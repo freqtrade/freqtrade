@@ -1,0 +1,3075 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Freqtrade is a free and open source crypto trading bot written in Python, designed to support all major exchanges and be controlled via Telegram or builtin Web UI">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/en/latest/2024.7.1/strategy_migration/">
+      
+      
+        <link rel="prev" href="../faq/">
+      
+      
+        <link rel="next" href="../updating/">
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.29">
+    
+    
+      
+        <title>Strategy migration - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.76a95c52.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#strategy-migration-between-v2-and-v3" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Strategy migration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Callbacks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freq-ui/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    freqUI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    FreqAI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            FreqAI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter table
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feature engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running FreqAI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reinforcement Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Short / Leverage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Sub-commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtest analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Trade Object
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lookahead-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lookahead analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recursive-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Recursive analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-orderflow/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Orderflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Producer/Consumer mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheat-sheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Strategy migration
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Strategy migration
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-summary-migration-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick summary / migration checklist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extensive-explanation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extensive explanation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extensive explanation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#populate_buy_trend" class="md-nav__link">
+    <span class="md-ellipsis">
+      populate_buy_trend
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#populate_sell_trend" class="md-nav__link">
+    <span class="md-ellipsis">
+      populate_sell_trend
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom_sell" class="md-nav__link">
+    <span class="md-ellipsis">
+      custom_sell
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom_entry_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      custom_entry_timeout
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom_stake_amount" class="md-nav__link">
+    <span class="md-ellipsis">
+      custom_stake_amount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#confirm_trade_entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      confirm_trade_entry
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#confirm_trade_exit" class="md-nav__link">
+    <span class="md-ellipsis">
+      confirm_trade_exit
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom_entry_price" class="md-nav__link">
+    <span class="md-ellipsis">
+      custom_entry_price
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adjust-trade-position-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adjust trade position changes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helper-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Helper methods
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategyconfiguration-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategy/Configuration settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Strategy/Configuration settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#order_time_in_force" class="md-nav__link">
+    <span class="md-ellipsis">
+      order_time_in_force
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#order_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      order_types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-level-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategy level settings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unfilledtimeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      unfilledtimeout
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#order-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      order pricing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freqai-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqAI strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FreqAI strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#freqai-feature-engineering-expand-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      freqai - feature engineering expand all
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqai-feature-engineering-basic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Freqai - feature engineering basic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqai-feature-engineering-standard" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqAI - feature engineering standard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqai-set-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqAI - set Targets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqai-new-data-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqAI - New data Pipeline
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating Freqtrade
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-summary-migration-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick summary / migration checklist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extensive-explanation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extensive explanation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extensive explanation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#populate_buy_trend" class="md-nav__link">
+    <span class="md-ellipsis">
+      populate_buy_trend
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#populate_sell_trend" class="md-nav__link">
+    <span class="md-ellipsis">
+      populate_sell_trend
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom_sell" class="md-nav__link">
+    <span class="md-ellipsis">
+      custom_sell
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom_entry_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      custom_entry_timeout
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom_stake_amount" class="md-nav__link">
+    <span class="md-ellipsis">
+      custom_stake_amount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#confirm_trade_entry" class="md-nav__link">
+    <span class="md-ellipsis">
+      confirm_trade_entry
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#confirm_trade_exit" class="md-nav__link">
+    <span class="md-ellipsis">
+      confirm_trade_exit
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom_entry_price" class="md-nav__link">
+    <span class="md-ellipsis">
+      custom_entry_price
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adjust-trade-position-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adjust trade position changes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helper-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Helper methods
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategyconfiguration-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategy/Configuration settings
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Strategy/Configuration settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#order_time_in_force" class="md-nav__link">
+    <span class="md-ellipsis">
+      order_time_in_force
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#order_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      order_types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-level-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategy level settings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unfilledtimeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      unfilledtimeout
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#order-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      order pricing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freqai-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqAI strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FreqAI strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#freqai-feature-engineering-expand-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      freqai - feature engineering expand all
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqai-feature-engineering-basic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Freqai - feature engineering basic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqai-feature-engineering-standard" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqAI - feature engineering standard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqai-set-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqAI - set Targets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqai-new-data-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqAI - New data Pipeline
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="strategy-migration-between-v2-and-v3">Strategy Migration between V2 and V3<a class="headerlink" href="#strategy-migration-between-v2-and-v3" title="Permanent link">&para;</a></h1>
+<p>To support new markets and trade-types (namely short trades / trades with leverage), some things had to change in the interface.
+If you intend on using markets other than spot markets, please migrate your strategy to the new format.</p>
+<p>We have put a great effort into keeping compatibility with existing strategies, so if you just want to continue using freqtrade in <strong>spot markets</strong>, there should be no changes necessary for now.</p>
+<p>You can use the quick summary as checklist. Please refer to the detailed sections below for full migration details.</p>
+<h2 id="quick-summary-migration-checklist">Quick summary / migration checklist<a class="headerlink" href="#quick-summary-migration-checklist" title="Permanent link">&para;</a></h2>
+<p>Note : <code>forcesell</code>, <code>forcebuy</code>, <code>emergencysell</code> are changed to <code>force_exit</code>, <code>force_enter</code>, <code>emergency_exit</code> respectively.</p>
+<ul>
+<li>Strategy methods:<ul>
+<li><a href="#populate_buy_trend"><code>populate_buy_trend()</code> -&gt; <code>populate_entry_trend()</code></a></li>
+<li><a href="#populate_sell_trend"><code>populate_sell_trend()</code> -&gt; <code>populate_exit_trend()</code></a></li>
+<li><a href="#custom_sell"><code>custom_sell()</code> -&gt; <code>custom_exit()</code></a></li>
+<li><a href="#custom_entry_timeout"><code>check_buy_timeout()</code> -&gt; <code>check_entry_timeout()</code></a></li>
+<li><a href="#custom_entry_timeout"><code>check_sell_timeout()</code> -&gt; <code>check_exit_timeout()</code></a></li>
+<li>New <code>side</code> argument to callbacks without trade object<ul>
+<li><a href="#custom_stake_amount"><code>custom_stake_amount</code></a></li>
+<li><a href="#confirm_trade_entry"><code>confirm_trade_entry</code></a></li>
+<li><a href="#custom_entry_price"><code>custom_entry_price</code></a></li>
+</ul>
+</li>
+<li><a href="#confirm_trade_exit">Changed argument name in <code>confirm_trade_exit</code></a></li>
+</ul>
+</li>
+<li>Dataframe columns:<ul>
+<li><a href="#populate_buy_trend"><code>buy</code> -&gt; <code>enter_long</code></a></li>
+<li><a href="#populate_sell_trend"><code>sell</code> -&gt; <code>exit_long</code></a></li>
+<li><a href="#populate_buy_trend"><code>buy_tag</code> -&gt; <code>enter_tag</code> (used for both long and short trades)</a></li>
+<li><a href="#populate_sell_trend">New column <code>enter_short</code> and corresponding new column <code>exit_short</code></a></li>
+</ul>
+</li>
+<li>trade-object now has the following new properties:<ul>
+<li><code>is_short</code></li>
+<li><code>entry_side</code></li>
+<li><code>exit_side</code></li>
+<li><code>trade_direction</code></li>
+<li>renamed: <code>sell_reason</code> -&gt; <code>exit_reason</code></li>
+</ul>
+</li>
+<li><a href="#adjust-trade-position-changes">Renamed <code>trade.nr_of_successful_buys</code> to <code>trade.nr_of_successful_entries</code> (mostly relevant for <code>adjust_trade_position()</code>)</a></li>
+<li>Introduced new <a href="../strategy-callbacks/#leverage-callback"><code>leverage</code> callback</a>.</li>
+<li>Informative pairs can now pass a 3<sup>rd</sup> element in the Tuple, defining the candle type.</li>
+<li><code>@informative</code> decorator now takes an optional <code>candle_type</code> argument.</li>
+<li><a href="#helper-methods">helper methods</a> <code>stoploss_from_open</code> and <code>stoploss_from_absolute</code> now take <code>is_short</code> as additional argument.</li>
+<li><code>INTERFACE_VERSION</code> should be set to 3.</li>
+<li><a href="#strategyconfiguration-settings">Strategy/Configuration settings</a>.<ul>
+<li><code>order_time_in_force</code> buy -&gt; entry, sell -&gt; exit.</li>
+<li><code>order_types</code> buy -&gt; entry, sell -&gt; exit.</li>
+<li><code>unfilledtimeout</code> buy -&gt; entry, sell -&gt; exit.</li>
+<li><code>ignore_buying_expired_candle_after</code> -&gt; moved to root level instead of "ask_strategy/exit_pricing"</li>
+</ul>
+</li>
+<li>Terminology changes<ul>
+<li>Sell reasons changed to reflect the new naming of "exit" instead of sells. Be careful in your strategy if you're using <code>exit_reason</code> checks and eventually update your strategy.<ul>
+<li><code>sell_signal</code> -&gt; <code>exit_signal</code></li>
+<li><code>custom_sell</code> -&gt; <code>custom_exit</code></li>
+<li><code>force_sell</code> -&gt; <code>force_exit</code></li>
+<li><code>emergency_sell</code> -&gt; <code>emergency_exit</code></li>
+</ul>
+</li>
+<li>Order pricing<ul>
+<li><code>bid_strategy</code> -&gt; <code>entry_pricing</code></li>
+<li><code>ask_strategy</code> -&gt; <code>exit_pricing</code></li>
+<li><code>ask_last_balance</code> -&gt; <code>price_last_balance</code></li>
+<li><code>bid_last_balance</code> -&gt; <code>price_last_balance</code></li>
+</ul>
+</li>
+<li>Webhook terminology changed from "sell" to "exit", and from "buy" to entry<ul>
+<li><code>webhookbuy</code> -&gt; <code>entry</code></li>
+<li><code>webhookbuyfill</code> -&gt; <code>entry_fill</code></li>
+<li><code>webhookbuycancel</code> -&gt; <code>entry_cancel</code></li>
+<li><code>webhooksell</code> -&gt; <code>exit</code></li>
+<li><code>webhooksellfill</code> -&gt; <code>exit_fill</code></li>
+<li><code>webhooksellcancel</code> -&gt; <code>exit_cancel</code></li>
+</ul>
+</li>
+<li>Telegram notification settings<ul>
+<li><code>buy</code> -&gt; <code>entry</code></li>
+<li><code>buy_fill</code> -&gt; <code>entry_fill</code></li>
+<li><code>buy_cancel</code> -&gt; <code>entry_cancel</code></li>
+<li><code>sell</code> -&gt; <code>exit</code></li>
+<li><code>sell_fill</code> -&gt; <code>exit_fill</code></li>
+<li><code>sell_cancel</code> -&gt; <code>exit_cancel</code></li>
+</ul>
+</li>
+<li>Strategy/config settings:<ul>
+<li><code>use_sell_signal</code> -&gt; <code>use_exit_signal</code></li>
+<li><code>sell_profit_only</code> -&gt; <code>exit_profit_only</code></li>
+<li><code>sell_profit_offset</code> -&gt; <code>exit_profit_offset</code></li>
+<li><code>ignore_roi_if_buy_signal</code> -&gt; <code>ignore_roi_if_entry_signal</code></li>
+<li><code>forcebuy_enable</code> -&gt; <code>force_entry_enable</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="extensive-explanation">Extensive explanation<a class="headerlink" href="#extensive-explanation" title="Permanent link">&para;</a></h2>
+<h3 id="populate_buy_trend"><code>populate_buy_trend</code><a class="headerlink" href="#populate_buy_trend" title="Permanent link">&para;</a></h3>
+<p>In <code>populate_buy_trend()</code> - you will want to change the columns you assign from <code>'buy</code>' to <code>'enter_long'</code>, as well as the method name from <code>populate_buy_trend</code> to <code>populate_entry_trend</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="hll"><span class="k">def</span> <span class="nf">populate_buy_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+</span>    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+        <span class="p">),</span>
+<span class="hll">        <span class="p">[</span><span class="s1">&#39;buy&#39;</span><span class="p">,</span> <span class="s1">&#39;buy_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;rsi_cross&#39;</span><span class="p">)</span>
+</span>
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<p>After:</p>
+<div class="highlight"><pre><span></span><code><span class="hll"><span class="k">def</span> <span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+</span>    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+        <span class="p">),</span>
+<span class="hll">        <span class="p">[</span><span class="s1">&#39;enter_long&#39;</span><span class="p">,</span> <span class="s1">&#39;enter_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;rsi_cross&#39;</span><span class="p">)</span>
+</span>
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<p>Please refer to the <a href="../strategy-customization/#entry-signal-rules">Strategy documentation</a> on how to enter and exit short trades.</p>
+<h3 id="populate_sell_trend"><code>populate_sell_trend</code><a class="headerlink" href="#populate_sell_trend" title="Permanent link">&para;</a></h3>
+<p>Similar to <code>populate_buy_trend</code>, <code>populate_sell_trend()</code> will be renamed to <code>populate_exit_trend()</code>.
+We'll also change the column from <code>'sell'</code> to <code>'exit_long'</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="hll"><span class="k">def</span> <span class="nf">populate_sell_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+</span>    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 70</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+        <span class="p">),</span>
+<span class="hll">        <span class="p">[</span><span class="s1">&#39;sell&#39;</span><span class="p">,</span> <span class="s1">&#39;exit_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;some_exit_tag&#39;</span><span class="p">)</span>
+</span>    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<p>After</p>
+<div class="highlight"><pre><span></span><code><span class="hll"><span class="k">def</span> <span class="nf">populate_exit_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+</span>    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 70</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+        <span class="p">),</span>
+<span class="hll">        <span class="p">[</span><span class="s1">&#39;exit_long&#39;</span><span class="p">,</span> <span class="s1">&#39;exit_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;some_exit_tag&#39;</span><span class="p">)</span>
+</span>    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<p>Please refer to the <a href="../strategy-customization/#exit-signal-rules">Strategy documentation</a> on how to enter and exit short trades.</p>
+<h3 id="custom_sell"><code>custom_sell</code><a class="headerlink" href="#custom_sell" title="Permanent link">&para;</a></h3>
+<p><code>custom_sell</code> has been renamed to <code>custom_exit</code>.
+It's now also being called for every iteration, independent of current profit and <code>exit_profit_only</code> settings.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+<span class="hll">    <span class="k">def</span> <span class="nf">custom_sell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="s1">&#39;datetime&#39;</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span>                    <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
+        <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+        <span class="c1"># ...</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+<span class="hll">    <span class="k">def</span> <span class="nf">custom_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="s1">&#39;datetime&#39;</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+</span>                    <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
+        <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+        <span class="c1"># ...</span>
+</code></pre></div>
+<h3 id="custom_entry_timeout"><code>custom_entry_timeout</code><a class="headerlink" href="#custom_entry_timeout" title="Permanent link">&para;</a></h3>
+<p><code>check_buy_timeout()</code> has been renamed to <code>check_entry_timeout()</code>, and <code>check_sell_timeout()</code> has been renamed to <code>check_exit_timeout()</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+<span class="hll">    <span class="k">def</span> <span class="nf">check_buy_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> 
+</span>                            <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+<span class="hll">    <span class="k">def</span> <span class="nf">check_sell_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> 
+</span>                            <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span> 
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+<span class="hll">    <span class="k">def</span> <span class="nf">check_entry_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="s1">&#39;Order&#39;</span><span class="p">,</span> 
+</span>                            <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+<span class="hll">    <span class="k">def</span> <span class="nf">check_exit_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="s1">&#39;Order&#39;</span><span class="p">,</span> 
+</span>                            <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span> 
+</code></pre></div>
+<h3 id="custom_stake_amount"><code>custom_stake_amount</code><a class="headerlink" href="#custom_stake_amount" title="Permanent link">&para;</a></h3>
+<p>New string argument <code>side</code> - which can be either <code>"long"</code> or <code>"short"</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">custom_stake_amount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                            <span class="n">proposed_stake</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">min_stake</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">max_stake</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="hll">                            <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span>        <span class="c1"># ... </span>
+        <span class="k">return</span> <span class="n">proposed_stake</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">custom_stake_amount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                            <span class="n">proposed_stake</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">min_stake</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">max_stake</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="hll">                            <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span>        <span class="c1"># ... </span>
+        <span class="k">return</span> <span class="n">proposed_stake</span>
+</code></pre></div>
+<h3 id="confirm_trade_entry"><code>confirm_trade_entry</code><a class="headerlink" href="#confirm_trade_entry" title="Permanent link">&para;</a></h3>
+<p>New string argument <code>side</code> - which can be either <code>"long"</code> or <code>"short"</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">confirm_trade_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                            <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> 
+<span class="hll">                            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span>      <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
+<p>After: </p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">confirm_trade_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                            <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> 
+<span class="hll">                            <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span>      <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
+<h3 id="confirm_trade_exit"><code>confirm_trade_exit</code><a class="headerlink" href="#confirm_trade_exit" title="Permanent link">&para;</a></h3>
+<p>Changed argument <code>sell_reason</code> to <code>exit_reason</code>.
+For compatibility, <code>sell_reason</code> will still be provided for a limited time.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">confirm_trade_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="hll">                           <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sell_reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span>                           <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
+<p>After:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">confirm_trade_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="hll">                           <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">exit_reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span>                           <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
+<h3 id="custom_entry_price"><code>custom_entry_price</code><a class="headerlink" href="#custom_entry_price" title="Permanent link">&para;</a></h3>
+<p>New string argument <code>side</code> - which can be either <code>"long"</code> or <code>"short"</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">custom_entry_price</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">proposed_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="hll">                           <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span>      <span class="k">return</span> <span class="n">proposed_rate</span>
+</code></pre></div>
+<p>After:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">custom_entry_price</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Trade</span><span class="p">],</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">proposed_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="hll">                           <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span>      <span class="k">return</span> <span class="n">proposed_rate</span>
+</code></pre></div>
+<h3 id="adjust-trade-position-changes">Adjust trade position changes<a class="headerlink" href="#adjust-trade-position-changes" title="Permanent link">&para;</a></h3>
+<p>While adjust-trade-position itself did not change, you should no longer use <code>trade.nr_of_successful_buys</code> - and instead use <code>trade.nr_of_successful_entries</code>, which will also include short entries.</p>
+<h3 id="helper-methods">Helper methods<a class="headerlink" href="#helper-methods" title="Permanent link">&para;</a></h3>
+<p>Added argument "is_short" to <code>stoploss_from_open</code> and <code>stoploss_from_absolute</code>.
+This should be given the value of <code>trade.is_short</code>.</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                        <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="c1"># once the profit has risen above 10%, keep the stoploss at 7% above the open price</span>
+        <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.10</span><span class="p">:</span>
+<span class="hll">            <span class="k">return</span> <span class="n">stoploss_from_open</span><span class="p">(</span><span class="mf">0.07</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">)</span>
+</span>
+<span class="hll">        <span class="k">return</span> <span class="n">stoploss_from_absolute</span><span class="p">(</span><span class="n">current_rate</span> <span class="o">-</span> <span class="p">(</span><span class="n">candle</span><span class="p">[</span><span class="s1">&#39;atr&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">),</span> <span class="n">current_rate</span><span class="p">)</span>
+</span>
+        <span class="k">return</span> <span class="mi">1</span>
+</code></pre></div>
+<p>After:</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                        <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">after_fill</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> 
+                        <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+        <span class="c1"># once the profit has risen above 10%, keep the stoploss at 7% above the open price</span>
+<span class="hll">        <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.10</span><span class="p">:</span>
+</span>            <span class="k">return</span> <span class="n">stoploss_from_open</span><span class="p">(</span><span class="mf">0.07</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">,</span> <span class="n">is_short</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">is_short</span><span class="p">)</span>
+<span class="hll">
+</span>        <span class="k">return</span> <span class="n">stoploss_from_absolute</span><span class="p">(</span><span class="n">current_rate</span> <span class="o">-</span> <span class="p">(</span><span class="n">candle</span><span class="p">[</span><span class="s1">&#39;atr&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">),</span> <span class="n">current_rate</span><span class="p">,</span> <span class="n">is_short</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">is_short</span><span class="p">,</span> <span class="n">leverage</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">leverage</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="strategyconfiguration-settings">Strategy/Configuration settings<a class="headerlink" href="#strategyconfiguration-settings" title="Permanent link">&para;</a></h3>
+<h4 id="order_time_in_force"><code>order_time_in_force</code><a class="headerlink" href="#order_time_in_force" title="Permanent link">&para;</a></h4>
+<p><code>order_time_in_force</code> attributes changed from <code>"buy"</code> to <code>"entry"</code> and <code>"sell"</code> to <code>"exit"</code>.</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">order_time_in_force</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;buy&quot;</span><span class="p">:</span> <span class="s2">&quot;gtc&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;sell&quot;</span><span class="p">:</span> <span class="s2">&quot;gtc&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+</code></pre></div>
+<p>After:</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">order_time_in_force</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{</span>
+<span class="hll">        <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="s2">&quot;GTC&quot;</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="s2">&quot;GTC&quot;</span><span class="p">,</span>
+</span>    <span class="p">}</span>
+</code></pre></div>
+<h4 id="order_types"><code>order_types</code><a class="headerlink" href="#order_types" title="Permanent link">&para;</a></h4>
+<p><code>order_types</code> have changed all wordings from <code>buy</code> to <code>entry</code> - and <code>sell</code> to <code>exit</code>.
+And two words are joined with <code>_</code>. </p>
+<div class="highlight"><pre><span></span><code>    <span class="n">order_types</span> <span class="o">=</span> <span class="p">{</span>
+<span class="hll">        <span class="s2">&quot;buy&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;sell&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;emergencysell&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;forcesell&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;forcebuy&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+</span>        <span class="s2">&quot;stoploss&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+        <span class="s2">&quot;stoploss_on_exchange_interval&quot;</span><span class="p">:</span> <span class="mi">60</span>
+    <span class="p">}</span>
+</code></pre></div>
+<p>After:</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">order_types</span> <span class="o">=</span> <span class="p">{</span>
+<span class="hll">        <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;emergency_exit&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;force_exit&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;force_entry&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+</span>        <span class="s2">&quot;stoploss&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+        <span class="s2">&quot;stoploss_on_exchange_interval&quot;</span><span class="p">:</span> <span class="mi">60</span>
+    <span class="p">}</span>
+</code></pre></div>
+<h4 id="strategy-level-settings">Strategy level settings<a class="headerlink" href="#strategy-level-settings" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>use_sell_signal</code> -&gt; <code>use_exit_signal</code></li>
+<li><code>sell_profit_only</code> -&gt; <code>exit_profit_only</code></li>
+<li><code>sell_profit_offset</code> -&gt; <code>exit_profit_offset</code></li>
+<li><code>ignore_roi_if_buy_signal</code> -&gt; <code>ignore_roi_if_entry_signal</code></li>
+</ul>
+<div class="highlight"><pre><span></span><code>    <span class="c1"># These values can be overridden in the config.</span>
+<span class="hll">    <span class="n">use_sell_signal</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span class="hll">    <span class="n">sell_profit_only</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span class="hll">    <span class="n">sell_profit_offset</span><span class="p">:</span> <span class="mf">0.01</span>
+</span><span class="hll">    <span class="n">ignore_roi_if_buy_signal</span> <span class="o">=</span> <span class="kc">False</span>
+</span></code></pre></div>
+<p>After:</p>
+<div class="highlight"><pre><span></span><code>    <span class="c1"># These values can be overridden in the config.</span>
+<span class="hll">    <span class="n">use_exit_signal</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span class="hll">    <span class="n">exit_profit_only</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span class="hll">    <span class="n">exit_profit_offset</span><span class="p">:</span> <span class="mf">0.01</span>
+</span><span class="hll">    <span class="n">ignore_roi_if_entry_signal</span> <span class="o">=</span> <span class="kc">False</span>
+</span></code></pre></div>
+<h4 id="unfilledtimeout"><code>unfilledtimeout</code><a class="headerlink" href="#unfilledtimeout" title="Permanent link">&para;</a></h4>
+<p><code>unfilledtimeout</code> have changed all wordings from <code>buy</code> to <code>entry</code> - and <code>sell</code> to <code>exit</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">unfilledtimeout</span> <span class="o">=</span> <span class="p">{</span>
+<span class="hll">        <span class="s2">&quot;buy&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;sell&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+</span>        <span class="s2">&quot;exit_timeout_count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;minutes&quot;</span>
+    <span class="p">}</span>
+</code></pre></div>
+<p>After:</p>
+<div class="highlight"><pre><span></span><code><span class="n">unfilledtimeout</span> <span class="o">=</span> <span class="p">{</span>
+<span class="hll">        <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+</span><span class="hll">        <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+</span>        <span class="s2">&quot;exit_timeout_count&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;minutes&quot;</span>
+    <span class="p">}</span>
+</code></pre></div>
+<h4 id="order-pricing"><code>order pricing</code><a class="headerlink" href="#order-pricing" title="Permanent link">&para;</a></h4>
+<p>Order pricing changed in 2 ways. <code>bid_strategy</code> was renamed to <code>entry_pricing</code> and <code>ask_strategy</code> was renamed to <code>exit_pricing</code>.
+The attributes <code>ask_last_balance</code> -&gt; <code>price_last_balance</code> and <code>bid_last_balance</code> -&gt; <code>price_last_balance</code> were renamed as well.
+Also, price-side can now be defined as <code>ask</code>, <code>bid</code>, <code>same</code> or <code>other</code>.
+Please refer to the <a href="../configuration/#prices-used-for-orders">pricing documentation</a> for more information.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="hll"><span class="w">    </span><span class="nt">&quot;bid_strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">        </span><span class="nt">&quot;price_side&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bid&quot;</span><span class="p">,</span>
+</span><span class="w">        </span><span class="nt">&quot;use_order_book&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;order_book_top&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="hll"><span class="w">        </span><span class="nt">&quot;ask_last_balance&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span>
+</span><span class="w">        </span><span class="nt">&quot;check_depth_of_market&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;bids_to_ask_delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="hll"><span class="w">    </span><span class="nt">&quot;ask_strategy&quot;</span><span class="p">:{</span>
+</span><span class="hll"><span class="w">        </span><span class="nt">&quot;price_side&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ask&quot;</span><span class="p">,</span>
+</span><span class="w">        </span><span class="nt">&quot;use_order_book&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;order_book_top&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="hll"><span class="w">        </span><span class="nt">&quot;bid_last_balance&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span>
+</span><span class="w">        </span><span class="nt">&quot;ignore_buying_expired_candle_after&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>after:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="hll"><span class="w">    </span><span class="nt">&quot;entry_pricing&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">        </span><span class="nt">&quot;price_side&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same&quot;</span><span class="p">,</span>
+</span><span class="w">        </span><span class="nt">&quot;use_order_book&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;order_book_top&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="hll"><span class="w">        </span><span class="nt">&quot;price_last_balance&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span>
+</span><span class="w">        </span><span class="nt">&quot;check_depth_of_market&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;bids_to_ask_delta&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="hll"><span class="w">    </span><span class="nt">&quot;exit_pricing&quot;</span><span class="p">:{</span>
+</span><span class="hll"><span class="w">        </span><span class="nt">&quot;price_side&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same&quot;</span><span class="p">,</span>
+</span><span class="w">        </span><span class="nt">&quot;use_order_book&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;order_book_top&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="hll"><span class="w">        </span><span class="nt">&quot;price_last_balance&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span>
+</span><span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;ignore_buying_expired_candle_after&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="freqai-strategy">FreqAI strategy<a class="headerlink" href="#freqai-strategy" title="Permanent link">&para;</a></h2>
+<p>The <code>populate_any_indicators()</code> method has been split into <code>feature_engineering_expand_all()</code>, <code>feature_engineering_expand_basic()</code>, <code>feature_engineering_standard()</code> and<code>set_freqai_targets()</code>.</p>
+<p>For each new function, the pair (and timeframe where necessary) will be automatically added to the column.
+As such, the definition of features becomes much simpler with the new logic.</p>
+<p>For a full explanation of each method, please go to the corresponding <a href="../freqai-feature-engineering/#defining-the-features">freqAI documentation page</a></p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span>
+<span class="normal">69</span>
+<span class="normal">70</span>
+<span class="normal">71</span>
+<span class="normal">72</span>
+<span class="normal">73</span>
+<span class="normal">74</span>
+<span class="normal">75</span>
+<span class="normal">76</span>
+<span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">populate_any_indicators</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="n">informative</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_generalized_indicators</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">informative</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">informative</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="n">tf</span><span class="p">)</span>
+
+        <span class="c1"># first loop is automatically duplicating indicators for time periods</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;indicator_periods_candles&quot;</span><span class="p">]:</span>
+
+            <span class="n">t</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">rsi-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">mfi-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">adx-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">sma-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">ema-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+</span><span class="hll">
+</span><span class="hll">            <span class="n">bollinger</span> <span class="o">=</span> <span class="n">qtpylib</span><span class="o">.</span><span class="n">bollinger_bands</span><span class="p">(</span>
+</span><span class="hll">                <span class="n">qtpylib</span><span class="o">.</span><span class="n">typical_price</span><span class="p">(</span><span class="n">informative</span><span class="p">),</span> <span class="n">window</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">stds</span><span class="o">=</span><span class="mf">2.2</span>
+</span><span class="hll">            <span class="p">)</span>
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">bb_lowerband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;lower&quot;</span><span class="p">]</span>
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">bb_middleband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;mid&quot;</span><span class="p">]</span>
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">bb_upperband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;upper&quot;</span><span class="p">]</span>
+</span><span class="hll">
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">bb_width-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+</span><span class="hll">                <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">bb_upperband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span class="hll">                <span class="o">-</span> <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">bb_lowerband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span class="hll">            <span class="p">)</span> <span class="o">/</span> <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">bb_middleband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">close-bb_lower-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+</span><span class="hll">                <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">bb_lowerband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span class="hll">            <span class="p">)</span>
+</span><span class="hll">
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">roc-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ROC</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+</span><span class="hll">
+</span><span class="hll">            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">relative_volume-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+</span><span class="hll">                <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</span><span class="hll">            <span class="p">)</span> <span class="c1"># (1)</span>
+</span>
+<span class="hll">        <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">pct-change&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span>
+</span><span class="hll">        <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">raw_volume&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span>
+</span><span class="hll">        <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">raw_price&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+</span><span class="hll">        <span class="c1"># (2)</span>
+</span>
+        <span class="n">indicators</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">informative</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)]</span>
+        <span class="c1"># This loop duplicates and shifts all indicators to add a sense of recency to data</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;include_shifted_candles&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">informative_shift</span> <span class="o">=</span> <span class="n">informative</span><span class="p">[</span><span class="n">indicators</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">informative_shift</span> <span class="o">=</span> <span class="n">informative_shift</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s2">&quot;_shift-&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+            <span class="n">informative</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">informative</span><span class="p">,</span> <span class="n">informative_shift</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">merge_informative_pair</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">informative</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;timeframe&quot;</span><span class="p">],</span> <span class="n">tf</span><span class="p">,</span> <span class="n">ffill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">skip_columns</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">tf</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="s2">&quot;open&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;close&quot;</span><span class="p">,</span> <span class="s2">&quot;volume&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">skip_columns</span><span class="p">)</span>
+
+        <span class="c1"># Add generalized indicators here (because in live, it will call this</span>
+        <span class="c1"># function to populate indicators during training). Notice how we ensure not to</span>
+        <span class="c1"># add them multiple times</span>
+        <span class="k">if</span> <span class="n">set_generalized_indicators</span><span class="p">:</span>
+<span class="hll">            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">ay_of_week&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span>
+</span><span class="hll">            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-ho</span><span class="s2">ur_of_day&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">25</span>
+</span><span class="hll">            <span class="c1"># (3)</span>
+</span>
+<span class="hll">            <span class="c1"># user adds targets here by prepending them with &amp;- (see convention below)</span>
+</span><span class="hll">            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+</span><span class="hll">                <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+</span><span class="hll">                <span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+</span><span class="hll">                <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+</span><span class="hll">                <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</span><span class="hll">                <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+</span><span class="hll">                <span class="o">-</span> <span class="mi">1</span>
+</span><span class="hll">            <span class="p">)</span>  <span class="c1"># (4)</span>
+</span>
+        <span class="k">return</span> <span class="n">df</span>
+</code></pre></div></td></tr></table></div>
+<ol>
+<li>Features - Move to <code>feature_engineering_expand_all</code></li>
+<li>Basic features, not expanded across <code>indicator_periods_candles</code> - move to<code>feature_engineering_expand_basic()</code>.</li>
+<li>Standard features which should not be expanded - move to <code>feature_engineering_standard()</code>.</li>
+<li>Targets - Move this part to <code>set_freqai_targets()</code>.</li>
+</ol>
+<h3 id="freqai-feature-engineering-expand-all">freqai - feature engineering expand all<a class="headerlink" href="#freqai-feature-engineering-expand-all" title="Permanent link">&para;</a></h3>
+<p>Features will now expand automatically. As such, the expansion loops, as well as the <code>{pair}</code> / <code>{timeframe}</code> parts will need to be removed.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">def</span> <span class="nf">feature_engineering_expand_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">::</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        This function will automatically expand the defined features on the config defined</span>
+<span class="sd">        `indicator_periods_candles`, `include_timeframes`, `include_shifted_candles`, and</span>
+<span class="sd">        `include_corr_pairs`. In other words, a single feature defined in this function</span>
+<span class="sd">        will automatically expand to a total of</span>
+<span class="sd">        `indicator_periods_candles` * `include_timeframes` * `include_shifted_candles` *</span>
+<span class="sd">        `include_corr_pairs` numbers of features added to the model.</span>
+
+<span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
+
+<span class="sd">        More details on how these config defined parameters accelerate feature engineering</span>
+<span class="sd">        in the documentation at:</span>
+
+<span class="sd">        https://www.freqtrade.io/en/latest/freqai-parameter-table/#feature-parameters</span>
+
+<span class="sd">        https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features</span>
+
+<span class="sd">        :param df: strategy dataframe which will receive the features</span>
+<span class="sd">        :param period: period of the indicator - usage example:</span>
+<span class="sd">        dataframe[&quot;%-ema-period&quot;] = ta.EMA(dataframe, timeperiod=period)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">si-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-mfi-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-a</span><span class="s2">dx-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-s</span><span class="s2">ma-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-e</span><span class="s2">ma-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+
+        <span class="n">bollinger</span> <span class="o">=</span> <span class="n">qtpylib</span><span class="o">.</span><span class="n">bollinger_bands</span><span class="p">(</span>
+            <span class="n">qtpylib</span><span class="o">.</span><span class="n">typical_price</span><span class="p">(</span><span class="n">dataframe</span><span class="p">),</span> <span class="n">window</span><span class="o">=</span><span class="n">period</span><span class="p">,</span> <span class="n">stds</span><span class="o">=</span><span class="mf">2.2</span>
+        <span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;lower&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_middleband-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;mid&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_upperband-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;upper&quot;</span><span class="p">]</span>
+
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-bb_width-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_upperband-period&quot;</span><span class="p">]</span>
+            <span class="o">-</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband-period&quot;</span><span class="p">]</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_middleband-period&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-c</span><span class="s2">lose-bb_lower-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband-period&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">oc-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ROC</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">elative_volume-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">period</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="freqai-feature-engineering-basic">Freqai - feature engineering basic<a class="headerlink" href="#freqai-feature-engineering-basic" title="Permanent link">&para;</a></h3>
+<p>Basic features. Make sure to remove the <code>{pair}</code> part from your features.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">def</span> <span class="nf">feature_engineering_expand_basic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">::</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        This function will automatically expand the defined features on the config defined</span>
+<span class="sd">        `include_timeframes`, `include_shifted_candles`, and `include_corr_pairs`.</span>
+<span class="sd">        In other words, a single feature defined in this function</span>
+<span class="sd">        will automatically expand to a total of</span>
+<span class="sd">        `include_timeframes` * `include_shifted_candles` * `include_corr_pairs`</span>
+<span class="sd">        numbers of features added to the model.</span>
+
+<span class="sd">        Features defined here will *not* be automatically duplicated on user defined</span>
+<span class="sd">        `indicator_periods_candles`</span>
+
+<span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
+
+<span class="sd">        More details on how these config defined parameters accelerate feature engineering</span>
+<span class="sd">        in the documentation at:</span>
+
+<span class="sd">        https://www.freqtrade.io/en/latest/freqai-parameter-table/#feature-parameters</span>
+
+<span class="sd">        https://www.freqtrade.io/en/latest/freqai-feature-engineering/#defining-the-features</span>
+
+<span class="sd">        :param df: strategy dataframe which will receive the features</span>
+<span class="sd">        dataframe[&quot;%-pct-change&quot;] = dataframe[&quot;close&quot;].pct_change()</span>
+<span class="sd">        dataframe[&quot;%-ema-200&quot;] = ta.EMA(dataframe, timeperiod=200)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-pct-change&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">aw_volume&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">aw_price&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="freqai-feature-engineering-standard">FreqAI - feature engineering standard<a class="headerlink" href="#freqai-feature-engineering-standard" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">def</span> <span class="nf">feature_engineering_standard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        This optional function will be called once with the dataframe of the base timeframe.</span>
+<span class="sd">        This is the final function to be called, which means that the dataframe entering this</span>
+<span class="sd">        function will contain all the features and columns created by all other</span>
+<span class="sd">        freqai_feature_engineering_* functions.</span>
+
+<span class="sd">        This function is a good place to do custom exotic feature extractions (e.g. tsfresh).</span>
+<span class="sd">        This function is a good place for any feature that should not be auto-expanded upon</span>
+<span class="sd">        (e.g. day of the week).</span>
+
+<span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
+
+<span class="sd">        More details about feature engineering available:</span>
+
+<span class="sd">        https://www.freqtrade.io/en/latest/freqai-feature-engineering</span>
+
+<span class="sd">        :param df: strategy dataframe which will receive the features</span>
+<span class="sd">        usage example: dataframe[&quot;%-day_of_week&quot;] = (dataframe[&quot;date&quot;].dt.dayofweek + 1) / 7</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">ay_of_week&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-ho</span><span class="s2">ur_of_day&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span>
+        <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="freqai-set-targets">FreqAI - set Targets<a class="headerlink" href="#freqai-set-targets" title="Permanent link">&para;</a></h3>
+<p>Targets now get their own, dedicated method.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">def</span> <span class="nf">set_freqai_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        Required function to set the targets for the model.</span>
+<span class="sd">        All targets must be prepended with `&amp;` to be recognized by the FreqAI internals.</span>
+
+<span class="sd">        More details about feature engineering available:</span>
+
+<span class="sd">        https://www.freqtrade.io/en/latest/freqai-feature-engineering</span>
+
+<span class="sd">        :param df: strategy dataframe which will receive the targets</span>
+<span class="sd">        usage example: dataframe[&quot;&amp;-target&quot;] = dataframe[&quot;close&quot;].shift(-1) / dataframe[&quot;close&quot;]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+            <span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+            <span class="o">-</span> <span class="mi">1</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="freqai-new-data-pipeline">FreqAI - New data Pipeline<a class="headerlink" href="#freqai-new-data-pipeline" title="Permanent link">&para;</a></h3>
+<p>If you have created your own custom <code>IFreqaiModel</code> with a custom <code>train()</code>/<code>predict()</code> function, <em>and</em> you still rely on <code>data_cleaning_train/predict()</code>, then you will need to migrate to the new pipeline. If your model does <em>not</em> rely on <code>data_cleaning_train/predict()</code>, then you do not need to worry about this migration. That means that this migration guide is relevant for a very small percentage of power-users. If you stumbled upon this guide by mistake, feel free to inquire in depth about your problem in the Freqtrade discord server.</p>
+<p>The conversion involves first removing <code>data_cleaning_train/predict()</code> and replacing them with a <code>define_data_pipeline()</code> and <code>define_label_pipeline()</code> function to your <code>IFreqaiModel</code> class:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span>
+<span class="normal">63</span>
+<span class="normal">64</span>
+<span class="normal">65</span>
+<span class="normal">66</span>
+<span class="normal">67</span>
+<span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">MyCoolFreqaiModel</span><span class="p">(</span><span class="n">BaseRegressionModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Some cool custom IFreqaiModel you made before Freqtrade version 2023.6</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">unfiltered_df</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dk</span><span class="p">:</span> <span class="n">FreqaiDataKitchen</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+
+        <span class="c1"># ... your custom stuff</span>
+
+<span class="hll">        <span class="c1"># Remove these lines</span>
+</span><span class="hll">        <span class="c1"># data_dictionary = dk.make_train_test_datasets(features_filtered, labels_filtered)</span>
+</span><span class="hll">        <span class="c1"># self.data_cleaning_train(dk)</span>
+</span><span class="hll">        <span class="c1"># data_dictionary = dk.normalize_data(data_dictionary)</span>
+</span>        <span class="c1"># (1)</span>
+
+        <span class="c1"># Add these lines. Now we control the pipeline fit/transform ourselves</span>
+        <span class="n">dd</span> <span class="o">=</span> <span class="n">dk</span><span class="o">.</span><span class="n">make_train_test_datasets</span><span class="p">(</span><span class="n">features_filtered</span><span class="p">,</span> <span class="n">labels_filtered</span><span class="p">)</span>
+        <span class="n">dk</span><span class="o">.</span><span class="n">feature_pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">define_data_pipeline</span><span class="p">(</span><span class="n">threads</span><span class="o">=</span><span class="n">dk</span><span class="o">.</span><span class="n">thread_count</span><span class="p">)</span>
+        <span class="n">dk</span><span class="o">.</span><span class="n">label_pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">define_label_pipeline</span><span class="p">(</span><span class="n">threads</span><span class="o">=</span><span class="n">dk</span><span class="o">.</span><span class="n">thread_count</span><span class="p">)</span>
+
+        <span class="p">(</span><span class="n">dd</span><span class="p">[</span><span class="s2">&quot;train_features&quot;</span><span class="p">],</span>
+         <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;train_labels&quot;</span><span class="p">],</span>
+         <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;train_weights&quot;</span><span class="p">])</span> <span class="o">=</span> <span class="n">dk</span><span class="o">.</span><span class="n">feature_pipeline</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">dd</span><span class="p">[</span><span class="s2">&quot;train_features&quot;</span><span class="p">],</span>
+                                                                  <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;train_labels&quot;</span><span class="p">],</span>
+                                                                  <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;train_weights&quot;</span><span class="p">])</span>
+
+        <span class="p">(</span><span class="n">dd</span><span class="p">[</span><span class="s2">&quot;test_features&quot;</span><span class="p">],</span>
+         <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;test_labels&quot;</span><span class="p">],</span>
+         <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;test_weights&quot;</span><span class="p">])</span> <span class="o">=</span> <span class="n">dk</span><span class="o">.</span><span class="n">feature_pipeline</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">dd</span><span class="p">[</span><span class="s2">&quot;test_features&quot;</span><span class="p">],</span>
+                                                             <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;test_labels&quot;</span><span class="p">],</span>
+                                                             <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;test_weights&quot;</span><span class="p">])</span>
+
+        <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;train_labels&quot;</span><span class="p">],</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dk</span><span class="o">.</span><span class="n">label_pipeline</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">dd</span><span class="p">[</span><span class="s2">&quot;train_labels&quot;</span><span class="p">])</span>
+        <span class="n">dd</span><span class="p">[</span><span class="s2">&quot;test_labels&quot;</span><span class="p">],</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dk</span><span class="o">.</span><span class="n">label_pipeline</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">dd</span><span class="p">[</span><span class="s2">&quot;test_labels&quot;</span><span class="p">])</span>
+
+        <span class="c1"># ... your custom code</span>
+
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">unfiltered_df</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">dk</span><span class="p">:</span> <span class="n">FreqaiDataKitchen</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int_</span><span class="p">]]:</span>
+
+        <span class="c1"># ... your custom stuff</span>
+
+<span class="hll">        <span class="c1"># Remove these lines:</span>
+</span><span class="hll">        <span class="c1"># self.data_cleaning_predict(dk)</span>
+</span><span class="hll">        <span class="c1"># (2)</span>
+</span>
+        <span class="c1"># Add these lines:</span>
+        <span class="n">dk</span><span class="o">.</span><span class="n">data_dictionary</span><span class="p">[</span><span class="s2">&quot;prediction_features&quot;</span><span class="p">],</span> <span class="n">outliers</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dk</span><span class="o">.</span><span class="n">feature_pipeline</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
+            <span class="n">dk</span><span class="o">.</span><span class="n">data_dictionary</span><span class="p">[</span><span class="s2">&quot;prediction_features&quot;</span><span class="p">],</span> <span class="n">outlier_check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="hll">        <span class="c1"># Remove this line</span>
+</span><span class="hll">        <span class="c1"># pred_df = dk.denormalize_labels_from_metadata(pred_df)</span>
+</span><span class="hll">        <span class="c1"># (3)</span>
+</span>
+        <span class="c1"># Replace with these lines</span>
+        <span class="n">pred_df</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dk</span><span class="o">.</span><span class="n">label_pipeline</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">pred_df</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;DI_threshold&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">dk</span><span class="o">.</span><span class="n">DI_values</span> <span class="o">=</span> <span class="n">dk</span><span class="o">.</span><span class="n">feature_pipeline</span><span class="p">[</span><span class="s2">&quot;di&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">di_values</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dk</span><span class="o">.</span><span class="n">DI_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">outliers</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">dk</span><span class="o">.</span><span class="n">do_predict</span> <span class="o">=</span> <span class="n">outliers</span>
+
+        <span class="c1"># ... your custom code</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">pred_df</span><span class="p">,</span> <span class="n">dk</span><span class="o">.</span><span class="n">do_predict</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<ol>
+<li>Data normalization and cleaning is now homogenized with the new pipeline definition. This is created in the new <code>define_data_pipeline()</code> and <code>define_label_pipeline()</code> functions. The <code>data_cleaning_train()</code> and <code>data_cleaning_predict()</code> functions are no longer used. You can override <code>define_data_pipeline()</code> to create your own custom pipeline if you wish.</li>
+<li>Data normalization and cleaning is now homogenized with the new pipeline definition. This is created in the new <code>define_data_pipeline()</code> and <code>define_label_pipeline()</code> functions. The <code>data_cleaning_train()</code> and <code>data_cleaning_predict()</code> functions are no longer used. You can override <code>define_data_pipeline()</code> to create your own custom pipeline if you wish.</li>
+<li>Data denormalization is done with the new pipeline. Replace this with the lines below.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../faq/" class="md-footer__link md-footer__link--prev" aria-label="Previous: FAQ">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                FAQ
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../updating/" class="md-footer__link md-footer__link--next" aria-label="Next: Updating Freqtrade">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Updating Freqtrade
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
