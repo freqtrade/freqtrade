@@ -1,0 +1,1369 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2021.12/includes/pairlists/">
+      
+      <link rel="icon" href="../../images/logo.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.3">
+    
+    
+      
+        <title>Pairlists - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.edf004c2.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pairlists-and-pairlist-handlers" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Pairlists
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../strategy-callbacks/" class="md-nav__link">
+        Strategy Callbacks
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_11">
+          Control the bot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_11">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_18" type="checkbox" id="__nav_18" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_18">
+          Data Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_18">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_19" type="checkbox" id="__nav_19" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_19">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_19">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pairlists-and-pairlist-handlers" class="md-nav__link">
+    Pairlists and Pairlist Handlers
+  </a>
+  
+    <nav class="md-nav" aria-label="Pairlists and Pairlist Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pair-blacklist" class="md-nav__link">
+    Pair blacklist
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-pairlist-handlers" class="md-nav__link">
+    Available Pairlist Handlers
+  </a>
+  
+    <nav class="md-nav" aria-label="Available Pairlist Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-pair-list" class="md-nav__link">
+    Static Pair List
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volume-pair-list" class="md-nav__link">
+    Volume Pair List
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volumepairlist-advanced-mode" class="md-nav__link">
+    VolumePairList Advanced mode
+  </a>
+  
+    <nav class="md-nav" aria-label="VolumePairList Advanced mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agefilter" class="md-nav__link">
+    AgeFilter
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#offsetfilter" class="md-nav__link">
+    OffsetFilter
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performancefilter" class="md-nav__link">
+    PerformanceFilter
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precisionfilter" class="md-nav__link">
+    PrecisionFilter
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pricefilter" class="md-nav__link">
+    PriceFilter
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shufflefilter" class="md-nav__link">
+    ShuffleFilter
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spreadfilter" class="md-nav__link">
+    SpreadFilter
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rangestabilityfilter" class="md-nav__link">
+    RangeStabilityFilter
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volatilityfilter" class="md-nav__link">
+    VolatilityFilter
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-example-of-pairlist-handlers" class="md-nav__link">
+    Full example of Pairlist Handlers
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/freqtrade/freqtrade/edit/master/docs/includes/pairlists.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+  <h1>Pairlists</h1>
+
+<h2 id="pairlists-and-pairlist-handlers">Pairlists and Pairlist Handlers<a class="headerlink" href="#pairlists-and-pairlist-handlers" title="Permanent link">&para;</a></h2>
+<p>Pairlist Handlers define the list of pairs (pairlist) that the bot should trade. They are configured in the <code>pairlists</code> section of the configuration settings.</p>
+<p>In your configuration, you can use Static Pairlist (defined by the <a href="#static-pair-list"><code>StaticPairList</code></a> Pairlist Handler) and Dynamic Pairlist (defined by the <a href="#volume-pair-list"><code>VolumePairList</code></a> Pairlist Handler).</p>
+<p>Additionally, <a href="#agefilter"><code>AgeFilter</code></a>, <a href="#precisionfilter"><code>PrecisionFilter</code></a>, <a href="#pricefilter"><code>PriceFilter</code></a>, <a href="#shufflefilter"><code>ShuffleFilter</code></a>, <a href="#spreadfilter"><code>SpreadFilter</code></a> and <a href="#volatilityfilter"><code>VolatilityFilter</code></a> act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.</p>
+<p>If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You should always configure either <code>StaticPairList</code> or <code>VolumePairList</code> as the starting Pairlist Handler.</p>
+<p>Inactive markets are always removed from the resulting pairlist. Explicitly blacklisted pairs (those in the <code>pair_blacklist</code> configuration setting) are also always removed from the resulting pairlist.</p>
+<h3 id="pair-blacklist">Pair blacklist<a class="headerlink" href="#pair-blacklist" title="Permanent link">&para;</a></h3>
+<p>The pair blacklist (configured via <code>exchange.pair_blacklist</code> in the configuration) disallows certain pairs from trading.
+This can be as simple as excluding <code>DOGE/BTC</code> - which will remove exactly this pair.</p>
+<p>The pair-blacklist does also support wildcards (in regex-style) - so <code>BNB/.*</code> will exclude ALL pairs that start with BNB.
+You may also use something like <code>.*DOWN/BTC</code> or <code>.*UP/BTC</code> to exclude leveraged tokens (check Pair naming conventions for your exchange!)</p>
+<h3 id="available-pairlist-handlers">Available Pairlist Handlers<a class="headerlink" href="#available-pairlist-handlers" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="#static-pair-list"><code>StaticPairList</code></a> (default, if not configured differently)</li>
+<li><a href="#volume-pair-list"><code>VolumePairList</code></a></li>
+<li><a href="#agefilter"><code>AgeFilter</code></a></li>
+<li><a href="#offsetfilter"><code>OffsetFilter</code></a></li>
+<li><a href="#performancefilter"><code>PerformanceFilter</code></a></li>
+<li><a href="#precisionfilter"><code>PrecisionFilter</code></a></li>
+<li><a href="#pricefilter"><code>PriceFilter</code></a></li>
+<li><a href="#shufflefilter"><code>ShuffleFilter</code></a></li>
+<li><a href="#spreadfilter"><code>SpreadFilter</code></a></li>
+<li><a href="#rangestabilityfilter"><code>RangeStabilityFilter</code></a></li>
+<li><a href="#volatilityfilter"><code>VolatilityFilter</code></a></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Testing pairlists</p>
+<p>Pairlist configurations can be quite tricky to get right. Best use the <a href="utils.md#test-pairlist"><code>test-pairlist</code></a> utility sub-command to test your configuration quickly.</p>
+</div>
+<h4 id="static-pair-list">Static Pair List<a class="headerlink" href="#static-pair-list" title="Permanent link">&para;</a></h4>
+<p>By default, the <code>StaticPairList</code> method is used, which uses a statically defined pair whitelist from the configuration. The pairlist also supports wildcards (in regex-style) - so <code>.*/BTC</code> will include all pairs with BTC as a stake.</p>
+<p>It uses configuration from <code>exchange.pair_whitelist</code> and <code>exchange.pair_blacklist</code>.</p>
+<p><code>json
+"pairlists": [
+    {"method": "StaticPairList"}
+    ],</code></p>
+<p>By default, only currently enabled pairs are allowed.
+To skip pair validation against active markets, set <code>"allow_inactive": true</code> within the <code>StaticPairList</code> configuration.
+This can be useful for backtesting expired pairs (like quarterly spot-markets).
+This option must be configured along with <code>exchange.skip_pair_validation</code> in the exchange configuration.</p>
+<p>When used in a "follow-up" position (e.g. after VolumePairlist), all pairs in <code>'pair_whitelist'</code> will be added to the end of the pairlist.</p>
+<h4 id="volume-pair-list">Volume Pair List<a class="headerlink" href="#volume-pair-list" title="Permanent link">&para;</a></h4>
+<p><code>VolumePairList</code> employs sorting/filtering of pairs by their trading volume. It selects <code>number_assets</code> top pairs with sorting based on the <code>sort_key</code> (which can only be <code>quoteVolume</code>).</p>
+<p>When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), <code>VolumePairList</code> considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the trading volume.</p>
+<p>When used in the leading position of the chain of Pairlist Handlers, the <code>pair_whitelist</code> configuration setting is ignored. Instead, <code>VolumePairList</code> selects the top assets from all available markets with matching stake-currency on the exchange.</p>
+<p>The <code>refresh_period</code> setting allows to define the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+The pairlist cache (<code>refresh_period</code>) on <code>VolumePairList</code> is only applicable to generating pairlists.
+Filtering instances (not the first position in the list) will not apply any cache and will always use up-to-date data.</p>
+<p><code>VolumePairList</code> is per default based on the ticker data from exchange, as reported by the ccxt library:</p>
+<ul>
+<li>The <code>quoteVolume</code> is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.</li>
+</ul>
+<p><code>json
+"pairlists": [
+    {
+        "method": "VolumePairList",
+        "number_assets": 20,
+        "sort_key": "quoteVolume",
+        "min_value": 0,
+        "refresh_period": 1800
+    }
+],</code></p>
+<p>You can define a minimum volume with <code>min_value</code> - which will filter out pairs with a volume lower than the specified value in the specified timerange.</p>
+<h3 id="volumepairlist-advanced-mode">VolumePairList Advanced mode<a class="headerlink" href="#volumepairlist-advanced-mode" title="Permanent link">&para;</a></h3>
+<p><code>VolumePairList</code> can also operate in an advanced mode to build volume over a given timerange of specified candle size. It utilizes exchange historical candle data, builds a typical price (calculated by (open+high+low)/3) and multiplies the typical price with every candle's volume. The sum is the <code>quoteVolume</code> over the given range. This allows different scenarios, for a  more smoothened volume, when using longer ranges with larger candle sizes, or the opposite when using a short range with small candles.</p>
+<p>For convenience <code>lookback_days</code> can be specified, which will imply that 1d candles will be used for the lookback. In the example below the pairlist would be created based on the last 7 days:</p>
+<p><code>json
+"pairlists": [
+    {
+        "method": "VolumePairList",
+        "number_assets": 20,
+        "sort_key": "quoteVolume",
+        "min_value": 0,
+        "refresh_period": 86400,
+        "lookback_days": 7
+    }
+],</code></p>
+<div class="admonition warning">
+<p class="admonition-title">Range look back and refresh period</p>
+<p>When used in conjunction with <code>lookback_days</code> and <code>lookback_timeframe</code> the <code>refresh_period</code> can not be smaller than the candle size in seconds. As this will result in unnecessary requests to the exchanges API.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Performance implications when using lookback range</p>
+<p>If used in first position in combination with lookback, the computation of the range based volume can be time and resource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with <code>VolumeFilter</code> to narrow the pairlist down for further range volume calculation.</p>
+</div>
+<details class="tip">
+<summary>Unsupported exchanges (Bittrex, Gemini)</summary>
+<p>On some exchanges (like Bittrex and Gemini), regular VolumePairList does not work as the api does not natively provide 24h volume. This can be worked around by using candle data to build the volume.
+To roughly simulate 24h volume, you can use the following configuration.
+Please note that These pairlists will only refresh once per day.</p>
+<p><code>json
+"pairlists": [
+    {
+        "method": "VolumePairList",
+        "number_assets": 20,
+        "sort_key": "quoteVolume",
+        "min_value": 0,
+        "refresh_period": 86400,
+        "lookback_days": 1
+    }
+],</code></p>
+</details>
+<p>More sophisticated approach can be used, by using <code>lookback_timeframe</code> for candle size and <code>lookback_period</code> which specifies the amount of candles. This example will build the volume pairs based on a rolling period of 3 days of 1h candles:</p>
+<p><code>json
+"pairlists": [
+    {
+        "method": "VolumePairList",
+        "number_assets": 20,
+        "sort_key": "quoteVolume",
+        "min_value": 0,
+        "refresh_period": 3600,
+        "lookback_timeframe": "1h",
+        "lookback_period": 72
+    }
+],</code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>VolumePairList</code> does not support backtesting mode.</p>
+</div>
+<h4 id="agefilter">AgeFilter<a class="headerlink" href="#agefilter" title="Permanent link">&para;</a></h4>
+<p>Removes pairs that have been listed on the exchange for less than <code>min_days_listed</code> days (defaults to <code>10</code>) or more than <code>max_days_listed</code> days (defaults <code>None</code> mean infinity).</p>
+<p>When pairs are first listed on an exchange they can suffer huge price drops and volatility
+in the first few days while the pair goes through its price-discovery period. Bots can often
+be caught out buying before the pair has finished dropping in price.</p>
+<p>This filter allows freqtrade to ignore pairs until they have been listed for at least <code>min_days_listed</code> days and listed before <code>max_days_listed</code>.</p>
+<h4 id="offsetfilter">OffsetFilter<a class="headerlink" href="#offsetfilter" title="Permanent link">&para;</a></h4>
+<p>Offsets an incoming pairlist by a given <code>offset</code> value.</p>
+<p>As an example it can be used in conjunction with <code>VolumeFilter</code> to remove the top X volume pairs. Or to split
+a larger pairlist on two bot instances.</p>
+<p>Example to remove the first 10 pairs from the pairlist:</p>
+<p><code>json
+"pairlists": [
+    // ...
+    {
+        "method": "OffsetFilter",
+        "offset": 10
+    }
+],</code></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When <code>OffsetFilter</code> is used to split a larger pairlist among multiple bots in combination with <code>VolumeFilter</code> 
+it can not be guaranteed that pairs won't overlap due to slightly different refresh intervals for the
+<code>VolumeFilter</code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>An offset larger then the total length of the incoming pairlist will result in an empty pairlist.</p>
+</div>
+<h4 id="performancefilter">PerformanceFilter<a class="headerlink" href="#performancefilter" title="Permanent link">&para;</a></h4>
+<p>Sorts pairs by past trade performance, as follows:</p>
+<ol>
+<li>Positive performance.</li>
+<li>No closed trades yet.</li>
+<li>Negative performance.</li>
+</ol>
+<p>Trade count is used as a tie breaker.</p>
+<p>You can use the <code>minutes</code> parameter to only consider performance of the past X minutes (rolling window).
+Not defining this parameter (or setting it to 0) will use all-time performance.</p>
+<p>The optional <code>min_profit</code> (as ratio -&gt; a setting of <code>0.01</code> corresponds to 1%) parameter defines the minimum profit a pair must have to be considered.
+Pairs below this level will be filtered out.
+Using this parameter without <code>minutes</code> is highly discouraged, as it can lead to an empty pairlist without a way to recover.</p>
+<p><code>json
+"pairlists": [
+    // ...
+    {
+        "method": "PerformanceFilter",
+        "minutes": 1440,  // rolling 24h
+        "min_profit": 0.01  // minimal profit 1%
+    }
+],</code></p>
+<p>As this Filter uses past performance of the bot, it'll have some startup-period - and should only be used after the bot has a few 100 trades in the database.</p>
+<div class="admonition warning">
+<p class="admonition-title">Backtesting</p>
+<p><code>PerformanceFilter</code> does not support backtesting mode.</p>
+</div>
+<h4 id="precisionfilter">PrecisionFilter<a class="headerlink" href="#precisionfilter" title="Permanent link">&para;</a></h4>
+<p>Filters low-value coins which would not allow setting stoplosses.</p>
+<div class="admonition warning">
+<p class="admonition-title">Backtesting</p>
+<p><code>PrecisionFilter</code> does not support backtesting mode using multiple strategies.</p>
+</div>
+<h4 id="pricefilter">PriceFilter<a class="headerlink" href="#pricefilter" title="Permanent link">&para;</a></h4>
+<p>The <code>PriceFilter</code> allows filtering of pairs by price. Currently the following price filters are supported:</p>
+<ul>
+<li><code>min_price</code></li>
+<li><code>max_price</code></li>
+<li><code>max_value</code></li>
+<li><code>low_price_ratio</code></li>
+</ul>
+<p>The <code>min_price</code> setting removes pairs where the price is below the specified price. This is useful if you wish to avoid trading very low-priced pairs.
+This option is disabled by default, and will only apply if set to &gt; 0.</p>
+<p>The <code>max_price</code> setting removes pairs where the price is above the specified price. This is useful if you wish to trade only low-priced pairs.
+This option is disabled by default, and will only apply if set to &gt; 0.</p>
+<p>The <code>max_value</code> setting removes pairs where the minimum value change is above a specified value.
+This is useful when an exchange has unbalanced limits. For example, if step-size = 1 (so you can only buy 1, or 2, or 3, but not 1.1 Coins) - and the price is pretty high (like 20$) as the coin has risen sharply since the last limit adaption.
+As a result of the above, you can only buy for 20$, or 40$ - but not for 25$.
+On exchanges that deduct fees from the receiving currency (e.g. FTX) - this can result in high value coins / amounts that are unsellable as the amount is slightly below the limit.</p>
+<p>The <code>low_price_ratio</code> setting removes pairs where a raise of 1 price unit (pip) is above the <code>low_price_ratio</code> ratio.
+This option is disabled by default, and will only apply if set to &gt; 0.</p>
+<p>For <code>PriceFiler</code> at least one of its <code>min_price</code>, <code>max_price</code> or <code>low_price_ratio</code> settings must be applied.</p>
+<p>Calculation example:</p>
+<p>Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 - one price step above would be 0.00000012, which is ~9% higher than the previous price value. You may filter out this pair by using PriceFilter with <code>low_price_ratio</code> set to 0.09 (9%) or with <code>min_price</code> set to 0.00000011, correspondingly.</p>
+<div class="admonition warning">
+<p class="admonition-title">Low priced pairs</p>
+<p>Low priced pairs with high "1 pip movements" are dangerous since they are often illiquid and it may also be impossible to place the desired stoploss, which can often result in high losses since price needs to be rounded to the next tradable price - so instead of having a stoploss of -5%, you could end up with a stoploss of -9% simply due to price rounding.</p>
+</div>
+<h4 id="shufflefilter">ShuffleFilter<a class="headerlink" href="#shufflefilter" title="Permanent link">&para;</a></h4>
+<p>Shuffles (randomizes) pairs in the pairlist. It can be used for preventing the bot from trading some of the pairs more frequently then others when you want all pairs be treated with the same priority.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You may set the <code>seed</code> value for this Pairlist to obtain reproducible results, which can be useful for repeated backtesting sessions. If <code>seed</code> is not set, the pairs are shuffled in the non-repeatable random order. ShuffleFilter will automatically detect runmodes and apply the <code>seed</code> only for backtesting modes - if a <code>seed</code> value is set.</p>
+</div>
+<h4 id="spreadfilter">SpreadFilter<a class="headerlink" href="#spreadfilter" title="Permanent link">&para;</a></h4>
+<p>Removes pairs that have a difference between asks and bids above the specified ratio, <code>max_spread_ratio</code> (defaults to <code>0.005</code>).</p>
+<p>Example:</p>
+<p>If <code>DOGE/BTC</code> maximum bid is 0.00000026 and minimum ask is 0.00000027, the ratio is calculated as: <code>1 - bid/ask ~= 0.037</code> which is <code>&gt; 0.005</code> and this pair will be filtered out.</p>
+<h4 id="rangestabilityfilter">RangeStabilityFilter<a class="headerlink" href="#rangestabilityfilter" title="Permanent link">&para;</a></h4>
+<p>Removes pairs where the difference between lowest low and highest high over <code>lookback_days</code> days is below <code>min_rate_of_change</code> or above <code>max_rate_of_change</code>. Since this is a filter that requires additional data, the results are cached for <code>refresh_period</code>.</p>
+<p>In the below example:
+If the trading range over the last 10 days is &lt;1% or &gt;99%, remove the pair from the whitelist.</p>
+<p><code>json
+"pairlists": [
+    {
+        "method": "RangeStabilityFilter",
+        "lookback_days": 10,
+        "min_rate_of_change": 0.01,
+        "max_rate_of_change": 0.99,
+        "refresh_period": 1440
+    }
+]</code></p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>This Filter can be used to automatically remove stable coin pairs, which have a very low trading range, and are therefore extremely difficult to trade with profit.
+Additionally, it can also be used to automatically remove pairs with extreme high/low variance over a given amount of time.</p>
+</div>
+<h4 id="volatilityfilter">VolatilityFilter<a class="headerlink" href="#volatilityfilter" title="Permanent link">&para;</a></h4>
+<p>Volatility is the degree of historical variation of a pairs over time, it is measured by the standard deviation of logarithmic daily returns. Returns are assumed to be normally distributed, although actual distribution might be different. In a normal distribution, 68% of observations fall within one standard deviation and 95% of observations fall within two standard deviations. Assuming a volatility of 0.05 means that the expected returns for 20 out of 30 days is expected to be less than 5% (one standard deviation). Volatility is a positive ratio of the expected deviation of return and can be greater than 1.00. Please refer to the wikipedia definition of <a href="https://en.wikipedia.org/wiki/Volatility_(finance)"><code>volatility</code></a>.</p>
+<p>This filter removes pairs if the average volatility over a <code>lookback_days</code> days is below <code>min_volatility</code> or above <code>max_volatility</code>. Since this is a filter that requires additional data, the results are cached for <code>refresh_period</code>.</p>
+<p>This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs. </p>
+<p>In the below example:
+If the volatility over the last 10 days is not in the range of 0.05-0.50, remove the pair from the whitelist. The filter is applied every 24h.</p>
+<p><code>json
+"pairlists": [
+    {
+        "method": "VolatilityFilter",
+        "lookback_days": 10,
+        "min_volatility": 0.05,
+        "max_volatility": 0.50,
+        "refresh_period": 86400
+    }
+]</code></p>
+<h3 id="full-example-of-pairlist-handlers">Full example of Pairlist Handlers<a class="headerlink" href="#full-example-of-pairlist-handlers" title="Permanent link">&para;</a></h3>
+<p>The below example blacklists <code>BNB/BTC</code>, uses <code>VolumePairList</code> with <code>20</code> assets, sorting pairs by <code>quoteVolume</code> and applies <a href="#precisionfilter"><code>PrecisionFilter</code></a> and <a href="#pricefilter"><code>PriceFilter</code></a>, filtering all assets where 1 price unit is &gt; 1%. Then the <a href="#spreadfilter"><code>SpreadFilter</code></a> and <a href="#volatilityfilter"><code>VolatilityFilter</code></a> is applied and pairs are finally shuffled with the random seed set to some predefined value.</p>
+<p><code>json
+"exchange": {
+    "pair_whitelist": [],
+    "pair_blacklist": ["BNB/BTC"]
+},
+"pairlists": [
+    {
+        "method": "VolumePairList",
+        "number_assets": 20,
+        "sort_key": "quoteVolume"
+    },
+    {"method": "AgeFilter", "min_days_listed": 10},
+    {"method": "PrecisionFilter"},
+    {"method": "PriceFilter", "low_price_ratio": 0.01},
+    {"method": "SpreadFilter", "max_spread_ratio": 0.005},
+    {
+        "method": "RangeStabilityFilter",
+        "lookback_days": 10,
+        "min_rate_of_change": 0.01,
+        "refresh_period": 1440
+    },
+    {
+        "method": "VolatilityFilter",
+        "lookback_days": 10,
+        "min_volatility": 0.05,
+        "max_volatility": 0.50,
+        "refresh_period": 86400
+    },
+    {"method": "ShuffleFilter", "seed": 42}
+],</code></p>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.0bbba5b5.min.js", "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.e1a181d9.min.js"></script>
+      
+        <script src="../../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
