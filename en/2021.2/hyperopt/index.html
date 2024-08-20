@@ -1,0 +1,2289 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../backtesting/">
+      
+      
+        <link rel="next" href="../utils/">
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.30">
+    
+    
+      
+        <title>Hyperopt - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.3cba04c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#hyperopt" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Hyperopt
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API & FreqUI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-hyperopt-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install hyperopt dependencies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Install hyperopt dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      Docker
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#easy-installation-script-setupsh-manual-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Easy installation script (setup.sh) / Manual installation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hyperopt-command-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hyperopt command reference
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prepare-hyperopting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prepare Hyperopting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prepare Hyperopting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hyperopt-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hyperopt checklist
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-custom-hyperopt-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a Custom Hyperopt File
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configure-your-guards-and-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configure your Guards and Triggers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configure your Guards and Triggers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sell-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sell optimization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-timeframe-as-a-part-of-the-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using timeframe as a part of the Strategy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solving-a-mystery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solving a Mystery
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loss-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Loss-functions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#execute-hyperopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execute Hyperopt
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Execute Hyperopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#execute-hyperopt-with-different-historical-data-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execute Hyperopt with different historical data source
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-hyperopt-with-a-smaller-test-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Hyperopt with a smaller test-set
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-hyperopt-using-methods-from-a-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Hyperopt using methods from a strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-hyperopt-with-smaller-search-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Hyperopt with Smaller Search Space
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#position-stacking-and-disabling-max-market-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Position stacking and disabling max market positions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducible-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducible results
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understand-the-hyperopt-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand the Hyperopt Result
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand the Hyperopt Result">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#understand-hyperopt-roi-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand Hyperopt ROI results
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand Hyperopt ROI results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-roi-search-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default ROI Search Space
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-hyperopt-stoploss-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand Hyperopt Stoploss results
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand Hyperopt Stoploss results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-stoploss-search-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default Stoploss Search Space
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-hyperopt-trailing-stop-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand Hyperopt Trailing Stop results
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand Hyperopt Trailing Stop results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-trailing-stop-search-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default Trailing Stop Search Space
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-details-of-hyperopt-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Show details of Hyperopt results
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validate-backtesting-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Validate backtesting results
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Sub-commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sandbox Testing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheat-sheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating Freqtrade
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-hyperopt-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install hyperopt dependencies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Install hyperopt dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      Docker
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#easy-installation-script-setupsh-manual-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Easy installation script (setup.sh) / Manual installation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hyperopt-command-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hyperopt command reference
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prepare-hyperopting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prepare Hyperopting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prepare Hyperopting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hyperopt-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hyperopt checklist
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-custom-hyperopt-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a Custom Hyperopt File
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configure-your-guards-and-triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configure your Guards and Triggers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configure your Guards and Triggers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sell-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sell optimization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-timeframe-as-a-part-of-the-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using timeframe as a part of the Strategy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solving-a-mystery" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solving a Mystery
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loss-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Loss-functions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#execute-hyperopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execute Hyperopt
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Execute Hyperopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#execute-hyperopt-with-different-historical-data-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Execute Hyperopt with different historical data source
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-hyperopt-with-a-smaller-test-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Hyperopt with a smaller test-set
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-hyperopt-using-methods-from-a-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Hyperopt using methods from a strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-hyperopt-with-smaller-search-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Hyperopt with Smaller Search Space
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#position-stacking-and-disabling-max-market-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Position stacking and disabling max market positions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducible-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducible results
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understand-the-hyperopt-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand the Hyperopt Result
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand the Hyperopt Result">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#understand-hyperopt-roi-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand Hyperopt ROI results
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand Hyperopt ROI results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-roi-search-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default ROI Search Space
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-hyperopt-stoploss-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand Hyperopt Stoploss results
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand Hyperopt Stoploss results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-stoploss-search-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default Stoploss Search Space
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-hyperopt-trailing-stop-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand Hyperopt Trailing Stop results
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand Hyperopt Trailing Stop results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-trailing-stop-search-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default Trailing Stop Search Space
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-details-of-hyperopt-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Show details of Hyperopt results
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validate-backtesting-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Validate backtesting results
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="hyperopt">Hyperopt<a class="headerlink" href="#hyperopt" title="Permanent link">&para;</a></h1>
+<p>This page explains how to tune your strategy by finding the optimal
+parameters, a process called hyperparameter optimization. The bot uses several
+algorithms included in the <code>scikit-optimize</code> package to accomplish this. The
+search will burn all your CPU cores, make your laptop sound like a fighter jet
+and still take a long time.</p>
+<p>In general, the search for best parameters starts with a few random combinations (see <a href="#reproducible-results">below</a> for more details) and then uses Bayesian search with a ML regressor algorithm (currently ExtraTreesRegressor) to quickly find a combination of parameters in the search hyperspace that minimizes the value of the <a href="#loss-functions">loss function</a>.</p>
+<p>Hyperopt requires historic data to be available, just as backtesting does.
+To learn how to get data for the pairs and exchange you're interested in, head over to the <a href="../data-download/">Data Downloading</a> section of the documentation.</p>
+<div class="admonition bug">
+<p class="admonition-title">Bug</p>
+<p>Hyperopt can crash when used with only 1 CPU Core as found out in <a href="https://github.com/freqtrade/freqtrade/issues/1133">Issue #1133</a></p>
+</div>
+<h2 id="install-hyperopt-dependencies">Install hyperopt dependencies<a class="headerlink" href="#install-hyperopt-dependencies" title="Permanent link">&para;</a></h2>
+<p>Since Hyperopt dependencies are not needed to run the bot itself, are heavy, can not be easily built on some platforms (like Raspberry PI), they are not installed by default. Before you run Hyperopt, you need to install the corresponding dependencies, as described in this section below.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since Hyperopt is a resource intensive process, running it on a Raspberry Pi is not recommended nor supported.</p>
+</div>
+<h3 id="docker">Docker<a class="headerlink" href="#docker" title="Permanent link">&para;</a></h3>
+<p>The docker-image includes hyperopt dependencies, no further action needed.</p>
+<h3 id="easy-installation-script-setupsh-manual-installation">Easy installation script (setup.sh) / Manual installation<a class="headerlink" href="#easy-installation-script-setupsh-manual-installation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>.env/bin/activate
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements-hyperopt.txt
+</code></pre></div>
+<h2 id="hyperopt-command-reference">Hyperopt command reference<a class="headerlink" href="#hyperopt-command-reference" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>usage: freqtrade hyperopt [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                          [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                          [-i TIMEFRAME] [--timerange TIMERANGE]
+                          [--data-format-ohlcv {json,jsongz,hdf5}]
+                          [--max-open-trades INT]
+                          [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
+                          [--hyperopt NAME] [--hyperopt-path PATH] [--eps]
+                          [--dmmp] [--enable-protections] [-e INT]
+                          [--spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]]
+                          [--print-all] [--no-color] [--print-json] [-j JOBS]
+                          [--random-state INT] [--min-trades INT]
+                          [--hyperopt-loss NAME]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i TIMEFRAME, --timeframe TIMEFRAME, --ticker-interval TIMEFRAME
+                        Specify ticker interval (`1m`, `5m`, `30m`, `1h`,
+                        `1d`).
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
+  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
+                        entry and exit).
+  --hyperopt NAME       Specify hyperopt class name which will be used by the
+                        bot.
+  --hyperopt-path PATH  Specify additional lookup path for Hyperopt and
+                        Hyperopt Loss functions.
+  --eps, --enable-position-stacking
+                        Allow buying the same pair multiple times (position
+                        stacking).
+  --dmmp, --disable-max-market-positions
+                        Disable applying `max_open_trades` during backtest
+                        (same as setting `max_open_trades` to a very high
+                        number).
+  --enable-protections, --enableprotections
+                        Enable protections for backtesting.Will slow
+                        backtesting down by a considerable amount, but will
+                        include configured protections
+  -e INT, --epochs INT  Specify number of epochs (default: 100).
+  --spaces {all,buy,sell,roi,stoploss,trailing,default} [{all,buy,sell,roi,stoploss,trailing,default} ...]
+                        Specify which parameters to hyperopt. Space-separated
+                        list.
+  --print-all           Print all results, not only the best ones.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
+  --print-json          Print output in JSON format.
+  -j JOBS, --job-workers JOBS
+                        The number of concurrently running jobs for
+                        hyperoptimization (hyperopt worker processes). If -1
+                        (default), all CPUs are used, for -2, all CPUs but one
+                        are used, etc. If 1 is given, no parallel computing
+                        code is used at all.
+  --random-state INT    Set random state to some positive integer for
+                        reproducible hyperopt results.
+  --min-trades INT      Set minimal desired number of trades for evaluations
+                        in the hyperopt optimization path (default: 1).
+  --hyperopt-loss NAME  Specify the class name of the hyperopt loss function
+                        class (IHyperOptLoss). Different functions can
+                        generate completely different results, since the
+                        target for optimization is different. Built-in
+                        Hyperopt-loss-functions are:
+                        ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss,
+                        SharpeHyperOptLoss, SharpeHyperOptLossDaily,
+                        SortinoHyperOptLoss, SortinoHyperOptLossDaily
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more
+                        details.
+  -V, --version         show program&#39;s version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
+</code></pre></div>
+<h2 id="prepare-hyperopting">Prepare Hyperopting<a class="headerlink" href="#prepare-hyperopting" title="Permanent link">&para;</a></h2>
+<p>Before we start digging into Hyperopt, we recommend you to take a look at
+the sample hyperopt file located in <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt.py">user_data/hyperopts/</a>.</p>
+<p>Configuring hyperopt is similar to writing your own strategy, and many tasks will be similar.</p>
+<div class="admonition tip">
+<p class="admonition-title">About this page</p>
+<p>For this page, we will be using a fictional strategy called <code>AwesomeStrategy</code> - which will be optimized using the <code>AwesomeHyperopt</code> class.</p>
+</div>
+<p>The simplest way to get started is to use the following, command, which will create a new hyperopt file from a template, which will be located under <code>user_data/hyperopts/AwesomeHyperopt.py</code>.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>new-hyperopt<span class="w"> </span>--hyperopt<span class="w"> </span>AwesomeHyperopt
+</code></pre></div>
+<h3 id="hyperopt-checklist">Hyperopt checklist<a class="headerlink" href="#hyperopt-checklist" title="Permanent link">&para;</a></h3>
+<p>Checklist on all tasks / possibilities in hyperopt</p>
+<p>Depending on the space you want to optimize, only some of the below are required:</p>
+<ul>
+<li>fill <code>buy_strategy_generator</code> - for buy signal optimization</li>
+<li>fill <code>indicator_space</code> - for buy signal optimization</li>
+<li>fill <code>sell_strategy_generator</code> - for sell signal optimization</li>
+<li>fill <code>sell_indicator_space</code> - for sell signal optimization</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>populate_indicators</code> needs to create all indicators any of thee spaces may use, otherwise hyperopt will not work.</p>
+</div>
+<p>Optional in hyperopt - can also be loaded from a strategy (recommended):</p>
+<ul>
+<li><code>populate_indicators</code> - fallback to create indicators</li>
+<li><code>populate_buy_trend</code> - fallback if not optimizing for buy space. should come from strategy</li>
+<li><code>populate_sell_trend</code> - fallback if not optimizing for sell space. should come from strategy</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You always have to provide a strategy to Hyperopt, even if your custom Hyperopt class contains all methods.
+Assuming the optional methods are not in your hyperopt file, please use <code>--strategy AweSomeStrategy</code> which contains these methods so hyperopt can use these methods instead.</p>
+</div>
+<p>Rarely you may also need to override:</p>
+<ul>
+<li><code>roi_space</code> - for custom ROI optimization (if you need the ranges for the ROI parameters in the optimization hyperspace that differ from default)</li>
+<li><code>generate_roi_table</code> - for custom ROI optimization (if you need the ranges for the values in the ROI table that differ from default or the number of entries (steps) in the ROI table which differs from the default 4 steps)</li>
+<li><code>stoploss_space</code> - for custom stoploss optimization (if you need the range for the stoploss parameter in the optimization hyperspace that differs from default)</li>
+<li><code>trailing_space</code> - for custom trailing stop optimization (if you need the ranges for the trailing stop parameters in the optimization hyperspace that differ from default)</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Quickly optimize ROI, stoploss and trailing stoploss</p>
+<p>You can quickly optimize the spaces <code>roi</code>, <code>stoploss</code> and <code>trailing</code> without changing anything (i.e. without creation of a "complete" Hyperopt class with dimensions, parameters, triggers and guards, as described in this document) from the default hyperopt template by relying on your strategy to do most of the calculations.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Have a working strategy at hand.</span>
+<span class="n">freqtrade</span> <span class="n">new</span><span class="o">-</span><span class="n">hyperopt</span> <span class="o">--</span><span class="n">hyperopt</span> <span class="n">EmptyHyperopt</span>
+
+<span class="n">freqtrade</span> <span class="n">hyperopt</span> <span class="o">--</span><span class="n">hyperopt</span> <span class="n">EmptyHyperopt</span> <span class="o">--</span><span class="n">hyperopt</span><span class="o">-</span><span class="n">loss</span> <span class="n">SharpeHyperOptLossDaily</span> <span class="o">--</span><span class="n">spaces</span> <span class="n">roi</span> <span class="n">stoploss</span> <span class="n">trailing</span> <span class="o">--</span><span class="n">strategy</span> <span class="n">MyWorkingStrategy</span> <span class="o">--</span><span class="n">config</span> <span class="n">config</span><span class="o">.</span><span class="n">json</span> <span class="o">-</span><span class="n">e</span> <span class="mi">100</span>
+</code></pre></div>
+</div>
+<h3 id="create-a-custom-hyperopt-file">Create a Custom Hyperopt File<a class="headerlink" href="#create-a-custom-hyperopt-file" title="Permanent link">&para;</a></h3>
+<p>Let assume you want a hyperopt file <code>AwesomeHyperopt.py</code>:  </p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>new-hyperopt<span class="w"> </span>--hyperopt<span class="w"> </span>AwesomeHyperopt
+</code></pre></div>
+<p>This command will create a new hyperopt file from a template, allowing you to get started quickly.</p>
+<h3 id="configure-your-guards-and-triggers">Configure your Guards and Triggers<a class="headerlink" href="#configure-your-guards-and-triggers" title="Permanent link">&para;</a></h3>
+<p>There are two places you need to change in your hyperopt file to add a new buy hyperopt for testing:</p>
+<ul>
+<li>Inside <code>indicator_space()</code> - the parameters hyperopt shall be optimizing.</li>
+<li>Within <code>buy_strategy_generator()</code> - populate the nested <code>populate_buy_trend()</code> to apply the parameters.</li>
+</ul>
+<p>There you have two different types of indicators: 1. <code>guards</code> and 2. <code>triggers</code>.</p>
+<ol>
+<li>Guards are conditions like "never buy if ADX &lt; 10", or never buy if current price is over EMA10.</li>
+<li>Triggers are ones that actually trigger buy in specific moment, like "buy when EMA5 crosses over EMA10" or "buy when close price touches lower Bollinger band".</li>
+</ol>
+<div class="admonition hint">
+<p class="admonition-title">Guards and Triggers</p>
+<p>Technically, there is no difference between Guards and Triggers.<br />
+However, this guide will make this distinction to make it clear that signals should not be "sticking".
+Sticking signals are signals that are active for multiple candles. This can lead into buying a signal late (right before the signal disappears - which means that the chance of success is a lot lower than right at the beginning).</p>
+</div>
+<p>Hyper-optimization will, for each epoch round, pick one trigger and possibly
+multiple guards. The constructed strategy will be something like "<em>buy exactly when close price touches lower Bollinger band, BUT only if
+ADX &gt; 10</em>".</p>
+<p>If you have updated the buy strategy, i.e. changed the contents of <code>populate_buy_trend()</code> method, you have to update the <code>guards</code> and <code>triggers</code> your hyperopt must use correspondingly.</p>
+<h4 id="sell-optimization">Sell optimization<a class="headerlink" href="#sell-optimization" title="Permanent link">&para;</a></h4>
+<p>Similar to the buy-signal above, sell-signals can also be optimized.
+Place the corresponding settings into the following methods</p>
+<ul>
+<li>Inside <code>sell_indicator_space()</code> - the parameters hyperopt shall be optimizing.</li>
+<li>Within <code>sell_strategy_generator()</code> - populate the nested method <code>populate_sell_trend()</code> to apply the parameters.</li>
+</ul>
+<p>The configuration and rules are the same than for buy signals.
+To avoid naming collisions in the search-space, please prefix all sell-spaces with <code>sell-</code>.</p>
+<h4 id="using-timeframe-as-a-part-of-the-strategy">Using timeframe as a part of the Strategy<a class="headerlink" href="#using-timeframe-as-a-part-of-the-strategy" title="Permanent link">&para;</a></h4>
+<p>The Strategy class exposes the timeframe value as the <code>self.timeframe</code> attribute.
+The same value is available as class-attribute <code>HyperoptName.timeframe</code>.
+In the case of the linked sample-value this would be <code>AwesomeHyperopt.timeframe</code>.</p>
+<h2 id="solving-a-mystery">Solving a Mystery<a class="headerlink" href="#solving-a-mystery" title="Permanent link">&para;</a></h2>
+<p>Let's say you are curious: should you use MACD crossings or lower Bollinger
+Bands to trigger your buys. And you also wonder should you use RSI or ADX to
+help with those buy decisions. If you decide to use RSI or ADX, which values
+should I use for them? So let's use hyperparameter optimization to solve this
+mystery.</p>
+<p>We will start by defining a search space:</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">indicator_space</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Define your Hyperopt space for searching strategy parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">Integer</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;adx-value&#39;</span><span class="p">),</span>
+            <span class="n">Integer</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rsi-value&#39;</span><span class="p">),</span>
+            <span class="n">Categorical</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;adx-enabled&#39;</span><span class="p">),</span>
+            <span class="n">Categorical</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;rsi-enabled&#39;</span><span class="p">),</span>
+            <span class="n">Categorical</span><span class="p">([</span><span class="s1">&#39;bb_lower&#39;</span><span class="p">,</span> <span class="s1">&#39;macd_cross_signal&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trigger&#39;</span><span class="p">)</span>
+        <span class="p">]</span>
+</code></pre></div>
+<p>Above definition says: I have five parameters I want you to randomly combine
+to find the best combination. Two of them are integer values (<code>adx-value</code>
+and <code>rsi-value</code>) and I want you test in the range of values 20 to 40.<br />
+Then we have three category variables. First two are either <code>True</code> or <code>False</code>.
+We use these to either enable or disable the ADX and RSI guards. The last
+one we call <code>trigger</code> and use it to decide which buy trigger we want to use.</p>
+<p>So let's write the buy strategy using these values:</p>
+<div class="highlight"><pre><span></span><code>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">buy_strategy_generator</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Define the buy strategy parameters to be used by Hyperopt.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">populate_buy_trend</span><span class="p">(</span><span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+            <span class="n">conditions</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c1"># GUARDS AND TRENDS</span>
+            <span class="k">if</span> <span class="s1">&#39;adx-enabled&#39;</span> <span class="ow">in</span> <span class="n">params</span> <span class="ow">and</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;adx-enabled&#39;</span><span class="p">]:</span>
+                <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;adx&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;adx-value&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="s1">&#39;rsi-enabled&#39;</span> <span class="ow">in</span> <span class="n">params</span> <span class="ow">and</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;rsi-enabled&#39;</span><span class="p">]:</span>
+                <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;rsi-value&#39;</span><span class="p">])</span>
+
+            <span class="c1"># TRIGGERS</span>
+            <span class="k">if</span> <span class="s1">&#39;trigger&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;trigger&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;bb_lower&#39;</span><span class="p">:</span>
+                    <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;close&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_lowerband&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;trigger&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;macd_cross_signal&#39;</span><span class="p">:</span>
+                    <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span>
+                        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macd&#39;</span><span class="p">],</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macdsignal&#39;</span><span class="p">]</span>
+                    <span class="p">))</span>
+
+            <span class="c1"># Check that volume is not 0</span>
+            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">conditions</span><span class="p">:</span>
+                <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                    <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">y</span><span class="p">,</span> <span class="n">conditions</span><span class="p">),</span>
+                    <span class="s1">&#39;buy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="k">return</span> <span class="n">dataframe</span>
+
+        <span class="k">return</span> <span class="n">populate_buy_trend</span>
+</code></pre></div>
+<p>Hyperopt will now call <code>populate_buy_trend()</code> many times (<code>epochs</code>) with different value combinations.<br />
+It will use the given historical data and make buys based on the buy signals generated with the above function.<br />
+Based on the results, hyperopt will tell you which parameter combination produced the best results (based on the configured <a href="#loss-functions">loss function</a>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The above setup expects to find ADX, RSI and Bollinger Bands in the populated indicators.
+When you want to test an indicator that isn't used by the bot currently, remember to
+add it to the <code>populate_indicators()</code> method in your strategy or hyperopt file.</p>
+</div>
+<h2 id="loss-functions">Loss-functions<a class="headerlink" href="#loss-functions" title="Permanent link">&para;</a></h2>
+<p>Each hyperparameter tuning requires a target. This is usually defined as a loss function (sometimes also called objective function), which should decrease for more desirable results, and increase for bad results.</p>
+<p>A loss function must be specified via the <code>--hyperopt-loss &lt;Class-name&gt;</code> argument (or optionally via the configuration under the <code>"hyperopt_loss"</code> key).
+This class should be in its own file within the <code>user_data/hyperopts/</code> directory.</p>
+<p>Currently, the following loss functions are builtin:</p>
+<ul>
+<li><code>ShortTradeDurHyperOptLoss</code> (default legacy Freqtrade hyperoptimization loss function) - Mostly for short trade duration and avoiding losses.</li>
+<li><code>OnlyProfitHyperOptLoss</code> (which takes only amount of profit into consideration)</li>
+<li><code>SharpeHyperOptLoss</code> (optimizes Sharpe Ratio calculated on trade returns relative to standard deviation)</li>
+<li><code>SharpeHyperOptLossDaily</code> (optimizes Sharpe Ratio calculated on <strong>daily</strong> trade returns relative to standard deviation)</li>
+<li><code>SortinoHyperOptLoss</code> (optimizes Sortino Ratio calculated on trade returns relative to <strong>downside</strong> standard deviation)</li>
+<li><code>SortinoHyperOptLossDaily</code> (optimizes Sortino Ratio calculated on <strong>daily</strong> trade returns relative to <strong>downside</strong> standard deviation)</li>
+</ul>
+<p>Creation of a custom loss function is covered in the <a href="../advanced-hyperopt/">Advanced Hyperopt</a> part of the documentation.</p>
+<h2 id="execute-hyperopt">Execute Hyperopt<a class="headerlink" href="#execute-hyperopt" title="Permanent link">&para;</a></h2>
+<p>Once you have updated your hyperopt configuration you can run it.
+Because hyperopt tries a lot of combinations to find the best parameters it will take time to get a good result. More time usually results in better results.</p>
+<p>We strongly recommend to use <code>screen</code> or <code>tmux</code> to prevent any connection loss.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>hyperopt<span class="w"> </span>--config<span class="w"> </span>config.json<span class="w"> </span>--hyperopt<span class="w"> </span>&lt;hyperoptname&gt;<span class="w"> </span>--hyperopt-loss<span class="w"> </span>&lt;hyperoptlossname&gt;<span class="w"> </span>--strategy<span class="w"> </span>&lt;strategyname&gt;<span class="w"> </span>-e<span class="w"> </span><span class="m">500</span><span class="w"> </span>--spaces<span class="w"> </span>all
+</code></pre></div>
+<p>Use <code>&lt;hyperoptname&gt;</code> as the name of the custom hyperopt used.</p>
+<p>The <code>-e</code> option will set how many evaluations hyperopt will do. Since hyperopt uses Bayesian search, running too many epochs at once may not produce greater results. Experience has shown that best results are usually not improving much after 500-1000 epochs.<br />
+Doing multiple runs (executions) with a few 1000 epochs and different random state will most likely produce different results.</p>
+<p>The <code>--spaces all</code> option determines that all possible parameters should be optimized. Possibilities are listed below.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Hyperopt will store hyperopt results with the timestamp of the hyperopt start time.
+Reading commands (<code>hyperopt-list</code>, <code>hyperopt-show</code>) can use <code>--hyperopt-filename &lt;filename&gt;</code> to read and display older hyperopt results.
+You can find a list of filenames with <code>ls -l user_data/hyperopt_results/</code>.</p>
+</div>
+<h3 id="execute-hyperopt-with-different-historical-data-source">Execute Hyperopt with different historical data source<a class="headerlink" href="#execute-hyperopt-with-different-historical-data-source" title="Permanent link">&para;</a></h3>
+<p>If you would like to hyperopt parameters using an alternate historical data set that
+you have on-disk, use the <code>--datadir PATH</code> option. By default, hyperopt
+uses data from directory <code>user_data/data</code>.</p>
+<h3 id="running-hyperopt-with-a-smaller-test-set">Running Hyperopt with a smaller test-set<a class="headerlink" href="#running-hyperopt-with-a-smaller-test-set" title="Permanent link">&para;</a></h3>
+<p>Use the <code>--timerange</code> argument to change how much of the test-set you want to use.
+For example, to use one month of data, pass the following parameter to the hyperopt call:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>hyperopt<span class="w"> </span>--hyperopt<span class="w"> </span>&lt;hyperoptname&gt;<span class="w"> </span>--strategy<span class="w"> </span>&lt;strategyname&gt;<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20180401</span>-20180501
+</code></pre></div>
+<h3 id="running-hyperopt-using-methods-from-a-strategy">Running Hyperopt using methods from a strategy<a class="headerlink" href="#running-hyperopt-using-methods-from-a-strategy" title="Permanent link">&para;</a></h3>
+<p>Hyperopt can reuse <code>populate_indicators</code>, <code>populate_buy_trend</code>, <code>populate_sell_trend</code> from your strategy, assuming these methods are <strong>not</strong> in your custom hyperopt file, and a strategy is provided.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>hyperopt<span class="w"> </span>--hyperopt<span class="w"> </span>AwesomeHyperopt<span class="w"> </span>--hyperopt-loss<span class="w"> </span>SharpeHyperOptLossDaily<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy
+</code></pre></div>
+<h3 id="running-hyperopt-with-smaller-search-space">Running Hyperopt with Smaller Search Space<a class="headerlink" href="#running-hyperopt-with-smaller-search-space" title="Permanent link">&para;</a></h3>
+<p>Use the <code>--spaces</code> option to limit the search space used by hyperopt.
+Letting Hyperopt optimize everything is a huuuuge search space. 
+Often it might make more sense to start by just searching for initial buy algorithm.
+Or maybe you just want to optimize your stoploss or roi table for that awesome new buy strategy you have.</p>
+<p>Legal values are:</p>
+<ul>
+<li><code>all</code>: optimize everything</li>
+<li><code>buy</code>: just search for a new buy strategy</li>
+<li><code>sell</code>: just search for a new sell strategy</li>
+<li><code>roi</code>: just optimize the minimal profit table for your strategy</li>
+<li><code>stoploss</code>: search for the best stoploss value</li>
+<li><code>trailing</code>: search for the best trailing stop values</li>
+<li><code>default</code>: <code>all</code> except <code>trailing</code></li>
+<li>space-separated list of any of the above values for example <code>--spaces roi stoploss</code></li>
+</ul>
+<p>The default Hyperopt Search Space, used when no <code>--space</code> command line option is specified, does not include the <code>trailing</code> hyperspace. We recommend you to run optimization for the <code>trailing</code> hyperspace separately, when the best parameters for other hyperspaces were found, validated and pasted into your custom strategy.</p>
+<h3 id="position-stacking-and-disabling-max-market-positions">Position stacking and disabling max market positions<a class="headerlink" href="#position-stacking-and-disabling-max-market-positions" title="Permanent link">&para;</a></h3>
+<p>In some situations, you may need to run Hyperopt (and Backtesting) with the
+<code>--eps</code>/<code>--enable-position-staking</code> and <code>--dmmp</code>/<code>--disable-max-market-positions</code> arguments.</p>
+<p>By default, hyperopt emulates the behavior of the Freqtrade Live Run/Dry Run, where only one
+open trade is allowed for every traded pair. The total number of trades open for all pairs
+is also limited by the <code>max_open_trades</code> setting. During Hyperopt/Backtesting this may lead to
+some potential trades to be hidden (or masked) by previously open trades.</p>
+<p>The <code>--eps</code>/<code>--enable-position-stacking</code> argument allows emulation of buying the same pair multiple times,
+while <code>--dmmp</code>/<code>--disable-max-market-positions</code> disables applying <code>max_open_trades</code>
+during Hyperopt/Backtesting (which is equal to setting <code>max_open_trades</code> to a very high
+number).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Dry/live runs will <strong>NOT</strong> use position stacking - therefore it does make sense to also validate the strategy without this as it's closer to reality.</p>
+</div>
+<p>You can also enable position stacking in the configuration file by explicitly setting
+<code>"position_stacking"=true</code>.</p>
+<h3 id="reproducible-results">Reproducible results<a class="headerlink" href="#reproducible-results" title="Permanent link">&para;</a></h3>
+<p>The search for optimal parameters starts with a few (currently 30) random combinations in the hyperspace of parameters, random Hyperopt epochs. These random epochs are marked with an asterisk character (<code>*</code>) in the first column in the Hyperopt output.</p>
+<p>The initial state for generation of these random values (random state) is controlled by the value of the <code>--random-state</code> command line option. You can set it to some arbitrary value of your choice to obtain reproducible results.</p>
+<p>If you have not set this value explicitly in the command line options, Hyperopt seeds the random state with some random value for you. The random state value for each Hyperopt run is shown in the log, so you can copy and paste it into the <code>--random-state</code> command line option to repeat the set of the initial random epochs used.</p>
+<p>If you have not changed anything in the command line options, configuration, timerange, Strategy and Hyperopt classes, historical data and the Loss Function -- you should obtain same hyper-optimization results with same random state value used.</p>
+<h2 id="understand-the-hyperopt-result">Understand the Hyperopt Result<a class="headerlink" href="#understand-the-hyperopt-result" title="Permanent link">&para;</a></h2>
+<p>Once Hyperopt is completed you can use the result to create a new strategy.
+Given the following result from hyperopt:</p>
+<div class="highlight"><pre><span></span><code>Best result:
+
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+
+Buy hyperspace params:
+{    &#39;adx-value&#39;: 44,
+     &#39;rsi-value&#39;: 29,
+     &#39;adx-enabled&#39;: False,
+     &#39;rsi-enabled&#39;: True,
+     &#39;trigger&#39;: &#39;bb_lower&#39;}
+</code></pre></div>
+<p>You should understand this result like:</p>
+<ul>
+<li>The buy trigger that worked best was <code>bb_lower</code>.</li>
+<li>You should not use ADX because <code>adx-enabled: False</code>)</li>
+<li>You should <strong>consider</strong> using the RSI indicator (<code>rsi-enabled: True</code> and the best value is <code>29.0</code> (<code>rsi-value: 29.0</code>)</li>
+</ul>
+<p>You have to look inside your strategy file into <code>buy_strategy_generator()</code>
+method, what those values match to.</p>
+<p>So for example you had <code>rsi-value: 29.0</code> so we would look at <code>rsi</code>-block, that translates to the following code block:</p>
+<div class="highlight"><pre><span></span><code><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">29.0</span><span class="p">)</span>
+</code></pre></div>
+<p>Translating your whole hyperopt result as the new buy-signal would then look like:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_buy_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">29.0</span><span class="p">)</span> <span class="o">&amp;</span>  <span class="c1"># rsi-value</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;close&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_lowerband&#39;</span><span class="p">]</span>  <span class="c1"># trigger</span>
+        <span class="p">),</span>
+        <span class="s1">&#39;buy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<p>By default, hyperopt prints colorized results -- epochs with positive profit are printed in the green color. This highlighting helps you find epochs that can be interesting for later analysis. Epochs with zero total profit or with negative profits (losses) are printed in the normal color. If you do not need colorization of results (for instance, when you are redirecting hyperopt output to a file) you can switch colorization off by specifying the <code>--no-color</code> option in the command line.</p>
+<p>You can use the <code>--print-all</code> command line option if you would like to see all results in the hyperopt output, not only the best ones. When <code>--print-all</code> is used, current best results are also colorized by default -- they are printed in bold (bright) style. This can also be switched off with the <code>--no-color</code> command line option.</p>
+<div class="admonition note">
+<p class="admonition-title">Windows and color output</p>
+<p>Windows does not support color-output natively, therefore it is automatically disabled. To have color-output for hyperopt running under windows, please consider using WSL.</p>
+</div>
+<h3 id="understand-hyperopt-roi-results">Understand Hyperopt ROI results<a class="headerlink" href="#understand-hyperopt-roi-results" title="Permanent link">&para;</a></h3>
+<p>If you are optimizing ROI (i.e. if optimization search-space contains 'all', 'default' or 'roi'), your result will look as follows and include a ROI table:</p>
+<div class="highlight"><pre><span></span><code>Best result:
+
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+
+ROI table:
+{   0: 0.10674,
+    21: 0.09158,
+    78: 0.03634,
+    118: 0}
+</code></pre></div>
+<p>In order to use this best ROI table found by Hyperopt in backtesting and for live trades/dry-run, copy-paste it as the value of the <code>minimal_roi</code> attribute of your custom strategy:</p>
+<div class="highlight"><pre><span></span><code>    # Minimal ROI designed for the strategy.
+    # This attribute will be overridden if the config file contains &quot;minimal_roi&quot;
+    minimal_roi = {
+        0: 0.10674,
+        21: 0.09158,
+        78: 0.03634,
+        118: 0
+    }
+</code></pre></div>
+<p>As stated in the comment, you can also use it as the value of the <code>minimal_roi</code> setting in the configuration file.</p>
+<h4 id="default-roi-search-space">Default ROI Search Space<a class="headerlink" href="#default-roi-search-space" title="Permanent link">&para;</a></h4>
+<p>If you are optimizing ROI, Freqtrade creates the 'roi' optimization hyperspace for you -- it's the hyperspace of components for the ROI tables. By default, each ROI table generated by the Freqtrade consists of 4 rows (steps). Hyperopt implements adaptive ranges for ROI tables with ranges for values in the ROI steps that depend on the timeframe used. By default the values vary in the following ranges (for some of the most used timeframes, values are rounded to 5 digits after the decimal point):</p>
+<table>
+<thead>
+<tr>
+<th># step</th>
+<th>1m</th>
+<th></th>
+<th>5m</th>
+<th></th>
+<th>1h</th>
+<th></th>
+<th>1d</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>0.01161...0.11992</td>
+<td>0</td>
+<td>0.03...0.31</td>
+<td>0</td>
+<td>0.06883...0.71124</td>
+<td>0</td>
+<td>0.12178...1.25835</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2...8</td>
+<td>0.00774...0.04255</td>
+<td>10...40</td>
+<td>0.02...0.11</td>
+<td>120...480</td>
+<td>0.04589...0.25238</td>
+<td>2880...11520</td>
+<td>0.08118...0.44651</td>
+</tr>
+<tr>
+<td>3</td>
+<td>4...20</td>
+<td>0.00387...0.01547</td>
+<td>20...100</td>
+<td>0.01...0.04</td>
+<td>240...1200</td>
+<td>0.02294...0.09177</td>
+<td>5760...28800</td>
+<td>0.04059...0.16237</td>
+</tr>
+<tr>
+<td>4</td>
+<td>6...44</td>
+<td>0.0</td>
+<td>30...220</td>
+<td>0.0</td>
+<td>360...2640</td>
+<td>0.0</td>
+<td>8640...63360</td>
+<td>0.0</td>
+</tr>
+</tbody>
+</table>
+<p>These ranges should be sufficient in most cases. The minutes in the steps (ROI dict keys) are scaled linearly depending on the timeframe used. The ROI values in the steps (ROI dict values) are scaled logarithmically depending on the timeframe used.</p>
+<p>If you have the <code>generate_roi_table()</code> and <code>roi_space()</code> methods in your custom hyperopt file, remove them in order to utilize these adaptive ROI tables and the ROI hyperoptimization space generated by Freqtrade by default.</p>
+<p>Override the <code>roi_space()</code> method if you need components of the ROI tables to vary in other ranges. Override the <code>generate_roi_table()</code> and <code>roi_space()</code> methods and implement your own custom approach for generation of the ROI tables during hyperoptimization if you need a different structure of the ROI tables or other amount of rows (steps). </p>
+<p>A sample for these methods can be found in <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py">sample_hyperopt_advanced.py</a>.</p>
+<h3 id="understand-hyperopt-stoploss-results">Understand Hyperopt Stoploss results<a class="headerlink" href="#understand-hyperopt-stoploss-results" title="Permanent link">&para;</a></h3>
+<p>If you are optimizing stoploss values (i.e. if optimization search-space contains 'all', 'default' or 'stoploss'), your result will look as follows and include stoploss:</p>
+<div class="highlight"><pre><span></span><code>Best result:
+
+    44/100:    135 trades. Avg profit  0.57%. Total profit  0.03871918 BTC (0.7722Σ%). Avg duration 180.4 mins. Objective: 1.94367
+
+Buy hyperspace params:
+{   &#39;adx-value&#39;: 44,
+    &#39;rsi-value&#39;: 29,
+    &#39;adx-enabled&#39;: False,
+    &#39;rsi-enabled&#39;: True,
+    &#39;trigger&#39;: &#39;bb_lower&#39;}
+Stoploss: -0.27996
+</code></pre></div>
+<p>In order to use this best stoploss value found by Hyperopt in backtesting and for live trades/dry-run, copy-paste it as the value of the <code>stoploss</code> attribute of your custom strategy:</p>
+<div class="highlight"><pre><span></span><code>    <span class="c1"># Optimal stoploss designed for the strategy</span>
+    <span class="c1"># This attribute will be overridden if the config file contains &quot;stoploss&quot;</span>
+    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.27996</span>
+</code></pre></div>
+<p>As stated in the comment, you can also use it as the value of the <code>stoploss</code> setting in the configuration file.</p>
+<h4 id="default-stoploss-search-space">Default Stoploss Search Space<a class="headerlink" href="#default-stoploss-search-space" title="Permanent link">&para;</a></h4>
+<p>If you are optimizing stoploss values, Freqtrade creates the 'stoploss' optimization hyperspace for you. By default, the stoploss values in that hyperspace vary in the range -0.35...-0.02, which is sufficient in most cases.</p>
+<p>If you have the <code>stoploss_space()</code> method in your custom hyperopt file, remove it in order to utilize Stoploss hyperoptimization space generated by Freqtrade by default.</p>
+<p>Override the <code>stoploss_space()</code> method and define the desired range in it if you need stoploss values to vary in other range during hyperoptimization. A sample for this method can be found in <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py">user_data/hyperopts/sample_hyperopt_advanced.py</a>.</p>
+<h3 id="understand-hyperopt-trailing-stop-results">Understand Hyperopt Trailing Stop results<a class="headerlink" href="#understand-hyperopt-trailing-stop-results" title="Permanent link">&para;</a></h3>
+<p>If you are optimizing trailing stop values (i.e. if optimization search-space contains 'all' or 'trailing'), your result will look as follows and include trailing stop parameters:</p>
+<div class="highlight"><pre><span></span><code>Best result:
+
+    45/100:    606 trades. Avg profit  1.04%. Total profit  0.31555614 BTC ( 630.48Σ%). Avg duration 150.3 mins. Objective: -1.10161
+
+Trailing stop:
+{   &#39;trailing_only_offset_is_reached&#39;: True,
+    &#39;trailing_stop&#39;: True,
+    &#39;trailing_stop_positive&#39;: 0.02001,
+    &#39;trailing_stop_positive_offset&#39;: 0.06038}
+</code></pre></div>
+<p>In order to use these best trailing stop parameters found by Hyperopt in backtesting and for live trades/dry-run, copy-paste them as the values of the corresponding attributes of your custom strategy:</p>
+<div class="highlight"><pre><span></span><code>    <span class="c1"># Trailing stop</span>
+    <span class="c1"># These attributes will be overridden if the config file contains corresponding values.</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">trailing_stop_positive</span> <span class="o">=</span> <span class="mf">0.02001</span>
+    <span class="n">trailing_stop_positive_offset</span> <span class="o">=</span> <span class="mf">0.06038</span>
+    <span class="n">trailing_only_offset_is_reached</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
+<p>As stated in the comment, you can also use it as the values of the corresponding settings in the configuration file.</p>
+<h4 id="default-trailing-stop-search-space">Default Trailing Stop Search Space<a class="headerlink" href="#default-trailing-stop-search-space" title="Permanent link">&para;</a></h4>
+<p>If you are optimizing trailing stop values, Freqtrade creates the 'trailing' optimization hyperspace for you. By default, the <code>trailing_stop</code> parameter is always set to True in that hyperspace, the value of the <code>trailing_only_offset_is_reached</code> vary between True and False, the values of the <code>trailing_stop_positive</code> and <code>trailing_stop_positive_offset</code> parameters vary in the ranges 0.02...0.35 and 0.01...0.1 correspondingly, which is sufficient in most cases.</p>
+<p>Override the <code>trailing_space()</code> method and define the desired range in it if you need values of the trailing stop parameters to vary in other ranges during hyperoptimization. A sample for this method can be found in <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_advanced.py">user_data/hyperopts/sample_hyperopt_advanced.py</a>.</p>
+<h2 id="show-details-of-hyperopt-results">Show details of Hyperopt results<a class="headerlink" href="#show-details-of-hyperopt-results" title="Permanent link">&para;</a></h2>
+<p>After you run Hyperopt for the desired amount of epochs, you can later list all results for analysis, select only best or profitable once, and show the details for any of the epochs previously evaluated. This can be done with the <code>hyperopt-list</code> and <code>hyperopt-show</code> sub-commands. The usage of these sub-commands is described in the <a href="../utils/#list-hyperopt-results">Utils</a> chapter.</p>
+<h2 id="validate-backtesting-results">Validate backtesting results<a class="headerlink" href="#validate-backtesting-results" title="Permanent link">&para;</a></h2>
+<p>Once the optimized strategy has been implemented into your strategy, you should backtest this strategy to make sure everything is working as expected.</p>
+<p>To achieve same results (number of trades, their durations, profit, etc.) than during Hyperopt, please use same configuration and parameters (timerange, timeframe, ...) used for hyperopt <code>--dmmp</code>/<code>--disable-max-market-positions</code> and <code>--eps</code>/<code>--enable-position-stacking</code> for Backtesting.</p>
+<p>Should results don't match, please double-check to make sure you transferred all conditions correctly.
+Pay special care to the stoploss (and trailing stoploss) parameters, as these are often set in configuration files, which override changes to the strategy.
+You should also carefully review the log of your backtest to ensure that there were no parameters inadvertently set by the configuration (like <code>stoploss</code> or <code>trailing_stop</code>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
