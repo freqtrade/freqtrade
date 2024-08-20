@@ -1,0 +1,2738 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2024.1/plugins/">
+      
+      
+        <link rel="prev" href="../stoploss/">
+      
+      
+        <link rel="next" href="../bot-usage/">
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.6">
+    
+    
+      
+        <title>Plugins - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.50c56a3b.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plugins" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Plugins
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Callbacks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pairlists-and-pairlist-handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pairlists and Pairlist Handlers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pairlists and Pairlist Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pair-blacklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pair blacklist
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-pairlist-handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Available Pairlist Handlers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available Pairlist Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-pair-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static Pair List
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volume-pair-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      Volume Pair List
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Volume Pair List">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volumepairlist-advanced-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      VolumePairList Advanced mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#producerpairlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProducerPairList
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remotepairlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      RemotePairList
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agefilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgeFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fulltradesfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      FullTradesFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#offsetfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      OffsetFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performancefilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      PerformanceFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precisionfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      PrecisionFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pricefilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      PriceFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shufflefilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      ShuffleFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spreadfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      SpreadFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rangestabilityfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      RangeStabilityFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volatilityfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      VolatilityFilter
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-example-of-pairlist-handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full example of Pairlist Handlers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Protections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#available-protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Available Protections
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-settings-to-all-protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common settings to all Protections
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common settings to all Protections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stoploss-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stoploss Guard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxdrawdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      MaxDrawdown
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#low-profit-pairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Low Profit Pairs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cooldown-period" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cooldown Period
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-example-of-protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full example of Protections
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API & FreqUI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    FreqAI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            FreqAI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter table
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feature engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running FreqAI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reinforcement Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Short / Leverage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Sub-commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtest analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Trade Object
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lookahead-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lookahead analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recursive-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Recursive analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Producer/Consumer mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheat-sheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating Freqtrade
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pairlists-and-pairlist-handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pairlists and Pairlist Handlers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pairlists and Pairlist Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pair-blacklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pair blacklist
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-pairlist-handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Available Pairlist Handlers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available Pairlist Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-pair-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static Pair List
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volume-pair-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      Volume Pair List
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Volume Pair List">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volumepairlist-advanced-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      VolumePairList Advanced mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#producerpairlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProducerPairList
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remotepairlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      RemotePairList
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agefilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      AgeFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fulltradesfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      FullTradesFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#offsetfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      OffsetFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performancefilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      PerformanceFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precisionfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      PrecisionFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pricefilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      PriceFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shufflefilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      ShuffleFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spreadfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      SpreadFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rangestabilityfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      RangeStabilityFilter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volatilityfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      VolatilityFilter
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-example-of-pairlist-handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full example of Pairlist Handlers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Protections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#available-protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Available Protections
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-settings-to-all-protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common settings to all Protections
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common settings to all Protections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stoploss-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stoploss Guard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxdrawdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      MaxDrawdown
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#low-profit-pairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Low Profit Pairs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cooldown-period" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cooldown Period
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-example-of-protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full example of Protections
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="plugins">Plugins<a class="headerlink" href="#plugins" title="Permanent link">&para;</a></h1>
+<h2 id="pairlists-and-pairlist-handlers">Pairlists and Pairlist Handlers<a class="headerlink" href="#pairlists-and-pairlist-handlers" title="Permanent link">&para;</a></h2>
+<p>Pairlist Handlers define the list of pairs (pairlist) that the bot should trade. They are configured in the <code>pairlists</code> section of the configuration settings.</p>
+<p>In your configuration, you can use Static Pairlist (defined by the <a href="#static-pair-list"><code>StaticPairList</code></a> Pairlist Handler) and Dynamic Pairlist (defined by the <a href="#volume-pair-list"><code>VolumePairList</code></a> Pairlist Handler).</p>
+<p>Additionally, <a href="#agefilter"><code>AgeFilter</code></a>, <a href="#precisionfilter"><code>PrecisionFilter</code></a>, <a href="#pricefilter"><code>PriceFilter</code></a>, <a href="#shufflefilter"><code>ShuffleFilter</code></a>, <a href="#spreadfilter"><code>SpreadFilter</code></a> and <a href="#volatilityfilter"><code>VolatilityFilter</code></a> act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.</p>
+<p>If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You should always configure either <code>StaticPairList</code> or <code>VolumePairList</code> as the starting Pairlist Handler.</p>
+<p>Inactive markets are always removed from the resulting pairlist. Explicitly blacklisted pairs (those in the <code>pair_blacklist</code> configuration setting) are also always removed from the resulting pairlist.</p>
+<h3 id="pair-blacklist">Pair blacklist<a class="headerlink" href="#pair-blacklist" title="Permanent link">&para;</a></h3>
+<p>The pair blacklist (configured via <code>exchange.pair_blacklist</code> in the configuration) disallows certain pairs from trading.
+This can be as simple as excluding <code>DOGE/BTC</code> - which will remove exactly this pair.</p>
+<p>The pair-blacklist does also support wildcards (in regex-style) - so <code>BNB/.*</code> will exclude ALL pairs that start with BNB.
+You may also use something like <code>.*DOWN/BTC</code> or <code>.*UP/BTC</code> to exclude leveraged tokens (check Pair naming conventions for your exchange!)</p>
+<h3 id="available-pairlist-handlers">Available Pairlist Handlers<a class="headerlink" href="#available-pairlist-handlers" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="#static-pair-list"><code>StaticPairList</code></a> (default, if not configured differently)</li>
+<li><a href="#volume-pair-list"><code>VolumePairList</code></a></li>
+<li><a href="#producerpairlist"><code>ProducerPairList</code></a></li>
+<li><a href="#remotepairlist"><code>RemotePairList</code></a></li>
+<li><a href="#agefilter"><code>AgeFilter</code></a></li>
+<li><a href="#fulltradesfilter"><code>FullTradesFilter</code></a></li>
+<li><a href="#offsetfilter"><code>OffsetFilter</code></a></li>
+<li><a href="#performancefilter"><code>PerformanceFilter</code></a></li>
+<li><a href="#precisionfilter"><code>PrecisionFilter</code></a></li>
+<li><a href="#pricefilter"><code>PriceFilter</code></a></li>
+<li><a href="#shufflefilter"><code>ShuffleFilter</code></a></li>
+<li><a href="#spreadfilter"><code>SpreadFilter</code></a></li>
+<li><a href="#rangestabilityfilter"><code>RangeStabilityFilter</code></a></li>
+<li><a href="#volatilityfilter"><code>VolatilityFilter</code></a></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Testing pairlists</p>
+<p>Pairlist configurations can be quite tricky to get right. Best use the <a href="../utils/#test-pairlist"><code>test-pairlist</code></a> utility sub-command to test your configuration quickly.</p>
+</div>
+<h4 id="static-pair-list">Static Pair List<a class="headerlink" href="#static-pair-list" title="Permanent link">&para;</a></h4>
+<p>By default, the <code>StaticPairList</code> method is used, which uses a statically defined pair whitelist from the configuration. The pairlist also supports wildcards (in regex-style) - so <code>.*/BTC</code> will include all pairs with BTC as a stake.</p>
+<p>It uses configuration from <code>exchange.pair_whitelist</code> and <code>exchange.pair_blacklist</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;StaticPairList&quot;</span><span class="p">}</span>
+<span class="p">],</span>
+</code></pre></div>
+<p>By default, only currently enabled pairs are allowed.
+To skip pair validation against active markets, set <code>"allow_inactive": true</code> within the <code>StaticPairList</code> configuration.
+This can be useful for backtesting expired pairs (like quarterly spot-markets).
+This option must be configured along with <code>exchange.skip_pair_validation</code> in the exchange configuration.</p>
+<p>When used in a "follow-up" position (e.g. after VolumePairlist), all pairs in <code>'pair_whitelist'</code> will be added to the end of the pairlist.</p>
+<h4 id="volume-pair-list">Volume Pair List<a class="headerlink" href="#volume-pair-list" title="Permanent link">&para;</a></h4>
+<p><code>VolumePairList</code> employs sorting/filtering of pairs by their trading volume. It selects <code>number_assets</code> top pairs with sorting based on the <code>sort_key</code> (which can only be <code>quoteVolume</code>).</p>
+<p>When used in the chain of Pairlist Handlers in a non-leading position (after StaticPairList and other Pairlist Filters), <code>VolumePairList</code> considers outputs of previous Pairlist Handlers, adding its sorting/selection of the pairs by the trading volume.</p>
+<p>When used in the leading position of the chain of Pairlist Handlers, the <code>pair_whitelist</code> configuration setting is ignored. Instead, <code>VolumePairList</code> selects the top assets from all available markets with matching stake-currency on the exchange.</p>
+<p>The <code>refresh_period</code> setting allows to define the period (in seconds), at which the pairlist will be refreshed. Defaults to 1800s (30 minutes).
+The pairlist cache (<code>refresh_period</code>) on <code>VolumePairList</code> is only applicable to generating pairlists.
+Filtering instances (not the first position in the list) will not apply any cache and will always use up-to-date data.</p>
+<p><code>VolumePairList</code> is per default based on the ticker data from exchange, as reported by the ccxt library:</p>
+<ul>
+<li>The <code>quoteVolume</code> is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">],</span>
+</code></pre></div>
+<p>You can define a minimum volume with <code>min_value</code> - which will filter out pairs with a volume lower than the specified value in the specified timerange.</p>
+<h5 id="volumepairlist-advanced-mode">VolumePairList Advanced mode<a class="headerlink" href="#volumepairlist-advanced-mode" title="Permanent link">&para;</a></h5>
+<p><code>VolumePairList</code> can also operate in an advanced mode to build volume over a given timerange of specified candle size. It utilizes exchange historical candle data, builds a typical price (calculated by (open+high+low)/3) and multiplies the typical price with every candle's volume. The sum is the <code>quoteVolume</code> over the given range. This allows different scenarios, for a  more smoothened volume, when using longer ranges with larger candle sizes, or the opposite when using a short range with small candles.</p>
+<p>For convenience <code>lookback_days</code> can be specified, which will imply that 1d candles will be used for the lookback. In the example below the pairlist would be created based on the last 7 days:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">],</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Range look back and refresh period</p>
+<p>When used in conjunction with <code>lookback_days</code> and <code>lookback_timeframe</code> the <code>refresh_period</code> can not be smaller than the candle size in seconds. As this will result in unnecessary requests to the exchanges API.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Performance implications when using lookback range</p>
+<p>If used in first position in combination with lookback, the computation of the range based volume can be time and resource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with <code>VolumeFilter</code> to narrow the pairlist down for further range volume calculation.</p>
+</div>
+<details class="tip">
+<summary>Unsupported exchanges</summary>
+<p>On some exchanges (like Gemini), regular VolumePairList does not work as the api does not natively provide 24h volume. This can be worked around by using candle data to build the volume.
+To roughly simulate 24h volume, you can use the following configuration.
+Please note that These pairlists will only refresh once per day.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">],</span>
+</code></pre></div>
+</details>
+<p>More sophisticated approach can be used, by using <code>lookback_timeframe</code> for candle size and <code>lookback_period</code> which specifies the amount of candles. This example will build the volume pairs based on a rolling period of 3 days of 1h candles:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1h&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">],</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>VolumePairList</code> does not support backtesting mode.</p>
+</div>
+<h4 id="producerpairlist">ProducerPairList<a class="headerlink" href="#producerpairlist" title="Permanent link">&para;</a></h4>
+<p>With <code>ProducerPairList</code>, you can reuse the pairlist from a <a href="../producer-consumer/">Producer</a> without explicitly defining the pairlist on each consumer.</p>
+<p><a href="../producer-consumer/">Consumer mode</a> is required for this pairlist to work.</p>
+<p>The pairlist will perform a check on active pairs against the current exchange configuration to avoid attempting to trade on invalid markets.</p>
+<p>You can limit the length of the pairlist with the optional parameter <code>number_assets</code>. Using <code>"number_assets"=0</code> or omitting this key will result in the reuse of all producer pairs valid for the current setup.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ProducerPairList&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;producer_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">],</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Combining pairlists</p>
+<p>This pairlist can be combined with all other pairlists and filters for further pairlist reduction, and can also act as an "additional" pairlist, on top of already defined pairs.
+<code>ProducerPairList</code> can also be used multiple times in sequence, combining the pairs from multiple producers.
+Obviously in complex such configurations, the Producer may not provide data for all pairs, so the strategy must be fit for this.</p>
+</div>
+<h4 id="remotepairlist">RemotePairList<a class="headerlink" href="#remotepairlist" title="Permanent link">&para;</a></h4>
+<p>It allows the user to fetch a pairlist from a remote server or a locally stored json file within the freqtrade directory, enabling dynamic updates and customization of the trading pairlist.</p>
+<p>The RemotePairList is defined in the pairlists section of the configuration settings. It uses the following configuration options:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RemotePairList&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;processing_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;filter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;pairlist_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://example.com/pairlist&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;keep_pairlist_on_failure&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;read_timeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;bearer_token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my-bearer-token&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;save_to_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_data/filename.json&quot;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<p>The optional <code>mode</code> option specifies if the pairlist should be used as a <code>blacklist</code> or as a <code>whitelist</code>. The default value is "whitelist".</p>
+<p>The optional <code>processing_mode</code> option in the RemotePairList configuration determines how the retrieved pairlist is processed. It can have two values: "filter" or "append".</p>
+<p>In "filter" mode, the retrieved pairlist is used as a filter. Only the pairs present in both the original pairlist and the retrieved pairlist are included in the final pairlist. Other pairs are filtered out.</p>
+<p>In "append" mode, the retrieved pairlist is added to the original pairlist. All pairs from both lists are included in the final pairlist without any filtering.</p>
+<p>The <code>pairlist_url</code> option specifies the URL of the remote server where the pairlist is located, or the path to a local file (if file:/// is prepended). This allows the user to use either a remote server or a local file as the source for the pairlist.</p>
+<p>The <code>save_to_file</code> option, when provided with a valid filename, saves the processed pairlist to that file in JSON format. This option is optional, and by default, the pairlist is not saved to a file.</p>
+<details class="example">
+<summary>Multi bot with shared pairlist example</summary>
+<p><code>save_to_file</code> can be used to save the pairlist to a file with Bot1:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RemotePairList&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;pairlist_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://example.com/pairlist&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;keep_pairlist_on_failure&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;read_timeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;save_to_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_data/filename.json&quot;</span><span class="w"> </span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<p>This saved pairlist file can be loaded by Bot2, or any additional bot with this configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RemotePairList&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;pairlist_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;file:///user_data/filename.json&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;keep_pairlist_on_failure&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+</details>
+<p>The user is responsible for providing a server or local file that returns a JSON object with the following structure:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;pairs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;XRP/USDT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;LTC/USDT&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The <code>pairs</code> property should contain a list of strings with the trading pairs to be used by the bot. The <code>refresh_period</code> property is optional and specifies the number of seconds that the pairlist should be cached before being refreshed.</p>
+<p>The optional <code>keep_pairlist_on_failure</code> specifies whether the previous received pairlist should be used if the remote server is not reachable or returns an error. The default value is true.</p>
+<p>The optional <code>read_timeout</code> specifies the maximum amount of time (in seconds) to wait for a response from the remote source, The default value is 60.</p>
+<p>The optional <code>bearer_token</code> will be included in the requests Authorization Header.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In case of a server error the last received pairlist will be kept if <code>keep_pairlist_on_failure</code> is set to true, when set to false a empty pairlist is returned.</p>
+</div>
+<h4 id="agefilter">AgeFilter<a class="headerlink" href="#agefilter" title="Permanent link">&para;</a></h4>
+<p>Removes pairs that have been listed on the exchange for less than <code>min_days_listed</code> days (defaults to <code>10</code>) or more than <code>max_days_listed</code> days (defaults <code>None</code> mean infinity).</p>
+<p>When pairs are first listed on an exchange they can suffer huge price drops and volatility
+in the first few days while the pair goes through its price-discovery period. Bots can often
+be caught out buying before the pair has finished dropping in price.</p>
+<p>This filter allows freqtrade to ignore pairs until they have been listed for at least <code>min_days_listed</code> days and listed before <code>max_days_listed</code>.</p>
+<h4 id="fulltradesfilter">FullTradesFilter<a class="headerlink" href="#fulltradesfilter" title="Permanent link">&para;</a></h4>
+<p>Shrink whitelist to consist only in-trade pairs when the trade slots are full (when <code>max_open_trades</code> isn't being set to <code>-1</code> in the config).</p>
+<p>When the trade slots are full, there is no need to calculate indicators of the rest of the pairs (except informative pairs) since no new trade can be opened. By shrinking the whitelist to just the in-trade pairs, you can improve calculation speeds and reduce CPU usage. When a trade slot is free (either a trade is closed or <code>max_open_trades</code> value in config is increased), then the whitelist will return to normal state.</p>
+<p>When multiple pairlist filters are being used, it's recommended to put this filter at second position directly below the primary pairlist, so when the trade slots are full, the bot doesn't have to download data for the rest of the filters.</p>
+<div class="admonition warning">
+<p class="admonition-title">Backtesting</p>
+<p><code>FullTradesFilter</code> does not support backtesting mode.</p>
+</div>
+<h4 id="offsetfilter">OffsetFilter<a class="headerlink" href="#offsetfilter" title="Permanent link">&para;</a></h4>
+<p>Offsets an incoming pairlist by a given <code>offset</code> value.</p>
+<p>As an example it can be used in conjunction with <code>VolumeFilter</code> to remove the top X volume pairs. Or to split a larger pairlist on two bot instances.</p>
+<p>Example to remove the first 10 pairs from the pairlist, and takes the next 20 (taking items 10-30 of the initial list):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="c1">// ...</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OffsetFilter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;offset&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">],</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When <code>OffsetFilter</code> is used to split a larger pairlist among multiple bots in combination with <code>VolumeFilter</code> 
+it can not be guaranteed that pairs won't overlap due to slightly different refresh intervals for the
+<code>VolumeFilter</code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>An offset larger than the total length of the incoming pairlist will result in an empty pairlist.</p>
+</div>
+<h4 id="performancefilter">PerformanceFilter<a class="headerlink" href="#performancefilter" title="Permanent link">&para;</a></h4>
+<p>Sorts pairs by past trade performance, as follows:</p>
+<ol>
+<li>Positive performance.</li>
+<li>No closed trades yet.</li>
+<li>Negative performance.</li>
+</ol>
+<p>Trade count is used as a tie breaker.</p>
+<p>You can use the <code>minutes</code> parameter to only consider performance of the past X minutes (rolling window).
+Not defining this parameter (or setting it to 0) will use all-time performance.</p>
+<p>The optional <code>min_profit</code> (as ratio -&gt; a setting of <code>0.01</code> corresponds to 1%) parameter defines the minimum profit a pair must have to be considered.
+Pairs below this level will be filtered out.
+Using this parameter without <code>minutes</code> is highly discouraged, as it can lead to an empty pairlist without a way to recover.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="c1">// ...</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PerformanceFilter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;minutes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1440</span><span class="p">,</span><span class="w">  </span><span class="c1">// rolling 24h</span>
+<span class="w">        </span><span class="nt">&quot;min_profit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="w">  </span><span class="c1">// minimal profit 1%</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">],</span>
+</code></pre></div>
+<p>As this Filter uses past performance of the bot, it'll have some startup-period - and should only be used after the bot has a few 100 trades in the database.</p>
+<div class="admonition warning">
+<p class="admonition-title">Backtesting</p>
+<p><code>PerformanceFilter</code> does not support backtesting mode.</p>
+</div>
+<h4 id="precisionfilter">PrecisionFilter<a class="headerlink" href="#precisionfilter" title="Permanent link">&para;</a></h4>
+<p>Filters low-value coins which would not allow setting stoplosses.</p>
+<div class="admonition warning">
+<p class="admonition-title">Backtesting</p>
+<p><code>PrecisionFilter</code> does not support backtesting mode using multiple strategies.</p>
+</div>
+<h4 id="pricefilter">PriceFilter<a class="headerlink" href="#pricefilter" title="Permanent link">&para;</a></h4>
+<p>The <code>PriceFilter</code> allows filtering of pairs by price. Currently the following price filters are supported:</p>
+<ul>
+<li><code>min_price</code></li>
+<li><code>max_price</code></li>
+<li><code>max_value</code></li>
+<li><code>low_price_ratio</code></li>
+</ul>
+<p>The <code>min_price</code> setting removes pairs where the price is below the specified price. This is useful if you wish to avoid trading very low-priced pairs.
+This option is disabled by default, and will only apply if set to &gt; 0.</p>
+<p>The <code>max_price</code> setting removes pairs where the price is above the specified price. This is useful if you wish to trade only low-priced pairs.
+This option is disabled by default, and will only apply if set to &gt; 0.</p>
+<p>The <code>max_value</code> setting removes pairs where the minimum value change is above a specified value.
+This is useful when an exchange has unbalanced limits. For example, if step-size = 1 (so you can only buy 1, or 2, or 3, but not 1.1 Coins) - and the price is pretty high (like 20$) as the coin has risen sharply since the last limit adaption.
+As a result of the above, you can only buy for 20$, or 40$ - but not for 25$.
+On exchanges that deduct fees from the receiving currency (e.g. binance) - this can result in high value coins / amounts that are unsellable as the amount is slightly below the limit.</p>
+<p>The <code>low_price_ratio</code> setting removes pairs where a raise of 1 price unit (pip) is above the <code>low_price_ratio</code> ratio.
+This option is disabled by default, and will only apply if set to &gt; 0.</p>
+<p>For <code>PriceFilter</code> at least one of its <code>min_price</code>, <code>max_price</code> or <code>low_price_ratio</code> settings must be applied.</p>
+<p>Calculation example:</p>
+<p>Min price precision for SHITCOIN/BTC is 8 decimals. If its price is 0.00000011 - one price step above would be 0.00000012, which is ~9% higher than the previous price value. You may filter out this pair by using PriceFilter with <code>low_price_ratio</code> set to 0.09 (9%) or with <code>min_price</code> set to 0.00000011, correspondingly.</p>
+<div class="admonition warning">
+<p class="admonition-title">Low priced pairs</p>
+<p>Low priced pairs with high "1 pip movements" are dangerous since they are often illiquid and it may also be impossible to place the desired stoploss, which can often result in high losses since price needs to be rounded to the next tradable price - so instead of having a stoploss of -5%, you could end up with a stoploss of -9% simply due to price rounding.</p>
+</div>
+<h4 id="shufflefilter">ShuffleFilter<a class="headerlink" href="#shufflefilter" title="Permanent link">&para;</a></h4>
+<p>Shuffles (randomizes) pairs in the pairlist. It can be used for preventing the bot from trading some of the pairs more frequently then others when you want all pairs be treated with the same priority.</p>
+<p>By default, ShuffleFilter will shuffle pairs once per candle.
+To shuffle on every iteration, set <code>"shuffle_frequency"</code> to <code>"iteration"</code> instead of  the default of <code>"candle"</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ShuffleFilter&quot;</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="nt">&quot;shuffle_frequency&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;candle&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;seed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You may set the <code>seed</code> value for this Pairlist to obtain reproducible results, which can be useful for repeated backtesting sessions. If <code>seed</code> is not set, the pairs are shuffled in the non-repeatable random order. ShuffleFilter will automatically detect runmodes and apply the <code>seed</code> only for backtesting modes - if a <code>seed</code> value is set.</p>
+</div>
+<h4 id="spreadfilter">SpreadFilter<a class="headerlink" href="#spreadfilter" title="Permanent link">&para;</a></h4>
+<p>Removes pairs that have a difference between asks and bids above the specified ratio, <code>max_spread_ratio</code> (defaults to <code>0.005</code>).</p>
+<p>Example:</p>
+<p>If <code>DOGE/BTC</code> maximum bid is 0.00000026 and minimum ask is 0.00000027, the ratio is calculated as: <code>1 - bid/ask ~= 0.037</code> which is <code>&gt; 0.005</code> and this pair will be filtered out.</p>
+<h4 id="rangestabilityfilter">RangeStabilityFilter<a class="headerlink" href="#rangestabilityfilter" title="Permanent link">&para;</a></h4>
+<p>Removes pairs where the difference between lowest low and highest high over <code>lookback_days</code> days is below <code>min_rate_of_change</code> or above <code>max_rate_of_change</code>. Since this is a filter that requires additional data, the results are cached for <code>refresh_period</code>.</p>
+<p>In the below example:
+If the trading range over the last 10 days is &lt;1% or &gt;99%, remove the pair from the whitelist.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RangeStabilityFilter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>This Filter can be used to automatically remove stable coin pairs, which have a very low trading range, and are therefore extremely difficult to trade with profit.
+Additionally, it can also be used to automatically remove pairs with extreme high/low variance over a given amount of time.</p>
+</div>
+<h4 id="volatilityfilter">VolatilityFilter<a class="headerlink" href="#volatilityfilter" title="Permanent link">&para;</a></h4>
+<p>Volatility is the degree of historical variation of a pairs over time, it is measured by the standard deviation of logarithmic daily returns. Returns are assumed to be normally distributed, although actual distribution might be different. In a normal distribution, 68% of observations fall within one standard deviation and 95% of observations fall within two standard deviations. Assuming a volatility of 0.05 means that the expected returns for 20 out of 30 days is expected to be less than 5% (one standard deviation). Volatility is a positive ratio of the expected deviation of return and can be greater than 1.00. Please refer to the wikipedia definition of <a href="https://en.wikipedia.org/wiki/Volatility_(finance)"><code>volatility</code></a>.</p>
+<p>This filter removes pairs if the average volatility over a <code>lookback_days</code> days is below <code>min_volatility</code> or above <code>max_volatility</code>. Since this is a filter that requires additional data, the results are cached for <code>refresh_period</code>.</p>
+<p>This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs. </p>
+<p>In the below example:
+If the volatility over the last 10 days is not in the range of 0.05-0.50, remove the pair from the whitelist. The filter is applied every 24h.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolatilityFilter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<h3 id="full-example-of-pairlist-handlers">Full example of Pairlist Handlers<a class="headerlink" href="#full-example-of-pairlist-handlers" title="Permanent link">&para;</a></h3>
+<p>The below example blacklists <code>BNB/BTC</code>, uses <code>VolumePairList</code> with <code>20</code> assets, sorting pairs by <code>quoteVolume</code> and applies <a href="#precisionfilter"><code>PrecisionFilter</code></a> and <a href="#pricefilter"><code>PriceFilter</code></a>, filtering all assets where 1 price unit is &gt; 1%. Then the <a href="#spreadfilter"><code>SpreadFilter</code></a> and <a href="#volatilityfilter"><code>VolatilityFilter</code></a> is applied and pairs are finally shuffled with the random seed set to some predefined value.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;pair_whitelist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">    </span><span class="nt">&quot;pair_blacklist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;BNB/BTC&quot;</span><span class="p">]</span>
+<span class="p">},</span>
+<span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AgeFilter&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;min_days_listed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PrecisionFilter&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PriceFilter&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;low_price_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SpreadFilter&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;max_spread_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.005</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RangeStabilityFilter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolatilityFilter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ShuffleFilter&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;seed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">}</span>
+<span class="p">],</span>
+</code></pre></div>
+<h2 id="protections">Protections<a class="headerlink" href="#protections" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Beta feature</p>
+<p>This feature is still in it's testing phase. Should you notice something you think is wrong please let us know via Discord or via Github Issue.</p>
+</div>
+<p>Protections will protect your strategy from unexpected events and market conditions by temporarily stop trading for either one pair, or for all pairs.
+All protection end times are rounded up to the next candle to avoid sudden, unexpected intra-candle buys.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Not all Protections will work for all strategies, and parameters will need to be tuned for your strategy to improve performance.  </p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Each Protection can be configured multiple times with different parameters, to allow different levels of protection (short-term / long-term).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Backtesting</p>
+<p>Protections are supported by backtesting and hyperopt, but must be explicitly enabled by using the <code>--enable-protections</code> flag.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Setting protections from the configuration</p>
+<p>Setting protections from the configuration via <code>"protections": [],</code> key should be considered deprecated and will be removed in a future version.
+It is also no longer guaranteed that your protections apply to the strategy in cases where the strategy defines <a href="../hyperopt/#optimizing-protections">protections as property</a>.</p>
+</div>
+<h3 id="available-protections">Available Protections<a class="headerlink" href="#available-protections" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="#stoploss-guard"><code>StoplossGuard</code></a> Stop trading if a certain amount of stoploss occurred within a certain time window.</li>
+<li><a href="#maxdrawdown"><code>MaxDrawdown</code></a> Stop trading if max-drawdown is reached.</li>
+<li><a href="#low-profit-pairs"><code>LowProfitPairs</code></a> Lock pairs with low profits</li>
+<li><a href="#cooldown-period"><code>CooldownPeriod</code></a> Don't enter a trade right after selling a trade.</li>
+</ul>
+<h3 id="common-settings-to-all-protections">Common settings to all Protections<a class="headerlink" href="#common-settings-to-all-protections" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>method</code></td>
+<td>Protection name to use. <br> <strong>Datatype:</strong> String, selected from <a href="#available-protections">available Protections</a></td>
+</tr>
+<tr>
+<td><code>stop_duration_candles</code></td>
+<td>For how many candles should the lock be set? <br> <strong>Datatype:</strong> Positive integer (in candles)</td>
+</tr>
+<tr>
+<td><code>stop_duration</code></td>
+<td>how many minutes should protections be locked. <br>Cannot be used together with <code>stop_duration_candles</code>. <br> <strong>Datatype:</strong> Float (in minutes)</td>
+</tr>
+<tr>
+<td><code>lookback_period_candles</code></td>
+<td>Only trades that completed within the last <code>lookback_period_candles</code> candles will be considered. This setting may be ignored by some Protections. <br> <strong>Datatype:</strong> Positive integer (in candles).</td>
+</tr>
+<tr>
+<td><code>lookback_period</code></td>
+<td>Only trades that completed after <code>current_time - lookback_period</code> will be considered. <br>Cannot be used together with <code>lookback_period_candles</code>. <br>This setting may be ignored by some Protections. <br> <strong>Datatype:</strong>  Float (in minutes)</td>
+</tr>
+<tr>
+<td><code>trade_limit</code></td>
+<td>Number of trades required at minimum (not used by all Protections). <br> <strong>Datatype:</strong> Positive integer</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Durations</p>
+<p>Durations (<code>stop_duration*</code> and <code>lookback_period*</code> can be defined in either minutes or candles).
+For more flexibility when testing different timeframes, all below examples will use the "candle" definition.</p>
+</div>
+<h4 id="stoploss-guard">Stoploss Guard<a class="headerlink" href="#stoploss-guard" title="Permanent link">&para;</a></h4>
+<p><code>StoplossGuard</code> selects all trades within <code>lookback_period</code> in minutes (or in candles when using <code>lookback_period_candles</code>).
+If <code>trade_limit</code> or more trades resulted in stoploss, trading will stop for <code>stop_duration</code> in minutes (or in candles when using <code>stop_duration_candles</code>).</p>
+<p>This applies across all pairs, unless <code>only_per_pair</code> is set to true, which will then only look at one pair at a time.</p>
+<p>Similarly, this protection will by default look at all trades (long and short). For futures bots, setting <code>only_per_side</code> will make the bot only consider one side, and will then only lock this one side, allowing for example shorts to continue after a series of long stoplosses.</p>
+<p><code>required_profit</code> will determine the required relative profit (or loss) for stoplosses to consider. This should normally not be set and defaults to 0.0 - which means all losing stoplosses will be triggering a block.</p>
+<p>The below example stops trading for all pairs for 4 candles after the last trade if the bot hit stoploss 4 times within the last 24 candles.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@property</span>
+<span class="k">def</span> <span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;StoplossGuard&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+            <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s2">&quot;required_profit&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;only_per_pair&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;only_per_side&quot;</span><span class="p">:</span> <span class="kc">False</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>StoplossGuard</code> considers all trades with the results <code>"stop_loss"</code>, <code>"stoploss_on_exchange"</code> and <code>"trailing_stop_loss"</code> if the resulting profit was negative.
+<code>trade_limit</code> and <code>lookback_period</code> will need to be tuned for your strategy.</p>
+</div>
+<h4 id="maxdrawdown">MaxDrawdown<a class="headerlink" href="#maxdrawdown" title="Permanent link">&para;</a></h4>
+<p><code>MaxDrawdown</code> uses all trades within <code>lookback_period</code> in minutes (or in candles when using <code>lookback_period_candles</code>) to determine the maximum drawdown. If the drawdown is below <code>max_allowed_drawdown</code>, trading will stop for <code>stop_duration</code> in minutes (or in candles when using <code>stop_duration_candles</code>) after the last trade - assuming that the bot needs some time to let markets recover.</p>
+<p>The below sample stops trading for 12 candles if max-drawdown is &gt; 20% considering all pairs - with a minimum of <code>trade_limit</code> trades - within the last 48 candles. If desired, <code>lookback_period</code> and/or <code>stop_duration</code> can be used.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@property</span>
+<span class="k">def</span> <span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span>  <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;MaxDrawdown&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">48</span><span class="p">,</span>
+            <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+            <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+            <span class="s2">&quot;max_allowed_drawdown&quot;</span><span class="p">:</span> <span class="mf">0.2</span>
+        <span class="p">},</span>
+    <span class="p">]</span>
+</code></pre></div>
+<h4 id="low-profit-pairs">Low Profit Pairs<a class="headerlink" href="#low-profit-pairs" title="Permanent link">&para;</a></h4>
+<p><code>LowProfitPairs</code> uses all trades for a pair within <code>lookback_period</code> in minutes (or in candles when using <code>lookback_period_candles</code>) to determine the overall profit ratio.
+If that ratio is below <code>required_profit</code>, that pair will be locked for <code>stop_duration</code> in minutes (or in candles when using <code>stop_duration_candles</code>).</p>
+<p>For futures bots, setting <code>only_per_side</code> will make the bot only consider one side, and will then only lock this one side, allowing for example shorts to continue after a series of long losses.</p>
+<p>The below example will stop trading a pair for 60 minutes if the pair does not have a required profit of 2% (and a minimum of 2 trades) within the last 6 candles.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@property</span>
+<span class="k">def</span> <span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;LowProfitPairs&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+            <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">&quot;stop_duration&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+            <span class="s2">&quot;required_profit&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
+            <span class="s2">&quot;only_per_pair&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+</code></pre></div>
+<h4 id="cooldown-period">Cooldown Period<a class="headerlink" href="#cooldown-period" title="Permanent link">&para;</a></h4>
+<p><code>CooldownPeriod</code> locks a pair for <code>stop_duration</code> in minutes (or in candles when using <code>stop_duration_candles</code>) after selling, avoiding a re-entry for this pair for <code>stop_duration</code> minutes.</p>
+<p>The below example will stop trading a pair for 2 candles after closing a trade, allowing this pair to "cool down".</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@property</span>
+<span class="k">def</span> <span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span>  <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;CooldownPeriod&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">2</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This Protection applies only at pair-level, and will never lock all pairs globally.
+This Protection does not consider <code>lookback_period</code> as it only looks at the latest trade.</p>
+</div>
+<h3 id="full-example-of-protections">Full example of Protections<a class="headerlink" href="#full-example-of-protections" title="Permanent link">&para;</a></h3>
+<p>All protections can be combined at will, also with different parameters, creating a increasing wall for under-performing pairs.
+All protections are evaluated in the sequence they are defined.</p>
+<p>The below example assumes a timeframe of 1 hour:</p>
+<ul>
+<li>Locks each pair after selling for an additional 5 candles (<code>CooldownPeriod</code>), giving other pairs a chance to get filled.</li>
+<li>Stops trading for 4 hours (<code>4 * 1h candles</code>) if the last 2 days (<code>48 * 1h candles</code>) had 20 trades, which caused a max-drawdown of more than 20%. (<code>MaxDrawdown</code>).</li>
+<li>Stops trading if more than 4 stoploss occur for all pairs within a 1 day (<code>24 * 1h candles</code>) limit (<code>StoplossGuard</code>).</li>
+<li>Locks all pairs that had 2 Trades within the last 6 hours (<code>6 * 1h candles</code>) with a combined profit ratio of below 0.02 (&lt;2%) (<code>LowProfitPairs</code>).</li>
+<li>Locks all pairs for 2 candles that had a profit of below 0.01 (&lt;1%) within the last 24h (<code>24 * 1h candles</code>), a minimum of 4 trades.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.strategy</span> <span class="kn">import</span> <span class="n">IStrategy</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">)</span>
+    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">&#39;1h&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;CooldownPeriod&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">5</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;MaxDrawdown&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">48</span><span class="p">,</span>
+                <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="s2">&quot;max_allowed_drawdown&quot;</span><span class="p">:</span> <span class="mf">0.2</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;StoplossGuard&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+                <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">&quot;only_per_pair&quot;</span><span class="p">:</span> <span class="kc">False</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;LowProfitPairs&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+                <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+                <span class="s2">&quot;required_profit&quot;</span><span class="p">:</span> <span class="mf">0.02</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;LowProfitPairs&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+                <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">&quot;required_profit&quot;</span><span class="p">:</span> <span class="mf">0.01</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="c1"># ...</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../stoploss/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Stoploss">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Stoploss
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../bot-usage/" class="md-footer__link md-footer__link--next" aria-label="Next: Start the bot">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Start the bot
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e1c3ead8.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
