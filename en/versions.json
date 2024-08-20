@@ -2,7 +2,9 @@
   {
     "version": "2024.7.1",
     "title": "2024.7.1",
-    "aliases": []
+    "aliases": [
+      "stable"
+    ]
   },
   {
     "version": "2024.7",
