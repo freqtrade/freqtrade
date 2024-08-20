@@ -53,12 +53,3 @@ jobs:
       - name: Show mike versions
         run: |
           mike list
-
-  # deploy-to-gha:
-  #   needs: build-docs
-  #   permissions:
-  #     contents: read
-  #     pages: write
-  #     id-token: write
-  #   uses: ./.github/workflows/deploy-to-gha.yml
-
