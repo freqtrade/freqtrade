@@ -1,0 +1,1938 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2021.7/strategy-customization/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.1">
+    
+    
+      
+        <title>Strategy Customization - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.1118c9be.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ba0d045b.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+      <script>var palette=__get("__palette");if(null!==palette&&"object"==typeof palette.color)for(var key in palette.color)document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#strategy-customization" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Strategy Customization
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 10a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2m10-3a5 5 0 0 1 5 5 5 5 0 0 1-5 5H7a5 5 0 0 1-5-5 5 5 0 0 1 5-5h10M7 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3h10a3 3 0 0 0 3-3 3 3 0 0 0-3-3H7z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 10a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2m10-3a5 5 0 0 1 5 5 5 5 0 0 1-5 5H7a5 5 0 0 1-5-5 5 5 0 0 1 5-5h10M7 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3h10a3 3 0 0 0 3-3 3 3 0 0 0-3-3H7z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      <label class="md-nav__link" for="__nav_3">
+        Installation
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Strategy Customization
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Strategy Customization
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-a-custom-strategy-file" class="md-nav__link">
+    Install a custom strategy file
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#develop-your-own-strategy" class="md-nav__link">
+    Develop your own strategy
+  </a>
+  
+    <nav class="md-nav" aria-label="Develop your own strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anatomy-of-a-strategy" class="md-nav__link">
+    Anatomy of a strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customize-indicators" class="md-nav__link">
+    Customize Indicators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-startup-period" class="md-nav__link">
+    Strategy startup period
+  </a>
+  
+    <nav class="md-nav" aria-label="Strategy startup period">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buy-signal-rules" class="md-nav__link">
+    Buy signal rules
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sell-signal-rules" class="md-nav__link">
+    Sell signal rules
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#minimal-roi" class="md-nav__link">
+    Minimal ROI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss" class="md-nav__link">
+    Stoploss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeframe-formerly-ticker-interval" class="md-nav__link">
+    Timeframe (formerly ticker interval)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata-dict" class="md-nav__link">
+    Metadata dict
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-data-informative_pairs" class="md-nav__link">
+    Additional data (informative_pairs)
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (informative_pairs)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-data-for-non-tradeable-pairs" class="md-nav__link">
+    Get data for non-tradeable pairs
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-data-dataprovider" class="md-nav__link">
+    Additional data (DataProvider)
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (DataProvider)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#possible-options-for-dataprovider" class="md-nav__link">
+    Possible options for DataProvider
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-usages" class="md-nav__link">
+    Example Usages
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available_pairs" class="md-nav__link">
+    available_pairs
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#current_whitelist" class="md-nav__link">
+    current_whitelist()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_pair_dataframepair-timeframe" class="md-nav__link">
+    get_pair_dataframe(pair, timeframe)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" >
+      
+      <label class="md-nav__link" for="__nav_10">
+        Control the bot
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_10">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_16" type="checkbox" id="__nav_16" >
+      
+      <label class="md-nav__link" for="__nav_16">
+        Data Analysis
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_16">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_18" type="checkbox" id="__nav_18" >
+      
+      <label class="md-nav__link" for="__nav_18">
+        Advanced Topics
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_18">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-a-custom-strategy-file" class="md-nav__link">
+    Install a custom strategy file
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#develop-your-own-strategy" class="md-nav__link">
+    Develop your own strategy
+  </a>
+  
+    <nav class="md-nav" aria-label="Develop your own strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anatomy-of-a-strategy" class="md-nav__link">
+    Anatomy of a strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customize-indicators" class="md-nav__link">
+    Customize Indicators
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-startup-period" class="md-nav__link">
+    Strategy startup period
+  </a>
+  
+    <nav class="md-nav" aria-label="Strategy startup period">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buy-signal-rules" class="md-nav__link">
+    Buy signal rules
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sell-signal-rules" class="md-nav__link">
+    Sell signal rules
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#minimal-roi" class="md-nav__link">
+    Minimal ROI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss" class="md-nav__link">
+    Stoploss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeframe-formerly-ticker-interval" class="md-nav__link">
+    Timeframe (formerly ticker interval)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata-dict" class="md-nav__link">
+    Metadata dict
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-data-informative_pairs" class="md-nav__link">
+    Additional data (informative_pairs)
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (informative_pairs)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-data-for-non-tradeable-pairs" class="md-nav__link">
+    Get data for non-tradeable pairs
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-data-dataprovider" class="md-nav__link">
+    Additional data (DataProvider)
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (DataProvider)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#possible-options-for-dataprovider" class="md-nav__link">
+    Possible options for DataProvider
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-usages" class="md-nav__link">
+    Example Usages
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available_pairs" class="md-nav__link">
+    available_pairs
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#current_whitelist" class="md-nav__link">
+    current_whitelist()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_pair_dataframepair-timeframe" class="md-nav__link">
+    get_pair_dataframe(pair, timeframe)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/freqtrade/freqtrade/edit/master/docs/strategy-customization.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="strategy-customization">Strategy Customization<a class="headerlink" href="#strategy-customization" title="Permanent link">&para;</a></h1>
+<p>This page explains how to customize your strategies, add new indicators and set up trading rules.</p>
+<p>Please familiarize yourself with <a href="../bot-basics/">Freqtrade basics</a> first, which provides overall info on how the bot operates.</p>
+<h2 id="install-a-custom-strategy-file">Install a custom strategy file<a class="headerlink" href="#install-a-custom-strategy-file" title="Permanent link">&para;</a></h2>
+<p>This is very simple. Copy paste your strategy file into the directory <code>user_data/strategies</code>.</p>
+<p>Let assume you have a class called <code>AwesomeStrategy</code> in the file <code>AwesomeStrategy.py</code>:</p>
+<ol>
+<li>Move your file into <code>user_data/strategies</code> (you should have <code>user_data/strategies/AwesomeStrategy.py</code></li>
+<li>Start the bot with the param <code>--strategy AwesomeStrategy</code> (the parameter is the class name)</li>
+</ol>
+<p><code>bash
+freqtrade trade --strategy AwesomeStrategy</code></p>
+<h2 id="develop-your-own-strategy">Develop your own strategy<a class="headerlink" href="#develop-your-own-strategy" title="Permanent link">&para;</a></h2>
+<p>The bot includes a default strategy file.
+Also, several other strategies are available in the <a href="https://github.com/freqtrade/freqtrade-strategies">strategy repository</a>.</p>
+<p>You will however most likely have your own idea for a strategy.
+This document intends to help you develop one for yourself.</p>
+<p>To get started, use <code>freqtrade new-strategy --strategy AwesomeStrategy</code>.
+This will create a new strategy file from a template, which will be located under <code>user_data/strategies/AwesomeStrategy.py</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is just a template file, which will most likely not be profitable out of the box.</p>
+</div>
+<h3 id="anatomy-of-a-strategy">Anatomy of a strategy<a class="headerlink" href="#anatomy-of-a-strategy" title="Permanent link">&para;</a></h3>
+<p>A strategy file contains all the information needed to build a good strategy:</p>
+<ul>
+<li>Indicators</li>
+<li>Buy strategy rules</li>
+<li>Sell strategy rules</li>
+<li>Minimal ROI recommended</li>
+<li>Stoploss strongly recommended</li>
+</ul>
+<p>The bot also include a sample strategy called <code>SampleStrategy</code> you can update: <code>user_data/strategies/sample_strategy.py</code>.
+You can test it with the parameter: <code>--strategy SampleStrategy</code></p>
+<p>Additionally, there is an attribute called <code>INTERFACE_VERSION</code>, which defines the version of the strategy interface the bot should use.
+The current version is 2 - which is also the default when it's not set explicitly in the strategy.</p>
+<p>Future versions will require this to be set.</p>
+<p><code>bash
+freqtrade trade --strategy AwesomeStrategy</code></p>
+<p><strong>For the following section we will use the <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py">user_data/strategies/sample_strategy.py</a>
+file as reference.</strong></p>
+<div class="admonition note">
+<p class="admonition-title">Strategies and Backtesting</p>
+<p>To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
+that during backtesting the full time range is passed to the <code>populate_*()</code> methods at once.
+It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
+avoid index referencing (<code>df.iloc[-1]</code>), but instead use <code>df.shift()</code> to get to the previous candle.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning: Using future data</p>
+<p>Since backtesting passes the full time range to the <code>populate_*()</code> methods, the strategy author
+needs to take care to avoid having the strategy utilize data from the future.
+Some common patterns for this are listed in the <a href="#common-mistakes-when-developing-strategies">Common Mistakes</a> section of this document.</p>
+</div>
+<h3 id="customize-indicators">Customize Indicators<a class="headerlink" href="#customize-indicators" title="Permanent link">&para;</a></h3>
+<p>Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method <code>populate_indicators()</code> from your strategy file.</p>
+<p>You should only add the indicators used in either <code>populate_buy_trend()</code>, <code>populate_sell_trend()</code>, or to populate another indicator, otherwise performance may suffer.</p>
+<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
+<p>Sample:</p>
+<p>```python
+def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    """
+    Adds several different TA indicators to the given DataFrame</p>
+<div class="codehilite"><pre><span></span><code>Performance Note: For the best performance be frugal on the number of indicators
+you are using. Let uncomment only the indicator you are using in your strategies
+or your hyperopt configuration, otherwise you will waste your memory and CPU usage.
+:param dataframe: Dataframe with data from the exchange
+:param metadata: Additional information, like the currently traded pair
+:return: a Dataframe with all mandatory indicators for the strategies
+&quot;&quot;&quot;
+dataframe[&#39;sar&#39;] = ta.SAR(dataframe)
+dataframe[&#39;adx&#39;] = ta.ADX(dataframe)
+stoch = ta.STOCHF(dataframe)
+dataframe[&#39;fastd&#39;] = stoch[&#39;fastd&#39;]
+dataframe[&#39;fastk&#39;] = stoch[&#39;fastk&#39;]
+dataframe[&#39;blower&#39;] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)[&#39;lowerband&#39;]
+dataframe[&#39;sma&#39;] = ta.SMA(dataframe, timeperiod=40)
+dataframe[&#39;tema&#39;] = ta.TEMA(dataframe, timeperiod=9)
+dataframe[&#39;mfi&#39;] = ta.MFI(dataframe)
+dataframe[&#39;rsi&#39;] = ta.RSI(dataframe)
+dataframe[&#39;ema5&#39;] = ta.EMA(dataframe, timeperiod=5)
+dataframe[&#39;ema10&#39;] = ta.EMA(dataframe, timeperiod=10)
+dataframe[&#39;ema50&#39;] = ta.EMA(dataframe, timeperiod=50)
+dataframe[&#39;ema100&#39;] = ta.EMA(dataframe, timeperiod=100)
+dataframe[&#39;ao&#39;] = awesome_oscillator(dataframe)
+macd = ta.MACD(dataframe)
+dataframe[&#39;macd&#39;] = macd[&#39;macd&#39;]
+dataframe[&#39;macdsignal&#39;] = macd[&#39;macdsignal&#39;]
+dataframe[&#39;macdhist&#39;] = macd[&#39;macdhist&#39;]
+hilbert = ta.HT_SINE(dataframe)
+dataframe[&#39;htsine&#39;] = hilbert[&#39;sine&#39;]
+dataframe[&#39;htleadsine&#39;] = hilbert[&#39;leadsine&#39;]
+dataframe[&#39;plus_dm&#39;] = ta.PLUS_DM(dataframe)
+dataframe[&#39;plus_di&#39;] = ta.PLUS_DI(dataframe)
+dataframe[&#39;minus_dm&#39;] = ta.MINUS_DM(dataframe)
+dataframe[&#39;minus_di&#39;] = ta.MINUS_DI(dataframe)
+return dataframe
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition note">
+<p class="admonition-title">Want more indicator examples?</p>
+<p>Look into the <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py">user_data/strategies/sample_strategy.py</a>.
+Then uncomment indicators you need.</p>
+</div>
+<h3 id="strategy-startup-period">Strategy startup period<a class="headerlink" href="#strategy-startup-period" title="Permanent link">&para;</a></h3>
+<p>Most indicators have an instable startup period, in which they are either not available, or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
+To account for this, the strategy can be assigned the <code>startup_candle_count</code> attribute.
+This should be set to the maximum number of candles that the strategy requires to calculate stable indicators.</p>
+<p>In this example strategy, this should be set to 100 (<code>startup_candle_count = 100</code>), since the longest needed history is 100 candles.</p>
+<p><code>python
+    dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)</code></p>
+<p>By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>startup_candle_count</code> should be below <code>ohlcv_candle_limit</code> (which is 500 for most exchanges) - since only this amount of candles will be available during Dry-Run/Live Trade operations.</p>
+</div>
+<h4 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h4>
+<p>Let's try to backtest 1 month (January 2019) of 5m candles using an example strategy with EMA100, as above.</p>
+<p><code>bash
+freqtrade backtesting --timerange 20190101-20190201 --timeframe 5m</code></p>
+<p>Assuming <code>startup_candle_count</code> is set to 100, backtesting knows it needs 100 candles to generate valid buy signals. It will load data from <code>20190101 - (100 * 5m)</code> - which is ~2018-12-31 15:30:00.
+If this data is available, indicators will be calculated with this extended timerange. The instable startup period (up to 2019-01-01 00:00:00) will then be removed before starting backtesting.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If data for the startup period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-01 08:30:00.</p>
+</div>
+<h3 id="buy-signal-rules">Buy signal rules<a class="headerlink" href="#buy-signal-rules" title="Permanent link">&para;</a></h3>
+<p>Edit the method <code>populate_buy_trend()</code> in your strategy file to update your buy strategy.</p>
+<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
+<p>This method will also define a new column, <code>"buy"</code>, which needs to contain 1 for buys, and 0 for "no action".</p>
+<p>Sample from <code>user_data/strategies/sample_strategy.py</code>:</p>
+<p>```python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    """
+    Based on TA indicators, populates the buy signal for the given dataframe
+    :param dataframe: DataFrame populated with indicators
+    :param metadata: Additional information, like the currently traded pair
+    :return: DataFrame with buy column
+    """
+    dataframe.loc[
+        (
+            (qtpylib.crossed_above(dataframe['rsi'], 30)) &amp;  # Signal: RSI crosses above 30
+            (dataframe['tema'] &lt;= dataframe['bb_middleband']) &amp;  # Guard
+            (dataframe['tema'] &gt; dataframe['tema'].shift(1)) &amp;  # Guard
+            (dataframe['volume'] &gt; 0)  # Make sure Volume is not 0
+        ),
+        'buy'] = 1</p>
+<div class="codehilite"><pre><span></span><code>return dataframe
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Buying requires sellers to buy from - therefore volume needs to be &gt; 0 (<code>dataframe['volume'] &gt; 0</code>) to make sure that the bot does not buy/sell in no-activity periods.</p>
+</div>
+<h3 id="sell-signal-rules">Sell signal rules<a class="headerlink" href="#sell-signal-rules" title="Permanent link">&para;</a></h3>
+<p>Edit the method <code>populate_sell_trend()</code> into your strategy file to update your sell strategy.
+Please note that the sell-signal is only used if <code>use_sell_signal</code> is set to true in the configuration.</p>
+<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
+<p>This method will also define a new column, <code>"sell"</code>, which needs to contain 1 for sells, and 0 for "no action".</p>
+<p>Sample from <code>user_data/strategies/sample_strategy.py</code>:</p>
+<p><code>python
+def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    """
+    Based on TA indicators, populates the sell signal for the given dataframe
+    :param dataframe: DataFrame populated with indicators
+    :param metadata: Additional information, like the currently traded pair
+    :return: DataFrame with buy column
+    """
+    dataframe.loc[
+        (
+            (qtpylib.crossed_above(dataframe['rsi'], 70)) &amp;  # Signal: RSI crosses above 70
+            (dataframe['tema'] &gt; dataframe['bb_middleband']) &amp;  # Guard
+            (dataframe['tema'] &lt; dataframe['tema'].shift(1)) &amp;  # Guard
+            (dataframe['volume'] &gt; 0)  # Make sure Volume is not 0
+        ),
+        'sell'] = 1
+    return dataframe</code></p>
+<h3 id="minimal-roi">Minimal ROI<a class="headerlink" href="#minimal-roi" title="Permanent link">&para;</a></h3>
+<p>This dict defines the minimal Return On Investment (ROI) a trade should reach before selling, independent from the sell signal.</p>
+<p>It is of the following format, with the dict key (left side of the colon) being the minutes passed since the trade opened, and the value (right side of the colon) being the percentage.</p>
+<p><code>python
+minimal_roi = {
+    "40": 0.0,
+    "30": 0.01,
+    "20": 0.02,
+    "0": 0.04
+}</code></p>
+<p>The above configuration would therefore mean:</p>
+<ul>
+<li>Sell whenever 4% profit was reached</li>
+<li>Sell when 2% profit was reached (in effect after 20 minutes)</li>
+<li>Sell when 1% profit was reached (in effect after 30 minutes)</li>
+<li>Sell when trade is non-loosing (in effect after 40 minutes)</li>
+</ul>
+<p>The calculation does include fees.</p>
+<p>To disable ROI completely, set it to an insanely high number:</p>
+<p><code>python
+minimal_roi = {
+    "0": 100
+}</code></p>
+<p>While technically not completely disabled, this would sell once the trade reaches 10000% Profit.</p>
+<p>To use times based on candle duration (timeframe), the following snippet can be handy.
+This will allow you to change the timeframe for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)</p>
+<p>``` python
+from freqtrade.exchange import timeframe_to_minutes</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code>timeframe = &quot;1d&quot;
+timeframe_mins = timeframe_to_minutes(timeframe)
+minimal_roi = {
+    &quot;0&quot;: 0.05,                             # 5% for the first 3 candles
+    str(timeframe_mins * 3)): 0.02,  # 2% after 3 candles
+    str(timeframe_mins * 6)): 0.01,  # 1% After 6 candles
+}
+</code></pre></div>
+
+<p>```</p>
+<h3 id="stoploss">Stoploss<a class="headerlink" href="#stoploss" title="Permanent link">&para;</a></h3>
+<p>Setting a stoploss is highly recommended to protect your capital from strong moves against you.</p>
+<p>Sample:</p>
+<p><code>python
+stoploss = -0.10</code></p>
+<p>This would signify a stoploss of -10%.</p>
+<p>For the full documentation on stoploss features, look at the dedicated <a href="../stoploss/">stoploss page</a>.</p>
+<p>If your exchange supports it, it's recommended to also set <code>"stoploss_on_exchange"</code> in the order_types dictionary, so your stoploss is on the exchange and cannot be missed due to network problems, high load or other reasons.</p>
+<p>For more information on order_types please look <a href="../configuration/#understand-order_types">here</a>.</p>
+<h3 id="timeframe-formerly-ticker-interval">Timeframe (formerly ticker interval)<a class="headerlink" href="#timeframe-formerly-ticker-interval" title="Permanent link">&para;</a></h3>
+<p>This is the set of candles the bot should download and use for the analysis.
+Common values are <code>"1m"</code>, <code>"5m"</code>, <code>"15m"</code>, <code>"1h"</code>, however all values supported by your exchange should work.</p>
+<p>Please note that the same buy/sell signals may work well with one timeframe, but not with the others.</p>
+<p>This setting is accessible within the strategy methods as the <code>self.timeframe</code> attribute.</p>
+<h3 id="metadata-dict">Metadata dict<a class="headerlink" href="#metadata-dict" title="Permanent link">&para;</a></h3>
+<p>The metadata-dict (available for <code>populate_buy_trend</code>, <code>populate_sell_trend</code>, <code>populate_indicators</code>) contains additional information.
+Currently this is <code>pair</code>, which can be accessed using <code>metadata['pair']</code> - and will return a pair in the format <code>XRP/BTC</code>.</p>
+<p>The Metadata-dict should not be modified and does not persist information across multiple calls.
+Instead, have a look at the section <a href="../strategy-advanced/#Storing-information">Storing information</a></p>
+<h2 id="additional-data-informative_pairs">Additional data (informative_pairs)<a class="headerlink" href="#additional-data-informative_pairs" title="Permanent link">&para;</a></h2>
+<h3 id="get-data-for-non-tradeable-pairs">Get data for non-tradeable pairs<a class="headerlink" href="#get-data-for-non-tradeable-pairs" title="Permanent link">&para;</a></h3>
+<p>Data for additional, informative pairs (reference pairs) can be beneficial for some strategies.
+OHLCV data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via <code>DataProvider</code> just as other pairs (see below).
+These parts will <strong>not</strong> be traded unless they are also specified in the pair whitelist, or have been selected by Dynamic Whitelisting.</p>
+<p>The pairs need to be specified as tuples in the format <code>("pair", "timeframe")</code>, with pair as the first and timeframe as the second argument.</p>
+<p>Sample:</p>
+<p><code>python
+def informative_pairs(self):
+    return [("ETH/USDT", "5m"),
+            ("BTC/TUSD", "15m"),
+            ]</code></p>
+<p>A full sample can be found <a href="#complete-data-provider-sample">in the DataProvider section</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
+All timeframes and all pairs can be specified as long as they are available (and active) on the used exchange.
+It is however better to use resampling to longer timeframes whenever possible
+to avoid hammering the exchange with too many requests and risk being blocked.</p>
+</div>
+<hr />
+<h2 id="additional-data-dataprovider">Additional data (DataProvider)<a class="headerlink" href="#additional-data-dataprovider" title="Permanent link">&para;</a></h2>
+<p>The strategy provides access to the <code>DataProvider</code>. This allows you to get additional data to use in your strategy.</p>
+<p>All methods return <code>None</code> in case of failure (do not raise an exception).</p>
+<p>Please always check the mode of operation to select the correct method to get data (samples see below).</p>
+<div class="admonition warning">
+<p class="admonition-title">Hyperopt</p>
+<p>Dataprovider is available during hyperopt, however it can only be used in <code>populate_indicators()</code> within a strategy.
+It is not available in <code>populate_buy()</code> and <code>populate_sell()</code> methods, nor in <code>populate_indicators()</code>, if this method located in the hyperopt file.</p>
+</div>
+<h3 id="possible-options-for-dataprovider">Possible options for DataProvider<a class="headerlink" href="#possible-options-for-dataprovider" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="#available_pairs"><code>available_pairs</code></a> - Property with tuples listing cached pairs with their timeframe (pair, timeframe).</li>
+<li><a href="#current_whitelist"><code>current_whitelist()</code></a> - Returns a current list of whitelisted pairs. Useful for accessing dynamic whitelists (i.e. VolumePairlist)</li>
+<li><a href="#get_pair_dataframepair-timeframe"><code>get_pair_dataframe(pair, timeframe)</code></a> - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).</li>
+<li><a href="#get_analyzed_dataframepair-timeframe"><code>get_analyzed_dataframe(pair, timeframe)</code></a> - Returns the analyzed dataframe (after calling <code>populate_indicators()</code>, <code>populate_buy()</code>, <code>populate_sell()</code>) and the time of the latest analysis.</li>
+<li><code>historic_ohlcv(pair, timeframe)</code> - Returns historical data stored on disk.</li>
+<li><code>market(pair)</code> - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See <a href="https://github.com/ccxt/ccxt/wiki/Manual#markets">ccxt documentation</a> for more details on the Market data structure.</li>
+<li><code>ohlcv(pair, timeframe)</code> - Currently cached candle (OHLCV) data for the pair, returns DataFrame or empty DataFrame.</li>
+<li><a href="#orderbookpair-maximum"><code>orderbook(pair, maximum)</code></a> - Returns latest orderbook data for the pair, a dict with bids/asks with a total of <code>maximum</code> entries.</li>
+<li><a href="#tickerpair"><code>ticker(pair)</code></a> - Returns current ticker data for the pair. See <a href="https://github.com/ccxt/ccxt/wiki/Manual#price-tickers">ccxt documentation</a> for more details on the Ticker data structure.</li>
+<li><code>runmode</code> - Property containing the current runmode.</li>
+</ul>
+<h3 id="example-usages">Example Usages<a class="headerlink" href="#example-usages" title="Permanent link">&para;</a></h3>
+<h3 id="available_pairs"><em>available_pairs</em><a class="headerlink" href="#available_pairs" title="Permanent link">&para;</a></h3>
+<p><code>python
+if self.dp:
+    for pair, timeframe in self.dp.available_pairs:
+        print(f"available {pair}, {timeframe}")</code></p>
+<h3 id="current_whitelist"><em>current_whitelist()</em><a class="headerlink" href="#current_whitelist" title="Permanent link">&para;</a></h3>
+<p>Imagine you've developed a strategy that trades the <code>5m</code> timeframe using signals generated from a <code>1d</code> timeframe on the top 10 volume pairs by volume.</p>
+<p>The strategy might look something like this:</p>
+<p><em>Scan through the top 10 pairs by volume using the <code>VolumePairList</code> every 5 minutes and use a 14 day RSI to buy and sell.</em></p>
+<p>Due to the limited available data, it's very difficult to resample our <code>5m</code> candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!</p>
+<p>Since we can't resample our data we will have to use an informative pair; and since our whitelist will be dynamic we don't know which pair(s) to use.</p>
+<p>This is where calling <code>self.dp.current_whitelist()</code> comes in handy.</p>
+<p>```python
+    def informative_pairs(self):</p>
+<div class="codehilite"><pre><span></span><code>    # get access to all pairs available in whitelist.
+    pairs = self.dp.current_whitelist()
+    # Assign tf to each pair so they can be downloaded and cached for strategy.
+    informative_pairs = [(pair, &#39;1d&#39;) for pair in pairs]
+    return informative_pairs
+</code></pre></div>
+
+<p>```</p>
+<h3 id="get_pair_dataframepair-timeframe"><em>get_pair_dataframe(pair, timeframe)</em><a class="headerlink" href="#get_pair_dataframepair-timeframe" title="Permanent link">&para;</a></h3>
+<p>``` python</p>
+<h1 id="fetch-live-historical-candle-ohlcv-data-for-the-first-informative-pair">fetch live / historical candle (OHLCV) data for the first informative pair<a class="headerlink" href="#fetch-live-historical-candle-ohlcv-data-for-the-first-informative-pair" title="Permanent link">&para;</a></h1>
+<p>if self.dp:
+    inf_pair, inf_timeframe = self.informative_pairs()[0]
+    informative = self.dp.get_pair_dataframe(pair=inf_pair,
+                                             timeframe=inf_timeframe)
+```</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning about backtesting</p>
+<p>Be careful when using dataprovider in backtesting. <code>historic_ohlcv()</code> (and <code>get_pair_dataframe()</code>
+for the backtesting runmode) provides the full time-range in one go,
+so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode.</p>
+</div>
+<h3 id="get_analyzed_dataframepair-timeframe"><em>get_analyzed_dataframe(pair, timeframe)</em><a class="headerlink" href="#get_analyzed_dataframepair-timeframe" title="Permanent link">&para;</a></h3>
+<p>This method is used by freqtrade internally to determine the last signal.
+It can also be used in specific callbacks to get the signal that caused the action (see <a href="../strategy-advanced/">Advanced Strategy Documentation</a> for more details on available callbacks).</p>
+<p>``` python</p>
+<h1 id="fetch-current-dataframe">fetch current dataframe<a class="headerlink" href="#fetch-current-dataframe" title="Permanent link">&para;</a></h1>
+<p>if self.dp:
+    if self.dp.runmode.value in ('live', 'dry_run'):
+        dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=metadata['pair'],
+                                                                 timeframe=self.timeframe)
+```</p>
+<div class="admonition note">
+<p class="admonition-title">No data available</p>
+<p>Returns an empty dataframe if the requested pair was not cached.
+This should not happen when using whitelisted pairs.</p>
+</div>
+<h3 id="orderbookpair-maximum"><em>orderbook(pair, maximum)</em><a class="headerlink" href="#orderbookpair-maximum" title="Permanent link">&para;</a></h3>
+<p><code>python
+if self.dp:
+    if self.dp.runmode.value in ('live', 'dry_run'):
+        ob = self.dp.orderbook(metadata['pair'], 1)
+        dataframe['best_bid'] = ob['bids'][0][0]
+        dataframe['best_ask'] = ob['asks'][0][0]</code></p>
+<p>The orderbook structure is aligned with the order structure from <a href="https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure">ccxt</a>, so the result will look as follows:</p>
+<p><code>js
+{
+    'bids': [
+        [ price, amount ], // [ float, float ]
+        [ price, amount ],
+        ...
+    ],
+    'asks': [
+        [ price, amount ],
+        [ price, amount ],
+        //...
+    ],
+    //...
+}</code></p>
+<p>Therefore, using <code>ob['bids'][0][0]</code> as demonstrated above will result in using the best bid price. <code>ob['bids'][0][1]</code> would look at the amount at this orderbook position.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning about backtesting</p>
+<p>The order book is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return uptodate values.</p>
+</div>
+<h3 id="tickerpair"><em>ticker(pair)</em><a class="headerlink" href="#tickerpair" title="Permanent link">&para;</a></h3>
+<p><code>python
+if self.dp:
+    if self.dp.runmode.value in ('live', 'dry_run'):
+        ticker = self.dp.ticker(metadata['pair'])
+        dataframe['last_price'] = ticker['last']
+        dataframe['volume24h'] = ticker['quoteVolume']
+        dataframe['vwap'] = ticker['vwap']</code></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Although the ticker data structure is a part of the ccxt Unified Interface, the values returned by this method can
+vary for different exchanges. For instance, many exchanges do not return <code>vwap</code> values, the FTX exchange
+does not always fills in the <code>last</code> field (so it can be None), etc. So you need to carefully verify the ticker
+data returned from the exchange and add appropriate error handling / defaults.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning about backtesting</p>
+<p>This method will always return up-to-date values - so usage during backtesting / hyperopt will lead to wrong results.</p>
+</div>
+<h3 id="complete-data-provider-sample">Complete Data-provider sample<a class="headerlink" href="#complete-data-provider-sample" title="Permanent link">&para;</a></h3>
+<p>```python
+from freqtrade.strategy import IStrategy, merge_informative_pair
+from pandas import DataFrame</p>
+<p>class SampleStrategy(IStrategy):
+    # strategy init stuff...</p>
+<div class="codehilite"><pre><span></span><code>timeframe = &#39;5m&#39;
+
+# more strategy init stuff..
+
+def informative_pairs(self):
+
+    # get access to all pairs available in whitelist.
+    pairs = self.dp.current_whitelist()
+    # Assign tf to each pair so they can be downloaded and cached for strategy.
+    informative_pairs = [(pair, &#39;1d&#39;) for pair in pairs]
+    # Optionally Add additional &quot;static&quot; pairs
+    informative_pairs += [(&quot;ETH/USDT&quot;, &quot;5m&quot;),
+                          (&quot;BTC/TUSD&quot;, &quot;15m&quot;),
+                        ]
+    return informative_pairs
+
+def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    if not self.dp:
+        # Don&#39;t do anything if DataProvider is not available.
+        return dataframe
+
+    inf_tf = &#39;1d&#39;
+    # Get the informative pair
+    informative = self.dp.get_pair_dataframe(pair=metadata[&#39;pair&#39;], timeframe=inf_tf)
+    # Get the 14 day rsi
+    informative[&#39;rsi&#39;] = ta.RSI(informative, timeperiod=14)
+
+    # Use the helper function merge_informative_pair to safely merge the pair
+    # Automatically renames the columns and merges a shorter timeframe dataframe and a longer timeframe informative pair
+    # use ffill to have the 1d value available in every row throughout the day.
+    # Without this, comparisons between columns of the original and the informative pair would only work once per day.
+    # Full documentation of this method, see below
+    dataframe = merge_informative_pair(dataframe, informative, self.timeframe, inf_tf, ffill=True)
+
+    # Calculate rsi of the original dataframe (5m timeframe)
+    dataframe[&#39;rsi&#39;] = ta.RSI(dataframe, timeperiod=14)
+
+    # Do other stuff
+    # ...
+
+    return dataframe
+
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+
+    dataframe.loc[
+        (
+            (qtpylib.crossed_above(dataframe[&#39;rsi&#39;], 30)) &amp;  # Signal: RSI crosses above 30
+            (dataframe[&#39;rsi_1d&#39;] &lt; 30) &amp;                     # Ensure daily RSI is &lt; 30
+            (dataframe[&#39;volume&#39;] &gt; 0)                        # Ensure this candle had volume (important for backtesting)
+        ),
+        &#39;buy&#39;] = 1
+</code></pre></div>
+
+<p>```</p>
+<hr />
+<h2 id="helper-functions">Helper functions<a class="headerlink" href="#helper-functions" title="Permanent link">&para;</a></h2>
+<h3 id="merge_informative_pair"><em>merge_informative_pair()</em><a class="headerlink" href="#merge_informative_pair" title="Permanent link">&para;</a></h3>
+<p>This method helps you merge an informative pair to a regular dataframe without lookahead bias.
+It's there to help you merge the dataframe in a safe and consistent way.</p>
+<p>Options:</p>
+<ul>
+<li>Rename the columns for you to create unique columns</li>
+<li>Merge the dataframe without lookahead bias</li>
+<li>Forward-fill (optional)</li>
+</ul>
+<p>All columns of the informative dataframe will be available on the returning dataframe in a renamed fashion:</p>
+<div class="admonition example">
+<p class="admonition-title">Column renaming</p>
+<p>Assuming <code>inf_tf = '1d'</code> the resulting columns will be:</p>
+<p><code>python
+'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
+'date_1d', 'open_1d', 'high_1d', 'low_1d', 'close_1d', 'rsi_1d'   # from the informative dataframe</code></p>
+</div>
+<details class="example">
+<summary>Column renaming - 1h</summary>
+<p>Assuming <code>inf_tf = '1h'</code> the resulting columns will be:</p>
+<p><code>python
+'date', 'open', 'high', 'low', 'close', 'rsi'                     # from the original dataframe
+'date_1h', 'open_1h', 'high_1h', 'low_1h', 'close_1h', 'rsi_1h'   # from the informative dataframe</code></p>
+</details>
+<details class="example">
+<summary>Custom implementation</summary>
+<p>A custom implementation for this is possible, and can be done as follows:</p>
+<p>``` python</p>
+<h1 id="shift-date-by-1-candle">Shift date by 1 candle<a class="headerlink" href="#shift-date-by-1-candle" title="Permanent link">&para;</a></h1>
+<h1 id="this-is-necessary-since-the-data-is-always-the-open-date">This is necessary since the data is always the "open date"<a class="headerlink" href="#this-is-necessary-since-the-data-is-always-the-open-date" title="Permanent link">&para;</a></h1>
+<h1 id="and-a-15m-candle-starting-at-1215-should-not-know-the-close-of-the-1h-candle-from-1200-to-1300">and a 15m candle starting at 12:15 should not know the close of the 1h candle from 12:00 to 13:00<a class="headerlink" href="#and-a-15m-candle-starting-at-1215-should-not-know-the-close-of-the-1h-candle-from-1200-to-1300" title="Permanent link">&para;</a></h1>
+<p>minutes = timeframe_to_minutes(inf_tf)</p>
+<h1 id="only-do-this-if-the-timeframes-are-different">Only do this if the timeframes are different:<a class="headerlink" href="#only-do-this-if-the-timeframes-are-different" title="Permanent link">&para;</a></h1>
+<p>informative['date_merge'] = informative["date"] + pd.to_timedelta(minutes, 'm')</p>
+<h1 id="rename-columns-to-be-unique">Rename columns to be unique<a class="headerlink" href="#rename-columns-to-be-unique" title="Permanent link">&para;</a></h1>
+<p>informative.columns = [f"{col}_{inf_tf}" for col in informative.columns]</p>
+<h1 id="assuming-inf_tf-1d-then-the-columns-will-now-be">Assuming inf_tf = '1d' - then the columns will now be:<a class="headerlink" href="#assuming-inf_tf-1d-then-the-columns-will-now-be" title="Permanent link">&para;</a></h1>
+<h1 id="date_1d-open_1d-high_1d-low_1d-close_1d-rsi_1d">date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d<a class="headerlink" href="#date_1d-open_1d-high_1d-low_1d-close_1d-rsi_1d" title="Permanent link">&para;</a></h1>
+<h1 id="combine-the-2-dataframes">Combine the 2 dataframes<a class="headerlink" href="#combine-the-2-dataframes" title="Permanent link">&para;</a></h1>
+<h1 id="all-indicators-on-the-informative-sample-must-be-calculated-before-this-point">all indicators on the informative sample MUST be calculated before this point<a class="headerlink" href="#all-indicators-on-the-informative-sample-must-be-calculated-before-this-point" title="Permanent link">&para;</a></h1>
+<p>dataframe = pd.merge(dataframe, informative, left_on='date', right_on=f'date_merge_{inf_tf}', how='left')</p>
+<h1 id="ffill-to-have-the-1d-value-available-in-every-row-throughout-the-day">FFill to have the 1d value available in every row throughout the day.<a class="headerlink" href="#ffill-to-have-the-1d-value-available-in-every-row-throughout-the-day" title="Permanent link">&para;</a></h1>
+<h1 id="without-this-comparisons-would-only-work-once-per-day">Without this, comparisons would only work once per day.<a class="headerlink" href="#without-this-comparisons-would-only-work-once-per-day" title="Permanent link">&para;</a></h1>
+<p>dataframe = dataframe.ffill()</p>
+<p>```</p>
+</details>
+<div class="admonition warning">
+<p class="admonition-title">Informative timeframe &lt; timeframe</p>
+<p>Using informative timeframes smaller than the dataframe timeframe is not recommended with this method, as it will not use any of the additional information this would provide.
+To use the more detailed information properly, more advanced methods should be applied (which are out of scope for freqtrade documentation, as it'll depend on the respective need).</p>
+</div>
+<hr />
+<h3 id="stoploss_from_open"><em>stoploss_from_open()</em><a class="headerlink" href="#stoploss_from_open" title="Permanent link">&para;</a></h3>
+<p>Stoploss values returned from <code>custom_stoploss</code> must specify a percentage relative to <code>current_rate</code>, but sometimes you may want to specify a stoploss relative to the open price instead. <code>stoploss_from_open()</code> is a helper function to calculate a stoploss value that can be returned from <code>custom_stoploss</code> which will be equivalent to the desired percentage above the open price.</p>
+<details class="example">
+<summary>Returning a stoploss relative to the open price from the custom stoploss function</summary>
+<p>Say the open price was $100, and <code>current_price</code> is $121 (<code>current_profit</code> will be <code>0.21</code>).  </p>
+<p>If we want a stop price at 7% above the open price we can call <code>stoploss_from_open(0.07, current_profit)</code> which will return <code>0.1157024793</code>.  11.57% below $121 is $107, which is the same as 7% above $100.</p>
+<p>``` python</p>
+<p>from datetime import datetime
+from freqtrade.persistence import Trade
+from freqtrade.strategy import IStrategy, stoploss_from_open</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: &#39;Trade&#39;, current_time: datetime,
+                    current_rate: float, current_profit: float, **kwargs) -&gt; float:
+
+    # once the profit has risen above 10%, keep the stoploss at 7% above the open price
+    if current_profit &gt; 0.10:
+        return stoploss_from_open(0.07, current_profit)
+
+    return 1
+</code></pre></div>
+
+<p>```</p>
+<p>Full examples can be found in the <a href="../strategy-advanced/#custom-stoploss">Custom stoploss</a> section of the Documentation.</p>
+</details>
+<h2 id="additional-data-wallets">Additional data (Wallets)<a class="headerlink" href="#additional-data-wallets" title="Permanent link">&para;</a></h2>
+<p>The strategy provides access to the <code>Wallets</code> object. This contains the current balances on the exchange.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Wallets is not available during backtesting / hyperopt.</p>
+</div>
+<p>Please always check if <code>Wallets</code> is available to avoid failures during backtesting.</p>
+<p><code>python
+if self.wallets:
+    free_eth = self.wallets.get_free('ETH')
+    used_eth = self.wallets.get_used('ETH')
+    total_eth = self.wallets.get_total('ETH')</code></p>
+<h3 id="possible-options-for-wallets">Possible options for Wallets<a class="headerlink" href="#possible-options-for-wallets" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>get_free(asset)</code> - currently available balance to trade</li>
+<li><code>get_used(asset)</code> - currently tied up balance (open orders)</li>
+<li><code>get_total(asset)</code> - total available balance - sum of the 2 above</li>
+</ul>
+<hr />
+<h2 id="additional-data-trades">Additional data (Trades)<a class="headerlink" href="#additional-data-trades" title="Permanent link">&para;</a></h2>
+<p>A history of Trades can be retrieved in the strategy by querying the database.</p>
+<p>At the top of the file, import Trade.</p>
+<p><code>python
+from freqtrade.persistence import Trade</code></p>
+<p>The following example queries for the current pair and trades from today, however other filters can easily be added.</p>
+<p><code>python
+if self.config['runmode'].value in ('live', 'dry_run'):
+    trades = Trade.get_trades([Trade.pair == metadata['pair'],
+                               Trade.open_date &gt; datetime.utcnow() - timedelta(days=1),
+                               Trade.is_open.is_(False),
+                ]).order_by(Trade.close_date).all()
+    # Summarize profit for this pair.
+    curdayprofit = sum(trade.close_profit for trade in trades)</code></p>
+<p>Get amount of stake_currency currently invested in Trades:</p>
+<p><code>python
+if self.config['runmode'].value in ('live', 'dry_run'):
+    total_stakes = Trade.total_open_trades_stakes()</code></p>
+<p>Retrieve performance per pair.
+Returns a List of dicts per pair.</p>
+<p><code>python
+if self.config['runmode'].value in ('live', 'dry_run'):
+    performance = Trade.get_overall_performance()</code></p>
+<p>Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of 0.015).</p>
+<p><code>json
+{'pair': "ETH/BTC", 'profit': 0.015, 'count': 5}</code></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Trade history is not available during backtesting or hyperopt.</p>
+</div>
+<h2 id="prevent-trades-from-happening-for-a-specific-pair">Prevent trades from happening for a specific pair<a class="headerlink" href="#prevent-trades-from-happening-for-a-specific-pair" title="Permanent link">&para;</a></h2>
+<p>Freqtrade locks pairs automatically for the current candle (until that candle is over) when a pair is sold, preventing an immediate re-buy of that pair.</p>
+<p>Locked pairs will show the message <code>Pair &lt;pair&gt; is currently locked.</code>.</p>
+<h3 id="locking-pairs-from-within-the-strategy">Locking pairs from within the strategy<a class="headerlink" href="#locking-pairs-from-within-the-strategy" title="Permanent link">&para;</a></h3>
+<p>Sometimes it may be desired to lock a pair after certain events happen (e.g. multiple losing trades in a row).</p>
+<p>Freqtrade has an easy method to do this from within the strategy, by calling <code>self.lock_pair(pair, until, [reason])</code>.
+<code>until</code> must be a datetime object in the future, after which trading will be re-enabled for that pair, while <code>reason</code> is an optional string detailing why the pair was locked.</p>
+<p>Locks can also be lifted manually, by calling <code>self.unlock_pair(pair)</code>.</p>
+<p>To verify if a pair is currently locked, use <code>self.is_pair_locked(pair)</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Locked pairs will always be rounded up to the next candle. So assuming a <code>5m</code> timeframe, a lock with <code>until</code> set to 10:18 will lock the pair until the candle from 10:15-10:20 will be finished.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Manually locking pairs is not available during backtesting, only locks via Protections are allowed.</p>
+</div>
+<h4 id="pair-locking-example">Pair locking example<a class="headerlink" href="#pair-locking-example" title="Permanent link">&para;</a></h4>
+<p>``` python
+from freqtrade.persistence import Trade
+from datetime import timedelta, datetime, timezone</p>
+<h1 id="put-the-above-lines-a-the-top-of-the-strategy-file-next-to-all-the-other-imports">Put the above lines a the top of the strategy file, next to all the other imports<a class="headerlink" href="#put-the-above-lines-a-the-top-of-the-strategy-file-next-to-all-the-other-imports" title="Permanent link">&para;</a></h1>
+<h1 id="-">--------<a class="headerlink" href="#-" title="Permanent link">&para;</a></h1>
+<h1 id="within-populate-indicators-or-populate_buy">Within populate indicators (or populate_buy):<a class="headerlink" href="#within-populate-indicators-or-populate_buy" title="Permanent link">&para;</a></h1>
+<p>if self.config['runmode'].value in ('live', 'dry_run'):
+   # fetch closed trades for the last 2 days
+    trades = Trade.get_trades([Trade.pair == metadata['pair'],
+                               Trade.open_date &gt; datetime.utcnow() - timedelta(days=2),
+                               Trade.is_open.is_(False),
+                ]).all()
+    # Analyze the conditions you'd like to lock the pair .... will probably be different for every strategy
+    sumprofit = sum(trade.close_profit for trade in trades)
+    if sumprofit &lt; 0:
+        # Lock pair for 12 hours
+        self.lock_pair(metadata['pair'], until=datetime.now(timezone.utc) + timedelta(hours=12))
+```</p>
+<h2 id="print-created-dataframe">Print created dataframe<a class="headerlink" href="#print-created-dataframe" title="Permanent link">&para;</a></h2>
+<p>To inspect the created dataframe, you can issue a print-statement in either <code>populate_buy_trend()</code> or <code>populate_sell_trend()</code>.
+You may also want to print the pair so it's clear what data is currently shown.</p>
+<p>``` python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    dataframe.loc[
+        (
+            #&gt;&gt; whatever condition&lt;&lt;&lt;
+        ),
+        'buy'] = 1</p>
+<div class="codehilite"><pre><span></span><code># Print the Analyzed pair
+print(f&quot;result for {metadata[&#39;pair&#39;]}&quot;)
+
+# Inspect the last 5 rows
+print(dataframe.tail())
+
+return dataframe
+</code></pre></div>
+
+<p>```</p>
+<p>Printing more than a few rows is also possible (simply use  <code>print(dataframe)</code> instead of <code>print(dataframe.tail())</code>), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).</p>
+<h2 id="common-mistakes-when-developing-strategies">Common mistakes when developing strategies<a class="headerlink" href="#common-mistakes-when-developing-strategies" title="Permanent link">&para;</a></h2>
+<p>Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look-ahead into the future.
+This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods, since they all use data which is not available during dry/live runs, so these strategies will perform well during backtesting, but will fail / perform badly in real conditions.</p>
+<p>The following lists some common patterns which should be avoided to prevent frustration:</p>
+<ul>
+<li>don't use <code>shift(-1)</code>. This uses data from the future, which is not available.</li>
+<li>don't use <code>.iloc[-1]</code> or any other absolute position in the dataframe, this will be different between dry-run and backtesting.</li>
+<li>don't use <code>dataframe['volume'].mean()</code>. This uses the full DataFrame for backtesting, including data from the future. Use <code>dataframe['volume'].rolling(&lt;window&gt;).mean()</code> instead</li>
+<li>don't use <code>.resample('1h')</code>. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use <code>.resample('1h', label='right')</code> instead.</li>
+</ul>
+<h2 id="further-strategy-ideas">Further strategy ideas<a class="headerlink" href="#further-strategy-ideas" title="Permanent link">&para;</a></h2>
+<p>To get additional Ideas for strategies, head over to our <a href="https://github.com/freqtrade/freqtrade-strategies">strategy repository</a>. Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
+Feel free to use any of them as inspiration for your own strategies.
+We're happy to accept Pull Requests containing new Strategies to that repo.</p>
+<h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
+<p>Now you have a perfect strategy you probably want to backtest it.
+Your next step is to learn <a href="../backtesting/">How to use the Backtesting</a>.</p>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+    
+        
+<footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../configuration/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Configuration" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Configuration
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../plugins/" class="md-footer__link md-footer__link--next" aria-label="Next: Plugins" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Plugins
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+        
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.53c85856.min.js", "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.716f8af4.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

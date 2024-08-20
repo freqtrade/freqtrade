@@ -1,0 +1,1157 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2021.7/strategy_analysis_example/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.1">
+    
+    
+      
+        <title>Strategy analysis - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.1118c9be.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ba0d045b.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+      <script>var palette=__get("__palette");if(null!==palette&&"object"==typeof palette.color)for(var key in palette.color)document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#strategy-analysis-example" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Strategy analysis
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 10a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2m10-3a5 5 0 0 1 5 5 5 5 0 0 1-5 5H7a5 5 0 0 1-5-5 5 5 0 0 1 5-5h10M7 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3h10a3 3 0 0 0 3-3 3 3 0 0 0-3-3H7z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 10a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2m10-3a5 5 0 0 1 5 5 5 5 0 0 1-5 5H7a5 5 0 0 1-5-5 5 5 0 0 1 5-5h10M7 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3h10a3 3 0 0 0 3-3 3 3 0 0 0-3-3H7z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      <label class="md-nav__link" for="__nav_3">
+        Installation
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" >
+      
+      <label class="md-nav__link" for="__nav_10">
+        Control the bot
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_10">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_16" type="checkbox" id="__nav_16" checked>
+      
+      <label class="md-nav__link" for="__nav_16">
+        Data Analysis
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_16">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Strategy analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Strategy analysis
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    Setup
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_18" type="checkbox" id="__nav_18" >
+      
+      <label class="md-nav__link" for="__nav_18">
+        Advanced Topics
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_18">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    Setup
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/freqtrade/freqtrade/edit/master/docs/strategy_analysis_example.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="strategy-analysis-example">Strategy analysis example<a class="headerlink" href="#strategy-analysis-example" title="Permanent link">&para;</a></h1>
+<p>Debugging a strategy can be time-consuming. Freqtrade offers helper functions to visualize raw data.
+The following assumes you work with SampleStrategy, data for 5m timeframe from Binance and have downloaded them into the data directory in the default location.</p>
+<h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
+<p>```python
+from pathlib import Path
+from freqtrade.configuration import Configuration</p>
+<h1 id="customize-these-according-to-your-needs">Customize these according to your needs.<a class="headerlink" href="#customize-these-according-to-your-needs" title="Permanent link">&para;</a></h1>
+<h1 id="initialize-empty-configuration-object">Initialize empty configuration object<a class="headerlink" href="#initialize-empty-configuration-object" title="Permanent link">&para;</a></h1>
+<p>config = Configuration.from_files([])</p>
+<h1 id="optionally-use-existing-configuration-file">Optionally, use existing configuration file<a class="headerlink" href="#optionally-use-existing-configuration-file" title="Permanent link">&para;</a></h1>
+<h1 id="config-configurationfrom_filesconfigjson">config = Configuration.from_files(["config.json"])<a class="headerlink" href="#config-configurationfrom_filesconfigjson" title="Permanent link">&para;</a></h1>
+<h1 id="define-some-constants">Define some constants<a class="headerlink" href="#define-some-constants" title="Permanent link">&para;</a></h1>
+<p>config["timeframe"] = "5m"</p>
+<h1 id="name-of-the-strategy-class">Name of the strategy class<a class="headerlink" href="#name-of-the-strategy-class" title="Permanent link">&para;</a></h1>
+<p>config["strategy"] = "SampleStrategy"</p>
+<h1 id="location-of-the-data">Location of the data<a class="headerlink" href="#location-of-the-data" title="Permanent link">&para;</a></h1>
+<p>data_location = Path(config['user_data_dir'], 'data', 'binance')</p>
+<h1 id="pair-to-analyze-only-use-one-pair-here">Pair to analyze - Only use one pair here<a class="headerlink" href="#pair-to-analyze-only-use-one-pair-here" title="Permanent link">&para;</a></h1>
+<p>pair = "BTC/USDT"
+```</p>
+<p>```python</p>
+<h1 id="load-data-using-values-set-above">Load data using values set above<a class="headerlink" href="#load-data-using-values-set-above" title="Permanent link">&para;</a></h1>
+<p>from freqtrade.data.history import load_pair_history</p>
+<p>candles = load_pair_history(datadir=data_location,
+                            timeframe=config["timeframe"],
+                            pair=pair,
+                            data_format = "hdf5",
+                            )</p>
+<h1 id="confirm-success">Confirm success<a class="headerlink" href="#confirm-success" title="Permanent link">&para;</a></h1>
+<p>print("Loaded " + str(len(candles)) + f" rows of data for {pair} from {data_location}")
+candles.head()
+```</p>
+<h2 id="load-and-run-strategy">Load and run strategy<a class="headerlink" href="#load-and-run-strategy" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Rerun each time the strategy file is changed</li>
+</ul>
+<p>```python</p>
+<h1 id="load-strategy-using-values-set-above">Load strategy using values set above<a class="headerlink" href="#load-strategy-using-values-set-above" title="Permanent link">&para;</a></h1>
+<p>from freqtrade.resolvers import StrategyResolver
+strategy = StrategyResolver.load_strategy(config)</p>
+<h1 id="generate-buysell-signals-using-strategy">Generate buy/sell signals using strategy<a class="headerlink" href="#generate-buysell-signals-using-strategy" title="Permanent link">&para;</a></h1>
+<p>df = strategy.analyze_ticker(candles, {'pair': pair})
+df.tail()
+```</p>
+<h3 id="display-the-trade-details">Display the trade details<a class="headerlink" href="#display-the-trade-details" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Note that using <code>data.head()</code> would also work, however most indicators have some "startup" data at the top of the dataframe.</li>
+<li>Some possible problems
+    * Columns with NaN values at the end of the dataframe
+    * Columns used in <code>crossed*()</code> functions with completely different units</li>
+<li>Comparison with full backtest
+    * having 200 buy signals as output for one pair from <code>analyze_ticker()</code> does not necessarily mean that 200 trades will be made during backtesting.
+    * Assuming you use only one condition such as, <code>df['rsi'] &lt; 30</code> as buy condition, this will generate multiple "buy" signals for each pair in sequence (until rsi returns &gt; 29). The bot will only buy on the first of these signals (and also only if a trade-slot ("max_open_trades") is still available), or on one of the middle signals, as soon as a "slot" becomes available.  </li>
+</ul>
+<p>```python</p>
+<h1 id="report-results">Report results<a class="headerlink" href="#report-results" title="Permanent link">&para;</a></h1>
+<p>print(f"Generated {df['buy'].sum()} buy signals")
+data = df.set_index('date', drop=False)
+data.tail()
+```</p>
+<h2 id="load-existing-objects-into-a-jupyter-notebook">Load existing objects into a Jupyter notebook<a class="headerlink" href="#load-existing-objects-into-a-jupyter-notebook" title="Permanent link">&para;</a></h2>
+<p>The following cells assume that you have already generated data using the cli.<br />
+They will allow you to drill deeper into your results, and perform analysis which otherwise would make the output very difficult to digest due to information overload.</p>
+<h3 id="load-backtest-results-to-pandas-dataframe">Load backtest results to pandas dataframe<a class="headerlink" href="#load-backtest-results-to-pandas-dataframe" title="Permanent link">&para;</a></h3>
+<p>Analyze a trades dataframe (also used below for plotting)</p>
+<p>```python
+from freqtrade.data.btanalysis import load_backtest_data, load_backtest_stats</p>
+<h1 id="if-backtest_dir-points-to-a-directory-itll-automatically-load-the-last-backtest-file">if backtest_dir points to a directory, it'll automatically load the last backtest file.<a class="headerlink" href="#if-backtest_dir-points-to-a-directory-itll-automatically-load-the-last-backtest-file" title="Permanent link">&para;</a></h1>
+<p>backtest_dir = config["user_data_dir"] / "backtest_results"</p>
+<h1 id="backtest_dir-can-also-point-to-a-specific-file">backtest_dir can also point to a specific file<a class="headerlink" href="#backtest_dir-can-also-point-to-a-specific-file" title="Permanent link">&para;</a></h1>
+<h1 id="backtest_dir-configuser_data_dir-backtest_resultsbacktest-result-2020-07-01_20-04-22json">backtest_dir = config["user_data_dir"] / "backtest_results/backtest-result-2020-07-01_20-04-22.json"<a class="headerlink" href="#backtest_dir-configuser_data_dir-backtest_resultsbacktest-result-2020-07-01_20-04-22json" title="Permanent link">&para;</a></h1>
+<p>```</p>
+<p>```python</p>
+<h1 id="you-can-get-the-full-backtest-statistics-by-using-the-following-command">You can get the full backtest statistics by using the following command.<a class="headerlink" href="#you-can-get-the-full-backtest-statistics-by-using-the-following-command" title="Permanent link">&para;</a></h1>
+<h1 id="this-contains-all-information-used-to-generate-the-backtest-result">This contains all information used to generate the backtest result.<a class="headerlink" href="#this-contains-all-information-used-to-generate-the-backtest-result" title="Permanent link">&para;</a></h1>
+<p>stats = load_backtest_stats(backtest_dir)</p>
+<p>strategy = 'SampleStrategy'</p>
+<h1 id="all-statistics-are-available-per-strategy-so-if-strategy-list-was-used-during-backtest-this-will-be-reflected-here-as-well">All statistics are available per strategy, so if <code>--strategy-list</code> was used during backtest, this will be reflected here as well.<a class="headerlink" href="#all-statistics-are-available-per-strategy-so-if-strategy-list-was-used-during-backtest-this-will-be-reflected-here-as-well" title="Permanent link">&para;</a></h1>
+<h1 id="example-usages">Example usages:<a class="headerlink" href="#example-usages" title="Permanent link">&para;</a></h1>
+<p>print(stats['strategy'][strategy]['results_per_pair'])</p>
+<h1 id="get-pairlist-used-for-this-backtest">Get pairlist used for this backtest<a class="headerlink" href="#get-pairlist-used-for-this-backtest" title="Permanent link">&para;</a></h1>
+<p>print(stats['strategy'][strategy]['pairlist'])</p>
+<h1 id="get-market-change-average-change-of-all-pairs-from-start-to-end-of-the-backtest-period">Get market change (average change of all pairs from start to end of the backtest period)<a class="headerlink" href="#get-market-change-average-change-of-all-pairs-from-start-to-end-of-the-backtest-period" title="Permanent link">&para;</a></h1>
+<p>print(stats['strategy'][strategy]['market_change'])</p>
+<h1 id="maximum-drawdown">Maximum drawdown ()<a class="headerlink" href="#maximum-drawdown" title="Permanent link">&para;</a></h1>
+<p>print(stats['strategy'][strategy]['max_drawdown'])</p>
+<h1 id="maximum-drawdown-start-and-end">Maximum drawdown start and end<a class="headerlink" href="#maximum-drawdown-start-and-end" title="Permanent link">&para;</a></h1>
+<p>print(stats['strategy'][strategy]['drawdown_start'])
+print(stats['strategy'][strategy]['drawdown_end'])</p>
+<h1 id="get-strategy-comparison-only-relevant-if-multiple-strategies-were-compared">Get strategy comparison (only relevant if multiple strategies were compared)<a class="headerlink" href="#get-strategy-comparison-only-relevant-if-multiple-strategies-were-compared" title="Permanent link">&para;</a></h1>
+<p>print(stats['strategy_comparison'])</p>
+<p>```</p>
+<p>```python</p>
+<h1 id="load-backtested-trades-as-dataframe">Load backtested trades as dataframe<a class="headerlink" href="#load-backtested-trades-as-dataframe" title="Permanent link">&para;</a></h1>
+<p>trades = load_backtest_data(backtest_dir)</p>
+<h1 id="show-value-counts-per-pair">Show value-counts per pair<a class="headerlink" href="#show-value-counts-per-pair" title="Permanent link">&para;</a></h1>
+<p>trades.groupby("pair")["sell_reason"].value_counts()
+```</p>
+<h2 id="plotting-daily-profit-equity-line">Plotting daily profit / equity line<a class="headerlink" href="#plotting-daily-profit-equity-line" title="Permanent link">&para;</a></h2>
+<p>```python</p>
+<h1 id="plotting-equity-line-starting-with-0-on-day-1-and-adding-daily-profit-for-each-backtested-day">Plotting equity line (starting with 0 on day 1 and adding daily profit for each backtested day)<a class="headerlink" href="#plotting-equity-line-starting-with-0-on-day-1-and-adding-daily-profit-for-each-backtested-day" title="Permanent link">&para;</a></h1>
+<p>from freqtrade.configuration import Configuration
+from freqtrade.data.btanalysis import load_backtest_data, load_backtest_stats
+import plotly.express as px
+import pandas as pd</p>
+<h1 id="strategy-samplestrategy">strategy = 'SampleStrategy'<a class="headerlink" href="#strategy-samplestrategy" title="Permanent link">&para;</a></h1>
+<h1 id="config-configurationfrom_filesuser_dataconfigjson">config = Configuration.from_files(["user_data/config.json"])<a class="headerlink" href="#config-configurationfrom_filesuser_dataconfigjson" title="Permanent link">&para;</a></h1>
+<h1 id="backtest_dir-configuser_data_dir-backtest_results">backtest_dir = config["user_data_dir"] / "backtest_results"<a class="headerlink" href="#backtest_dir-configuser_data_dir-backtest_results" title="Permanent link">&para;</a></h1>
+<p>stats = load_backtest_stats(backtest_dir)
+strategy_stats = stats['strategy'][strategy]</p>
+<p>dates = []
+profits = []
+for date_profit in strategy_stats['daily_profit']:
+    dates.append(date_profit[0])
+    profits.append(date_profit[1])</p>
+<p>equity = 0
+equity_daily = []
+for daily_profit in profits:
+    equity_daily.append(equity)
+    equity += float(daily_profit)</p>
+<p>df = pd.DataFrame({'dates': dates,'equity_daily': equity_daily})</p>
+<p>fig = px.line(df, x="dates", y="equity_daily")
+fig.show()</p>
+<p>```</p>
+<h3 id="load-live-trading-results-into-a-pandas-dataframe">Load live trading results into a pandas dataframe<a class="headerlink" href="#load-live-trading-results-into-a-pandas-dataframe" title="Permanent link">&para;</a></h3>
+<p>In case you did already some trading and want to analyze your performance</p>
+<p>```python
+from freqtrade.data.btanalysis import load_trades_from_db</p>
+<h1 id="fetch-trades-from-database">Fetch trades from database<a class="headerlink" href="#fetch-trades-from-database" title="Permanent link">&para;</a></h1>
+<p>trades = load_trades_from_db("sqlite:///tradesv3.sqlite")</p>
+<h1 id="display-results">Display results<a class="headerlink" href="#display-results" title="Permanent link">&para;</a></h1>
+<p>trades.groupby("pair")["sell_reason"].value_counts()
+```</p>
+<h2 id="analyze-the-loaded-trades-for-trade-parallelism">Analyze the loaded trades for trade parallelism<a class="headerlink" href="#analyze-the-loaded-trades-for-trade-parallelism" title="Permanent link">&para;</a></h2>
+<p>This can be useful to find the best <code>max_open_trades</code> parameter, when used with backtesting in conjunction with <code>--disable-max-market-positions</code>.</p>
+<p><code>analyze_trade_parallelism()</code> returns a timeseries dataframe with an "open_trades" column, specifying the number of open trades for each candle.</p>
+<p>```python
+from freqtrade.data.btanalysis import analyze_trade_parallelism</p>
+<h1 id="analyze-the-above">Analyze the above<a class="headerlink" href="#analyze-the-above" title="Permanent link">&para;</a></h1>
+<p>parallel_trades = analyze_trade_parallelism(trades, '5m')</p>
+<p>parallel_trades.plot()
+```</p>
+<h2 id="plot-results">Plot results<a class="headerlink" href="#plot-results" title="Permanent link">&para;</a></h2>
+<p>Freqtrade offers interactive plotting capabilities based on plotly.</p>
+<p>```python
+from freqtrade.plot.plotting import  generate_candlestick_graph</p>
+<h1 id="limit-graph-period-to-keep-plotly-quick-and-reactive">Limit graph period to keep plotly quick and reactive<a class="headerlink" href="#limit-graph-period-to-keep-plotly-quick-and-reactive" title="Permanent link">&para;</a></h1>
+<h1 id="filter-trades-to-one-pair">Filter trades to one pair<a class="headerlink" href="#filter-trades-to-one-pair" title="Permanent link">&para;</a></h1>
+<p>trades_red = trades.loc[trades['pair'] == pair]</p>
+<p>data_red = data['2019-06-01':'2019-06-10']</p>
+<h1 id="generate-candlestick-graph">Generate candlestick graph<a class="headerlink" href="#generate-candlestick-graph" title="Permanent link">&para;</a></h1>
+<p>graph = generate_candlestick_graph(pair=pair,
+                                   data=data_red,
+                                   trades=trades_red,
+                                   indicators1=['sma20', 'ema50', 'ema55'],
+                                   indicators2=['rsi', 'macd', 'macdsignal', 'macdhist']
+                                  )</p>
+<p>```</p>
+<p>```python</p>
+<h1 id="show-graph-inline">Show graph inline<a class="headerlink" href="#show-graph-inline" title="Permanent link">&para;</a></h1>
+<h1 id="graphshow">graph.show()<a class="headerlink" href="#graphshow" title="Permanent link">&para;</a></h1>
+<h1 id="render-graph-in-a-seperate-window">Render graph in a seperate window<a class="headerlink" href="#render-graph-in-a-seperate-window" title="Permanent link">&para;</a></h1>
+<p>graph.show(renderer="browser")</p>
+<p>```</p>
+<h2 id="plot-average-profit-per-trade-as-distribution-graph">Plot average profit per trade as distribution graph<a class="headerlink" href="#plot-average-profit-per-trade-as-distribution-graph" title="Permanent link">&para;</a></h2>
+<p>```python
+import plotly.figure_factory as ff</p>
+<p>hist_data = [trades.profit_ratio]
+group_labels = ['profit_ratio']  # name of the dataset</p>
+<p>fig = ff.create_distplot(hist_data, group_labels,bin_size=0.01)
+fig.show()</p>
+<p>```</p>
+<p>Feel free to submit an issue or Pull Request enhancing this document if you would like to share ideas on how to best analyze the data.</p>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+    
+        
+<footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../data-analysis/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Jupyter Notebooks" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Jupyter Notebooks
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../exchanges/" class="md-footer__link md-footer__link--next" aria-label="Next: Exchange-specific Notes" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Exchange-specific Notes
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+        
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.53c85856.min.js", "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.716f8af4.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
