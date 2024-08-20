@@ -1,0 +1,1495 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2022.11/advanced-hyperopt/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Advanced Hyperopt - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.472b142f.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.08040f6c.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#advanced-hyperopt" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Advanced Hyperopt
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        Strategy Callbacks
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_11">
+          Control the bot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_11">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_15" type="checkbox" id="__nav_15" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_15">
+          FreqAI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="FreqAI" data-md-level="1">
+        <label class="md-nav__title" for="__nav_15">
+          <span class="md-nav__icon md-icon"></span>
+          FreqAI
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        Parameter table
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        Feature engineering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        Running FreqAI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        Developer guide
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        Short / Leverage
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_20" type="checkbox" id="__nav_20" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_20">
+          Data Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_20">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        Backtest analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_21" type="checkbox" id="__nav_21" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_21">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_21">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Advanced Hyperopt
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Advanced Hyperopt
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-and-using-a-custom-loss-function" class="md-nav__link">
+    Creating and using a custom loss function
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overriding-pre-defined-spaces" class="md-nav__link">
+    Overriding pre-defined spaces
+  </a>
+  
+    <nav class="md-nav" aria-label="Overriding pre-defined spaces">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-parameters" class="md-nav__link">
+    Dynamic parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#overriding-base-estimator" class="md-nav__link">
+    Overriding Base estimator
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#space-options" class="md-nav__link">
+    Space options
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        Producer/Consumer mode
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        Strategy migration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-and-using-a-custom-loss-function" class="md-nav__link">
+    Creating and using a custom loss function
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overriding-pre-defined-spaces" class="md-nav__link">
+    Overriding pre-defined spaces
+  </a>
+  
+    <nav class="md-nav" aria-label="Overriding pre-defined spaces">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-parameters" class="md-nav__link">
+    Dynamic parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#overriding-base-estimator" class="md-nav__link">
+    Overriding Base estimator
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#space-options" class="md-nav__link">
+    Space options
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/freqtrade/freqtrade/edit/develop/docs/advanced-hyperopt.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="advanced-hyperopt">Advanced Hyperopt<a class="headerlink" href="#advanced-hyperopt" title="Permanent link">&para;</a></h1>
+<p>This page explains some advanced Hyperopt topics that may require higher
+coding skills and Python knowledge than creation of an ordinal hyperoptimization
+class.</p>
+<h2 id="creating-and-using-a-custom-loss-function">Creating and using a custom loss function<a class="headerlink" href="#creating-and-using-a-custom-loss-function" title="Permanent link">&para;</a></h2>
+<p>To use a custom loss function class, make sure that the function <code>hyperopt_loss_function</code> is defined in your custom hyperopt loss class.
+For the sample below, you then need to add the command line parameter <code>--hyperopt-loss SuperDuperHyperOptLoss</code> to your hyperopt call so this function is being used.</p>
+<p>A sample of this can be found below, which is identical to the Default Hyperopt loss implementation. A full sample can be found in <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_hyperopt_loss.py">userdata/hyperopts</a>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+
+<span class="kn">from</span> <span class="nn">freqtrade.constants</span> <span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span> <span class="nn">freqtrade.optimize.hyperopt</span> <span class="kn">import</span> <span class="n">IHyperOptLoss</span>
+
+<span class="n">TARGET_TRADES</span> <span class="o">=</span> <span class="mi">600</span>
+<span class="n">EXPECTED_MAX_PROFIT</span> <span class="o">=</span> <span class="mf">3.0</span>
+<span class="n">MAX_ACCEPTED_TRADE_DURATION</span> <span class="o">=</span> <span class="mi">300</span>
+
+<span class="k">class</span> <span class="nc">SuperDuperHyperOptLoss</span><span class="p">(</span><span class="n">IHyperOptLoss</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Defines the default loss function for hyperopt</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">hyperopt_loss_function</span><span class="p">(</span><span class="n">results</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">trade_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                               <span class="n">min_date</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">max_date</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                               <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">processed</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">],</span>
+                               <span class="n">backtest_stats</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+                               <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Objective function, returns smaller number for better results</span>
+<span class="sd">        This is the legacy algorithm (used until now in freqtrade).</span>
+<span class="sd">        Weights are distributed as follows:</span>
+<span class="sd">        * 0.4 to trade duration</span>
+<span class="sd">        * 0.25: Avoiding trade loss</span>
+<span class="sd">        * 1.0 to total profit, compared to the expected value (`EXPECTED_MAX_PROFIT`) defined above</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">total_profit</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;profit_ratio&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">trade_duration</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;trade_duration&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="n">trade_loss</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">trade_count</span> <span class="o">-</span> <span class="n">TARGET_TRADES</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">10</span> <span class="o">**</span> <span class="mf">5.8</span><span class="p">)</span>
+        <span class="n">profit_loss</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">total_profit</span> <span class="o">/</span> <span class="n">EXPECTED_MAX_PROFIT</span><span class="p">)</span>
+        <span class="n">duration_loss</span> <span class="o">=</span> <span class="mf">0.4</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="n">trade_duration</span> <span class="o">/</span> <span class="n">MAX_ACCEPTED_TRADE_DURATION</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">trade_loss</span> <span class="o">+</span> <span class="n">profit_loss</span> <span class="o">+</span> <span class="n">duration_loss</span>
+        <span class="k">return</span> <span class="n">result</span>
+</code></pre></div>
+<p>Currently, the arguments are:</p>
+<ul>
+<li><code>results</code>: DataFrame containing the resulting trades.
+    The following columns are available in results (corresponds to the output-file of backtesting when used with <code>--export trades</code>):<br />
+<code>pair, profit_ratio, profit_abs, open_date, open_rate, fee_open, close_date, close_rate, fee_close, amount, trade_duration, is_open, exit_reason, stake_amount, min_rate, max_rate, stop_loss_ratio, stop_loss_abs</code></li>
+<li><code>trade_count</code>: Amount of trades (identical to <code>len(results)</code>)</li>
+<li><code>min_date</code>: Start date of the timerange used</li>
+<li><code>min_date</code>: End date of the timerange used</li>
+<li><code>config</code>: Config object used (Note: Not all strategy-related parameters will be updated here if they are part of a hyperopt space).</li>
+<li><code>processed</code>: Dict of Dataframes with the pair as keys containing the data used for backtesting.</li>
+<li><code>backtest_stats</code>: Backtesting statistics using the same format as the backtesting file "strategy" substructure. Available fields can be seen in <code>generate_strategy_stats()</code> in <code>optimize_reports.py</code>.</li>
+</ul>
+<p>This function needs to return a floating point number (<code>float</code>). Smaller numbers will be interpreted as better results. The parameters and balancing for this is up to you.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is called once per epoch - so please make sure to have this as optimized as possible to not slow hyperopt down unnecessarily.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title"><code>*args</code> and <code>**kwargs</code></p>
+<p>Please keep the arguments <code>*args</code> and <code>**kwargs</code> in the interface to allow us to extend this interface in the future.</p>
+</div>
+<h2 id="overriding-pre-defined-spaces">Overriding pre-defined spaces<a class="headerlink" href="#overriding-pre-defined-spaces" title="Permanent link">&para;</a></h2>
+<p>To override a pre-defined space (<code>roi_space</code>, <code>generate_roi_table</code>, <code>stoploss_space</code>, <code>trailing_space</code>), define a nested class called Hyperopt and define the required spaces as follows:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.optimize.space</span> <span class="kn">import</span> <span class="n">Categorical</span><span class="p">,</span> <span class="n">Dimension</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">SKDecimal</span>
+
+<span class="k">class</span> <span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">HyperOpt</span><span class="p">:</span>
+        <span class="c1"># Define a custom stoploss space.</span>
+        <span class="k">def</span> <span class="nf">stoploss_space</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">SKDecimal</span><span class="p">(</span><span class="o">-</span><span class="mf">0.05</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;stoploss&#39;</span><span class="p">)]</span>
+
+        <span class="c1"># Define custom ROI space</span>
+        <span class="k">def</span> <span class="nf">roi_space</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="n">Integer</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;roi_t1&#39;</span><span class="p">),</span>
+                <span class="n">Integer</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;roi_t2&#39;</span><span class="p">),</span>
+                <span class="n">Integer</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;roi_t3&#39;</span><span class="p">),</span>
+                <span class="n">SKDecimal</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;roi_p1&#39;</span><span class="p">),</span>
+                <span class="n">SKDecimal</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;roi_p2&#39;</span><span class="p">),</span>
+                <span class="n">SKDecimal</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;roi_p3&#39;</span><span class="p">),</span>
+            <span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">generate_roi_table</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+
+            <span class="n">roi_table</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">roi_table</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_p1&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_p2&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_p3&#39;</span><span class="p">]</span>
+            <span class="n">roi_table</span><span class="p">[</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_t3&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_p1&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_p2&#39;</span><span class="p">]</span>
+            <span class="n">roi_table</span><span class="p">[</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_t3&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_t2&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_p1&#39;</span><span class="p">]</span>
+            <span class="n">roi_table</span><span class="p">[</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_t3&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_t2&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;roi_t1&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">return</span> <span class="n">roi_table</span>
+
+        <span class="k">def</span> <span class="nf">trailing_space</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dimension</span><span class="p">]:</span>
+            <span class="c1"># All parameters here are mandatory, you can only modify their type or the range.</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="c1"># Fixed to true, if optimizing trailing_stop we assume to use trailing stop at all times.</span>
+                <span class="n">Categorical</span><span class="p">([</span><span class="kc">True</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trailing_stop&#39;</span><span class="p">),</span>
+
+                <span class="n">SKDecimal</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trailing_stop_positive&#39;</span><span class="p">),</span>
+                <span class="c1"># &#39;trailing_stop_positive_offset&#39; should be greater than &#39;trailing_stop_positive&#39;,</span>
+                <span class="c1"># so this intermediate parameter is used as the value of the difference between</span>
+                <span class="c1"># them. The value of the &#39;trailing_stop_positive_offset&#39; is constructed in the</span>
+                <span class="c1"># generate_trailing_params() method.</span>
+                <span class="c1"># This is similar to the hyperspace dimensions used for constructing the ROI tables.</span>
+                <span class="n">SKDecimal</span><span class="p">(</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trailing_stop_positive_offset_p1&#39;</span><span class="p">),</span>
+
+                <span class="n">Categorical</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;trailing_only_offset_is_reached&#39;</span><span class="p">),</span>
+        <span class="p">]</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All overrides are optional and can be mixed/matched as necessary.</p>
+</div>
+<h3 id="dynamic-parameters">Dynamic parameters<a class="headerlink" href="#dynamic-parameters" title="Permanent link">&para;</a></h3>
+<p>Parameters can also be defined dynamically, but must be available to the instance once the * <a href="../strategy-callbacks/#bot-start"><code>bot_start()</code> callback</a> has been called.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">bot_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buy_adx</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># ...</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Parameters created this way will not show up in the <code>list-strategies</code> parameter count.</p>
+</div>
+<h3 id="overriding-base-estimator">Overriding Base estimator<a class="headerlink" href="#overriding-base-estimator" title="Permanent link">&para;</a></h3>
+<p>You can define your own estimator for Hyperopt by implementing <code>generate_estimator()</code> in the Hyperopt subclass.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">HyperOpt</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">generate_estimator</span><span class="p">(</span><span class="n">dimensions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;Dimension&#39;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;RF&quot;</span>
+</code></pre></div>
+<p>Possible values are either one of "GP", "RF", "ET", "GBRT" (Details can be found in the <a href="https://scikit-optimize.github.io/">scikit-optimize documentation</a>), or "an instance of a class that inherits from <code>RegressorMixin</code> (from sklearn) and where the <code>predict</code> method has an optional <code>return_std</code> argument, which returns <code>std(Y | x)</code> along with <code>E[Y | x]</code>".</p>
+<p>Some research will be necessary to find additional Regressors.</p>
+<p>Example for <code>ExtraTreesRegressor</code> ("ET") with additional parameters:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">HyperOpt</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">generate_estimator</span><span class="p">(</span><span class="n">dimensions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;Dimension&#39;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="kn">from</span> <span class="nn">skopt.learning</span> <span class="kn">import</span> <span class="n">ExtraTreesRegressor</span>
+            <span class="c1"># Corresponds to &quot;ET&quot; - but allows additional parameters.</span>
+            <span class="k">return</span> <span class="n">ExtraTreesRegressor</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</code></pre></div>
+<p>The <code>dimensions</code> parameter is the list of <code>skopt.space.Dimension</code> objects corresponding to the parameters to be optimized. It can be used to create isotropic kernels for the <code>skopt.learning.GaussianProcessRegressor</code> estimator. Here's an example:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">HyperOpt</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">generate_estimator</span><span class="p">(</span><span class="n">dimensions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;Dimension&#39;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="kn">from</span> <span class="nn">skopt.utils</span> <span class="kn">import</span> <span class="n">cook_estimator</span>
+            <span class="kn">from</span> <span class="nn">skopt.learning.gaussian_process.kernels</span> <span class="kn">import</span> <span class="p">(</span><span class="n">Matern</span><span class="p">,</span> <span class="n">ConstantKernel</span><span class="p">)</span>
+            <span class="n">kernel_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0001</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+            <span class="n">kernel</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">ConstantKernel</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">kernel_bounds</span><span class="p">)</span> <span class="o">*</span> 
+                <span class="n">Matern</span><span class="p">(</span><span class="n">length_scale</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)),</span> <span class="n">length_scale_bounds</span><span class="o">=</span><span class="p">[</span><span class="n">kernel_bounds</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">],</span> <span class="n">nu</span><span class="o">=</span><span class="mf">2.5</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">kernel</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="n">ConstantKernel</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">kernel_bounds</span><span class="p">)</span> <span class="o">*</span> 
+                <span class="n">Matern</span><span class="p">(</span><span class="n">length_scale</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)),</span> <span class="n">length_scale_bounds</span><span class="o">=</span><span class="p">[</span><span class="n">kernel_bounds</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dimensions</span><span class="p">],</span> <span class="n">nu</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">cook_estimator</span><span class="p">(</span><span class="s2">&quot;GP&quot;</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">n_restarts_optimizer</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>While custom estimators can be provided, it's up to you as User to do research on possible parameters and analyze / understand which ones should be used.
+If you're unsure about this, best use one of the Defaults (<code>"ET"</code> has proven to be the most versatile) without further parameters.</p>
+</div>
+<h2 id="space-options">Space options<a class="headerlink" href="#space-options" title="Permanent link">&para;</a></h2>
+<p>For the additional spaces, scikit-optimize (in combination with Freqtrade) provides the following space types:</p>
+<ul>
+<li><code>Categorical</code> - Pick from a list of categories (e.g. <code>Categorical(['a', 'b', 'c'], name="cat")</code>)</li>
+<li><code>Integer</code> - Pick from a range of whole numbers (e.g. <code>Integer(1, 10, name='rsi')</code>)</li>
+<li><code>SKDecimal</code> - Pick from a range of decimal numbers with limited precision (e.g. <code>SKDecimal(0.1, 0.5, decimals=3, name='adx')</code>). <em>Available only with freqtrade</em>.</li>
+<li><code>Real</code> - Pick from a range of decimal numbers with full precision (e.g. <code>Real(0.1, 0.5, name='adx')</code></li>
+</ul>
+<p>You can import all of these from <code>freqtrade.optimize.space</code>, although <code>Categorical</code>, <code>Integer</code> and <code>Real</code> are only aliases for their corresponding scikit-optimize Spaces. <code>SKDecimal</code> is provided by freqtrade for faster optimizations.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.optimize.space</span> <span class="kn">import</span> <span class="n">Categorical</span><span class="p">,</span> <span class="n">Dimension</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">SKDecimal</span><span class="p">,</span> <span class="n">Real</span>  <span class="c1"># noqa</span>
+</code></pre></div>
+<div class="admonition hint">
+<p class="admonition-title">SKDecimal vs. Real</p>
+<p>We recommend to use <code>SKDecimal</code> instead of the <code>Real</code> space in almost all cases. While the Real space provides full accuracy (up to ~16 decimal places) - this precision is rarely needed, and leads to unnecessary long hyperopt times.</p>
+<p>Assuming the definition of a rather small space (<code>SKDecimal(0.10, 0.15, decimals=2, name='xxx')</code>) - SKDecimal will have 5 possibilities (<code>[0.10, 0.11, 0.12, 0.13, 0.14, 0.15]</code>).</p>
+<p>A corresponding real space <code>Real(0.10, 0.15 name='xxx')</code>  on the other hand has an almost unlimited number of possibilities (<code>[0.10, 0.010000000001, 0.010000000002, ... 0.014999999999, 0.01500000000]</code>).</p>
+</div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../strategy-advanced/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Advanced Strategy" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Advanced Strategy
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../producer-consumer/" class="md-footer__link md-footer__link--next" aria-label="Next: Producer/Consumer mode" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Producer/Consumer mode
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["search.share"], "search": "../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d6c3db9e.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
