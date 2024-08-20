@@ -1,0 +1,1923 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/en/latest/2024.4/advanced-setup/">
+      
+      
+        <link rel="prev" href="../advanced-backtesting/">
+      
+      
+        <link rel="next" href="../trade-object/">
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.19">
+    
+    
+      
+        <title>Advanced Post-installation Tasks - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.66ac8b77.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#advanced-post-installation-tasks" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Advanced Post-installation Tasks
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Callbacks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API & FreqUI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    FreqAI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            FreqAI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter table
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feature engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running FreqAI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reinforcement Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Short / Leverage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Sub-commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtest analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#running-multiple-instances-of-freqtrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running multiple instances of Freqtrade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running multiple instances of Freqtrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#things-to-consider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Things to consider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#different-database-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Different database files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-instances-using-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple instances using docker
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-the-bot-running-as-a-systemd-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configure the bot running as a systemd service
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Logging
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#logging-to-syslog" class="md-nav__link">
+    <span class="md-ellipsis">
+      Logging to syslog
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logging-to-journald" class="md-nav__link">
+    <span class="md-ellipsis">
+      Logging to journald
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Trade Object
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lookahead-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lookahead analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recursive-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Recursive analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Producer/Consumer mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheat-sheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating Freqtrade
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#running-multiple-instances-of-freqtrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running multiple instances of Freqtrade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running multiple instances of Freqtrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#things-to-consider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Things to consider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#different-database-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Different database files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-instances-using-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple instances using docker
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-the-bot-running-as-a-systemd-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configure the bot running as a systemd service
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Logging
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#logging-to-syslog" class="md-nav__link">
+    <span class="md-ellipsis">
+      Logging to syslog
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logging-to-journald" class="md-nav__link">
+    <span class="md-ellipsis">
+      Logging to journald
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="advanced-post-installation-tasks">Advanced Post-installation Tasks<a class="headerlink" href="#advanced-post-installation-tasks" title="Permanent link">&para;</a></h1>
+<p>This page explains some advanced tasks and configuration options that can be performed after the bot installation and may be uselful in some environments.</p>
+<p>If you do not know what things mentioned here mean, you probably do not need it.</p>
+<h2 id="running-multiple-instances-of-freqtrade">Running multiple instances of Freqtrade<a class="headerlink" href="#running-multiple-instances-of-freqtrade" title="Permanent link">&para;</a></h2>
+<p>This section will show you how to run multiple bots at the same time, on the same machine.</p>
+<h3 id="things-to-consider">Things to consider<a class="headerlink" href="#things-to-consider" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Use different database files.</li>
+<li>Use different Telegram bots (requires multiple different configuration files; applies only when Telegram is enabled).</li>
+<li>Use different ports (applies only when Freqtrade REST API webserver is enabled).</li>
+</ul>
+<h3 id="different-database-files">Different database files<a class="headerlink" href="#different-database-files" title="Permanent link">&para;</a></h3>
+<p>In order to keep track of your trades, profits, etc., freqtrade is using a SQLite database where it stores various types of information such as the trades you performed in the past and the current position(s) you are holding at any time. This allows you to keep track of your profits, but most importantly, keep track of ongoing activity if the bot process would be restarted or would be terminated unexpectedly.</p>
+<p>Freqtrade will, by default, use separate database files for dry-run and live bots (this assumes no database-url is given in either configuration nor via command line argument).
+For live trading mode, the default database will be <code>tradesv3.sqlite</code> and for dry-run it will be <code>tradesv3.dryrun.sqlite</code>.</p>
+<p>The optional argument to the trade command used to specify the path of these files is <code>--db-url</code>, which requires a valid SQLAlchemy url.
+So when you are starting a bot with only the config and strategy arguments in dry-run mode, the following 2 commands would have the same outcome.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>MyConfig.json<span class="w"> </span>-s<span class="w"> </span>MyStrategy
+<span class="c1"># is equivalent to</span>
+freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>MyConfig.json<span class="w"> </span>-s<span class="w"> </span>MyStrategy<span class="w"> </span>--db-url<span class="w"> </span>sqlite:///tradesv3.dryrun.sqlite
+</code></pre></div>
+<p>It means that if you are running the trade command in two different terminals, for example to test your strategy both for trades in USDT and in another instance for trades in BTC, you will have to run them with different databases.</p>
+<p>If you specify the URL of a database which does not exist, freqtrade will create one with the name you specified. So to test your custom strategy with BTC and USDT stake currencies, you could use the following commands (in 2 separate terminals):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Terminal 1:</span>
+freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>MyConfigBTC.json<span class="w"> </span>-s<span class="w"> </span>MyCustomStrategy<span class="w"> </span>--db-url<span class="w"> </span>sqlite:///user_data/tradesBTC.dryrun.sqlite
+<span class="c1"># Terminal 2:</span>
+freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>MyConfigUSDT.json<span class="w"> </span>-s<span class="w"> </span>MyCustomStrategy<span class="w"> </span>--db-url<span class="w"> </span>sqlite:///user_data/tradesUSDT.dryrun.sqlite
+</code></pre></div>
+<p>Conversely, if you wish to do the same thing in production mode, you will also have to create at least one new database (in addition to the default one) and specify the path to the "live" databases, for example:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Terminal 1:</span>
+freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>MyConfigBTC.json<span class="w"> </span>-s<span class="w"> </span>MyCustomStrategy<span class="w"> </span>--db-url<span class="w"> </span>sqlite:///user_data/tradesBTC.live.sqlite
+<span class="c1"># Terminal 2:</span>
+freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>MyConfigUSDT.json<span class="w"> </span>-s<span class="w"> </span>MyCustomStrategy<span class="w"> </span>--db-url<span class="w"> </span>sqlite:///user_data/tradesUSDT.live.sqlite
+</code></pre></div>
+<p>For more information regarding usage of the sqlite databases, for example to manually enter or remove trades, please refer to the <a href="../sql_cheatsheet/">SQL Cheatsheet</a>.</p>
+<h3 id="multiple-instances-using-docker">Multiple instances using docker<a class="headerlink" href="#multiple-instances-using-docker" title="Permanent link">&para;</a></h3>
+<p>To run multiple instances of freqtrade using docker you will need to edit the docker-compose.yml file and add all the instances you want as separate services. Remember, you can separate your configuration into multiple files, so it's a good idea to think about making them modular, then if you need to edit something common to all bots, you can do that in a single config file. 
+<div class="highlight"><pre><span></span><code>---
+version: &#39;3&#39;
+services:
+  freqtrade1:
+    image: freqtradeorg/freqtrade:stable
+    # image: freqtradeorg/freqtrade:develop
+    # Use plotting image
+    # image: freqtradeorg/freqtrade:develop_plot
+    # Build step - only needed when additional dependencies are needed
+    # build:
+    #   context: .
+    #   dockerfile: &quot;./docker/Dockerfile.custom&quot;
+    restart: always
+    container_name: freqtrade1
+    volumes:
+      - &quot;./user_data:/freqtrade/user_data&quot;
+    # Expose api on port 8080 (localhost only)
+    # Please read the https://www.freqtrade.io/en/latest/rest-api/ documentation
+    # before enabling this.
+     ports:
+     - &quot;127.0.0.1:8080:8080&quot;
+    # Default command used when running `docker compose up`
+    command: &gt;
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade1.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3_freqtrade1.sqlite
+      --config /freqtrade/user_data/config.json
+      --config /freqtrade/user_data/config.freqtrade1.json
+      --strategy SampleStrategy
+
+  freqtrade2:
+    image: freqtradeorg/freqtrade:stable
+    # image: freqtradeorg/freqtrade:develop
+    # Use plotting image
+    # image: freqtradeorg/freqtrade:develop_plot
+    # Build step - only needed when additional dependencies are needed
+    # build:
+    #   context: .
+    #   dockerfile: &quot;./docker/Dockerfile.custom&quot;
+    restart: always
+    container_name: freqtrade2
+    volumes:
+      - &quot;./user_data:/freqtrade/user_data&quot;
+    # Expose api on port 8080 (localhost only)
+    # Please read the https://www.freqtrade.io/en/latest/rest-api/ documentation
+    # before enabling this.
+    ports:
+      - &quot;127.0.0.1:8081:8080&quot;
+    # Default command used when running `docker compose up`
+    command: &gt;
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade2.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3_freqtrade2.sqlite
+      --config /freqtrade/user_data/config.json
+      --config /freqtrade/user_data/config.freqtrade2.json
+      --strategy SampleStrategy
+</code></pre></div>
+You can use whatever naming convention you want, freqtrade1 and 2 are arbitrary. Note, that you will need to use different database files, port mappings and telegram configurations for each instance, as mentioned above. </p>
+<h2 id="configure-the-bot-running-as-a-systemd-service">Configure the bot running as a systemd service<a class="headerlink" href="#configure-the-bot-running-as-a-systemd-service" title="Permanent link">&para;</a></h2>
+<p>Copy the <code>freqtrade.service</code> file to your systemd user directory (usually <code>~/.config/systemd/user</code>) and update <code>WorkingDirectory</code> and <code>ExecStart</code> to match your setup.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Certain systems (like Raspbian) don't load service unit files from the user directory. In this case, copy <code>freqtrade.service</code> into <code>/etc/systemd/user/</code> (requires superuser permissions).</p>
+</div>
+<p>After that you can start the daemon with:</p>
+<div class="highlight"><pre><span></span><code>systemctl<span class="w"> </span>--user<span class="w"> </span>start<span class="w"> </span>freqtrade
+</code></pre></div>
+<p>For this to be persistent (run when user is logged out) you'll need to enable <code>linger</code> for your freqtrade user.</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>loginctl<span class="w"> </span>enable-linger<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$USER</span><span class="s2">&quot;</span>
+</code></pre></div>
+<p>If you run the bot as a service, you can use systemd service manager as a software watchdog monitoring freqtrade bot 
+state and restarting it in the case of failures. If the <code>internals.sd_notify</code> parameter is set to true in the 
+configuration or the <code>--sd-notify</code> command line option is used, the bot will send keep-alive ping messages to systemd 
+using the sd_notify (systemd notifications) protocol and will also tell systemd its current state (Running or Stopped) 
+when it changes. </p>
+<p>The <code>freqtrade.service.watchdog</code> file contains an example of the service unit configuration file which uses systemd 
+as the watchdog.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The sd_notify communication between the bot and the systemd service manager will not work if the bot runs in a Docker container.</p>
+</div>
+<h2 id="advanced-logging">Advanced Logging<a class="headerlink" href="#advanced-logging" title="Permanent link">&para;</a></h2>
+<p>On many Linux systems the bot can be configured to send its log messages to <code>syslog</code> or <code>journald</code> system services. Logging to a remote <code>syslog</code> server is also available on Windows. The special values for the <code>--logfile</code> command line option can be used for this.</p>
+<h3 id="logging-to-syslog">Logging to syslog<a class="headerlink" href="#logging-to-syslog" title="Permanent link">&para;</a></h3>
+<p>To send Freqtrade log messages to a local or remote <code>syslog</code> service use the <code>--logfile</code> command line option with the value in the following format:</p>
+<ul>
+<li><code>--logfile syslog:&lt;syslog_address&gt;</code> -- send log messages to <code>syslog</code> service using the <code>&lt;syslog_address&gt;</code> as the syslog address.</li>
+</ul>
+<p>The syslog address can be either a Unix domain socket (socket filename) or a UDP socket specification, consisting of IP address and UDP port, separated by the <code>:</code> character.</p>
+<p>So, the following are the examples of possible usages:</p>
+<ul>
+<li><code>--logfile syslog:/dev/log</code> -- log to syslog (rsyslog) using the <code>/dev/log</code> socket, suitable for most systems.</li>
+<li><code>--logfile syslog</code> -- same as above, the shortcut for <code>/dev/log</code>.</li>
+<li><code>--logfile syslog:/var/run/syslog</code> -- log to syslog (rsyslog) using the <code>/var/run/syslog</code> socket. Use this on MacOS.</li>
+<li><code>--logfile syslog:localhost:514</code> -- log to local syslog using UDP socket, if it listens on port 514.</li>
+<li><code>--logfile syslog:&lt;ip&gt;:514</code> -- log to remote syslog at IP address and port 514. This may be used on Windows for remote logging to an external syslog server.</li>
+</ul>
+<p>Log messages are send to <code>syslog</code> with the <code>user</code> facility. So you can see them with the following commands:</p>
+<ul>
+<li><code>tail -f /var/log/user</code>, or </li>
+<li>install a comprehensive graphical viewer (for instance, 'Log File Viewer' for Ubuntu).</li>
+</ul>
+<p>On many systems <code>syslog</code> (<code>rsyslog</code>) fetches data from <code>journald</code> (and vice versa), so both <code>--logfile syslog</code> or <code>--logfile journald</code> can be used and the messages be viewed with both <code>journalctl</code> and a syslog viewer utility. You can combine this in any way which suites you better.</p>
+<p>For <code>rsyslog</code> the messages from the bot can be redirected into a separate dedicated log file. To achieve this, add</p>
+<div class="highlight"><pre><span></span><code>if $programname startswith &quot;freqtrade&quot; then -/var/log/freqtrade.log
+</code></pre></div>
+<p>to one of the rsyslog configuration files, for example at the end of the <code>/etc/rsyslog.d/50-default.conf</code>.</p>
+<p>For <code>syslog</code> (<code>rsyslog</code>), the reduction mode can be switched on. This will reduce the number of repeating messages. For instance, multiple bot Heartbeat messages will be reduced to a single message when nothing else happens with the bot. To achieve this, set in <code>/etc/rsyslog.conf</code>:</p>
+<div class="highlight"><pre><span></span><code># Filter duplicated messages
+$RepeatedMsgReduction on
+</code></pre></div>
+<h3 id="logging-to-journald">Logging to journald<a class="headerlink" href="#logging-to-journald" title="Permanent link">&para;</a></h3>
+<p>This needs the <code>cysystemd</code> python package installed as dependency (<code>pip install cysystemd</code>), which is not available on Windows. Hence, the whole journald logging functionality is not available for a bot running on Windows.</p>
+<p>To send Freqtrade log messages to <code>journald</code> system service use the <code>--logfile</code> command line option with the value in the following format:</p>
+<ul>
+<li><code>--logfile journald</code> -- send log messages to <code>journald</code>.</li>
+</ul>
+<p>Log messages are send to <code>journald</code> with the <code>user</code> facility. So you can see them with the following commands:</p>
+<ul>
+<li><code>journalctl -f</code> -- shows Freqtrade log messages sent to <code>journald</code> along with other log messages fetched by <code>journald</code>.</li>
+<li><code>journalctl -f -u freqtrade.service</code> -- this command can be used when the bot is run as a <code>systemd</code> service.</li>
+</ul>
+<p>There are many other options in the <code>journalctl</code> utility to filter the messages, see manual pages for this utility.</p>
+<p>On many systems <code>syslog</code> (<code>rsyslog</code>) fetches data from <code>journald</code> (and vice versa), so both <code>--logfile syslog</code> or <code>--logfile journald</code> can be used and the messages be viewed with both <code>journalctl</code> and a syslog viewer utility. You can combine this in any way which suites you better.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../advanced-backtesting/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Backtest analysis">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Backtest analysis
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../trade-object/" class="md-footer__link md-footer__link--next" aria-label="Next: Trade Object">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Trade Object
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.dd8806f2.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
