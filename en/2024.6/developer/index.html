@@ -1,0 +1,2813 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Freqtrade is a free and open source crypto trading bot written in Python, designed to support all major exchanges and be controlled via Telegram or builtin Web UI">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/en/latest/2024.6/developer/">
+      
+      
+        <link rel="prev" href="../deprecated/">
+      
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.27">
+    
+    
+      
+        <title>Contributors Guide - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.6543a935.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#development-help" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Contributors Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Callbacks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freq-ui/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    freqUI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    FreqAI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            FreqAI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter table
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feature engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running FreqAI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reinforcement Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Short / Leverage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Sub-commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtest analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Trade Object
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lookahead-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lookahead analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recursive-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Recursive analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Producer/Consumer mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheat-sheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating Freqtrade
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#developer-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Developer setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Developer setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#devcontainer-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Devcontainer setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Devcontainer setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#devcontainer-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Devcontainer dependencies
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tests
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-run-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      How to run tests
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#checking-log-content-in-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Checking log content in tests
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Debug configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Debug configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vscode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vscode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pycharm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pycharm
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errorhandling" class="md-nav__link">
+    <span class="md-ellipsis">
+      ErrorHandling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plugins
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pairlists" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pairlists
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pairlists">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pairlist-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pairlist configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#short_desc" class="md-nav__link">
+    <span class="md-ellipsis">
+      short_desc
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gen_pairlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      gen_pairlist
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter_pairlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      filter_pairlist
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="filter_pairlist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      sample
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Protections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#implementation-of-a-new-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementation of a new protection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-vs-local-stops" class="md-nav__link">
+    <span class="md-ellipsis">
+      Global vs. local stops
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Global vs. local stops">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#protections-per-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections - per pair
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protections-global-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections - global protection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protections-calculating-lock-end-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections - calculating lock end time
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implement-a-new-exchange-wip" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implement a new Exchange (WIP)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implement a new Exchange (WIP)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stoploss-on-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stoploss On Exchange
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#incomplete-candles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Incomplete candles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-binance-cached-leverage-tiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update binance cached leverage tiers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updating-example-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updating example notebooks
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#continuous-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Continuous integration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a release
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating a release">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-release-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create release branch
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-changelog-from-git-commits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create changelog from git commits
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frequi-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqUI release
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-github-release-tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create github release / tag
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#releases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Releases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Releases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pypi" class="md-nav__link">
+    <span class="md-ellipsis">
+      pypi
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#developer-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Developer setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Developer setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#devcontainer-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Devcontainer setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Devcontainer setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#devcontainer-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Devcontainer dependencies
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tests
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-run-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      How to run tests
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#checking-log-content-in-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Checking log content in tests
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Debug configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Debug configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vscode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vscode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pycharm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pycharm
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errorhandling" class="md-nav__link">
+    <span class="md-ellipsis">
+      ErrorHandling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plugins
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pairlists" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pairlists
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pairlists">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pairlist-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pairlist configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#short_desc" class="md-nav__link">
+    <span class="md-ellipsis">
+      short_desc
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gen_pairlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      gen_pairlist
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter_pairlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      filter_pairlist
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="filter_pairlist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      sample
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Protections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#implementation-of-a-new-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementation of a new protection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-vs-local-stops" class="md-nav__link">
+    <span class="md-ellipsis">
+      Global vs. local stops
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Global vs. local stops">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#protections-per-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections - per pair
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protections-global-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections - global protection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protections-calculating-lock-end-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      Protections - calculating lock end time
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implement-a-new-exchange-wip" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implement a new Exchange (WIP)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implement a new Exchange (WIP)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stoploss-on-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stoploss On Exchange
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#incomplete-candles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Incomplete candles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-binance-cached-leverage-tiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update binance cached leverage tiers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updating-example-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updating example notebooks
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#continuous-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Continuous integration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a release
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating a release">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-release-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create release branch
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-changelog-from-git-commits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create changelog from git commits
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frequi-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      FreqUI release
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-github-release-tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create github release / tag
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#releases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Releases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Releases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pypi" class="md-nav__link">
+    <span class="md-ellipsis">
+      pypi
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="development-help">Development Help<a class="headerlink" href="#development-help" title="Permanent link">&para;</a></h1>
+<p>This page is intended for developers of Freqtrade, people who want to contribute to the Freqtrade codebase or documentation, or people who want to understand the source code of the application they're running.</p>
+<p>All contributions, bug reports, bug fixes, documentation improvements, enhancements and ideas are welcome. We <a href="https://github.com/freqtrade/freqtrade/issues">track issues</a> on <a href="https://github.com">GitHub</a> and also have a dev channel on <a href="https://discord.gg/p7nuUNVfP7">discord</a> where you can ask questions.</p>
+<h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
+<p>Documentation is available at <a href="https://www.freqtrade.io/">https://freqtrade.io</a> and needs to be provided with every new feature PR.</p>
+<p>Special fields for the documentation (like Note boxes, ...) can be found <a href="https://squidfunk.github.io/mkdocs-material/reference/admonitions/">here</a>.</p>
+<p>To test the documentation locally use the following commands.</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>docs/requirements-docs.txt
+mkdocs<span class="w"> </span>serve
+</code></pre></div>
+<p>This will spin up a local server (usually on port 8000) so you can see if everything looks as you'd like it to.</p>
+<h2 id="developer-setup">Developer setup<a class="headerlink" href="#developer-setup" title="Permanent link">&para;</a></h2>
+<p>To configure a development environment, you can either use the provided <a href="#devcontainer-setup">DevContainer</a>, or use the <code>setup.sh</code> script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
+Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run <code>pip3 install -e .[all]</code>.</p>
+<p>This will install all required tools for development, including <code>pytest</code>, <code>ruff</code>, <code>mypy</code>, and <code>coveralls</code>.</p>
+<p>Then install the git hook scripts by running <code>pre-commit install</code>, so your changes will be verified locally before committing.
+This avoids a lot of waiting for CI already, as some basic formatting checks are done locally on your machine.</p>
+<p>Before opening a pull request, please familiarize yourself with our <a href="https://github.com/freqtrade/freqtrade/blob/develop/CONTRIBUTING.md">Contributing Guidelines</a>.</p>
+<h3 id="devcontainer-setup">Devcontainer setup<a class="headerlink" href="#devcontainer-setup" title="Permanent link">&para;</a></h3>
+<p>The fastest and easiest way to get started is to use <a href="https://code.visualstudio.com/">VSCode</a> with the Remote container extension.
+This gives developers the ability to start the bot with all required dependencies <em>without</em> needing to install any freqtrade specific dependencies on your local machine.</p>
+<h4 id="devcontainer-dependencies">Devcontainer dependencies<a class="headerlink" href="#devcontainer-dependencies" title="Permanent link">&para;</a></h4>
+<ul>
+<li><a href="https://code.visualstudio.com/">VSCode</a></li>
+<li><a href="https://docs.docker.com/install/">docker</a></li>
+<li><a href="https://code.visualstudio.com/docs/remote">Remote container extension documentation</a></li>
+</ul>
+<p>For more information about the <a href="https://code.visualstudio.com/docs/remote">Remote container extension</a>, best consult the documentation.</p>
+<h3 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h3>
+<p>New code should be covered by basic unittests. Depending on the complexity of the feature, Reviewers may request more in-depth unittests.
+If necessary, the Freqtrade team can assist and give guidance with writing good tests (however please don't expect anyone to write the tests for you).</p>
+<h4 id="how-to-run-tests">How to run tests<a class="headerlink" href="#how-to-run-tests" title="Permanent link">&para;</a></h4>
+<p>Use <code>pytest</code> in root folder to run all available testcases and confirm your local environment is setup correctly</p>
+<div class="admonition note">
+<p class="admonition-title">feature branches</p>
+<p>Tests are expected to pass on the <code>develop</code> and <code>stable</code> branches. Other branches may be work in progress with tests not working yet.</p>
+</div>
+<h4 id="checking-log-content-in-tests">Checking log content in tests<a class="headerlink" href="#checking-log-content-in-tests" title="Permanent link">&para;</a></h4>
+<p>Freqtrade uses 2 main methods to check log content in tests, <code>log_has()</code> and <code>log_has_re()</code> (to check using regex, in case of dynamic log-messages).
+These are available from <code>conftest.py</code> and can be imported in any test module.</p>
+<p>A sample check looks as follows:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">tests.conftest</span> <span class="kn">import</span> <span class="n">log_has</span><span class="p">,</span> <span class="n">log_has_re</span>
+
+<span class="k">def</span> <span class="nf">test_method_to_test</span><span class="p">(</span><span class="n">caplog</span><span class="p">):</span>
+    <span class="n">method_to_test</span><span class="p">()</span>
+
+    <span class="k">assert</span> <span class="n">log_has</span><span class="p">(</span><span class="s2">&quot;This event happened&quot;</span><span class="p">,</span> <span class="n">caplog</span><span class="p">)</span>
+    <span class="c1"># Check regex with trailing number ...</span>
+    <span class="k">assert</span> <span class="n">log_has_re</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;This dynamic event happened and produced \d+&quot;</span><span class="p">,</span> <span class="n">caplog</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="debug-configuration">Debug configuration<a class="headerlink" href="#debug-configuration" title="Permanent link">&para;</a></h3>
+<p>To debug freqtrade, we recommend VSCode (with the Python extension) with the following launch configuration (located in <code>.vscode/launch.json</code>).
+Details will obviously vary between setups - but this should work to get you started.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;freqtrade trade&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;debugpy&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;request&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;launch&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;module&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;freqtrade&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;console&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integratedTerminal&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;trade&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="c1">// Optional:</span>
+<span class="w">        </span><span class="c1">// &quot;--userdir&quot;, &quot;user_data&quot;,</span>
+<span class="w">        </span><span class="s2">&quot;--strategy&quot;</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">&quot;MyAwesomeStrategy&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">},</span>
+</code></pre></div>
+<p>Command line arguments can be added in the <code>"args"</code> array.
+This method can also be used to debug a strategy, by setting the breakpoints within the strategy.</p>
+<p>A similar setup can also be taken for Pycharm - using <code>freqtrade</code> as module name, and setting the command line arguments as "parameters".</p>
+<details class="tip">
+<summary>Correct venv usage</summary>
+<p>When using a virtual environment (which you should), make sure that your Editor is using the correct virtual environment to avoid problems or "unknown import" errors.</p>
+<h4 id="vscode">Vscode<a class="headerlink" href="#vscode" title="Permanent link">&para;</a></h4>
+<p>You can select the correct environment in VSCode with the command "Python: Select Interpreter" - which will show you environments the extension detected.
+If your environment has not been detected, you can also pick a path manually.</p>
+<h4 id="pycharm">Pycharm<a class="headerlink" href="#pycharm" title="Permanent link">&para;</a></h4>
+<p>In pycharm, you can select the appropriate Environment in the "Run/Debug Configurations" window.
+<img alt="Pycharm debug configuration" src="../assets/pycharm_debug.png" /></p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Startup directory</p>
+<p>This assumes that you have the repository checked out, and the editor is started at the repository root level (so setup.py is at the top level of your repository).</p>
+</div>
+<h2 id="errorhandling">ErrorHandling<a class="headerlink" href="#errorhandling" title="Permanent link">&para;</a></h2>
+<p>Freqtrade Exceptions all inherit from <code>FreqtradeException</code>.
+This general class of error should however not be used directly. Instead, multiple specialized sub-Exceptions exist.</p>
+<p>Below is an outline of exception inheritance hierarchy:</p>
+<div class="highlight"><pre><span></span><code>+ FreqtradeException
+|
++---+ OperationalException
+|   |
+|   +---+ ConfigurationError
+|
++---+ DependencyException
+|   |
+|   +---+ PricingError
+|   |
+|   +---+ ExchangeError
+|       |
+|       +---+ TemporaryError
+|       |
+|       +---+ DDosProtection
+|       |
+|       +---+ InvalidOrderException
+|           |
+|           +---+ RetryableOrderError
+|           |
+|           +---+ InsufficientFundsError
+|
++---+ StrategyError
+</code></pre></div>
+<hr />
+<h2 id="plugins">Plugins<a class="headerlink" href="#plugins" title="Permanent link">&para;</a></h2>
+<h3 id="pairlists">Pairlists<a class="headerlink" href="#pairlists" title="Permanent link">&para;</a></h3>
+<p>You have a great idea for a new pair selection algorithm you would like to try out? Great.
+Hopefully you also want to contribute this back upstream.</p>
+<p>Whatever your motivations are - This should get you off the ground in trying to develop a new Pairlist Handler.</p>
+<p>First of all, have a look at the <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/pairlist/VolumePairList.py">VolumePairList</a> Handler, and best copy this file with a name of your new Pairlist Handler.</p>
+<p>This is a simple Handler, which however serves as a good example on how to start developing.</p>
+<p>Next, modify the class-name of the Handler (ideally align this with the module filename).</p>
+<p>The base-class provides an instance of the exchange (<code>self._exchange</code>) the pairlist manager (<code>self._pairlistmanager</code>), as well as the main configuration (<code>self._config</code>), the pairlist dedicated configuration (<code>self._pairlistconfig</code>) and the absolute position within the list of pairlists.</p>
+<div class="highlight"><pre><span></span><code>        <span class="bp">self</span><span class="o">.</span><span class="n">_exchange</span> <span class="o">=</span> <span class="n">exchange</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pairlistmanager</span> <span class="o">=</span> <span class="n">pairlistmanager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pairlistconfig</span> <span class="o">=</span> <span class="n">pairlistconfig</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pairlist_pos</span> <span class="o">=</span> <span class="n">pairlist_pos</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Don't forget to register your pairlist in <code>constants.py</code> under the variable <code>AVAILABLE_PAIRLISTS</code> - otherwise it will not be selectable.</p>
+</div>
+<p>Now, let's step through the methods which require actions:</p>
+<h4 id="pairlist-configuration">Pairlist configuration<a class="headerlink" href="#pairlist-configuration" title="Permanent link">&para;</a></h4>
+<p>Configuration for the chain of Pairlist Handlers is done in the bot configuration file in the element <code>"pairlists"</code>, an array of configuration parameters for each Pairlist Handlers in the chain.</p>
+<p>By convention, <code>"number_assets"</code> is used to specify the maximum number of pairs to keep in the pairlist. Please follow this to ensure a consistent user experience.</p>
+<p>Additional parameters can be configured as needed. For instance, <code>VolumePairList</code> uses <code>"sort_key"</code> to specify the sorting value - however feel free to specify whatever is necessary for your great algorithm to be successful and dynamic.</p>
+<h4 id="short_desc">short_desc<a class="headerlink" href="#short_desc" title="Permanent link">&para;</a></h4>
+<p>Returns a description used for Telegram messages.</p>
+<p>This should contain the name of the Pairlist Handler, as well as a short description containing the number of assets. Please follow the format <code>"PairlistName - top/bottom X pairs"</code>.</p>
+<h4 id="gen_pairlist">gen_pairlist<a class="headerlink" href="#gen_pairlist" title="Permanent link">&para;</a></h4>
+<p>Override this method if the Pairlist Handler can be used as the leading Pairlist Handler in the chain, defining the initial pairlist which is then handled by all Pairlist Handlers in the chain. Examples are <code>StaticPairList</code> and <code>VolumePairList</code>.</p>
+<p>This is called with each iteration of the bot (only if the Pairlist Handler is at the first location) - so consider implementing caching for compute/network heavy calculations.</p>
+<p>It must return the resulting pairlist (which may then be passed into the chain of Pairlist Handlers).</p>
+<p>Validations are optional, the parent class exposes a <code>_verify_blacklist(pairlist)</code> and <code>_whitelist_for_active_markets(pairlist)</code> to do default filtering. Use this if you limit your result to a certain number of pairs - so the end-result is not shorter than expected.</p>
+<h4 id="filter_pairlist">filter_pairlist<a class="headerlink" href="#filter_pairlist" title="Permanent link">&para;</a></h4>
+<p>This method is called for each Pairlist Handler in the chain by the pairlist manager.</p>
+<p>This is called with each iteration of the bot - so consider implementing caching for compute/network heavy calculations.</p>
+<p>It gets passed a pairlist (which can be the result of previous pairlists) as well as <code>tickers</code>, a pre-fetched version of <code>get_tickers()</code>.</p>
+<p>The default implementation in the base class simply calls the <code>_validate_pair()</code> method for each pair in the pairlist, but you may override it. So you should either implement the <code>_validate_pair()</code> in your Pairlist Handler or override <code>filter_pairlist()</code> to do something else.</p>
+<p>If overridden, it must return the resulting pairlist (which may then be passed into the next Pairlist Handler in the chain).</p>
+<p>Validations are optional, the parent class exposes a <code>_verify_blacklist(pairlist)</code> and <code>_whitelist_for_active_markets(pairlist)</code> to do default filters. Use this if you limit your result to a certain number of pairs - so the end result is not shorter than expected.</p>
+<p>In <code>VolumePairList</code>, this implements different methods of sorting, does early validation so only the expected number of pairs is returned.</p>
+<h5 id="sample">sample<a class="headerlink" href="#sample" title="Permanent link">&para;</a></h5>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">filter_pairlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pairlist</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">tickers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="c1"># Generate dynamic whitelist</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_pairlist</span><span class="p">(</span><span class="n">pairlist</span><span class="p">,</span> <span class="n">tickers</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pairs</span>
+</code></pre></div>
+<h3 id="protections">Protections<a class="headerlink" href="#protections" title="Permanent link">&para;</a></h3>
+<p>Best read the <a href="../plugins/#protections">Protection documentation</a> to understand protections.
+This Guide is directed towards Developers who want to develop a new protection.</p>
+<p>No protection should use datetime directly, but use the provided <code>date_now</code> variable for date calculations. This preserves the ability to backtest protections.</p>
+<div class="admonition tip">
+<p class="admonition-title">Writing a new Protection</p>
+<p>Best copy one of the existing Protections to have a good example.
+Don't forget to register your protection in <code>constants.py</code> under the variable <code>AVAILABLE_PROTECTIONS</code> - otherwise it will not be selectable.</p>
+</div>
+<h4 id="implementation-of-a-new-protection">Implementation of a new protection<a class="headerlink" href="#implementation-of-a-new-protection" title="Permanent link">&para;</a></h4>
+<p>All Protection implementations must have <code>IProtection</code> as parent class.
+For that reason, they must implement the following methods:</p>
+<ul>
+<li><code>short_desc()</code></li>
+<li><code>global_stop()</code></li>
+<li><code>stop_per_pair()</code>.</li>
+</ul>
+<p><code>global_stop()</code> and <code>stop_per_pair()</code> must return a ProtectionReturn object, which consists of:</p>
+<ul>
+<li>lock pair - boolean</li>
+<li>lock until - datetime - until when should the pair be locked (will be rounded up to the next new candle)</li>
+<li>reason - string, used for logging and storage in the database</li>
+<li>lock_side - long, short or '*'.</li>
+</ul>
+<p>The <code>until</code> portion should be calculated using the provided <code>calculate_lock_end()</code> method.</p>
+<p>All Protections should use <code>"stop_duration"</code> / <code>"stop_duration_candles"</code> to define how long a pair (or all pairs) should be locked.
+The content of this is made available as <code>self._stop_duration</code> to the each Protection.</p>
+<p>If your protection requires a look-back period, please use <code>"lookback_period"</code> / <code>"lockback_period_candles"</code> to keep all protections aligned.</p>
+<h4 id="global-vs-local-stops">Global vs. local stops<a class="headerlink" href="#global-vs-local-stops" title="Permanent link">&para;</a></h4>
+<p>Protections can have 2 different ways to stop trading for a limited :</p>
+<ul>
+<li>Per pair (local)</li>
+<li>For all Pairs (globally)</li>
+</ul>
+<h5 id="protections-per-pair">Protections - per pair<a class="headerlink" href="#protections-per-pair" title="Permanent link">&para;</a></h5>
+<p>Protections that implement the per pair approach must set <code>has_local_stop=True</code>.
+The method <code>stop_per_pair()</code> will be called whenever a trade closed (exit order completed).</p>
+<h5 id="protections-global-protection">Protections - global protection<a class="headerlink" href="#protections-global-protection" title="Permanent link">&para;</a></h5>
+<p>These Protections should do their evaluation across all pairs, and consequently will also lock all pairs from trading (called a global PairLock).
+Global protection must set <code>has_global_stop=True</code> to be evaluated for global stops.
+The method <code>global_stop()</code> will be called whenever a trade closed (exit order completed).</p>
+<h5 id="protections-calculating-lock-end-time">Protections - calculating lock end time<a class="headerlink" href="#protections-calculating-lock-end-time" title="Permanent link">&para;</a></h5>
+<p>Protections should calculate the lock end time based on the last trade it considers.
+This avoids re-locking should the lookback-period be longer than the actual lock period.</p>
+<p>The <code>IProtection</code> parent class provides a helper method for this in <code>calculate_lock_end()</code>.</p>
+<hr />
+<h2 id="implement-a-new-exchange-wip">Implement a new Exchange (WIP)<a class="headerlink" href="#implement-a-new-exchange-wip" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This section is a Work in Progress and is not a complete guide on how to test a new exchange with Freqtrade.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Make sure to use an up-to-date version of CCXT before running any of the below tests.
+You can get the latest version of ccxt by running <code>pip install -U ccxt</code> with activated virtual environment.
+Native docker is not supported for these tests, however the available dev-container will support all required actions and eventually necessary changes.</p>
+</div>
+<p>Most exchanges supported by CCXT should work out of the box.</p>
+<p>To quickly test the public endpoints of an exchange, add a configuration for your exchange to <code>tests/exchange_online/conftest.py</code> and run these tests with <code>pytest --longrun tests/exchange_online/test_ccxt_compat.py</code>.
+Completing these tests successfully a good basis point (it's a requirement, actually), however these won't guarantee correct exchange functioning, as this only tests public endpoints, but no private endpoint (like generate order or similar).</p>
+<p>Also try to use <code>freqtrade download-data</code> for an extended timerange (multiple months) and verify that the data downloaded correctly (no holes, the specified timerange was actually downloaded).</p>
+<p>These are prerequisites to have an exchange listed as either Supported or Community tested (listed on the homepage).
+The below are "extras", which will make an exchange better (feature-complete) - but are not absolutely necessary for either of the 2 categories.</p>
+<p>Additional tests / steps to complete:</p>
+<ul>
+<li>Verify data provided by <code>fetch_ohlcv()</code> - and eventually adjust <code>ohlcv_candle_limit</code> for this exchange</li>
+<li>Check L2 orderbook limit range (API documentation) - and eventually set as necessary</li>
+<li>Check if balance shows correctly (*)</li>
+<li>Create market order (*)</li>
+<li>Create limit order (*)</li>
+<li>Cancel order (*)</li>
+<li>Complete trade (enter + exit) (*)<ul>
+<li>Compare result calculation between exchange and bot</li>
+<li>Ensure fees are applied correctly (check the database against the exchange)</li>
+</ul>
+</li>
+</ul>
+<p>(*) Requires API keys and Balance on the exchange.</p>
+<h3 id="stoploss-on-exchange">Stoploss On Exchange<a class="headerlink" href="#stoploss-on-exchange" title="Permanent link">&para;</a></h3>
+<p>Check if the new exchange supports Stoploss on Exchange orders through their API.</p>
+<p>Since CCXT does not provide unification for Stoploss On Exchange yet, we'll need to implement the exchange-specific parameters ourselves. Best look at <code>binance.py</code> for an example implementation of this. You'll need to dig through the documentation of the Exchange's API on how exactly this can be done. <a href="https://github.com/ccxt/ccxt/issues">CCXT Issues</a> may also provide great help, since others may have implemented something similar for their projects.</p>
+<h3 id="incomplete-candles">Incomplete candles<a class="headerlink" href="#incomplete-candles" title="Permanent link">&para;</a></h3>
+<p>While fetching candle (OHLCV) data, we may end up getting incomplete candles (depending on the exchange).
+To demonstrate this, we'll use daily candles (<code>"1d"</code>) to keep things simple.
+We query the api (<code>ct.fetch_ohlcv()</code>) for the timeframe and look at the date of the last entry. If this entry changes or shows the date of a "incomplete" candle, then we should drop this since having incomplete candles is problematic because indicators assume that only complete candles are passed to them, and will generate a lot of false buy signals. By default, we're therefore removing the last candle assuming it's incomplete.</p>
+<p>To check how the new exchange behaves, you can use the following snippet:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">ccxt</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span> <span class="nn">freqtrade.data.converter</span> <span class="kn">import</span> <span class="n">ohlcv_to_dataframe</span>
+<span class="n">ct</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binance</span><span class="p">()</span>  <span class="c1"># Use the exchange you&#39;re testing</span>
+<span class="n">timeframe</span> <span class="o">=</span> <span class="s2">&quot;1d&quot;</span>
+<span class="n">pair</span> <span class="o">=</span> <span class="s2">&quot;BTC/USDT&quot;</span>  <span class="c1"># Make sure to use a pair that exists on that exchange!</span>
+<span class="n">raw</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">fetch_ohlcv</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="n">timeframe</span><span class="o">=</span><span class="n">timeframe</span><span class="p">)</span>
+
+<span class="c1"># convert to dataframe</span>
+<span class="n">df1</span> <span class="o">=</span> <span class="n">ohlcv_to_dataframe</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">timeframe</span><span class="p">,</span> <span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span> <span class="n">drop_incomplete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">df1</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">                         date      open      high       low     close  volume  </span>
+<span class="go">499 2019-06-08 00:00:00+00:00  0.000007  0.000007  0.000007  0.000007   26264344.0  </span>
+<span class="go">2019-06-09 12:30:27.873327</span>
+</code></pre></div>
+<p>The output will show the last entry from the Exchange as well as the current UTC date.
+If the day shows the same day, then the last candle can be assumed as incomplete and should be dropped (leave the setting <code>"ohlcv_partial_candle"</code> from the exchange-class untouched / True). Otherwise, set <code>"ohlcv_partial_candle"</code> to <code>False</code> to not drop Candles (shown in the example above).
+Another way is to run this command multiple times in a row and observe if the volume is changing (while the date remains the same).</p>
+<h3 id="update-binance-cached-leverage-tiers">Update binance cached leverage tiers<a class="headerlink" href="#update-binance-cached-leverage-tiers" title="Permanent link">&para;</a></h3>
+<p>Updating leveraged tiers should be done regularly - and requires an authenticated account with futures enabled.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">ccxt</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">exchange</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binance</span><span class="p">({</span>
+    <span class="s1">&#39;apiKey&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;apikey&gt;&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;secret&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;secret&gt;&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;defaultType&#39;</span><span class="p">:</span> <span class="s1">&#39;swap&#39;</span><span class="p">}</span>
+    <span class="p">})</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">load_markets</span><span class="p">()</span>
+
+<span class="n">lev_tiers</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">fetch_leverage_tiers</span><span class="p">()</span>
+
+<span class="c1"># Assumes this is running in the root of the repository.</span>
+<span class="n">file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;freqtrade/exchange/binance_leverage_tiers.json&#39;</span><span class="p">)</span>
+<span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">lev_tiers</span><span class="o">.</span><span class="n">items</span><span class="p">())),</span> <span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;w&#39;</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+<p>This file should then be contributed upstream, so others can benefit from this, too.</p>
+<h2 id="updating-example-notebooks">Updating example notebooks<a class="headerlink" href="#updating-example-notebooks" title="Permanent link">&para;</a></h2>
+<p>To keep the jupyter notebooks aligned with the documentation, the following should be ran after updating a example notebook.</p>
+<div class="highlight"><pre><span></span><code>jupyter<span class="w"> </span>nbconvert<span class="w"> </span>--ClearOutputPreprocessor.enabled<span class="o">=</span>True<span class="w"> </span>--inplace<span class="w"> </span>freqtrade/templates/strategy_analysis_example.ipynb
+jupyter<span class="w"> </span>nbconvert<span class="w"> </span>--ClearOutputPreprocessor.enabled<span class="o">=</span>True<span class="w"> </span>--to<span class="w"> </span>markdown<span class="w"> </span>freqtrade/templates/strategy_analysis_example.ipynb<span class="w"> </span>--stdout<span class="w"> </span>&gt;<span class="w"> </span>docs/strategy_analysis_example.md
+</code></pre></div>
+<h2 id="continuous-integration">Continuous integration<a class="headerlink" href="#continuous-integration" title="Permanent link">&para;</a></h2>
+<p>This documents some decisions taken for the CI Pipeline.</p>
+<ul>
+<li>CI runs on all OS variants, Linux (ubuntu), macOS and Windows.</li>
+<li>Docker images are build for the branches <code>stable</code> and <code>develop</code>, and are built as multiarch builds, supporting multiple platforms via the same tag.</li>
+<li>Docker images containing Plot dependencies are also available as <code>stable_plot</code> and <code>develop_plot</code>.</li>
+<li>Docker images contain a file, <code>/freqtrade/freqtrade_commit</code> containing the commit this image is based of.</li>
+<li>Full docker image rebuilds are run once a week via schedule.</li>
+<li>Deployments run on ubuntu.</li>
+<li>ta-lib binaries are contained in the build_helpers directory to avoid fails related to external unavailability.</li>
+<li>All tests must pass for a PR to be merged to <code>stable</code> or <code>develop</code>.</li>
+</ul>
+<h2 id="creating-a-release">Creating a release<a class="headerlink" href="#creating-a-release" title="Permanent link">&para;</a></h2>
+<p>This part of the documentation is aimed at maintainers, and shows how to create a release.</p>
+<h3 id="create-release-branch">Create release branch<a class="headerlink" href="#create-release-branch" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Make sure that the <code>stable</code> branch is up-to-date!</p>
+</div>
+<p>First, pick a commit that's about one week old (to not include latest additions to releases).</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># create new branch</span>
+git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>new_release<span class="w"> </span>&lt;commitid&gt;
+</code></pre></div>
+<p>Determine if crucial bugfixes have been made between this commit and the current state, and eventually cherry-pick these.</p>
+<ul>
+<li>Merge the release branch (stable) into this branch.</li>
+<li>Edit <code>freqtrade/__init__.py</code> and add the version matching the current date (for example <code>2019.7</code> for July 2019). Minor versions can be <code>2019.7.1</code> should we need to do a second release that month. Version numbers must follow allowed versions from PEP0440 to avoid failures pushing to pypi.</li>
+<li>Commit this part.</li>
+<li>Push that branch to the remote and create a PR against the <strong>stable branch</strong>.</li>
+<li>Update develop version to next version following the pattern <code>2019.8-dev</code>.</li>
+</ul>
+<h3 id="create-changelog-from-git-commits">Create changelog from git commits<a class="headerlink" href="#create-changelog-from-git-commits" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Needs to be done before merging / pulling that branch.</span>
+git<span class="w"> </span>log<span class="w"> </span>--oneline<span class="w"> </span>--no-decorate<span class="w"> </span>--no-merges<span class="w"> </span>stable..new_release
+</code></pre></div>
+<p>To keep the release-log short, best wrap the full git changelog into a collapsible details section.</p>
+<div class="highlight"><pre><span></span><code>&lt;details&gt;
+&lt;summary&gt;Expand full changelog&lt;/summary&gt;
+
+... Full git changelog
+
+&lt;/details&gt;
+</code></pre></div>
+<h3 id="frequi-release">FreqUI release<a class="headerlink" href="#frequi-release" title="Permanent link">&para;</a></h3>
+<p>If FreqUI has been updated substantially, make sure to create a release before merging the release branch.
+Make sure that freqUI CI on the release is finished and passed before merging the release.</p>
+<h3 id="create-github-release-tag">Create github release / tag<a class="headerlink" href="#create-github-release-tag" title="Permanent link">&para;</a></h3>
+<p>Once the PR against stable is merged (best right after merging):</p>
+<ul>
+<li>Use the button "Draft a new release" in the Github UI (subsection releases).</li>
+<li>Use the version-number specified as tag.</li>
+<li>Use "stable" as reference (this step comes after the above PR is merged).</li>
+<li>Use the above changelog as release comment (as codeblock).</li>
+<li>Use the below snippet for the new release</li>
+</ul>
+<details class="tip">
+<summary>Release template</summary>
+<div class="highlight"><pre><span></span><code>## Highlighted changes
+
+- ...
+
+### How to update
+
+As always, you can update your bot using one of the following commands:
+
+#### docker-compose
+
+```bash
+docker-compose pull
+docker-compose up -d
+```
+
+#### Installation via setup script
+
+```
+# Deactivate venv and run 
+./setup.sh --update
+```
+
+#### Plain native installation
+
+```
+git pull
+pip install -U -r requirements.txt
+```
+
+&lt;details&gt;
+&lt;summary&gt;Expand full changelog&lt;/summary&gt;
+
+```
+&lt;Paste your changelog here&gt;
+```
+
+&lt;/details&gt;
+</code></pre></div>
+</details>
+<h2 id="releases">Releases<a class="headerlink" href="#releases" title="Permanent link">&para;</a></h2>
+<h3 id="pypi">pypi<a class="headerlink" href="#pypi" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This process is now automated as part of Github Actions.</p>
+</div>
+<p>To create a pypi release, please run the following commands:</p>
+<p>Additional requirement: <code>wheel</code>, <code>twine</code> (for uploading), account on pypi with proper permissions.</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>setup.py<span class="w"> </span>sdist<span class="w"> </span>bdist_wheel
+
+<span class="c1"># For pypi test (to check if some change to the installation did work)</span>
+twine<span class="w"> </span>upload<span class="w"> </span>--repository-url<span class="w"> </span>https://test.pypi.org/legacy/<span class="w"> </span>dist/*
+
+<span class="c1"># For production:</span>
+twine<span class="w"> </span>upload<span class="w"> </span>dist/*
+</code></pre></div>
+<p>Please don't push non-releases to the productive / real pypi instance.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../deprecated/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Deprecated Features">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Deprecated Features
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.ad660dcc.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
