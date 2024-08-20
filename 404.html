@@ -1,8 +1,8 @@
 <script>
     // Check if the current path is versioned, if not, redirect to the default versioned path
-    const versions = [ "stable"]
+    const versions = ["stable"]
     const defaultVersion = "stable"
-    const basePath = "/freqtrade/en"
+    const basePath = "freqtrade/en/"
     const targetRedirectPath = "404" // path to redirect to, relative to basePath
 
     // if path starts with version, redirect to versioned 404
@@ -21,6 +21,7 @@
     // Replace it in href, so we keep hashes and query params
     // Only replace first occurence of basePath
     if (!foundVersion){
-        window.location.href = window.location.href.replace(basePath, `${basePath}/${defaultVersion}`)
+        //window.location.href = window.location.href.replace(basePath, `${basePath}/${defaultVersion}`)
+        window.location.href = `https://${window.location.hostname}/${basePath}/${defaultVersion}`
     }
 </script>
