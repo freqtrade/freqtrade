@@ -1,0 +1,1109 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../advanced-hyperopt/">
+      
+      
+        <link rel="next" href="../deprecated/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.30">
+    
+    
+      
+        <title>Sandbox Testing - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.3cba04c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#sandbox-api-testing" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Sandbox Testing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Subcommands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheatsheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Sandbox Testing
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="sandbox-api-testing">Sandbox API testing<a class="headerlink" href="#sandbox-api-testing" title="Permanent link">&para;</a></h1>
+<p>Where an exchange provides a sandbox for risk-free integration, or end-to-end, testing CCXT provides access to these.</p>
+<p>This document is a *light overview of configuring Freqtrade and GDAX sandbox.
+This can be useful to developers and trader alike as Freqtrade is quite customisable.</p>
+<p>When testing your API connectivity, make sure to use the following URLs.
+<strong><em>Website</em>*
+<a href="https://public.sandbox.gdax.com">https://public.sandbox.gdax.com</a>
+</strong><em>REST API</em>*
+<a href="https://api-public.sandbox.gdax.com">https://api-public.sandbox.gdax.com</a></p>
+<hr />
+<h1 id="configure-a-sandbox-account-on-gdax">Configure a Sandbox account on Gdax<a class="headerlink" href="#configure-a-sandbox-account-on-gdax" title="Permanent link">&para;</a></h1>
+<p>Aim of this document section</p>
+<ul>
+<li>An sanbox account</li>
+<li>create 2FA (needed to create an API)</li>
+<li>Add test 50BTC to account </li>
+<li>Create :</li>
+<li>
+<ul>
+<li>API-KEY</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>API-Secret</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>API Password</li>
+</ul>
+</li>
+</ul>
+<h2 id="acccount">Acccount<a class="headerlink" href="#acccount" title="Permanent link">&para;</a></h2>
+<p>This link will redirect to the sandbox main page to login / create account dialogues:
+<a href="https://public.sandbox.pro.coinbase.com/orders/">https://public.sandbox.pro.coinbase.com/orders/</a></p>
+<p>After registration and Email confimation you wil be redirected into your sanbox account.  It is easy to verify you're in sandbox by checking the URL bar.</p>
+<blockquote>
+<p><a href="https://public.sandbox.pro.coinbase.com/">https://public.sandbox.pro.coinbase.com/</a></p>
+</blockquote>
+<h2 id="enable-2fa-a-prerequisite-to-creating-sandbox-api-keys">Enable 2Fa (a prerequisite to creating sandbox API Keys)<a class="headerlink" href="#enable-2fa-a-prerequisite-to-creating-sandbox-api-keys" title="Permanent link">&para;</a></h2>
+<p>From within sand box site select your profile, top right.</p>
+<blockquote>
+<p>Or as a direct link: <a href="https://public.sandbox.pro.coinbase.com/profile">https://public.sandbox.pro.coinbase.com/profile</a></p>
+</blockquote>
+<p>From the menu panel to the left of the screen select</p>
+<blockquote>
+<p>Security: "<em>View or Update</em>"</p>
+</blockquote>
+<p>In the new site select "enable authenticator" as typical google Authenticator.</p>
+<ul>
+<li>open Google Authenticator on your phone</li>
+<li>scan barcode</li>
+<li>enter your generated 2fa</li>
+</ul>
+<h2 id="enable-api-access">Enable API Access<a class="headerlink" href="#enable-api-access" title="Permanent link">&para;</a></h2>
+<p>From within sandbox select profile&gt;api&gt;create api-keys</p>
+<blockquote>
+<p>or as a direct link: <a href="https://public.sandbox.pro.coinbase.com/profile/api">https://public.sandbox.pro.coinbase.com/profile/api</a></p>
+</blockquote>
+<p>Click on "create one" and ensure  <strong>view</strong> and <strong>trade</strong>  are "checked" and sumbit your 2FA</p>
+<ul>
+<li><strong>Copy and paste the Passphase</strong> into a notepade this will be needed later</li>
+<li><strong>Copy and paste the API Secret</strong> popup into a notepad this will needed later</li>
+<li><strong>Copy and paste the API Key</strong> into a notepad this will needed later</li>
+</ul>
+<h2 id="add-50-btc-test-funds">Add 50 BTC test funds<a class="headerlink" href="#add-50-btc-test-funds" title="Permanent link">&para;</a></h2>
+<p>To add funds, use the web interface deposit and withdraw buttons.</p>
+<p>To begin select 'Wallets' from the top menu.</p>
+<blockquote>
+<p>Or as a direct link: <a href="https://public.sandbox.pro.coinbase.com/wallets">https://public.sandbox.pro.coinbase.com/wallets</a></p>
+</blockquote>
+<ul>
+<li>Deposits (bottom left of screen)</li>
+<li>
+<ul>
+<li>Deposit Funds Bitcoin</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>Coinbase BTC Wallet</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>Max (50 BTC)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>
+<ul>
+<li>Deposit</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><em>This process may be repeated for other currencies, ETH as example</em></p>
+<hr />
+<h1 id="configure-freqtrade-to-use-gax-sandbox">Configure Freqtrade to use Gax Sandbox<a class="headerlink" href="#configure-freqtrade-to-use-gax-sandbox" title="Permanent link">&para;</a></h1>
+<p>The aim of this document section</p>
+<ul>
+<li>Enable sandbox URLs in Freqtrade</li>
+<li>Configure API</li>
+<li>
+<ul>
+<li>secret</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>key</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>passphrase</li>
+</ul>
+</li>
+</ul>
+<h2 id="sandbox-urls">Sandbox URLs<a class="headerlink" href="#sandbox-urls" title="Permanent link">&para;</a></h2>
+<p>Freqtrade makes use of CCXT which in turn provides a list of URLs to Freqtrade.
+These include <code>['test']</code> and <code>['api']</code>.</p>
+<ul>
+<li><code>[Test]</code> if available will point to an Exchanges sandbox. </li>
+<li><code>[Api]</code> normally used, and resolves to live API target on the exchange </li>
+</ul>
+<p>To make use of sandbox / test add "sandbox": true, to your config.json</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gdax&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;sandbox&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;5wowfxemogxeowo;heiohgmd&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/ZMH1P62rCVmwefewrgcewX8nh4gob+lywxfwfxwwfxwfNsH1ySgvWCUR/w==&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1bkjfkhfhfu6sr&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;outdated_offset&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="w">        </span><span class="nt">&quot;pair_whitelist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;BTC/USD&quot;</span>
+</code></pre></div>
+<p>Also insert your </p>
+<ul>
+<li>api-key  (noted earlier)</li>
+<li>api-secret (noted earlier)</li>
+<li>password (the passphrase - noted earlier)</li>
+</ul>
+<hr />
+<h2 id="you-should-now-be-ready-to-test-your-sandbox">You should now be ready to test your sandbox<a class="headerlink" href="#you-should-now-be-ready-to-test-your-sandbox" title="Permanent link">&para;</a></h2>
+<p>Ensure Freqtrade logs show the sandbox URL, and trades made are shown in sandbox.
+** Typically the  BTC/USD has the most activity in sandbox to test against.</p>
+<h2 id="gdax-old-candles-problem">GDAX - Old Candles problem<a class="headerlink" href="#gdax-old-candles-problem" title="Permanent link">&para;</a></h2>
+<p>It is my experience that GDAX sandbox candles may be 20+- minutes out of date. This can cause trades to fail as one of Freqtrades safety checks.</p>
+<p>To disable this check, add / change the <code>"outdated_offset"</code> parameter in the exchange section of your configuration to adjust for this delay.
+Example based on the above configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gdax&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;sandbox&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;5wowfxemogxeowo;heiohgmd&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/ZMH1P62rCVmwefewrgcewX8nh4gob+lywxfwfxwwfxwfNsH1ySgvWCUR/w==&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1bkjfkhfhfu6sr&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;outdated_offset&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span>
+<span class="w">        </span><span class="nt">&quot;pair_whitelist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;BTC/USD&quot;</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+    
+  </body>
+</html>
