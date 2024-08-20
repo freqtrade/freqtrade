@@ -1,0 +1,1279 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../rest-api/">
+      
+      
+        <link rel="next" href="../hyperopt/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.30">
+    
+    
+      
+        <title>Backtesting - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.3cba04c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#backtesting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Backtesting
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-data-for-backtesting-and-hyperopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting data for backtesting and hyperopt
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-your-strategy-with-backtesting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Test your strategy with Backtesting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Test your strategy with Backtesting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-a-backtesting-against-the-currencies-listed-in-your-config-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run a backtesting against the currencies listed in your config file
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run a backtesting against the currencies listed in your config file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#with-5-min-tickers-per-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      With 5 min tickers (Per default)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#with-1-min-tickers" class="md-nav__link">
+    <span class="md-ellipsis">
+      With 1 min tickers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-a-different-on-disk-ticker-data-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using a different on-disk ticker-data source
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#with-a-custom-strategy-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      With a (custom) strategy file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparing-multiple-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Comparing multiple Strategies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exporting-trades-to-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exporting trades to file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exporting-trades-to-file-specifying-a-custom-filename" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exporting trades to file specifying a custom filename
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-backtest-with-smaller-testset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running backtest with smaller testset
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-use-of-timerange" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced use of timerange
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understand-the-backtesting-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand the backtesting result
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand the backtesting result">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#further-backtest-result-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further backtest-result analysis
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backtesting-multiple-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backtesting multiple strategies
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next step
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheatsheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sandbox testing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-data-for-backtesting-and-hyperopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting data for backtesting and hyperopt
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-your-strategy-with-backtesting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Test your strategy with Backtesting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Test your strategy with Backtesting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-a-backtesting-against-the-currencies-listed-in-your-config-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run a backtesting against the currencies listed in your config file
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Run a backtesting against the currencies listed in your config file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#with-5-min-tickers-per-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      With 5 min tickers (Per default)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#with-1-min-tickers" class="md-nav__link">
+    <span class="md-ellipsis">
+      With 1 min tickers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-a-different-on-disk-ticker-data-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using a different on-disk ticker-data source
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#with-a-custom-strategy-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      With a (custom) strategy file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparing-multiple-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Comparing multiple Strategies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exporting-trades-to-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exporting trades to file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exporting-trades-to-file-specifying-a-custom-filename" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exporting trades to file specifying a custom filename
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-backtest-with-smaller-testset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running backtest with smaller testset
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-use-of-timerange" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced use of timerange
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understand-the-backtesting-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand the backtesting result
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand the backtesting result">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#further-backtest-result-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further backtest-result analysis
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backtesting-multiple-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backtesting multiple strategies
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next step
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="backtesting">Backtesting<a class="headerlink" href="#backtesting" title="Permanent link">&para;</a></h1>
+<p>This page explains how to validate your strategy performance by using
+Backtesting.</p>
+<h2 id="getting-data-for-backtesting-and-hyperopt">Getting data for backtesting and hyperopt<a class="headerlink" href="#getting-data-for-backtesting-and-hyperopt" title="Permanent link">&para;</a></h2>
+<p>To download data (candles / OHLCV) needed for backtesting and hyperoptimization use the <code>freqtrade download-data</code> command.</p>
+<p>If no additional parameter is specified, freqtrade will download data for <code>"1m"</code> and <code>"5m"</code> timeframes.
+Exchange and pairs will come from <code>config.json</code> (if specified using <code>-c/--config</code>). Otherwise <code>--exchange</code> becomes mandatory.</p>
+<p>Alternatively, a <code>pairs.json</code> file can be used.</p>
+<p>If you are using Binance for example:</p>
+<ul>
+<li>create a directory <code>user_data/data/binance</code> and copy <code>pairs.json</code> in that directory.</li>
+<li>update the <code>pairs.json</code> to contain the currency pairs you are interested in.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>user_data/data/binance
+cp<span class="w"> </span>freqtrade/tests/testdata/pairs.json<span class="w"> </span>user_data/data/binance
+</code></pre></div>
+<p>Then run:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>download-data<span class="w"> </span>--exchange<span class="w"> </span>binance
+</code></pre></div>
+<p>This will download ticker data for all the currency pairs you defined in <code>pairs.json</code>.</p>
+<ul>
+<li>To use a different directory than the exchange specific default, use <code>--datadir user_data/data/some_directory</code>.</li>
+<li>To change the exchange used to download the tickers, please use a different configuration file (you'll probably need to adjust ratelimits etc.)</li>
+<li>To use <code>pairs.json</code> from some other directory, use <code>--pairs-file some_other_dir/pairs.json</code>.</li>
+<li>To download ticker data for only 10 days, use <code>--days 10</code> (defaults to 30 days).</li>
+<li>Use <code>--timeframes</code> to specify which tickers to download. Default is <code>--timeframes 1m 5m</code> which will download 1-minute and 5-minute tickers.</li>
+<li>To use exchange, timeframe and list of pairs as defined in your configuration file, use the <code>-c/--config</code> option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine <code>-c/--config</code> with most other options.</li>
+</ul>
+<h2 id="test-your-strategy-with-backtesting">Test your strategy with Backtesting<a class="headerlink" href="#test-your-strategy-with-backtesting" title="Permanent link">&para;</a></h2>
+<p>Now you have good Buy and Sell strategies and some historic data, you want to test it against
+real data. This is what we call
+<a href="https://en.wikipedia.org/wiki/Backtesting">backtesting</a>.</p>
+<p>Backtesting will use the crypto-currencies (pair) from your config file
+and load static tickers located in
+<a href="https://github.com/freqtrade/freqtrade/tree/develop/freqtrade/tests/testdata">/freqtrade/tests/testdata</a>.
+If the 5 min and 1 min ticker for the crypto-currencies to test is not
+already in the <code>testdata</code> directory, backtesting will download them
+automatically. Testdata files will not be updated until you specify it.</p>
+<p>The result of backtesting will confirm you if your bot has better odds of making a profit than a loss.</p>
+<p>The backtesting is very easy with freqtrade.</p>
+<h3 id="run-a-backtesting-against-the-currencies-listed-in-your-config-file">Run a backtesting against the currencies listed in your config file<a class="headerlink" href="#run-a-backtesting-against-the-currencies-listed-in-your-config-file" title="Permanent link">&para;</a></h3>
+<h4 id="with-5-min-tickers-per-default">With 5 min tickers (Per default)<a class="headerlink" href="#with-5-min-tickers-per-default" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting
+</code></pre></div>
+<h4 id="with-1-min-tickers">With 1 min tickers<a class="headerlink" href="#with-1-min-tickers" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--ticker-interval<span class="w"> </span>1m
+</code></pre></div>
+<h4 id="using-a-different-on-disk-ticker-data-source">Using a different on-disk ticker-data source<a class="headerlink" href="#using-a-different-on-disk-ticker-data-source" title="Permanent link">&para;</a></h4>
+<p>Assume you downloaded the history data from the Bittrex exchange and kept it in the <code>user_data/data/bittrex-20180101</code> directory. 
+You can then use this data for backtesting as follows:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--datadir<span class="w"> </span>user_data/data/bittrex-20180101
+</code></pre></div>
+<h4 id="with-a-custom-strategy-file">With a (custom) strategy file<a class="headerlink" href="#with-a-custom-strategy-file" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>-s<span class="w"> </span>TestStrategy<span class="w"> </span>backtesting
+</code></pre></div>
+<p>Where <code>-s TestStrategy</code> refers to the class name within the strategy file <code>test_strategy.py</code> found in the <code>freqtrade/user_data/strategies</code> directory.</p>
+<h4 id="comparing-multiple-strategies">Comparing multiple Strategies<a class="headerlink" href="#comparing-multiple-strategies" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy-list<span class="w"> </span>TestStrategy1<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--ticker-interval<span class="w"> </span>5m
+</code></pre></div>
+<p>Where <code>TestStrategy1</code> and <code>AwesomeStrategy</code> refer to class names of strategies.</p>
+<h4 id="exporting-trades-to-file">Exporting trades to file<a class="headerlink" href="#exporting-trades-to-file" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--export<span class="w"> </span>trades
+</code></pre></div>
+<p>The exported trades can be used for <a href="#further-backtest-result-analysis">further analysis</a>, or can be used by the plotting script <code>plot_dataframe.py</code> in the scripts directory.</p>
+<h4 id="exporting-trades-to-file-specifying-a-custom-filename">Exporting trades to file specifying a custom filename<a class="headerlink" href="#exporting-trades-to-file-specifying-a-custom-filename" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--export<span class="w"> </span>trades<span class="w"> </span>--export-filename<span class="o">=</span>backtest_teststrategy.json
+</code></pre></div>
+<h4 id="running-backtest-with-smaller-testset">Running backtest with smaller testset<a class="headerlink" href="#running-backtest-with-smaller-testset" title="Permanent link">&para;</a></h4>
+<p>Use the <code>--timerange</code> argument to change how much of the testset
+you want to use. The last N ticks/timeframes will be used.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--timerange<span class="o">=</span>-200
+</code></pre></div>
+<h4 id="advanced-use-of-timerange">Advanced use of timerange<a class="headerlink" href="#advanced-use-of-timerange" title="Permanent link">&para;</a></h4>
+<p>Doing <code>--timerange=-200</code> will get the last 200 timeframes
+from your inputdata. You can also specify specific dates,
+or a range span indexed by start and stop.</p>
+<p>The full timerange specification:</p>
+<ul>
+<li>Use last 123 tickframes of data: <code>--timerange=-123</code></li>
+<li>Use first 123 tickframes of data: <code>--timerange=123-</code></li>
+<li>Use tickframes from line 123 through 456: <code>--timerange=123-456</code></li>
+<li>Use tickframes till 2018/01/31: <code>--timerange=-20180131</code></li>
+<li>Use tickframes since 2018/01/31: <code>--timerange=20180131-</code></li>
+<li>Use tickframes since 2018/01/31 till 2018/03/01 : <code>--timerange=20180131-20180301</code></li>
+<li>Use tickframes between POSIX timestamps 1527595200 1527618600:
+                                                <code>--timerange=1527595200-1527618600</code></li>
+</ul>
+<h2 id="understand-the-backtesting-result">Understand the backtesting result<a class="headerlink" href="#understand-the-backtesting-result" title="Permanent link">&para;</a></h2>
+<p>The most important in the backtesting is to understand the result.</p>
+<p>A backtesting result will look like that:</p>
+<div class="highlight"><pre><span></span><code>========================================================= BACKTESTING REPORT ========================================================
+| pair     |   buy count |   avg profit % |   cum profit % |   tot profit BTC |   tot profit % | avg duration   |   profit |   loss |
+|:---------|------------:|---------------:|---------------:|-----------------:|---------------:|:---------------|---------:|-------:|
+| ADA/BTC  |          35 |          -0.11 |          -3.88 |      -0.00019428 |          -1.94 | 4:35:00        |       14 |     21 |
+| ARK/BTC  |          11 |          -0.41 |          -4.52 |      -0.00022647 |          -2.26 | 2:03:00        |        3 |      8 |
+| BTS/BTC  |          32 |           0.31 |           9.78 |       0.00048938 |           4.89 | 5:05:00        |       18 |     14 |
+| DASH/BTC |          13 |          -0.08 |          -1.07 |      -0.00005343 |          -0.53 | 4:39:00        |        6 |      7 |
+| ENG/BTC  |          18 |           1.36 |          24.54 |       0.00122807 |          12.27 | 2:50:00        |        8 |     10 |
+| EOS/BTC  |          36 |           0.08 |           3.06 |       0.00015304 |           1.53 | 3:34:00        |       16 |     20 |
+| ETC/BTC  |          26 |           0.37 |           9.51 |       0.00047576 |           4.75 | 6:14:00        |       11 |     15 |
+| ETH/BTC  |          33 |           0.30 |           9.96 |       0.00049856 |           4.98 | 7:31:00        |       16 |     17 |
+| IOTA/BTC |          32 |           0.03 |           1.09 |       0.00005444 |           0.54 | 3:12:00        |       14 |     18 |
+| LSK/BTC  |          15 |           1.75 |          26.26 |       0.00131413 |          13.13 | 2:58:00        |        6 |      9 |
+| LTC/BTC  |          32 |          -0.04 |          -1.38 |      -0.00006886 |          -0.69 | 4:49:00        |       11 |     21 |
+| NANO/BTC |          17 |           1.26 |          21.39 |       0.00107058 |          10.70 | 1:55:00        |       10 |      7 |
+| NEO/BTC  |          23 |           0.82 |          18.97 |       0.00094936 |           9.48 | 2:59:00        |       10 |     13 |
+| REQ/BTC  |           9 |           1.17 |          10.54 |       0.00052734 |           5.27 | 3:47:00        |        4 |      5 |
+| XLM/BTC  |          16 |           1.22 |          19.54 |       0.00097800 |           9.77 | 3:15:00        |        7 |      9 |
+| XMR/BTC  |          23 |          -0.18 |          -4.13 |      -0.00020696 |          -2.07 | 5:30:00        |       12 |     11 |
+| XRP/BTC  |          35 |           0.66 |          22.96 |       0.00114897 |          11.48 | 3:49:00        |       12 |     23 |
+| ZEC/BTC  |          22 |          -0.46 |         -10.18 |      -0.00050971 |          -5.09 | 2:22:00        |        7 |     15 |
+| TOTAL    |         429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |      186 |    243 |
+========================================================= SELL REASON STATS =========================================================
+| Sell Reason        |   Count |
+|:-------------------|--------:|
+| trailing_stop_loss |     205 |
+| stop_loss          |     166 |
+| sell_signal        |      56 |
+| force_sell         |       2 |
+====================================================== LEFT OPEN TRADES REPORT ======================================================
+| pair     |   buy count |   avg profit % |   cum profit % |   tot profit BTC |   tot profit % | avg duration   |   profit |   loss |
+|:---------|------------:|---------------:|---------------:|-----------------:|---------------:|:---------------|---------:|-------:|
+| ADA/BTC  |           1 |           0.89 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |        1 |      0 |
+| LTC/BTC  |           1 |           0.68 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |        1 |      0 |
+| TOTAL    |           2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |        2 |      0 |
+</code></pre></div>
+<p>The 1<sup>st</sup> table will contain all trades the bot made.</p>
+<p>The 2<sup>nd</sup> table will contain a recap of sell reasons.</p>
+<p>The 3<sup>rd</sup> table will contain all trades the bot had to <code>forcesell</code> at the end of the backtest period to present a full picture.
+These trades are also included in the first table, but are extracted separately for clarity.</p>
+<p>The last line will give you the overall performance of your strategy,
+here:</p>
+<div class="highlight"><pre><span></span><code>| TOTAL    |         429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |      186 |    243 |
+</code></pre></div>
+<p>We understand the bot has made <code>429</code> trades for an average duration of
+<code>4:12:00</code>, with a performance of <code>76.20%</code> (profit), that means it has
+earned a total of <code>0.00762792 BTC</code> starting with a capital of 0.01 BTC.</p>
+<p>The column <code>avg profit %</code> shows the average profit for all trades made while the column <code>cum profit %</code> sums all the profits/losses. 
+The column <code>tot profit %</code> shows instead the total profit % in relation to allocated capital 
+(<code>max_open_trades * stake_amount</code>). In the above results we have <code>max_open_trades=2 stake_amount=0.005</code> in config 
+so <code>(76.20/100) * (0.005 * 2) =~ 0.00762792 BTC</code>.</p>
+<p>As you will see your strategy performance will be influenced by your buy
+strategy, your sell strategy, and also by the <code>minimal_roi</code> and
+<code>stop_loss</code> you have set.</p>
+<p>As for an example if your minimal_roi is only <code>"0":  0.01</code>. You cannot
+expect the bot to make more profit than 1% (because it will sell every
+time a trade will reach 1%).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;minimal_roi&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;0&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.01</span>
+<span class="p">},</span>
+</code></pre></div>
+<p>On the other hand, if you set a too high <code>minimal_roi</code> like <code>"0":  0.55</code>
+(55%), there is a lot of chance that the bot will never reach this
+profit. Hence, keep in mind that your performance is a mix of your
+strategies, your configuration, and the crypto-currency you have set up.</p>
+<h3 id="further-backtest-result-analysis">Further backtest-result analysis<a class="headerlink" href="#further-backtest-result-analysis" title="Permanent link">&para;</a></h3>
+<p>To further analyze your backtest results, you can <a href="#exporting-trades-to-file">export the trades</a>.
+You can then load the trades to perform further analysis as shown in our <a href="../data-analysis/#backtesting">data analysis</a> backtesting section.</p>
+<h2 id="backtesting-multiple-strategies">Backtesting multiple strategies<a class="headerlink" href="#backtesting-multiple-strategies" title="Permanent link">&para;</a></h2>
+<p>To backtest multiple strategies, a list of Strategies can be provided.</p>
+<p>This is limited to 1 ticker-interval per run, however, data is only loaded once from disk so if you have multiple
+strategies you'd like to compare, this should give a nice runtime boost.</p>
+<p>All listed Strategies need to be in the same directory.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20180401</span>-20180410<span class="w"> </span>--ticker-interval<span class="w"> </span>5m<span class="w"> </span>--strategy-list<span class="w"> </span>Strategy001<span class="w"> </span>Strategy002<span class="w"> </span>--export<span class="w"> </span>trades
+</code></pre></div>
+<p>This will save the results to <code>user_data/backtest_results/backtest-result-&lt;strategy&gt;.json</code>, injecting the strategy-name into the target filename.
+There will be an additional table comparing win/losses of the different strategies (identical to the "Total" row in the first table).
+Detailed output for all strategies one after the other will be available, so make sure to scroll up.</p>
+<div class="highlight"><pre><span></span><code>=========================================================== Strategy Summary ===========================================================
+| Strategy    |   buy count |   avg profit % |   cum profit % |   tot profit BTC |   tot profit % | avg duration   |   profit |   loss |
+|:------------|------------:|---------------:|---------------:|-----------------:|---------------:|:---------------|---------:|-------:|
+| Strategy1   |         429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |      186 |    243 |
+| Strategy2   |        1487 |          -0.13 |        -197.58 |      -0.00988917 |         -98.79 | 4:43:00        |      662 |    825 |
+</code></pre></div>
+<h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
+<p>Great, your strategy is profitable. What if the bot can give your the
+optimal parameters to use for your strategy?
+Your next step is to learn <a href="../hyperopt/">how to find optimal parameters with Hyperopt</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+    
+  </body>
+</html>
