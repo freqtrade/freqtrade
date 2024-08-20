@@ -1,0 +1,2397 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2022.8/freqai/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.1">
+    
+    
+      
+        <title>FreqAI - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#freqai" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              FreqAI
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        Strategy Callbacks
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_11">
+          Control the bot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_11">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        Short / Leverage
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_19" type="checkbox" id="__nav_19" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_19">
+          Data Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_19">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        Backtest analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_20" type="checkbox" id="__nav_20" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_20">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_20">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          FreqAI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        FreqAI
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    Quick start
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-approach" class="md-nav__link">
+    General approach
+  </a>
+  
+    <nav class="md-nav" aria-label="General approach">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#important-machine-learning-vocabulary" class="md-nav__link">
+    Important machine learning vocabulary
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-prerequisites" class="md-nav__link">
+    Install prerequisites
+  </a>
+  
+    <nav class="md-nav" aria-label="Install prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage-with-docker" class="md-nav__link">
+    Usage with docker
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-freqai" class="md-nav__link">
+    Setting up FreqAI
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting up FreqAI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameter-table" class="md-nav__link">
+    Parameter table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#important-dataframe-key-patterns" class="md-nav__link">
+    Important dataframe key patterns
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-structure" class="md-nav__link">
+    File structure
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-config-file" class="md-nav__link">
+    Example config file
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-a-freqai-strategy" class="md-nav__link">
+    Building a FreqAI strategy
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-dynamic-target" class="md-nav__link">
+    Creating a dynamic target
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-a-custom-prediction-model" class="md-nav__link">
+    Building a custom prediction model
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-engineering" class="md-nav__link">
+    Feature engineering
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-classifier-targets" class="md-nav__link">
+    Setting classifier targets
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-freqai" class="md-nav__link">
+    Running FreqAI
+  </a>
+  
+    <nav class="md-nav" aria-label="Running FreqAI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-the-model-live" class="md-nav__link">
+    Running the model live
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backtesting" class="md-nav__link">
+    Backtesting
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deciding-the-size-of-the-sliding-training-window-and-backtesting-duration" class="md-nav__link">
+    Deciding the size of the sliding training window and backtesting duration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-model-expirations" class="md-nav__link">
+    Defining model expirations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purging-old-model-data" class="md-nav__link">
+    Purging old model data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returning-additional-info-from-training" class="md-nav__link">
+    Returning additional info from training
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-a-follower" class="md-nav__link">
+    Setting up a follower
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-manipulation-techniques" class="md-nav__link">
+    Data manipulation techniques
+  </a>
+  
+    <nav class="md-nav" aria-label="Data manipulation techniques">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feature-normalization" class="md-nav__link">
+    Feature normalization
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reducing-data-dimensionality-with-principal-component-analysis" class="md-nav__link">
+    Reducing data dimensionality with Principal Component Analysis
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stratifying-the-data-for-training-and-testing-the-model" class="md-nav__link">
+    Stratifying the data for training and testing the model
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#controlling-the-model-learning-process" class="md-nav__link">
+    Controlling the model learning process
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outlier-removal" class="md-nav__link">
+    Outlier removal
+  </a>
+  
+    <nav class="md-nav" aria-label="Outlier removal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#removing-outliers-with-the-dissimilarity-index" class="md-nav__link">
+    Removing outliers with the Dissimilarity Index
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removing-outliers-using-a-support-vector-machine-svm" class="md-nav__link">
+    Removing outliers using a Support Vector Machine (SVM)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removing-outliers-with-dbscan" class="md-nav__link">
+    Removing outliers with DBSCAN
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-information" class="md-nav__link">
+    Additional information
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-pitfalls" class="md-nav__link">
+    Common pitfalls
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#credits" class="md-nav__link">
+    Credits
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        Strategy migration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    Quick start
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-approach" class="md-nav__link">
+    General approach
+  </a>
+  
+    <nav class="md-nav" aria-label="General approach">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#important-machine-learning-vocabulary" class="md-nav__link">
+    Important machine learning vocabulary
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-prerequisites" class="md-nav__link">
+    Install prerequisites
+  </a>
+  
+    <nav class="md-nav" aria-label="Install prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage-with-docker" class="md-nav__link">
+    Usage with docker
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-freqai" class="md-nav__link">
+    Setting up FreqAI
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting up FreqAI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#parameter-table" class="md-nav__link">
+    Parameter table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#important-dataframe-key-patterns" class="md-nav__link">
+    Important dataframe key patterns
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-structure" class="md-nav__link">
+    File structure
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-config-file" class="md-nav__link">
+    Example config file
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-a-freqai-strategy" class="md-nav__link">
+    Building a FreqAI strategy
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-dynamic-target" class="md-nav__link">
+    Creating a dynamic target
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-a-custom-prediction-model" class="md-nav__link">
+    Building a custom prediction model
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-engineering" class="md-nav__link">
+    Feature engineering
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-classifier-targets" class="md-nav__link">
+    Setting classifier targets
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-freqai" class="md-nav__link">
+    Running FreqAI
+  </a>
+  
+    <nav class="md-nav" aria-label="Running FreqAI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-the-model-live" class="md-nav__link">
+    Running the model live
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backtesting" class="md-nav__link">
+    Backtesting
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deciding-the-size-of-the-sliding-training-window-and-backtesting-duration" class="md-nav__link">
+    Deciding the size of the sliding training window and backtesting duration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-model-expirations" class="md-nav__link">
+    Defining model expirations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purging-old-model-data" class="md-nav__link">
+    Purging old model data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returning-additional-info-from-training" class="md-nav__link">
+    Returning additional info from training
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-a-follower" class="md-nav__link">
+    Setting up a follower
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-manipulation-techniques" class="md-nav__link">
+    Data manipulation techniques
+  </a>
+  
+    <nav class="md-nav" aria-label="Data manipulation techniques">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feature-normalization" class="md-nav__link">
+    Feature normalization
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reducing-data-dimensionality-with-principal-component-analysis" class="md-nav__link">
+    Reducing data dimensionality with Principal Component Analysis
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stratifying-the-data-for-training-and-testing-the-model" class="md-nav__link">
+    Stratifying the data for training and testing the model
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#controlling-the-model-learning-process" class="md-nav__link">
+    Controlling the model learning process
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outlier-removal" class="md-nav__link">
+    Outlier removal
+  </a>
+  
+    <nav class="md-nav" aria-label="Outlier removal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#removing-outliers-with-the-dissimilarity-index" class="md-nav__link">
+    Removing outliers with the Dissimilarity Index
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removing-outliers-using-a-support-vector-machine-svm" class="md-nav__link">
+    Removing outliers using a Support Vector Machine (SVM)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removing-outliers-with-dbscan" class="md-nav__link">
+    Removing outliers with DBSCAN
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-information" class="md-nav__link">
+    Additional information
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-pitfalls" class="md-nav__link">
+    Common pitfalls
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#credits" class="md-nav__link">
+    Credits
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/freqtrade/freqtrade/edit/develop/docs/freqai.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<p><img alt="freqai-logo" src="../assets/freqai_doc_logo.svg" /></p>
+<h1 id="freqai">FreqAI<a class="headerlink" href="#freqai" title="Permanent link">&para;</a></h1>
+<p>FreqAI is a module designed to automate a variety of tasks associated with training a predictive machine learning model to generate market forecasts given a set of input features.</p>
+<p>Features include:</p>
+<ul>
+<li><strong>Self-adaptive retraining</strong>: retrain models during <a href="#running-the-model-live">live deployments</a> to self-adapt to the market in an unsupervised manner.</li>
+<li><strong>Rapid feature engineering</strong>: create large rich <a href="#feature-engineering">feature sets</a> (10k+ features) based on simple user-created strategies.</li>
+<li><strong>High performance</strong>: adaptive retraining occurs on a separate thread (or on GPU if available) from inferencing and bot trade operations. Newest models and data are kept in memory for rapid inferencing.</li>
+<li><strong>Realistic backtesting</strong>: emulate self-adaptive retraining with a <a href="#backtesting">backtesting module</a> that automates past retraining.</li>
+<li><strong>Modifiability</strong>: use the generalized and robust architecture for incorporating any <a href="#building-a-custom-prediction-model">machine learning library/method</a> available in Python. Eight examples are currently available, including classifiers, regressors, and a convolutional neural network.</li>
+<li><strong>Smart outlier removal</strong>: remove outliers from training and prediction data sets using a variety of <a href="#outlier-removal">outlier detection techniques</a>.</li>
+<li><strong>Crash resilience</strong>: store model to disk to make reloading from a crash fast and easy, and <a href="#purging-old-model-data">purge obsolete files</a> for sustained dry/live runs.</li>
+<li><strong>Automatic data normalization</strong>: <a href="#feature-normalization">normalize the data</a> in a smart and statistically safe way.</li>
+<li><strong>Automatic data download</strong>: compute the data download timerange and update historic data (in live deployments).</li>
+<li><strong>Cleaning of incoming data</strong>: handle NaNs safely before training and prediction.</li>
+<li><strong>Dimensionality reduction</strong>: reduce the size of the training data via <a href="#reducing-data-dimensionality-with-principal-component-analysis">Principal Component Analysis</a>.</li>
+<li><strong>Deploying bot fleets</strong>: set one bot to train models while a fleet of <a href="#setting-up-a-follower">follower bots</a> inference the models and handle trades.</li>
+</ul>
+<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<p>The easiest way to quickly test FreqAI is to run it in dry mode with the following command</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--config<span class="w"> </span>config_examples/config_freqai.example.json<span class="w"> </span>--strategy<span class="w"> </span>FreqaiExampleStrategy<span class="w"> </span>--freqaimodel<span class="w"> </span>LightGBMRegressor<span class="w"> </span>--strategy-path<span class="w"> </span>freqtrade/templates
+</code></pre></div>
+<p>The user will see the boot-up process of automatic data downloading, followed by simultaneous training and trading.</p>
+<p>The example strategy, example prediction model, and example config can be found in
+<code>freqtrade/templates/FreqaiExampleStrategy.py</code>, <code>freqtrade/freqai/prediction_models/LightGBMRegressor.py</code>, and
+<code>config_examples/config_freqai.example.json</code>, respectively.</p>
+<h2 id="general-approach">General approach<a class="headerlink" href="#general-approach" title="Permanent link">&para;</a></h2>
+<p>The user provides FreqAI with a set of custom <em>base</em> indicators (the same way as in a typical Freqtrade strategy) as well as target values (<em>labels</em>).
+FreqAI trains a model to predict the target values based on the input of custom indicators, for each pair in the whitelist. These models are consistently retrained to adapt to market conditions. FreqAI offers the ability to both backtest strategies (emulating reality with periodic retraining) and deploy dry/live runs. In dry/live conditions, FreqAI can be set to constant retraining in a background thread in an effort to keep models as up to date as possible.</p>
+<p>An overview of the algorithm is shown below, explaining the data processing pipeline and the model usage. </p>
+<p><img alt="freqai-algo" src="../assets/freqai_algo.jpg" /></p>
+<h3 id="important-machine-learning-vocabulary">Important machine learning vocabulary<a class="headerlink" href="#important-machine-learning-vocabulary" title="Permanent link">&para;</a></h3>
+<p><strong>Features</strong> - the quantities with which a model is trained. All features for a single candle is stored as a vector. In FreqAI, the user
+builds the feature sets from anything they can construct in the strategy. </p>
+<p><strong>Labels</strong> - the target values that a model is trained
+toward. Each set of features is associated with a single label that is
+defined by the user within the strategy. These labels intentionally look into the
+future, and are not available to the model during dry/live/backtesting.</p>
+<p><strong>Training</strong> - the process of feeding individual feature sets, composed of historic data, with associated labels into the
+model with the goal of matching input feature sets to associated labels. </p>
+<p><strong>Train data</strong> - a subset of the historic data that is fed to the model during
+training. This data directly influences weight connections in the model.</p>
+<p><strong>Test data</strong> - a subset of the historic data that is used to evaluate the performance of the model after training. This data does not influence nodal weights within the model. </p>
+<h2 id="install-prerequisites">Install prerequisites<a class="headerlink" href="#install-prerequisites" title="Permanent link">&para;</a></h2>
+<p>The normal Freqtrade install process will ask the user if they wish to install FreqAI dependencies. The user should reply "yes" to this question if they wish to use FreqAI. If the user did not reply yes, they can manually install these dependencies after the install with:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements-freqai.txt
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Catboost will not be installed on arm devices (raspberry, Mac M1, ARM based VPS, ...), since Catboost does not provide wheels for this platform.</p>
+</div>
+<h3 id="usage-with-docker">Usage with docker<a class="headerlink" href="#usage-with-docker" title="Permanent link">&para;</a></h3>
+<p>For docker users, a dedicated tag with freqAI dependencies is available as <code>:freqai</code>.
+As such - you can replace the image line in your docker-compose file with <code>image: freqtradeorg/freqtrade:develop_freqai</code>.
+This image contains the regular freqAI dependencies. Similar to native installs, Catboost will not be available on ARM based devices.</p>
+<h2 id="setting-up-freqai">Setting up FreqAI<a class="headerlink" href="#setting-up-freqai" title="Permanent link">&para;</a></h2>
+<h3 id="parameter-table">Parameter table<a class="headerlink" href="#parameter-table" title="Permanent link">&para;</a></h3>
+<p>The table below will list all configuration parameters available for FreqAI, presented in the same order as <code>config_examples/config_freqai.example.json</code>.</p>
+<p>Mandatory parameters are marked as <strong>Required</strong>, which means that they are required to be set in one of the possible ways.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><strong>General configuration parameters</strong></td>
+</tr>
+<tr>
+<td><code>freqai</code></td>
+<td><strong>Required.</strong> <br> The parent dictionary containing all the parameters for controlling FreqAI. <br> <strong>Datatype:</strong> Dictionary.</td>
+</tr>
+<tr>
+<td><code>startup_candles</code></td>
+<td>Number of candles needed for <em>backtesting only</em> to ensure all indicators are non NaNs at the start of the first train period. <br> <strong>Datatype:</strong> Positive integer.</td>
+</tr>
+<tr>
+<td><code>purge_old_models</code></td>
+<td>Delete obsolete models (otherwise, all historic models will remain on disk). <br> <strong>Datatype:</strong> Boolean. Default: <code>False</code>.</td>
+</tr>
+<tr>
+<td><code>train_period_days</code></td>
+<td><strong>Required.</strong> <br> Number of days to use for the training data (width of the sliding window). <br> <strong>Datatype:</strong> Positive integer.</td>
+</tr>
+<tr>
+<td><code>backtest_period_days</code></td>
+<td><strong>Required.</strong> <br> Number of days to inference from the trained model before sliding the window defined above, and retraining the model. This can be fractional days, but beware that the user-provided <code>timerange</code> will be divided by this number to yield the number of trainings necessary to complete the backtest. <br> <strong>Datatype:</strong> Float.</td>
+</tr>
+<tr>
+<td><code>identifier</code></td>
+<td><strong>Required.</strong> <br> A unique name for the current model. This can be reused to reload pre-trained models/data. <br> <strong>Datatype:</strong> String.</td>
+</tr>
+<tr>
+<td><code>live_retrain_hours</code></td>
+<td>Frequency of retraining during dry/live runs. <br> Default set to 0, which means the model will retrain as often as possible. <br> <strong>Datatype:</strong> Float &gt; 0.</td>
+</tr>
+<tr>
+<td><code>expiration_hours</code></td>
+<td>Avoid making predictions if a model is more than <code>expiration_hours</code> old. <br> Defaults set to 0, which means models never expire. <br> <strong>Datatype:</strong> Positive integer.</td>
+</tr>
+<tr>
+<td><code>fit_live_predictions_candles</code></td>
+<td>Number of historical candles to use for computing target (label) statistics from prediction data, instead of from the training data set. <br> <strong>Datatype:</strong> Positive integer.</td>
+</tr>
+<tr>
+<td><code>follow_mode</code></td>
+<td>If true, this instance of FreqAI will look for models associated with <code>identifier</code> and load those for inferencing. A <code>follower</code> will <strong>not</strong> train new models. <br> <strong>Datatype:</strong> Boolean. Default: <code>False</code>.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Feature parameters</strong></td>
+</tr>
+<tr>
+<td><code>feature_parameters</code></td>
+<td>A dictionary containing the parameters used to engineer the feature set. Details and examples are shown <a href="#feature-engineering">here</a>. <br> <strong>Datatype:</strong> Dictionary.</td>
+</tr>
+<tr>
+<td><code>include_timeframes</code></td>
+<td>A list of timeframes that all indicators in <code>populate_any_indicators</code> will be created for. The list is added as features to the base asset feature set. <br> <strong>Datatype:</strong> List of timeframes (strings).</td>
+</tr>
+<tr>
+<td><code>include_corr_pairlist</code></td>
+<td>A list of correlated coins that FreqAI will add as additional features to all <code>pair_whitelist</code> coins. All indicators set in <code>populate_any_indicators</code> during feature engineering (see details <a href="#feature-engineering">here</a>) will be created for each coin in this list, and that set of features is added to the base asset feature set. <br> <strong>Datatype:</strong> List of assets (strings).</td>
+</tr>
+<tr>
+<td><code>label_period_candles</code></td>
+<td>Number of candles into the future that the labels are created for. This is used in <code>populate_any_indicators</code> (see <code>templates/FreqaiExampleStrategy.py</code> for detailed usage). The user can create custom labels, making use of this parameter or not. <br> <strong>Datatype:</strong> Positive integer.</td>
+</tr>
+<tr>
+<td><code>include_shifted_candles</code></td>
+<td>Add features from previous candles to subsequent candles to add historical information. FreqAI takes all features from the <code>include_shifted_candles</code> previous candles, duplicates and shifts them so that the information is available for the subsequent candle. <br> <strong>Datatype:</strong> Positive integer.</td>
+</tr>
+<tr>
+<td><code>weight_factor</code></td>
+<td>Used to set weights for training data points according to their recency. See details about how it works <a href="#controlling-the-model-learning-process">here</a>. <br> <strong>Datatype:</strong> Positive float (typically &lt; 1).</td>
+</tr>
+<tr>
+<td><code>indicator_max_period_candles</code></td>
+<td>The maximum period used in <code>populate_any_indicators()</code> for indicator creation. FreqAI uses this information in combination with the maximum timeframe to calculate how many data points that should be downloaded so that the first data point does not have a NaN. <br> <strong>Datatype:</strong> Positive integer.</td>
+</tr>
+<tr>
+<td><code>indicator_periods_candles</code></td>
+<td>Calculate indicators for <code>indicator_periods_candles</code> time periods and add them to the feature set. <br> <strong>Datatype:</strong> List of positive integers.</td>
+</tr>
+<tr>
+<td><code>stratify_training_data</code></td>
+<td>This value is used to indicate the grouping of the data. For example, 2 would set every 2<sup>nd</sup> data point into a separate dataset to be pulled from during training/testing. See details about how it works <a href="#stratifying-the-data-for-training-and-testing-the-model">here</a> <br> <strong>Datatype:</strong> Positive integer.</td>
+</tr>
+<tr>
+<td><code>principal_component_analysis</code></td>
+<td>Automatically reduce the dimensionality of the data set using Principal Component Analysis. See details about how it works <a href="#reducing-data-dimensionality-with-principal-component-analysis">here</a> <br> <strong>Datatype:</strong> Boolean.</td>
+</tr>
+<tr>
+<td><code>DI_threshold</code></td>
+<td>Activates the Dissimilarity Index for outlier detection when &gt; 0. See details about how it works <a href="#removing-outliers-with-the-dissimilarity-index">here</a>. <br> <strong>Datatype:</strong> Positive float (typically &lt; 1).</td>
+</tr>
+<tr>
+<td><code>use_SVM_to_remove_outliers</code></td>
+<td>Train a support vector machine to detect and remove outliers from the training data set, as well as from incoming data points. See details about how it works <a href="#removing-outliers-using-a-support-vector-machine-svm">here</a>. <br> <strong>Datatype:</strong> Boolean.</td>
+</tr>
+<tr>
+<td><code>svm_params</code></td>
+<td>All parameters available in Sklearn's <code>SGDOneClassSVM()</code>. See details about some select parameters <a href="#removing-outliers-using-a-support-vector-machine-svm">here</a>. <br> <strong>Datatype:</strong> Dictionary.</td>
+</tr>
+<tr>
+<td><code>use_DBSCAN_to_remove_outliers</code></td>
+<td>Cluster data using DBSCAN to identify and remove outliers from training and prediction data. See details about how it works <a href="#removing-outliers-with-dbscan">here</a>. <br> <strong>Datatype:</strong> Boolean.</td>
+</tr>
+<tr>
+<td><code>outlier_protection_percentage</code></td>
+<td>If more than <code>outlier_protection_percentage</code> fraction of points are removed as outliers, FreqAI will log a warning message and ignore outlier detection while keeping the original dataset intact. <br> <strong>Datatype:</strong> float. Default: <code>30</code></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Data split parameters</strong></td>
+</tr>
+<tr>
+<td><code>data_split_parameters</code></td>
+<td>Include any additional parameters available from Scikit-learn <code>test_train_split()</code>, which are shown <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html">here</a> (external website). <br> <strong>Datatype:</strong> Dictionary.</td>
+</tr>
+<tr>
+<td><code>test_size</code></td>
+<td>Fraction of data that should be used for testing instead of training. <br> <strong>Datatype:</strong> Positive float &lt; 1.</td>
+</tr>
+<tr>
+<td><code>shuffle</code></td>
+<td>Shuffle the training data points during training. Typically, for time-series forecasting, this is set to <code>False</code>. <br></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Model training parameters</strong></td>
+</tr>
+<tr>
+<td><code>model_training_parameters</code></td>
+<td>A flexible dictionary that includes all parameters available by the user selected model library. For example, if the user uses <code>LightGBMRegressor</code>, this dictionary can contain any parameter available by the <code>LightGBMRegressor</code> <a href="https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html">here</a> (external website). If the user selects a different model, this dictionary can contain any parameter from that model.  <br> <strong>Datatype:</strong> Dictionary.<strong>Datatype:</strong> Boolean.</td>
+</tr>
+<tr>
+<td><code>n_estimators</code></td>
+<td>The number of boosted trees to fit in regression. <br> <strong>Datatype:</strong> Integer.</td>
+</tr>
+<tr>
+<td><code>learning_rate</code></td>
+<td>Boosting learning rate during regression. <br> <strong>Datatype:</strong> Float.</td>
+</tr>
+<tr>
+<td><code>n_jobs</code>, <code>thread_count</code>, <code>task_type</code></td>
+<td>Set the number of threads for parallel processing and the <code>task_type</code> (<code>gpu</code> or <code>cpu</code>). Different model libraries use different parameter names. <br> <strong>Datatype:</strong> Float.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Extraneous parameters</strong></td>
+</tr>
+<tr>
+<td><code>keras</code></td>
+<td>If your model makes use of Keras (typical for Tensorflow-based prediction models), activate this flag so that the model save/loading follows Keras standards. <br> <strong>Datatype:</strong> Boolean. Default: <code>False</code>.</td>
+</tr>
+<tr>
+<td><code>conv_width</code></td>
+<td>The width of a convolutional neural network input tensor. This replaces the need for shifting candles (<code>include_shifted_candles</code>) by feeding in historical data points as the second dimension of the tensor. Technically, this parameter can also be used for regressors, but it only adds computational overhead and does not change the model training/prediction. <br> <strong>Datatype:</strong> Integer. Default: 2.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="important-dataframe-key-patterns">Important dataframe key patterns<a class="headerlink" href="#important-dataframe-key-patterns" title="Permanent link">&para;</a></h3>
+<p>Below are the values the user can expect to include/use inside a typical strategy dataframe (<code>df[]</code>):</p>
+<table>
+<thead>
+<tr>
+<th>DataFrame Key</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>df['&amp;*']</code></td>
+<td>Any dataframe column prepended with <code>&amp;</code> in <code>populate_any_indicators()</code> is treated as a training target (label) inside FreqAI (typically following the naming convention <code>&amp;-s*</code>). The names of these dataframe columns are fed back to the user as the predictions. For example, if the user wishes to predict the price change in the next 40 candles (similar to <code>templates/FreqaiExampleStrategy.py</code>), they set <code>df['&amp;-s_close']</code>. FreqAI makes the predictions and gives them back under the same key (<code>df['&amp;-s_close']</code>) to be used in <code>populate_entry/exit_trend()</code>. <br> <strong>Datatype:</strong> Depends on the output of the model.</td>
+</tr>
+<tr>
+<td><code>df['&amp;*_std/mean']</code></td>
+<td>Standard deviation and mean values of the user-defined labels during training (or live tracking with <code>fit_live_predictions_candles</code>). Commonly used to understand the rarity of a prediction (use the z-score as shown in <code>templates/FreqaiExampleStrategy.py</code> to evaluate how often a particular prediction was observed during training or historically with <code>fit_live_predictions_candles</code>). <br> <strong>Datatype:</strong> Float.</td>
+</tr>
+<tr>
+<td><code>df['do_predict']</code></td>
+<td>Indication of an outlier data point. The return value is integer between -1 and 2, which lets the user know if the prediction is trustworthy or not. <code>do_predict==1</code> means the prediction is trustworthy. If the Dissimilarity Index (DI, see details <a href="#removing-outliers-with-the-dissimilarity-index">here</a>) of the input data point is above the user-defined threshold, FreqAI will subtract 1 from <code>do_predict</code>, resulting in <code>do_predict==0</code>. If <code>use_SVM_to_remove_outliers()</code> is active, the Support Vector Machine (SVM) may also detect outliers in training and prediction data. In this case, the SVM will also subtract 1 from <code>do_predict</code>. If the input data point was considered an outlier by the SVM but not by the DI, the result will be <code>do_predict==0</code>. If both the DI and the SVM considers the input data point to be an outlier, the result will be <code>do_predict==-1</code>. A particular case is when <code>do_predict == 2</code>, which means that the model has expired due to exceeding <code>expired_hours</code>. <br> <strong>Datatype:</strong> Integer between -1 and 2.</td>
+</tr>
+<tr>
+<td><code>df['DI_values']</code></td>
+<td>Dissimilarity Index values are proxies to the level of confidence FreqAI has in the prediction. A lower DI means the prediction is close to the training data, i.e., higher prediction confidence. <br> <strong>Datatype:</strong> Float.</td>
+</tr>
+<tr>
+<td><code>df['%*']</code></td>
+<td>Any dataframe column prepended with <code>%</code> in <code>populate_any_indicators()</code> is treated as a training feature. For example, the user can include the RSI in the training feature set (similar to in <code>templates/FreqaiExampleStrategy.py</code>) by setting <code>df['%-rsi']</code>. See more details on how this is done <a href="#feature-engineering">here</a>. <br> <strong>Note</strong>: Since the number of features prepended with <code>%</code> can multiply very quickly (10s of thousands of features is easily engineered using the multiplictative functionality described in the <code>feature_parameters</code> table shown above), these features are removed from the dataframe upon return from FreqAI. If the user wishes to keep a particular type of feature for plotting purposes, they can prepend it with <code>%%</code>. <br> <strong>Datatype:</strong> Depends on the output of the model.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="file-structure">File structure<a class="headerlink" href="#file-structure" title="Permanent link">&para;</a></h3>
+<p><code>user_data_dir/models/</code> contains all the data associated with the trainings and backtests.
+This file structure is heavily controlled and inferenced by the <code>FreqaiDataKitchen()</code>
+and should therefore not be modified.</p>
+<h3 id="example-config-file">Example config file<a class="headerlink" href="#example-config-file" title="Permanent link">&para;</a></h3>
+<p>The user interface is isolated to the typical Freqtrade config file. A FreqAI config should include:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;startup_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;purge_old_models&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;train_period_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;backtest_period_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;identifier&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unique-id&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;include_timeframes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;5m&quot;</span><span class="p">,</span><span class="s2">&quot;15m&quot;</span><span class="p">,</span><span class="s2">&quot;4h&quot;</span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;include_corr_pairlist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;ETH/USD&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;LINK/USD&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;BNB/USD&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;label_period_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">24</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;include_shifted_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;indicator_max_period_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;indicator_periods_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;data_split_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;test_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.25</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;model_training_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;n_estimators&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<h2 id="building-a-freqai-strategy">Building a FreqAI strategy<a class="headerlink" href="#building-a-freqai-strategy" title="Permanent link">&para;</a></h2>
+<p>The FreqAI strategy requires the user to include the following lines of code in the standard Freqtrade strategy:</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">informative_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">whitelist_pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">current_whitelist</span><span class="p">()</span>
+        <span class="n">corr_pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;freqai&quot;</span><span class="p">][</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;include_corr_pairlist&quot;</span><span class="p">]</span>
+        <span class="n">informative_pairs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;freqai&quot;</span><span class="p">][</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;include_timeframes&quot;</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">whitelist_pairs</span><span class="p">:</span>
+                <span class="n">informative_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pair</span><span class="p">,</span> <span class="n">tf</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">corr_pairs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">whitelist_pairs</span><span class="p">:</span>
+                    <span class="k">continue</span>  <span class="c1"># avoid duplication</span>
+                <span class="n">informative_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pair</span><span class="p">,</span> <span class="n">tf</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">informative_pairs</span>
+
+    <span class="k">def</span> <span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+
+        <span class="c1"># the model will return all labels created by user in `populate_any_indicators` </span>
+        <span class="c1"># (&amp; appended targets), an indication of whether or not the prediction should be accepted, </span>
+        <span class="c1"># the target mean/std values for each of the labels created by user in </span>
+        <span class="c1"># `populate_any_indicators()` for each training period.</span>
+
+        <span class="n">dataframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqai</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dataframe</span>
+
+    <span class="k">def</span> <span class="nf">populate_any_indicators</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="n">informative</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_generalized_indicators</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function designed to automatically generate, name and merge features</span>
+<span class="sd">        from user indicated timeframes in the configuration file. User controls the indicators</span>
+<span class="sd">        passed to the training/prediction by prepending indicators with `&#39;%-&#39; + coin `</span>
+<span class="sd">        (see convention below). I.e. user should not prepend any supporting metrics</span>
+<span class="sd">        (e.g. bb_lowerband below) with % unless they explicitly want to pass that metric to the</span>
+<span class="sd">        model.</span>
+<span class="sd">        :param pair: pair to be used as informative</span>
+<span class="sd">        :param df: strategy dataframe which will receive merges from informatives</span>
+<span class="sd">        :param tf: timeframe of the dataframe which will modify the feature names</span>
+<span class="sd">        :param informative: the dataframe associated with the informative pair</span>
+<span class="sd">        :param coin: the name of the coin which will modify the feature names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">coin</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">informative</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">informative</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="n">tf</span><span class="p">)</span>
+
+        <span class="c1"># first loop is automatically duplicating indicators for time periods</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;indicator_periods_candles&quot;</span><span class="p">]:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">rsi-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">mfi-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">adx-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+
+        <span class="n">indicators</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">informative</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)]</span>
+        <span class="c1"># This loop duplicates and shifts all indicators to add a sense of recency to data</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;include_shifted_candles&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">informative_shift</span> <span class="o">=</span> <span class="n">informative</span><span class="p">[</span><span class="n">indicators</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">informative_shift</span> <span class="o">=</span> <span class="n">informative_shift</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s2">&quot;_shift-&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+            <span class="n">informative</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">informative</span><span class="p">,</span> <span class="n">informative_shift</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">merge_informative_pair</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">informative</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;timeframe&quot;</span><span class="p">],</span> <span class="n">tf</span><span class="p">,</span> <span class="n">ffill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">skip_columns</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">tf</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="s2">&quot;open&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;close&quot;</span><span class="p">,</span> <span class="s2">&quot;volume&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">skip_columns</span><span class="p">)</span>
+
+        <span class="c1"># Add generalized indicators here (because in live, it will call this</span>
+        <span class="c1"># function to populate indicators during training). Notice how we ensure not to</span>
+        <span class="c1"># add them multiple times</span>
+        <span class="k">if</span> <span class="n">set_generalized_indicators</span><span class="p">:</span>
+
+            <span class="c1"># user adds targets here by prepending them with &amp;- (see convention below)</span>
+            <span class="c1"># If user wishes to use multiple targets, a multioutput prediction model</span>
+            <span class="c1"># needs to be used such as templates/CatboostPredictionMultiModel.py</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+                <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+                <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+                <span class="o">-</span> <span class="mi">1</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span>
+</code></pre></div>
+<p>Notice how the <code>populate_any_indicators()</code> is where the user adds their own features (<a href="#feature-engineering">more information</a>) and labels (<a href="#setting-classifier-targets">more information</a>). See a full example at <code>templates/FreqaiExampleStrategy.py</code>.</p>
+<h2 id="creating-a-dynamic-target">Creating a dynamic target<a class="headerlink" href="#creating-a-dynamic-target" title="Permanent link">&para;</a></h2>
+<p>The <code>&amp;*_std/mean</code> return values describe the statistical fit of the user defined label <em>during the most recent training</em>. This value allows the user to know the rarity of a given prediction. For example, <code>templates/FreqaiExampleStrategy.py</code>, creates a <code>target_roi</code> which is based on filtering out predictions that are below a given z-score of 1.25.</p>
+<div class="highlight"><pre><span></span><code><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;target_roi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close_mean&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close_std&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.25</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;sell_roi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close_mean&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close_std&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.25</span>
+</code></pre></div>
+<p>If the user wishes to consider the population
+of <em>historical predictions</em> for creating the dynamic target instead of the trained labels, (as discussed above) the user
+can do so by setting <code>fit_live_prediction_candles</code> in the config to the number of historical prediction candles
+the user wishes to use to generate target statistics.</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;fit_live_prediction_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>If the user sets this value, FreqAI will initially use the predictions from the training data
+and subsequently begin introducing real prediction data as it is generated. FreqAI will save
+this historical data to be reloaded if the user stops and restarts a model with the same <code>identifier</code>.</p>
+<h2 id="building-a-custom-prediction-model">Building a custom prediction model<a class="headerlink" href="#building-a-custom-prediction-model" title="Permanent link">&para;</a></h2>
+<p>FreqAI has multiple example prediction model libraries, such as <code>Catboost</code> regression (<code>freqai/prediction_models/CatboostRegressor.py</code>) and <code>LightGBM</code> regression.
+However, the user can customize and create their own prediction models using the <code>IFreqaiModel</code> class.
+The user is encouraged to inherit <code>train()</code> and <code>predict()</code> to let them customize various aspects of their training procedures.</p>
+<h2 id="feature-engineering">Feature engineering<a class="headerlink" href="#feature-engineering" title="Permanent link">&para;</a></h2>
+<p>Features are added by the user inside the <code>populate_any_indicators()</code> method of the strategy
+by prepending indicators with <code>%</code>, and labels with <code>&amp;</code>.  </p>
+<p>There are some important components/structures that the user <em>must</em> include when building their feature set; the use of these is shown below:</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">populate_any_indicators</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="n">informative</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">set_generalized_indicators</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function designed to automatically generate, name, and merge features</span>
+<span class="sd">        from user-indicated timeframes in the configuration file. The user controls the indicators</span>
+<span class="sd">        passed to the training/prediction by prepending indicators with `&#39;%-&#39; + coin `</span>
+<span class="sd">        (see convention below). I.e., the user should not prepend any supporting metrics</span>
+<span class="sd">        (e.g., bb_lowerband below) with % unless they explicitly want to pass that metric to the</span>
+<span class="sd">        model.</span>
+<span class="sd">        :param pair: pair to be used as informative</span>
+<span class="sd">        :param df: strategy dataframe which will receive merges from informatives</span>
+<span class="sd">        :param tf: timeframe of the dataframe which will modify the feature names</span>
+<span class="sd">        :param informative: the dataframe associated with the informative pair</span>
+<span class="sd">        :param coin: the name of the coin which will modify the feature names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">coin</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">informative</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">informative</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="n">tf</span><span class="p">)</span>
+
+        <span class="c1"># first loop is automatically duplicating indicators for time periods</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;indicator_periods_candles&quot;</span><span class="p">]:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">rsi-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">mfi-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">adx-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+
+            <span class="n">bollinger</span> <span class="o">=</span> <span class="n">qtpylib</span><span class="o">.</span><span class="n">bollinger_bands</span><span class="p">(</span>
+                <span class="n">qtpylib</span><span class="o">.</span><span class="n">typical_price</span><span class="p">(</span><span class="n">informative</span><span class="p">),</span> <span class="n">window</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">stds</span><span class="o">=</span><span class="mf">2.2</span>
+            <span class="p">)</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">bb_lowerband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;lower&quot;</span><span class="p">]</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">bb_middleband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;mid&quot;</span><span class="p">]</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">bb_upperband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;upper&quot;</span><span class="p">]</span>
+
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">bb_width-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">bb_upperband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+                <span class="o">-</span> <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">bb_lowerband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+            <span class="p">)</span> <span class="o">/</span> <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">bb_middleband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">close-bb_lower-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">bb_lowerband-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+
+            <span class="n">informative</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-</span><span class="si">{</span><span class="n">coin</span><span class="si">}</span><span class="s2">relative_volume-period_</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="p">)</span>
+
+        <span class="n">indicators</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">informative</span> <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)]</span>
+        <span class="c1"># This loop duplicates and shifts all indicators to add a sense of recency to data</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;include_shifted_candles&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">informative_shift</span> <span class="o">=</span> <span class="n">informative</span><span class="p">[</span><span class="n">indicators</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">informative_shift</span> <span class="o">=</span> <span class="n">informative_shift</span><span class="o">.</span><span class="n">add_suffix</span><span class="p">(</span><span class="s2">&quot;_shift-&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+            <span class="n">informative</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">informative</span><span class="p">,</span> <span class="n">informative_shift</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">merge_informative_pair</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">informative</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;timeframe&quot;</span><span class="p">],</span> <span class="n">tf</span><span class="p">,</span> <span class="n">ffill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">skip_columns</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">tf</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="s2">&quot;open&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;close&quot;</span><span class="p">,</span> <span class="s2">&quot;volume&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">skip_columns</span><span class="p">)</span>
+
+        <span class="c1"># Add generalized indicators here (because in live, it will call this</span>
+        <span class="c1"># function to populate indicators during training). Notice how we ensure not to</span>
+        <span class="c1"># add them multiple times</span>
+        <span class="k">if</span> <span class="n">set_generalized_indicators</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">ay_of_week&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-ho</span><span class="s2">ur_of_day&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">25</span>
+
+            <span class="c1"># user adds targets here by prepending them with &amp;- (see convention below)</span>
+            <span class="c1"># If user wishes to use multiple targets, a multioutput prediction model</span>
+            <span class="c1"># needs to be used such as templates/CatboostPredictionMultiModel.py</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+                <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+                <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+                <span class="o">-</span> <span class="mi">1</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span>
+</code></pre></div>
+<p>In the presented example strategy, the user does not wish to pass the <code>bb_lowerband</code> as a feature to the model,
+and has therefore not prepended it with <code>%</code>. The user does, however, wish to pass <code>bb_width</code> to the
+model for training/prediction and has therefore prepended it with <code>%</code>.</p>
+<p>The <code>include_timeframes</code> in the example config above are the timeframes (<code>tf</code>) of each call to <code>populate_any_indicators()</code> in the strategy. In the present case, the user is asking for the
+<code>5m</code>, <code>15m</code>, and <code>4h</code> timeframes of the <code>rsi</code>, <code>mfi</code>, <code>roc</code>, and <code>bb_width</code> to be included in the feature set.</p>
+<p>The user can ask for each of the defined features to be included also from
+informative pairs using the <code>include_corr_pairlist</code>. This means that the feature
+set will include all the features from <code>populate_any_indicators</code> on all the <code>include_timeframes</code> for each of the correlated pairs defined in the config (<code>ETH/USD</code>, <code>LINK/USD</code>, and <code>BNB/USD</code>).</p>
+<p><code>include_shifted_candles</code> indicates the number of previous
+candles to include in the feature set. For example, <code>include_shifted_candles: 2</code> tells
+FreqAI to include the past 2 candles for each of the features in the feature set.</p>
+<p>In total, the number of features the user of the presented example strat has created is:
+length of <code>include_timeframes</code> * no. features in <code>populate_any_indicators()</code> * length of <code>include_corr_pairlist</code> * no. <code>include_shifted_candles</code> * length of <code>indicator_periods_candles</code>
+ <span class="arithmatex">\(= 3 * 3 * 3 * 2 * 2 = 108\)</span>.</p>
+<p>Another structure to consider is the location of the labels at the bottom of the example function (below <code>if set_generalized_indicators:</code>). 
+This is where the user will add single features and labels to their feature set to avoid duplication of them from
+various configuration parameters that multiply the feature set, such as <code>include_timeframes</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Features <strong>must</strong> be defined in <code>populate_any_indicators()</code>. Definining FreqAI features in <code>populate_indicators()</code>
+will cause the algorithm to fail in live/dry mode. If the user wishes to add generalized features that are not associated with 
+a specific pair or timeframe, they should use the following structure inside <code>populate_any_indicators()</code>
+(as exemplified in <code>freqtrade/templates/FreqaiExampleStrategy.py</code>):</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">populate_any_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">pair</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="n">informative</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">coin</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">set_generalized_indicators</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+        <span class="o">...</span>
+
+        <span class="c1"># Add generalized indicators here (because in live, it will call only this function to populate </span>
+        <span class="c1"># indicators for retraining). Notice how we ensure not to add them multiple times by associating</span>
+        <span class="c1"># these generalized indicators to the basepair/timeframe</span>
+        <span class="k">if</span> <span class="n">set_generalized_indicators</span><span class="p">:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">%-d</span><span class="s1">ay_of_week&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">%-ho</span><span class="s1">ur_of_day&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">25</span>
+
+            <span class="c1"># user adds targets here by prepending them with &amp;- (see convention below)</span>
+            <span class="c1"># If user wishes to use multiple targets, a multioutput prediction model</span>
+            <span class="c1"># needs to be used such as templates/CatboostPredictionMultiModel.py</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+                <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+                <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                <span class="o">/</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+                <span class="o">-</span> <span class="mi">1</span>
+                <span class="p">)</span>
+</code></pre></div>
+<p>(Please see the example script located in <code>freqtrade/templates/FreqaiExampleStrategy.py</code> for a full example of <code>populate_any_indicators()</code>.)</p>
+</div>
+<h2 id="setting-classifier-targets">Setting classifier targets<a class="headerlink" href="#setting-classifier-targets" title="Permanent link">&para;</a></h2>
+<p>FreqAI includes the <code>CatboostClassifier</code> via the flag <code>--freqaimodel CatboostClassifier</code>. The user should take care to set the classes using strings:</p>
+<div class="highlight"><pre><span></span><code><span class="n">df</span><span class="p">[</span><span class="s1">&#39;&amp;s-up_or_down&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">],</span> <span class="s1">&#39;up&#39;</span><span class="p">,</span> <span class="s1">&#39;down&#39;</span><span class="p">)</span>
+</code></pre></div>
+<p>Additionally, the example classifier models do not accommodate multiple labels, but they do allow multi-class classification within a single label column.</p>
+<h2 id="running-freqai">Running FreqAI<a class="headerlink" href="#running-freqai" title="Permanent link">&para;</a></h2>
+<p>There are two ways to train and deploy an adaptive machine learning model. FreqAI enables live deployment as well as backtesting analyses. In both cases, a model is trained periodically, as shown in the following figure.</p>
+<p><img alt="freqai-window" src="../assets/freqai_moving-window.jpg" /></p>
+<h3 id="running-the-model-live">Running the model live<a class="headerlink" href="#running-the-model-live" title="Permanent link">&para;</a></h3>
+<p>FreqAI can be run dry/live using the following command:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--strategy<span class="w"> </span>FreqaiExampleStrategy<span class="w"> </span>--config<span class="w"> </span>config_freqai.example.json<span class="w"> </span>--freqaimodel<span class="w"> </span>LightGBMRegressor
+</code></pre></div>
+<p>By default, FreqAI will not find any existing models and will start by training a new one
+based on the user's configuration settings. Following training, the model will be used to make predictions on incoming candles until a new model is available. New models are typically generated as often as possible, with FreqAI managing an internal queue of the coin pairs to try to keep all models equally up to date. FreqAI will always use the most recently trained model to make predictions on incoming live data. If the user does not want FreqAI to retrain new models as often as possible, they can set <code>live_retrain_hours</code> to tell FreqAI to wait at least that number of hours before training a new model. Additionally, the user can set <code>expired_hours</code> to tell FreqAI to avoid making predictions on models that are older than that number of hours.</p>
+<p>If the user wishes to start a dry/live run from a saved backtest model (or from a previously crashed dry/live session), the user only needs to reuse
+the same <code>identifier</code> parameter:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;identifier&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;live_retrain_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>In this case, although FreqAI will initiate with a
+pre-trained model, it will still check to see how much time has elapsed since the model was trained,
+and if a full <code>live_retrain_hours</code> has elapsed since the end of the loaded model, FreqAI will retrain.</p>
+<h3 id="backtesting">Backtesting<a class="headerlink" href="#backtesting" title="Permanent link">&para;</a></h3>
+<p>The FreqAI backtesting module can be executed with the following command:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>FreqaiExampleStrategy<span class="w"> </span>--config<span class="w"> </span>config_freqai.example.json<span class="w"> </span>--freqaimodel<span class="w"> </span>LightGBMRegressor<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20210501</span>-20210701
+</code></pre></div>
+<p>Backtesting mode requires the user to have the data pre-downloaded (unlike in dry/live mode where FreqAI automatically downloads the necessary data). The user should be careful to consider that the time range of the downloaded data is more than the backtesting time range. This is because FreqAI needs data prior to the desired backtesting time range in order to train a model to be ready to make predictions on the first candle of the user-set backtesting time range. More details on how to calculate the data to download can be found <a href="#deciding-the-sliding-training-window-and-backtesting-duration">here</a>.</p>
+<p>If this command has never been executed with the existing config file, it will train a new model
+for each pair, for each backtesting window within the expanded <code>--timerange</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Model reuse</p>
+<p>Once the training is completed, the user can execute the backtesting again with the same config file and
+FreqAI will find the trained models and load them instead of spending time training. This is useful
+if the user wants to tweak (or even hyperopt) buy and sell criteria inside the strategy. If the user
+<em>wants</em> to retrain a new model with the same config file, then they should simply change the <code>identifier</code>.
+This way, the user can return to using any model they wish by simply specifying the <code>identifier</code>.</p>
+</div>
+<hr />
+<h3 id="deciding-the-size-of-the-sliding-training-window-and-backtesting-duration">Deciding the size of the sliding training window and backtesting duration<a class="headerlink" href="#deciding-the-size-of-the-sliding-training-window-and-backtesting-duration" title="Permanent link">&para;</a></h3>
+<p>The user defines the backtesting timerange with the typical <code>--timerange</code> parameter in the
+configuration file. The duration of the sliding training window is set by <code>train_period_days</code>, whilst
+<code>backtest_period_days</code> is the sliding backtesting window, both in number of days (<code>backtest_period_days</code> can be
+a float to indicate sub-daily retraining in live/dry mode). In the presented example config,
+the user is asking FreqAI to use a training period of 30 days and backtest on the subsequent 7 days.
+This means that if the user sets <code>--timerange 20210501-20210701</code>,
+FreqAI will train have trained 8 separate models at the end of <code>--timerange</code> (because the full range comprises 8 weeks). After the training of the model, FreqAI will backtest the subsequent 7 days. The "sliding window" then moves one week forward (emulating FreqAI retraining once per week in live mode) and the new model uses the previous 30 days (including the 7 days used for backtesting by the previous model) to train. This is repeated until the end of <code>--timerange</code>.</p>
+<p>In live mode, the required training data is automatically computed and downloaded. However, in backtesting mode,
+the user must manually enter the required number of <code>startup_candles</code> in the config. This value
+is used to increase the data to FreqAI, which should be sufficient to enable all indicators
+to be NaN free at the beginning of the first training. This is done by identifying the
+longest timeframe (<code>4h</code> in presented example config) and the longest indicator period (<code>20</code> days in presented example config)
+and adding this to the <code>train_period_days</code>. The units need to be in the base candle time frame:
+<code>startup_candles</code> = ( 4 hours * 20 max period * 60 minutes/hour + 30 day train_period_days * 1440 minutes per day ) / 5 min (base time frame) = 9360.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In dry/live mode, this is all precomputed and handled automatically. Thus, <code>startup_candle</code> has no influence on dry/live mode.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although fractional <code>backtest_period_days</code> is allowed, the user should be aware that the <code>--timerange</code> is divided by this value to determine the number of models that FreqAI will need to train in order to backtest the full range. For example, if the user wants to set a <code>--timerange</code> of 10 days, and asks for a <code>backtest_period_days</code> of 0.1, FreqAI will need to train 100 models per pair to complete the full backtest. Because of this, a true backtest of FreqAI adaptive training would take a <em>very</em> long time. The best way to fully test a model is to run it dry and let it constantly train. In this case, backtesting would take the exact same amount of time as a dry run.</p>
+</div>
+<h3 id="defining-model-expirations">Defining model expirations<a class="headerlink" href="#defining-model-expirations" title="Permanent link">&para;</a></h3>
+<p>During dry/live mode, FreqAI trains each coin pair sequentially (on separate threads/GPU from the main Freqtrade bot). This means that there is always an age discrepancy between models. If a user is training on 50 pairs, and each pair requires 5 minutes to train, the oldest model will be over 4 hours old. This may be undesirable if the characteristic time scale (the trade duration target) for a strategy is less than 4 hours. The user can decide to only make trade entries if the model is less than 
+a certain number of hours old by setting the <code>expiration_hours</code> in the config file:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;expiration_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>In the presented example config, the user will only allow predictions on models that are less than &frac12; hours old.</p>
+<h3 id="purging-old-model-data">Purging old model data<a class="headerlink" href="#purging-old-model-data" title="Permanent link">&para;</a></h3>
+<p>FreqAI stores new model files each time it retrains. These files become obsolete as new models are trained and FreqAI adapts to new market conditions. Users planning to leave FreqAI running for extended periods of time with high frequency retraining should enable <code>purge_old_models</code> in their config:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;purge_old_models&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>This will automatically purge all models older than the two most recently trained ones.</p>
+<h3 id="returning-additional-info-from-training">Returning additional info from training<a class="headerlink" href="#returning-additional-info-from-training" title="Permanent link">&para;</a></h3>
+<p>The user may find that there are some important metrics that they'd like to return to the strategy at the end of each model training.
+The user can include these metrics by assigning them to <code>dk.data['extra_returns_per_train']['my_new_value'] = XYZ</code> inside their custom prediction model class. FreqAI takes the <code>my_new_value</code> assigned in this dictionary and expands it to fit the return dataframe to the strategy.
+The user can then use the value in the strategy with <code>dataframe['my_new_value']</code>. An example of how this is already used in FreqAI is
+the <code>&amp;*_mean</code> and <code>&amp;*_std</code> values, which indicate the mean and standard deviation of the particular target (label) during the most recent training.
+An example, where the user wants to use live metrics from the trade database, is shown below:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;extra_returns_per_train&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;total_profit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>The user needs to set the standard dictionary in the config so that FreqAI can return proper dataframe shapes.  These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs a default initial value, this is the value that will be returned.</p>
+<h3 id="setting-up-a-follower">Setting up a follower<a class="headerlink" href="#setting-up-a-follower" title="Permanent link">&para;</a></h3>
+<p>The user can define:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;follow_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;identifier&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>to indicate to the bot that it should not train models, but instead should look for models trained by a leader with the same <code>identifier</code>. In this example, the user has a leader bot with the <code>identifier: "example"</code>. The leader bot is already running or launching simultaneously as the follower.
+The follower will load models created by the leader and inference them to obtain predictions.</p>
+<h2 id="data-manipulation-techniques">Data manipulation techniques<a class="headerlink" href="#data-manipulation-techniques" title="Permanent link">&para;</a></h2>
+<h3 id="feature-normalization">Feature normalization<a class="headerlink" href="#feature-normalization" title="Permanent link">&para;</a></h3>
+<p>The feature set created by the user is automatically normalized to the training data. This includes all test data and unseen prediction data (dry/live/backtest).</p>
+<h3 id="reducing-data-dimensionality-with-principal-component-analysis">Reducing data dimensionality with Principal Component Analysis<a class="headerlink" href="#reducing-data-dimensionality-with-principal-component-analysis" title="Permanent link">&para;</a></h3>
+<p>Users can reduce the dimensionality of their features by activating the <code>principal_component_analysis</code> in the config:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;principal_component_analysis&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>This will perform PCA on the features and reduce the dimensionality of the data so that the explained variance of the data set is &gt;= 0.999.</p>
+<h3 id="stratifying-the-data-for-training-and-testing-the-model">Stratifying the data for training and testing the model<a class="headerlink" href="#stratifying-the-data-for-training-and-testing-the-model" title="Permanent link">&para;</a></h3>
+<p>The user can stratify (group) the training/testing data using:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;stratify_training_data&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>This will split the data chronologically so that every Xth data point is used to test the model after training. In the
+example above, the user is asking for every third data point in the dataframe to be used for
+testing; the other points are used for training. </p>
+<p>The test data is used to evaluate the performance of the model after training. If the test score is high, the model is able to capture the behavior of the data well. If the test score is low, either the model either does not capture the complexity of the data, the test data is significantly different from the train data, or a different model should be used. </p>
+<h3 id="controlling-the-model-learning-process">Controlling the model learning process<a class="headerlink" href="#controlling-the-model-learning-process" title="Permanent link">&para;</a></h3>
+<p>Model training parameters are unique to the machine learning library selected by the user. FreqAI allows the user to set any parameter for any library using the <code>model_training_parameters</code> dictionary in the user configuration file. The example configuration file (found in <code>config_examples/config_freqai.example.json</code>) show some of the example parameters associated with <code>Catboost</code> and <code>LightGBM</code>, but the user can add any parameters available in those libraries.</p>
+<p>Data split parameters are defined in <code>data_split_parameters</code> which can be any parameters associated with <code>Sklearn</code>'s <code>train_test_split()</code> function. </p>
+<p>FreqAI includes some additional parameters such as <code>weight_factor</code>, which allows the user to weight more recent data more strongly
+than past data via an exponential function:</p>
+<div class="arithmatex">\[ W_i = \exp(\frac{-i}{\alpha*n}) \]</div>
+<p>where <span class="arithmatex">\(W_i\)</span> is the weight of data point <span class="arithmatex">\(i\)</span> in a total set of <span class="arithmatex">\(n\)</span> data points. Below is a figure showing the effect of different weight factors on the data points (candles) in a feature set.</p>
+<p><img alt="weight-factor" src="../assets/freqai_weight-factor.jpg" /></p>
+<p><code>train_test_split()</code> has a parameters called <code>shuffle</code> that allows the user to keep the data unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data.</p>
+<p>Finally, <code>label_period_candles</code> defines the offset (number of candles into the future) used for the <code>labels</code>. In the presented example config,
+the user is asking for <code>labels</code> that are 24 candles in the future.</p>
+<h3 id="outlier-removal">Outlier removal<a class="headerlink" href="#outlier-removal" title="Permanent link">&para;</a></h3>
+<h4 id="removing-outliers-with-the-dissimilarity-index">Removing outliers with the Dissimilarity Index<a class="headerlink" href="#removing-outliers-with-the-dissimilarity-index" title="Permanent link">&para;</a></h4>
+<p>The user can tell FreqAI to remove outlier data points from the training/test data sets using a Dissimilarity Index by including the following statement in the config:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;DI_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>Equity and crypto markets suffer from a high level of non-patterned noise in the form of outlier data points. The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. The DI allows predictions which are outliers (not existent in the model feature space) to be thrown out due to low levels of certainty. </p>
+<p>To do so, FreqAI measures the distance between each training data point (feature vector), <span class="arithmatex">\(X_{a}\)</span>, and all other training data points:</p>
+<div class="arithmatex">\[ d_{ab} = \sqrt{\sum_{j=1}^p(X_{a,j}-X_{b,j})^2} \]</div>
+<p>where <span class="arithmatex">\(d_{ab}\)</span> is the distance between the normalized points <span class="arithmatex">\(a\)</span> and <span class="arithmatex">\(b\)</span>. <span class="arithmatex">\(p\)</span> is the number of features, i.e., the length of the vector <span class="arithmatex">\(X\)</span>. The characteristic distance, <span class="arithmatex">\(\overline{d}\)</span> for a set of training data points is simply the mean of the average distances:</p>
+<div class="arithmatex">\[ \overline{d} = \sum_{a=1}^n(\sum_{b=1}^n(d_{ab}/n)/n) \]</div>
+<p><span class="arithmatex">\(\overline{d}\)</span> quantifies the spread of the training data, which is compared to the distance between a new prediction feature vectors, <span class="arithmatex">\(X_k\)</span> and all the training data:</p>
+<div class="arithmatex">\[ d_k = \arg \min d_{k,i} \]</div>
+<p>which enables the estimation of the Dissimilarity Index as:</p>
+<div class="arithmatex">\[ DI_k = d_k/\overline{d} \]</div>
+<p>The user can tweak the DI through the <code>DI_threshold</code> to increase or decrease the extrapolation of the trained model. </p>
+<p>Below is a figure that describes the DI for a 3D data set.</p>
+<p><img alt="DI" src="../assets/freqai_DI.jpg" /></p>
+<h4 id="removing-outliers-using-a-support-vector-machine-svm">Removing outliers using a Support Vector Machine (SVM)<a class="headerlink" href="#removing-outliers-using-a-support-vector-machine-svm" title="Permanent link">&para;</a></h4>
+<p>The user can tell FreqAI to remove outlier data points from the training/test data sets using a SVM by setting:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;use_SVM_to_remove_outliers&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>FreqAI will train an SVM on the training data (or components of it if the user activated
+<code>principal_component_analysis</code>) and remove any data point that the SVM deems to be beyond the feature space. </p>
+<p>The parameter <code>shuffle</code> is by default set to <code>False</code> to ensure consistent results. If it is set to <code>True</code>, running the SVM multiple times on the same data set might result in different outcomes due to <code>max_iter</code> being to low for the algorithm to reach the demanded <code>tol</code>. Increasing <code>max_iter</code> solves this issue but causes the procedure to take longer time. </p>
+<p>The parameter <code>nu</code>, <em>very</em> broadly, is the amount of data points that should be considered outliers. </p>
+<h4 id="removing-outliers-with-dbscan">Removing outliers with DBSCAN<a class="headerlink" href="#removing-outliers-with-dbscan" title="Permanent link">&para;</a></h4>
+<p>The user can configure FreqAI to use DBSCAN to cluster and remove outliers from the training/test data set or incoming outliers from predictions, by activating <code>use_DBSCAN_to_remove_outliers</code> in the config:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;use_DBSCAN_to_remove_outliers&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+<p>DBSCAN is an unsupervised machine learning algorithm that clusters data without needing to know how many clusters there should be.</p>
+<p>Given a number of data points <span class="arithmatex">\(N\)</span>, and a distance <span class="arithmatex">\(\varepsilon\)</span>, DBSCAN clusters the data set by setting all data points that have <span class="arithmatex">\(N-1\)</span> other data points within a distance of <span class="arithmatex">\(\varepsilon\)</span> as <em>core points</em>. A data point that is within a distance of <span class="arithmatex">\(\varepsilon\)</span> from a <em>core point</em> but that does not have <span class="arithmatex">\(N-1\)</span> other data points within a distance of <span class="arithmatex">\(\varepsilon\)</span> from itself is considered an <em>edge point</em>. A cluster is then the collection of <em>core points</em> and <em>edge points</em>. Data points that have no other data points at a distance <span class="arithmatex">\(&lt;\varepsilon\)</span> are considered outliers. The figure below shows a cluster with <span class="arithmatex">\(N = 3\)</span>.</p>
+<p><img alt="dbscan" src="../assets/freqai_dbscan.jpg" /></p>
+<p>FreqAI uses <code>sklearn.cluster.DBSCAN</code> (details are available on scikit-learn's webpage <a href="#https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html">here</a>) with <code>min_samples</code> (<span class="arithmatex">\(N\)</span>) taken as double the no. of user-defined features, and <code>eps</code> (<span class="arithmatex">\(\varepsilon\)</span>) taken as the longest distance in the <em>k-distance graph</em> computed from the nearest neighbors in the pairwise distances of all data points in the feature set.</p>
+<h2 id="additional-information">Additional information<a class="headerlink" href="#additional-information" title="Permanent link">&para;</a></h2>
+<h3 id="common-pitfalls">Common pitfalls<a class="headerlink" href="#common-pitfalls" title="Permanent link">&para;</a></h3>
+<p>FreqAI cannot be combined with dynamic <code>VolumePairlists</code> (or any pairlist filter that adds and removes pairs dynamically).
+This is for performance reasons - FreqAI relies on making quick predictions/retrains. To do this effectively,
+it needs to download all the training data at the beginning of a dry/live instance. FreqAI stores and appends
+new candles automatically for future retrains. This means that if new pairs arrive later in the dry run due to a volume pairlist, it will not have the data ready. However, FreqAI does work with the <code>ShufflePairlist</code> or a <code>VolumePairlist</code> which keeps the total pairlist constant (but reorders the pairs according to volume).</p>
+<h2 id="credits">Credits<a class="headerlink" href="#credits" title="Permanent link">&para;</a></h2>
+<p>FreqAI was developed by a group of individuals who all contributed specific skillsets to the project.</p>
+<p>Conception and software development:
+Robert Caulk @robcaulk</p>
+<p>Theoretical brainstorming, data analysis:
+Elin Törnquist @th0rntwig</p>
+<p>Code review, software architecture brainstorming:
+@xmatthias</p>
+<p>Beta testing and bug reporting:
+@bloodhunter4rc, Salah Lamkadem @ikonx, @ken11o2, @longyu, @paranoidandy, @smidelis, @smarm
+Juha Nykänen @suikula, Wagner Costa @wagnercosta</p>
+
+
+
+
+              
+            </article>
+            
+          </div>
+        </div>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../advanced-hyperopt/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Advanced Hyperopt" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Advanced Hyperopt
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../edge/" class="md-footer__link md-footer__link--next" aria-label="Next: Edge Positioning" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Edge Positioning
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
