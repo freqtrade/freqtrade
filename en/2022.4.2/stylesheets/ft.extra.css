@@ -1,0 +1,28 @@
+.rst-versions  {
+    font-size: .7rem;
+    color: white;
+}
+
+.rst-versions.rst-badge .rst-current-version {
+    font-size: .7rem;
+    color: white;
+}
+
+.rst-versions .rst-other-versions {
+    color: white;
+}
+
+
+#widget-wrapper {
+    height: calc(220px * 0.5625 + 18px);
+    width: 220px;
+    margin: 0 auto 16px auto;
+    border-style: solid;
+    border-color: var(--md-code-bg-color);
+    border-width: 1px;
+    border-radius: 5px;
+}
+
+@media screen and (max-width: calc(76.25em - 1px)) {
+    #widget-wrapper { display: none; }
+}

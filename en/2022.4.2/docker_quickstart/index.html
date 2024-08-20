@@ -1,0 +1,1526 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2022.4.2/docker_quickstart/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.2.10">
+    
+    
+      
+        <title>Quickstart with Docker - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.df45aa19.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.9647289d.min.css">
+        
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#using-freqtrade-with-docker" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Quickstart with Docker
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Quickstart with Docker
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Quickstart with Docker
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-docker" class="md-nav__link">
+    Install Docker
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freqtrade-with-docker-compose" class="md-nav__link">
+    Freqtrade with docker-compose
+  </a>
+  
+    <nav class="md-nav" aria-label="Freqtrade with docker-compose">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-quick-start" class="md-nav__link">
+    Docker quick start
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker quick start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-custom-strategy" class="md-nav__link">
+    Adding a custom strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accessing-the-ui" class="md-nav__link">
+    Accessing the UI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-the-bot" class="md-nav__link">
+    Monitoring the bot
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose-logs" class="md-nav__link">
+    Docker-compose logs
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database" class="md-nav__link">
+    Database
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#updating-freqtrade-with-docker-compose" class="md-nav__link">
+    Updating freqtrade with docker-compose
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#editing-the-docker-compose-file" class="md-nav__link">
+    Editing the docker-compose file
+  </a>
+  
+    <nav class="md-nav" aria-label="Editing the docker-compose file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-download-data-with-docker-compose" class="md-nav__link">
+    Example: Download data with docker-compose
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-backtest-with-docker-compose" class="md-nav__link">
+    Example: Backtest with docker-compose
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-dependencies-with-docker-compose" class="md-nav__link">
+    Additional dependencies with docker-compose
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plotting-with-docker-compose" class="md-nav__link">
+    Plotting with docker-compose
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-analysis-using-docker-compose" class="md-nav__link">
+    Data analysis using docker compose
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-on-windows" class="md-nav__link">
+    Docker on Windows
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        Strategy Callbacks
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_11">
+          Control the bot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_11">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        Short / Leverage
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_19" type="checkbox" id="__nav_19" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_19">
+          Data Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_19">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        Backtest analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_20" type="checkbox" id="__nav_20" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_20">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_20">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        Strategy migration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-docker" class="md-nav__link">
+    Install Docker
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freqtrade-with-docker-compose" class="md-nav__link">
+    Freqtrade with docker-compose
+  </a>
+  
+    <nav class="md-nav" aria-label="Freqtrade with docker-compose">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-quick-start" class="md-nav__link">
+    Docker quick start
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker quick start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-custom-strategy" class="md-nav__link">
+    Adding a custom strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accessing-the-ui" class="md-nav__link">
+    Accessing the UI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-the-bot" class="md-nav__link">
+    Monitoring the bot
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose-logs" class="md-nav__link">
+    Docker-compose logs
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database" class="md-nav__link">
+    Database
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#updating-freqtrade-with-docker-compose" class="md-nav__link">
+    Updating freqtrade with docker-compose
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#editing-the-docker-compose-file" class="md-nav__link">
+    Editing the docker-compose file
+  </a>
+  
+    <nav class="md-nav" aria-label="Editing the docker-compose file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-download-data-with-docker-compose" class="md-nav__link">
+    Example: Download data with docker-compose
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-backtest-with-docker-compose" class="md-nav__link">
+    Example: Backtest with docker-compose
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-dependencies-with-docker-compose" class="md-nav__link">
+    Additional dependencies with docker-compose
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plotting-with-docker-compose" class="md-nav__link">
+    Plotting with docker-compose
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-analysis-using-docker-compose" class="md-nav__link">
+    Data analysis using docker compose
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker-on-windows" class="md-nav__link">
+    Docker on Windows
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/freqtrade/freqtrade/edit/master/docs/docker_quickstart.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="using-freqtrade-with-docker">Using Freqtrade with Docker<a class="headerlink" href="#using-freqtrade-with-docker" title="Permanent link">&para;</a></h1>
+<p>This page explains how to run the bot with Docker. It is not meant to work out of the box. You'll still need to read through the documentation and understand how to properly configure it.</p>
+<h2 id="install-docker">Install Docker<a class="headerlink" href="#install-docker" title="Permanent link">&para;</a></h2>
+<p>Start by downloading and installing Docker CE for your platform:</p>
+<ul>
+<li><a href="https://docs.docker.com/docker-for-mac/install/">Mac</a></li>
+<li><a href="https://docs.docker.com/docker-for-windows/install/">Windows</a></li>
+<li><a href="https://docs.docker.com/install/">Linux</a></li>
+</ul>
+<p>To simplify running freqtrade, <a href="https://docs.docker.com/compose/install/"><code>docker-compose</code></a> should be installed and available to follow the below <a href="#docker-quick-start">docker quick start guide</a>.</p>
+<h2 id="freqtrade-with-docker-compose">Freqtrade with docker-compose<a class="headerlink" href="#freqtrade-with-docker-compose" title="Permanent link">&para;</a></h2>
+<p>Freqtrade provides an official Docker image on <a href="https://hub.docker.com/r/freqtradeorg/freqtrade/">Dockerhub</a>, as well as a <a href="https://github.com/freqtrade/freqtrade/blob/stable/docker-compose.yml">docker-compose file</a> ready for usage.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>The following section assumes that <code>docker</code> and <code>docker-compose</code> are installed and available to the logged in user.</li>
+<li>All below commands use relative directories and will have to be executed from the directory containing the <code>docker-compose.yml</code> file.</li>
+</ul>
+</div>
+<h3 id="docker-quick-start">Docker quick start<a class="headerlink" href="#docker-quick-start" title="Permanent link">&para;</a></h3>
+<p>Create a new directory and place the <a href="https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml">docker-compose file</a> in this directory.</p>
+<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>ft_userdata
+<span class="nb">cd</span><span class="w"> </span>ft_userdata/
+<span class="c1"># Download the docker-compose file from the repository</span>
+curl<span class="w"> </span>https://raw.githubusercontent.com/freqtrade/freqtrade/stable/docker-compose.yml<span class="w"> </span>-o<span class="w"> </span>docker-compose.yml
+
+<span class="c1"># Pull the freqtrade image</span>
+docker-compose<span class="w"> </span>pull
+
+<span class="c1"># Create user directory structure</span>
+docker-compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>freqtrade<span class="w"> </span>create-userdir<span class="w"> </span>--userdir<span class="w"> </span>user_data
+
+<span class="c1"># Create configuration - Requires answering interactive questions</span>
+docker-compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>freqtrade<span class="w"> </span>new-config<span class="w"> </span>--config<span class="w"> </span>user_data/config.json
+</code></pre></div>
+<p>The above snippet creates a new directory called <code>ft_userdata</code>, downloads the latest compose file and pulls the freqtrade image.
+The last 2 steps in the snippet create the directory with <code>user_data</code>, as well as (interactively) the default configuration based on your selections.</p>
+<div class="admonition question">
+<p class="admonition-title">How to edit the bot configuration?</p>
+<p>You can edit the configuration at any time, which is available as <code>user_data/config.json</code> (within the directory <code>ft_userdata</code>) when using the above configuration.</p>
+<p>You can also change the both Strategy and commands by editing the command section of your <code>docker-compose.yml</code> file.</p>
+</div>
+<h4 id="adding-a-custom-strategy">Adding a custom strategy<a class="headerlink" href="#adding-a-custom-strategy" title="Permanent link">&para;</a></h4>
+<ol>
+<li>The configuration is now available as <code>user_data/config.json</code></li>
+<li>Copy a custom strategy to the directory <code>user_data/strategies/</code></li>
+<li>Add the Strategy' class name to the <code>docker-compose.yml</code> file</li>
+</ol>
+<p>The <code>SampleStrategy</code> is run by default.</p>
+<div class="admonition danger">
+<p class="admonition-title"><code>SampleStrategy</code> is just a demo!</p>
+<p>The <code>SampleStrategy</code> is there for your reference and give you ideas for your own strategy.
+Please always backtest your strategy and use dry-run for some time before risking real money!
+You will find more information about Strategy development in the <a href="../strategy-customization/">Strategy documentation</a>.</p>
+</div>
+<p>Once this is done, you're ready to launch the bot in trading mode (Dry-run or Live-trading, depending on your answer to the corresponding question you made above).</p>
+<div class="highlight"><pre><span></span><code>docker-compose<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Default configuration</p>
+<p>While the configuration generated will be mostly functional, you will still need to verify that all options correspond to what you want (like Pricing, pairlist, ...) before starting the bot.</p>
+</div>
+<h4 id="accessing-the-ui">Accessing the UI<a class="headerlink" href="#accessing-the-ui" title="Permanent link">&para;</a></h4>
+<p>If you've selected to enable FreqUI in the <code>new-config</code> step, you will have freqUI available at port <code>localhost:8080</code>.</p>
+<p>You can now access the UI by typing localhost:8080 in your browser.</p>
+<details class="note">
+<summary>UI Access on a remote servers</summary>
+<p>If you're running on a VPS, you should consider using either a ssh tunnel, or setup a VPN (openVPN, wireguard) to connect to your bot.
+This will ensure that freqUI is not directly exposed to the internet, which is not recommended for security reasons (freqUI does not support https out of the box).
+Setup of these tools is not part of this tutorial, however many good tutorials can be found on the internet.
+Please also read the <a href="../rest-api/#configuration-with-docker">API configuration with docker</a> section to learn more about this configuration.</p>
+</details>
+<h4 id="monitoring-the-bot">Monitoring the bot<a class="headerlink" href="#monitoring-the-bot" title="Permanent link">&para;</a></h4>
+<p>You can check for running instances with <code>docker-compose ps</code>.
+This should list the service <code>freqtrade</code> as <code>running</code>. If that's not the case, best check the logs (see next point).</p>
+<h4 id="docker-compose-logs">Docker-compose logs<a class="headerlink" href="#docker-compose-logs" title="Permanent link">&para;</a></h4>
+<p>Logs will be written to: <code>user_data/logs/freqtrade.log</code>.<br />
+You can also check the latest log with the command <code>docker-compose logs -f</code>.</p>
+<h4 id="database">Database<a class="headerlink" href="#database" title="Permanent link">&para;</a></h4>
+<p>The database will be located at: <code>user_data/tradesv3.sqlite</code></p>
+<h4 id="updating-freqtrade-with-docker-compose">Updating freqtrade with docker-compose<a class="headerlink" href="#updating-freqtrade-with-docker-compose" title="Permanent link">&para;</a></h4>
+<p>Updating freqtrade when using <code>docker-compose</code> is as simple as running the following 2 commands:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Download the latest image</span>
+docker-compose<span class="w"> </span>pull
+<span class="c1"># Restart the image</span>
+docker-compose<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
+<p>This will first pull the latest image, and will then restart the container with the just pulled version.</p>
+<div class="admonition warning">
+<p class="admonition-title">Check the Changelog</p>
+<p>You should always check the changelog for breaking changes / manual interventions required and make sure the bot starts correctly after the update.</p>
+</div>
+<h3 id="editing-the-docker-compose-file">Editing the docker-compose file<a class="headerlink" href="#editing-the-docker-compose-file" title="Permanent link">&para;</a></h3>
+<p>Advanced users may edit the docker-compose file further to include all possible options or arguments.</p>
+<p>All freqtrade arguments will be available by running <code>docker-compose run --rm freqtrade &lt;command&gt; &lt;optional arguments&gt;</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title"><code>docker-compose</code> for trade commands</p>
+<p>Trade commands (<code>freqtrade trade &lt;...&gt;</code>) should not be ran via <code>docker-compose run</code> - but should use <code>docker-compose up -d</code> instead.
+This makes sure that the container is properly started (including port forwardings) and will make sure that the container will restart after a system reboot.
+If you intend to use freqUI, please also ensure to adjust the <a href="../rest-api/#configuration-with-docker">configuration accordingly</a>, otherwise the UI will not be available.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title"><code>docker-compose run --rm</code></p>
+<p>Including <code>--rm</code> will remove the container after completion, and is highly recommended for all modes except trading mode (running with <code>freqtrade trade</code> command).</p>
+</div>
+<details class="note">
+<summary>Using docker without docker-compose</summary>
+<p>"<code>docker-compose run --rm</code>" will require a compose file to be provided.
+Some freqtrade commands that don't require authentication such as <code>list-pairs</code> can be run with "<code>docker run --rm</code>" instead.<br />
+For example <code>docker run --rm freqtradeorg/freqtrade:stable list-pairs --exchange binance --quote BTC --print-json</code>.<br />
+This can be useful for fetching exchange information to add to your <code>config.json</code> without affecting your running containers.</p>
+</details>
+<h4 id="example-download-data-with-docker-compose">Example: Download data with docker-compose<a class="headerlink" href="#example-download-data-with-docker-compose" title="Permanent link">&para;</a></h4>
+<p>Download backtesting data for 5 days for the pair ETH/BTC and 1h timeframe from Binance. The data will be stored in the directory <code>user_data/data/</code> on the host.</p>
+<div class="highlight"><pre><span></span><code>docker-compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>freqtrade<span class="w"> </span>download-data<span class="w"> </span>--pairs<span class="w"> </span>ETH/BTC<span class="w"> </span>--exchange<span class="w"> </span>binance<span class="w"> </span>--days<span class="w"> </span><span class="m">5</span><span class="w"> </span>-t<span class="w"> </span>1h
+</code></pre></div>
+<p>Head over to the <a href="../data-download/">Data Downloading Documentation</a> for more details on downloading data.</p>
+<h4 id="example-backtest-with-docker-compose">Example: Backtest with docker-compose<a class="headerlink" href="#example-backtest-with-docker-compose" title="Permanent link">&para;</a></h4>
+<p>Run backtesting in docker-containers for SampleStrategy and specified timerange of historical data, on 5m timeframe:</p>
+<div class="highlight"><pre><span></span><code>docker-compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--config<span class="w"> </span>user_data/config.json<span class="w"> </span>--strategy<span class="w"> </span>SampleStrategy<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20190801</span>-20191001<span class="w"> </span>-i<span class="w"> </span>5m
+</code></pre></div>
+<p>Head over to the <a href="../backtesting/">Backtesting Documentation</a> to learn more.</p>
+<h3 id="additional-dependencies-with-docker-compose">Additional dependencies with docker-compose<a class="headerlink" href="#additional-dependencies-with-docker-compose" title="Permanent link">&para;</a></h3>
+<p>If your strategy requires dependencies not included in the default image - it will be necessary to build the image on your host.
+For this, please create a Dockerfile containing installation steps for the additional dependencies (have a look at <a href="https://github.com/freqtrade/freqtrade/blob/develop/docker/Dockerfile.custom">docker/Dockerfile.custom</a> for an example).</p>
+<p>You'll then also need to modify the <code>docker-compose.yml</code> file and uncomment the build step, as well as rename the image to avoid naming collisions.</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">freqtrade_custom</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">      </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./Dockerfile.&lt;yourextension&gt;&quot;</span>
+</code></pre></div>
+<p>You can then run <code>docker-compose build --pull</code> to build the docker image, and run it using the commands described above.</p>
+<h3 id="plotting-with-docker-compose">Plotting with docker-compose<a class="headerlink" href="#plotting-with-docker-compose" title="Permanent link">&para;</a></h3>
+<p>Commands <code>freqtrade plot-profit</code> and <code>freqtrade plot-dataframe</code> (<a href="../plotting/">Documentation</a>) are available by changing the image to <code>*_plot</code> in your docker-compose.yml file.
+You can then use these commands as follows:</p>
+<div class="highlight"><pre><span></span><code>docker-compose<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>freqtrade<span class="w"> </span>plot-dataframe<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>-p<span class="w"> </span>BTC/ETH<span class="w"> </span>--timerange<span class="o">=</span><span class="m">20180801</span>-20180805
+</code></pre></div>
+<p>The output will be stored in the <code>user_data/plot</code> directory, and can be opened with any modern browser.</p>
+<h3 id="data-analysis-using-docker-compose">Data analysis using docker compose<a class="headerlink" href="#data-analysis-using-docker-compose" title="Permanent link">&para;</a></h3>
+<p>Freqtrade provides a docker-compose file which starts up a jupyter lab server.
+You can run this server using the following command:</p>
+<div class="highlight"><pre><span></span><code>docker-compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose-jupyter.yml<span class="w"> </span>up
+</code></pre></div>
+<p>This will create a docker-container running jupyter lab, which will be accessible using <code>https://127.0.0.1:8888/lab</code>.
+Please use the link that's printed in the console after startup for simplified login.</p>
+<p>Since part of this image is built on your machine, it is recommended to rebuild the image from time to time to keep freqtrade (and dependencies) up-to-date.</p>
+<div class="highlight"><pre><span></span><code>docker-compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose-jupyter.yml<span class="w"> </span>build<span class="w"> </span>--no-cache
+</code></pre></div>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="docker-on-windows">Docker on Windows<a class="headerlink" href="#docker-on-windows" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Error: <code>"Timestamp for this request is outside of the recvWindow."</code><ul>
+<li>
+<p>The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
+  To fix this issue temporarily you need to run <code>wsl --shutdown</code> and restart docker again (a popup on windows 10 will ask you to do so).
+  A permanent solution is either to host the docker container on a linux host or restart the wsl from time to time with the scheduler.</p>
+<div class="highlight"><pre><span></span><code>taskkill<span class="w"> </span>/IM<span class="w"> </span><span class="s2">&quot;Docker Desktop.exe&quot;</span><span class="w"> </span>/F
+wsl<span class="w"> </span>--shutdown
+start<span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w"> </span><span class="s2">&quot;C:\Program Files\Docker\Docker\Docker Desktop.exe&quot;</span>
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Due to the above, we do not recommend the usage of docker on windows for production setups, but only for experimentation, datadownload and backtesting.
+Best use a linux-VPS for running freqtrade reliably.</p>
+</div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Home
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../installation/" class="md-footer__link md-footer__link--next" aria-label="Next: Linux/MacOS/Raspberry" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Linux/MacOS/Raspberry
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.2a1c317c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.748e2769.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
