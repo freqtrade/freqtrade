@@ -1,0 +1,1661 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../rest-api/">
+      
+      
+        <link rel="next" href="../backtesting/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.30">
+    
+    
+      
+        <title>Data Downloading - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.3cba04c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-downloading" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Data Downloading
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker without docker-compose
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-data-for-backtesting-and-hyperopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting data for backtesting and hyperopt
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Getting data for backtesting and hyperopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data format
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sub-command-convert-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sub-command convert data
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sub-command convert data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-converting-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example converting data
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-command-convert-trade-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sub-command convert trade data
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sub-command convert trade data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-converting-trades" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example converting trades
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-command-list-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sub-command list-data
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sub-command list-data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-list-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example list-data
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pairs-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pairs file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-download" class="md-nav__link">
+    <span class="md-ellipsis">
+      Start download
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Other Notes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trades-tick-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trades (tick) data
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next step
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Subcommands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheatsheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sandbox Testing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-data-for-backtesting-and-hyperopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting data for backtesting and hyperopt
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Getting data for backtesting and hyperopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data format
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sub-command-convert-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sub-command convert data
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sub-command convert data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-converting-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example converting data
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-command-convert-trade-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sub-command convert trade data
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sub-command convert trade data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-converting-trades" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example converting trades
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-command-list-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sub-command list-data
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sub-command list-data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-list-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example list-data
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pairs-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pairs file
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-download" class="md-nav__link">
+    <span class="md-ellipsis">
+      Start download
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Other Notes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trades-tick-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trades (tick) data
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next step
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="data-downloading">Data Downloading<a class="headerlink" href="#data-downloading" title="Permanent link">&para;</a></h1>
+<h2 id="getting-data-for-backtesting-and-hyperopt">Getting data for backtesting and hyperopt<a class="headerlink" href="#getting-data-for-backtesting-and-hyperopt" title="Permanent link">&para;</a></h2>
+<p>To download data (candles / OHLCV) needed for backtesting and hyperoptimization use the <code>freqtrade download-data</code> command.</p>
+<p>If no additional parameter is specified, freqtrade will download data for <code>"1m"</code> and <code>"5m"</code> timeframes for the last 30 days.
+Exchange and pairs will come from <code>config.json</code> (if specified using <code>-c/--config</code>).
+Otherwise <code>--exchange</code> becomes mandatory.</p>
+<p>You can use a relative timerange (<code>--days 20</code>) or an absolute starting point (<code>--timerange 20200101</code>). For incremental downloads, the relative approach should be used.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip: Updating existing data</p>
+<p>If you already have backtesting data available in your data-directory and would like to refresh this data up to today, use <code>--days xx</code> with a number slightly higher than the missing number of days. Freqtrade will keep the available data and only download the missing data.
+Be careful though: If the number is too small (which would result in a few missing days), the whole dataset will be removed and only xx days will be downloaded.</p>
+</div>
+<h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>usage: freqtrade download-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                               [-d PATH] [--userdir PATH]
+                               [-p PAIRS [PAIRS ...]] [--pairs-file FILE]
+                               [--days INT] [--timerange TIMERANGE]
+                               [--dl-trades] [--exchange EXCHANGE]
+                               [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
+                               [--erase]
+                               [--data-format-ohlcv {json,jsongz,hdf5}]
+                               [--data-format-trades {json,jsongz,hdf5}]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Show profits for only these pairs. Pairs are space-
+                        separated.
+  --pairs-file FILE     File containing a list of pairs to download.
+  --days INT            Download data for given number of days.
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
+  --dl-trades           Download trades instead of OHLCV data. The bot will
+                        resample trades to the desired timeframe as specified
+                        as --timeframes/-t.
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
+                        config is provided.
+  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]
+                        Specify which tickers to download. Space-separated
+                        list. Default: `1m 5m`.
+  --erase               Clean all existing data for the selected
+                        exchange/pairs/timeframes.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `json`).
+  --data-format-trades {json,jsongz,hdf5}
+                        Storage format for downloaded trades data. (default:
+                        `jsongz`).
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more
+                        details.
+  -V, --version         show program&#39;s version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Startup period</p>
+<p><code>download-data</code> is a strategy-independent command. The idea is to download a big chunk of data once, and then iteratively increase the amount of data stored.</p>
+<p>For that reason, <code>download-data</code> does not care about the "startup-period" defined in a strategy. It's up to the user to download additional days if the backtest should start at a specific point in time (while respecting startup period).</p>
+</div>
+<h3 id="data-format">Data format<a class="headerlink" href="#data-format" title="Permanent link">&para;</a></h3>
+<p>Freqtrade currently supports 3 data-formats for both OHLCV and trades data:</p>
+<ul>
+<li><code>json</code> (plain "text" json files)</li>
+<li><code>jsongz</code> (a gzip-zipped version of json files)</li>
+<li><code>hdf5</code> (a high performance datastore)</li>
+</ul>
+<p>By default, OHLCV data is stored as <code>json</code> data, while trades data is stored as <code>jsongz</code> data.</p>
+<p>This can be changed via the <code>--data-format-ohlcv</code> and <code>--data-format-trades</code> command line arguments respectively.
+To persist this change, you can should also add the following snippet to your configuration, so you don't have to insert the above arguments each time:</p>
+<div class="highlight"><pre><span></span><code>    // ...
+    &quot;dataformat_ohlcv&quot;: &quot;hdf5&quot;,
+    &quot;dataformat_trades&quot;: &quot;hdf5&quot;,
+    // ...
+</code></pre></div>
+<p>If the default data-format has been changed during download, then the keys <code>dataformat_ohlcv</code> and <code>dataformat_trades</code> in the configuration file need to be adjusted to the selected dataformat as well.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can convert between data-formats using the <a href="#sub-command-convert-data">convert-data</a> and <a href="#sub-command-convert-trade-data">convert-trade-data</a> methods.</p>
+</div>
+<h4 id="sub-command-convert-data">Sub-command convert data<a class="headerlink" href="#sub-command-convert-data" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>usage: freqtrade convert-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                              [-d PATH] [--userdir PATH]
+                              [-p PAIRS [PAIRS ...]] --format-from
+                              {json,jsongz,hdf5} --format-to
+                              {json,jsongz,hdf5} [--erase]
+                              [-t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Show profits for only these pairs. Pairs are space-
+                        separated.
+  --format-from {json,jsongz,hdf5}
+                        Source format for data conversion.
+  --format-to {json,jsongz,hdf5}
+                        Destination format for data conversion.
+  --erase               Clean all existing data for the selected
+                        exchange/pairs/timeframes.
+  -t {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...], --timeframes {1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} [{1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,2w,1M,1y} ...]
+                        Specify which tickers to download. Space-separated
+                        list. Default: `1m 5m`.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more
+                        details.
+  -V, --version         show program&#39;s version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+</code></pre></div>
+<h5 id="example-converting-data">Example converting data<a class="headerlink" href="#example-converting-data" title="Permanent link">&para;</a></h5>
+<p>The following command will convert all candle (OHLCV) data available in <code>~/.freqtrade/data/binance</code> from json to jsongz, saving diskspace in the process.
+It'll also remove original json data files (<code>--erase</code> parameter).</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>convert-data<span class="w"> </span>--format-from<span class="w"> </span>json<span class="w"> </span>--format-to<span class="w"> </span>jsongz<span class="w"> </span>--datadir<span class="w"> </span>~/.freqtrade/data/binance<span class="w"> </span>-t<span class="w"> </span>5m<span class="w"> </span>15m<span class="w"> </span>--erase
+</code></pre></div>
+<h4 id="sub-command-convert-trade-data">Sub-command convert trade data<a class="headerlink" href="#sub-command-convert-trade-data" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>usage: freqtrade convert-trade-data [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                    [-d PATH] [--userdir PATH]
+                                    [-p PAIRS [PAIRS ...]] --format-from
+                                    {json,jsongz,hdf5} --format-to
+                                    {json,jsongz,hdf5} [--erase]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Show profits for only these pairs. Pairs are space-
+                        separated.
+  --format-from {json,jsongz,hdf5}
+                        Source format for data conversion.
+  --format-to {json,jsongz,hdf5}
+                        Destination format for data conversion.
+  --erase               Clean all existing data for the selected
+                        exchange/pairs/timeframes.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more
+                        details.
+  -V, --version         show program&#39;s version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+</code></pre></div>
+<h5 id="example-converting-trades">Example converting trades<a class="headerlink" href="#example-converting-trades" title="Permanent link">&para;</a></h5>
+<p>The following command will convert all available trade-data in <code>~/.freqtrade/data/kraken</code> from jsongz to json.
+It'll also remove original jsongz data files (<code>--erase</code> parameter).</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>convert-trade-data<span class="w"> </span>--format-from<span class="w"> </span>jsongz<span class="w"> </span>--format-to<span class="w"> </span>json<span class="w"> </span>--datadir<span class="w"> </span>~/.freqtrade/data/kraken<span class="w"> </span>--erase
+</code></pre></div>
+<h3 id="sub-command-list-data">Sub-command list-data<a class="headerlink" href="#sub-command-list-data" title="Permanent link">&para;</a></h3>
+<p>You can get a list of downloaded data using the <code>list-data</code> sub-command.</p>
+<div class="highlight"><pre><span></span><code>usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                           [--userdir PATH] [--exchange EXCHANGE]
+                           [--data-format-ohlcv {json,jsongz,hdf5}]
+                           [-p PAIRS [PAIRS ...]]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --exchange EXCHANGE   Exchange name (default: `bittrex`). Only valid if no
+                        config is provided.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `json`).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Show profits for only these pairs. Pairs are space-
+                        separated.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more
+                        details.
+  -V, --version         show program&#39;s version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+</code></pre></div>
+<h4 id="example-list-data">Example list-data<a class="headerlink" href="#example-list-data" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>&gt;<span class="w"> </span>freqtrade<span class="w"> </span>list-data<span class="w"> </span>--userdir<span class="w"> </span>~/.freqtrade/user_data/
+
+Found<span class="w"> </span><span class="m">33</span><span class="w"> </span>pair<span class="w"> </span>/<span class="w"> </span>timeframe<span class="w"> </span>combinations.
+pairs<span class="w">       </span>timeframe
+----------<span class="w">  </span>-----------------------------------------
+ADA/BTC<span class="w">     </span>5m,<span class="w"> </span>15m,<span class="w"> </span>30m,<span class="w"> </span>1h,<span class="w"> </span>2h,<span class="w"> </span>4h,<span class="w"> </span>6h,<span class="w"> </span>12h,<span class="w"> </span>1d
+ADA/ETH<span class="w">     </span>5m,<span class="w"> </span>15m,<span class="w"> </span>30m,<span class="w"> </span>1h,<span class="w"> </span>2h,<span class="w"> </span>4h,<span class="w"> </span>6h,<span class="w"> </span>12h,<span class="w"> </span>1d
+ETH/BTC<span class="w">     </span>5m,<span class="w"> </span>15m,<span class="w"> </span>30m,<span class="w"> </span>1h,<span class="w"> </span>2h,<span class="w"> </span>4h,<span class="w"> </span>6h,<span class="w"> </span>12h,<span class="w"> </span>1d
+ETH/USDT<span class="w">    </span>5m,<span class="w"> </span>15m,<span class="w"> </span>30m,<span class="w"> </span>1h,<span class="w"> </span>2h,<span class="w"> </span>4h
+</code></pre></div>
+<h3 id="pairs-file">Pairs file<a class="headerlink" href="#pairs-file" title="Permanent link">&para;</a></h3>
+<p>In alternative to the whitelist from <code>config.json</code>, a <code>pairs.json</code> file can be used.</p>
+<p>If you are using Binance for example:</p>
+<ul>
+<li>create a directory <code>user_data/data/binance</code> and copy or create the <code>pairs.json</code> file in that directory.</li>
+<li>update the <code>pairs.json</code> file to contain the currency pairs you are interested in.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>user_data/data/binance
+cp<span class="w"> </span>freqtrade/tests/testdata/pairs.json<span class="w"> </span>user_data/data/binance
+</code></pre></div>
+<p>The format of the <code>pairs.json</code> file is a simple json list.
+Mixing different stake-currencies is allowed for this file, since it's only used for downloading.</p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;ETH/BTC&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;BTC/USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;XRP/ETH&quot;</span>
+<span class="p">]</span>
+</code></pre></div>
+<h3 id="start-download">Start download<a class="headerlink" href="#start-download" title="Permanent link">&para;</a></h3>
+<p>Then run:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>download-data<span class="w"> </span>--exchange<span class="w"> </span>binance
+</code></pre></div>
+<p>This will download historical candle (OHLCV) data for all the currency pairs you defined in <code>pairs.json</code>.</p>
+<h3 id="other-notes">Other Notes<a class="headerlink" href="#other-notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>To use a different directory than the exchange specific default, use <code>--datadir user_data/data/some_directory</code>.</li>
+<li>To change the exchange used to download the historical data from, please use a different configuration file (you'll probably need to adjust rate limits etc.)</li>
+<li>To use <code>pairs.json</code> from some other directory, use <code>--pairs-file some_other_dir/pairs.json</code>.</li>
+<li>To download historical candle (OHLCV) data for only 10 days, use <code>--days 10</code> (defaults to 30 days).</li>
+<li>To download historical candle (OHLCV) data from a fixed starting point, use <code>--timerange 20200101-</code> - which will download all data from January 1<sup>st</sup>, 2020. Eventually set end dates are ignored.</li>
+<li>Use <code>--timeframes</code> to specify what timeframe download the historical candle (OHLCV) data for. Default is <code>--timeframes 1m 5m</code> which will download 1-minute and 5-minute data.</li>
+<li>To use exchange, timeframe and list of pairs as defined in your configuration file, use the <code>-c/--config</code> option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine <code>-c/--config</code> with most other options.</li>
+</ul>
+<h3 id="trades-tick-data">Trades (tick) data<a class="headerlink" href="#trades-tick-data" title="Permanent link">&para;</a></h3>
+<p>By default, <code>download-data</code> sub-command downloads Candles (OHLCV) data. Some exchanges also provide historic trade-data via their API.
+This data can be useful if you need many different timeframes, since it is only downloaded once, and then resampled locally to the desired timeframes.</p>
+<p>Since this data is large by default, the files use gzip by default. They are stored in your data-directory with the naming convention of <code>&lt;pair&gt;-trades.json.gz</code> (<code>ETH_BTC-trades.json.gz</code>). Incremental mode is also supported, as for historic OHLCV data, so downloading the data once per week with <code>--days 8</code> will create an incremental data-repository.</p>
+<p>To use this mode, simply add <code>--dl-trades</code> to your call. This will swap the download method to download trades, and resamples the data locally.</p>
+<p>Example call:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>download-data<span class="w"> </span>--exchange<span class="w"> </span>binance<span class="w"> </span>--pairs<span class="w"> </span>XRP/ETH<span class="w"> </span>ETH/BTC<span class="w"> </span>--days<span class="w"> </span><span class="m">20</span><span class="w"> </span>--dl-trades
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>While this method uses async calls, it will be slow, since it requires the result of the previous call to generate the next request to the exchange.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The historic trades are not available during Freqtrade dry-run and live trade modes because all exchanges tested provide this data with a delay of few 100 candles, so it's not suitable for real-time trading.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Kraken user</p>
+<p>Kraken users should read <a href="../exchanges/#historic-kraken-data">this</a> before starting to download data.</p>
+</div>
+<h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
+<p>Great, you now have backtest data downloaded, so you can now start <a href="../backtesting/">backtesting</a> your strategy.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
