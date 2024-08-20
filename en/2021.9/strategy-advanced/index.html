@@ -1,0 +1,1728 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2021.9/strategy-advanced/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.3.0">
+    
+    
+      
+        <title>Advanced Strategy - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.8b42a75e.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.3f5d1f46.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    
+      
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    
+      <script>var palette=__get("__palette");if(null!==palette&&"object"==typeof palette.color)for(var key in palette.color)document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#advanced-strategies" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Advanced Strategy
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_10">
+          Control the bot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_10">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_17" type="checkbox" id="__nav_17" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_17">
+          Data Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_17">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_18" type="checkbox" id="__nav_18" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_18">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_18">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Advanced Strategy
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Advanced Strategy
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#storing-information" class="md-nav__link">
+    Storing information
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dataframe-access" class="md-nav__link">
+    Dataframe access
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-sell-signal" class="md-nav__link">
+    Custom sell signal
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#buy-tag" class="md-nav__link">
+    Buy Tag
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-stoploss" class="md-nav__link">
+    Custom stoploss
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#storing-information" class="md-nav__link">
+    Storing information
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dataframe-access" class="md-nav__link">
+    Dataframe access
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-sell-signal" class="md-nav__link">
+    Custom sell signal
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#buy-tag" class="md-nav__link">
+    Buy Tag
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-stoploss" class="md-nav__link">
+    Custom stoploss
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/freqtrade/freqtrade/edit/master/docs/strategy-advanced.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="advanced-strategies">Advanced Strategies<a class="headerlink" href="#advanced-strategies" title="Permanent link">&para;</a></h1>
+<p>This page explains some advanced concepts available for strategies.
+If you're just getting started, please be familiar with the methods described in the <a href="../strategy-customization/">Strategy Customization</a> documentation and with the <a href="../bot-basics/">Freqtrade basics</a> first.</p>
+<p><a href="../bot-basics/">Freqtrade basics</a> describes in which sequence each method described below is called, which can be helpful to understand which method to use for your custom needs.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All callback methods described below should only be implemented in a strategy if they are actually used.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can get a strategy template containing all below methods by running <code>freqtrade new-strategy --strategy MyAwesomeStrategy --template advanced</code></p>
+</div>
+<h2 id="storing-information">Storing information<a class="headerlink" href="#storing-information" title="Permanent link">&para;</a></h2>
+<p>Storing information can be accomplished by creating a new dictionary within the strategy class.</p>
+<p>The name of the variable can be chosen at will, but should be prefixed with <code>cust_</code> to avoid naming collisions with predefined strategy variables.</p>
+<p>```python
+class AwesomeStrategy(IStrategy):
+    # Create custom dictionary
+    custom_info = {}</p>
+<div class="codehilite"><pre><span></span><code>def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    # Check if the entry already exists
+    if not metadata[&quot;pair&quot;] in self.custom_info:
+        # Create empty entry for this pair
+        self.custom_info[metadata[&quot;pair&quot;]] = {}
+
+    if &quot;crosstime&quot; in self.custom_info[metadata[&quot;pair&quot;]]:
+        self.custom_info[metadata[&quot;pair&quot;]][&quot;crosstime&quot;] += 1
+    else:
+        self.custom_info[metadata[&quot;pair&quot;]][&quot;crosstime&quot;] = 1
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.</p>
+</div>
+<h2 id="dataframe-access">Dataframe access<a class="headerlink" href="#dataframe-access" title="Permanent link">&para;</a></h2>
+<p>You may access dataframe in various strategy functions by querying it from dataprovider.</p>
+<p>``` python
+from freqtrade.exchange import timeframe_to_prev_date</p>
+<p>class AwesomeStrategy(IStrategy):
+    def confirm_trade_exit(self, pair: str, trade: 'Trade', order_type: str, amount: float,
+                           rate: float, time_in_force: str, sell_reason: str,
+                           current_time: 'datetime', **kwargs) -&gt; bool:
+        # Obtain pair dataframe.
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)</p>
+<div class="codehilite"><pre><span></span><code>    # Obtain last available candle. Do not use current_time to look up latest candle, because 
+    # current_time points to current incomplete candle whose data is not available.
+    last_candle = dataframe.iloc[-1].squeeze()
+    # &lt;...&gt;
+
+    # In dry/live runs trade open date will not match candle open date therefore it must be 
+    # rounded.
+    trade_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
+    # Look up trade candle.
+    trade_candle = dataframe.loc[dataframe[&#39;date&#39;] == trade_date]
+    # trade_candle may be empty for trades that just opened as it is still incomplete.
+    if not trade_candle.empty:
+        trade_candle = trade_candle.squeeze()
+        # &lt;...&gt;
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition warning">
+<p class="admonition-title">Using .iloc[-1]</p>
+<p>You can use <code>.iloc[-1]</code> here because <code>get_analyzed_dataframe()</code> only returns candles that backtesting is allowed to see.
+This will not work in <code>populate_*</code> methods, so make sure to not use <code>.iloc[]</code> in that area.
+Also, this will only work starting with version 2021.5.</p>
+</div>
+<hr />
+<h2 id="custom-sell-signal">Custom sell signal<a class="headerlink" href="#custom-sell-signal" title="Permanent link">&para;</a></h2>
+<p>It is possible to define custom sell signals, indicating that specified position should be sold. This is very useful when we need to customize sell conditions for each individual trade, or if you need the trade profit to take the sell decision. </p>
+<p>For example you could implement a 1:2 risk-reward ROI with <code>custom_sell()</code>.</p>
+<p>Using custom_sell() signals in place of stoploss though <em>is not recommended</em>. It is a inferior method to using <code>custom_stoploss()</code> in this regard - which also allows you to keep the stoploss on exchange.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Returning a <code>string</code> or <code>True</code> from this method is equal to setting sell signal on a candle at specified time. This method is not called when sell signal is set already, or if sell signals are disabled (<code>use_sell_signal=False</code> or <code>sell_profit_only=True</code> while profit is below <code>sell_profit_offset</code>). <code>string</code> max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.</p>
+</div>
+<p>An example of how we can use different indicators depending on the current profit and also sell trades that were open longer than one day:</p>
+<p>``` python
+class AwesomeStrategy(IStrategy):
+    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, **kwargs):
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()</p>
+<div class="codehilite"><pre><span></span><code>    # Above 20% profit, sell when rsi &lt; 80
+    if current_profit &gt; 0.2:
+        if last_candle[&#39;rsi&#39;] &lt; 80:
+            return &#39;rsi_below_80&#39;
+
+    # Between 2% and 10%, sell if EMA-long above EMA-short
+    if 0.02 &lt; current_profit &lt; 0.1:
+        if last_candle[&#39;emalong&#39;] &gt; last_candle[&#39;emashort&#39;]:
+            return &#39;ema_long_below_80&#39;
+
+    # Sell any positions at a loss if they are held for more than one day.
+    if current_profit &lt; 0.0 and (current_time - trade.open_date_utc).days &gt;= 1:
+        return &#39;unclog&#39;
+</code></pre></div>
+
+<p>```</p>
+<p>See <a href="#dataframe-access">Dataframe access</a> for more information about dataframe use in strategy callbacks.</p>
+<h2 id="buy-tag">Buy Tag<a class="headerlink" href="#buy-tag" title="Permanent link">&para;</a></h2>
+<p>When your strategy has multiple buy signals, you can name the signal that triggered.
+Then you can access you buy signal on <code>custom_sell</code></p>
+<p>```python
+def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    dataframe.loc[
+        (
+            (dataframe['rsi'] &lt; 35) &amp;
+            (dataframe['volume'] &gt; 0)
+        ),
+        ['buy', 'buy_tag']] = (1, 'buy_signal_rsi')</p>
+<div class="codehilite"><pre><span></span><code>return dataframe
+</code></pre></div>
+
+<p>def custom_sell(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs):
+    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+    last_candle = dataframe.iloc[-1].squeeze()
+    if trade.buy_tag == 'buy_signal_rsi' and last_candle['rsi'] &gt; 80:
+        return 'sell_signal_rsi'
+    return None</p>
+<p>```</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>buy_tag</code> is limited to 100 characters, remaining data will be truncated.</p>
+</div>
+<h2 id="custom-stoploss">Custom stoploss<a class="headerlink" href="#custom-stoploss" title="Permanent link">&para;</a></h2>
+<p>The stoploss price can only ever move upwards - if the stoploss value returned from <code>custom_stoploss</code> would result in a lower stoploss price than was previously set, it will be ignored. The traditional <code>stoploss</code> value serves as an absolute lower level and will be instated as the initial stoploss.</p>
+<p>The usage of the custom stoploss method must be enabled by setting <code>use_custom_stoploss=True</code> on the strategy object.
+The method must return a stoploss value (float / number) as a percentage of the current price.
+E.g. If the <code>current_rate</code> is 200 USD, then returning <code>0.02</code> will set the stoploss price 2% lower, at 196 USD.</p>
+<p>The absolute value of the return value is used (the sign is ignored), so returning <code>0.05</code> or <code>-0.05</code> have the same result, a stoploss 5% below the current price.</p>
+<p>To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:</p>
+<p>``` python</p>
+<h1 id="additional-imports-required">additional imports required<a class="headerlink" href="#additional-imports-required" title="Permanent link">&para;</a></h1>
+<p>from datetime import datetime
+from freqtrade.persistence import Trade</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: &#39;Trade&#39;, current_time: datetime,
+                    current_rate: float, current_profit: float, **kwargs) -&gt; float:
+    &quot;&quot;&quot;
+    Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
+    e.g. returning -0.05 would create a stoploss 5% below current_rate.
+    The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
+
+    For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+    When not implemented by a strategy, returns the initial stoploss value
+    Only called when use_custom_stoploss is set to True.
+
+    :param pair: Pair that&#39;s currently analyzed
+    :param trade: trade object.
+    :param current_time: datetime object, containing the current datetime
+    :param current_rate: Rate, calculated based on pricing settings in ask_strategy.
+    :param current_profit: Current profit (as ratio), calculated based on current_rate.
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    :return float: New stoploss value, relative to the current rate
+    &quot;&quot;&quot;
+    return -0.04
+</code></pre></div>
+
+<p>```</p>
+<p>Stoploss on exchange works similar to <code>trailing_stop</code>, and the stoploss on exchange is updated as configured in <code>stoploss_on_exchange_interval</code> (<a href="../stoploss/#stop-loss-on-exchange-freqtrade">More details about stoploss on exchange</a>).</p>
+<div class="admonition note">
+<p class="admonition-title">Use of dates</p>
+<p>All time-based calculations should be done based on <code>current_time</code> - using <code>datetime.now()</code> or <code>datetime.utcnow()</code> is discouraged, as this will break backtesting support.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Trailing stoploss</p>
+<p>It's recommended to disable <code>trailing_stop</code> when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.</p>
+</div>
+<h3 id="custom-stoploss-examples">Custom stoploss examples<a class="headerlink" href="#custom-stoploss-examples" title="Permanent link">&para;</a></h3>
+<p>The next section will show some examples on what's possible with the custom stoploss function.
+Of course, many more things are possible, and all examples can be combined at will.</p>
+<h4 id="time-based-trailing-stop">Time based trailing stop<a class="headerlink" href="#time-based-trailing-stop" title="Permanent link">&para;</a></h4>
+<p>Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.</p>
+<p>``` python
+from datetime import datetime, timedelta
+from freqtrade.persistence import Trade</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: &#39;Trade&#39;, current_time: datetime,
+                    current_rate: float, current_profit: float, **kwargs) -&gt; float:
+
+    # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
+    if current_time - timedelta(minutes=120) &gt; trade.open_date_utc:
+        return -0.05
+    elif current_time - timedelta(minutes=60) &gt; trade.open_date_utc:
+        return -0.10
+    return 1
+</code></pre></div>
+
+<p>```</p>
+<h4 id="different-stoploss-per-pair">Different stoploss per pair<a class="headerlink" href="#different-stoploss-per-pair" title="Permanent link">&para;</a></h4>
+<p>Use a different stoploss depending on the pair.
+In this example, we'll trail the highest price with 10% trailing stoploss for <code>ETH/BTC</code> and <code>XRP/BTC</code>, with 5% trailing stoploss for <code>LTC/BTC</code> and with 15% for all other pairs.</p>
+<p>``` python
+from datetime import datetime
+from freqtrade.persistence import Trade</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: &#39;Trade&#39;, current_time: datetime,
+                    current_rate: float, current_profit: float, **kwargs) -&gt; float:
+
+    if pair in (&#39;ETH/BTC&#39;, &#39;XRP/BTC&#39;):
+        return -0.10
+    elif pair in (&#39;LTC/BTC&#39;):
+        return -0.05
+    return -0.15
+</code></pre></div>
+
+<p>```</p>
+<h4 id="trailing-stoploss-with-positive-offset">Trailing stoploss with positive offset<a class="headerlink" href="#trailing-stoploss-with-positive-offset" title="Permanent link">&para;</a></h4>
+<p>Use the initial stoploss until the profit is above 4%, then use a trailing stoploss of 50% of the current profit with a minimum of 2.5% and a maximum of 5%.</p>
+<p>Please note that the stoploss can only increase, values lower than the current stoploss are ignored.</p>
+<p>``` python
+from datetime import datetime, timedelta
+from freqtrade.persistence import Trade</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: &#39;Trade&#39;, current_time: datetime,
+                    current_rate: float, current_profit: float, **kwargs) -&gt; float:
+
+    if current_profit &lt; 0.04:
+        return -1 # return a value bigger than the initial stoploss to keep using the initial stoploss
+
+    # After reaching the desired offset, allow the stoploss to trail by half the profit
+    desired_stoploss = current_profit / 2
+
+    # Use a minimum of 2.5% and a maximum of 5%
+    return max(min(desired_stoploss, 0.05), 0.025)
+</code></pre></div>
+
+<p>```</p>
+<h4 id="calculating-stoploss-relative-to-open-price">Calculating stoploss relative to open price<a class="headerlink" href="#calculating-stoploss-relative-to-open-price" title="Permanent link">&para;</a></h4>
+<p>Stoploss values returned from <code>custom_stoploss()</code> always specify a percentage relative to <code>current_rate</code>. In order to set a stoploss relative to the <em>open</em> price, we need to use <code>current_profit</code> to calculate what percentage relative to the <code>current_rate</code> will give you the same result as if the percentage was specified from the open price.</p>
+<p>The helper function <a href="../strategy-customization/#stoploss_from_open"><code>stoploss_from_open()</code></a> can be used to convert from an open price relative stop, to a current price relative stop which can be returned from <code>custom_stoploss()</code>.</p>
+<h3 id="calculating-stoploss-percentage-from-absolute-price">Calculating stoploss percentage from absolute price<a class="headerlink" href="#calculating-stoploss-percentage-from-absolute-price" title="Permanent link">&para;</a></h3>
+<p>Stoploss values returned from <code>custom_stoploss()</code> always specify a percentage relative to <code>current_rate</code>. In order to set a stoploss at specified absolute price level, we need to use <code>stop_rate</code> to calculate what percentage relative to the <code>current_rate</code> will give you the same result as if the percentage was specified from the open price.</p>
+<p>The helper function <a href="../strategy-customization/#stoploss_from_absolute"><code>stoploss_from_absolute()</code></a> can be used to convert from an absolute price, to a current price relative stop which can be returned from <code>custom_stoploss()</code>.</p>
+<h4 id="stepped-stoploss">Stepped stoploss<a class="headerlink" href="#stepped-stoploss" title="Permanent link">&para;</a></h4>
+<p>Instead of continuously trailing behind the current price, this example sets fixed stoploss price levels based on the current profit.</p>
+<ul>
+<li>Use the regular stoploss until 20% profit is reached</li>
+<li>Once profit is &gt; 20% - set stoploss to 7% above open price.</li>
+<li>Once profit is &gt; 25% - set stoploss to 15% above open price.</li>
+<li>Once profit is &gt; 40% - set stoploss to 25% above open price.</li>
+</ul>
+<p>``` python
+from datetime import datetime
+from freqtrade.persistence import Trade
+from freqtrade.strategy import stoploss_from_open</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: &#39;Trade&#39;, current_time: datetime,
+                    current_rate: float, current_profit: float, **kwargs) -&gt; float:
+
+    # evaluate highest to lowest, so that highest possible stop is used
+    if current_profit &gt; 0.40:
+        return stoploss_from_open(0.25, current_profit)
+    elif current_profit &gt; 0.25:
+        return stoploss_from_open(0.15, current_profit)
+    elif current_profit &gt; 0.20:
+        return stoploss_from_open(0.07, current_profit)
+
+    # return maximum stoploss value, keeping current stoploss price unchanged
+    return 1
+</code></pre></div>
+
+<p>```</p>
+<h4 id="custom-stoploss-using-an-indicator-from-dataframe-example">Custom stoploss using an indicator from dataframe example<a class="headerlink" href="#custom-stoploss-using-an-indicator-from-dataframe-example" title="Permanent link">&para;</a></h4>
+<p>Absolute stoploss value may be derived from indicators stored in dataframe. Example uses parabolic SAR below the price as stoploss.</p>
+<p>``` python
+class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code>def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    # &lt;...&gt;
+    dataframe[&#39;sar&#39;] = ta.SAR(dataframe)
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: &#39;Trade&#39;, current_time: datetime,
+                    current_rate: float, current_profit: float, **kwargs) -&gt; float:
+
+    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+    last_candle = dataframe.iloc[-1].squeeze()
+
+    # Use parabolic sar as absolute stoploss price
+    stoploss_price = last_candle[&#39;sar&#39;]
+
+    # Convert absolute price to percentage relative to current_rate
+    if stoploss_price &lt; current_rate:
+        return (stoploss_price / current_rate) - 1
+
+    # return maximum stoploss value, keeping current stoploss price unchanged
+    return 1
+</code></pre></div>
+
+<p>```</p>
+<p>See <a href="#dataframe-access">Dataframe access</a> for more information about dataframe use in strategy callbacks.</p>
+<hr />
+<h2 id="custom-order-price-rules">Custom order price rules<a class="headerlink" href="#custom-order-price-rules" title="Permanent link">&para;</a></h2>
+<p>By default, freqtrade use the orderbook to automatically set an order price(<a href="../configuration/#prices-used-for-orders">Relevant documentation</a>), you also have the option to create custom order prices based on your strategy.</p>
+<p>You can use this feature by creating a <code>custom_entry_price()</code> function in your strategy file to customize entry prices and <code>custom_exit_price()</code> for exits.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your custom pricing function return None or an invalid value, price will fall back to <code>proposed_rate</code>, which is based on the regular pricing configuration.</p>
+</div>
+<h3 id="custom-order-entry-and-exit-price-example">Custom order entry and exit price example<a class="headerlink" href="#custom-order-entry-and-exit-price-example" title="Permanent link">&para;</a></h3>
+<p>``` python
+from datetime import datetime, timedelta, timezone
+from freqtrade.persistence import Trade</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def custom_entry_price(self, pair: str, current_time: datetime,
+                       proposed_rate, **kwargs) -&gt; float:
+
+    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                            timeframe=self.timeframe)
+    new_entryprice = dataframe[&#39;bollinger_10_lowerband&#39;].iat[-1]
+
+    return new_entryprice
+
+def custom_exit_price(self, pair: str, trade: Trade,
+                      current_time: datetime, proposed_rate: float,
+                      current_profit: float, **kwargs) -&gt; float:
+
+    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                            timeframe=self.timeframe)
+    new_exitprice = dataframe[&#39;bollinger_10_upperband&#39;].iat[-1]
+
+    return new_exitprice
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the <code>custom_price_max_distance_ratio</code> parameter.</p>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>If the new_entryprice is 97, the proposed_rate is 100 and the <code>custom_price_max_distance_ratio</code> is set to 2%, The retained valid custom entry price will be 98.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">No backtesting support</p>
+<p>Custom entry-prices are currently not supported during backtesting.</p>
+</div>
+<h2 id="custom-order-timeout-rules">Custom order timeout rules<a class="headerlink" href="#custom-order-timeout-rules" title="Permanent link">&para;</a></h2>
+<p>Simple, time-based order-timeouts can be configured either via strategy or in the configuration in the <code>unfilledtimeout</code> section.</p>
+<p>However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if an order did time out or not.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Unfilled order timeouts are not relevant during backtesting or hyperopt, and are only relevant during real (live) trading. Therefore these methods are only called in these circumstances.</p>
+</div>
+<h3 id="custom-order-timeout-example">Custom order timeout example<a class="headerlink" href="#custom-order-timeout-example" title="Permanent link">&para;</a></h3>
+<p>A simple example, which applies different unfilled-timeouts depending on the price of the asset can be seen below.
+It applies a tight timeout for higher priced assets, while allowing more time to fill on cheap coins.</p>
+<p>The function must return either <code>True</code> (cancel order) or <code>False</code> (keep order alive).</p>
+<p>``` python
+from datetime import datetime, timedelta, timezone
+from freqtrade.persistence import Trade</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+# Set unfilledtimeout to 25 hours, since our maximum timeout from below is 24 hours.
+unfilledtimeout = {
+    &#39;buy&#39;: 60 * 25,
+    &#39;sell&#39;: 60 * 25
+}
+
+def check_buy_timeout(self, pair: str, trade: &#39;Trade&#39;, order: dict, **kwargs) -&gt; bool:
+    if trade.open_rate &gt; 100 and trade.open_date_utc &lt; datetime.now(timezone.utc) - timedelta(minutes=5):
+        return True
+    elif trade.open_rate &gt; 10 and trade.open_date_utc &lt; datetime.now(timezone.utc) - timedelta(minutes=3):
+        return True
+    elif trade.open_rate &lt; 1 and trade.open_date_utc &lt; datetime.now(timezone.utc) - timedelta(hours=24):
+       return True
+    return False
+
+
+def check_sell_timeout(self, pair: str, trade: &#39;Trade&#39;, order: dict, **kwargs) -&gt; bool:
+    if trade.open_rate &gt; 100 and trade.open_date_utc &lt; datetime.now(timezone.utc) - timedelta(minutes=5):
+        return True
+    elif trade.open_rate &gt; 10 and trade.open_date_utc &lt; datetime.now(timezone.utc) - timedelta(minutes=3):
+        return True
+    elif trade.open_rate &lt; 1 and trade.open_date_utc &lt; datetime.now(timezone.utc) - timedelta(hours=24):
+       return True
+    return False
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the above example, <code>unfilledtimeout</code> must be set to something bigger than 24h, otherwise that type of timeout will apply first.</p>
+</div>
+<h3 id="custom-order-timeout-example-using-additional-data">Custom order timeout example (using additional data)<a class="headerlink" href="#custom-order-timeout-example-using-additional-data" title="Permanent link">&para;</a></h3>
+<p>``` python
+from datetime import datetime
+from freqtrade.persistence import Trade</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+# Set unfilledtimeout to 25 hours, since our maximum timeout from below is 24 hours.
+unfilledtimeout = {
+    &#39;buy&#39;: 60 * 25,
+    &#39;sell&#39;: 60 * 25
+}
+
+def check_buy_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -&gt; bool:
+    ob = self.dp.orderbook(pair, 1)
+    current_price = ob[&#39;bids&#39;][0][0]
+    # Cancel buy order if price is more than 2% above the order.
+    if current_price &gt; order[&#39;price&#39;] * 1.02:
+        return True
+    return False
+
+
+def check_sell_timeout(self, pair: str, trade: Trade, order: dict, **kwargs) -&gt; bool:
+    ob = self.dp.orderbook(pair, 1)
+    current_price = ob[&#39;asks&#39;][0][0]
+    # Cancel sell order if price is more than 2% below the order.
+    if current_price &lt; order[&#39;price&#39;] * 0.98:
+        return True
+    return False
+</code></pre></div>
+
+<p>```</p>
+<hr />
+<h2 id="bot-loop-start-callback">Bot loop start callback<a class="headerlink" href="#bot-loop-start-callback" title="Permanent link">&para;</a></h2>
+<p>A simple callback which is called once at the start of every bot throttling iteration.
+This can be used to perform calculations which are pair independent (apply to all pairs), loading of external data, etc.</p>
+<p>``` python
+import requests</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def bot_loop_start(self, **kwargs) -&gt; None:
+    &quot;&quot;&quot;
+    Called at the start of the bot iteration (one loop).
+    Might be used to perform pair-independent tasks
+    (e.g. gather some remote resource for comparison)
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    &quot;&quot;&quot;
+    if self.config[&#39;runmode&#39;].value in (&#39;live&#39;, &#39;dry_run&#39;):
+        # Assign this to the class by using self.*
+        # can then be used by populate_* methods
+        self.remote_data = requests.get(&#39;https://some_remote_source.example.com&#39;)
+</code></pre></div>
+
+<p>```</p>
+<h2 id="bot-order-confirmation">Bot order confirmation<a class="headerlink" href="#bot-order-confirmation" title="Permanent link">&para;</a></h2>
+<h3 id="trade-entry-buy-order-confirmation">Trade entry (buy order) confirmation<a class="headerlink" href="#trade-entry-buy-order-confirmation" title="Permanent link">&para;</a></h3>
+<p><code>confirm_trade_entry()</code> can be used to abort a trade entry at the latest second (maybe because the price is not what we expect).</p>
+<p>``` python
+class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
+                        time_in_force: str, current_time: datetime, **kwargs) -&gt; bool:
+    &quot;&quot;&quot;
+    Called right before placing a buy order.
+    Timing for this function is critical, so avoid doing heavy computations or
+    network requests in this method.
+
+    For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+    When not implemented by a strategy, returns True (always confirming).
+
+    :param pair: Pair that&#39;s about to be bought.
+    :param order_type: Order type (as configured in order_types). usually limit or market.
+    :param amount: Amount in target (quote) currency that&#39;s going to be traded.
+    :param rate: Rate that&#39;s going to be used when using limit orders
+    :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+    :param current_time: datetime object, containing the current datetime
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    :return bool: When True is returned, then the buy-order is placed on the exchange.
+        False aborts the process
+    &quot;&quot;&quot;
+    return True
+</code></pre></div>
+
+<p>```</p>
+<h3 id="trade-exit-sell-order-confirmation">Trade exit (sell order) confirmation<a class="headerlink" href="#trade-exit-sell-order-confirmation" title="Permanent link">&para;</a></h3>
+<p><code>confirm_trade_exit()</code> can be used to abort a trade exit (sell) at the latest second (maybe because the price is not what we expect).</p>
+<p>``` python
+from freqtrade.persistence import Trade</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+                       rate: float, time_in_force: str, sell_reason: str,
+                       current_time: datetime, **kwargs) -&gt; bool:
+    &quot;&quot;&quot;
+    Called right before placing a regular sell order.
+    Timing for this function is critical, so avoid doing heavy computations or
+    network requests in this method.
+
+    For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/
+
+    When not implemented by a strategy, returns True (always confirming).
+
+    :param pair: Pair that&#39;s about to be sold.
+    :param order_type: Order type (as configured in order_types). usually limit or market.
+    :param amount: Amount in quote currency.
+    :param rate: Rate that&#39;s going to be used when using limit orders
+    :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+    :param sell_reason: Sell reason.
+        Can be any of [&#39;roi&#39;, &#39;stop_loss&#39;, &#39;stoploss_on_exchange&#39;, &#39;trailing_stop_loss&#39;,
+                       &#39;sell_signal&#39;, &#39;force_sell&#39;, &#39;emergency_sell&#39;]
+    :param current_time: datetime object, containing the current datetime
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    :return bool: When True is returned, then the sell-order is placed on the exchange.
+        False aborts the process
+    &quot;&quot;&quot;
+    if sell_reason == &#39;force_sell&#39; and trade.calc_profit_ratio(rate) &lt; 0:
+        # Reject force-sells with negative profit
+        # This is just a sample, please adjust to your needs
+        # (this does not necessarily make sense, assuming you know when you&#39;re force-selling)
+        return False
+    return True
+</code></pre></div>
+
+<p>```</p>
+<h3 id="stake-size-management">Stake size management<a class="headerlink" href="#stake-size-management" title="Permanent link">&para;</a></h3>
+<p>It is possible to manage your risk by reducing or increasing stake amount when placing a new trade.</p>
+<p>```python
+class AwesomeStrategy(IStrategy):
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            **kwargs) -&gt; float:</p>
+<div class="codehilite"><pre><span></span><code>    dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+    current_candle = dataframe.iloc[-1].squeeze()
+
+    if current_candle[&#39;fastk_rsi_1h&#39;] &gt; current_candle[&#39;fastd_rsi_1h&#39;]:
+        if self.config[&#39;stake_amount&#39;] == &#39;unlimited&#39;:
+            # Use entire available wallet during favorable conditions when in compounding mode.
+            return max_stake
+        else:
+            # Compound profits during favorable conditions instead of using a static stake.
+            return self.wallets.get_total_stake_amount() / self.config[&#39;max_open_trades&#39;]
+
+    # Use default stake amount.
+    return proposed_stake
+</code></pre></div>
+
+<p>```</p>
+<p>Freqtrade will fall back to the <code>proposed_stake</code> value should your code raise an exception. The exception itself will be logged.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You do not <em>have</em> to ensure that <code>min_stake &lt;= returned_value &lt;= max_stake</code>. Trades will succeed as the returned value will be clamped to supported range and this acton will be logged.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Returning <code>0</code> or <code>None</code> will prevent trades from being placed.</p>
+</div>
+<hr />
+<h2 id="derived-strategies">Derived strategies<a class="headerlink" href="#derived-strategies" title="Permanent link">&para;</a></h2>
+<p>The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:</p>
+<p>``` python
+class MyAwesomeStrategy(IStrategy):
+    ...
+    stoploss = 0.13
+    trailing_stop = False
+    # All other attributes and methods are here as they
+    # should be in any custom strategy...
+    ...</p>
+<p>class MyAwesomeStrategy2(MyAwesomeStrategy):
+    # Override something
+    stoploss = 0.08
+    trailing_stop = True
+```</p>
+<p>Both attributes and methods may be overridden, altering behavior of the original strategy in a way you need.</p>
+<div class="admonition note">
+<p class="admonition-title">Parent-strategy in different files</p>
+<p>If you have the parent-strategy in a different file, you'll need to add the following to the top of your "child"-file to ensure proper loading, otherwise freqtrade may not be able to load the parent strategy correctly.</p>
+<p>``` python
+import sys
+from pathlib import Path
+sys.path.append(str(Path(<strong>file</strong>).parent))</p>
+<p>from myawesomestrategy import MyAwesomeStrategy
+```</p>
+</div>
+<h2 id="embedding-strategies">Embedding Strategies<a class="headerlink" href="#embedding-strategies" title="Permanent link">&para;</a></h2>
+<p>Freqtrade provides you with an easy way to embed the strategy into your configuration file.
+This is done by utilizing BASE64 encoding and providing this string at the strategy configuration field,
+in your chosen config file.</p>
+<h3 id="encoding-a-string-as-base64">Encoding a string as BASE64<a class="headerlink" href="#encoding-a-string-as-base64" title="Permanent link">&para;</a></h3>
+<p>This is a quick example, how to generate the BASE64 string in python</p>
+<p>```python
+from base64 import urlsafe_b64encode</p>
+<p>with open(file, 'r') as f:
+    content = f.read()
+content = urlsafe_b64encode(content.encode('utf-8'))
+```</p>
+<p>The variable 'content', will contain the strategy file in a BASE64 encoded form. Which can now be set in your configurations file as following</p>
+<p><code>json
+"strategy": "NameOfStrategy:BASE64String"</code></p>
+<p>Please ensure that 'NameOfStrategy' is identical to the strategy name!</p>
+<h2 id="performance-warning">Performance warning<a class="headerlink" href="#performance-warning" title="Permanent link">&para;</a></h2>
+<p>When executing a strategy, one can sometimes be greeted by the following in the logs</p>
+<blockquote>
+<p>PerformanceWarning: DataFrame is highly fragmented.</p>
+</blockquote>
+<p>This is a warning from <a href="https://github.com/pandas-dev/pandas"><code>pandas</code></a> and as the warning continues to say:
+use <code>pd.concat(axis=1)</code>.
+This can have slight performance implications, which are usually only visible during hyperopt (when optimizing an indicator).</p>
+<p>For example:</p>
+<p><code>python
+for val in self.buy_ema_short.range:
+    dataframe[f'ema_short_{val}'] = ta.EMA(dataframe, timeperiod=val)</code></p>
+<p>should be rewritten to</p>
+<p>```python
+frames = [dataframe]
+for val in self.buy_ema_short.range:
+    frames.append({
+        f'ema_short_{val}': ta.EMA(dataframe, timeperiod=val)
+    })</p>
+<h1 id="append-columns-to-existing-dataframe">Append columns to existing dataframe<a class="headerlink" href="#append-columns-to-existing-dataframe" title="Permanent link">&para;</a></h1>
+<p>merged_frame = pd.concat(frames, axis=1)
+```</p>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+    
+        
+<footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../edge/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Edge Positioning" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Edge Positioning
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../advanced-hyperopt/" class="md-footer__link md-footer__link--next" aria-label="Next: Advanced Hyperopt" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Advanced Hyperopt
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        
+          Made with
+          <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+            Material for MkDocs
+          </a>
+        
+        
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.f8263e09.min.js", "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.4fc53ad4.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
