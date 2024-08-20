@@ -1,0 +1,1716 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2023.5.1/stoploss/">
+      
+      
+        <link rel="prev" href="../strategy-callbacks/">
+      
+      
+        <link rel="next" href="../plugins/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
+    
+    
+      
+        <title>Stoploss - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.85bb2934.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.a6bdf11c.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#stop-loss" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Stoploss
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        Strategy Callbacks
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Stoploss
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Stoploss
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#stop-loss-on-exchangefreqtrade" class="md-nav__link">
+    Stop Loss On-Exchange/Freqtrade
+  </a>
+  
+    <nav class="md-nav" aria-label="Stop Loss On-Exchange/Freqtrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio" class="md-nav__link">
+    stoploss_on_exchange and stoploss_on_exchange_limit_ratio
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss_on_exchange_interval" class="md-nav__link">
+    stoploss_on_exchange_interval
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss_price_type" class="md-nav__link">
+    stoploss_price_type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#force_exit" class="md-nav__link">
+    force_exit
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#force_entry" class="md-nav__link">
+    force_entry
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emergency_exit" class="md-nav__link">
+    emergency_exit
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stop-loss-types" class="md-nav__link">
+    Stop Loss Types
+  </a>
+  
+    <nav class="md-nav" aria-label="Stop Loss Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-stop-loss" class="md-nav__link">
+    Static Stop Loss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trailing-stop-loss" class="md-nav__link">
+    Trailing Stop Loss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trailing-stop-loss-custom-positive-loss" class="md-nav__link">
+    Trailing stop loss, custom positive loss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset" class="md-nav__link">
+    Trailing stop loss only once the trade has reached a certain offset
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stoploss-and-leverage" class="md-nav__link">
+    Stoploss and Leverage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changing-stoploss-on-open-trades" class="md-nav__link">
+    Changing stoploss on open trades
+  </a>
+  
+    <nav class="md-nav" aria-label="Changing stoploss on open trades">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    Limitations
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+          Control the bot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_11">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+          FreqAI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_15">
+          <span class="md-nav__icon md-icon"></span>
+          FreqAI
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        Parameter table
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        Feature engineering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        Running FreqAI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        Reinforcement Learning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        Developer guide
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        Short / Leverage
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+          Data Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_20">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        Backtest analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_21">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        Trade Object
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        Producer/Consumer mode
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        Strategy migration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#stop-loss-on-exchangefreqtrade" class="md-nav__link">
+    Stop Loss On-Exchange/Freqtrade
+  </a>
+  
+    <nav class="md-nav" aria-label="Stop Loss On-Exchange/Freqtrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio" class="md-nav__link">
+    stoploss_on_exchange and stoploss_on_exchange_limit_ratio
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss_on_exchange_interval" class="md-nav__link">
+    stoploss_on_exchange_interval
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss_price_type" class="md-nav__link">
+    stoploss_price_type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#force_exit" class="md-nav__link">
+    force_exit
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#force_entry" class="md-nav__link">
+    force_entry
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emergency_exit" class="md-nav__link">
+    emergency_exit
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stop-loss-types" class="md-nav__link">
+    Stop Loss Types
+  </a>
+  
+    <nav class="md-nav" aria-label="Stop Loss Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#static-stop-loss" class="md-nav__link">
+    Static Stop Loss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trailing-stop-loss" class="md-nav__link">
+    Trailing Stop Loss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trailing-stop-loss-custom-positive-loss" class="md-nav__link">
+    Trailing stop loss, custom positive loss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset" class="md-nav__link">
+    Trailing stop loss only once the trade has reached a certain offset
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stoploss-and-leverage" class="md-nav__link">
+    Stoploss and Leverage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changing-stoploss-on-open-trades" class="md-nav__link">
+    Changing stoploss on open trades
+  </a>
+  
+    <nav class="md-nav" aria-label="Changing stoploss on open trades">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    Limitations
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="stop-loss">Stop Loss<a class="headerlink" href="#stop-loss" title="Permanent link">&para;</a></h1>
+<p>The <code>stoploss</code> configuration parameter is loss as ratio that should trigger a sale.
+For example, value <code>-0.10</code> will cause immediate sell if the profit dips below -10% for a given trade. This parameter is optional.
+Stoploss calculations do include fees, so a stoploss of -10% is placed exactly 10% below the entry point.</p>
+<p>Most of the strategy files already include the optimal <code>stoploss</code> value.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>All stoploss properties mentioned in this file can be set in the Strategy, or in the configuration.<br />
+<ins>Configuration values will override the strategy values.</ins></p>
+</div>
+<h2 id="stop-loss-on-exchangefreqtrade">Stop Loss On-Exchange/Freqtrade<a class="headerlink" href="#stop-loss-on-exchangefreqtrade" title="Permanent link">&para;</a></h2>
+<p>Those stoploss modes can be <em>on exchange</em> or <em>off exchange</em>.</p>
+<p>These modes can be configured with these values:</p>
+<div class="highlight"><pre><span></span><code>    <span class="s1">&#39;emergency_exit&#39;</span><span class="p">:</span> <span class="s1">&#39;market&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;stoploss_on_exchange&#39;</span><span class="p">:</span> <span class="kc">False</span>
+    <span class="s1">&#39;stoploss_on_exchange_interval&#39;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+    <span class="s1">&#39;stoploss_on_exchange_limit_ratio&#39;</span><span class="p">:</span> <span class="mf">0.99</span>
+</code></pre></div>
+<p>Stoploss on exchange is only supported for the following exchanges, and not all exchanges support both stop-limit and stop-market.
+The Order-type will be ignored if only one mode is available.</p>
+<table>
+<thead>
+<tr>
+<th>Exchange</th>
+<th>stop-loss type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Binance</td>
+<td>limit</td>
+</tr>
+<tr>
+<td>Binance Futures</td>
+<td>market, limit</td>
+</tr>
+<tr>
+<td>Huobi</td>
+<td>limit</td>
+</tr>
+<tr>
+<td>kraken</td>
+<td>market, limit</td>
+</tr>
+<tr>
+<td>Gate</td>
+<td>limit</td>
+</tr>
+<tr>
+<td>Okx</td>
+<td>limit</td>
+</tr>
+<tr>
+<td>Kucoin</td>
+<td>stop-limit, stop-market</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Tight stoploss</p>
+<p><ins>Do not set too low/tight stoploss value when using stop loss on exchange!</ins><br />
+If set to low/tight you will have greater risk of missing fill on the order and stoploss will not work.</p>
+</div>
+<h3 id="stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio">stoploss_on_exchange and stoploss_on_exchange_limit_ratio<a class="headerlink" href="#stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio" title="Permanent link">&para;</a></h3>
+<p>Enable or Disable stop loss on exchange.
+If the stoploss is <em>on exchange</em> it means a stoploss limit order is placed on the exchange immediately after buy order fills. This will protect you against sudden crashes in market, as the order execution happens purely within the exchange, and has no potential network overhead.</p>
+<p>If <code>stoploss_on_exchange</code> uses limit orders, the exchange needs 2 prices, the stoploss_price and the Limit price.<br />
+<code>stoploss</code> defines the stop-price where the limit order is placed - and limit should be slightly below this.<br />
+If an exchange supports both limit and market stoploss orders, then the value of <code>stoploss</code> will be used to determine the stoploss type.  </p>
+<p>Calculation example: we bought the asset at 100$.<br />
+Stop-price is 95$, then limit would be <code>95 * 0.99 = 94.05$</code> - so the limit order fill can happen between 95$ and 94.05$.  </p>
+<p>For example, assuming the stoploss is on exchange, and trailing stoploss is enabled, and the market is going up, then the bot automatically cancels the previous stoploss order and puts a new one with a stop value higher than the previous stoploss order.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <code>stoploss_on_exchange</code> is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.</p>
+</div>
+<h3 id="stoploss_on_exchange_interval">stoploss_on_exchange_interval<a class="headerlink" href="#stoploss_on_exchange_interval" title="Permanent link">&para;</a></h3>
+<p>In case of stoploss on exchange there is another parameter called <code>stoploss_on_exchange_interval</code>. This configures the interval in seconds at which the bot will check the stoploss and update it if necessary.<br />
+The bot cannot do these every 5 seconds (at each iteration), otherwise it would get banned by the exchange.
+So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
+This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.</p>
+<h3 id="stoploss_price_type">stoploss_price_type<a class="headerlink" href="#stoploss_price_type" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Only applies to futures</p>
+<p><code>stoploss_price_type</code> only applies to futures markets (on exchanges where it's available).
+Freqtrade will perform a validation of this setting on startup, failing to start if an invalid setting for your exchange has been selected.
+Supported price types are gonna differs between each exchanges. Please check with your exchange on which price types it supports.</p>
+</div>
+<p>Stoploss on exchange on futures markets can trigger on different price types.
+The naming for these prices in exchange terminology often varies, but is usually something around "last" (or "contract price" ), "mark" and "index".</p>
+<p>Acceptable values for this setting are <code>"last"</code>, <code>"mark"</code> and <code>"index"</code> - which freqtrade will transfer automatically to the corresponding API type, and place the <a href="#stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio">stoploss on exchange</a> order correspondingly.</p>
+<h3 id="force_exit">force_exit<a class="headerlink" href="#force_exit" title="Permanent link">&para;</a></h3>
+<p><code>force_exit</code> is an optional value, which defaults to the same value as <code>exit</code> and is used when sending a <code>/forceexit</code> command from Telegram or from the Rest API.</p>
+<h3 id="force_entry">force_entry<a class="headerlink" href="#force_entry" title="Permanent link">&para;</a></h3>
+<p><code>force_entry</code> is an optional value, which defaults to the same value as <code>entry</code> and is used when sending a <code>/forceentry</code> command from Telegram or from the Rest API.</p>
+<h3 id="emergency_exit">emergency_exit<a class="headerlink" href="#emergency_exit" title="Permanent link">&para;</a></h3>
+<p><code>emergency_exit</code> is an optional value, which defaults to <code>market</code> and is used when creating stop loss on exchange orders fails.
+The below is the default which is used if not changed in strategy or configuration file.</p>
+<p>Example from strategy file:</p>
+<div class="highlight"><pre><span></span><code><span class="n">order_types</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;emergency_exit&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss_on_exchange_interval&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss_on_exchange_limit_ratio&quot;</span><span class="p">:</span> <span class="mf">0.99</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="stop-loss-types">Stop Loss Types<a class="headerlink" href="#stop-loss-types" title="Permanent link">&para;</a></h2>
+<p>At this stage the bot contains the following stoploss support modes:</p>
+<ol>
+<li>Static stop loss.</li>
+<li>Trailing stop loss.</li>
+<li>Trailing stop loss, custom positive loss.</li>
+<li>Trailing stop loss only once the trade has reached a certain offset.</li>
+<li><a href="../strategy-callbacks/#custom-stoploss">Custom stoploss function</a></li>
+</ol>
+<h3 id="static-stop-loss">Static Stop Loss<a class="headerlink" href="#static-stop-loss" title="Permanent link">&para;</a></h3>
+<p>This is very simple, you define a stop loss of x (as a ratio of price, i.e. x * 100% of price). This will try to sell the asset once the loss exceeds the defined loss.</p>
+<p>Example of stop loss:</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+</code></pre></div>
+<p>For example, simplified math:</p>
+<ul>
+<li>the bot buys an asset at a price of 100$</li>
+<li>the stop loss is defined at -10%</li>
+<li>the stop loss would get triggered once the asset drops below 90$</li>
+</ul>
+<h3 id="trailing-stop-loss">Trailing Stop Loss<a class="headerlink" href="#trailing-stop-loss" title="Permanent link">&para;</a></h3>
+<p>The initial value for this is <code>stoploss</code>, just as you would define your static Stop loss.
+To enable trailing stoploss:</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
+<p>This will now activate an algorithm, which automatically moves the stop loss up every time the price of your asset increases.</p>
+<p>For example, simplified math:</p>
+<ul>
+<li>the bot buys an asset at a price of 100$</li>
+<li>the stop loss is defined at -10%</li>
+<li>the stop loss would get triggered once the asset drops below 90$</li>
+<li>assuming the asset now increases to 102$</li>
+<li>the stop loss will now be -10% of 102$ = 91.8$</li>
+<li>now the asset drops in value to 101$, the stop loss will still be 91.8$ and would trigger at 91.8$.</li>
+</ul>
+<p>In summary: The stoploss will be adjusted to be always be -10% of the highest observed price.</p>
+<h3 id="trailing-stop-loss-custom-positive-loss">Trailing stop loss, custom positive loss<a class="headerlink" href="#trailing-stop-loss-custom-positive-loss" title="Permanent link">&para;</a></h3>
+<p>You could also have a default stop loss when you are in the red with your buy (buy - fee), but once you hit a positive result (or an offset you define) the system will utilize a new stop loss, which can have a different value.
+For example, your default stop loss is -10%, but once you have more than 0% profit (example 0.1%) a different trailing stoploss will be used.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you want the stoploss to only be changed when you break even of making a profit (what most users want) please refer to next section with <a href="#Trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset">offset enabled</a>.</p>
+</div>
+<p>Both values require <code>trailing_stop</code> to be set to true and <code>trailing_stop_positive</code> with a value.</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">trailing_stop_positive</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="n">trailing_stop_positive_offset</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">trailing_only_offset_is_reached</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Default - not necessary for this example</span>
+</code></pre></div>
+<p>For example, simplified math:</p>
+<ul>
+<li>the bot buys an asset at a price of 100$</li>
+<li>the stop loss is defined at -10%</li>
+<li>the stop loss would get triggered once the asset drops below 90$</li>
+<li>assuming the asset now increases to 102$</li>
+<li>the stop loss will now be -2% of 102$ = 99.96$ (99.96$ stop loss will be locked in and will follow asset price increments with -2%)</li>
+<li>now the asset drops in value to 101$, the stop loss will still be 99.96$ and would trigger at 99.96$</li>
+</ul>
+<p>The 0.02 would translate to a -2% stop loss.
+Before this, <code>stoploss</code> is used for the trailing stoploss.</p>
+<div class="admonition tip">
+<p class="admonition-title">Use an offset to change your stoploss</p>
+<p>Use <code>trailing_stop_positive_offset</code> to ensure that your new trailing stoploss will be in profit by setting <code>trailing_stop_positive_offset</code> higher than <code>trailing_stop_positive</code>. Your first new stoploss value will then already have locked in profits.</p>
+<p>Example with simplified math:</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">trailing_stop_positive</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="n">trailing_stop_positive_offset</span> <span class="o">=</span> <span class="mf">0.03</span>
+</code></pre></div>
+<ul>
+<li>the bot buys an asset at a price of 100$</li>
+<li>the stop loss is defined at -10%, so the stop loss would get triggered once the asset drops below 90$</li>
+<li>assuming the asset now increases to 102$</li>
+<li>the stoploss will now be at 91.8$ - 10% below the highest observed rate</li>
+<li>assuming the asset now increases to 103.5$ (above the offset configured)</li>
+<li>the stop loss will now be -2% of 103.5$ = 101.43$</li>
+<li>now the asset drops in value to 102$, the stop loss will still be 101.43$ and would trigger once price breaks below 101.43$</li>
+</ul>
+</div>
+<h3 id="trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset">Trailing stop loss only once the trade has reached a certain offset<a class="headerlink" href="#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset" title="Permanent link">&para;</a></h3>
+<p>You can also keep a static stoploss until the offset is reached, and then trail the trade to take profits once the market turns.</p>
+<p>If <code>trailing_only_offset_is_reached = True</code> then the trailing stoploss is only activated once the offset is reached. Until then, the stoploss remains at the configured <code>stoploss</code>.
+This option can be used with or without <code>trailing_stop_positive</code>, but uses <code>trailing_stop_positive_offset</code> as offset.</p>
+<p>Configuration (offset is buy-price + 3%):</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">trailing_stop_positive</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="n">trailing_stop_positive_offset</span> <span class="o">=</span> <span class="mf">0.03</span>
+    <span class="n">trailing_only_offset_is_reached</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
+<p>For example, simplified math:</p>
+<ul>
+<li>the bot buys an asset at a price of 100$</li>
+<li>the stop loss is defined at -10%</li>
+<li>the stop loss would get triggered once the asset drops below 90$</li>
+<li>stoploss will remain at 90$ unless asset increases to or above the configured offset</li>
+<li>assuming the asset now increases to 103$ (where we have the offset configured)</li>
+<li>the stop loss will now be -2% of 103$ = 100.94$</li>
+<li>now the asset drops in value to 101$, the stop loss will still be 100.94$ and would trigger at 100.94$</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Make sure to have this value (<code>trailing_stop_positive_offset</code>) lower than minimal ROI, otherwise minimal ROI will apply first and sell the trade.</p>
+</div>
+<h2 id="stoploss-and-leverage">Stoploss and Leverage<a class="headerlink" href="#stoploss-and-leverage" title="Permanent link">&para;</a></h2>
+<p>Stoploss should be thought of as "risk on this trade" - so a stoploss of 10% on a 100$ trade means you are willing to lose 10$ (10%) on this trade - which would trigger if the price moves 10% to the downside.</p>
+<p>When using leverage, the same principle is applied - with stoploss defining the risk on the trade (the amount you are willing to lose).</p>
+<p>Therefore, a stoploss of 10% on a 10x trade would trigger on a 1% price move.
+If your stake amount (own capital) was 100$ - this trade would be 1000$ at 10x (after leverage).
+If price moves 1% - you've lost 10$ of your own capital - therfore stoploss will trigger in this case.</p>
+<p>Make sure to be aware of this, and avoid using too tight stoploss (at 10x leverage, 10% risk may be too little to allow the trade to "breath" a little).</p>
+<h2 id="changing-stoploss-on-open-trades">Changing stoploss on open trades<a class="headerlink" href="#changing-stoploss-on-open-trades" title="Permanent link">&para;</a></h2>
+<p>A stoploss on an open trade can be changed by changing the value in the configuration or strategy and use the <code>/reload_config</code> command (alternatively, completely stopping and restarting the bot also works).</p>
+<p>The new stoploss value will be applied to open trades (and corresponding log-messages will be generated).</p>
+<h3 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h3>
+<p>Stoploss values cannot be changed if <code>trailing_stop</code> is enabled and the stoploss has already been adjusted, or if <a href="../edge/">Edge</a> is enabled (since Edge would recalculate stoploss based on the current market situation).</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../strategy-callbacks/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Strategy Callbacks" rel="prev">
+            <div class="md-footer__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Strategy Callbacks
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../plugins/" class="md-footer__link md-footer__link--next" aria-label="Next: Plugins" rel="next">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Plugins
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
