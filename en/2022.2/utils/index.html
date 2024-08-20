@@ -1,0 +1,2069 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2022.2/utils/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.1">
+    
+    
+      
+        <title>Utility Sub-commands - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.e8d9bf0c.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#utility-subcommands" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Utility Sub-commands
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        Strategy Callbacks
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_11">
+          Control the bot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_11">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Utility Sub-commands
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Utility Sub-commands
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#create-userdir" class="md-nav__link">
+    Create userdir
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-new-config" class="md-nav__link">
+    Create new config
+  </a>
+  
+    <nav class="md-nav" aria-label="Create new config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-config-examples" class="md-nav__link">
+    Create config examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-new-strategy" class="md-nav__link">
+    Create new strategy
+  </a>
+  
+    <nav class="md-nav" aria-label="Create new strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sample-usage-of-new-strategy" class="md-nav__link">
+    Sample usage of new-strategy
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-strategies" class="md-nav__link">
+    List Strategies
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-exchanges" class="md-nav__link">
+    List Exchanges
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-timeframes" class="md-nav__link">
+    List Timeframes
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-pairslist-markets" class="md-nav__link">
+    List pairs/list markets
+  </a>
+  
+    <nav class="md-nav" aria-label="List pairs/list markets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-pairlist" class="md-nav__link">
+    Test pairlist
+  </a>
+  
+    <nav class="md-nav" aria-label="Test pairlist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_1" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#webserver-mode" class="md-nav__link">
+    Webserver mode
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-previous-backtest-results" class="md-nav__link">
+    Show previous Backtest results
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-hyperopt-results" class="md-nav__link">
+    List Hyperopt results
+  </a>
+  
+    <nav class="md-nav" aria-label="List Hyperopt results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_2" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-details-of-hyperopt-results" class="md-nav__link">
+    Show details of Hyperopt results
+  </a>
+  
+    <nav class="md-nav" aria-label="Show details of Hyperopt results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_3" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-trades" class="md-nav__link">
+    Show trades
+  </a>
+  
+    <nav class="md-nav" aria-label="Show trades">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_4" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_18" type="checkbox" id="__nav_18" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_18">
+          Data Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_18">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_19" type="checkbox" id="__nav_19" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_19">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_19">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#create-userdir" class="md-nav__link">
+    Create userdir
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-new-config" class="md-nav__link">
+    Create new config
+  </a>
+  
+    <nav class="md-nav" aria-label="Create new config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-config-examples" class="md-nav__link">
+    Create config examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-new-strategy" class="md-nav__link">
+    Create new strategy
+  </a>
+  
+    <nav class="md-nav" aria-label="Create new strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sample-usage-of-new-strategy" class="md-nav__link">
+    Sample usage of new-strategy
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-strategies" class="md-nav__link">
+    List Strategies
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-exchanges" class="md-nav__link">
+    List Exchanges
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-timeframes" class="md-nav__link">
+    List Timeframes
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-pairslist-markets" class="md-nav__link">
+    List pairs/list markets
+  </a>
+  
+    <nav class="md-nav" aria-label="List pairs/list markets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-pairlist" class="md-nav__link">
+    Test pairlist
+  </a>
+  
+    <nav class="md-nav" aria-label="Test pairlist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_1" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#webserver-mode" class="md-nav__link">
+    Webserver mode
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-previous-backtest-results" class="md-nav__link">
+    Show previous Backtest results
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-hyperopt-results" class="md-nav__link">
+    List Hyperopt results
+  </a>
+  
+    <nav class="md-nav" aria-label="List Hyperopt results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_2" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-details-of-hyperopt-results" class="md-nav__link">
+    Show details of Hyperopt results
+  </a>
+  
+    <nav class="md-nav" aria-label="Show details of Hyperopt results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_3" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#show-trades" class="md-nav__link">
+    Show trades
+  </a>
+  
+    <nav class="md-nav" aria-label="Show trades">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_4" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/freqtrade/freqtrade/edit/master/docs/utils.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+
+<h1 id="utility-subcommands">Utility Subcommands<a class="headerlink" href="#utility-subcommands" title="Permanent link">&para;</a></h1>
+<p>Besides the Live-Trade and Dry-Run run modes, the <code>backtesting</code>, <code>edge</code> and <code>hyperopt</code> optimization subcommands, and the <code>download-data</code> subcommand which prepares historical data, the bot contains a number of utility subcommands. They are described in this section.</p>
+<h2 id="create-userdir">Create userdir<a class="headerlink" href="#create-userdir" title="Permanent link">&para;</a></h2>
+<p>Creates the directory structure to hold your files for freqtrade.
+Will also create strategy and hyperopt examples for you to get started.
+Can be used multiple times - using <code>--reset</code> will reset the sample strategy and hyperopt files to their default state. </p>
+<p>```
+usage: freqtrade create-userdir [-h] [--userdir PATH] [--reset]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  --reset               Reset sample files to their original state.
+```</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Using <code>--reset</code> may result in loss of data, since this will overwrite all sample files without asking again.</p>
+</div>
+<p><code>├── backtest_results
+├── data
+├── hyperopt_results
+├── hyperopts
+│   ├── sample_hyperopt_loss.py
+├── notebooks
+│   └── strategy_analysis_example.ipynb
+├── plot
+└── strategies
+    └── sample_strategy.py</code></p>
+<h2 id="create-new-config">Create new config<a class="headerlink" href="#create-new-config" title="Permanent link">&para;</a></h2>
+<p>Creates a new configuration file, asking some questions which are important selections for a configuration.</p>
+<p>```
+usage: freqtrade new-config [-h] [-c PATH]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: <code>config.json</code>). Multiple --config options may be used. Can be set to <code>-</code>
+                        to read config from stdin.
+```</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Only vital questions are asked. Freqtrade offers a lot more configuration possibilities, which are listed in the <a href="../configuration/#configuration-parameters">Configuration documentation</a></p>
+</div>
+<h3 id="create-config-examples">Create config examples<a class="headerlink" href="#create-config-examples" title="Permanent link">&para;</a></h3>
+<p>```
+$ freqtrade new-config --config config_binance.json</p>
+<p>? Do you want to enable Dry-run (simulated trades)?  Yes
+? Please insert your stake currency: BTC
+? Please insert your stake amount: 0.05
+? Please insert max_open_trades (Integer or -1 for unlimited open trades): 3
+? Please insert your desired timeframe (e.g. 5m): 5m
+? Please insert your display Currency (for reporting): USD
+? Select exchange  binance
+? Do you want to enable Telegram?  No
+```</p>
+<h2 id="create-new-strategy">Create new strategy<a class="headerlink" href="#create-new-strategy" title="Permanent link">&para;</a></h2>
+<p>Creates a new strategy from a template similar to SampleStrategy.
+The file will be named inline with your class name, and will not overwrite existing files.</p>
+<p>Results will be located in <code>user_data/strategies/&lt;strategyclassname&gt;.py</code>.</p>
+<p>``` output
+usage: freqtrade new-strategy [-h] [--userdir PATH] [-s NAME]
+                              [--template {full,minimal,advanced}]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --template {full,minimal,advanced}
+                        Use a template which is either <code>minimal</code>, <code>full</code>
+                        (containing multiple sample indicators) or <code>advanced</code>.
+                        Default: <code>full</code>.</p>
+<p>```</p>
+<h3 id="sample-usage-of-new-strategy">Sample usage of new-strategy<a class="headerlink" href="#sample-usage-of-new-strategy" title="Permanent link">&para;</a></h3>
+<p><code>bash
+freqtrade new-strategy --strategy AwesomeStrategy</code></p>
+<p>With custom user directory</p>
+<p><code>bash
+freqtrade new-strategy --userdir ~/.freqtrade/ --strategy AwesomeStrategy</code></p>
+<p>Using the advanced template (populates all optional functions and methods)</p>
+<p><code>bash
+freqtrade new-strategy --strategy AwesomeStrategy --template advanced</code></p>
+<h2 id="list-strategies">List Strategies<a class="headerlink" href="#list-strategies" title="Permanent link">&para;</a></h2>
+<p>Use the <code>list-strategies</code> subcommand to see all strategies in one particular directory.</p>
+<p>This subcommand is useful for finding problems in your environment with loading strategies: modules with strategies that contain errors and failed to load are printed in red (LOAD FAILED), while strategies with duplicate names are printed in yellow (DUPLICATE NAME).</p>
+<p>```
+usage: freqtrade list-strategies [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                 [-d PATH] [--userdir PATH]
+                                 [--strategy-path PATH] [-1] [--no-color]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  --strategy-path PATH  Specify additional strategy lookup path.
+  -1, --one-column      Print output in one column.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.</p>
+<p>Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: <code>config.json</code>).
+                        Multiple --config options may be used. Can be set to
+                        <code>-</code> to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Using these commands will try to load all python files from a directory. This can be a security risk if untrusted files reside in this directory, since all module-level code is executed.</p>
+</div>
+<p>Example: Search default strategies directories (within the default userdir).</p>
+<p><code>bash
+freqtrade list-strategies</code></p>
+<p>Example: Search strategies  directory within the userdir.</p>
+<p><code>bash
+freqtrade list-strategies --userdir ~/.freqtrade/</code></p>
+<p>Example: Search dedicated strategy path.</p>
+<p><code>bash
+freqtrade list-strategies --strategy-path ~/.freqtrade/strategies/</code></p>
+<h2 id="list-exchanges">List Exchanges<a class="headerlink" href="#list-exchanges" title="Permanent link">&para;</a></h2>
+<p>Use the <code>list-exchanges</code> subcommand to see the exchanges available for the bot.</p>
+<p>```
+usage: freqtrade list-exchanges [-h] [-1] [-a]</p>
+<p>optional arguments:
+  -h, --help        show this help message and exit
+  -1, --one-column  Print output in one column.
+  -a, --all         Print all exchanges known to the ccxt library.
+```</p>
+<ul>
+<li>Example: see exchanges available for the bot:
+```
+$ freqtrade list-exchanges
+Exchanges available for Freqtrade:
+Exchange name    Valid    reason</li>
+</ul>
+<hr />
+<p>aax              True
+ascendex         True     missing opt: fetchMyTrades
+bequant          True
+bibox            True
+bigone           True
+binance          True
+binanceus        True
+bitbank          True     missing opt: fetchTickers
+bitcoincom       True
+bitfinex         True
+bitforex         True     missing opt: fetchMyTrades, fetchTickers
+bitget           True
+bithumb          True     missing opt: fetchMyTrades
+bitkk            True     missing opt: fetchMyTrades
+bitmart          True
+bitmax           True     missing opt: fetchMyTrades
+bitpanda         True
+bittrex          True
+bitvavo          True
+bitz             True     missing opt: fetchMyTrades
+btcalpha         True     missing opt: fetchTicker, fetchTickers
+btcmarkets       True     missing opt: fetchTickers
+buda             True     missing opt: fetchMyTrades, fetchTickers
+bw               True     missing opt: fetchMyTrades, fetchL2OrderBook
+bybit            True
+bytetrade        True
+cdax             True
+cex              True     missing opt: fetchMyTrades
+coinbaseprime    True     missing opt: fetchTickers
+coinbasepro      True     missing opt: fetchTickers
+coinex           True
+crex24           True
+deribit          True
+digifinex        True
+equos            True     missing opt: fetchTicker, fetchTickers
+eterbase         True
+fcoin            True     missing opt: fetchMyTrades, fetchTickers
+fcoinjp          True     missing opt: fetchMyTrades, fetchTickers
+ftx              True
+gateio           True
+gemini           True
+gopax            True
+hbtc             True
+hitbtc           True
+huobijp          True
+huobipro         True
+idex             True
+kraken           True
+kucoin           True
+lbank            True     missing opt: fetchMyTrades
+mercado          True     missing opt: fetchTickers
+ndax             True     missing opt: fetchTickers
+novadax          True
+okcoin           True
+okex             True
+probit           True
+qtrade           True
+stex             True
+timex            True
+upbit            True     missing opt: fetchMyTrades
+vcc              True
+zb               True     missing opt: fetchMyTrades</p>
+<p>```</p>
+<div class="admonition note">
+<p class="admonition-title">missing opt exchanges</p>
+<p>Values with "missing opt:" might need special configuration (e.g. using orderbook if <code>fetchTickers</code> is missing) - but should in theory work (although we cannot guarantee they will).</p>
+</div>
+<ul>
+<li>Example: see all exchanges supported by the ccxt library (including 'bad' ones, i.e. those that are known to not work with Freqtrade):
+```
+$ freqtrade list-exchanges -a
+All exchanges supported by the ccxt library:
+Exchange name       Valid    reason</li>
+</ul>
+<hr />
+<p>aax                 True
+aofex               False    missing: fetchOrder
+ascendex            True     missing opt: fetchMyTrades
+bequant             True
+bibox               True
+bigone              True
+binance             True
+binanceus           True
+bit2c               False    missing: fetchOrder, fetchOHLCV
+bitbank             True     missing opt: fetchTickers
+bitbay              False    missing: fetchOrder
+bitcoincom          True
+bitfinex            True
+bitfinex2           False    missing: fetchOrder
+bitflyer            False    missing: fetchOrder, fetchOHLCV
+bitforex            True     missing opt: fetchMyTrades, fetchTickers
+bitget              True
+bithumb             True     missing opt: fetchMyTrades
+bitkk               True     missing opt: fetchMyTrades
+bitmart             True
+bitmax              True     missing opt: fetchMyTrades
+bitmex              False    Various reasons.
+bitpanda            True
+bitso               False    missing: fetchOHLCV
+bitstamp            True     missing opt: fetchTickers
+bitstamp1           False    missing: fetchOrder, fetchOHLCV
+bittrex             True
+bitvavo             True
+bitz                True     missing opt: fetchMyTrades
+bl3p                False    missing: fetchOrder, fetchOHLCV
+bleutrade           False    missing: fetchOrder
+braziliex           False    missing: fetchOHLCV
+btcalpha            True     missing opt: fetchTicker, fetchTickers
+btcbox              False    missing: fetchOHLCV
+btcmarkets          True     missing opt: fetchTickers
+btctradeua          False    missing: fetchOrder, fetchOHLCV
+btcturk             False    missing: fetchOrder
+buda                True     missing opt: fetchMyTrades, fetchTickers
+bw                  True     missing opt: fetchMyTrades, fetchL2OrderBook
+bybit               True
+bytetrade           True
+cdax                True
+cex                 True     missing opt: fetchMyTrades
+chilebit            False    missing: fetchOrder, fetchOHLCV
+coinbase            False    missing: fetchOrder, cancelOrder, createOrder, fetchOHLCV
+coinbaseprime       True     missing opt: fetchTickers
+coinbasepro         True     missing opt: fetchTickers
+coincheck           False    missing: fetchOrder, fetchOHLCV
+coinegg             False    missing: fetchOHLCV
+coinex              True
+coinfalcon          False    missing: fetchOHLCV
+coinfloor           False    missing: fetchOrder, fetchOHLCV
+coingi              False    missing: fetchOrder, fetchOHLCV
+coinmarketcap       False    missing: fetchOrder, cancelOrder, createOrder, fetchBalance, fetchOHLCV
+coinmate            False    missing: fetchOHLCV
+coinone             False    missing: fetchOHLCV
+coinspot            False    missing: fetchOrder, cancelOrder, fetchOHLCV
+crex24              True
+currencycom         False    missing: fetchOrder
+delta               False    missing: fetchOrder
+deribit             True
+digifinex           True
+equos               True     missing opt: fetchTicker, fetchTickers
+eterbase            True
+exmo                False    missing: fetchOrder
+exx                 False    missing: fetchOHLCV
+fcoin               True     missing opt: fetchMyTrades, fetchTickers
+fcoinjp             True     missing opt: fetchMyTrades, fetchTickers
+flowbtc             False    missing: fetchOrder, fetchOHLCV
+foxbit              False    missing: fetchOrder, fetchOHLCV
+ftx                 True
+gateio              True
+gemini              True
+gopax               True
+hbtc                True
+hitbtc              True
+hollaex             False    missing: fetchOrder
+huobijp             True
+huobipro            True
+idex                True
+independentreserve  False    missing: fetchOHLCV
+indodax             False    missing: fetchOHLCV
+itbit               False    missing: fetchOHLCV
+kraken              True
+kucoin              True
+kuna                False    missing: fetchOHLCV
+lakebtc             False    missing: fetchOrder, fetchOHLCV
+latoken             False    missing: fetchOrder, fetchOHLCV
+lbank               True     missing opt: fetchMyTrades
+liquid              False    missing: fetchOHLCV
+luno                False    missing: fetchOHLCV
+lykke               False    missing: fetchOHLCV
+mercado             True     missing opt: fetchTickers
+mixcoins            False    missing: fetchOrder, fetchOHLCV
+ndax                True     missing opt: fetchTickers
+novadax             True
+oceanex             False    missing: fetchOHLCV
+okcoin              True
+okex                True
+paymium             False    missing: fetchOrder, fetchOHLCV
+phemex              False    Does not provide history.
+poloniex            False    missing: fetchOrder
+probit              True
+qtrade              True
+rightbtc            False    missing: fetchOrder
+ripio               False    missing: fetchOHLCV
+southxchange        False    missing: fetchOrder, fetchOHLCV
+stex                True
+surbitcoin          False    missing: fetchOrder, fetchOHLCV
+therock             False    missing: fetchOHLCV
+tidebit             False    missing: fetchOrder
+tidex               False    missing: fetchOHLCV
+timex               True
+upbit               True     missing opt: fetchMyTrades
+vbtc                False    missing: fetchOrder, fetchOHLCV
+vcc                 True
+wavesexchange       False    missing: fetchOrder
+whitebit            False    missing: fetchOrder, cancelOrder, createOrder, fetchBalance
+xbtce               False    missing: fetchOrder, fetchOHLCV
+xena                False    missing: fetchOrder
+yobit               False    missing: fetchOHLCV
+zaif                False    missing: fetchOrder, fetchOHLCV
+zb                  True     missing opt: fetchMyTrades
+```</p>
+<h2 id="list-timeframes">List Timeframes<a class="headerlink" href="#list-timeframes" title="Permanent link">&para;</a></h2>
+<p>Use the <code>list-timeframes</code> subcommand to see the list of timeframes available for the exchange.</p>
+<p>```
+usage: freqtrade list-timeframes [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH] [--userdir PATH] [--exchange EXCHANGE] [-1]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  --exchange EXCHANGE   Exchange name (default: <code>bittrex</code>). Only valid if no config is provided.
+  -1, --one-column      Print output in one column.</p>
+<p>Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are: 'syslog', 'journald'. See the documentation for more details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: <code>config.json</code>). Multiple --config options may be used. Can be set to <code>-</code>
+                        to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.</p>
+<p>```</p>
+<ul>
+<li>Example: see the timeframes for the 'binance' exchange, set in the configuration file:</li>
+</ul>
+<p><code>$ freqtrade list-timeframes -c config_binance.json
+...
+Timeframes available for the exchange `binance`: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M</code></p>
+<ul>
+<li>Example: enumerate exchanges available for Freqtrade and print timeframes supported by each of them:
+<code>$ for i in `freqtrade list-exchanges -1`; do freqtrade list-timeframes --exchange $i; done</code></li>
+</ul>
+<h2 id="list-pairslist-markets">List pairs/list markets<a class="headerlink" href="#list-pairslist-markets" title="Permanent link">&para;</a></h2>
+<p>The <code>list-pairs</code> and <code>list-markets</code> subcommands allow to see the pairs/markets available on exchange.</p>
+<p>Pairs are markets with the '/' character between the base currency part and the quote currency part in the market symbol.
+For example, in the 'ETH/BTC' pair 'ETH' is the base currency, while 'BTC' is the quote currency.</p>
+<p>For pairs traded by Freqtrade the pair quote currency is defined by the value of the <code>stake_currency</code> configuration setting.</p>
+<p>You can print info about any pair/market with these subcommands - and you can filter output by quote-currency using <code>--quote BTC</code>, or by base-currency using <code>--base ETH</code> options correspondingly.</p>
+<p>These subcommands have same usage and same set of available options:</p>
+<p>```
+usage: freqtrade list-markets [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                              [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
+                              [--print-list] [--print-json] [-1] [--print-csv]
+                              [--base BASE_CURRENCY [BASE_CURRENCY ...]]
+                              [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
+                              [-a]</p>
+<p>usage: freqtrade list-pairs [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                            [-d PATH] [--userdir PATH] [--exchange EXCHANGE]
+                            [--print-list] [--print-json] [-1] [--print-csv]
+                            [--base BASE_CURRENCY [BASE_CURRENCY ...]]
+                            [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]] [-a]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  --exchange EXCHANGE   Exchange name (default: <code>bittrex</code>). Only valid if no
+                        config is provided.
+  --print-list          Print list of pairs or market symbols. By default data
+                        is printed in the tabular format.
+  --print-json          Print list of pairs or market symbols in JSON format.
+  -1, --one-column      Print output in one column.
+  --print-csv           Print exchange pair or market data in the csv format.
+  --base BASE_CURRENCY [BASE_CURRENCY ...]
+                        Specify base currency(-ies). Space-separated list.
+  --quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]
+                        Specify quote currency(-ies). Space-separated list.
+  -a, --all             Print all pairs or market symbols. By default only
+                        active ones are shown.</p>
+<p>Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: <code>config.json</code>).
+                        Multiple --config options may be used. Can be set to
+                        <code>-</code> to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.</p>
+<p>```</p>
+<p>By default, only active pairs/markets are shown. Active pairs/markets are those that can currently be traded
+on the exchange. The see the list of all pairs/markets (not only the active ones), use the <code>-a</code>/<code>-all</code> option.</p>
+<p>Pairs/markets are sorted by its symbol string in the printed output.</p>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Print the list of active pairs with quote currency USD on exchange, specified in the default
+configuration file (i.e. pairs on the "Bittrex" exchange) in JSON format:</li>
+</ul>
+<p><code>$ freqtrade list-pairs --quote USD --print-json</code></p>
+<ul>
+<li>Print the list of all pairs on the exchange, specified in the <code>config_binance.json</code> configuration file
+(i.e. on the "Binance" exchange) with base currencies BTC or ETH and quote currencies USDT or USD, as the
+human-readable list with summary:</li>
+</ul>
+<p><code>$ freqtrade list-pairs -c config_binance.json --all --base BTC ETH --quote USDT USD --print-list</code></p>
+<ul>
+<li>Print all markets on exchange "Kraken", in the tabular format:</li>
+</ul>
+<p><code>$ freqtrade list-markets --exchange kraken --all</code></p>
+<h2 id="test-pairlist">Test pairlist<a class="headerlink" href="#test-pairlist" title="Permanent link">&para;</a></h2>
+<p>Use the <code>test-pairlist</code> subcommand to test the configuration of <a href="../plugins/#pairlists">dynamic pairlists</a>.</p>
+<p>Requires a configuration with specified <code>pairlists</code> attribute.
+Can be used to generate static pairlists to be used during backtesting / hyperopt.</p>
+<p>```
+usage: freqtrade test-pairlist [-h] [-c PATH]
+                               [--quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]]
+                               [-1] [--print-json]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default: <code>config.json</code>).
+                        Multiple --config options may be used. Can be set to
+                        <code>-</code> to read config from stdin.
+  --quote QUOTE_CURRENCY [QUOTE_CURRENCY ...]
+                        Specify quote currency(-ies). Space-separated list.
+  -1, --one-column      Print output in one column.
+  --print-json          Print list of pairs or market symbols in JSON format.
+```</p>
+<h3 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h3>
+<p>Show whitelist when using a <a href="../plugins/#pairlists">dynamic pairlist</a>.</p>
+<p><code>freqtrade test-pairlist --config config.json --quote USDT BTC</code></p>
+<h2 id="webserver-mode">Webserver mode<a class="headerlink" href="#webserver-mode" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Experimental</p>
+<p>Webserver mode is an experimental mode to increase backesting and strategy development productivity.
+There may still be bugs - so if you happen to stumble across these, please report them as github issues, thanks.</p>
+</div>
+<p>Run freqtrade in webserver mode.
+Freqtrade will start the webserver and allow FreqUI to start and control backtesting processes.
+This has the advantage that data will not be reloaded between backtesting runs (as long as timeframe and timerange remain identical).
+FreqUI will also show the backtesting results.</p>
+<p>```
+usage: freqtrade webserver [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                           [--userdir PATH]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit</p>
+<p>Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        <code>userdir/config.json</code> or <code>config.json</code> whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to <code>-</code> to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.</p>
+<p>```</p>
+<h2 id="show-previous-backtest-results">Show previous Backtest results<a class="headerlink" href="#show-previous-backtest-results" title="Permanent link">&para;</a></h2>
+<p>Allows you to show previous backtest results.
+Adding <code>--show-pair-list</code> outputs a sorted pair list you can easily copy/paste into your configuration (omitting bad pairs).</p>
+<details class="warning">
+<summary>Strategy overfitting</summary>
+<p>Only using winning pairs can lead to an overfitted strategy, which will not work well on future data. Make sure to extensively test your strategy in dry-run before risking real money.</p>
+</details>
+<p>```
+usage: freqtrade backtesting-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                  [-d PATH] [--userdir PATH]
+                                  [--export-filename PATH] [--show-pair-list]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  --export-filename PATH
+                        Save backtest results to the file with this filename.
+                        Requires <code>--export</code> to be set as well. Example:
+                        <code>--export-filename=user_data/backtest_results/backtest
+                        _today.json</code>
+  --show-pair-list      Show backtesting pairlist sorted by profit.</p>
+<p>Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        <code>userdir/config.json</code> or <code>config.json</code> whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to <code>-</code> to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.</p>
+<p>```</p>
+<h2 id="list-hyperopt-results">List Hyperopt results<a class="headerlink" href="#list-hyperopt-results" title="Permanent link">&para;</a></h2>
+<p>You can list the hyperoptimization epochs the Hyperopt module evaluated previously with the <code>hyperopt-list</code> sub-command.</p>
+<p>```
+usage: freqtrade hyperopt-list [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                               [-d PATH] [--userdir PATH] [--best]
+                               [--profitable] [--min-trades INT]
+                               [--max-trades INT] [--min-avg-time FLOAT]
+                               [--max-avg-time FLOAT] [--min-avg-profit FLOAT]
+                               [--max-avg-profit FLOAT]
+                               [--min-total-profit FLOAT]
+                               [--max-total-profit FLOAT]
+                               [--min-objective FLOAT] [--max-objective FLOAT]
+                               [--no-color] [--print-json] [--no-details]
+                               [--hyperopt-filename PATH] [--export-csv FILE]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  --best                Select only best epochs.
+  --profitable          Select only profitable epochs.
+  --min-trades INT      Select epochs with more than INT trades.
+  --max-trades INT      Select epochs with less than INT trades.
+  --min-avg-time FLOAT  Select epochs above average time.
+  --max-avg-time FLOAT  Select epochs below average time.
+  --min-avg-profit FLOAT
+                        Select epochs above average profit.
+  --max-avg-profit FLOAT
+                        Select epochs below average profit.
+  --min-total-profit FLOAT
+                        Select epochs above total profit.
+  --max-total-profit FLOAT
+                        Select epochs below total profit.
+  --min-objective FLOAT
+                        Select epochs above objective.
+  --max-objective FLOAT
+                        Select epochs below objective.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
+  --print-json          Print output in JSON format.
+  --no-details          Do not print best epoch details.
+  --hyperopt-filename FILENAME
+                        Hyperopt result filename.Example: <code>--hyperopt-
+                        filename=hyperopt_results_2020-09-27_16-20-48.pickle</code>
+  --export-csv FILE     Export to CSV-File. This will disable table print.
+                        Example: --export-csv hyperopt.csv</p>
+<p>Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        <code>userdir/config.json</code> or <code>config.json</code> whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to <code>-</code> to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>hyperopt-list</code> will automatically use the latest available hyperopt results file.
+You can override this using the <code>--hyperopt-filename</code> argument, and specify another, available filename (without path!).</p>
+</div>
+<h3 id="examples_2">Examples<a class="headerlink" href="#examples_2" title="Permanent link">&para;</a></h3>
+<p>List all results, print details of the best result at the end:
+<code>freqtrade hyperopt-list</code></p>
+<p>List only epochs with positive profit. Do not print the details of the best epoch, so that the list can be iterated in a script:
+<code>freqtrade hyperopt-list --profitable --no-details</code></p>
+<h2 id="show-details-of-hyperopt-results">Show details of Hyperopt results<a class="headerlink" href="#show-details-of-hyperopt-results" title="Permanent link">&para;</a></h2>
+<p>You can show the details of any hyperoptimization epoch previously evaluated by the Hyperopt module with the <code>hyperopt-show</code> subcommand.</p>
+<p>```
+usage: freqtrade hyperopt-show [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                               [-d PATH] [--userdir PATH] [--best]
+                               [--profitable] [-n INT] [--print-json]
+                               [--hyperopt-filename FILENAME] [--no-header]
+                               [--disable-param-export]
+                               [--breakdown {day,week,month} [{day,week,month} ...]]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  --best                Select only best epochs.
+  --profitable          Select only profitable epochs.
+  -n INT, --index INT   Specify the index of the epoch to print details for.
+  --print-json          Print output in JSON format.
+  --hyperopt-filename FILENAME
+                        Hyperopt result filename.Example: <code>--hyperopt-
+                        filename=hyperopt_results_2020-09-27_16-20-48.pickle</code>
+  --no-header           Do not print epoch details header.
+  --disable-param-export
+                        Disable automatic hyperopt parameter export.
+  --breakdown {day,week,month} [{day,week,month} ...]
+                        Show backtesting breakdown per [day, week, month].</p>
+<p>Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        <code>userdir/config.json</code> or <code>config.json</code> whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to <code>-</code> to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.</p>
+<p>```</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>hyperopt-show</code> will automatically use the latest available hyperopt results file.
+You can override this using the <code>--hyperopt-filename</code> argument, and specify another, available filename (without path!).</p>
+</div>
+<h3 id="examples_3">Examples<a class="headerlink" href="#examples_3" title="Permanent link">&para;</a></h3>
+<p>Print details for the epoch 168 (the number of the epoch is shown by the <code>hyperopt-list</code> subcommand or by Hyperopt itself during hyperoptimization run):</p>
+<p><code>freqtrade hyperopt-show -n 168</code></p>
+<p>Prints JSON data with details for the last best epoch (i.e., the best of all epochs):</p>
+<p><code>freqtrade hyperopt-show --best -n -1 --print-json --no-header</code></p>
+<h2 id="show-trades">Show trades<a class="headerlink" href="#show-trades" title="Permanent link">&para;</a></h2>
+<p>Print selected (or all) trades from database to screen.</p>
+<p>```
+usage: freqtrade show-trades [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                             [-d PATH] [--userdir PATH] [--db-url PATH]
+                             [--trade-ids TRADE_IDS [TRADE_IDS ...]]
+                             [--print-json]</p>
+<p>optional arguments:
+  -h, --help            show this help message and exit
+  --db-url PATH         Override trades database URL, this is useful in custom
+                        deployments (default: <code>sqlite:///tradesv3.sqlite</code> for
+                        Live Run mode, <code>sqlite:///tradesv3.dryrun.sqlite</code> for
+                        Dry Run).
+  --trade-ids TRADE_IDS [TRADE_IDS ...]
+                        Specify the list of trade ids.
+  --print-json          Print output in JSON format.</p>
+<p>Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        <code>userdir/config.json</code> or <code>config.json</code> whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to <code>-</code> to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```</p>
+<h3 id="examples_4">Examples<a class="headerlink" href="#examples_4" title="Permanent link">&para;</a></h3>
+<p>Print trades with id 2 and 3 as json</p>
+<p><code>bash
+freqtrade show-trades --db-url sqlite:///tradesv3.sqlite --trade-ids 2 3 --print-json</code></p>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../hyperopt/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Hyperopt" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Hyperopt
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../plotting/" class="md-footer__link md-footer__link--next" aria-label="Next: Plotting" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Plotting
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.bd0b6b67.min.js", "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.8aa65030.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
