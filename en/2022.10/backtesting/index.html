@@ -1,0 +1,2035 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2022.10/backtesting/">
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
+    
+    
+      
+        <title>Backtesting - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.20d9efc8.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#backtesting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Backtesting
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div id="widget-wrapper">
+
+      </div>
+      <div class="md-sidebar__inner">
+        
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Installation
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        Strategy Callbacks
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_11">
+          Control the bot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_11">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Backtesting
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Backtesting
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#backtesting-command-reference" class="md-nav__link">
+    Backtesting command reference
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-your-strategy-with-backtesting" class="md-nav__link">
+    Test your strategy with Backtesting
+  </a>
+  
+    <nav class="md-nav" aria-label="Test your strategy with Backtesting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starting-balance" class="md-nav__link">
+    Starting balance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-stake-amount" class="md-nav__link">
+    Dynamic stake amount
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-backtesting-commands" class="md-nav__link">
+    Example backtesting commands
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understand-the-backtesting-result" class="md-nav__link">
+    Understand the backtesting result
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand the backtesting result">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backtesting-report-table" class="md-nav__link">
+    Backtesting report table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-reasons-table" class="md-nav__link">
+    Exit reasons table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#left-open-trades-table" class="md-nav__link">
+    Left open trades table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary-metrics" class="md-nav__link">
+    Summary metrics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily-weekly-monthly-breakdown" class="md-nav__link">
+    Daily / Weekly / Monthly breakdown
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backtest-result-caching" class="md-nav__link">
+    Backtest result caching
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#further-backtest-result-analysis" class="md-nav__link">
+    Further backtest-result analysis
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assumptions-made-by-backtesting" class="md-nav__link">
+    Assumptions made by backtesting
+  </a>
+  
+    <nav class="md-nav" aria-label="Assumptions made by backtesting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trading-limits-in-backtesting" class="md-nav__link">
+    Trading limits in backtesting
+  </a>
+  
+    <nav class="md-nav" aria-label="Trading limits in backtesting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trading-precision-limits" class="md-nav__link">
+    Trading precision limits
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#improved-backtest-accuracy" class="md-nav__link">
+    Improved backtest accuracy
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backtesting-multiple-strategies" class="md-nav__link">
+    Backtesting multiple strategies
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    Next step
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_15" type="checkbox" id="__nav_15" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_15">
+          FreqAI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="FreqAI" data-md-level="1">
+        <label class="md-nav__title" for="__nav_15">
+          <span class="md-nav__icon md-icon"></span>
+          FreqAI
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        Parameter table
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        Feature engineering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        Running FreqAI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        Developer guide
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        Short / Leverage
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_20" type="checkbox" id="__nav_20" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_20">
+          Data Analysis
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_20">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        Backtest analysis
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_21" type="checkbox" id="__nav_21" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_21">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_21">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        Producer/Consumer mode
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        Strategy migration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#backtesting-command-reference" class="md-nav__link">
+    Backtesting command reference
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-your-strategy-with-backtesting" class="md-nav__link">
+    Test your strategy with Backtesting
+  </a>
+  
+    <nav class="md-nav" aria-label="Test your strategy with Backtesting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starting-balance" class="md-nav__link">
+    Starting balance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-stake-amount" class="md-nav__link">
+    Dynamic stake amount
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-backtesting-commands" class="md-nav__link">
+    Example backtesting commands
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#understand-the-backtesting-result" class="md-nav__link">
+    Understand the backtesting result
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand the backtesting result">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backtesting-report-table" class="md-nav__link">
+    Backtesting report table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-reasons-table" class="md-nav__link">
+    Exit reasons table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#left-open-trades-table" class="md-nav__link">
+    Left open trades table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary-metrics" class="md-nav__link">
+    Summary metrics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily-weekly-monthly-breakdown" class="md-nav__link">
+    Daily / Weekly / Monthly breakdown
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backtest-result-caching" class="md-nav__link">
+    Backtest result caching
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#further-backtest-result-analysis" class="md-nav__link">
+    Further backtest-result analysis
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assumptions-made-by-backtesting" class="md-nav__link">
+    Assumptions made by backtesting
+  </a>
+  
+    <nav class="md-nav" aria-label="Assumptions made by backtesting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trading-limits-in-backtesting" class="md-nav__link">
+    Trading limits in backtesting
+  </a>
+  
+    <nav class="md-nav" aria-label="Trading limits in backtesting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trading-precision-limits" class="md-nav__link">
+    Trading precision limits
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#improved-backtest-accuracy" class="md-nav__link">
+    Improved backtest accuracy
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backtesting-multiple-strategies" class="md-nav__link">
+    Backtesting multiple strategies
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    Next step
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/freqtrade/freqtrade/edit/develop/docs/backtesting.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="backtesting">Backtesting<a class="headerlink" href="#backtesting" title="Permanent link">&para;</a></h1>
+<p>This page explains how to validate your strategy performance by using Backtesting.</p>
+<p>Backtesting requires historic data to be available.
+To learn how to get data for the pairs and exchange you're interested in, head over to the <a href="../data-download/">Data Downloading</a> section of the documentation.</p>
+<h2 id="backtesting-command-reference">Backtesting command reference<a class="headerlink" href="#backtesting-command-reference" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>usage: freqtrade backtesting [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                             [-d PATH] [--userdir PATH] [-s NAME]
+                             [--strategy-path PATH] [-i TIMEFRAME]
+                             [--timerange TIMERANGE]
+                             [--data-format-ohlcv {json,jsongz,hdf5}]
+                             [--max-open-trades INT]
+                             [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
+                             [-p PAIRS [PAIRS ...]] [--eps] [--dmmp]
+                             [--enable-protections]
+                             [--dry-run-wallet DRY_RUN_WALLET]
+                             [--timeframe-detail TIMEFRAME_DETAIL]
+                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
+                             [--export {none,trades,signals}]
+                             [--export-filename PATH]
+                             [--breakdown {day,week,month} [{day,week,month} ...]]
+                             [--cache {none,day,week,month}]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i TIMEFRAME, --timeframe TIMEFRAME
+                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `json`).
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
+  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
+                        entry and exit).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
+  --eps, --enable-position-stacking
+                        Allow buying the same pair multiple times (position
+                        stacking).
+  --dmmp, --disable-max-market-positions
+                        Disable applying `max_open_trades` during backtest
+                        (same as setting `max_open_trades` to a very high
+                        number).
+  --enable-protections, --enableprotections
+                        Enable protections for backtesting.Will slow
+                        backtesting down by a considerable amount, but will
+                        include configured protections
+  --dry-run-wallet DRY_RUN_WALLET, --starting-balance DRY_RUN_WALLET
+                        Starting balance, used for backtesting / hyperopt and
+                        dry-runs.
+  --timeframe-detail TIMEFRAME_DETAIL
+                        Specify detail timeframe for backtesting (`1m`, `5m`,
+                        `30m`, `1h`, `1d`).
+  --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
+                        Provide a space-separated list of strategies to
+                        backtest. Please note that timeframe needs to be set
+                        either in config or via command line. When using this
+                        together with `--export trades`, the strategy-name is
+                        injected into the filename (so `backtest-data.json`
+                        becomes `backtest-data-SampleStrategy.json`
+  --export {none,trades,signals}
+                        Export backtest results (default: trades).
+  --export-filename PATH, --backtest-filename PATH
+                        Use this filename for backtest results.Requires
+                        `--export` to be set as well. Example: `--export-filen
+                        ame=user_data/backtest_results/backtest_today.json`
+  --breakdown {day,week,month} [{day,week,month} ...]
+                        Show backtesting breakdown per [day, week, month].
+  --cache {none,day,week,month}
+                        Load a cached backtest result no older than specified
+                        age (default: day).
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more
+                        details.
+  -V, --version         show program&#39;s version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
+</code></pre></div>
+<h2 id="test-your-strategy-with-backtesting">Test your strategy with Backtesting<a class="headerlink" href="#test-your-strategy-with-backtesting" title="Permanent link">&para;</a></h2>
+<p>Now you have good Entry and exit strategies and some historic data, you want to test it against
+real data. This is what we call <a href="https://en.wikipedia.org/wiki/Backtesting">backtesting</a>.</p>
+<p>Backtesting will use the crypto-currencies (pairs) from your config file and load historical candle (OHLCV) data from <code>user_data/data/&lt;exchange&gt;</code> by default.
+If no data is available for the exchange / pair / timeframe combination, backtesting will ask you to download them first using <code>freqtrade download-data</code>.
+For details on downloading, please refer to the <a href="../data-download/">Data Downloading</a> section in the documentation.</p>
+<p>The result of backtesting will confirm if your bot has better odds of making a profit than a loss.</p>
+<p>All profit calculations include fees, and freqtrade will use the exchange's default fees for the calculation.</p>
+<div class="admonition warning">
+<p class="admonition-title">Using dynamic pairlists for backtesting</p>
+<p>Using dynamic pairlists is possible (not all of the handlers are allowed to be used in backtest mode), however it relies on the current market conditions - which will not reflect the historic status of the pairlist.
+Also, when using pairlists other than StaticPairlist, reproducibility of backtesting-results cannot be guaranteed.
+Please read the <a href="../plugins/#pairlists">pairlists documentation</a> for more information.</p>
+<p>To achieve reproducible results, best generate a pairlist via the <a href="../utils/#test-pairlist"><code>test-pairlist</code></a> command and use that as static pairlist.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, Freqtrade will export backtesting results to <code>user_data/backtest_results</code>.
+The exported trades can be used for <a href="#further-backtest-result-analysis">further analysis</a> or can be used by the <a href="../plotting/#plot-price-and-indicators">plotting sub-command</a> (<code>freqtrade plot-dataframe</code>) in the scripts directory.</p>
+</div>
+<h3 id="starting-balance">Starting balance<a class="headerlink" href="#starting-balance" title="Permanent link">&para;</a></h3>
+<p>Backtesting will require a starting balance, which can be provided as <code>--dry-run-wallet &lt;balance&gt;</code> or <code>--starting-balance &lt;balance&gt;</code> command line argument, or via <code>dry_run_wallet</code> configuration setting.
+This amount must be higher than <code>stake_amount</code>, otherwise the bot will not be able to simulate any trade.</p>
+<h3 id="dynamic-stake-amount">Dynamic stake amount<a class="headerlink" href="#dynamic-stake-amount" title="Permanent link">&para;</a></h3>
+<p>Backtesting supports <a href="../configuration/#dynamic-stake-amount">dynamic stake amount</a> by configuring <code>stake_amount</code> as <code>"unlimited"</code>, which will split the starting balance into <code>max_open_trades</code> pieces.
+Profits from early trades will result in subsequent higher stake amounts, resulting in compounding of profits over the backtesting period.</p>
+<h3 id="example-backtesting-commands">Example backtesting commands<a class="headerlink" href="#example-backtesting-commands" title="Permanent link">&para;</a></h3>
+<p>With 5 min candle (OHLCV) data (per default)</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy
+</code></pre></div>
+<p>Where <code>--strategy AwesomeStrategy</code> / <code>-s AwesomeStrategy</code> refers to the class name of the strategy, which is within a python file in the <code>user_data/strategies</code> directory.</p>
+<hr />
+<p>With 1 min candle (OHLCV) data</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--timeframe<span class="w"> </span>1m
+</code></pre></div>
+<hr />
+<p>Providing a custom starting balance of 1000 (in stake currency)</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--dry-run-wallet<span class="w"> </span><span class="m">1000</span>
+</code></pre></div>
+<hr />
+<p>Using a different on-disk historical candle (OHLCV) data source</p>
+<p>Assume you downloaded the history data from the Bittrex exchange and kept it in the <code>user_data/data/bittrex-20180101</code> directory. 
+You can then use this data for backtesting as follows:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--datadir<span class="w"> </span>user_data/data/bittrex-20180101<span class="w"> </span>
+</code></pre></div>
+<hr />
+<p>Comparing multiple Strategies</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy-list<span class="w"> </span>SampleStrategy1<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--timeframe<span class="w"> </span>5m
+</code></pre></div>
+<p>Where <code>SampleStrategy1</code> and <code>AwesomeStrategy</code> refer to class names of strategies.</p>
+<hr />
+<p>Prevent exporting trades to file</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>backtesting<span class="w"> </span>--export<span class="w"> </span>none<span class="w"> </span>--config<span class="w"> </span>config.json<span class="w"> </span>
+</code></pre></div>
+<p>Only use this if you're sure you'll not want to plot or analyze your results further.</p>
+<hr />
+<p>Exporting trades to file specifying a custom filename</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>backtesting<span class="w"> </span>--export<span class="w"> </span>trades<span class="w"> </span>--export-filename<span class="o">=</span>backtest_samplestrategy.json
+</code></pre></div>
+<p>Please also read about the <a href="../strategy-customization/#strategy-startup-period">strategy startup period</a>.</p>
+<hr />
+<p>Supplying custom fee value</p>
+<p>Sometimes your account has certain fee rebates (fee reductions starting with a certain account size or monthly volume), which are not visible to ccxt.
+To account for this in backtesting, you can use the <code>--fee</code> command line option to supply this value to backtesting.
+This fee must be a ratio, and will be applied twice (once for trade entry, and once for trade exit).</p>
+<p>For example, if the commission fee per order is 0.1% (i.e., 0.001 written as ratio), then you would run backtesting as the following:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--fee<span class="w"> </span><span class="m">0</span>.001
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only supply this option (or the corresponding configuration parameter) if you want to experiment with different fee values. By default, Backtesting fetches the default fee from the exchange pair/market info.</p>
+</div>
+<hr />
+<p>Running backtest with smaller test-set by using timerange</p>
+<p>Use the <code>--timerange</code> argument to change how much of the test-set you want to use.</p>
+<p>For example, running backtesting with the <code>--timerange=20190501-</code> option will use all available data starting with May 1<sup>st</sup>, 2019 from your input data.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--timerange<span class="o">=</span><span class="m">20190501</span>-
+</code></pre></div>
+<p>You can also specify particular date ranges.</p>
+<p>The full timerange specification:</p>
+<ul>
+<li>Use data until 2018/01/31: <code>--timerange=-20180131</code></li>
+<li>Use data since 2018/01/31: <code>--timerange=20180131-</code></li>
+<li>Use data since 2018/01/31 till 2018/03/01 : <code>--timerange=20180131-20180301</code></li>
+<li>Use data between POSIX / epoch timestamps 1527595200 1527618600: <code>--timerange=1527595200-1527618600</code></li>
+</ul>
+<h2 id="understand-the-backtesting-result">Understand the backtesting result<a class="headerlink" href="#understand-the-backtesting-result" title="Permanent link">&para;</a></h2>
+<p>The most important in the backtesting is to understand the result.</p>
+<p>A backtesting result will look like that:</p>
+<div class="highlight"><pre><span></span><code>========================================================= BACKTESTING REPORT =========================================================
+| Pair     | Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration |  Wins Draws Loss   Win%  |
+|:---------|--------:|---------------:|---------------:|-----------------:|---------------:|:-------------|-------------------------:|
+| ADA/BTC  |      35 |          -0.11 |          -3.88 |      -0.00019428 |          -1.94 | 4:35:00      |    14     0    21   40.0 |
+| ARK/BTC  |      11 |          -0.41 |          -4.52 |      -0.00022647 |          -2.26 | 2:03:00      |     3     0     8   27.3 |
+| BTS/BTC  |      32 |           0.31 |           9.78 |       0.00048938 |           4.89 | 5:05:00      |    18     0    14   56.2 |
+| DASH/BTC |      13 |          -0.08 |          -1.07 |      -0.00005343 |          -0.53 | 4:39:00      |     6     0     7   46.2 |
+| ENG/BTC  |      18 |           1.36 |          24.54 |       0.00122807 |          12.27 | 2:50:00      |     8     0    10   44.4 |
+| EOS/BTC  |      36 |           0.08 |           3.06 |       0.00015304 |           1.53 | 3:34:00      |    16     0    20   44.4 |
+| ETC/BTC  |      26 |           0.37 |           9.51 |       0.00047576 |           4.75 | 6:14:00      |    11     0    15   42.3 |
+| ETH/BTC  |      33 |           0.30 |           9.96 |       0.00049856 |           4.98 | 7:31:00      |    16     0    17   48.5 |
+| IOTA/BTC |      32 |           0.03 |           1.09 |       0.00005444 |           0.54 | 3:12:00      |    14     0    18   43.8 |
+| LSK/BTC  |      15 |           1.75 |          26.26 |       0.00131413 |          13.13 | 2:58:00      |     6     0     9   40.0 |
+| LTC/BTC  |      32 |          -0.04 |          -1.38 |      -0.00006886 |          -0.69 | 4:49:00      |    11     0    21   34.4 |
+| NANO/BTC |      17 |           1.26 |          21.39 |       0.00107058 |          10.70 | 1:55:00      |    10     0     7   58.5 |
+| NEO/BTC  |      23 |           0.82 |          18.97 |       0.00094936 |           9.48 | 2:59:00      |    10     0    13   43.5 |
+| REQ/BTC  |       9 |           1.17 |          10.54 |       0.00052734 |           5.27 | 3:47:00      |     4     0     5   44.4 |
+| XLM/BTC  |      16 |           1.22 |          19.54 |       0.00097800 |           9.77 | 3:15:00      |     7     0     9   43.8 |
+| XMR/BTC  |      23 |          -0.18 |          -4.13 |      -0.00020696 |          -2.07 | 5:30:00      |    12     0    11   52.2 |
+| XRP/BTC  |      35 |           0.66 |          22.96 |       0.00114897 |          11.48 | 3:49:00      |    12     0    23   34.3 |
+| ZEC/BTC  |      22 |          -0.46 |         -10.18 |      -0.00050971 |          -5.09 | 2:22:00      |     7     0    15   31.8 |
+| TOTAL    |     429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00      |   186     0   243   43.4 |
+========================================================= EXIT REASON STATS ==========================================================
+| Exit Reason        |   Exits |  Wins |  Draws |  Losses |
+|:-------------------|--------:|------:|-------:|--------:|
+| trailing_stop_loss |     205 |   150 |      0 |      55 |
+| stop_loss          |     166 |     0 |      0 |     166 |
+| exit_signal        |      56 |    36 |      0 |      20 |
+| force_exit         |       2 |     0 |      0 |       2 |
+====================================================== LEFT OPEN TRADES REPORT ======================================================
+| Pair     |  Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Win Draw Loss Win% |
+|:---------|---------:|---------------:|---------------:|-----------------:|---------------:|:---------------|--------------------:|
+| ADA/BTC  |        1 |           0.89 |           0.89 |       0.00004434 |           0.44 | 6:00:00        |    1    0    0  100 |
+| LTC/BTC  |        1 |           0.68 |           0.68 |       0.00003421 |           0.34 | 2:00:00        |    1    0    0  100 |
+| TOTAL    |        2 |           0.78 |           1.57 |       0.00007855 |           0.78 | 4:00:00        |    2    0    0  100 |
+================== SUMMARY METRICS ==================
+| Metric                      | Value               |
+|-----------------------------+---------------------|
+| Backtesting from            | 2019-01-01 00:00:00 |
+| Backtesting to              | 2019-05-01 00:00:00 |
+| Max open trades             | 3                   |
+|                             |                     |
+| Total/Daily Avg Trades      | 429 / 3.575         |
+| Starting balance            | 0.01000000 BTC      |
+| Final balance               | 0.01762792 BTC      |
+| Absolute profit             | 0.00762792 BTC      |
+| Total profit %              | 76.2%               |
+| CAGR %                      | 460.87%             |
+| Profit factor               | 1.11                |
+| Avg. stake amount           | 0.001      BTC      |
+| Total trade volume          | 0.429      BTC      |
+|                             |                     |
+| Long / Short                | 352 / 77            |
+| Total profit Long %         | 1250.58%            |
+| Total profit Short %        | -15.02%             |
+| Absolute profit Long        | 0.00838792 BTC      |
+| Absolute profit Short       | -0.00076 BTC        |
+|                             |                     |
+| Best Pair                   | LSK/BTC 26.26%      |
+| Worst Pair                  | ZEC/BTC -10.18%     |
+| Best Trade                  | LSK/BTC 4.25%       |
+| Worst Trade                 | ZEC/BTC -10.25%     |
+| Best day                    | 0.00076 BTC         |
+| Worst day                   | -0.00036 BTC        |
+| Days win/draw/lose          | 12 / 82 / 25        |
+| Avg. Duration Winners       | 4:23:00             |
+| Avg. Duration Loser         | 6:55:00             |
+| Rejected Entry signals      | 3089                |
+| Entry/Exit Timeouts         | 0 / 0               |
+| Canceled Trade Entries      | 34                  |
+| Canceled Entry Orders       | 123                 |
+| Replaced Entry Orders       | 89                  |
+|                             |                     |
+| Min balance                 | 0.00945123 BTC      |
+| Max balance                 | 0.01846651 BTC      |
+| Max % of account underwater | 25.19%              |
+| Absolute Drawdown (Account) | 13.33%              |
+| Drawdown                    | 0.0015 BTC          |
+| Drawdown high               | 0.0013 BTC          |
+| Drawdown low                | -0.0002 BTC         |
+| Drawdown Start              | 2019-02-15 14:10:00 |
+| Drawdown End                | 2019-04-11 18:15:00 |
+| Market change               | -5.88%              |
+=====================================================
+</code></pre></div>
+<h3 id="backtesting-report-table">Backtesting report table<a class="headerlink" href="#backtesting-report-table" title="Permanent link">&para;</a></h3>
+<p>The 1<sup>st</sup> table contains all trades the bot made, including "left open trades".</p>
+<p>The last line will give you the overall performance of your strategy,
+here:</p>
+<div class="highlight"><pre><span></span><code>| TOTAL    |    429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00      |   186     0   243   43.4 |
+</code></pre></div>
+<p>The bot has made <code>429</code> trades for an average duration of <code>4:12:00</code>, with a performance of <code>76.20%</code> (profit), that means it has
+earned a total of <code>0.00762792 BTC</code> starting with a capital of 0.01 BTC.</p>
+<p>The column <code>Avg Profit %</code> shows the average profit for all trades made while the column <code>Cum Profit %</code> sums up all the profits/losses.
+The column <code>Tot Profit %</code> shows instead the total profit % in relation to the starting balance.
+In the above results, we have a starting balance of 0.01 BTC and an absolute profit of 0.00762792 BTC - so the <code>Tot Profit %</code> will be <code>(0.00762792 / 0.01) * 100 ~= 76.2%</code>.</p>
+<p>Your strategy performance is influenced by your entry strategy, your exit strategy, and also by the <code>minimal_roi</code> and <code>stop_loss</code> you have set.</p>
+<p>For example, if your <code>minimal_roi</code> is only <code>"0":  0.01</code> you cannot expect the bot to make more profit than 1% (because it will exit every time a trade reaches 1%).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;minimal_roi&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;0&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.01</span>
+<span class="p">},</span>
+</code></pre></div>
+<p>On the other hand, if you set a too high <code>minimal_roi</code> like <code>"0":  0.55</code>
+(55%), there is almost no chance that the bot will ever reach this profit.
+Hence, keep in mind that your performance is an integral mix of all different elements of the strategy, your configuration, and the crypto-currency pairs you have set up.</p>
+<h3 id="exit-reasons-table">Exit reasons table<a class="headerlink" href="#exit-reasons-table" title="Permanent link">&para;</a></h3>
+<p>The 2<sup>nd</sup> table contains a recap of exit reasons.
+This table can tell you which area needs some additional work (e.g. all or many of the <code>exit_signal</code> trades are losses, so you should work on improving the exit signal, or consider disabling it).</p>
+<h3 id="left-open-trades-table">Left open trades table<a class="headerlink" href="#left-open-trades-table" title="Permanent link">&para;</a></h3>
+<p>The 3<sup>rd</sup> table contains all trades the bot had to <code>force_exit</code> at the end of the backtesting period to present you the full picture.
+This is necessary to simulate realistic behavior, since the backtest period has to end at some point, while realistically, you could leave the bot running forever.
+These trades are also included in the first table, but are also shown separately in this table for clarity.</p>
+<h3 id="summary-metrics">Summary metrics<a class="headerlink" href="#summary-metrics" title="Permanent link">&para;</a></h3>
+<p>The last element of the backtest report is the summary metrics table.
+It contains some useful key metrics about performance of your strategy on backtesting data.</p>
+<div class="highlight"><pre><span></span><code>================== SUMMARY METRICS ==================
+| Metric                      | Value               |
+|-----------------------------+---------------------|
+| Backtesting from            | 2019-01-01 00:00:00 |
+| Backtesting to              | 2019-05-01 00:00:00 |
+| Max open trades             | 3                   |
+|                             |                     |
+| Total/Daily Avg Trades      | 429 / 3.575         |
+| Starting balance            | 0.01000000 BTC      |
+| Final balance               | 0.01762792 BTC      |
+| Absolute profit             | 0.00762792 BTC      |
+| Total profit %              | 76.2%               |
+| CAGR %                      | 460.87%             |
+| Profit factor               | 1.11                |
+| Avg. stake amount           | 0.001      BTC      |
+| Total trade volume          | 0.429      BTC      |
+|                             |                     |
+| Long / Short                | 352 / 77            |
+| Total profit Long %         | 1250.58%            |
+| Total profit Short %        | -15.02%             |
+| Absolute profit Long        | 0.00838792 BTC      |
+| Absolute profit Short       | -0.00076 BTC        |
+|                             |                     |
+| Best Pair                   | LSK/BTC 26.26%      |
+| Worst Pair                  | ZEC/BTC -10.18%     |
+| Best Trade                  | LSK/BTC 4.25%       |
+| Worst Trade                 | ZEC/BTC -10.25%     |
+| Best day                    | 0.00076 BTC         |
+| Worst day                   | -0.00036 BTC        |
+| Days win/draw/lose          | 12 / 82 / 25        |
+| Avg. Duration Winners       | 4:23:00             |
+| Avg. Duration Loser         | 6:55:00             |
+| Rejected Entry signals      | 3089                |
+| Entry/Exit Timeouts         | 0 / 0               |
+| Canceled Trade Entries      | 34                  |
+| Canceled Entry Orders       | 123                 |
+| Replaced Entry Orders       | 89                  |
+|                             |                     |
+| Min balance                 | 0.00945123 BTC      |
+| Max balance                 | 0.01846651 BTC      |
+| Max % of account underwater | 25.19%              |
+| Absolute Drawdown (Account) | 13.33%              |
+| Drawdown                    | 0.0015 BTC          |
+| Drawdown high               | 0.0013 BTC          |
+| Drawdown low                | -0.0002 BTC         |
+| Drawdown Start              | 2019-02-15 14:10:00 |
+| Drawdown End                | 2019-04-11 18:15:00 |
+| Market change               | -5.88%              |
+=====================================================
+</code></pre></div>
+<ul>
+<li><code>Backtesting from</code> / <code>Backtesting to</code>: Backtesting range (usually defined with the <code>--timerange</code> option).</li>
+<li><code>Max open trades</code>: Setting of <code>max_open_trades</code> (or <code>--max-open-trades</code>) - or number of pairs in the pairlist (whatever is lower).</li>
+<li><code>Total/Daily Avg Trades</code>: Identical to the total trades of the backtest output table / Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).</li>
+<li><code>Starting balance</code>: Start balance - as given by dry-run-wallet (config or command line).</li>
+<li><code>Final balance</code>: Final balance - starting balance + absolute profit.</li>
+<li><code>Absolute profit</code>: Profit made in stake currency.</li>
+<li><code>Total profit %</code>: Total profit. Aligned to the <code>TOTAL</code> row's <code>Tot Profit %</code> from the first table. Calculated as <code>(End capital − Starting capital) / Starting capital</code>.</li>
+<li><code>CAGR %</code>: Compound annual growth rate.</li>
+<li><code>Profit factor</code>: profit / loss.</li>
+<li><code>Avg. stake amount</code>: Average stake amount, either <code>stake_amount</code> or the average when using dynamic stake amount.</li>
+<li><code>Total trade volume</code>: Volume generated on the exchange to reach the above profit.</li>
+<li><code>Best Pair</code> / <code>Worst Pair</code>: Best and worst performing pair, and it's corresponding <code>Cum Profit %</code>.</li>
+<li><code>Best Trade</code> / <code>Worst Trade</code>: Biggest single winning trade and biggest single losing trade.</li>
+<li><code>Best day</code> / <code>Worst day</code>: Best and worst day based on daily profit.</li>
+<li><code>Days win/draw/lose</code>: Winning / Losing days (draws are usually days without closed trade).</li>
+<li><code>Avg. Duration Winners</code> / <code>Avg. Duration Loser</code>: Average durations for winning and losing trades.</li>
+<li><code>Rejected Entry signals</code>: Trade entry signals that could not be acted upon due to <code>max_open_trades</code> being reached.</li>
+<li><code>Entry/Exit Timeouts</code>: Entry/exit orders which did not fill (only applicable if custom pricing is used).</li>
+<li><code>Canceled Trade Entries</code>: Number of trades that have been canceled by user request via <code>adjust_entry_price</code>.</li>
+<li><code>Canceled Entry Orders</code>: Number of entry orders that have been canceled by user request via <code>adjust_entry_price</code>.</li>
+<li><code>Replaced Entry Orders</code>: Number of entry orders that have been replaced by user request via <code>adjust_entry_price</code>.</li>
+<li><code>Min balance</code> / <code>Max balance</code>: Lowest and Highest Wallet balance during the backtest period.</li>
+<li><code>Max % of account underwater</code>: Maximum percentage your account has decreased from the top since the simulation started.
+Calculated as the maximum of <code>(Max Balance - Current Balance) / (Max Balance)</code>.</li>
+<li><code>Absolute Drawdown (Account)</code>: Maximum Account Drawdown experienced. Calculated as <code>(Absolute Drawdown) / (DrawdownHigh + startingBalance)</code>.</li>
+<li><code>Drawdown</code>: Maximum, absolute drawdown experienced. Difference between Drawdown High and Subsequent Low point.</li>
+<li><code>Drawdown high</code> / <code>Drawdown low</code>: Profit at the beginning and end of the largest drawdown period. A negative low value means initial capital lost.</li>
+<li><code>Drawdown Start</code> / <code>Drawdown End</code>: Start and end datetime for this largest drawdown (can also be visualized via the <code>plot-dataframe</code> sub-command).</li>
+<li><code>Market change</code>: Change of the market during the backtest period. Calculated as average of all pairs changes from the first to the last candle using the "close" column.</li>
+<li><code>Long / Short</code>: Split long/short values (Only shown when short trades were made).</li>
+<li><code>Total profit Long %</code> / <code>Absolute profit Long</code>: Profit long trades only (Only shown when short trades were made).</li>
+<li><code>Total profit Short %</code> / <code>Absolute profit Short</code>: Profit short trades only (Only shown when short trades were made).</li>
+</ul>
+<h3 id="daily-weekly-monthly-breakdown">Daily / Weekly / Monthly breakdown<a class="headerlink" href="#daily-weekly-monthly-breakdown" title="Permanent link">&para;</a></h3>
+<p>You can get an overview over daily / weekly or monthly results by using the <code>--breakdown &lt;&gt;</code> switch.</p>
+<p>To visualize daily and weekly breakdowns, you can use the following:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>MyAwesomeStrategy<span class="w"> </span>--breakdown<span class="w"> </span>day<span class="w"> </span>week
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">======================== DAY BREAKDOWN =========================</span>
+<span class="go">|        Day |   Tot Profit USDT |   Wins |   Draws |   Losses |</span>
+<span class="go">|------------+-------------------+--------+---------+----------|</span>
+<span class="go">| 03/07/2021 |           200.0   |      2 |       0 |        0 |</span>
+<span class="go">| 04/07/2021 |           -50.31  |      0 |       0 |        2 |</span>
+<span class="go">| 05/07/2021 |           220.611 |      3 |       2 |        0 |</span>
+<span class="go">| 06/07/2021 |           150.974 |      3 |       0 |        2 |</span>
+<span class="go">| 07/07/2021 |           -70.193 |      1 |       0 |        2 |</span>
+<span class="go">| 08/07/2021 |           212.413 |      2 |       0 |        3 |</span>
+</code></pre></div>
+<p>The output will show a table containing the realized absolute Profit (in stake currency) for the given timeperiod, as well as wins, draws and losses that materialized (closed) on this day. Below that there will be a second table for the summarized values of weeks indicated by the date of the closing Sunday. The same would apply to a monthly breakdown indicated by the last day of the month.</p>
+<h3 id="backtest-result-caching">Backtest result caching<a class="headerlink" href="#backtest-result-caching" title="Permanent link">&para;</a></h3>
+<p>To save time, by default backtest will reuse a cached result from within the last day when the backtested strategy and config match that of a previous backtest. To force a new backtest despite existing result for an identical run specify <code>--cache none</code> parameter.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Caching is automatically disabled for open-ended timeranges (<code>--timerange 20210101-</code>), as freqtrade cannot ensure reliably that the underlying data didn't change. It can also use cached results where it shouldn't if the original backtest had missing data at the end, which was fixed by downloading more data.
+In this instance, please use <code>--cache none</code> once to force a fresh backtest.</p>
+</div>
+<h3 id="further-backtest-result-analysis">Further backtest-result analysis<a class="headerlink" href="#further-backtest-result-analysis" title="Permanent link">&para;</a></h3>
+<p>To further analyze your backtest results, you can <a href="#exporting-trades-to-file">export the trades</a>.
+You can then load the trades to perform further analysis as shown in the <a href="../data-analysis/#backtesting">data analysis</a> backtesting section.</p>
+<h2 id="assumptions-made-by-backtesting">Assumptions made by backtesting<a class="headerlink" href="#assumptions-made-by-backtesting" title="Permanent link">&para;</a></h2>
+<p>Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:</p>
+<ul>
+<li>Exchange <a href="#trading-limits-in-backtesting">trading limits</a> are respected</li>
+<li>Entries happen at open-price</li>
+<li>All orders are filled at the requested price (no slippage, no unfilled orders)</li>
+<li>Exit-signal exits happen at open-price of the consecutive candle</li>
+<li>Exit-signal is favored over Stoploss, because exit-signals are assumed to trigger on candle's open</li>
+<li>ROI<ul>
+<li>exits are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the exit will be at 2%)</li>
+<li>exits are never "below the candle", so a ROI of 2% may result in a exit at 2.4% if low was at 2.4% profit</li>
+<li>Force-exits caused by <code>&lt;N&gt;=-1</code> ROI entries use low as exit value, unless N falls on the candle open (e.g. <code>120: -1</code> for 1h candles)</li>
+</ul>
+</li>
+<li>Stoploss exits happen exactly at stoploss price, even if low was lower, but the loss will be <code>2 * fees</code> higher than the stoploss price</li>
+<li>Stoploss is evaluated before ROI within one candle. So you can often see more trades with the <code>stoploss</code> exit reason comparing to the results obtained with the same strategy in the Dry Run/Live Trade modes</li>
+<li>Low happens before high for stoploss, protecting capital first</li>
+<li>Trailing stoploss<ul>
+<li>Trailing Stoploss is only adjusted if it's below the candle's low (otherwise it would be triggered)</li>
+<li>On trade entry candles that trigger trailing stoploss, the "minimum offset" (<code>stop_positive_offset</code>) is assumed (instead of high) - and the stop is calculated from this point. This rule is NOT applicable to custom-stoploss scenarios, since there's no information about the stoploss logic available.</li>
+<li>High happens first - adjusting stoploss</li>
+<li>Low uses the adjusted stoploss (so exits with large high-low difference are backtested correctly)</li>
+<li>ROI applies before trailing-stop, ensuring profits are "top-capped" at ROI if both ROI and trailing stop applies</li>
+</ul>
+</li>
+<li>Exit-reason does not explain if a trade was positive or negative, just what triggered the exit (this can look odd if negative ROI values are used)</li>
+<li>Evaluation sequence (if multiple signals happen on the same candle)<ul>
+<li>Exit-signal</li>
+<li>Stoploss</li>
+<li>ROI</li>
+<li>Trailing stoploss</li>
+</ul>
+</li>
+</ul>
+<p>Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will <strong>never</strong> replace running a strategy in dry-run mode.
+Also, keep in mind that past results don't guarantee future success.</p>
+<p>In addition to the above assumptions, strategy authors should carefully read the <a href="../strategy-customization/#common-mistakes-when-developing-strategies">Common Mistakes</a> section, to avoid using data in backtesting which is not available in real market conditions.</p>
+<h3 id="trading-limits-in-backtesting">Trading limits in backtesting<a class="headerlink" href="#trading-limits-in-backtesting" title="Permanent link">&para;</a></h3>
+<p>Exchanges have certain trading limits, like minimum base currency, or minimum stake (quote) currency.
+These limits are usually listed in the exchange documentation as "trading rules" or similar.</p>
+<p>Backtesting (as well as live and dry-run) does honor these limits, and will ensure that a stoploss can be placed below this value - so the value will be slightly higher than what the exchange specifies.
+Freqtrade has however no information about historic limits.</p>
+<p>This can lead to situations where trading-limits are inflated by using a historic price, resulting in minimum amounts &gt; 50$.</p>
+<p>For example:</p>
+<p>BTC minimum tradable amount is 0.001.
+BTC trades at 22.000$ today (0.001 BTC is related to this) - but the backtesting period includes prices as high as 50.000$.
+Today's minimum would be <code>0.001 * 22_000</code> - or 22$.<br />
+However the limit could also be 50$ - based on <code>0.001 * 50_000</code> in some historic setting.</p>
+<h4 id="trading-precision-limits">Trading precision limits<a class="headerlink" href="#trading-precision-limits" title="Permanent link">&para;</a></h4>
+<p>Most exchanges pose precision limits on both price and amounts, so you cannot buy 1.0020401 of a pair, or at a price of 1.24567123123.<br />
+Instead, these prices and amounts will be rounded or truncated (based on the exchange definition) to the defined trading precision.
+The above values may for example be rounded to an amount of 1.002, and a price of 1.24567.</p>
+<p>These precision values are based on current exchange limits (as described in the <a href="#trading-limits-in-backtesting">above section</a>), as historic precision limits are not available.</p>
+<h2 id="improved-backtest-accuracy">Improved backtest accuracy<a class="headerlink" href="#improved-backtest-accuracy" title="Permanent link">&para;</a></h2>
+<p>One big limitation of backtesting is it's inability to know how prices moved intra-candle (was high before close, or viceversa?).
+So assuming you run backtesting with a 1h timeframe, there will be 4 prices for that candle (Open, High, Low, Close).</p>
+<p>While backtesting does take some assumptions (read above) about this - this can never be perfect, and will always be biased in one way or the other.
+To mitigate this, freqtrade can use a lower (faster) timeframe to simulate intra-candle movements.</p>
+<p>To utilize this, you can append <code>--timeframe-detail 5m</code> to your regular backtesting command.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--timeframe<span class="w"> </span>1h<span class="w"> </span>--timeframe-detail<span class="w"> </span>5m
+</code></pre></div>
+<p>This will load 1h data as well as 5m data for the timeframe. The strategy will be analyzed with the 1h timeframe - and for every "open trade candle" (candles where a trade is open) the 5m data will be used to simulate intra-candle movements.
+All callback functions (<code>custom_exit()</code>, <code>custom_stoploss()</code>, ... ) will be running for each 5m candle once the trade is opened (so 12 times in the above example of 1h timeframe, and 5m detailed timeframe).</p>
+<p><code>--timeframe-detail</code> must be smaller than the original timeframe, otherwise backtesting will fail to start.</p>
+<p>Obviously this will require more memory (5m data is bigger than 1h data), and will also impact runtime (depending on the amount of trades and trade durations).
+Also, data must be available / downloaded already.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can use this function as the last part of strategy development, to ensure your strategy is not exploiting one of the <a href="#assumptions-made-by-backtesting">backtesting assumptions</a>. Strategies that perform similarly well with this mode have a good chance to perform well in dry/live modes too (although only forward-testing (dry-mode) can really confirm a strategy).</p>
+</div>
+<h2 id="backtesting-multiple-strategies">Backtesting multiple strategies<a class="headerlink" href="#backtesting-multiple-strategies" title="Permanent link">&para;</a></h2>
+<p>To compare multiple strategies, a list of Strategies can be provided to backtesting.</p>
+<p>This is limited to 1 timeframe value per run. However, data is only loaded once from disk so if you have multiple
+strategies you'd like to compare, this will give a nice runtime boost.</p>
+<p>All listed Strategies need to be in the same directory.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20180401</span>-20180410<span class="w"> </span>--timeframe<span class="w"> </span>5m<span class="w"> </span>--strategy-list<span class="w"> </span>Strategy001<span class="w"> </span>Strategy002<span class="w"> </span>--export<span class="w"> </span>trades
+</code></pre></div>
+<p>This will save the results to <code>user_data/backtest_results/backtest-result-&lt;strategy&gt;.json</code>, injecting the strategy-name into the target filename.
+There will be an additional table comparing win/losses of the different strategies (identical to the "Total" row in the first table).
+Detailed output for all strategies one after the other will be available, so make sure to scroll up to see the details per strategy.</p>
+<div class="highlight"><pre><span></span><code>=========================================================== STRATEGY SUMMARY ===========================================================================
+| Strategy    |  Entries |   Avg Profit % |   Cum Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Wins |  Draws | Losses | Drawdown % |
+|:------------|---------:|---------------:|---------------:|-----------------:|---------------:|:---------------|------:|-------:|-------:|-----------:|
+| Strategy1   |      429 |           0.36 |         152.41 |       0.00762792 |          76.20 | 4:12:00        |   186 |      0 |    243 |       45.2 |
+| Strategy2   |     1487 |          -0.13 |        -197.58 |      -0.00988917 |         -98.79 | 4:43:00        |   662 |      0 |    825 |     241.68 |
+</code></pre></div>
+<h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
+<p>Great, your strategy is profitable. What if the bot can give your the optimal parameters to use for your strategy?
+Your next step is to learn <a href="../hyperopt/">how to find optimal parameters with Hyperopt</a></p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../data-download/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Data Downloading" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Data Downloading
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../hyperopt/" class="md-footer__link md-footer__link--next" aria-label="Next: Hyperopt" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Hyperopt
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+    <!-- Load binance SDK -->
+    <script async defer src="https://public.bnbstatic.com/static/js/broker-sdk/broker-sdk@1.0.0.min.js"></script>
+
+    <script>
+      window.onload = function () {
+        var sidebar = document.getElementById('widget-wrapper')
+        var newDiv = document.createElement("div");
+        newDiv.id = "widget";
+        try {
+          sidebar.prepend(newDiv);
+
+          window.binanceBrokerPortalSdk.initBrokerSDK('#widget', {
+            apiHost: 'https://www.binance.com',
+            brokerId: 'R4BD3S82',
+            slideTime: 4e4,
+          });
+        } catch(err) {
+          console.log(err)
+        }
+      }
+    </script>
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["search.share"], "search": "../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.8492ddcf.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
