@@ -1,0 +1,2474 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2023.9/installation/">
+      
+      
+        <link rel="prev" href="../docker_quickstart/">
+      
+      
+        <link rel="next" href="../windows_installation/">
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.1">
+    
+    
+      
+        <title>Linux/MacOS/Raspberry - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.72749a73.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.a5377069.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#installation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Linux/MacOS/Raspberry
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#information" class="md-nav__link">
+    Information
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    Requirements
+  </a>
+  
+    <nav class="md-nav" aria-label="Requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-guide" class="md-nav__link">
+    Install guide
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-code" class="md-nav__link">
+    Install code
+  </a>
+  
+    <nav class="md-nav" aria-label="Install code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-necessary-dependencies" class="md-nav__link">
+    Install necessary dependencies
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freqtrade-repository" class="md-nav__link">
+    Freqtrade repository
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#script-installation" class="md-nav__link">
+    Script Installation
+  </a>
+  
+    <nav class="md-nav" aria-label="Script Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-setupsh-install-linuxmacos" class="md-nav__link">
+    Use /setup.sh -install (Linux/MacOS)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activate-your-virtual-environment" class="md-nav__link">
+    Activate your virtual environment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#congratulations" class="md-nav__link">
+    Congratulations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-options-of-setupsh-script" class="md-nav__link">
+    Other options of /setup.sh script
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-installation" class="md-nav__link">
+    Manual Installation
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-ta-lib" class="md-nav__link">
+    Install TA-Lib
+  </a>
+  
+    <nav class="md-nav" aria-label="Install TA-Lib">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ta-lib-script-installation" class="md-nav__link">
+    TA-Lib script installation
+  </a>
+  
+    <nav class="md-nav" aria-label="TA-Lib script installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ta-lib-manual-installation" class="md-nav__link">
+    TA-Lib manual installation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-python-virtual-environment-virtualenv" class="md-nav__link">
+    Setup Python virtual environment (virtualenv)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-python-dependencies" class="md-nav__link">
+    Install python dependencies
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#congratulations_1" class="md-nav__link">
+    Congratulations
+  </a>
+  
+    <nav class="md-nav" aria-label="Congratulations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optional-post-installation-tasks" class="md-nav__link">
+    (Optional) Post-installation Tasks
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-with-conda" class="md-nav__link">
+    Installation with Conda
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation with Conda">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-conda" class="md-nav__link">
+    What is Conda?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installation-with-conda_1" class="md-nav__link">
+    Installation with conda
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation with conda">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-conda" class="md-nav__link">
+    Install Conda
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqtrade-download" class="md-nav__link">
+    Freqtrade download
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqtrade-install-conda-environment" class="md-nav__link">
+    Freqtrade install: Conda Environment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enterexit-freqtrade-environment" class="md-nav__link">
+    Enter/exit freqtrade environment
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#congratulations_2" class="md-nav__link">
+    Congratulations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#important-shortcuts" class="md-nav__link">
+    Important shortcuts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#further-info-on-anaconda" class="md-nav__link">
+    Further info on anaconda
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#you-are-ready" class="md-nav__link">
+    You are ready
+  </a>
+  
+    <nav class="md-nav" aria-label="You are ready">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initialize-the-configuration" class="md-nav__link">
+    Initialize the configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-the-bot" class="md-nav__link">
+    Start the Bot
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-problem-command-not-found" class="md-nav__link">
+    Common problem: "command not found"
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-installation-error" class="md-nav__link">
+    MacOS installation error
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Callbacks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API & FreqUI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+        
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    FreqAI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            FreqAI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter table
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feature engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running FreqAI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reinforcement Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Short / Leverage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Sub-commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtest analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
+        
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Trade Object
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lookahead-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lookahead analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recursive-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Recursive analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Producer/Consumer mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheat-sheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating Freqtrade
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#information" class="md-nav__link">
+    Information
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    Requirements
+  </a>
+  
+    <nav class="md-nav" aria-label="Requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-guide" class="md-nav__link">
+    Install guide
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-code" class="md-nav__link">
+    Install code
+  </a>
+  
+    <nav class="md-nav" aria-label="Install code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-necessary-dependencies" class="md-nav__link">
+    Install necessary dependencies
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freqtrade-repository" class="md-nav__link">
+    Freqtrade repository
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#script-installation" class="md-nav__link">
+    Script Installation
+  </a>
+  
+    <nav class="md-nav" aria-label="Script Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-setupsh-install-linuxmacos" class="md-nav__link">
+    Use /setup.sh -install (Linux/MacOS)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activate-your-virtual-environment" class="md-nav__link">
+    Activate your virtual environment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#congratulations" class="md-nav__link">
+    Congratulations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-options-of-setupsh-script" class="md-nav__link">
+    Other options of /setup.sh script
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-installation" class="md-nav__link">
+    Manual Installation
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-ta-lib" class="md-nav__link">
+    Install TA-Lib
+  </a>
+  
+    <nav class="md-nav" aria-label="Install TA-Lib">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ta-lib-script-installation" class="md-nav__link">
+    TA-Lib script installation
+  </a>
+  
+    <nav class="md-nav" aria-label="TA-Lib script installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ta-lib-manual-installation" class="md-nav__link">
+    TA-Lib manual installation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-python-virtual-environment-virtualenv" class="md-nav__link">
+    Setup Python virtual environment (virtualenv)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-python-dependencies" class="md-nav__link">
+    Install python dependencies
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#congratulations_1" class="md-nav__link">
+    Congratulations
+  </a>
+  
+    <nav class="md-nav" aria-label="Congratulations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optional-post-installation-tasks" class="md-nav__link">
+    (Optional) Post-installation Tasks
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-with-conda" class="md-nav__link">
+    Installation with Conda
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation with Conda">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-conda" class="md-nav__link">
+    What is Conda?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installation-with-conda_1" class="md-nav__link">
+    Installation with conda
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation with conda">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-conda" class="md-nav__link">
+    Install Conda
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqtrade-download" class="md-nav__link">
+    Freqtrade download
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freqtrade-install-conda-environment" class="md-nav__link">
+    Freqtrade install: Conda Environment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enterexit-freqtrade-environment" class="md-nav__link">
+    Enter/exit freqtrade environment
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#congratulations_2" class="md-nav__link">
+    Congratulations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#important-shortcuts" class="md-nav__link">
+    Important shortcuts
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#further-info-on-anaconda" class="md-nav__link">
+    Further info on anaconda
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#you-are-ready" class="md-nav__link">
+    You are ready
+  </a>
+  
+    <nav class="md-nav" aria-label="You are ready">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initialize-the-configuration" class="md-nav__link">
+    Initialize the configuration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#start-the-bot" class="md-nav__link">
+    Start the Bot
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-problem-command-not-found" class="md-nav__link">
+    Common problem: "command not found"
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-installation-error" class="md-nav__link">
+    MacOS installation error
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
+<p>This page explains how to prepare your environment for running the bot.</p>
+<p>The freqtrade documentation describes various ways to install freqtrade</p>
+<ul>
+<li><a href="../docker_quickstart/">Docker images</a> (separate page)</li>
+<li><a href="#script-installation">Script Installation</a></li>
+<li><a href="#manual-installation">Manual Installation</a></li>
+<li><a href="#installation-with-conda">Installation with Conda</a></li>
+</ul>
+<p>Please consider using the prebuilt <a href="../docker_quickstart/">docker images</a> to get started quickly while evaluating how freqtrade works.</p>
+<hr />
+<h2 id="information">Information<a class="headerlink" href="#information" title="Permanent link">&para;</a></h2>
+<p>For Windows installation, please use the <a href="../windows_installation/">windows installation guide</a>.</p>
+<p>The easiest way to install and run Freqtrade is to clone the bot Github repository and then run the <code>./setup.sh</code> script, if it's available for your platform.</p>
+<div class="admonition note">
+<p class="admonition-title">Version considerations</p>
+<p>When cloning the repository the default working branch has the name <code>develop</code>. This branch contains all last features (can be considered as relatively stable, thanks to automated tests).
+The <code>stable</code> branch contains the code of the last release (done usually once per month on an approximately one week old snapshot of the <code>develop</code> branch to prevent packaging bugs, so potentially it's more stable).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Python3.9 or higher and the corresponding <code>pip</code> are assumed to be available. The install-script will warn you and stop if that's not the case. <code>git</code> is also needed to clone the Freqtrade repository.<br />
+Also, python headers (<code>python&lt;yourversion&gt;-dev</code> / <code>python&lt;yourversion&gt;-devel</code>) must be available for the installation to complete successfully.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Up-to-date clock</p>
+<p>The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.</p>
+</div>
+<hr />
+<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
+<p>These requirements apply to both <a href="#script-installation">Script Installation</a> and <a href="#manual-installation">Manual Installation</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">ARM64 systems</p>
+<p>If you are running an ARM64 system (like a MacOS M1 or an Oracle VM), please use <a href="../docker_quickstart/">docker</a> to run freqtrade.
+While native installation is possible with some manual effort, this is not supported at the moment.</p>
+</div>
+<h3 id="install-guide">Install guide<a class="headerlink" href="#install-guide" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="http://docs.python-guide.org/en/latest/starting/installation/">Python &gt;= 3.9</a></li>
+<li><a href="https://pip.pypa.io/en/stable/installing/">pip</a></li>
+<li><a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">git</a></li>
+<li><a href="https://virtualenv.pypa.io/en/stable/installation.html">virtualenv</a> (Recommended)</li>
+<li><a href="https://ta-lib.github.io/ta-lib-python/">TA-Lib</a> (install instructions <a href="#install-ta-lib">below</a>)</li>
+</ul>
+<h3 id="install-code">Install code<a class="headerlink" href="#install-code" title="Permanent link">&para;</a></h3>
+<p>We've included/collected install instructions for Ubuntu, MacOS, and Windows. These are guidelines and your success may vary with other distros.
+OS Specific steps are listed first, the <a href="#common">Common</a> section below is necessary for all systems.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Python3.9 or higher and the corresponding pip are assumed to be available.</p>
+</div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Debian/Ubuntu</label><label for="__tabbed_1_2">RaspberryPi/Raspbian</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<h4 id="install-necessary-dependencies">Install necessary dependencies<a class="headerlink" href="#install-necessary-dependencies" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># update repository</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+
+<span class="c1"># install packages</span>
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>python3-pip<span class="w"> </span>python3-venv<span class="w"> </span>python3-dev<span class="w"> </span>python3-pandas<span class="w"> </span>git<span class="w"> </span>curl
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>The following assumes the latest <a href="https://www.raspberrypi.org/downloads/raspbian/">Raspbian Buster lite image</a>.
+This image comes with python3.9 preinstalled, making it easy to get freqtrade up and running.</p>
+<p>Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>python3-venv<span class="w"> </span>libatlas-base-dev<span class="w"> </span>cmake<span class="w"> </span>curl
+<span class="c1"># Use pywheels.org to speed up installation</span>
+sudo<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;[global]\nextra-index-url=https://www.piwheels.org/simple&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>tee<span class="w"> </span>/etc/pip.conf
+
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/freqtrade/freqtrade.git
+<span class="nb">cd</span><span class="w"> </span>freqtrade
+
+bash<span class="w"> </span>setup.sh<span class="w"> </span>-i
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Installation duration</p>
+<p>Depending on your internet speed and the Raspberry Pi version, installation can take multiple hours to complete.
+Due to this, we recommend to use the pre-build docker-image for Raspberry, by following the <a href="../docker_quickstart/">Docker quickstart documentation</a></p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The above does not install hyperopt dependencies. To install these, please use <code>python3 -m pip install -e .[hyperopt]</code>.
+We do not advise to run hyperopt on a Raspberry Pi, since this is a very resource-heavy operation, which should be done on powerful machine.</p>
+</div>
+</div>
+</div>
+</div>
+<hr />
+<h2 id="freqtrade-repository">Freqtrade repository<a class="headerlink" href="#freqtrade-repository" title="Permanent link">&para;</a></h2>
+<p>Freqtrade is an open source crypto-currency trading bot, whose code is hosted on <code>github.com</code></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Download `develop` branch of freqtrade repository</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/freqtrade/freqtrade.git
+
+<span class="c1"># Enter downloaded directory</span>
+<span class="nb">cd</span><span class="w"> </span>freqtrade
+
+<span class="c1"># your choice (1): novice user</span>
+git<span class="w"> </span>checkout<span class="w"> </span>stable
+
+<span class="c1"># your choice (2): advanced user</span>
+git<span class="w"> </span>checkout<span class="w"> </span>develop
+</code></pre></div>
+<p>(1) This command switches the cloned repository to the use of the <code>stable</code> branch. It's not needed, if you wish to stay on the (2) <code>develop</code> branch.</p>
+<p>You may later switch between branches at any time with the <code>git checkout stable</code>/<code>git checkout develop</code> commands.</p>
+<details class="note">
+<summary>Install from pypi</summary>
+<p>An alternative way to install Freqtrade is from <a href="https://pypi.org/project/freqtrade/">pypi</a>. The downside is that this method requires ta-lib to be correctly installed beforehand, and is therefore currently not the recommended way to install Freqtrade.</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>freqtrade
+</code></pre></div>
+</details>
+<hr />
+<h2 id="script-installation">Script Installation<a class="headerlink" href="#script-installation" title="Permanent link">&para;</a></h2>
+<p>First of the ways to install Freqtrade, is to use provided the Linux/MacOS <code>./setup.sh</code> script, which install all dependencies and help you configure the bot.</p>
+<p>Make sure you fulfill the <a href="#requirements">Requirements</a> and have downloaded the <a href="#freqtrade-repository">Freqtrade repository</a>.</p>
+<h3 id="use-setupsh-install-linuxmacos">Use /setup.sh -install (Linux/MacOS)<a class="headerlink" href="#use-setupsh-install-linuxmacos" title="Permanent link">&para;</a></h3>
+<p>If you are on Debian, Ubuntu or MacOS, freqtrade provides the script to install freqtrade.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># --install, Install freqtrade from scratch</span>
+./setup.sh<span class="w"> </span>-i
+</code></pre></div>
+<h3 id="activate-your-virtual-environment">Activate your virtual environment<a class="headerlink" href="#activate-your-virtual-environment" title="Permanent link">&para;</a></h3>
+<p>Each time you open a new terminal, you must run <code>source .venv/bin/activate</code> to activate your virtual environment.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># activate virtual environment</span>
+<span class="nb">source</span><span class="w"> </span>./.venv/bin/activate
+</code></pre></div>
+<h3 id="congratulations">Congratulations<a class="headerlink" href="#congratulations" title="Permanent link">&para;</a></h3>
+<p><a href="#you-are-ready">You are ready</a>, and run the bot</p>
+<h3 id="other-options-of-setupsh-script">Other options of /setup.sh script<a class="headerlink" href="#other-options-of-setupsh-script" title="Permanent link">&para;</a></h3>
+<p>You can as well update, configure and reset the codebase of your bot with <code>./script.sh</code></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># --update, Command git pull to update.</span>
+./setup.sh<span class="w"> </span>-u
+<span class="c1"># --reset, Hard reset your develop/stable branch.</span>
+./setup.sh<span class="w"> </span>-r
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>** --install **
+
+With this option, the script will install the bot and most dependencies:
+You will need to have git and python3.9+ installed beforehand for this to work.
+
+* Mandatory software as: `ta-lib`
+* Setup your virtualenv under `.venv/`
+
+This option is a combination of installation tasks and `--reset`
+
+** --update **
+
+This option will pull the last version of your current branch and update your virtualenv. Run the script with this option periodically to update your bot.
+
+** --reset **
+
+This option will hard reset your branch (only if you are on either `stable` or `develop`) and recreate your virtualenv.
+</code></pre></div>
+<hr />
+<h2 id="manual-installation">Manual Installation<a class="headerlink" href="#manual-installation" title="Permanent link">&para;</a></h2>
+<p>Make sure you fulfill the <a href="#requirements">Requirements</a> and have downloaded the <a href="#freqtrade-repository">Freqtrade repository</a>.</p>
+<h3 id="install-ta-lib">Install TA-Lib<a class="headerlink" href="#install-ta-lib" title="Permanent link">&para;</a></h3>
+<h4 id="ta-lib-script-installation">TA-Lib script installation<a class="headerlink" href="#ta-lib-script-installation" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./build_helpers/install_ta-lib.sh
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This will use the ta-lib tar.gz included in this repository.</p>
+</div>
+<h5 id="ta-lib-manual-installation">TA-Lib manual installation<a class="headerlink" href="#ta-lib-manual-installation" title="Permanent link">&para;</a></h5>
+<p><a href="https://ta-lib.github.io/ta-lib-python/install.html">Official installation guide</a></p>
+<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+tar<span class="w"> </span>xvzf<span class="w"> </span>ta-lib-0.4.0-src.tar.gz
+<span class="nb">cd</span><span class="w"> </span>ta-lib
+sed<span class="w"> </span>-i.bak<span class="w"> </span><span class="s2">&quot;s|0.00000001|0.000000000000000001 |g&quot;</span><span class="w"> </span>src/ta_func/ta_utility.h
+./configure<span class="w"> </span>--prefix<span class="o">=</span>/usr/local
+make
+sudo<span class="w"> </span>make<span class="w"> </span>install
+<span class="c1"># On debian based systems (debian, ubuntu, ...) - updating ldconfig might be necessary.</span>
+sudo<span class="w"> </span>ldconfig<span class="w">  </span>
+<span class="nb">cd</span><span class="w"> </span>..
+rm<span class="w"> </span>-rf<span class="w"> </span>./ta-lib*
+</code></pre></div>
+<h4 id="setup-python-virtual-environment-virtualenv">Setup Python virtual environment (virtualenv)<a class="headerlink" href="#setup-python-virtual-environment-virtualenv" title="Permanent link">&para;</a></h4>
+<p>You will run freqtrade in separated <code>virtual environment</code></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># create virtualenv in directory /freqtrade/.venv</span>
+python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
+
+<span class="c1"># run virtualenv</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</code></pre></div>
+<h4 id="install-python-dependencies">Install python dependencies<a class="headerlink" href="#install-python-dependencies" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
+python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div>
+<h3 id="congratulations_1">Congratulations<a class="headerlink" href="#congratulations_1" title="Permanent link">&para;</a></h3>
+<p><a href="#you-are-ready">You are ready</a>, and run the bot</p>
+<h4 id="optional-post-installation-tasks">(Optional) Post-installation Tasks<a class="headerlink" href="#optional-post-installation-tasks" title="Permanent link">&para;</a></h4>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you run the bot on a server, you should consider using <a href="../docker_quickstart/">Docker</a> or a terminal multiplexer like <code>screen</code> or <a href="https://en.wikipedia.org/wiki/Tmux"><code>tmux</code></a> to avoid that the bot is stopped on logout.</p>
+</div>
+<p>On Linux with software suite <code>systemd</code>, as an optional post-installation task, you may wish to setup the bot to run as a <code>systemd service</code> or configure it to send the log messages to the <code>syslog</code>/<code>rsyslog</code> or <code>journald</code> daemons. See <a href="../advanced-setup/#advanced-logging">Advanced Logging</a> for details.</p>
+<hr />
+<h2 id="installation-with-conda">Installation with Conda<a class="headerlink" href="#installation-with-conda" title="Permanent link">&para;</a></h2>
+<p>Freqtrade can also be installed with Miniconda or Anaconda. We recommend using Miniconda as it's installation footprint is smaller. Conda will automatically prepare and manage the extensive library-dependencies of the Freqtrade program.</p>
+<h3 id="what-is-conda">What is Conda?<a class="headerlink" href="#what-is-conda" title="Permanent link">&para;</a></h3>
+<p>Conda is a package, dependency and environment manager for multiple programming languages: <a href="https://docs.conda.io/projects/conda/en/latest/index.html">conda docs</a></p>
+<h3 id="installation-with-conda_1">Installation with conda<a class="headerlink" href="#installation-with-conda_1" title="Permanent link">&para;</a></h3>
+<h4 id="install-conda">Install Conda<a class="headerlink" href="#install-conda" title="Permanent link">&para;</a></h4>
+<p><a href="https://conda.io/projects/conda/en/latest/user-guide/install/linux.html#install-linux-silent">Installing on linux</a></p>
+<p><a href="https://conda.io/projects/conda/en/latest/user-guide/install/windows.html">Installing on windows</a></p>
+<p>Answer all questions. After installation, it is mandatory to turn your terminal OFF and ON again.</p>
+<h4 id="freqtrade-download">Freqtrade download<a class="headerlink" href="#freqtrade-download" title="Permanent link">&para;</a></h4>
+<p>Download and install freqtrade.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># download freqtrade</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/freqtrade/freqtrade.git
+
+<span class="c1"># enter downloaded directory &#39;freqtrade&#39;</span>
+<span class="nb">cd</span><span class="w"> </span>freqtrade<span class="w">      </span>
+</code></pre></div>
+<h4 id="freqtrade-install-conda-environment">Freqtrade install: Conda Environment<a class="headerlink" href="#freqtrade-install-conda-environment" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>freqtrade<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.11
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Creating Conda Environment</p>
+<p>The conda command <code>create -n</code> automatically installs all nested dependencies for the selected libraries, general structure of installation command is:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># choose your own packages</span>
+conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span><span class="o">[</span>name<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>environment<span class="o">]</span><span class="w"> </span><span class="o">[</span>python<span class="w"> </span>version<span class="o">]</span><span class="w"> </span><span class="o">[</span>packages<span class="o">]</span>
+</code></pre></div>
+</div>
+<h4 id="enterexit-freqtrade-environment">Enter/exit freqtrade environment<a class="headerlink" href="#enterexit-freqtrade-environment" title="Permanent link">&para;</a></h4>
+<p>To check available environments, type</p>
+<div class="highlight"><pre><span></span><code>conda<span class="w"> </span>env<span class="w"> </span>list
+</code></pre></div>
+<p>Enter installed environment</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># enter conda environment</span>
+conda<span class="w"> </span>activate<span class="w"> </span>freqtrade
+
+<span class="c1"># exit conda environment - don&#39;t do it now</span>
+conda<span class="w"> </span>deactivate
+</code></pre></div>
+<p>Install last python dependencies with pip</p>
+<div class="highlight"><pre><span></span><code>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
+python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div>
+<p>Patch conda libta-lib (Linux only)</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Ensure that the environment is active!</span>
+conda<span class="w"> </span>activate<span class="w"> </span>freqtrade
+
+<span class="nb">cd</span><span class="w"> </span>build_helpers
+bash<span class="w"> </span>install_ta-lib.sh<span class="w"> </span><span class="si">${</span><span class="nv">CONDA_PREFIX</span><span class="si">}</span><span class="w"> </span>nosudo
+</code></pre></div>
+<h3 id="congratulations_2">Congratulations<a class="headerlink" href="#congratulations_2" title="Permanent link">&para;</a></h3>
+<p><a href="#you-are-ready">You are ready</a>, and run the bot</p>
+<h3 id="important-shortcuts">Important shortcuts<a class="headerlink" href="#important-shortcuts" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># list installed conda environments</span>
+conda<span class="w"> </span>env<span class="w"> </span>list
+
+<span class="c1"># activate base environment</span>
+conda<span class="w"> </span>activate
+
+<span class="c1"># activate freqtrade environment</span>
+conda<span class="w"> </span>activate<span class="w"> </span>freqtrade
+
+<span class="c1">#deactivate any conda environments</span>
+conda<span class="w"> </span>deactivate<span class="w">                              </span>
+</code></pre></div>
+<h3 id="further-info-on-anaconda">Further info on anaconda<a class="headerlink" href="#further-info-on-anaconda" title="Permanent link">&para;</a></h3>
+<div class="admonition info">
+<p class="admonition-title">New heavy packages</p>
+<p>It may happen that creating a new Conda environment, populated with selected packages at the moment of creation takes less time than installing a large, heavy library or application, into previously set environment.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">pip install within conda</p>
+<p>The documentation of conda says that pip should NOT be used within conda, because internal problems can occur.
+However, they are rare. <a href="https://www.anaconda.com/blog/using-pip-in-a-conda-environment">Anaconda Blogpost</a></p>
+<p>Nevertheless, that is why, the <code>conda-forge</code> channel is preferred:</p>
+<ul>
+<li>more libraries are available (less need for <code>pip</code>)</li>
+<li><code>conda-forge</code> works better with <code>pip</code></li>
+<li>the libraries are newer</li>
+</ul>
+</div>
+<p>Happy trading!</p>
+<hr />
+<h2 id="you-are-ready">You are ready<a class="headerlink" href="#you-are-ready" title="Permanent link">&para;</a></h2>
+<p>You've made it this far, so you have successfully installed freqtrade.</p>
+<h3 id="initialize-the-configuration">Initialize the configuration<a class="headerlink" href="#initialize-the-configuration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Step 1 - Initialize user folder</span>
+freqtrade<span class="w"> </span>create-userdir<span class="w"> </span>--userdir<span class="w"> </span>user_data
+
+<span class="c1"># Step 2 - Create a new configuration file</span>
+freqtrade<span class="w"> </span>new-config<span class="w"> </span>--config<span class="w"> </span>user_data/config.json
+</code></pre></div>
+<p>You are ready to run, read <a href="../configuration/">Bot Configuration</a>, remember to start with <code>dry_run: True</code> and verify that everything is working.</p>
+<p>To learn how to setup your configuration, please refer to the <a href="../configuration/">Bot Configuration</a> documentation page.</p>
+<h3 id="start-the-bot">Start the Bot<a class="headerlink" href="#start-the-bot" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--config<span class="w"> </span>user_data/config.json<span class="w"> </span>--strategy<span class="w"> </span>SampleStrategy
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>You should read through the rest of the documentation, backtest the strategy you're going to use, and use dry-run before enabling trading with real money.</p>
+</div>
+<hr />
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="common-problem-command-not-found">Common problem: "command not found"<a class="headerlink" href="#common-problem-command-not-found" title="Permanent link">&para;</a></h3>
+<p>If you used (1)<code>Script</code> or (2)<code>Manual</code> installation, you need to run the bot in virtual environment. If you get error as below, make sure venv is active.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># if:</span>
+bash:<span class="w"> </span>freqtrade:<span class="w"> </span><span class="nb">command</span><span class="w"> </span>not<span class="w"> </span>found
+
+<span class="c1"># then activate your virtual environment</span>
+<span class="nb">source</span><span class="w"> </span>./.venv/bin/activate
+</code></pre></div>
+<h3 id="macos-installation-error">MacOS installation error<a class="headerlink" href="#macos-installation-error" title="Permanent link">&para;</a></h3>
+<p>Newer versions of MacOS may have installation failed with errors like <code>error: command 'g++' failed with exit status 1</code>.</p>
+<p>This error will require explicit installation of the SDK Headers, which are not installed by default in this version of MacOS.
+For MacOS 10.14, this can be accomplished with the below command.</p>
+<div class="highlight"><pre><span></span><code>open<span class="w"> </span>/Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
+</code></pre></div>
+<p>If this file is inexistent, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../docker_quickstart/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Quickstart with Docker" rel="prev">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Quickstart with Docker
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../windows_installation/" class="md-footer__link md-footer__link--next" aria-label="Next: Windows" rel="next">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Windows
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.a264c092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.4e0fa4ba.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
