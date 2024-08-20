@@ -1,0 +1,1675 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../bot-usage/">
+      
+      
+        <link rel="next" href="../webhook-config/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.30">
+    
+    
+      
+        <title>Telegram - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.3cba04c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#telegram-usage" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Telegram
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup-your-telegram-bot" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup your Telegram bot
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup your Telegram bot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-create-your-telegram-bot" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Create your Telegram bot
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-get-your-user-id" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Get your user id
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telegram-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Telegram commands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telegram-commands-in-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      Telegram commands in action
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Telegram commands in action">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start" class="md-nav__link">
+    <span class="md-ellipsis">
+      /start
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      /stop
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stopbuy" class="md-nav__link">
+    <span class="md-ellipsis">
+      /stopbuy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      /status
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      /status table
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#count" class="md-nav__link">
+    <span class="md-ellipsis">
+      /count
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#profit" class="md-nav__link">
+    <span class="md-ellipsis">
+      /profit
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forcesell" class="md-nav__link">
+    <span class="md-ellipsis">
+      /forcesell
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forcebuy" class="md-nav__link">
+    <span class="md-ellipsis">
+      /forcebuy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      /performance
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#balance" class="md-nav__link">
+    <span class="md-ellipsis">
+      /balance
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily" class="md-nav__link">
+    <span class="md-ellipsis">
+      /daily
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#whitelist" class="md-nav__link">
+    <span class="md-ellipsis">
+      /whitelist
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blacklist-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      /blacklist [pair]
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      /edge
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version" class="md-nav__link">
+    <span class="md-ellipsis">
+      /version
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Subcommands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheatsheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sandbox Testing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup-your-telegram-bot" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup your Telegram bot
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup your Telegram bot">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-create-your-telegram-bot" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Create your Telegram bot
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-get-your-user-id" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Get your user id
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telegram-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Telegram commands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#telegram-commands-in-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      Telegram commands in action
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Telegram commands in action">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start" class="md-nav__link">
+    <span class="md-ellipsis">
+      /start
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      /stop
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stopbuy" class="md-nav__link">
+    <span class="md-ellipsis">
+      /stopbuy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      /status
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      /status table
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#count" class="md-nav__link">
+    <span class="md-ellipsis">
+      /count
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#profit" class="md-nav__link">
+    <span class="md-ellipsis">
+      /profit
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forcesell" class="md-nav__link">
+    <span class="md-ellipsis">
+      /forcesell
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forcebuy" class="md-nav__link">
+    <span class="md-ellipsis">
+      /forcebuy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      /performance
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#balance" class="md-nav__link">
+    <span class="md-ellipsis">
+      /balance
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#daily" class="md-nav__link">
+    <span class="md-ellipsis">
+      /daily
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#whitelist" class="md-nav__link">
+    <span class="md-ellipsis">
+      /whitelist
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blacklist-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      /blacklist [pair]
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge" class="md-nav__link">
+    <span class="md-ellipsis">
+      /edge
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version" class="md-nav__link">
+    <span class="md-ellipsis">
+      /version
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="telegram-usage">Telegram usage<a class="headerlink" href="#telegram-usage" title="Permanent link">&para;</a></h1>
+<h2 id="setup-your-telegram-bot">Setup your Telegram bot<a class="headerlink" href="#setup-your-telegram-bot" title="Permanent link">&para;</a></h2>
+<p>Below we explain how to create your Telegram Bot, and how to get your
+Telegram user id.</p>
+<h3 id="1-create-your-telegram-bot">1. Create your Telegram bot<a class="headerlink" href="#1-create-your-telegram-bot" title="Permanent link">&para;</a></h3>
+<p>Start a chat with the <a href="https://telegram.me/BotFather">Telegram BotFather</a></p>
+<p>Send the message <code>/newbot</code>. </p>
+<p><em>BotFather response:</em></p>
+<blockquote>
+<p>Alright, a new bot. How are we going to call it? Please choose a name for your bot.</p>
+</blockquote>
+<p>Choose the public name of your bot (e.x. <code>Freqtrade bot</code>)</p>
+<p><em>BotFather response:</em></p>
+<blockquote>
+<p>Good. Now let's choose a username for your bot. It must end in <code>bot</code>. Like this, for example: TetrisBot or tetris_bot.</p>
+</blockquote>
+<p>Choose the name id of your bot and send it to the BotFather (e.g. "<code>My_own_freqtrade_bot</code>")</p>
+<p><em>BotFather response:</em></p>
+<blockquote>
+<p>Done! Congratulations on your new bot. You will find it at <code>t.me/yourbots_name_bot</code>. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.</p>
+<p>Use this token to access the HTTP API: <code>22222222:APITOKEN</code></p>
+<p>For a description of the Bot API, see this page: <a href="https://core.telegram.org/bots/api">https://core.telegram.org/bots/api</a> Father bot will return you the token (API key)</p>
+</blockquote>
+<p>Copy the API Token (<code>22222222:APITOKEN</code> in the above example) and keep use it for the config parameter <code>token</code>.</p>
+<p>Don't forget to start the conversation with your bot, by clicking <code>/START</code> button</p>
+<h3 id="2-get-your-user-id">2. Get your user id<a class="headerlink" href="#2-get-your-user-id" title="Permanent link">&para;</a></h3>
+<p>Talk to the <a href="https://telegram.me/userinfobot">userinfobot</a></p>
+<p>Get your "Id", you will use it for the config parameter <code>chat_id</code>.</p>
+<h2 id="telegram-commands">Telegram commands<a class="headerlink" href="#telegram-commands" title="Permanent link">&para;</a></h2>
+<p>Per default, the Telegram bot shows predefined commands. Some commands
+are only available by sending them to the bot. The table below list the
+official commands. You can ask at any moment for help with <code>/help</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/start</code></td>
+<td></td>
+<td>Starts the trader</td>
+</tr>
+<tr>
+<td><code>/stop</code></td>
+<td></td>
+<td>Stops the trader</td>
+</tr>
+<tr>
+<td><code>/stopbuy</code></td>
+<td></td>
+<td>Stops the trader from opening new trades. Gracefully closes open trades according to their rules.</td>
+</tr>
+<tr>
+<td><code>/reload_config</code></td>
+<td></td>
+<td>Reloads the configuration file</td>
+</tr>
+<tr>
+<td><code>/show_config</code></td>
+<td></td>
+<td>Shows part of the current configuration with relevant settings to operation</td>
+</tr>
+<tr>
+<td><code>/status</code></td>
+<td></td>
+<td>Lists all open trades</td>
+</tr>
+<tr>
+<td><code>/status table</code></td>
+<td></td>
+<td>List all open trades in a table format. Pending buy orders are marked with an asterisk (<em>) Pending sell orders are marked with a double asterisk (</em>*)</td>
+</tr>
+<tr>
+<td><code>/trades [limit]</code></td>
+<td></td>
+<td>List all recently closed trades in a table format.</td>
+</tr>
+<tr>
+<td><code>/count</code></td>
+<td></td>
+<td>Displays number of trades used and available</td>
+</tr>
+<tr>
+<td><code>/profit</code></td>
+<td></td>
+<td>Display a summary of your profit/loss from close trades and some stats about your performance</td>
+</tr>
+<tr>
+<td><code>/forcesell &lt;trade_id&gt;</code></td>
+<td></td>
+<td>Instantly sells the given trade  (Ignoring <code>minimum_roi</code>).</td>
+</tr>
+<tr>
+<td><code>/forcesell all</code></td>
+<td></td>
+<td>Instantly sells all open trades (Ignoring <code>minimum_roi</code>).</td>
+</tr>
+<tr>
+<td><code>/forcebuy &lt;pair&gt; [rate]</code></td>
+<td></td>
+<td>Instantly buys the given pair. Rate is optional. (<code>forcebuy_enable</code> must be set to True)</td>
+</tr>
+<tr>
+<td><code>/performance</code></td>
+<td></td>
+<td>Show performance of each finished trade grouped by pair</td>
+</tr>
+<tr>
+<td><code>/balance</code></td>
+<td></td>
+<td>Show account balance per currency</td>
+</tr>
+<tr>
+<td><code>/daily &lt;n&gt;</code></td>
+<td>7</td>
+<td>Shows profit or loss per day, over the last n days</td>
+</tr>
+<tr>
+<td><code>/whitelist</code></td>
+<td></td>
+<td>Show the current whitelist</td>
+</tr>
+<tr>
+<td><code>/blacklist [pair]</code></td>
+<td></td>
+<td>Show the current blacklist, or adds a pair to the blacklist.</td>
+</tr>
+<tr>
+<td><code>/edge</code></td>
+<td></td>
+<td>Show validated pairs by Edge if it is enabled.</td>
+</tr>
+<tr>
+<td><code>/help</code></td>
+<td></td>
+<td>Show help message</td>
+</tr>
+<tr>
+<td><code>/version</code></td>
+<td></td>
+<td>Show version</td>
+</tr>
+</tbody>
+</table>
+<h2 id="telegram-commands-in-action">Telegram commands in action<a class="headerlink" href="#telegram-commands-in-action" title="Permanent link">&para;</a></h2>
+<p>Below, example of Telegram message you will receive for each command.</p>
+<h3 id="start">/start<a class="headerlink" href="#start" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Status:</strong> <code>running</code></p>
+</blockquote>
+<h3 id="stop">/stop<a class="headerlink" href="#stop" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><code>Stopping trader ...</code>
+<strong>Status:</strong> <code>stopped</code></p>
+</blockquote>
+<h3 id="stopbuy">/stopbuy<a class="headerlink" href="#stopbuy" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>status:</strong> <code>Setting max_open_trades to 0. Run /reload_config to reset.</code></p>
+</blockquote>
+<p>Prevents the bot from opening new trades by temporarily setting "max_open_trades" to 0. Open trades will be handled via their regular rules (ROI / Sell-signal, stoploss, ...).</p>
+<p>After this, give the bot time to close off open trades (can be checked via <code>/status table</code>).
+Once all positions are sold, run <code>/stop</code> to completely stop the bot.</p>
+<p><code>/reload_config</code> resets "max_open_trades" to the value set in the configuration and resets this command.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+</div>
+<p>The stop-buy signal is ONLY active while the bot is running, and is not persisted anyway, so restarting the bot will cause this to reset.</p>
+<h3 id="status">/status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h3>
+<p>For each open trade, the bot will send you the following message.</p>
+<blockquote>
+<p><strong>Trade ID:</strong> <code>123</code> <code>(since 1 days ago)</code><br />
+<strong>Current Pair:</strong> CVC/BTC<br />
+<strong>Open Since:</strong> <code>1 days ago</code><br />
+<strong>Amount:</strong> <code>26.64180098</code><br />
+<strong>Open Rate:</strong> <code>0.00007489</code><br />
+<strong>Current Rate:</strong> <code>0.00007489</code><br />
+<strong>Current Profit:</strong> <code>12.95%</code><br />
+<strong>Stoploss:</strong> <code>0.00007389 (-0.02%)</code>  </p>
+</blockquote>
+<h3 id="status-table">/status table<a class="headerlink" href="#status-table" title="Permanent link">&para;</a></h3>
+<p>Return the status of all open trades in a table format.
+<div class="highlight"><pre><span></span><code>   ID  Pair      Since    Profit
+----  --------  -------  --------
+  67  SC/BTC    1 d      13.33%
+ 123  CVC/BTC   1 h      12.95%
+</code></pre></div></p>
+<h3 id="count">/count<a class="headerlink" href="#count" title="Permanent link">&para;</a></h3>
+<p>Return the number of trades used and available.
+<div class="highlight"><pre><span></span><code>current    max
+---------  -----
+     2     10
+</code></pre></div></p>
+<h3 id="profit">/profit<a class="headerlink" href="#profit" title="Permanent link">&para;</a></h3>
+<p>Return a summary of your profit/loss and performance.</p>
+<blockquote>
+<p><strong>ROI:</strong> Close trades<br />
+  ∙ <code>0.00485701 BTC (258.45%)</code><br />
+  ∙ <code>62.968 USD</code><br />
+<strong>ROI:</strong> All trades<br />
+  ∙ <code>0.00255280 BTC (143.43%)</code><br />
+  ∙ <code>33.095 EUR</code>  </p>
+<p><strong>Total Trade Count:</strong> <code>138</code><br />
+<strong>First Trade opened:</strong> <code>3 days ago</code><br />
+<strong>Latest Trade opened:</strong> <code>2 minutes ago</code><br />
+<strong>Avg. Duration:</strong> <code>2:33:45</code><br />
+<strong>Best Performing:</strong> <code>PAY/BTC: 50.23%</code>  </p>
+</blockquote>
+<h3 id="forcesell">/forcesell <trade_id><a class="headerlink" href="#forcesell" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>BITTREX:</strong> Selling BTC/LTC with limit <code>0.01650000 (profit: ~-4.07%, -0.00008168)</code></p>
+</blockquote>
+<h3 id="forcebuy">/forcebuy <pair><a class="headerlink" href="#forcebuy" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>BITTREX:</strong> Buying ETH/BTC with limit <code>0.03400000</code> (<code>1.000000 ETH</code>, <code>225.290 USD</code>)</p>
+</blockquote>
+<p>Note that for this to work, <code>forcebuy_enable</code> needs to be set to true.</p>
+<p><a href="../configuration/#understand-forcebuy_enable">More details</a></p>
+<h3 id="performance">/performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
+<p>Return the performance of each crypto-currency the bot has sold.</p>
+<blockquote>
+<p>Performance:
+1. <code>RCN/BTC 57.77%</code><br />
+2. <code>PAY/BTC 56.91%</code><br />
+3. <code>VIB/BTC 47.07%</code><br />
+4. <code>SALT/BTC 30.24%</code><br />
+5. <code>STORJ/BTC 27.24%</code><br />
+...  </p>
+</blockquote>
+<h3 id="balance">/balance<a class="headerlink" href="#balance" title="Permanent link">&para;</a></h3>
+<p>Return the balance of all crypto-currency your have on the exchange.</p>
+<blockquote>
+<p><strong>Currency:</strong> BTC<br />
+<strong>Available:</strong> 3.05890234<br />
+<strong>Balance:</strong> 3.05890234<br />
+<strong>Pending:</strong> 0.0  </p>
+<p><strong>Currency:</strong> CVC<br />
+<strong>Available:</strong> 86.64180098<br />
+<strong>Balance:</strong> 86.64180098<br />
+<strong>Pending:</strong> 0.0  </p>
+</blockquote>
+<h3 id="daily">/daily <n><a class="headerlink" href="#daily" title="Permanent link">&para;</a></h3>
+<p>Per default <code>/daily</code> will return the 7 last days.
+The example below if for <code>/daily 3</code>:</p>
+<blockquote>
+<p><strong>Daily Profit over the last 3 days:</strong>
+<div class="highlight"><pre><span></span><code>Day         Profit BTC      Profit USD
+----------  --------------  ------------
+2018-01-03  0.00224175 BTC  29,142 USD
+2018-01-02  0.00033131 BTC   4,307 USD
+2018-01-01  0.00269130 BTC  34.986 USD
+</code></pre></div></p>
+</blockquote>
+<h3 id="whitelist">/whitelist<a class="headerlink" href="#whitelist" title="Permanent link">&para;</a></h3>
+<p>Shows the current whitelist</p>
+<blockquote>
+<p>Using whitelist <code>StaticPairList</code> with 22 pairs<br />
+<code>IOTA/BTC, NEO/BTC, TRX/BTC, VET/BTC, ADA/BTC, ETC/BTC, NCASH/BTC, DASH/BTC, XRP/BTC, XVG/BTC, EOS/BTC, LTC/BTC, OMG/BTC, BTG/BTC, LSK/BTC, ZEC/BTC, HOT/BTC, IOTX/BTC, XMR/BTC, AST/BTC, XLM/BTC, NANO/BTC</code></p>
+</blockquote>
+<h3 id="blacklist-pair">/blacklist [pair]<a class="headerlink" href="#blacklist-pair" title="Permanent link">&para;</a></h3>
+<p>Shows the current blacklist.
+If Pair is set, then this pair will be added to the pairlist.
+Also supports multiple pairs, seperated by a space.
+Use <code>/reload_config</code> to reset the blacklist.</p>
+<blockquote>
+<p>Using blacklist <code>StaticPairList</code> with 2 pairs<br />
+<code>DODGE/BTC</code>, <code>HOT/BTC</code>.</p>
+</blockquote>
+<h3 id="edge">/edge<a class="headerlink" href="#edge" title="Permanent link">&para;</a></h3>
+<p>Shows pairs validated by Edge along with their corresponding winrate, expectancy and stoploss values.</p>
+<blockquote>
+<p><strong>Edge only validated following pairs:</strong>
+<div class="highlight"><pre><span></span><code>Pair        Winrate    Expectancy    Stoploss
+--------  ---------  ------------  ----------
+DOCK/ETH   0.522727      0.881821       -0.03
+PHX/ETH    0.677419      0.560488       -0.03
+HOT/ETH    0.733333      0.490492       -0.03
+HC/ETH     0.588235      0.280988       -0.02
+ARDR/ETH   0.366667      0.143059       -0.01
+</code></pre></div></p>
+</blockquote>
+<h3 id="version">/version<a class="headerlink" href="#version" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Version:</strong> <code>0.14.3</code></p>
+</blockquote>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2275 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../configuration/">
+      
+      
+        <link rel="next" href="../stoploss/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.30">
+    
+    
+      
+        <title>Strategy Customization - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.3cba04c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#strategy-customization" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Strategy Customization
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-a-custom-strategy-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install a custom strategy file
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#develop-your-own-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Develop your own strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Develop your own strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anatomy-of-a-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Anatomy of a strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customize-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customize Indicators
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-startup-period" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategy startup period
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Strategy startup period">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buy-signal-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Buy signal rules
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sell-signal-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sell signal rules
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#minimal-roi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Minimal ROI
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stoploss
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeframe-ticker-interval" class="md-nav__link">
+    <span class="md-ellipsis">
+      Timeframe (ticker interval)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metadata dict
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storing-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      Storing information
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-data-informative_pairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional data (informative_pairs)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (informative_pairs)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-data-for-non-tradeable-pairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get data for non-tradeable pairs
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-data-dataprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional data (DataProvider)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (DataProvider)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#possible-options-for-dataprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Possible options for DataProvider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-usages" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example Usages:
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available_pairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      available_pairs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#current_whitelist" class="md-nav__link">
+    <span class="md-ellipsis">
+      current_whitelist()
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_pair_dataframepair-timeframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_pair_dataframe(pair, timeframe)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_analyzed_dataframepair-timeframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_analyzed_dataframe(pair, timeframe)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#orderbookpair-maximum" class="md-nav__link">
+    <span class="md-ellipsis">
+      orderbook(pair, maximum)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tickerpair" class="md-nav__link">
+    <span class="md-ellipsis">
+      ticker(pair)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-data-wallets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional data (Wallets)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (Wallets)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#possible-options-for-wallets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Possible options for Wallets
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-data-trades" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional data (Trades)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevent-trades-from-happening-for-a-specific-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prevent trades from happening for a specific pair
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prevent trades from happening for a specific pair">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#locking-pairs-from-within-the-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Locking pairs from within the strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Locking pairs from within the strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pair-locking-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pair locking example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#print-created-dataframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      Print created dataframe
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specify-custom-strategy-location" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specify custom strategy location
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#derived-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Derived strategies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-mistakes-when-developing-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common mistakes when developing strategies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#further-strategy-ideas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further strategy ideas
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next step
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Subcommands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheatsheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sandbox Testing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install-a-custom-strategy-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install a custom strategy file
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#develop-your-own-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Develop your own strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Develop your own strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#anatomy-of-a-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Anatomy of a strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customize-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customize Indicators
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-startup-period" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategy startup period
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Strategy startup period">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buy-signal-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Buy signal rules
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sell-signal-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sell signal rules
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#minimal-roi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Minimal ROI
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stoploss
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeframe-ticker-interval" class="md-nav__link">
+    <span class="md-ellipsis">
+      Timeframe (ticker interval)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metadata dict
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storing-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      Storing information
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-data-informative_pairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional data (informative_pairs)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (informative_pairs)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-data-for-non-tradeable-pairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get data for non-tradeable pairs
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-data-dataprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional data (DataProvider)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (DataProvider)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#possible-options-for-dataprovider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Possible options for DataProvider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-usages" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example Usages:
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available_pairs" class="md-nav__link">
+    <span class="md-ellipsis">
+      available_pairs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#current_whitelist" class="md-nav__link">
+    <span class="md-ellipsis">
+      current_whitelist()
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_pair_dataframepair-timeframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_pair_dataframe(pair, timeframe)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_analyzed_dataframepair-timeframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_analyzed_dataframe(pair, timeframe)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#orderbookpair-maximum" class="md-nav__link">
+    <span class="md-ellipsis">
+      orderbook(pair, maximum)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tickerpair" class="md-nav__link">
+    <span class="md-ellipsis">
+      ticker(pair)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-data-wallets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional data (Wallets)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Additional data (Wallets)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#possible-options-for-wallets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Possible options for Wallets
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-data-trades" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional data (Trades)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prevent-trades-from-happening-for-a-specific-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prevent trades from happening for a specific pair
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prevent trades from happening for a specific pair">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#locking-pairs-from-within-the-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Locking pairs from within the strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Locking pairs from within the strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pair-locking-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pair locking example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#print-created-dataframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      Print created dataframe
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specify-custom-strategy-location" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specify custom strategy location
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#derived-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Derived strategies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-mistakes-when-developing-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common mistakes when developing strategies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#further-strategy-ideas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further strategy ideas
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next step
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="strategy-customization">Strategy Customization<a class="headerlink" href="#strategy-customization" title="Permanent link">&para;</a></h1>
+<p>This page explains how to customize your strategies, add new indicators and set up trading rules.</p>
+<p>Please familiarize yourself with <a href="../bot-basics/">Freqtrade basics</a> first, which provides overall info on how the bot operates.</p>
+<h2 id="install-a-custom-strategy-file">Install a custom strategy file<a class="headerlink" href="#install-a-custom-strategy-file" title="Permanent link">&para;</a></h2>
+<p>This is very simple. Copy paste your strategy file into the directory <code>user_data/strategies</code>.</p>
+<p>Let assume you have a class called <code>AwesomeStrategy</code> in the file <code>AwesomeStrategy.py</code>:</p>
+<ol>
+<li>Move your file into <code>user_data/strategies</code> (you should have <code>user_data/strategies/AwesomeStrategy.py</code></li>
+<li>Start the bot with the param <code>--strategy AwesomeStrategy</code> (the parameter is the class name)</li>
+</ol>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy
+</code></pre></div>
+<h2 id="develop-your-own-strategy">Develop your own strategy<a class="headerlink" href="#develop-your-own-strategy" title="Permanent link">&para;</a></h2>
+<p>The bot includes a default strategy file.
+Also, several other strategies are available in the <a href="https://github.com/freqtrade/freqtrade-strategies">strategy repository</a>.</p>
+<p>You will however most likely have your own idea for a strategy.
+This document intends to help you develop one for yourself.</p>
+<p>To get started, use <code>freqtrade new-strategy --strategy AwesomeStrategy</code>.
+This will create a new strategy file from a template, which will be located under <code>user_data/strategies/AwesomeStrategy.py</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is just a template file, which will most likely not be profitable out of the box.</p>
+</div>
+<h3 id="anatomy-of-a-strategy">Anatomy of a strategy<a class="headerlink" href="#anatomy-of-a-strategy" title="Permanent link">&para;</a></h3>
+<p>A strategy file contains all the information needed to build a good strategy:</p>
+<ul>
+<li>Indicators</li>
+<li>Buy strategy rules</li>
+<li>Sell strategy rules</li>
+<li>Minimal ROI recommended</li>
+<li>Stoploss strongly recommended</li>
+</ul>
+<p>The bot also include a sample strategy called <code>SampleStrategy</code> you can update: <code>user_data/strategies/sample_strategy.py</code>.
+You can test it with the parameter: <code>--strategy SampleStrategy</code></p>
+<p>Additionally, there is an attribute called <code>INTERFACE_VERSION</code>, which defines the version of the strategy interface the bot should use.
+The current version is 2 - which is also the default when it's not set explicitly in the strategy.</p>
+<p>Future versions will require this to be set.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy
+</code></pre></div>
+<p><strong>For the following section we will use the <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py">user_data/strategies/sample_strategy.py</a>
+file as reference.</strong></p>
+<div class="admonition note">
+<p class="admonition-title">Strategies and Backtesting</p>
+<p>To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
+that during backtesting the full time-interval is passed to the <code>populate_*()</code> methods at once.
+It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
+avoid index referencing (<code>df.iloc[-1]</code>), but instead use <code>df.shift()</code> to get to the previous candle.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning: Using future data</p>
+<p>Since backtesting passes the full time interval to the <code>populate_*()</code> methods, the strategy author
+needs to take care to avoid having the strategy utilize data from the future.
+Some common patterns for this are listed in the <a href="#common-mistakes-when-developing-strategies">Common Mistakes</a> section of this document.</p>
+</div>
+<h3 id="customize-indicators">Customize Indicators<a class="headerlink" href="#customize-indicators" title="Permanent link">&para;</a></h3>
+<p>Buy and sell strategies need indicators. You can add more indicators by extending the list contained in the method <code>populate_indicators()</code> from your strategy file.</p>
+<p>You should only add the indicators used in either <code>populate_buy_trend()</code>, <code>populate_sell_trend()</code>, or to populate another indicator, otherwise performance may suffer.</p>
+<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
+<p>Sample:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adds several different TA indicators to the given DataFrame</span>
+
+<span class="sd">    Performance Note: For the best performance be frugal on the number of indicators</span>
+<span class="sd">    you are using. Let uncomment only the indicator you are using in your strategies</span>
+<span class="sd">    or your hyperopt configuration, otherwise you will waste your memory and CPU usage.</span>
+<span class="sd">    :param dataframe: Dataframe with data from the exchange</span>
+<span class="sd">    :param metadata: Additional information, like the currently traded pair</span>
+<span class="sd">    :return: a Dataframe with all mandatory indicators for the strategies</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;sar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SAR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;adx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">stoch</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">STOCHF</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;fastd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stoch</span><span class="p">[</span><span class="s1">&#39;fastd&#39;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;fastk&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stoch</span><span class="p">[</span><span class="s1">&#39;fastk&#39;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;blower&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">BBANDS</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">nbdevup</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nbdevdn</span><span class="o">=</span><span class="mi">2</span><span class="p">)[</span><span class="s1">&#39;lowerband&#39;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;sma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">TEMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;mfi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema5&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema10&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema50&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema100&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ao&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">awesome_oscillator</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">macd</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MACD</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">&#39;macd&#39;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macdsignal&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">&#39;macdsignal&#39;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macdhist&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">&#39;macdhist&#39;</span><span class="p">]</span>
+    <span class="n">hilbert</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">HT_SINE</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;htsine&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hilbert</span><span class="p">[</span><span class="s1">&#39;sine&#39;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;htleadsine&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hilbert</span><span class="p">[</span><span class="s1">&#39;leadsine&#39;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;plus_dm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">PLUS_DM</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;plus_di&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">PLUS_DI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;minus_dm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MINUS_DM</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;minus_di&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MINUS_DI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Want more indicator examples?</p>
+<p>Look into the <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py">user_data/strategies/sample_strategy.py</a>.
+Then uncomment indicators you need.</p>
+</div>
+<h3 id="strategy-startup-period">Strategy startup period<a class="headerlink" href="#strategy-startup-period" title="Permanent link">&para;</a></h3>
+<p>Most indicators have an instable startup period, in which they are either not available, or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
+To account for this, the strategy can be assigned the <code>startup_candle_count</code> attribute.
+This should be set to the maximum number of candles that the strategy requires to calculate stable indicators.</p>
+<p>In this example strategy, this should be set to 100 (<code>startup_candle_count = 100</code>), since the longest needed history is 100 candles.</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema100&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</code></pre></div>
+<p>By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>startup_candle_count</code> should be below <code>ohlcv_candle_limit</code> (which is 500 for most exchanges) - since only this amount of candles will be available during Dry-Run/Live Trade operations.</p>
+</div>
+<h4 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h4>
+<p>Let's try to backtest 1 month (January 2019) of 5m candles using an example strategy with EMA100, as above.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20190101</span>-20190201<span class="w"> </span>--timeframe<span class="w"> </span>5m
+</code></pre></div>
+<p>Assuming <code>startup_candle_count</code> is set to 100, backtesting knows it needs 100 candles to generate valid buy signals. It will load data from <code>20190101 - (100 * 5m)</code> - which is ~2019-12-31 15:30:00.
+If this data is available, indicators will be calculated with this extended timerange. The instable startup period (up to 2019-01-01 00:00:00) will then be removed before starting backtesting.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If data for the startup period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-01 08:30:00.</p>
+</div>
+<h3 id="buy-signal-rules">Buy signal rules<a class="headerlink" href="#buy-signal-rules" title="Permanent link">&para;</a></h3>
+<p>Edit the method <code>populate_buy_trend()</code> in your strategy file to update your buy strategy.</p>
+<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
+<p>This will method will also define a new column, <code>"buy"</code>, which needs to contain 1 for buys, and 0 for "no action".</p>
+<p>Sample from <code>user_data/strategies/sample_strategy.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_buy_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Based on TA indicators, populates the buy signal for the given dataframe</span>
+<span class="sd">    :param dataframe: DataFrame populated with indicators</span>
+<span class="sd">    :param metadata: Additional information, like the currently traded pair</span>
+<span class="sd">    :return: DataFrame with buy column</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+        <span class="p">),</span>
+        <span class="s1">&#39;buy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Buying requires sellers to buy from - therefore volume needs to be &gt; 0 (<code>dataframe['volume'] &gt; 0</code>) to make sure that the bot does not buy/sell in no-activity periods.</p>
+</div>
+<h3 id="sell-signal-rules">Sell signal rules<a class="headerlink" href="#sell-signal-rules" title="Permanent link">&para;</a></h3>
+<p>Edit the method <code>populate_sell_trend()</code> into your strategy file to update your sell strategy.
+Please note that the sell-signal is only used if <code>use_sell_signal</code> is set to true in the configuration.</p>
+<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
+<p>This will method will also define a new column, <code>"sell"</code>, which needs to contain 1 for sells, and 0 for "no action".</p>
+<p>Sample from <code>user_data/strategies/sample_strategy.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_sell_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Based on TA indicators, populates the sell signal for the given dataframe</span>
+<span class="sd">    :param dataframe: DataFrame populated with indicators</span>
+<span class="sd">    :param metadata: Additional information, like the currently traded pair</span>
+<span class="sd">    :return: DataFrame with buy column</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 70</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+        <span class="p">),</span>
+        <span class="s1">&#39;sell&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<h3 id="minimal-roi">Minimal ROI<a class="headerlink" href="#minimal-roi" title="Permanent link">&para;</a></h3>
+<p>This dict defines the minimal Return On Investment (ROI) a trade should reach before selling, independent from the sell signal.</p>
+<p>It is of the following format, with the dict key (left side of the colon) being the minutes passed since the trade opened, and the value (right side of the colon) being the percentage.</p>
+<div class="highlight"><pre><span></span><code><span class="n">minimal_roi</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;40&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s2">&quot;30&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="s2">&quot;20&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
+    <span class="s2">&quot;0&quot;</span><span class="p">:</span> <span class="mf">0.04</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The above configuration would therefore mean:</p>
+<ul>
+<li>Sell whenever 4% profit was reached</li>
+<li>Sell when 2% profit was reached (in effect after 20 minutes)</li>
+<li>Sell when 1% profit was reached (in effect after 30 minutes)</li>
+<li>Sell when trade is non-loosing (in effect after 40 minutes)</li>
+</ul>
+<p>The calculation does include fees.</p>
+<p>To disable ROI completely, set it to an insanely high number:</p>
+<div class="highlight"><pre><span></span><code><span class="n">minimal_roi</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;0&quot;</span><span class="p">:</span> <span class="mi">100</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>While technically not completely disabled, this would sell once the trade reaches 10000% Profit.</p>
+<p>To use times based on candle duration (timeframe), the following snippet can be handy.
+This will allow you to change the ticket_interval for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.exchange</span> <span class="kn">import</span> <span class="n">timeframe_to_minutes</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="n">timeframe</span> <span class="o">=</span> <span class="s2">&quot;1d&quot;</span>
+    <span class="n">timeframe_mins</span> <span class="o">=</span> <span class="n">timeframe_to_minutes</span><span class="p">(</span><span class="n">timeframe</span><span class="p">)</span>
+    <span class="n">minimal_roi</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;0&quot;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span>                             <span class="c1"># 5% for the first 3 candles</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">timeframe_mins</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)):</span> <span class="mf">0.02</span><span class="p">,</span>  <span class="c1"># 2% after 3 candles</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">timeframe_mins</span> <span class="o">*</span> <span class="mi">6</span><span class="p">)):</span> <span class="mf">0.01</span><span class="p">,</span>  <span class="c1"># 1% After 6 candles</span>
+    <span class="p">}</span>
+</code></pre></div>
+<h3 id="stoploss">Stoploss<a class="headerlink" href="#stoploss" title="Permanent link">&para;</a></h3>
+<p>Setting a stoploss is highly recommended to protect your capital from strong moves against you.</p>
+<p>Sample:</p>
+<div class="highlight"><pre><span></span><code><span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+</code></pre></div>
+<p>This would signify a stoploss of -10%.</p>
+<p>For the full documentation on stoploss features, look at the dedicated <a href="../stoploss/">stoploss page</a>.</p>
+<p>If your exchange supports it, it's recommended to also set <code>"stoploss_on_exchange"</code> in the order_types dictionary, so your stoploss is on the exchange and cannot be missed due to network problems, high load or other reasons.</p>
+<p>For more information on order_types please look <a href="../configuration/#understand-order_types">here</a>.</p>
+<h3 id="timeframe-ticker-interval">Timeframe (ticker interval)<a class="headerlink" href="#timeframe-ticker-interval" title="Permanent link">&para;</a></h3>
+<p>This is the set of candles the bot should download and use for the analysis.
+Common values are <code>"1m"</code>, <code>"5m"</code>, <code>"15m"</code>, <code>"1h"</code>, however all values supported by your exchange should work.</p>
+<p>Please note that the same buy/sell signals may work well with one timeframe, but not with the others.</p>
+<p>This setting is accessible within the strategy methods as the <code>self.timeframe</code> attribute.</p>
+<h3 id="metadata-dict">Metadata dict<a class="headerlink" href="#metadata-dict" title="Permanent link">&para;</a></h3>
+<p>The metadata-dict (available for <code>populate_buy_trend</code>, <code>populate_sell_trend</code>, <code>populate_indicators</code>) contains additional information.
+Currently this is <code>pair</code>, which can be accessed using <code>metadata['pair']</code> - and will return a pair in the format <code>XRP/BTC</code>.</p>
+<p>The Metadata-dict should not be modified and does not persist information across multiple calls.
+Instead, have a look at the section <a href="#Storing-information">Storing information</a></p>
+<h3 id="storing-information">Storing information<a class="headerlink" href="#storing-information" title="Permanent link">&para;</a></h3>
+<p>Storing information can be accomplished by creating a new dictionary within the strategy class.</p>
+<p>The name of the variable can be chosen at will, but should be prefixed with <code>cust_</code> to avoid naming collisions with predefined strategy variables.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Awesomestrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="c1"># Create custom dictionary</span>
+    <span class="n">cust_info</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">def</span> <span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+        <span class="c1"># Check if the entry already exists</span>
+        <span class="k">if</span> <span class="s2">&quot;crosstime&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cust_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;pair&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cust_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;pair&quot;</span><span class="p">][</span><span class="s2">&quot;crosstime&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cust_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;pair&quot;</span><span class="p">][</span><span class="s2">&quot;crosstime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The data is not persisted after a bot-restart (or config-reload). Also, the amount of data should be kept smallish (no DataFrames and such), otherwise the bot will start to consume a lot of memory and eventually run out of memory and crash.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the data is pair-specific, make sure to use pair as one of the keys in the dictionary.</p>
+</div>
+<hr />
+<h3 id="additional-data-informative_pairs">Additional data (informative_pairs)<a class="headerlink" href="#additional-data-informative_pairs" title="Permanent link">&para;</a></h3>
+<h4 id="get-data-for-non-tradeable-pairs">Get data for non-tradeable pairs<a class="headerlink" href="#get-data-for-non-tradeable-pairs" title="Permanent link">&para;</a></h4>
+<p>Data for additional, informative pairs (reference pairs) can be beneficial for some strategies.
+Ohlcv data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via <code>DataProvider</code> just as other pairs (see below).
+These parts will <strong>not</strong> be traded unless they are also specified in the pair whitelist, or have been selected by Dynamic Whitelisting.</p>
+<p>The pairs need to be specified as tuples in the format <code>("pair", "interval")</code>, with pair as the first and time interval as the second argument.</p>
+<p>Sample:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">informative_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span> <span class="s2">&quot;5m&quot;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;BTC/TUSD&quot;</span><span class="p">,</span> <span class="s2">&quot;15m&quot;</span><span class="p">),</span>
+            <span class="p">]</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>As these pairs will be refreshed as part of the regular whitelist refresh, it's best to keep this list short.
+All intervals and all pairs can be specified as long as they are available (and active) on the used exchange.
+It is however better to use resampling to longer time-intervals when possible
+to avoid hammering the exchange with too many requests and risk being blocked.</p>
+</div>
+<hr />
+<h3 id="additional-data-dataprovider">Additional data (DataProvider)<a class="headerlink" href="#additional-data-dataprovider" title="Permanent link">&para;</a></h3>
+<p>The strategy provides access to the <code>DataProvider</code>. This allows you to get additional data to use in your strategy.</p>
+<p>All methods return <code>None</code> in case of failure (do not raise an exception).</p>
+<p>Please always check the mode of operation to select the correct method to get data (samples see below).</p>
+<h4 id="possible-options-for-dataprovider">Possible options for DataProvider<a class="headerlink" href="#possible-options-for-dataprovider" title="Permanent link">&para;</a></h4>
+<ul>
+<li><a href="#available_pairs"><code>available_pairs</code></a> - Property with tuples listing cached pairs with their intervals (pair, interval).</li>
+<li><a href="#current_whitelist"><code>current_whitelist()</code></a> - Returns a current list of whitelisted pairs. Useful for accessing dynamic whitelists (ie. VolumePairlist)</li>
+<li><a href="#get_pair_dataframepair-timeframe"><code>get_pair_dataframe(pair, timeframe)</code></a> - This is a universal method, which returns either historical data (for backtesting) or cached live data (for the Dry-Run and Live-Run modes).</li>
+<li><a href="#get_analyzed_dataframepair-timeframe"><code>get_analyzed_dataframe(pair, timeframe)</code></a> - Returns the analyzed dataframe (after calling <code>populate_indicators()</code>, <code>populate_buy()</code>, <code>populate_sell()</code>) and the time of the latest analysis.</li>
+<li><code>historic_ohlcv(pair, timeframe)</code> - Returns historical data stored on disk.</li>
+<li><code>market(pair)</code> - Returns market data for the pair: fees, limits, precisions, activity flag, etc. See <a href="https://github.com/ccxt/ccxt/wiki/Manual#markets">ccxt documentation</a> for more details on the Market data structure.</li>
+<li><code>ohlcv(pair, timeframe)</code> - Currently cached candle (OHLCV) data for the pair, returns DataFrame or empty DataFrame.</li>
+<li><a href="#orderbookpair-maximum"><code>orderbook(pair, maximum)</code></a> - Returns latest orderbook data for the pair, a dict with bids/asks with a total of <code>maximum</code> entries.</li>
+<li><a href="#tickerpair"><code>ticker(pair)</code></a> - Returns current ticker data for the pair. See <a href="https://github.com/ccxt/ccxt/wiki/Manual#price-tickers">ccxt documentation</a> for more details on the Ticker data structure.</li>
+<li><code>runmode</code> - Property containing the current runmode.</li>
+</ul>
+<h4 id="example-usages">Example Usages:<a class="headerlink" href="#example-usages" title="Permanent link">&para;</a></h4>
+<h4 id="available_pairs"><em>available_pairs</em><a class="headerlink" href="#available_pairs" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">pair</span><span class="p">,</span> <span class="n">timeframe</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">available_pairs</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;available </span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">timeframe</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="current_whitelist"><em>current_whitelist()</em><a class="headerlink" href="#current_whitelist" title="Permanent link">&para;</a></h4>
+<p>Imagine you've developed a strategy that trades the <code>5m</code> timeframe using signals generated from a <code>1d</code> timeframe on the top 10 volume pairs by volume. </p>
+<p>The strategy might look something like this:</p>
+<p><em>Scan through the top 10 pairs by volume using the <code>VolumePairList</code> every 5 minutes and use a 14 day RSI to buy and sell.</em></p>
+<p>Due to the limited available data, it's very difficult to resample our <code>5m</code> candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!</p>
+<p>Since we can't resample our data we will have to use an informative pair; and since our whitelist will be dynamic we don't know which pair(s) to use.</p>
+<p>This is where calling <code>self.dp.current_whitelist()</code> comes in handy.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SampleStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="c1"># strategy init stuff...</span>
+
+    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">&#39;5m&#39;</span>
+
+    <span class="c1"># more strategy init stuff..</span>
+
+    <span class="k">def</span> <span class="nf">informative_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="c1"># get access to all pairs available in whitelist.</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">current_whitelist</span><span class="p">()</span>
+        <span class="c1"># Assign tf to each pair so they can be downloaded and cached for strategy.</span>
+        <span class="n">informative_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pair</span><span class="p">,</span> <span class="s1">&#39;1d&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">informative_pairs</span>
+
+    <span class="k">def</span> <span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+
+        <span class="n">inf_tf</span> <span class="o">=</span> <span class="s1">&#39;1d&#39;</span>
+        <span class="c1"># Get the informative pair</span>
+        <span class="n">informative</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="n">timeframe</span><span class="o">=</span><span class="s1">&#39;1d&#39;</span><span class="p">)</span>
+        <span class="c1"># Get the 14 day rsi</span>
+        <span class="n">informative</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+
+        <span class="c1"># Rename columns to be unique</span>
+        <span class="n">informative</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">inf_tf</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">informative</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+        <span class="c1"># Assuming inf_tf = &#39;1d&#39; - then the columns will now be:</span>
+        <span class="c1"># date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d</span>
+
+        <span class="c1"># Combine the 2 dataframes</span>
+        <span class="c1"># all indicators on the informative sample MUST be calculated before this point</span>
+        <span class="n">dataframe</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">informative</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">right_on</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;date_</span><span class="si">{</span><span class="n">inf_tf</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+        <span class="c1"># FFill to have the 1d value available in every row throughout the day.</span>
+        <span class="c1"># Without this, comparisons would only work once per day.</span>
+        <span class="n">dataframe</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">ffill</span><span class="p">()</span>
+        <span class="c1"># Calculate rsi of the original dataframe (5m timeframe)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+
+        <span class="c1"># Do other stuff</span>
+        <span class="c1"># ...</span>
+
+        <span class="k">return</span> <span class="n">dataframe</span>
+
+    <span class="k">def</span> <span class="nf">populate_buy_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+
+        <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+            <span class="p">(</span>
+                <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi_1d&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">)</span> <span class="o">&amp;</span>                     <span class="c1"># Ensure daily RSI is &lt; 30</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>                        <span class="c1"># Ensure this candle had volume (important for backtesting)</span>
+            <span class="p">),</span>
+            <span class="s1">&#39;buy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+</code></pre></div>
+<h4 id="get_pair_dataframepair-timeframe"><em>get_pair_dataframe(pair, timeframe)</em><a class="headerlink" href="#get_pair_dataframepair-timeframe" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># fetch live / historical candle (OHLCV) data for the first informative pair</span>
+<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="p">:</span>
+    <span class="n">inf_pair</span><span class="p">,</span> <span class="n">inf_timeframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">informative_pairs</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">informative</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">inf_pair</span><span class="p">,</span>
+                                             <span class="n">timeframe</span><span class="o">=</span><span class="n">inf_timeframe</span><span class="p">)</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning about backtesting</p>
+<p>Be careful when using dataprovider in backtesting. <code>historic_ohlcv()</code> (and <code>get_pair_dataframe()</code>
+for the backtesting runmode) provides the full time-range in one go,
+so please be aware of it and make sure to not "look into the future" to avoid surprises when running in dry/live mode).</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning in hyperopt</p>
+<p>This option cannot currently be used during hyperopt.</p>
+</div>
+<h4 id="get_analyzed_dataframepair-timeframe"><em>get_analyzed_dataframe(pair, timeframe)</em><a class="headerlink" href="#get_analyzed_dataframepair-timeframe" title="Permanent link">&para;</a></h4>
+<p>This method is used by freqtrade internally to determine the last signal.
+It can also be used in specific callbacks to get the signal that caused the action (see <a href="../strategy-advanced/">Advanced Strategy Documentation</a> for more details on available callbacks).</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># fetch current dataframe</span>
+<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="p">:</span>
+    <span class="n">dataframe</span><span class="p">,</span> <span class="n">last_updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span>
+                                                             <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ticker_interval</span><span class="p">)</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">No data available</p>
+<p>Returns an empty dataframe if the requested pair was not cached.
+This should not happen when using whitelisted pairs.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning in hyperopt</p>
+<p>This option cannot currently be used during hyperopt.</p>
+</div>
+<h4 id="orderbookpair-maximum"><em>orderbook(pair, maximum)</em><a class="headerlink" href="#orderbookpair-maximum" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="p">:</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+        <span class="n">ob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">orderbook</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;best_bid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;bids&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;best_ask&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;asks&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The order book is not part of the historic data which means backtesting and hyperopt will not work if this
+method is used.</p>
+</div>
+<h4 id="tickerpair"><em>ticker(pair)</em><a class="headerlink" href="#tickerpair" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="p">:</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+        <span class="n">ticker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">ticker</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">])</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;last_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ticker</span><span class="p">[</span><span class="s1">&#39;last&#39;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume24h&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ticker</span><span class="p">[</span><span class="s1">&#39;quoteVolume&#39;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;vwap&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ticker</span><span class="p">[</span><span class="s1">&#39;vwap&#39;</span><span class="p">]</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Although the ticker data structure is a part of the ccxt Unified Interface, the values returned by this method can
+vary for different exchanges. For instance, many exchanges do not return <code>vwap</code> values, the FTX exchange
+does not always fills in the <code>last</code> field (so it can be None), etc. So you need to carefully verify the ticker
+data returned from the exchange and add appropriate error handling / defaults.</p>
+</div>
+<hr />
+<h3 id="additional-data-wallets">Additional data (Wallets)<a class="headerlink" href="#additional-data-wallets" title="Permanent link">&para;</a></h3>
+<p>The strategy provides access to the <code>Wallets</code> object. This contains the current balances on the exchange.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Wallets is not available during backtesting / hyperopt.</p>
+</div>
+<p>Please always check if <code>Wallets</code> is available to avoid failures during backtesting.</p>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="p">:</span>
+    <span class="n">free_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_free</span><span class="p">(</span><span class="s1">&#39;ETH&#39;</span><span class="p">)</span>
+    <span class="n">used_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_used</span><span class="p">(</span><span class="s1">&#39;ETH&#39;</span><span class="p">)</span>
+    <span class="n">total_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_total</span><span class="p">(</span><span class="s1">&#39;ETH&#39;</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="possible-options-for-wallets">Possible options for Wallets<a class="headerlink" href="#possible-options-for-wallets" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>get_free(asset)</code> - currently available balance to trade</li>
+<li><code>get_used(asset)</code> - currently tied up balance (open orders)</li>
+<li><code>get_total(asset)</code> - total available balance - sum of the 2 above</li>
+</ul>
+<hr />
+<h3 id="additional-data-trades">Additional data (Trades)<a class="headerlink" href="#additional-data-trades" title="Permanent link">&para;</a></h3>
+<p>A history of Trades can be retrieved in the strategy by querying the database.</p>
+<p>At the top of the file, import Trade.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+</code></pre></div>
+<p>The following example queries for the current pair and trades from today, however other filters can easily be added.</p>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;runmode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+    <span class="n">trades</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_trades</span><span class="p">([</span><span class="n">Trade</span><span class="o">.</span><span class="n">pair</span> <span class="o">==</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span>
+                               <span class="n">Trade</span><span class="o">.</span><span class="n">open_date</span> <span class="o">&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                               <span class="n">Trade</span><span class="o">.</span><span class="n">is_open</span> <span class="o">==</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="p">])</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Trade</span><span class="o">.</span><span class="n">close_date</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="c1"># Summarize profit for this pair.</span>
+    <span class="n">curdayprofit</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">close_profit</span> <span class="k">for</span> <span class="n">trade</span> <span class="ow">in</span> <span class="n">trades</span><span class="p">)</span>
+</code></pre></div>
+<p>Get amount of stake_currency currently invested in Trades:</p>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;runmode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+    <span class="n">total_stakes</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">total_open_trades_stakes</span><span class="p">()</span>
+</code></pre></div>
+<p>Retrieve performance per pair.
+Returns a List of dicts per pair.</p>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;runmode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+    <span class="n">performance</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_overall_performance</span><span class="p">()</span>
+</code></pre></div>
+<p>Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of 0.015).</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="err">&#39;pair&#39;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ETH/BTC&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.015</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;cou</span><span class="kc">nt</span><span class="err">&#39;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">}</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Trade history is not available during backtesting or hyperopt.</p>
+</div>
+<h3 id="prevent-trades-from-happening-for-a-specific-pair">Prevent trades from happening for a specific pair<a class="headerlink" href="#prevent-trades-from-happening-for-a-specific-pair" title="Permanent link">&para;</a></h3>
+<p>Freqtrade locks pairs automatically for the current candle (until that candle is over) when a pair is sold, preventing an immediate re-buy of that pair.</p>
+<p>Locked pairs will show the message <code>Pair &lt;pair&gt; is currently locked.</code>.</p>
+<h4 id="locking-pairs-from-within-the-strategy">Locking pairs from within the strategy<a class="headerlink" href="#locking-pairs-from-within-the-strategy" title="Permanent link">&para;</a></h4>
+<p>Sometimes it may be desired to lock a pair after certain events happen (e.g. multiple losing trades in a row).</p>
+<p>Freqtrade has an easy method to do this from within the strategy, by calling <code>self.lock_pair(pair, until)</code>.
+<code>until</code> must be a datetime object in the future, after which trading will be reenabled for that pair.</p>
+<p>Locks can also be lifted manually, by calling <code>self.unlock_pair(pair)</code>.</p>
+<p>To verify if a pair is currently locked, use <code>self.is_pair_locked(pair)</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Locked pairs are not persisted, so a restart of the bot, or calling <code>/reload_config</code> will reset locked pairs.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Locking pairs is not functioning during backtesting.</p>
+</div>
+<h5 id="pair-locking-example">Pair locking example<a class="headerlink" href="#pair-locking-example" title="Permanent link">&para;</a></h5>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="c1"># Put the above lines a the top of the strategy file, next to all the other imports</span>
+<span class="c1"># --------</span>
+
+<span class="c1"># Within populate indicators (or populate_buy):</span>
+<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;runmode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+   <span class="c1"># fetch closed trades for the last 2 days</span>
+    <span class="n">trades</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_trades</span><span class="p">([</span><span class="n">Trade</span><span class="o">.</span><span class="n">pair</span> <span class="o">==</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span>
+                               <span class="n">Trade</span><span class="o">.</span><span class="n">open_date</span> <span class="o">&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+                               <span class="n">Trade</span><span class="o">.</span><span class="n">is_open</span> <span class="o">==</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="c1"># Analyze the conditions you&#39;d like to lock the pair .... will probably be different for every strategy</span>
+    <span class="n">sumprofit</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">close_profit</span> <span class="k">for</span> <span class="n">trade</span> <span class="ow">in</span> <span class="n">trades</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sumprofit</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Lock pair for 12 hours</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock_pair</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="n">until</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">12</span><span class="p">))</span>
+</code></pre></div>
+<h3 id="print-created-dataframe">Print created dataframe<a class="headerlink" href="#print-created-dataframe" title="Permanent link">&para;</a></h3>
+<p>To inspect the created dataframe, you can issue a print-statement in either <code>populate_buy_trend()</code> or <code>populate_sell_trend()</code>.
+You may also want to print the pair so it's clear what data is currently shown.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_buy_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span>
+            <span class="c1">#&gt;&gt; whatever condition&lt;&lt;&lt;</span>
+        <span class="p">),</span>
+        <span class="s1">&#39;buy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># Print the Analyzed pair</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;result for </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Inspect the last 5 rows</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">tail</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<p>Printing more than a few rows is also possible (simply use  <code>print(dataframe)</code> instead of <code>print(dataframe.tail())</code>), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).</p>
+<h3 id="specify-custom-strategy-location">Specify custom strategy location<a class="headerlink" href="#specify-custom-strategy-location" title="Permanent link">&para;</a></h3>
+<p>If you want to use a strategy from a different directory you can pass <code>--strategy-path</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--strategy-path<span class="w"> </span>/some/directory
+</code></pre></div>
+<h3 id="derived-strategies">Derived strategies<a class="headerlink" href="#derived-strategies" title="Permanent link">&para;</a></h3>
+<p>The strategies can be derived from other strategies. This avoids duplication of your custom strategy code. You can use this technique to override small parts of your main strategy, leaving the rest untouched:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="n">stoploss</span> <span class="o">=</span> <span class="mf">0.13</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># All other attributes and methods are here as they</span>
+    <span class="c1"># should be in any custom strategy...</span>
+    <span class="o">...</span>
+
+<span class="k">class</span> <span class="nc">MyAwesomeStrategy2</span><span class="p">(</span><span class="n">MyAwesomeStrategy</span><span class="p">):</span>
+    <span class="c1"># Override something</span>
+    <span class="n">stoploss</span> <span class="o">=</span> <span class="mf">0.08</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
+<p>Both attributes and methods may be overriden, altering behavior of the original strategy in a way you need.</p>
+<h3 id="common-mistakes-when-developing-strategies">Common mistakes when developing strategies<a class="headerlink" href="#common-mistakes-when-developing-strategies" title="Permanent link">&para;</a></h3>
+<p>Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look-ahead into the future.
+This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods, since they all use data which is not available during dry/live runs, so these strategies will perform well during backtesting, but will fail / perform badly in real conditions.</p>
+<p>The following lists some common patterns which should be avoided to prevent frustration:</p>
+<ul>
+<li>don't use <code>shift(-1)</code>. This uses data from the future, which is not available.</li>
+<li>don't use <code>.iloc[-1]</code> or any other absolute position in the dataframe, this will be different between dry-run and backtesting.</li>
+<li>don't use <code>dataframe['volume'].mean()</code>. This uses the full DataFrame for backtesting, including data from the future. Use <code>dataframe['volume'].rolling(&lt;window&gt;).mean()</code> instead</li>
+<li>don't use <code>.resample('1h')</code>. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use <code>.resample('1h', label='right')</code> instead.</li>
+</ul>
+<h3 id="further-strategy-ideas">Further strategy ideas<a class="headerlink" href="#further-strategy-ideas" title="Permanent link">&para;</a></h3>
+<p>To get additional Ideas for strategies, head over to our <a href="https://github.com/freqtrade/freqtrade-strategies">strategy repository</a>. Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
+Feel free to use any of them as inspiration for your own strategies.
+We're happy to accept Pull Requests containing new Strategies to that repo.</p>
+<p>We also got a <em>strategy-sharing</em> channel in our <a href="https://join.slack.com/t/highfrequencybot/shared_invite/enQtNjU5ODcwNjI1MDU3LTU1MTgxMjkzNmYxNWE1MDEzYzQ3YmU4N2MwZjUyNjJjODRkMDVkNjg4YTAyZGYzYzlhOTZiMTE4ZjQ4YzM0OGE">Slack community</a> which is a great place to get and/or share ideas.</p>
+<h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
+<p>Now you have a perfect strategy you probably want to backtest it.
+Your next step is to learn <a href="../backtesting/">How to use the Backtesting</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+    
+  </body>
+</html>
