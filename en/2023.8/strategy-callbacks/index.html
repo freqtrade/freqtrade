@@ -1,0 +1,2726 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2023.8/strategy-callbacks/">
+      
+      
+        <link rel="prev" href="../strategy-customization/">
+      
+      
+        <link rel="next" href="../stoploss/">
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.2.1">
+    
+    
+      
+        <title>Strategy Callbacks - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.0e669242.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.85d0ee34.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#strategy-callbacks" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Strategy Callbacks
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Strategy Callbacks
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Callbacks
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bot-start" class="md-nav__link">
+    Bot start
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bot-loop-start" class="md-nav__link">
+    Bot loop start
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stake-size-management" class="md-nav__link">
+    Stake size management
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-exit-signal" class="md-nav__link">
+    Custom exit signal
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-stoploss" class="md-nav__link">
+    Custom stoploss
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom stoploss">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-stoploss-examples" class="md-nav__link">
+    Custom stoploss examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom stoploss examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time-based-trailing-stop" class="md-nav__link">
+    Time based trailing stop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#different-stoploss-per-pair" class="md-nav__link">
+    Different stoploss per pair
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trailing-stoploss-with-positive-offset" class="md-nav__link">
+    Trailing stoploss with positive offset
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stepped-stoploss" class="md-nav__link">
+    Stepped stoploss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-stoploss-using-an-indicator-from-dataframe-example" class="md-nav__link">
+    Custom stoploss using an indicator from dataframe example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-helpers-for-stoploss-calculations" class="md-nav__link">
+    Common helpers for stoploss calculations
+  </a>
+  
+    <nav class="md-nav" aria-label="Common helpers for stoploss calculations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stoploss-relative-to-open-price" class="md-nav__link">
+    Stoploss relative to open price
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss-percentage-from-absolute-price" class="md-nav__link">
+    Stoploss percentage from absolute price
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-order-price-rules" class="md-nav__link">
+    Custom order price rules
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom order price rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-order-entry-and-exit-price-example" class="md-nav__link">
+    Custom order entry and exit price example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-order-timeout-rules" class="md-nav__link">
+    Custom order timeout rules
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom order timeout rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-order-timeout-example" class="md-nav__link">
+    Custom order timeout example
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-order-timeout-example-using-additional-data" class="md-nav__link">
+    Custom order timeout example (using additional data)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bot-order-confirmation" class="md-nav__link">
+    Bot order confirmation
+  </a>
+  
+    <nav class="md-nav" aria-label="Bot order confirmation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trade-entry-buy-order-confirmation" class="md-nav__link">
+    Trade entry (buy order) confirmation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trade-exit-sell-order-confirmation" class="md-nav__link">
+    Trade exit (sell order) confirmation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adjust-trade-position" class="md-nav__link">
+    Adjust trade position
+  </a>
+  
+    <nav class="md-nav" aria-label="Adjust trade position">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#position-adjust-calculations" class="md-nav__link">
+    Position adjust calculations
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adjust-entry-price" class="md-nav__link">
+    Adjust Entry Price
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#leverage-callback" class="md-nav__link">
+    Leverage Callback
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API & FreqUI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lookahead-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lookahead analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_16" >
+        
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    FreqAI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            FreqAI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter table
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feature engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running FreqAI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reinforcement Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Short / Leverage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Sub-commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
+        
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtest analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_22" >
+        
+          <label class="md-nav__link" for="__nav_22" id="__nav_22_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_22_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_22">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Trade Object
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Producer/Consumer mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheat-sheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating Freqtrade
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bot-start" class="md-nav__link">
+    Bot start
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bot-loop-start" class="md-nav__link">
+    Bot loop start
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stake-size-management" class="md-nav__link">
+    Stake size management
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-exit-signal" class="md-nav__link">
+    Custom exit signal
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-stoploss" class="md-nav__link">
+    Custom stoploss
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom stoploss">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-stoploss-examples" class="md-nav__link">
+    Custom stoploss examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom stoploss examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time-based-trailing-stop" class="md-nav__link">
+    Time based trailing stop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#different-stoploss-per-pair" class="md-nav__link">
+    Different stoploss per pair
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trailing-stoploss-with-positive-offset" class="md-nav__link">
+    Trailing stoploss with positive offset
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stepped-stoploss" class="md-nav__link">
+    Stepped stoploss
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-stoploss-using-an-indicator-from-dataframe-example" class="md-nav__link">
+    Custom stoploss using an indicator from dataframe example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-helpers-for-stoploss-calculations" class="md-nav__link">
+    Common helpers for stoploss calculations
+  </a>
+  
+    <nav class="md-nav" aria-label="Common helpers for stoploss calculations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stoploss-relative-to-open-price" class="md-nav__link">
+    Stoploss relative to open price
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stoploss-percentage-from-absolute-price" class="md-nav__link">
+    Stoploss percentage from absolute price
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-order-price-rules" class="md-nav__link">
+    Custom order price rules
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom order price rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-order-entry-and-exit-price-example" class="md-nav__link">
+    Custom order entry and exit price example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-order-timeout-rules" class="md-nav__link">
+    Custom order timeout rules
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom order timeout rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-order-timeout-example" class="md-nav__link">
+    Custom order timeout example
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-order-timeout-example-using-additional-data" class="md-nav__link">
+    Custom order timeout example (using additional data)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bot-order-confirmation" class="md-nav__link">
+    Bot order confirmation
+  </a>
+  
+    <nav class="md-nav" aria-label="Bot order confirmation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trade-entry-buy-order-confirmation" class="md-nav__link">
+    Trade entry (buy order) confirmation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trade-exit-sell-order-confirmation" class="md-nav__link">
+    Trade exit (sell order) confirmation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adjust-trade-position" class="md-nav__link">
+    Adjust trade position
+  </a>
+  
+    <nav class="md-nav" aria-label="Adjust trade position">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#position-adjust-calculations" class="md-nav__link">
+    Position adjust calculations
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adjust-entry-price" class="md-nav__link">
+    Adjust Entry Price
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#leverage-callback" class="md-nav__link">
+    Leverage Callback
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="strategy-callbacks">Strategy Callbacks<a class="headerlink" href="#strategy-callbacks" title="Permanent link">&para;</a></h1>
+<p>While the main strategy functions (<code>populate_indicators()</code>, <code>populate_entry_trend()</code>, <code>populate_exit_trend()</code>) should be used in a vectorized way, and are only called <a href="../bot-basics/#backtesting-hyperopt-execution-logic">once during backtesting</a>, callbacks are called "whenever needed".</p>
+<p>As such, you should avoid doing heavy calculations in callbacks to avoid delays during operations.
+Depending on the callback used, they may be called when entering / exiting a trade, or throughout the duration of a trade.</p>
+<p>Currently available callbacks:</p>
+<ul>
+<li><a href="#bot-start"><code>bot_start()</code></a></li>
+<li><a href="#bot-loop-start"><code>bot_loop_start()</code></a></li>
+<li><a href="#stake-size-management"><code>custom_stake_amount()</code></a></li>
+<li><a href="#custom-exit-signal"><code>custom_exit()</code></a></li>
+<li><a href="#custom-stoploss"><code>custom_stoploss()</code></a></li>
+<li><a href="#custom-order-price-rules"><code>custom_entry_price()</code> and <code>custom_exit_price()</code></a></li>
+<li><a href="#custom-order-timeout-rules"><code>check_entry_timeout()</code> and <code>check_exit_timeout()</code></a></li>
+<li><a href="#trade-entry-buy-order-confirmation"><code>confirm_trade_entry()</code></a></li>
+<li><a href="#trade-exit-sell-order-confirmation"><code>confirm_trade_exit()</code></a></li>
+<li><a href="#adjust-trade-position"><code>adjust_trade_position()</code></a></li>
+<li><a href="#adjust-entry-price"><code>adjust_entry_price()</code></a></li>
+<li><a href="#leverage-callback"><code>leverage()</code></a></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Callback calling sequence</p>
+<p>You can find the callback calling sequence in <a href="../bot-basics/#bot-execution-logic">bot-basics</a></p>
+</div>
+<h2 id="bot-start">Bot start<a class="headerlink" href="#bot-start" title="Permanent link">&para;</a></h2>
+<p>A simple callback which is called once when the strategy is loaded.
+This can be used to perform actions that must only be performed once and runs after dataprovider and wallet are set</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="k">def</span> <span class="nf">bot_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called only once after bot instantiation.</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;runmode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+            <span class="c1"># Assign this to the class by using self.*</span>
+            <span class="c1"># can then be used by populate_* methods</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">custom_remote_data</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;https://some_remote_source.example.com&#39;</span><span class="p">)</span>
+</code></pre></div>
+<p>During hyperopt, this runs only once at startup.</p>
+<h2 id="bot-loop-start">Bot loop start<a class="headerlink" href="#bot-loop-start" title="Permanent link">&para;</a></h2>
+<p>A simple callback which is called once at the start of every bot throttling iteration in dry/live mode (roughly every 5
+seconds, unless configured differently) or once per candle in backtest/hyperopt mode.
+This can be used to perform calculations which are pair independent (apply to all pairs), loading of external data, etc.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="k">def</span> <span class="nf">bot_loop_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called at the start of the bot iteration (one loop).</span>
+<span class="sd">        Might be used to perform pair-independent tasks</span>
+<span class="sd">        (e.g. gather some remote resource for comparison)</span>
+<span class="sd">        :param current_time: datetime object, containing the current datetime</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;runmode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+            <span class="c1"># Assign this to the class by using self.*</span>
+            <span class="c1"># can then be used by populate_* methods</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remote_data</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;https://some_remote_source.example.com&#39;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="stake-size-management">Stake size management<a class="headerlink" href="#stake-size-management" title="Permanent link">&para;</a></h2>
+<p>Called before entering a trade, makes it possible to manage your position size when placing a new trade.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">custom_stake_amount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                            <span class="n">proposed_stake</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">min_stake</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">max_stake</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                            <span class="n">leverage</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span> <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
+        <span class="n">current_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">current_candle</span><span class="p">[</span><span class="s1">&#39;fastk_rsi_1h&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">current_candle</span><span class="p">[</span><span class="s1">&#39;fastd_rsi_1h&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;stake_amount&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;unlimited&#39;</span><span class="p">:</span>
+                <span class="c1"># Use entire available wallet during favorable conditions when in compounding mode.</span>
+                <span class="k">return</span> <span class="n">max_stake</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Compound profits during favorable conditions instead of using a static stake.</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_total_stake_amount</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;max_open_trades&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Use default stake amount.</span>
+        <span class="k">return</span> <span class="n">proposed_stake</span>
+</code></pre></div>
+<p>Freqtrade will fall back to the <code>proposed_stake</code> value should your code raise an exception. The exception itself will be logged.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You do not <em>have</em> to ensure that <code>min_stake &lt;= returned_value &lt;= max_stake</code>. Trades will succeed as the returned value will be clamped to supported range and this action will be logged.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Returning <code>0</code> or <code>None</code> will prevent trades from being placed.</p>
+</div>
+<h2 id="custom-exit-signal">Custom exit signal<a class="headerlink" href="#custom-exit-signal" title="Permanent link">&para;</a></h2>
+<p>Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.</p>
+<p>Allows to define custom exit signals, indicating that specified position should be sold. This is very useful when we need to customize exit conditions for each individual trade, or if you need trade data to make an exit decision.</p>
+<p>For example you could implement a 1:2 risk-reward ROI with <code>custom_exit()</code>.</p>
+<p>Using <code>custom_exit()</code> signals in place of stoploss though <em>is not recommended</em>. It is a inferior method to using <code>custom_stoploss()</code> in this regard - which also allows you to keep the stoploss on exchange.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Returning a (none-empty) <code>string</code> or <code>True</code> from this method is equal to setting exit signal on a candle at specified time. This method is not called when exit signal is set already, or if exit signals are disabled (<code>use_exit_signal=False</code>). <code>string</code> max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
+<code>custom_exit()</code> will ignore <code>exit_profit_only</code>, and will always be called unless <code>use_exit_signal=False</code>, even if there is a new enter signal.</p>
+</div>
+<p>An example of how we can use different indicators depending on the current profit and also exit trades that were open longer than one day:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">custom_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="s1">&#39;datetime&#39;</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                    <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
+        <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+
+        <span class="c1"># Above 20% profit, sell when rsi &lt; 80</span>
+        <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">last_candle</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">80</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;rsi_below_80&#39;</span>
+
+        <span class="c1"># Between 2% and 10%, sell if EMA-long above EMA-short</span>
+        <span class="k">if</span> <span class="mf">0.02</span> <span class="o">&lt;</span> <span class="n">current_profit</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">last_candle</span><span class="p">[</span><span class="s1">&#39;emalong&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">last_candle</span><span class="p">[</span><span class="s1">&#39;emashort&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s1">&#39;ema_long_below_80&#39;</span>
+
+        <span class="c1"># Sell any positions at a loss if they are held for more than one day.</span>
+        <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span><span class="p">)</span><span class="o">.</span><span class="n">days</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;unclog&#39;</span>
+</code></pre></div>
+<p>See <a href="../strategy-advanced/#dataframe-access">Dataframe access</a> for more information about dataframe use in strategy callbacks.</p>
+<h2 id="custom-stoploss">Custom stoploss<a class="headerlink" href="#custom-stoploss" title="Permanent link">&para;</a></h2>
+<p>Called for open trade every iteration (roughly every 5 seconds) until a trade is closed.</p>
+<p>The usage of the custom stoploss method must be enabled by setting <code>use_custom_stoploss=True</code> on the strategy object.</p>
+<p>The stoploss price can only ever move upwards - if the stoploss value returned from <code>custom_stoploss</code> would result in a lower stoploss price than was previously set, it will be ignored. The traditional <code>stoploss</code> value serves as an absolute lower level and will be instated as the initial stoploss (before this method is called for the first time for a trade), and is still mandatory.</p>
+<p>The method must return a stoploss value (float / number) as a percentage of the current price.
+E.g. If the <code>current_rate</code> is 200 USD, then returning <code>0.02</code> will set the stoploss price 2% lower, at 196 USD.
+During backtesting, <code>current_rate</code> (and <code>current_profit</code>) are provided against the candle's high (or low for short trades) - while the resulting stoploss is evaluated against the candle's low (or high for short trades).</p>
+<p>The absolute value of the return value is used (the sign is ignored), so returning <code>0.05</code> or <code>-0.05</code> have the same result, a stoploss 5% below the current price.</p>
+<p>To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># additional imports required</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="n">use_custom_stoploss</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                        <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Custom stoploss logic, returning the new distance relative to current_rate (as ratio).</span>
+<span class="sd">        e.g. returning -0.05 would create a stoploss 5% below current_rate.</span>
+<span class="sd">        The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.</span>
+
+<span class="sd">        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/</span>
+
+<span class="sd">        When not implemented by a strategy, returns the initial stoploss value</span>
+<span class="sd">        Only called when use_custom_stoploss is set to True.</span>
+
+<span class="sd">        :param pair: Pair that&#39;s currently analyzed</span>
+<span class="sd">        :param trade: trade object.</span>
+<span class="sd">        :param current_time: datetime object, containing the current datetime</span>
+<span class="sd">        :param current_rate: Rate, calculated based on pricing settings in exit_pricing.</span>
+<span class="sd">        :param current_profit: Current profit (as ratio), calculated based on current_rate.</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :return float: New stoploss value, relative to the current rate</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mf">0.04</span>
+</code></pre></div>
+<p>Stoploss on exchange works similar to <code>trailing_stop</code>, and the stoploss on exchange is updated as configured in <code>stoploss_on_exchange_interval</code> (<a href="../stoploss/#stop-loss-on-exchange-freqtrade">More details about stoploss on exchange</a>).</p>
+<div class="admonition note">
+<p class="admonition-title">Use of dates</p>
+<p>All time-based calculations should be done based on <code>current_time</code> - using <code>datetime.now()</code> or <code>datetime.utcnow()</code> is discouraged, as this will break backtesting support.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Trailing stoploss</p>
+<p>It's recommended to disable <code>trailing_stop</code> when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.</p>
+</div>
+<h3 id="custom-stoploss-examples">Custom stoploss examples<a class="headerlink" href="#custom-stoploss-examples" title="Permanent link">&para;</a></h3>
+<p>The next section will show some examples on what's possible with the custom stoploss function.
+Of course, many more things are possible, and all examples can be combined at will.</p>
+<h4 id="time-based-trailing-stop">Time based trailing stop<a class="headerlink" href="#time-based-trailing-stop" title="Permanent link">&para;</a></h4>
+<p>Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="n">use_custom_stoploss</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                        <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="c1"># Make sure you have the longest interval first - these conditions are evaluated from top to bottom.</span>
+        <span class="k">if</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">0.05</span>
+        <span class="k">elif</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">0.10</span>
+        <span class="k">return</span> <span class="mi">1</span>
+</code></pre></div>
+<h4 id="different-stoploss-per-pair">Different stoploss per pair<a class="headerlink" href="#different-stoploss-per-pair" title="Permanent link">&para;</a></h4>
+<p>Use a different stoploss depending on the pair.
+In this example, we'll trail the highest price with 10% trailing stoploss for <code>ETH/BTC</code> and <code>XRP/BTC</code>, with 5% trailing stoploss for <code>LTC/BTC</code> and with 15% for all other pairs.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="n">use_custom_stoploss</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                        <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">pair</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;ETH/BTC&#39;</span><span class="p">,</span> <span class="s1">&#39;XRP/BTC&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">0.10</span>
+        <span class="k">elif</span> <span class="n">pair</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;LTC/BTC&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">0.05</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mf">0.15</span>
+</code></pre></div>
+<h4 id="trailing-stoploss-with-positive-offset">Trailing stoploss with positive offset<a class="headerlink" href="#trailing-stoploss-with-positive-offset" title="Permanent link">&para;</a></h4>
+<p>Use the initial stoploss until the profit is above 4%, then use a trailing stoploss of 50% of the current profit with a minimum of 2.5% and a maximum of 5%.</p>
+<p>Please note that the stoploss can only increase, values lower than the current stoploss are ignored.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="n">use_custom_stoploss</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                        <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&lt;</span> <span class="mf">0.04</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span> <span class="c1"># return a value bigger than the initial stoploss to keep using the initial stoploss</span>
+
+        <span class="c1"># After reaching the desired offset, allow the stoploss to trail by half the profit</span>
+        <span class="n">desired_stoploss</span> <span class="o">=</span> <span class="n">current_profit</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="c1"># Use a minimum of 2.5% and a maximum of 5%</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">desired_stoploss</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span> <span class="mf">0.025</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="stepped-stoploss">Stepped stoploss<a class="headerlink" href="#stepped-stoploss" title="Permanent link">&para;</a></h4>
+<p>Instead of continuously trailing behind the current price, this example sets fixed stoploss price levels based on the current profit.</p>
+<ul>
+<li>Use the regular stoploss until 20% profit is reached</li>
+<li>Once profit is &gt; 20% - set stoploss to 7% above open price.</li>
+<li>Once profit is &gt; 25% - set stoploss to 15% above open price.</li>
+<li>Once profit is &gt; 40% - set stoploss to 25% above open price.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+<span class="kn">from</span> <span class="nn">freqtrade.strategy</span> <span class="kn">import</span> <span class="n">stoploss_from_open</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="n">use_custom_stoploss</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                        <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="c1"># evaluate highest to lowest, so that highest possible stop is used</span>
+        <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.40</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">stoploss_from_open</span><span class="p">(</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">,</span> <span class="n">is_short</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">is_short</span><span class="p">,</span> <span class="n">leverage</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">leverage</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.25</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">stoploss_from_open</span><span class="p">(</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">,</span> <span class="n">is_short</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">is_short</span><span class="p">,</span> <span class="n">leverage</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">leverage</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.20</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">stoploss_from_open</span><span class="p">(</span><span class="mf">0.07</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">,</span> <span class="n">is_short</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">is_short</span><span class="p">,</span> <span class="n">leverage</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">leverage</span><span class="p">)</span>
+
+        <span class="c1"># return maximum stoploss value, keeping current stoploss price unchanged</span>
+        <span class="k">return</span> <span class="mi">1</span>
+</code></pre></div>
+<h4 id="custom-stoploss-using-an-indicator-from-dataframe-example">Custom stoploss using an indicator from dataframe example<a class="headerlink" href="#custom-stoploss-using-an-indicator-from-dataframe-example" title="Permanent link">&para;</a></h4>
+<p>Absolute stoploss value may be derived from indicators stored in dataframe. Example uses parabolic SAR below the price as stoploss.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+        <span class="c1"># &lt;...&gt;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;sar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SAR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+
+    <span class="n">use_custom_stoploss</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                        <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
+        <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+
+        <span class="c1"># Use parabolic sar as absolute stoploss price</span>
+        <span class="n">stoploss_price</span> <span class="o">=</span> <span class="n">last_candle</span><span class="p">[</span><span class="s1">&#39;sar&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Convert absolute price to percentage relative to current_rate</span>
+        <span class="k">if</span> <span class="n">stoploss_price</span> <span class="o">&lt;</span> <span class="n">current_rate</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">stoploss_from_absolute</span><span class="p">(</span><span class="n">stoploss_price</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">,</span> <span class="n">is_short</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">is_short</span><span class="p">)</span>
+
+        <span class="c1"># return maximum stoploss value, keeping current stoploss price unchanged</span>
+        <span class="k">return</span> <span class="mi">1</span>
+</code></pre></div>
+<p>See <a href="../strategy-advanced/#dataframe-access">Dataframe access</a> for more information about dataframe use in strategy callbacks.</p>
+<h3 id="common-helpers-for-stoploss-calculations">Common helpers for stoploss calculations<a class="headerlink" href="#common-helpers-for-stoploss-calculations" title="Permanent link">&para;</a></h3>
+<h4 id="stoploss-relative-to-open-price">Stoploss relative to open price<a class="headerlink" href="#stoploss-relative-to-open-price" title="Permanent link">&para;</a></h4>
+<p>Stoploss values returned from <code>custom_stoploss()</code> always specify a percentage relative to <code>current_rate</code>. In order to set a stoploss relative to the <em>open</em> price, we need to use <code>current_profit</code> to calculate what percentage relative to the <code>current_rate</code> will give you the same result as if the percentage was specified from the open price.</p>
+<p>The helper function <a href="../strategy-customization/#stoploss_from_open"><code>stoploss_from_open()</code></a> can be used to convert from an open price relative stop, to a current price relative stop which can be returned from <code>custom_stoploss()</code>.</p>
+<h4 id="stoploss-percentage-from-absolute-price">Stoploss percentage from absolute price<a class="headerlink" href="#stoploss-percentage-from-absolute-price" title="Permanent link">&para;</a></h4>
+<p>Stoploss values returned from <code>custom_stoploss()</code> always specify a percentage relative to <code>current_rate</code>. In order to set a stoploss at specified absolute price level, we need to use <code>stop_rate</code> to calculate what percentage relative to the <code>current_rate</code> will give you the same result as if the percentage was specified from the open price.</p>
+<p>The helper function <a href="../strategy-customization/#stoploss_from_absolute"><code>stoploss_from_absolute()</code></a> can be used to convert from an absolute price, to a current price relative stop which can be returned from <code>custom_stoploss()</code>.</p>
+<hr />
+<h2 id="custom-order-price-rules">Custom order price rules<a class="headerlink" href="#custom-order-price-rules" title="Permanent link">&para;</a></h2>
+<p>By default, freqtrade use the orderbook to automatically set an order price(<a href="../configuration/#prices-used-for-orders">Relevant documentation</a>), you also have the option to create custom order prices based on your strategy.</p>
+<p>You can use this feature by creating a <code>custom_entry_price()</code> function in your strategy file to customize entry prices and <code>custom_exit_price()</code> for exits.</p>
+<p>Each of these methods are called right before placing an order on the exchange.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your custom pricing function return None or an invalid value, price will fall back to <code>proposed_rate</code>, which is based on the regular pricing configuration.</p>
+</div>
+<h3 id="custom-order-entry-and-exit-price-example">Custom order entry and exit price example<a class="headerlink" href="#custom-order-entry-and-exit-price-example" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="k">def</span> <span class="nf">custom_entry_price</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">proposed_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                           <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="n">dataframe</span><span class="p">,</span> <span class="n">last_updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span>
+                                                                <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
+        <span class="n">new_entryprice</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bollinger_10_lowerband&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">new_entryprice</span>
+
+    <span class="k">def</span> <span class="nf">custom_exit_price</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span>
+                          <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">proposed_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                          <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">exit_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="n">dataframe</span><span class="p">,</span> <span class="n">last_updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span>
+                                                                <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
+        <span class="n">new_exitprice</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bollinger_10_upperband&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">new_exitprice</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the <code>custom_price_max_distance_ratio</code> parameter.
+<strong>Example</strong>:
+If the new_entryprice is 97, the proposed_rate is 100 and the <code>custom_price_max_distance_ratio</code> is set to 2%, The retained valid custom entry price will be 98, which is 2% below the current (proposed) rate.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Backtesting</p>
+<p>Custom prices are supported in backtesting (starting with 2021.12), and orders will fill if the price falls within the candle's low/high range.
+Orders that don't fill immediately are subject to regular timeout handling, which happens once per (detail) candle.
+<code>custom_exit_price()</code> is only called for sells of type exit_signal, Custom exit and partial exits. All other exit-types will use regular backtesting prices.</p>
+</div>
+<h2 id="custom-order-timeout-rules">Custom order timeout rules<a class="headerlink" href="#custom-order-timeout-rules" title="Permanent link">&para;</a></h2>
+<p>Simple, time-based order-timeouts can be configured either via strategy or in the configuration in the <code>unfilledtimeout</code> section.</p>
+<p>However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if an order did time out or not.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Backtesting fills orders if their price falls within the candle's low/high range.
+The below callbacks will be called once per (detail) candle for orders that don't fill immediately (which use custom pricing).</p>
+</div>
+<h3 id="custom-order-timeout-example">Custom order timeout example<a class="headerlink" href="#custom-order-timeout-example" title="Permanent link">&para;</a></h3>
+<p>Called for every open order until that order is either filled or cancelled.
+<code>check_entry_timeout()</code> is called for trade entries, while <code>check_exit_timeout()</code> is called for trade exit orders.</p>
+<p>A simple example, which applies different unfilled-timeouts depending on the price of the asset can be seen below.
+It applies a tight timeout for higher priced assets, while allowing more time to fill on cheap coins.</p>
+<p>The function must return either <code>True</code> (cancel order) or <code>False</code> (keep order alive).</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">Order</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="c1"># Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.</span>
+    <span class="n">unfilledtimeout</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;entry&#39;</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span><span class="p">,</span>
+        <span class="s1">&#39;exit&#39;</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">check_entry_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="s1">&#39;Order&#39;</span><span class="p">,</span>
+                            <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_rate</span> <span class="o">&gt;</span> <span class="mi">100</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span> <span class="o">&lt;</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_rate</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span> <span class="o">&lt;</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_rate</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span> <span class="o">&lt;</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">24</span><span class="p">):</span>
+           <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+
+    <span class="k">def</span> <span class="nf">check_exit_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="s1">&#39;Order&#39;</span><span class="p">,</span>
+                           <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_rate</span> <span class="o">&gt;</span> <span class="mi">100</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span> <span class="o">&lt;</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_rate</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span> <span class="o">&lt;</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_rate</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span> <span class="o">&lt;</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">24</span><span class="p">):</span>
+           <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the above example, <code>unfilledtimeout</code> must be set to something bigger than 24h, otherwise that type of timeout will apply first.</p>
+</div>
+<h3 id="custom-order-timeout-example-using-additional-data">Custom order timeout example (using additional data)<a class="headerlink" href="#custom-order-timeout-example-using-additional-data" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">Order</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="c1"># Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.</span>
+    <span class="n">unfilledtimeout</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;entry&#39;</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span><span class="p">,</span>
+        <span class="s1">&#39;exit&#39;</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">check_entry_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="s1">&#39;Order&#39;</span><span class="p">,</span>
+                            <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">ob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">orderbook</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">current_price</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;bids&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># Cancel buy order if price is more than 2% above the order.</span>
+        <span class="k">if</span> <span class="n">current_price</span> <span class="o">&gt;</span> <span class="n">order</span><span class="o">.</span><span class="n">price</span> <span class="o">*</span> <span class="mf">1.02</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+
+    <span class="k">def</span> <span class="nf">check_exit_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="s1">&#39;Order&#39;</span><span class="p">,</span>
+                           <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">ob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">orderbook</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">current_price</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;asks&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># Cancel sell order if price is more than 2% below the order.</span>
+        <span class="k">if</span> <span class="n">current_price</span> <span class="o">&lt;</span> <span class="n">order</span><span class="o">.</span><span class="n">price</span> <span class="o">*</span> <span class="mf">0.98</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+</code></pre></div>
+<hr />
+<h2 id="bot-order-confirmation">Bot order confirmation<a class="headerlink" href="#bot-order-confirmation" title="Permanent link">&para;</a></h2>
+<p>Confirm trade entry / exits.
+This are the last methods that will be called before an order is placed.</p>
+<h3 id="trade-entry-buy-order-confirmation">Trade entry (buy order) confirmation<a class="headerlink" href="#trade-entry-buy-order-confirmation" title="Permanent link">&para;</a></h3>
+<p><code>confirm_trade_entry()</code> can be used to abort a trade entry at the latest second (maybe because the price is not what we expect).</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="k">def</span> <span class="nf">confirm_trade_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                            <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                            <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called right before placing a entry order.</span>
+<span class="sd">        Timing for this function is critical, so avoid doing heavy computations or</span>
+<span class="sd">        network requests in this method.</span>
+
+<span class="sd">        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/</span>
+
+<span class="sd">        When not implemented by a strategy, returns True (always confirming).</span>
+
+<span class="sd">        :param pair: Pair that&#39;s about to be bought/shorted.</span>
+<span class="sd">        :param order_type: Order type (as configured in order_types). usually limit or market.</span>
+<span class="sd">        :param amount: Amount in target (base) currency that&#39;s going to be traded.</span>
+<span class="sd">        :param rate: Rate that&#39;s going to be used when using limit orders </span>
+<span class="sd">                     or current rate for market orders.</span>
+<span class="sd">        :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).</span>
+<span class="sd">        :param current_time: datetime object, containing the current datetime</span>
+<span class="sd">        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.</span>
+<span class="sd">        :param side: &#39;long&#39; or &#39;short&#39; - indicating the direction of the proposed trade</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :return bool: When True is returned, then the buy-order is placed on the exchange.</span>
+<span class="sd">            False aborts the process</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
+<h3 id="trade-exit-sell-order-confirmation">Trade exit (sell order) confirmation<a class="headerlink" href="#trade-exit-sell-order-confirmation" title="Permanent link">&para;</a></h3>
+<p><code>confirm_trade_exit()</code> can be used to abort a trade exit (sell) at the latest second (maybe because the price is not what we expect).</p>
+<p><code>confirm_trade_exit()</code> may be called multiple times within one iteration for the same trade if different exit-reasons apply.
+The exit-reasons (if applicable) will be in the following sequence:</p>
+<ul>
+<li><code>exit_signal</code> / <code>custom_exit</code></li>
+<li><code>stop_loss</code></li>
+<li><code>roi</code></li>
+<li><code>trailing_stop_loss</code></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="k">def</span> <span class="nf">confirm_trade_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                           <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">exit_reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                           <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called right before placing a regular exit order.</span>
+<span class="sd">        Timing for this function is critical, so avoid doing heavy computations or</span>
+<span class="sd">        network requests in this method.</span>
+
+<span class="sd">        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/</span>
+
+<span class="sd">        When not implemented by a strategy, returns True (always confirming).</span>
+
+<span class="sd">        :param pair: Pair for trade that&#39;s about to be exited.</span>
+<span class="sd">        :param trade: trade object.</span>
+<span class="sd">        :param order_type: Order type (as configured in order_types). usually limit or market.</span>
+<span class="sd">        :param amount: Amount in base currency.</span>
+<span class="sd">        :param rate: Rate that&#39;s going to be used when using limit orders</span>
+<span class="sd">                     or current rate for market orders.</span>
+<span class="sd">        :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).</span>
+<span class="sd">        :param exit_reason: Exit reason.</span>
+<span class="sd">            Can be any of [&#39;roi&#39;, &#39;stop_loss&#39;, &#39;stoploss_on_exchange&#39;, &#39;trailing_stop_loss&#39;,</span>
+<span class="sd">                           &#39;exit_signal&#39;, &#39;force_exit&#39;, &#39;emergency_exit&#39;]</span>
+<span class="sd">        :param current_time: datetime object, containing the current datetime</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :return bool: When True, then the exit-order is placed on the exchange.</span>
+<span class="sd">            False aborts the process</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">exit_reason</span> <span class="o">==</span> <span class="s1">&#39;force_exit&#39;</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">calc_profit_ratio</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Reject force-sells with negative profit</span>
+            <span class="c1"># This is just a sample, please adjust to your needs</span>
+            <span class="c1"># (this does not necessarily make sense, assuming you know when you&#39;re force-selling)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>confirm_trade_exit()</code> can prevent stoploss exits, causing significant losses as this would ignore stoploss exits.
+<code>confirm_trade_exit()</code> will not be called for Liquidations - as liquidations are forced by the exchange, and therefore cannot be rejected.</p>
+</div>
+<h2 id="adjust-trade-position">Adjust trade position<a class="headerlink" href="#adjust-trade-position" title="Permanent link">&para;</a></h2>
+<p>The <code>position_adjustment_enable</code> strategy property enables the usage of <code>adjust_trade_position()</code> callback in the strategy.
+For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
+<code>adjust_trade_position()</code> can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging) or to increase or decrease positions.</p>
+<p><code>max_entry_position_adjustment</code> property is used to limit the number of additional buys per trade (on top of the first buy) that the bot can execute. By default, the value is -1 which means the bot have no limit on number of adjustment buys.</p>
+<p>The strategy is expected to return a stake_amount (in stake currency) between <code>min_stake</code> and <code>max_stake</code> if and when an additional buy order should be made (position is increased).
+If there are not enough funds in the wallet (the return value is above <code>max_stake</code>) then the signal will be ignored.
+Additional orders also result in additional fees and those orders don't count towards <code>max_open_trades</code>.</p>
+<p>This callback is <strong>not</strong> called when there is an open order (either buy or sell) waiting for execution.</p>
+<p><code>adjust_trade_position()</code> is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.</p>
+<p>Additional Buys are ignored once you have reached the maximum amount of extra buys that you have set on <code>max_entry_position_adjustment</code>, but the callback is called anyway looking for partial exits.</p>
+<p>Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position (negative values will decrease your position), no matter if it's a long or short trade. Modifications to leverage are not possible, and the stake-amount is assumed to be before applying leverage.</p>
+<div class="admonition note">
+<p class="admonition-title">About stake size</p>
+<p>Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
+If you wish to buy additional orders with DCA, then make sure to leave enough funds in the wallet for that.
+Using 'unlimited' stake amount with DCA orders requires you to also implement the <code>custom_stake_amount()</code> callback to avoid allocating all funds to the initial order.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Stoploss is still calculated from the initial opening price, not averaged price.
+Regular stoploss rules still apply (cannot move down).</p>
+<p>While <code>/stopentry</code> command stops the bot from entering new trades, the position adjustment feature will continue buying new orders on existing trades.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Backtesting</p>
+<p>During backtesting this callback is called for each candle in <code>timeframe</code> or <code>timeframe_detail</code>, so run-time performance will be affected.
+This can also cause deviating results between live and backtesting, since backtesting can adjust the trade only once per candle, whereas live could adjust the trade multiple times per candle.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+
+
+<span class="k">class</span> <span class="nc">DigDeeperStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="n">position_adjustment_enable</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># Attempts to handle large drops with DCA. High stoploss is required.</span>
+    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.30</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="c1"># Example specific variables</span>
+    <span class="n">max_entry_position_adjustment</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="c1"># This number is explained a bit further down</span>
+    <span class="n">max_dca_multiplier</span> <span class="o">=</span> <span class="mf">5.5</span>
+
+    <span class="c1"># This is called when placing the initial order (opening trade)</span>
+    <span class="k">def</span> <span class="nf">custom_stake_amount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                            <span class="n">proposed_stake</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">min_stake</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">max_stake</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                            <span class="n">leverage</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="c1"># We need to leave most of the funds for possible further DCA orders</span>
+        <span class="c1"># This also applies to fixed stakes</span>
+        <span class="k">return</span> <span class="n">proposed_stake</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_dca_multiplier</span>
+
+    <span class="k">def</span> <span class="nf">adjust_trade_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
+                              <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                              <span class="n">min_stake</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">max_stake</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                              <span class="n">current_entry_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_exit_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                              <span class="n">current_entry_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_exit_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                              <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Custom trade adjustment logic, returning the stake amount that a trade should be</span>
+<span class="sd">        increased or decreased.</span>
+<span class="sd">        This means extra buy or sell orders with additional fees.</span>
+<span class="sd">        Only called when `position_adjustment_enable` is set to True.</span>
+
+<span class="sd">        For full documentation please go to https://www.freqtrade.io/en/latest/strategy-advanced/</span>
+
+<span class="sd">        When not implemented by a strategy, returns None</span>
+
+<span class="sd">        :param trade: trade object.</span>
+<span class="sd">        :param current_time: datetime object, containing the current datetime</span>
+<span class="sd">        :param current_rate: Current buy rate.</span>
+<span class="sd">        :param current_profit: Current profit (as ratio), calculated based on current_rate.</span>
+<span class="sd">        :param min_stake: Minimal stake size allowed by exchange (for both entries and exits)</span>
+<span class="sd">        :param max_stake: Maximum stake allowed (either through balance, or by exchange limits).</span>
+<span class="sd">        :param current_entry_rate: Current rate using entry pricing.</span>
+<span class="sd">        :param current_exit_rate: Current rate using exit pricing.</span>
+<span class="sd">        :param current_entry_profit: Current profit using entry pricing.</span>
+<span class="sd">        :param current_exit_profit: Current profit using exit pricing.</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :return float: Stake amount to adjust your trade,</span>
+<span class="sd">                       Positive values to increase position, Negative values to decrease position.</span>
+<span class="sd">                       Return None for no action.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.05</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">nr_of_successful_exits</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Take half of the profit at +5%</span>
+            <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">stake_amount</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mf">0.05</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Obtain pair dataframe (just to show how to access it)</span>
+        <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">pair</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
+        <span class="c1"># Only buy when not actively falling price.</span>
+        <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+        <span class="n">previous_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">last_candle</span><span class="p">[</span><span class="s1">&#39;close&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">previous_candle</span><span class="p">[</span><span class="s1">&#39;close&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">filled_entries</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">select_filled_orders</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">entry_side</span><span class="p">)</span>
+        <span class="n">count_of_entries</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">nr_of_successful_entries</span>
+        <span class="c1"># Allow up to 3 additional increasingly larger buys (4 in total)</span>
+        <span class="c1"># Initial buy is 1x</span>
+        <span class="c1"># If that falls to -5% profit, we buy 1.25x more, average profit should increase to roughly -2.2%</span>
+        <span class="c1"># If that falls down to -5% again, we buy 1.5x more</span>
+        <span class="c1"># If that falls once again down to -5%, we buy 1.75x more</span>
+        <span class="c1"># Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.</span>
+        <span class="c1"># That is why max_dca_multiplier is 5.5</span>
+        <span class="c1"># Hope you have a deep wallet!</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># This returns first order stake size</span>
+            <span class="n">stake_amount</span> <span class="o">=</span> <span class="n">filled_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stake_amount</span>
+            <span class="c1"># This then calculates current safety order size</span>
+            <span class="n">stake_amount</span> <span class="o">=</span> <span class="n">stake_amount</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">count_of_entries</span> <span class="o">*</span> <span class="mf">0.25</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">stake_amount</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+<h3 id="position-adjust-calculations">Position adjust calculations<a class="headerlink" href="#position-adjust-calculations" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Entry rates are calculated using weighted averages.</li>
+<li>Exits will not influence the average entry rate.</li>
+<li>Partial exit relative profit is relative to the average entry price at this point.</li>
+<li>Final exit relative profit is calculated based on the total invested capital. (See example below)</li>
+</ul>
+<details class="example">
+<summary>Calculation example</summary>
+<p><em>This example assumes 0 fees for simplicity, and a long position on an imaginary coin.</em>  </p>
+<ul>
+<li>Buy 100@8$ </li>
+<li>Buy 100@9$ -&gt; Avg price: 8.5$</li>
+<li>Sell 100@10$ -&gt; Avg price: 8.5$, realized profit 150$, 17.65%</li>
+<li>Buy 150@11$ -&gt; Avg price: 10$, realized profit 150$, 17.65%</li>
+<li>Sell 100@12$ -&gt; Avg price: 10$, total realized profit 350$, 20%</li>
+<li>Sell 150@14$ -&gt; Avg price: 10$, total realized profit 950$, 40%  &lt;- <em>This will be the last "Exit" message</em></li>
+</ul>
+<p>The total profit for this trade was 950$ on a 3350$ investment (<code>100@8$ + 100@9$ + 150@11$</code>). As such - the final relative profit is 28.35% (<code>950 / 3350</code>).</p>
+</details>
+<h2 id="adjust-entry-price">Adjust Entry Price<a class="headerlink" href="#adjust-entry-price" title="Permanent link">&para;</a></h2>
+<p>The <code>adjust_entry_price()</code> callback may be used by strategy developer to refresh/replace limit orders upon arrival of new candles.
+Be aware that <code>custom_entry_price()</code> is still the one dictating initial entry limit order price target at the time of entry trigger.</p>
+<p>Orders can be cancelled out of this callback by returning <code>None</code>.</p>
+<p>Returning <code>current_order_rate</code> will keep the order on the exchange "as is".
+Returning any other price will cancel the existing order, and replace it with a new order.</p>
+<p>The trade open-date (<code>trade.open_date_utc</code>) will remain at the time of the very first order placed.
+Please make sure to be aware of this - and eventually adjust your logic in other callbacks to account for this, and use the date of the first filled order instead.</p>
+<div class="admonition warning">
+<p class="admonition-title">Regular timeout</p>
+<p>Entry <code>unfilledtimeout</code> mechanism (as well as <code>check_entry_timeout()</code>) takes precedence over this.
+Entry Orders that are cancelled via the above methods will not have this callback called. Be sure to update timeout values to match your expectations.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
+
+<span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+
+    <span class="c1"># ... populate_* methods</span>
+
+    <span class="k">def</span> <span class="nf">adjust_entry_price</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Order</span><span class="p">],</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                           <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">proposed_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_order_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                           <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Entry price re-adjustment logic, returning the user desired limit price.</span>
+<span class="sd">        This only executes when a order was already placed, still open (unfilled fully or partially)</span>
+<span class="sd">        and not timed out on subsequent candles after entry trigger.</span>
+
+<span class="sd">        When not implemented by a strategy, returns current_order_rate as default.</span>
+<span class="sd">        If current_order_rate is returned then the existing order is maintained.</span>
+<span class="sd">        If None is returned then order gets canceled but not replaced by a new one.</span>
+
+<span class="sd">        :param pair: Pair that&#39;s currently analyzed</span>
+<span class="sd">        :param trade: Trade object.</span>
+<span class="sd">        :param order: Order object</span>
+<span class="sd">        :param current_time: datetime object, containing the current datetime</span>
+<span class="sd">        :param proposed_rate: Rate, calculated based on pricing settings in entry_pricing.</span>
+<span class="sd">        :param current_order_rate: Rate of the existing order in place.</span>
+<span class="sd">        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.</span>
+<span class="sd">        :param side: &#39;long&#39; or &#39;short&#39; - indicating the direction of the proposed trade</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :return float: New entry price value if provided</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.</span>
+        <span class="k">if</span> <span class="n">pair</span> <span class="o">==</span> <span class="s1">&#39;BTC/USDT&#39;</span> <span class="ow">and</span> <span class="n">entry_tag</span> <span class="o">==</span> <span class="s1">&#39;long_sma200&#39;</span> <span class="ow">and</span> <span class="n">side</span> <span class="o">==</span> <span class="s1">&#39;long&#39;</span> <span class="ow">and</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span><span class="p">:</span>
+            <span class="c1"># just cancel the order if it has been filled more than half of the amount</span>
+            <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">filled</span> <span class="o">&gt;</span> <span class="n">order</span><span class="o">.</span><span class="n">remaining</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span> <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
+                <span class="n">current_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+                <span class="c1"># desired price</span>
+                <span class="k">return</span> <span class="n">current_candle</span><span class="p">[</span><span class="s1">&#39;sma_200&#39;</span><span class="p">]</span>
+        <span class="c1"># default: maintain existing order</span>
+        <span class="k">return</span> <span class="n">current_order_rate</span>
+</code></pre></div>
+<h2 id="leverage-callback">Leverage Callback<a class="headerlink" href="#leverage-callback" title="Permanent link">&para;</a></h2>
+<p>When trading in markets that allow leverage, this method must return the desired Leverage (Defaults to 1 -&gt; No leverage).</p>
+<p>Assuming a capital of 500USDT, a trade with leverage=3 would result in a position with 500 x 3 = 1500 USDT.</p>
+<p>Values that are above <code>max_leverage</code> will be adjusted to <code>max_leverage</code>.
+For markets / exchanges that don't support leverage, this method is ignored.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">leverage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                 <span class="n">proposed_leverage</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">max_leverage</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">entry_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Customize leverage for each new trade. This method is only called in futures mode.</span>
+
+<span class="sd">        :param pair: Pair that&#39;s currently analyzed</span>
+<span class="sd">        :param current_time: datetime object, containing the current datetime</span>
+<span class="sd">        :param current_rate: Rate, calculated based on pricing settings in exit_pricing.</span>
+<span class="sd">        :param proposed_leverage: A leverage proposed by the bot.</span>
+<span class="sd">        :param max_leverage: Max leverage allowed on this pair</span>
+<span class="sd">        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.</span>
+<span class="sd">        :param side: &#39;long&#39; or &#39;short&#39; - indicating the direction of the proposed trade</span>
+<span class="sd">        :return: A leverage amount, which is between 1.0 and max_leverage.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">1.0</span>
+</code></pre></div>
+<p>All profit calculations include leverage. Stoploss / ROI also include leverage in their calculation.
+Defining a stoploss of 10% at 10x leverage would trigger the stoploss with a 1% move to the downside.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../strategy-customization/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Strategy Customization" rel="prev">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Strategy Customization
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../stoploss/" class="md-footer__link md-footer__link--next" aria-label="Next: Stoploss" rel="next">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Stoploss
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.dfff1995.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.78eede0e.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
