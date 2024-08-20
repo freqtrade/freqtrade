@@ -1,0 +1,26 @@
+<script>
+    // Check if the current path is versioned, if not, redirect to the default versioned path
+    const versions = ["0.19.x", "latest"]
+    const defaultVersion = "latest"
+    const basePath = "/gitlint"
+    const targetRedirectPath = "404" // path to redirect to, relative to basePath
+
+    // if path starts with version, redirect to versioned 404
+    let foundVersion = false
+    versions.forEach(version => {
+        const versionedPath = `${basePath}/${version}`;
+        if (window.location.pathname.startsWith(versionedPath)) {
+             // we need this foundVersion guard because the browser is fast and
+             // will keep the executing code below until the redirect happens
+            foundVersion = true;
+            window.location.href = `${versionedPath}/${targetRedirectPath}`
+        }
+    });
+
+    // if path doesn't start with any version, redirect to defaultVersion
+    // Replace it in href, so we keep hashes and query params
+    // Only replace first occurence of basePath
+    if (!foundVersion){
+        window.location.href = window.location.href.replace(basePath, `${basePath}/en/${defaultVersion}`)
+    }
+</script>
