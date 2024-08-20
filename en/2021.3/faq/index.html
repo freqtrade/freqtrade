@@ -1,0 +1,1334 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-7.0.6">
+    
+    
+      
+        <title>FAQ - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2c0c5eaf.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.7fa14f5b.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#546d78">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font-family:"Roboto";--md-code-font-family:"Roboto Mono"}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+      
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#freqtrade-faq" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo"
+      aria-label="Freqtrade">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+            FAQ
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="md-header__options">
+      
+    </div>
+    
+    <label class="md-header__button md-icon" for="__search">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+    </label>
+    
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+    <div class="md-header__source">
+      
+<a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+    
+  </nav>
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        Quickstart with Docker
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      <label class="md-nav__link" for="__nav_3">
+        Installation
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        Linux/MacOS/Raspberry
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        Windows
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        Freqtrade Basics
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        Strategy Customization
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        Plugins
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        Stoploss
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        Start the bot
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" >
+      
+      <label class="md-nav__link" for="__nav_10">
+        Control the bot
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Control the bot" data-md-level="1">
+        <label class="md-nav__title" for="__nav_10">
+          <span class="md-nav__icon md-icon"></span>
+          Control the bot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        Telegram
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        REST API & FreqUI
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        Web Hook
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        Data Downloading
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        Backtesting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        Hyperopt
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utility Sub-commands
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        Plotting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_16" type="checkbox" id="__nav_16" >
+      
+      <label class="md-nav__link" for="__nav_16">
+        Data Analysis
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Data Analysis" data-md-level="1">
+        <label class="md-nav__title" for="__nav_16">
+          <span class="md-nav__icon md-icon"></span>
+          Data Analysis
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        Jupyter Notebooks
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        Strategy analysis
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        Exchange-specific Notes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_18" type="checkbox" id="__nav_18" >
+      
+      <label class="md-nav__link" for="__nav_18">
+        Advanced Topics
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_18">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        Advanced Post-installation Tasks
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        Edge Positioning
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        Advanced Strategy
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        Advanced Hyperopt
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sandbox-testing/" class="md-nav__link">
+        Sandbox Testing
+      </a>
+    </li>
+  
+
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          FAQ
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        FAQ
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#beginner-tips-tricks" class="md-nav__link">
+    Beginner Tips &amp; Tricks
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freqtrade-common-issues" class="md-nav__link">
+    Freqtrade common issues
+  </a>
+  
+    <nav class="md-nav" aria-label="Freqtrade common issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-bot-does-not-start" class="md-nav__link">
+    The bot does not start
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-have-waited-5-minutes-why-hasnt-the-bot-made-any-trades-yet" class="md-nav__link">
+    I have waited 5 minutes, why hasn't the bot made any trades yet?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-have-made-12-trades-already-why-is-my-total-profit-negative" class="md-nav__link">
+    I have made 12 trades already, why is my total profit negative?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#id-like-to-make-changes-to-the-config-can-i-do-that-without-having-to-kill-the-bot" class="md-nav__link">
+    I’d like to make changes to the config. Can I do that without having to kill the bot?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-want-to-improve-the-bot-with-a-new-strategy" class="md-nav__link">
+    I want to improve the bot with a new strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is-there-a-setting-to-only-sell-the-coins-being-held-and-not-perform-anymore-buys" class="md-nav__link">
+    Is there a setting to only SELL the coins being held and not perform anymore BUYS?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-want-to-run-multiple-bots-on-the-same-machine" class="md-nav__link">
+    I want to run multiple bots on the same machine
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#im-getting-missing-data-fillup-messages-in-the-log" class="md-nav__link">
+    I'm getting "Missing data fillup" messages in the log
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#im-getting-the-restricted_market-message-in-the-log" class="md-nav__link">
+    I'm getting the "RESTRICTED_MARKET" message in the log
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#im-getting-the-exchange-bittrex-does-not-support-market-orders-message-and-cannot-run-my-strategy" class="md-nav__link">
+    I'm getting the "Exchange Bittrex does not support market orders." message and cannot run my strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-do-i-search-the-bot-logs-for-something" class="md-nav__link">
+    How do I search the bot logs for something?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hyperopt-module" class="md-nav__link">
+    Hyperopt module
+  </a>
+  
+    <nav class="md-nav" aria-label="Hyperopt module">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-many-epochs-do-i-need-to-get-a-good-hyperopt-result" class="md-nav__link">
+    How many epochs do I need to get a good Hyperopt result?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-does-it-take-a-long-time-to-run-hyperopt" class="md-nav__link">
+    Why does it take a long time to run hyperopt?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edge-module" class="md-nav__link">
+    Edge module
+  </a>
+  
+    <nav class="md-nav" aria-label="Edge module">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#edge-implements-interesting-approach-for-controlling-position-size-is-there-any-theory-behind-it" class="md-nav__link">
+    Edge implements interesting approach for controlling position size, is there any theory behind it?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        SQL Cheat-sheet
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        Updating Freqtrade
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        Deprecated Features
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        Contributors Guide
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#beginner-tips-tricks" class="md-nav__link">
+    Beginner Tips &amp; Tricks
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#freqtrade-common-issues" class="md-nav__link">
+    Freqtrade common issues
+  </a>
+  
+    <nav class="md-nav" aria-label="Freqtrade common issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-bot-does-not-start" class="md-nav__link">
+    The bot does not start
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-have-waited-5-minutes-why-hasnt-the-bot-made-any-trades-yet" class="md-nav__link">
+    I have waited 5 minutes, why hasn't the bot made any trades yet?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-have-made-12-trades-already-why-is-my-total-profit-negative" class="md-nav__link">
+    I have made 12 trades already, why is my total profit negative?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#id-like-to-make-changes-to-the-config-can-i-do-that-without-having-to-kill-the-bot" class="md-nav__link">
+    I’d like to make changes to the config. Can I do that without having to kill the bot?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-want-to-improve-the-bot-with-a-new-strategy" class="md-nav__link">
+    I want to improve the bot with a new strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#is-there-a-setting-to-only-sell-the-coins-being-held-and-not-perform-anymore-buys" class="md-nav__link">
+    Is there a setting to only SELL the coins being held and not perform anymore BUYS?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-want-to-run-multiple-bots-on-the-same-machine" class="md-nav__link">
+    I want to run multiple bots on the same machine
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#im-getting-missing-data-fillup-messages-in-the-log" class="md-nav__link">
+    I'm getting "Missing data fillup" messages in the log
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#im-getting-the-restricted_market-message-in-the-log" class="md-nav__link">
+    I'm getting the "RESTRICTED_MARKET" message in the log
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#im-getting-the-exchange-bittrex-does-not-support-market-orders-message-and-cannot-run-my-strategy" class="md-nav__link">
+    I'm getting the "Exchange Bittrex does not support market orders." message and cannot run my strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-do-i-search-the-bot-logs-for-something" class="md-nav__link">
+    How do I search the bot logs for something?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hyperopt-module" class="md-nav__link">
+    Hyperopt module
+  </a>
+  
+    <nav class="md-nav" aria-label="Hyperopt module">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-many-epochs-do-i-need-to-get-a-good-hyperopt-result" class="md-nav__link">
+    How many epochs do I need to get a good Hyperopt result?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-does-it-take-a-long-time-to-run-hyperopt" class="md-nav__link">
+    Why does it take a long time to run hyperopt?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edge-module" class="md-nav__link">
+    Edge module
+  </a>
+  
+    <nav class="md-nav" aria-label="Edge module">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#edge-implements-interesting-approach-for-controlling-position-size-is-there-any-theory-behind-it" class="md-nav__link">
+    Edge implements interesting approach for controlling position size, is there any theory behind it?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/freqtrade/freqtrade/edit/master/docs/faq.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="freqtrade-faq">Freqtrade FAQ<a class="headerlink" href="#freqtrade-faq" title="Permanent link">&para;</a></h1>
+<h2 id="beginner-tips-tricks">Beginner Tips &amp; Tricks<a class="headerlink" href="#beginner-tips-tricks" title="Permanent link">&para;</a></h2>
+<ul>
+<li>When you work with your strategy &amp; hyperopt file you should use a proper code editor like VSCode or PyCharm. A good code editor will provide syntax highlighting as well as line numbers, making it easy to find syntax errors (most likely pointed out by Freqtrade during startup).</li>
+</ul>
+<h2 id="freqtrade-common-issues">Freqtrade common issues<a class="headerlink" href="#freqtrade-common-issues" title="Permanent link">&para;</a></h2>
+<h3 id="the-bot-does-not-start">The bot does not start<a class="headerlink" href="#the-bot-does-not-start" title="Permanent link">&para;</a></h3>
+<p>Running the bot with <code>freqtrade trade --config config.json</code> shows the output <code>freqtrade: command not found</code>.</p>
+<p>This could be caused by the following reasons:</p>
+<ul>
+<li>The virtual environment is not active.<ul>
+<li>Run <code>source .env/bin/activate</code> to activate the virtual environment.</li>
+</ul>
+</li>
+<li>The installation did not work correctly.<ul>
+<li>Please check the <a href="../installation/">Installation documentation</a>.</li>
+</ul>
+</li>
+</ul>
+<h3 id="i-have-waited-5-minutes-why-hasnt-the-bot-made-any-trades-yet">I have waited 5 minutes, why hasn't the bot made any trades yet?<a class="headerlink" href="#i-have-waited-5-minutes-why-hasnt-the-bot-made-any-trades-yet" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Depending on the buy strategy, the amount of whitelisted coins, the
+situation of the market etc, it can take up to hours to find a good entry
+position for a trade. Be patient!</li>
+</ul>
+<ul>
+<li>It may be because of a configuration error. It's best to check the logs, they usually tell you if the bot is simply not getting buy signals (only heartbeat messages), or if there is something wrong (errors / exceptions in the log).</li>
+</ul>
+<h3 id="i-have-made-12-trades-already-why-is-my-total-profit-negative">I have made 12 trades already, why is my total profit negative?<a class="headerlink" href="#i-have-made-12-trades-already-why-is-my-total-profit-negative" title="Permanent link">&para;</a></h3>
+<p>I understand your disappointment but unfortunately 12 trades is just
+not enough to say anything. If you run backtesting, you can see that our
+current algorithm does leave you on the plus side, but that is after
+thousands of trades and even there, you will be left with losses on
+specific coins that you have traded tens if not hundreds of times. We
+of course constantly aim to improve the bot but it will <em>always</em> be a
+gamble, which should leave you with modest wins on monthly basis but
+you can't say much from few trades.</p>
+<h3 id="id-like-to-make-changes-to-the-config-can-i-do-that-without-having-to-kill-the-bot">I’d like to make changes to the config. Can I do that without having to kill the bot?<a class="headerlink" href="#id-like-to-make-changes-to-the-config-can-i-do-that-without-having-to-kill-the-bot" title="Permanent link">&para;</a></h3>
+<p>Yes. You can edit your config and use the <code>/reload_config</code> command to reload the configuration. The bot will stop, reload the configuration and strategy and will restart with the new configuration and strategy.</p>
+<h3 id="i-want-to-improve-the-bot-with-a-new-strategy">I want to improve the bot with a new strategy<a class="headerlink" href="#i-want-to-improve-the-bot-with-a-new-strategy" title="Permanent link">&para;</a></h3>
+<p>That's great. We have a nice backtesting and hyperoptimization setup. See the tutorial <a href="../bot-usage/#hyperopt-commands">here|Testing-new-strategies-with-Hyperopt</a>.</p>
+<h3 id="is-there-a-setting-to-only-sell-the-coins-being-held-and-not-perform-anymore-buys">Is there a setting to only SELL the coins being held and not perform anymore BUYS?<a class="headerlink" href="#is-there-a-setting-to-only-sell-the-coins-being-held-and-not-perform-anymore-buys" title="Permanent link">&para;</a></h3>
+<p>You can use the <code>/stopbuy</code> command in Telegram to prevent future buys, followed by <code>/forcesell all</code> (sell all open trades).</p>
+<h3 id="i-want-to-run-multiple-bots-on-the-same-machine">I want to run multiple bots on the same machine<a class="headerlink" href="#i-want-to-run-multiple-bots-on-the-same-machine" title="Permanent link">&para;</a></h3>
+<p>Please look at the <a href="../advanced-setup/#running-multiple-instances-of-freqtrade">advanced setup documentation Page</a>.</p>
+<h3 id="im-getting-missing-data-fillup-messages-in-the-log">I'm getting "Missing data fillup" messages in the log<a class="headerlink" href="#im-getting-missing-data-fillup-messages-in-the-log" title="Permanent link">&para;</a></h3>
+<p>This message is just a warning that the latest candles had missing candles in them.
+Depending on the exchange, this can indicate that the pair didn't have a trade for the timeframe you are using - and the exchange does only return candles with volume.
+On low volume pairs, this is a rather common occurrence.</p>
+<p>If this happens for all pairs in the pairlist, this might indicate a recent exchange downtime. Please check your exchange's public channels for details.</p>
+<p>Irrespectively of the reason, Freqtrade will fill up these candles with "empty" candles, where open, high, low and close are set to the previous candle close - and volume is empty. In a chart, this will look like a <code>_</code> - and is aligned with how exchanges usually represent 0 volume candles.</p>
+<h3 id="im-getting-the-restricted_market-message-in-the-log">I'm getting the "RESTRICTED_MARKET" message in the log<a class="headerlink" href="#im-getting-the-restricted_market-message-in-the-log" title="Permanent link">&para;</a></h3>
+<p>Currently known to happen for US Bittrex users.  </p>
+<p>Read <a href="../exchanges/#restricted-markets">the Bittrex section about restricted markets</a> for more information.</p>
+<h3 id="im-getting-the-exchange-bittrex-does-not-support-market-orders-message-and-cannot-run-my-strategy">I'm getting the "Exchange Bittrex does not support market orders." message and cannot run my strategy<a class="headerlink" href="#im-getting-the-exchange-bittrex-does-not-support-market-orders-message-and-cannot-run-my-strategy" title="Permanent link">&para;</a></h3>
+<p>As the message says, Bittrex does not support market orders and you have one of the <a href="configuration.md/#understand-order_types">order types</a> set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Bittrex).</p>
+<p>To fix it for Bittrex, redefine order types in the strategy to use "limit" instead of "market":</p>
+<p><code>order_types = {
+        ...
+        'stoploss': 'limit',
+        ...
+    }</code></p>
+<p>The same fix should be applied in the configuration file, if order types are defined in your custom config rather than in the strategy.</p>
+<h3 id="how-do-i-search-the-bot-logs-for-something">How do I search the bot logs for something?<a class="headerlink" href="#how-do-i-search-the-bot-logs-for-something" title="Permanent link">&para;</a></h3>
+<p>By default, the bot writes its log into stderr stream. This is implemented this way so that you can easily separate the bot's diagnostics messages from Backtesting, Edge and Hyperopt results, output from other various Freqtrade utility sub-commands, as well as from the output of your custom <code>print()</code>'s you may have inserted into your strategy. So if you need to search the log messages with the grep utility, you need to redirect stderr to stdout and disregard stdout.</p>
+<ul>
+<li>In unix shells, this normally can be done as simple as:
+<code>shell
+$ freqtrade --some-options 2&gt;&amp;1 &gt;/dev/null | grep 'something'</code>
+(note, <code>2&gt;&amp;1</code> and <code>&gt;/dev/null</code> should be written in this order)</li>
+</ul>
+<ul>
+<li>Bash interpreter also supports so called process substitution syntax, you can grep the log for a string with it as:
+<code>shell
+$ freqtrade --some-options 2&gt; &gt;(grep 'something') &gt;/dev/null</code>
+or
+<code>shell
+$ freqtrade --some-options 2&gt; &gt;(grep -v 'something' 1&gt;&amp;2)</code></li>
+</ul>
+<ul>
+<li>You can also write the copy of Freqtrade log messages to a file with the <code>--logfile</code> option:
+<code>shell
+$ freqtrade --logfile /path/to/mylogfile.log --some-options</code>
+and then grep it as:
+<code>shell
+$ cat /path/to/mylogfile.log | grep 'something'</code>
+or even on the fly, as the bot works and the log file grows:
+<code>shell
+$ tail -f /path/to/mylogfile.log | grep 'something'</code>
+from a separate terminal window.</li>
+</ul>
+<p>On Windows, the <code>--logfile</code> option is also supported by Freqtrade and you can use the <code>findstr</code> command to search the log for the string of interest:
+```</p>
+<blockquote>
+<p>type \path\to\mylogfile.log | findstr "something"
+```</p>
+</blockquote>
+<h2 id="hyperopt-module">Hyperopt module<a class="headerlink" href="#hyperopt-module" title="Permanent link">&para;</a></h2>
+<h3 id="how-many-epochs-do-i-need-to-get-a-good-hyperopt-result">How many epochs do I need to get a good Hyperopt result?<a class="headerlink" href="#how-many-epochs-do-i-need-to-get-a-good-hyperopt-result" title="Permanent link">&para;</a></h3>
+<p>Per default Hyperopt called without the <code>-e</code>/<code>--epochs</code> command line option will only
+run 100 epochs, means 100 evaluations of your triggers, guards, ... Too few
+to find a great result (unless if you are very lucky), so you probably
+have to run it for 10.000 or more. But it will take an eternity to
+compute.</p>
+<p>Since hyperopt uses Bayesian search, running for too many epochs may not produce greater results.</p>
+<p>It's therefore recommended to run between 500-1000 epochs over and over until you hit at least 10.000 epochs in total (or are satisfied with the result). You can best judge by looking at the results - if the bot keeps discovering better strategies, it's best to keep on going.</p>
+<p><code>bash
+freqtrade hyperopt --hyperopt SampleHyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy SampleStrategy -e 1000</code></p>
+<h3 id="why-does-it-take-a-long-time-to-run-hyperopt">Why does it take a long time to run hyperopt?<a class="headerlink" href="#why-does-it-take-a-long-time-to-run-hyperopt" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Discovering a great strategy with Hyperopt takes time. Study <a href="http://www.freqtrade.io">www.freqtrade.io</a>, the Freqtrade Documentation page, join the Freqtrade <a href="https://join.slack.com/t/highfrequencybot/shared_invite/zt-mm786y93-Fxo37glxMY9g8OQC5AoOIw">Slack community</a> - or the Freqtrade <a href="https://discord.gg/X89cVG">discord community</a>. While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.</li>
+</ul>
+<ul>
+<li>If you wonder why it can take from 20 minutes to days to do 1000 epochs here are some answers:</li>
+</ul>
+<p>This answer was written during the release 0.15.1, when we had:</p>
+<ul>
+<li>8 triggers</li>
+<li>9 guards: let's say we evaluate even 10 values from each</li>
+<li>1 stoploss calculation: let's say we want 10 values from that too to be evaluated</li>
+</ul>
+<p>The following calculation is still very rough and not very precise
+but it will give the idea. With only these triggers and guards there is
+already 8*10^9*10 evaluations. A roughly total of 80 billion evaluations.
+Did you run 100 000 evaluations? Congrats, you've done roughly 1 / 100 000 th
+of the search space, assuming that the bot never tests the same parameters more than once.</p>
+<ul>
+<li>The time it takes to run 1000 hyperopt epochs depends on things like: The available cpu, hard-disk, ram, timeframe, timerange, indicator settings, indicator count, amount of coins that hyperopt test strategies on and the resulting trade count - which can be 650 trades in a year or 10.0000 trades depending if the strategy aims for big profits by trading rarely or for many low profit trades. </li>
+</ul>
+<p>Example: 4% profit 650 times vs 0,3% profit a trade 10.000 times in a year. If we assume you set the --timerange to 365 days. </p>
+<p>Example:
+<code>freqtrade --config config.json --strategy SampleStrategy --hyperopt SampleHyperopt -e 1000 --timerange 20190601-20200601</code></p>
+<h2 id="edge-module">Edge module<a class="headerlink" href="#edge-module" title="Permanent link">&para;</a></h2>
+<h3 id="edge-implements-interesting-approach-for-controlling-position-size-is-there-any-theory-behind-it">Edge implements interesting approach for controlling position size, is there any theory behind it?<a class="headerlink" href="#edge-implements-interesting-approach-for-controlling-position-size-is-there-any-theory-behind-it" title="Permanent link">&para;</a></h3>
+<p>The Edge module is mostly a result of brainstorming of <a href="https://github.com/mishaker">@mishaker</a> and <a href="https://github.com/creslinux">@creslinux</a> freqtrade team members.</p>
+<p>You can find further info on expectancy, win rate, risk management and position size in the following sources:</p>
+<ul>
+<li><a href="https://www.tradeciety.com/ultimate-math-guide-for-traders/">https://www.tradeciety.com/ultimate-math-guide-for-traders/</a></li>
+<li><a href="http://www.vantharp.com/tharp-concepts/expectancy.asp">http://www.vantharp.com/tharp-concepts/expectancy.asp</a></li>
+<li><a href="https://samuraitradingacademy.com/trading-expectancy/">https://samuraitradingacademy.com/trading-expectancy/</a></li>
+<li><a href="https://www.learningmarkets.com/determining-expectancy-in-your-trading/">https://www.learningmarkets.com/determining-expectancy-in-your-trading/</a></li>
+<li><a href="http://www.lonestocktrader.com/make-money-trading-positive-expectancy/">http://www.lonestocktrader.com/make-money-trading-positive-expectancy/</a></li>
+<li><a href="https://www.babypips.com/trading/trade-expectancy-matter">https://www.babypips.com/trading/trade-expectancy-matter</a></li>
+</ul>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        <a href="../sandbox-testing/" class="md-footer__link md-footer__link--prev" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Sandbox Testing
+            </div>
+          </div>
+        </a>
+      
+      
+        <a href="../sql_cheatsheet/" class="md-footer__link md-footer__link--next" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              SQL Cheat-sheet
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+        
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.fb4a9340.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a1c7c35e.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
