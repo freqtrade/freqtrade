@@ -1,0 +1,2389 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/2023.11/edge/">
+      
+      
+        <link rel="prev" href="../producer-consumer/">
+      
+      
+        <link rel="next" href="../faq/">
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.14">
+    
+    
+      
+        <title>Edge Positioning - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.fad675c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.356b1318.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#edge-positioning" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Edge Positioning
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Callbacks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API & FreqUI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    FreqAI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            FreqAI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter table
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feature engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running FreqAI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reinforcement Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Short / Leverage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Sub-commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtest analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Trade Object
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lookahead-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lookahead analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recursive-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Recursive analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Producer/Consumer mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Introduction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trading-winning-and-losing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trading, winning and losing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#win-rate-and-lose-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      Win Rate and Lose Rate
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risk-reward-ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      Risk Reward Ratio
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expectancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expectancy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-does-it-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      How does it work?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How does it work?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#position-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      Position size
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edge-command-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Edge command reference
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configurations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-edge-independently" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Edge independently
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running Edge independently">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#update-cached-pairs-with-the-latest-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update cached pairs with the latest data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precising-stoploss-range" class="md-nav__link">
+    <span class="md-ellipsis">
+      Precising stoploss range
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-use-of-timerange" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced use of timerange
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheat-sheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating Freqtrade
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Introduction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trading-winning-and-losing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trading, winning and losing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#win-rate-and-lose-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      Win Rate and Lose Rate
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risk-reward-ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      Risk Reward Ratio
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expectancy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expectancy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-does-it-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      How does it work?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How does it work?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#position-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      Position size
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edge-command-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Edge command reference
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configurations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-edge-independently" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Edge independently
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running Edge independently">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#update-cached-pairs-with-the-latest-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update cached pairs with the latest data
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#precising-stoploss-range" class="md-nav__link">
+    <span class="md-ellipsis">
+      Precising stoploss range
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-use-of-timerange" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced use of timerange
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="edge-positioning">Edge positioning<a class="headerlink" href="#edge-positioning" title="Permanent link">&para;</a></h1>
+<p>The <code>Edge Positioning</code> module uses probability to calculate your win rate and risk reward ratio. It will use these statistics to control your strategy trade entry points, position size and, stoploss.</p>
+<div class="admonition danger">
+<p class="admonition-title">Deprecated functionality</p>
+<p><code>Edge positioning</code> (or short Edge) is currently in maintenance mode only (we keep existing functionality alive) and should be considered as deprecated.
+It will currently not receive new features until either someone stepped forward to take up ownership of that module - or we'll decide to remove edge from freqtrade.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When using <code>Edge positioning</code> with a dynamic whitelist (VolumePairList), make sure to also use <code>AgeFilter</code> and set it to at least <code>calculate_since_number_of_days</code> to avoid problems with missing data.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>Edge Positioning</code> only considers <em>its own</em> buy/sell/stoploss signals. It ignores the stoploss, trailing stoploss, and ROI settings in the strategy configuration file.
+<code>Edge Positioning</code> improves the performance of some trading strategies and <em>decreases</em> the performance of others.</p>
+</div>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
+<p>Trading strategies are not perfect. They are frameworks that are susceptible to the market and its indicators. Because the market is not at all predictable, sometimes a strategy will win and sometimes the same strategy will lose.</p>
+<p>To obtain an edge in the market, a strategy has to make more money than it loses. Making money in trading is not only about <em>how often</em> the strategy makes or loses money.</p>
+<div class="admonition tip">
+<p class="admonition-title">It doesn't matter how often, but how much!</p>
+<p>A bad strategy might make 1 penny in <em>ten</em> transactions but lose 1 dollar in <em>one</em> transaction. If one only checks the number of winning trades, it would be misleading to think that the strategy is actually making a profit.</p>
+</div>
+<p>The Edge Positioning module seeks to improve a strategy's winning probability and the money that the strategy will make <em>on the long run</em>. </p>
+<p>We raise the following question<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>:</p>
+<div class="admonition question">
+<p class="admonition-title">Which trade is a better option?</p>
+<p>a) A trade with 80% of chance of losing 100$ and 20% chance of winning 200$<br/>
+b) A trade with 100% of chance of losing 30$</p>
+</div>
+<details class="info" open="open">
+<summary>Answer</summary>
+<p>The expected value of <em>a)</em> is smaller than the expected value of <em>b)</em>.<br/>
+Hence, <em>b</em>) represents a smaller loss in the long run.<br/>
+However, the answer is: <em>it depends</em></p>
+</details>
+<p>Another way to look at it is to ask a similar question:</p>
+<div class="admonition question">
+<p class="admonition-title">Which trade is a better option?</p>
+<p>a) A trade with 80% of chance of winning 100$ and 20% chance of losing 200$<br/>
+b) A trade with 100% of chance of winning 30$</p>
+</div>
+<p>Edge positioning tries to answer the hard questions about risk/reward and position size automatically, seeking to minimizes the chances of losing of a given strategy.</p>
+<h3 id="trading-winning-and-losing">Trading, winning and losing<a class="headerlink" href="#trading-winning-and-losing" title="Permanent link">&para;</a></h3>
+<p>Let's call <span class="arithmatex">\(o\)</span> the return of a single transaction <span class="arithmatex">\(o\)</span> where <span class="arithmatex">\(o \in \mathbb{R}\)</span>. The collection <span class="arithmatex">\(O = \{o_1, o_2, ..., o_N\}\)</span> is the set of all returns of transactions made during a trading session. We say that <span class="arithmatex">\(N\)</span> is the cardinality of <span class="arithmatex">\(O\)</span>, or, in lay terms, it is the number of transactions made in a trading session.</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>In a session where a strategy made three transactions we can say that <span class="arithmatex">\(O = \{3.5, -1, 15\}\)</span>. That means that <span class="arithmatex">\(N = 3\)</span> and <span class="arithmatex">\(o_1 = 3.5\)</span>, <span class="arithmatex">\(o_2 = -1\)</span>, <span class="arithmatex">\(o_3 = 15\)</span>.</p>
+</div>
+<p>A winning trade is a trade where a strategy <em>made</em> money. Making money means that the strategy closed the position in a value that returned a profit, after all deducted fees. Formally, a winning trade will have a return <span class="arithmatex">\(o_i &gt; 0\)</span>. Similarly, a losing trade will have a return <span class="arithmatex">\(o_j \leq 0\)</span>. With that, we can discover the set of all winning trades, <span class="arithmatex">\(T_{win}\)</span>, as follows:</p>
+<div class="arithmatex">\[ T_{win} = \{ o \in O | o &gt; 0 \} \]</div>
+<p>Similarly, we can discover the set of losing trades <span class="arithmatex">\(T_{lose}\)</span> as follows:</p>
+<div class="arithmatex">\[ T_{lose} = \{o \in O | o \leq 0\} \]</div>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>In a section where a strategy made four transactions <span class="arithmatex">\(O = \{3.5, -1, 15, 0\}\)</span>:<br>
+<span class="arithmatex">\(T_{win} = \{3.5, 15\}\)</span><br>
+<span class="arithmatex">\(T_{lose} = \{-1, 0\}\)</span><br></p>
+</div>
+<h3 id="win-rate-and-lose-rate">Win Rate and Lose Rate<a class="headerlink" href="#win-rate-and-lose-rate" title="Permanent link">&para;</a></h3>
+<p>The win rate <span class="arithmatex">\(W\)</span> is the proportion of winning trades with respect to all the trades made by a strategy. We use the following function to compute the win rate:</p>
+<div class="arithmatex">\[W = \frac{|T_{win}|}{N}\]</div>
+<p>Where <span class="arithmatex">\(W\)</span> is the win rate, <span class="arithmatex">\(N\)</span> is the number of trades and, <span class="arithmatex">\(T_{win}\)</span> is the set of all trades where the strategy made money.</p>
+<p>Similarly, we can compute the rate of losing trades:</p>
+<div class="arithmatex">\[ 
+    L = \frac{|T_{lose}|}{N} 
+\]</div>
+<p>Where <span class="arithmatex">\(L\)</span> is the lose rate, <span class="arithmatex">\(N\)</span> is the amount of trades made and, <span class="arithmatex">\(T_{lose}\)</span> is the set of all trades where the strategy lost money. Note that the above formula is the same as calculating <span class="arithmatex">\(L = 1 – W\)</span> or <span class="arithmatex">\(W = 1 – L\)</span></p>
+<h3 id="risk-reward-ratio">Risk Reward Ratio<a class="headerlink" href="#risk-reward-ratio" title="Permanent link">&para;</a></h3>
+<p>Risk Reward Ratio (<span class="arithmatex">\(R\)</span>) is a formula used to measure the expected gains of a given investment against the risk of loss. It is basically what you potentially win divided by what you potentially lose. Formally:</p>
+<div class="arithmatex">\[ R = \frac{\text{potential_profit}}{\text{potential_loss}} \]</div>
+<details class="example" open="open">
+<summary>Worked example of <span class="arithmatex">\(R\)</span> calculation</summary>
+<p>Let's say that you think that the price of <em>stonecoin</em> today is 10.0$. You believe that, because they will start mining stonecoin, it will go up to 15.0$ tomorrow. There is the risk that the stone is too hard, and the GPUs can't mine it, so the price might go to 0$ tomorrow. You are planning to invest 100$, which will give you 10 shares (100 / 10).</p>
+<p>Your potential profit is calculated as:</p>
+<p><span class="arithmatex">\(\begin{aligned} 
+    \text{potential_profit} &amp;= (\text{potential_price} - \text{entry_price}) * \frac{\text{investment}}{\text{entry_price}} \\
+                            &amp;= (15 - 10) * (100 / 10) \\
+                            &amp;= 50
+\end{aligned}\)</span></p>
+<p>Since the price might go to 0$, the 100$ dollars invested could turn into 0.</p>
+<p>We do however use a stoploss of 15% - so in the worst case, we'll sell 15% below entry price (or at 8.5$).</p>
+<p><span class="arithmatex">\(\begin{aligned}
+    \text{potential_loss} &amp;= (\text{entry_price} - \text{stoploss}) * \frac{\text{investment}}{\text{entry_price}} \\
+                            &amp;= (10 - 8.5) * (100 / 10)\\
+                            &amp;= 15
+\end{aligned}\)</span></p>
+<p>We can compute the Risk Reward Ratio as follows:</p>
+<p><span class="arithmatex">\(\begin{aligned}
+    R   &amp;= \frac{\text{potential_profit}}{\text{potential_loss}}\\
+        &amp;= \frac{50}{15}\\
+        &amp;= 3.33
+\end{aligned}\)</span><br>
+What it effectively means is that the strategy have the potential to make 3.33$ for each 1$ invested.</p>
+</details>
+<p>On a long horizon, that is, on many trades, we can calculate the risk reward by dividing the strategy' average profit on winning trades by the strategy' average loss on losing trades. We can calculate the average profit, <span class="arithmatex">\(\mu_{win}\)</span>, as follows:</p>
+<div class="arithmatex">\[ \text{average_profit} = \mu_{win} = \frac{\text{sum_of_profits}}{\text{count_winning_trades}} = \frac{\sum^{o \in T_{win}} o}{|T_{win}|} \]</div>
+<p>Similarly, we can calculate the average loss, <span class="arithmatex">\(\mu_{lose}\)</span>, as follows:</p>
+<div class="arithmatex">\[ \text{average_loss} = \mu_{lose} = \frac{\text{sum_of_losses}}{\text{count_losing_trades}} = \frac{\sum^{o \in T_{lose}} o}{|T_{lose}|} \]</div>
+<p>Finally, we can calculate the Risk Reward ratio, <span class="arithmatex">\(R\)</span>, as follows:</p>
+<div class="arithmatex">\[ R = \frac{\text{average_profit}}{\text{average_loss}} = \frac{\mu_{win}}{\mu_{lose}}\\ \]</div>
+<details class="example" open="open">
+<summary>Worked example of <span class="arithmatex">\(R\)</span> calculation using mean profit/loss</summary>
+<p>Let's say the strategy that we are using makes an average win <span class="arithmatex">\(\mu_{win} = 2.06\)</span> and an average loss <span class="arithmatex">\(\mu_{loss} = 4.11\)</span>.<br>
+We calculate the risk reward ratio as follows:<br>
+<span class="arithmatex">\(R = \frac{\mu_{win}}{\mu_{loss}} = \frac{2.06}{4.11} = 0.5012...\)</span></p>
+</details>
+<h3 id="expectancy">Expectancy<a class="headerlink" href="#expectancy" title="Permanent link">&para;</a></h3>
+<p>By combining the Win Rate <span class="arithmatex">\(W\)</span> and and the Risk Reward ratio <span class="arithmatex">\(R\)</span> to create an expectancy ratio <span class="arithmatex">\(E\)</span>. A expectance ratio is the expected return of the investment made in a trade. We can compute the value of <span class="arithmatex">\(E\)</span> as follows:</p>
+<div class="arithmatex">\[E = R * W - L\]</div>
+<div class="admonition example">
+<p class="admonition-title">Calculating <span class="arithmatex">\(E\)</span></p>
+<p>Let's say that a strategy has a win rate <span class="arithmatex">\(W = 0.28\)</span> and a risk reward ratio <span class="arithmatex">\(R = 5\)</span>. What this means is that the strategy is expected to make 5 times the investment around on 28% of the trades it makes. Working out the example:<br>
+<span class="arithmatex">\(E = R * W - L = 5 * 0.28 - 0.72 = 0.68\)</span>
+<br></p>
+</div>
+<p>The expectancy worked out in the example above means that, on average, this strategy' trades will return 1.68 times the size of its losses. Said another way, the strategy makes 1.68$ for every 1$ it loses, on average. </p>
+<p>This is important for two reasons: First, it may seem obvious, but you know right away that you have a positive return. Second, you now have a number you can compare to other candidate systems to make decisions about which ones you employ.</p>
+<p>It is important to remember that any system with an expectancy greater than 0 is profitable using past data. The key is finding one that will be profitable in the future.</p>
+<p>You can also use this value to evaluate the effectiveness of modifications to this system.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It's important to keep in mind that Edge is testing your expectancy using historical data, there's no guarantee that you will have a similar edge in the future. It's still vital to do this testing in order to build confidence in your methodology but be wary of "curve-fitting" your approach to the historical data as things are unlikely to play out the exact same way for future trades.</p>
+</div>
+<h2 id="how-does-it-work">How does it work?<a class="headerlink" href="#how-does-it-work" title="Permanent link">&para;</a></h2>
+<p>Edge combines dynamic stoploss, dynamic positions, and whitelist generation into one isolated module which is then applied to the trading strategy. If enabled in config, Edge will go through historical data with a range of stoplosses in order to find buy and sell/stoploss signals. It then calculates win rate and expectancy over <em>N</em> trades for each stoploss. Here is an example:</p>
+<table>
+<thead>
+<tr>
+<th>Pair</th>
+<th style="text-align: center;">Stoploss</th>
+<th style="text-align: right;">Win Rate</th>
+<th style="text-align: right;">Risk Reward Ratio</th>
+<th style="text-align: right;">Expectancy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XZC/ETH</td>
+<td style="text-align: center;">-0.01</td>
+<td style="text-align: right;">0.50</td>
+<td style="text-align: right;">1.176384</td>
+<td style="text-align: right;">0.088</td>
+</tr>
+<tr>
+<td>XZC/ETH</td>
+<td style="text-align: center;">-0.02</td>
+<td style="text-align: right;">0.51</td>
+<td style="text-align: right;">1.115941</td>
+<td style="text-align: right;">0.079</td>
+</tr>
+<tr>
+<td>XZC/ETH</td>
+<td style="text-align: center;">-0.03</td>
+<td style="text-align: right;">0.52</td>
+<td style="text-align: right;">1.359670</td>
+<td style="text-align: right;">0.228</td>
+</tr>
+<tr>
+<td>XZC/ETH</td>
+<td style="text-align: center;">-0.04</td>
+<td style="text-align: right;">0.51</td>
+<td style="text-align: right;">1.234539</td>
+<td style="text-align: right;">0.117</td>
+</tr>
+</tbody>
+</table>
+<p>The goal here is to find the best stoploss for the strategy in order to have the maximum expectancy. In the above example stoploss at <span class="arithmatex">\(3%\)</span> leads to the maximum expectancy according to historical data.</p>
+<p>Edge module then forces stoploss value it evaluated to your strategy dynamically.</p>
+<h3 id="position-size">Position size<a class="headerlink" href="#position-size" title="Permanent link">&para;</a></h3>
+<p>Edge dictates the amount at stake for each trade to the bot according to the following factors:</p>
+<ul>
+<li>Allowed capital at risk</li>
+<li>Stoploss</li>
+</ul>
+<p>Allowed capital at risk is calculated as follows:</p>
+<div class="highlight"><pre><span></span><code>Allowed capital at risk = (Capital available_percentage) X (Allowed risk per trade)
+</code></pre></div>
+<p>Stoploss is calculated as described above with respect to historical data.</p>
+<p>The position size is calculated as follows:</p>
+<div class="highlight"><pre><span></span><code>Position size = (Allowed capital at risk) / Stoploss
+</code></pre></div>
+<p>Example:</p>
+<p>Let's say the stake currency is <strong>ETH</strong> and there is <span class="arithmatex">\(10\)</span> <strong>ETH</strong> on the wallet. The capital available percentage is <span class="arithmatex">\(50%\)</span> and the allowed risk per trade is <span class="arithmatex">\(1\%\)</span>. Thus, the available capital for trading is <span class="arithmatex">\(10 * 0.5 = 5\)</span> <strong>ETH</strong> and the allowed capital at risk would be <span class="arithmatex">\(5 * 0.01 = 0.05\)</span> <strong>ETH</strong>.</p>
+<ul>
+<li><strong>Trade 1:</strong> The strategy detects a new buy signal in the <strong>XLM/ETH</strong> market. <code>Edge Positioning</code> calculates a stoploss of <span class="arithmatex">\(2\%\)</span> and a position of <span class="arithmatex">\(0.05 / 0.02 = 2.5\)</span> <strong>ETH</strong>. The bot takes a position of <span class="arithmatex">\(2.5\)</span> <strong>ETH</strong> in the <strong>XLM/ETH</strong> market.</li>
+</ul>
+<ul>
+<li><strong>Trade 2:</strong> The strategy detects a buy signal on the <strong>BTC/ETH</strong> market while <strong>Trade 1</strong> is still open. <code>Edge Positioning</code> calculates the stoploss of <span class="arithmatex">\(4\%\)</span> on this market. Thus, <strong>Trade 2</strong> position size is <span class="arithmatex">\(0.05 / 0.04 = 1.25\)</span> <strong>ETH</strong>.</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Available Capital <span class="arithmatex">\(\neq\)</span> Available in wallet</p>
+<p>The available capital for trading didn't change in <strong>Trade 2</strong> even with <strong>Trade 1</strong> still open. The available capital <strong>is not</strong> the free amount in the wallet.</p>
+</div>
+<ul>
+<li><strong>Trade 3:</strong> The strategy detects a buy signal in the <strong>ADA/ETH</strong> market. <code>Edge Positioning</code> calculates a stoploss of <span class="arithmatex">\(1\%\)</span> and a position of <span class="arithmatex">\(0.05 / 0.01 = 5\)</span> <strong>ETH</strong>. Since <strong>Trade 1</strong> has <span class="arithmatex">\(2.5\)</span> <strong>ETH</strong> blocked and <strong>Trade 2</strong> has <span class="arithmatex">\(1.25\)</span> <strong>ETH</strong> blocked, there is only <span class="arithmatex">\(5 - 1.25 - 2.5 = 1.25\)</span> <strong>ETH</strong> available. Hence, the position size of <strong>Trade 3</strong> is <span class="arithmatex">\(1.25\)</span> <strong>ETH</strong>. </li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Available Capital Updates</p>
+<p>The available capital does not change before a position is sold. After a trade is closed the Available Capital goes up if the trade was profitable or goes down if the trade was a loss.</p>
+</div>
+<ul>
+<li>The strategy detects a sell signal in the <strong>XLM/ETH</strong> market. The bot exits <strong>Trade 1</strong> for a profit of <span class="arithmatex">\(1\)</span> <strong>ETH</strong>. The total capital in the wallet becomes <span class="arithmatex">\(11\)</span> <strong>ETH</strong> and the available capital for trading becomes <span class="arithmatex">\(5.5\)</span> <strong>ETH</strong>.</li>
+</ul>
+<ul>
+<li><strong>Trade 4</strong> The strategy detects a new buy signal int the <strong>XLM/ETH</strong> market. <code>Edge Positioning</code> calculates the stoploss of <span class="arithmatex">\(2\%\)</span>, and the position size of <span class="arithmatex">\(0.055 / 0.02 = 2.75\)</span> <strong>ETH</strong>.</li>
+</ul>
+<h2 id="edge-command-reference">Edge command reference<a class="headerlink" href="#edge-command-reference" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>usage: freqtrade edge [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
+                      [--userdir PATH] [-s NAME] [--strategy-path PATH]
+                      [-i TIMEFRAME] [--timerange TIMERANGE]
+                      [--data-format-ohlcv {json,jsongz,hdf5}]
+                      [--max-open-trades INT] [--stake-amount STAKE_AMOUNT]
+                      [--fee FLOAT] [-p PAIRS [PAIRS ...]]
+                      [--stoplosses STOPLOSS_RANGE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i TIMEFRAME, --timeframe TIMEFRAME
+                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
+  --timerange TIMERANGE
+                        Specify what timerange of data to use.
+  --data-format-ohlcv {json,jsongz,hdf5}
+                        Storage format for downloaded candle (OHLCV) data.
+                        (default: `None`).
+  --max-open-trades INT
+                        Override the value of the `max_open_trades`
+                        configuration setting.
+  --stake-amount STAKE_AMOUNT
+                        Override the value of the `stake_amount` configuration
+                        setting.
+  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
+                        entry and exit).
+  -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
+                        Limit command to these pairs. Pairs are space-
+                        separated.
+  --stoplosses STOPLOSS_RANGE
+                        Defines a range of stoploss values against which edge
+                        will assess the strategy. The format is &quot;min,max,step&quot;
+                        (without any space). Example:
+                        `--stoplosses=-0.01,-0.1,-0.001`
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE        Log to the file specified. Special values are:
+                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more
+                        details.
+  -V, --version         show program&#39;s version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+
+Strategy arguments:
+  -s NAME, --strategy NAME
+                        Specify strategy class name which will be used by the
+                        bot.
+  --strategy-path PATH  Specify additional strategy lookup path.
+</code></pre></div>
+<h2 id="configurations">Configurations<a class="headerlink" href="#configurations" title="Permanent link">&para;</a></h2>
+<p>Edge module has following configuration options:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>If true, then Edge will run periodically. <br><em>Defaults to <code>false</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>process_throttle_secs</code></td>
+<td>How often should Edge run in seconds. <br><em>Defaults to <code>3600</code> (once per hour).</em> <br> <strong>Datatype:</strong> Integer</td>
+</tr>
+<tr>
+<td><code>calculate_since_number_of_days</code></td>
+<td>Number of days of data against which Edge calculates Win Rate, Risk Reward and Expectancy. <br> <strong>Note</strong> that it downloads historical data so increasing this number would lead to slowing down the bot. <br><em>Defaults to <code>7</code>.</em> <br> <strong>Datatype:</strong> Integer</td>
+</tr>
+<tr>
+<td><code>allowed_risk</code></td>
+<td>Ratio of allowed risk per trade. <br><em>Defaults to <code>0.01</code> (1%)).</em> <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>stoploss_range_min</code></td>
+<td>Minimum stoploss. <br><em>Defaults to <code>-0.01</code>.</em> <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>stoploss_range_max</code></td>
+<td>Maximum stoploss. <br><em>Defaults to <code>-0.10</code>.</em> <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>stoploss_range_step</code></td>
+<td>As an example if this is set to -0.01 then Edge will test the strategy for <code>[-0.01, -0,02, -0,03 ..., -0.09, -0.10]</code> ranges. <br> <strong>Note</strong> than having a smaller step means having a bigger range which could lead to slow calculation. <br> If you set this parameter to -0.001, you then slow down the Edge calculation by a factor of 10. <br><em>Defaults to <code>-0.001</code>.</em> <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>minimum_winrate</code></td>
+<td>It filters out pairs which don't have at least minimum_winrate. <br>This comes handy if you want to be conservative and don't comprise win rate in favour of risk reward ratio. <br><em>Defaults to <code>0.60</code>.</em> <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>minimum_expectancy</code></td>
+<td>It filters out pairs which have the expectancy lower than this number. <br>Having an expectancy of 0.20 means if you put 10$ on a trade you expect a 12$ return. <br><em>Defaults to <code>0.20</code>.</em> <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>min_trade_number</code></td>
+<td>When calculating <em>W</em>, <em>R</em> and <em>E</em> (expectancy) against historical data, you always want to have a minimum number of trades. The more this number is the more Edge is reliable. <br>Having a win rate of 100% on a single trade doesn't mean anything at all. But having a win rate of 70% over past 100 trades means clearly something. <br><em>Defaults to <code>10</code> (it is highly recommended not to decrease this number).</em> <br> <strong>Datatype:</strong> Integer</td>
+</tr>
+<tr>
+<td><code>max_trade_duration_minute</code></td>
+<td>Edge will filter out trades with long duration. If a trade is profitable after 1 month, it is hard to evaluate the strategy based on it. But if most of trades are profitable and they have maximum duration of 30 minutes, then it is clearly a good sign.<br><strong>NOTICE:</strong> While configuring this value, you should take into consideration your timeframe. As an example filtering out trades having duration less than one day for a strategy which has 4h interval does not make sense. Default value is set assuming your strategy interval is relatively small (1m or 5m, etc.).<br><em>Defaults to <code>1440</code> (one day).</em> <br> <strong>Datatype:</strong> Integer</td>
+</tr>
+<tr>
+<td><code>remove_pumps</code></td>
+<td>Edge will remove sudden pumps in a given market while going through historical data. However, given that pumps happen very often in crypto markets, we recommend you keep this off.<br><em>Defaults to <code>false</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+</tbody>
+</table>
+<h2 id="running-edge-independently">Running Edge independently<a class="headerlink" href="#running-edge-independently" title="Permanent link">&para;</a></h2>
+<p>You can run Edge independently in order to see in details the result. Here is an example:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>edge
+</code></pre></div>
+<p>An example of its output:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>pair</strong></th>
+<th style="text-align: right;"><strong>stoploss</strong></th>
+<th style="text-align: right;"><strong>win rate</strong></th>
+<th style="text-align: right;"><strong>risk reward ratio</strong></th>
+<th style="text-align: right;"><strong>required risk reward</strong></th>
+<th style="text-align: right;"><strong>expectancy</strong></th>
+<th style="text-align: right;"><strong>total number of trades</strong></th>
+<th style="text-align: right;"><strong>average duration (min)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>AGI/BTC</strong></td>
+<td style="text-align: right;">-0.02</td>
+<td style="text-align: right;">0.64</td>
+<td style="text-align: right;">5.86</td>
+<td style="text-align: right;">0.56</td>
+<td style="text-align: right;">3.41</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">54</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>NXS/BTC</strong></td>
+<td style="text-align: right;">-0.03</td>
+<td style="text-align: right;">0.64</td>
+<td style="text-align: right;">2.99</td>
+<td style="text-align: right;">0.57</td>
+<td style="text-align: right;">1.54</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">26</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>LEND/BTC</strong></td>
+<td style="text-align: right;">-0.02</td>
+<td style="text-align: right;">0.82</td>
+<td style="text-align: right;">2.05</td>
+<td style="text-align: right;">0.22</td>
+<td style="text-align: right;">1.50</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">36</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIA/BTC</strong></td>
+<td style="text-align: right;">-0.01</td>
+<td style="text-align: right;">0.55</td>
+<td style="text-align: right;">3.01</td>
+<td style="text-align: right;">0.83</td>
+<td style="text-align: right;">1.19</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">48</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>MTH/BTC</strong></td>
+<td style="text-align: right;">-0.09</td>
+<td style="text-align: right;">0.56</td>
+<td style="text-align: right;">2.82</td>
+<td style="text-align: right;">0.80</td>
+<td style="text-align: right;">1.12</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">52</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>ARDR/BTC</strong></td>
+<td style="text-align: right;">-0.04</td>
+<td style="text-align: right;">0.42</td>
+<td style="text-align: right;">3.14</td>
+<td style="text-align: right;">1.40</td>
+<td style="text-align: right;">0.73</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">42</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>BCPT/BTC</strong></td>
+<td style="text-align: right;">-0.01</td>
+<td style="text-align: right;">0.71</td>
+<td style="text-align: right;">1.34</td>
+<td style="text-align: right;">0.40</td>
+<td style="text-align: right;">0.67</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">30</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>WINGS/BTC</strong></td>
+<td style="text-align: right;">-0.02</td>
+<td style="text-align: right;">0.56</td>
+<td style="text-align: right;">1.97</td>
+<td style="text-align: right;">0.80</td>
+<td style="text-align: right;">0.65</td>
+<td style="text-align: right;">27</td>
+<td style="text-align: right;">42</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>VIBE/BTC</strong></td>
+<td style="text-align: right;">-0.02</td>
+<td style="text-align: right;">0.83</td>
+<td style="text-align: right;">0.91</td>
+<td style="text-align: right;">0.20</td>
+<td style="text-align: right;">0.59</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">35</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>MCO/BTC</strong></td>
+<td style="text-align: right;">-0.02</td>
+<td style="text-align: right;">0.79</td>
+<td style="text-align: right;">0.97</td>
+<td style="text-align: right;">0.27</td>
+<td style="text-align: right;">0.55</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">31</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>GNT/BTC</strong></td>
+<td style="text-align: right;">-0.02</td>
+<td style="text-align: right;">0.50</td>
+<td style="text-align: right;">2.06</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">0.53</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">24</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>HOT/BTC</strong></td>
+<td style="text-align: right;">-0.01</td>
+<td style="text-align: right;">0.17</td>
+<td style="text-align: right;">7.72</td>
+<td style="text-align: right;">4.81</td>
+<td style="text-align: right;">0.50</td>
+<td style="text-align: right;">209</td>
+<td style="text-align: right;">7</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>SNM/BTC</strong></td>
+<td style="text-align: right;">-0.03</td>
+<td style="text-align: right;">0.71</td>
+<td style="text-align: right;">1.06</td>
+<td style="text-align: right;">0.42</td>
+<td style="text-align: right;">0.45</td>
+<td style="text-align: right;">17</td>
+<td style="text-align: right;">38</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>APPC/BTC</strong></td>
+<td style="text-align: right;">-0.02</td>
+<td style="text-align: right;">0.44</td>
+<td style="text-align: right;">2.28</td>
+<td style="text-align: right;">1.27</td>
+<td style="text-align: right;">0.44</td>
+<td style="text-align: right;">25</td>
+<td style="text-align: right;">43</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>NEBL/BTC</strong></td>
+<td style="text-align: right;">-0.03</td>
+<td style="text-align: right;">0.63</td>
+<td style="text-align: right;">1.29</td>
+<td style="text-align: right;">0.58</td>
+<td style="text-align: right;">0.44</td>
+<td style="text-align: right;">19</td>
+<td style="text-align: right;">59</td>
+</tr>
+</tbody>
+</table>
+<p>Edge produced the above table by comparing <code>calculate_since_number_of_days</code> to <code>minimum_expectancy</code> to find <code>min_trade_number</code> historical information based on the config file. The timerange Edge uses for its comparisons can be further limited by using the <code>--timerange</code> switch.</p>
+<p>In live and dry-run modes, after the <code>process_throttle_secs</code> has passed, Edge will again process <code>calculate_since_number_of_days</code> against <code>minimum_expectancy</code> to find <code>min_trade_number</code>. If no <code>min_trade_number</code> is found, the bot will return "whitelist empty". Depending on the trade strategy being deployed, "whitelist empty" may be return much of the time - or <em>all</em> of the time. The use of Edge may also cause trading to occur in bursts, though this is rare.</p>
+<p>If you encounter "whitelist empty" a lot, condsider tuning <code>calculate_since_number_of_days</code>, <code>minimum_expectancy</code>  and <code>min_trade_number</code> to align to the trading frequency of your strategy.</p>
+<h3 id="update-cached-pairs-with-the-latest-data">Update cached pairs with the latest data<a class="headerlink" href="#update-cached-pairs-with-the-latest-data" title="Permanent link">&para;</a></h3>
+<p>Edge requires historic data the same way as backtesting does.
+Please refer to the <a href="../data-download/">Data Downloading</a> section of the documentation for details.</p>
+<h3 id="precising-stoploss-range">Precising stoploss range<a class="headerlink" href="#precising-stoploss-range" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>edge<span class="w"> </span>--stoplosses<span class="o">=</span>-0.01,-0.1,-0.001<span class="w"> </span><span class="c1">#min,max,step</span>
+</code></pre></div>
+<h3 id="advanced-use-of-timerange">Advanced use of timerange<a class="headerlink" href="#advanced-use-of-timerange" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>edge<span class="w"> </span>--timerange<span class="o">=</span><span class="m">20181110</span>-20181113
+</code></pre></div>
+<p>Doing <code>--timerange=-20190901</code> will get all available data until September 1<sup>st</sup> (excluding September 1<sup>st</sup> 2019).</p>
+<p>The full timerange specification:</p>
+<ul>
+<li>Use tickframes till 2018/01/31: <code>--timerange=-20180131</code></li>
+<li>Use tickframes since 2018/01/31: <code>--timerange=20180131-</code></li>
+<li>Use tickframes since 2018/01/31 till 2018/03/01 : <code>--timerange=20180131-20180301</code></li>
+<li>Use tickframes between POSIX timestamps 1527595200 1527618600: <code>--timerange=1527595200-1527618600</code></li>
+</ul>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>Question extracted from MIT Opencourseware S096 - Mathematics with applications in Finance: <a href="https://ocw.mit.edu/courses/mathematics/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/">https://ocw.mit.edu/courses/mathematics/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/</a>&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../producer-consumer/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Producer/Consumer mode">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Producer/Consumer mode
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                FAQ
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.cd18aaf1.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
