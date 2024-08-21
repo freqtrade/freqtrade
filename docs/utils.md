@@ -418,8 +418,9 @@ Common arguments:
 
 ```
 
-By default, only active pairs/markets are shown. Active pairs/markets are those that can currently be traded
-on the exchange. The see the list of all pairs/markets (not only the active ones), use the `-a`/`-all` option.
+By default, only active pairs/markets are shown. Active pairs/markets are those that can currently be traded on the exchange.
+You can use the `-a`/`-all` option to see the list of all pairs/markets, including the inactive ones.
+Pairs may be listed as untradeable if the smallest tradeable price for the market is very small, i.e. less than `1e-11` (`0.00000000001`)
 
 Pairs/markets are sorted by its symbol string in the printed output.
 
