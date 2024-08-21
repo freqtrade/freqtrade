@@ -2385,8 +2385,9 @@ Common arguments:
   --userdir PATH, --user-data-dir PATH
                         Path to userdata directory.
 </code></pre></div>
-<p>By default, only active pairs/markets are shown. Active pairs/markets are those that can currently be traded
-on the exchange. The see the list of all pairs/markets (not only the active ones), use the <code>-a</code>/<code>-all</code> option.</p>
+<p>By default, only active pairs/markets are shown. Active pairs/markets are those that can currently be traded on the exchange.
+You can use the <code>-a</code>/<code>-all</code> option to see the list of all pairs/markets, including the inactive ones.
+Pairs may be listed as untradeable if the smallest tradeable price for the market is very small, i.e. less than <code>1e-11</code> (<code>0.00000000001</code>)</p>
 <p>Pairs/markets are sorted by its symbol string in the printed output.</p>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <ul>
