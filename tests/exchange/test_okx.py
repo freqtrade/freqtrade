@@ -640,7 +640,7 @@ def test__get_stop_params_okx(mocker, default_conf):
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
     exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
-    params = exchange._get_stop_params("ETH/USDT:USDT", 1500, "sell")
+    params = exchange._get_stop_params("sell", "market", 1500)
 
     assert params["tdMode"] == "isolated"
     assert params["posSide"] == "net"
