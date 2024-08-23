@@ -323,7 +323,7 @@ class Exchange:
         asyncio.set_event_loop(loop)
         return loop
 
-    def validate_config(self, config):
+    def validate_config(self, config: Config) -> None:
         # Check if timeframe is available
         self.validate_timeframes(config.get("timeframe"))
 
