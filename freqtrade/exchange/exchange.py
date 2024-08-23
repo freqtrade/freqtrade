@@ -337,6 +337,7 @@ class Exchange:
         self.validate_pricing(config["exit_pricing"])
         self.validate_pricing(config["entry_pricing"])
         self.validate_orderflow(config["exchange"])
+        self.validate_freqai(config)
 
     def _init_ccxt(
         self, exchange_config: Dict[str, Any], sync: bool, ccxt_kwargs: Dict[str, Any]
@@ -824,6 +825,13 @@ class Exchange:
         ):
             raise ConfigurationError(
                 f"Trade data not available for {self.name}. Can't use orderflow feature."
+            )
+
+    def validate_freqai(self, config: Config) -> None:
+        freqai_enabled = config.get("freqai", {}).get("enabled", False)
+        if freqai_enabled and not self._ft_has["ohlcv_has_history"]:
+            raise ConfigurationError(
+                f"Historic OHLCV data not available for {self.name}. Can't use freqAI."
             )
 
     def validate_required_startup_candles(self, startup_candles: int, timeframe: str) -> int:

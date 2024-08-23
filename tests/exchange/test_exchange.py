@@ -342,6 +342,27 @@ def test_validate_orderflow(default_conf, mocker, caplog):
     ex.validate_orderflow({"use_public_trades": True})
 
 
+def test_validate_freqai_compat(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
+    # Test kraken - as it doesn't support historic trades data.
+    ex = get_patched_exchange(mocker, default_conf, exchange="kraken")
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
+
+    default_conf["freqai"] = {"enabled": False}
+    ex.validate_freqai(default_conf)
+
+    default_conf["freqai"] = {"enabled": True}
+    with pytest.raises(ConfigurationError, match=r"Historic OHLCV data not available for.*"):
+        ex.validate_freqai(default_conf)
+
+    # Binance supports historic data.
+    ex = get_patched_exchange(mocker, default_conf, exchange="binance")
+    default_conf["freqai"] = {"enabled": True}
+    ex.validate_freqai(default_conf)
+    default_conf["freqai"] = {"enabled": False}
+    ex.validate_freqai(default_conf)
+
+
 @pytest.mark.parametrize(
     "price,precision_mode,precision,expected",
     [
