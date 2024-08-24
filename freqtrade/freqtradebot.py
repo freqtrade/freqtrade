@@ -2163,12 +2163,11 @@ class FreqtradeBot(LoggingMixin):
         Updates liquidation price for all trades in cross margin mode.
         TODO: this is missing a dedicated test!
         """
-        total_wallet_stake = 0.0
-        if self.config["dry_run"] and self.exchange.margin_mode == MarginMode.CROSS:
-            # Parameters only needed for cross margin
-            total_wallet_stake = self.wallets.get_total(self.config["stake_currency"])
-
         if self.exchange.margin_mode == MarginMode.CROSS:
+            total_wallet_stake = 0.0
+            if self.config["dry_run"]:
+                # Parameters only needed for cross margin
+                total_wallet_stake = self.wallets.get_total(self.config["stake_currency"])
             logger.info("Updating liquidation price for all open trades.")
             for t in Trade.get_open_trades():
                 # TODO: This should be done in a batch update
