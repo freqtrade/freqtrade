@@ -11,3 +11,7 @@
 .rst-versions .rst-other-versions {
     color: white;
 }
+
+.md-version__list {
+    font-weight: 500 !important;
+}
