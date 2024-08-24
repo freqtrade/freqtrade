@@ -37,6 +37,7 @@ from freqtrade.exchange import (
 )
 from freqtrade.exchange.exchange import Exchange
 from freqtrade.ft_types import BacktestResultType, get_BacktestResultType_default
+from freqtrade.leverage.liquidation_price import update_liquidation_prices
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
@@ -700,16 +701,12 @@ class Backtesting:
 
             if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
                 # trade is still open
-                trade.set_liquidation_price(
-                    self.exchange.get_liquidation_price(
-                        pair=trade.pair,
-                        open_rate=trade.open_rate,
-                        is_short=trade.is_short,
-                        amount=trade.amount,
-                        stake_amount=trade.stake_amount,
-                        leverage=trade.leverage,
-                        wallet_balance=trade.stake_amount,
-                    )
+                update_liquidation_prices(
+                    trade,
+                    exchange=self.exchange,
+                    wallets=self.wallets,
+                    stake_currency=self.config["stake_currency"],
+                    dry_run=self.config["dry_run"],
                 )
                 self._call_adjust_stop(current_date, trade, order.ft_price)
                 # pass

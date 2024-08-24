@@ -22,7 +22,6 @@ from freqtrade.edge import Edge
 from freqtrade.enums import (
     ExitCheckTuple,
     ExitType,
-    MarginMode,
     RPCMessageType,
     SignalDirection,
     State,
@@ -43,6 +42,7 @@ from freqtrade.exchange import (
     timeframe_to_next_date,
     timeframe_to_seconds,
 )
+from freqtrade.leverage.liquidation_price import update_liquidation_prices
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, init_db
@@ -2157,44 +2157,6 @@ class FreqtradeBot(LoggingMixin):
     # Common update trade state methods
     #
 
-    def update_liquidation_prices(self, trade: Optional[Trade] = None):
-        """
-        Update trade liquidation price in isolated margin mode.
-        Updates liquidation price for all trades in cross margin mode.
-        TODO: this is missing a dedicated test!
-        """
-        if self.exchange.margin_mode == MarginMode.CROSS:
-            total_wallet_stake = 0.0
-            if self.config["dry_run"]:
-                # Parameters only needed for cross margin
-                total_wallet_stake = self.wallets.get_total(self.config["stake_currency"])
-            logger.info("Updating liquidation price for all open trades.")
-            for t in Trade.get_open_trades():
-                # TODO: This should be done in a batch update
-                t.set_liquidation_price(
-                    self.exchange.get_liquidation_price(
-                        pair=t.pair,
-                        open_rate=t.open_rate,
-                        is_short=t.is_short,
-                        amount=t.amount,
-                        stake_amount=t.stake_amount,
-                        leverage=trade.leverage,
-                        wallet_balance=total_wallet_stake,
-                    )
-                )
-        elif trade:
-            trade.set_liquidation_price(
-                self.exchange.get_liquidation_price(
-                    pair=trade.pair,
-                    open_rate=trade.open_rate,
-                    is_short=trade.is_short,
-                    amount=trade.amount,
-                    stake_amount=trade.stake_amount,
-                    leverage=trade.leverage,
-                    wallet_balance=trade.stake_amount,
-                )
-            )
-
     def update_trade_state(
         self,
         trade: Trade,
@@ -2272,7 +2234,13 @@ class FreqtradeBot(LoggingMixin):
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
                 try:
-                    self.update_liquidation_prices(trade)
+                    update_liquidation_prices(
+                        trade,
+                        exchange=self.exchange,
+                        wallets=self.wallets,
+                        stake_currency=self.config["stake_currency"],
+                        dry_run=self.config["dry_run"],
+                    )
                 except DependencyException:
                     logger.warning("Unable to calculate liquidation price")
                 if self.strategy.use_custom_stoploss:
