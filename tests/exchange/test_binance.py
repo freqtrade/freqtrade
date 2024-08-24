@@ -171,12 +171,11 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
 
 
 @pytest.mark.parametrize(
-    "exchange_name, is_short, trading_mode, margin_mode, wallet_balance, "
+    "is_short, trading_mode, margin_mode, wallet_balance, "
     "mm_ex_1, upnl_ex_1, maintenance_amt, amount, open_rate, "
     "mm_ratio, expected",
     [
         (
-            "binance",
             False,
             "futures",
             "isolated",
@@ -190,7 +189,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             1114.78,
         ),
         (
-            "binance",
             False,
             "futures",
             "isolated",
@@ -204,7 +202,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             18778.73,
         ),
         (
-            "binance",
             False,
             "futures",
             "cross",
@@ -218,7 +215,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             1153.26,
         ),
         (
-            "binance",
             False,
             "futures",
             "cross",
@@ -236,7 +232,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
 def test_liquidation_price_binance(
     mocker,
     default_conf,
-    exchange_name,
     open_rate,
     is_short,
     trading_mode,
@@ -252,7 +247,7 @@ def test_liquidation_price_binance(
     default_conf["trading_mode"] = trading_mode
     default_conf["margin_mode"] = margin_mode
     default_conf["liquidation_buffer"] = 0.0
-    exchange = get_patched_exchange(mocker, default_conf, exchange=exchange_name)
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
     exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
     assert (
         pytest.approx(
