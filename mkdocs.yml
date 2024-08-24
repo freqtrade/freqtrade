@@ -115,6 +115,7 @@ markdown_extensions:
 extra:
   version:
     provider: mike
+    alias: true
 plugins:
   - mike:
       deploy_prefix: 'en'
