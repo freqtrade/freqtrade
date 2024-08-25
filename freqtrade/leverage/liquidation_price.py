@@ -20,7 +20,6 @@ def update_liquidation_prices(
     """
     Update trade liquidation price in isolated margin mode.
     Updates liquidation price for all trades in cross margin mode.
-    TODO: this is missing a dedicated test!
     """
     if exchange.margin_mode == MarginMode.CROSS:
         total_wallet_stake = 0.0
@@ -42,7 +41,7 @@ def update_liquidation_prices(
                     wallet_balance=total_wallet_stake,
                 )
             )
-    elif trade:
+    else:
         trade.set_liquidation_price(
             exchange.get_liquidation_price(
                 pair=trade.pair,
