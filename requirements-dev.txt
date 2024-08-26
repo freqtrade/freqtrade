@@ -11,7 +11,7 @@ ruff==0.6.1
 mypy==1.11.1
 pre-commit==3.8.0
 pytest==8.3.2
-pytest-asyncio==0.23.8
+pytest-asyncio==0.24.0
 pytest-cov==5.0.0
 pytest-mock==3.14.0
 pytest-random-order==1.1.1
