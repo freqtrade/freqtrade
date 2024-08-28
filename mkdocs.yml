@@ -117,5 +117,7 @@ extra:
     provider: mike
     alias: true
 plugins:
+  - search:
+      enabled: true
   - mike:
       deploy_prefix: 'en'
