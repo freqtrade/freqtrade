@@ -2261,7 +2261,6 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     assert log_has_re(r"Async code raised an exception: .*", caplog)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 @pytest.mark.parametrize("candle_type", [CandleType.MARK, CandleType.SPOT])
 async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_type):
@@ -3235,7 +3234,6 @@ def test_get_rates_testing_exit(
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-@pytest.mark.asyncio
 async def test___async_get_candle_history_sort(default_conf, mocker, exchange_name):
     def sort_data(data, key):
         return sorted(data, key=key)
@@ -3437,7 +3435,6 @@ async def test__async_fetch_trades_contract_size(
     exchange.close()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_trade_history_id(
     default_conf, mocker, exchange_name, fetch_trades_result
@@ -3506,7 +3503,6 @@ def test__valid_trade_pagination_id(mocker, default_conf_usdt, exchange_name, tr
     assert exchange._valid_trade_pagination_id("XRP/USDT", trade_id) == expected
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_trade_history_time(
     default_conf, mocker, caplog, exchange_name, fetch_trades_result
@@ -3548,7 +3544,6 @@ async def test__async_get_trade_history_time(
     assert log_has_re(r"Stopping because until was reached.*", caplog)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_trade_history_time_empty(
     default_conf, mocker, caplog, exchange_name, trades_history

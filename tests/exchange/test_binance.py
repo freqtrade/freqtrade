@@ -660,7 +660,6 @@ def test__set_leverage_binance(mocker, default_conf):
     )
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("candle_type", [CandleType.MARK, ""])
 async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, candle_type):
     ohlcv = [
