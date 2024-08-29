@@ -59,7 +59,7 @@ class HyperoptOutput:
 
         max_rows: Optional[int] = None
 
-        if self._streaming:
+        if self._streaming and "pytest" not in sys.modules:
             ts = get_terminal_size()
             # Get terminal size.
             # Account for header, borders, and for the progress bar.
