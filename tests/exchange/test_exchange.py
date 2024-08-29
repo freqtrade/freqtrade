@@ -5524,8 +5524,7 @@ def test_liquidation_price_is_none(
             stake_amount=open_rate * 71200.81144,
             leverage=5,
             wallet_balance=-56354.57,
-            mm_ex_1=0.10,
-            upnl_ex_1=0.0,
+            other_trades=[],
         )
         is None
     )
@@ -5971,6 +5970,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         stake_amount=18.884 * 0.8,
         leverage=leverage,
         wallet_balance=18.884 * 0.8,
+        other_trades=[],
     )
     assert liq_price == 17.47
 
@@ -5984,6 +5984,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         stake_amount=18.884 * 0.8,
         leverage=leverage,
         wallet_balance=18.884 * 0.8,
+        other_trades=[],
     )
     assert liq_price == 17.540699999999998
 
@@ -5997,6 +5998,7 @@ def test_get_liquidation_price1(mocker, default_conf):
         stake_amount=18.884 * 0.8,
         leverage=leverage,
         wallet_balance=18.884 * 0.8,
+        other_trades=[],
     )
     assert liq_price is None
     default_conf["trading_mode"] = "margin"
@@ -6011,6 +6013,7 @@ def test_get_liquidation_price1(mocker, default_conf):
             stake_amount=18.884 * 0.8,
             leverage=leverage,
             wallet_balance=18.884 * 0.8,
+            other_trades=[],
         )
 
 
@@ -6141,6 +6144,7 @@ def test_get_liquidation_price(
         wallet_balance=amount * open_rate / leverage,
         leverage=leverage,
         is_short=is_short,
+        other_trades=[],
     )
     if expected_liq is None:
         assert liq is None
