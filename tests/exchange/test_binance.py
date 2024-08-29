@@ -172,7 +172,7 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
 
 @pytest.mark.parametrize(
     "is_short, trading_mode, margin_mode, wallet_balance, "
-    "mm_ex_1, upnl_ex_1, maintenance_amt, amount, open_rate, "
+    "maintenance_amt, amount, open_rate, mark_price, other_contracts,"
     "mm_ratio, expected",
     [
         (
@@ -180,11 +180,11 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             "futures",
             "isolated",
             1535443.01,
-            0.0,
-            0.0,
             135365.00,
             3683.979,
             1456.84,
+            1456.84,  # mark price
+            [],
             0.10,
             1114.78,
         ),
@@ -193,11 +193,11 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             "futures",
             "isolated",
             1535443.01,
-            0.0,
-            0.0,
             16300.000,
             109.488,
             32481.980,
+            32481.980,
+            [],
             0.025,
             18778.73,
         ),
@@ -206,11 +206,24 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             "futures",
             "cross",
             1535443.01,
-            71200.81144,
-            -56354.57,
+            # 71200.81144,  # tmm1
+            # -56354.57,  # upnl1
             135365.00,
-            3683.979,
-            1456.84,
+            3683.979,  # amount
+            1456.84,  # open_rate
+            1335.18,  # mark_price
+            [
+                {
+                    # From calc example
+                    "pair": "BTC/USDT:USDT",
+                    "open_rate": 32481.98,
+                    "amount": 109.488,
+                    "stake_amount": 3556387.02624,  # open_rate * amount
+                    "mark_price": 31967.27,
+                    "mm_ratio": 0.025,
+                    "maintenance_amt": 16300.0,
+                }
+            ],
             0.10,
             1153.26,
         ),
@@ -219,11 +232,24 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             "futures",
             "cross",
             1535443.01,
-            356512.508,
-            -448192.89,
-            16300.000,
-            109.488,
-            32481.980,
+            # 356512.508,  # tmm1
+            # -448192.89,  # upnl1
+            16300.0,
+            109.488,  # amount
+            32481.980,  # open_rate
+            31967.27,  # mark_price
+            [
+                {
+                    # From calc example
+                    "pair": "ETH/USDT:USDT",
+                    "open_rate": 1456.84,
+                    "amount": 3683.979,
+                    "stake_amount": 5366967.96,
+                    "mark_price": 1335.18,
+                    "mm_ratio": 0.10,
+                    "maintenance_amt": 135365.00,
+                }
+            ],
             0.025,
             26316.89,
         ),
@@ -232,15 +258,15 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
 def test_liquidation_price_binance(
     mocker,
     default_conf,
-    open_rate,
     is_short,
     trading_mode,
     margin_mode,
     wallet_balance,
-    mm_ex_1,
-    upnl_ex_1,
     maintenance_amt,
     amount,
+    open_rate,
+    mark_price,
+    other_contracts,
     mm_ratio,
     expected,
 ):
@@ -248,7 +274,14 @@ def test_liquidation_price_binance(
     default_conf["margin_mode"] = margin_mode
     default_conf["liquidation_buffer"] = 0.0
     exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
-    exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
+
+    def get_maint_ratio(pair, stake_amount):
+        if pair != "DOGE/USDT":
+            oc = [c for c in other_contracts if c["pair"] == pair][0]
+            return oc["mm_ratio"], oc["maintenance_amt"]
+        return mm_ratio, maintenance_amt
+
+    exchange.get_maintenance_ratio_and_amt = get_maint_ratio
     assert (
         pytest.approx(
             round(
@@ -257,11 +290,12 @@ def test_liquidation_price_binance(
                     open_rate=open_rate,
                     is_short=is_short,
                     wallet_balance=wallet_balance,
-                    mm_ex_1=mm_ex_1,
-                    upnl_ex_1=upnl_ex_1,
                     amount=amount,
                     stake_amount=open_rate * amount,
                     leverage=5,
+                    other_trades=other_contracts,
+                    # mm_ex_1=mm_ex_1,
+                    # upnl_ex_1=upnl_ex_1,
                 ),
                 2,
             )
