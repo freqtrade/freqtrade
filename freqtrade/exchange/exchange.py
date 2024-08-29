@@ -3532,8 +3532,7 @@ class Exchange:
         stake_amount: float,
         leverage: float,
         wallet_balance: float,
-        mm_ex_1: float = 0.0,  # (Binance) Cross only
-        upnl_ex_1: float = 0.0,  # (Binance) Cross only
+        other_trades: list,
     ) -> Optional[float]:
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
@@ -3555,8 +3554,7 @@ class Exchange:
                 leverage=leverage,
                 stake_amount=stake_amount,
                 wallet_balance=wallet_balance,
-                mm_ex_1=mm_ex_1,
-                upnl_ex_1=upnl_ex_1,
+                other_trades=other_trades,
             )
         else:
             positions = self.fetch_positions(pair)
@@ -3582,8 +3580,7 @@ class Exchange:
         stake_amount: float,
         leverage: float,
         wallet_balance: float,  # Or margin balance
-        mm_ex_1: float = 0.0,  # (Binance) Cross only
-        upnl_ex_1: float = 0.0,  # (Binance) Cross only
+        other_trades: list,
     ) -> Optional[float]:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
@@ -3608,10 +3605,7 @@ class Exchange:
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
-
-        # * Not required by Gate or OKX
-        :param mm_ex_1:
-        :param upnl_ex_1:
+        :param other_trades: List of other open trades in the same wallet
         """
 
         market = self.markets[pair]

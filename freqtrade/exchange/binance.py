@@ -153,8 +153,7 @@ class Binance(Exchange):
         stake_amount: float,
         leverage: float,
         wallet_balance: float,  # Or margin balance
-        mm_ex_1: float = 0.0,  # (Binance) Cross only
-        upnl_ex_1: float = 0.0,  # (Binance) Cross only
+        other_trades: list,
     ) -> Optional[float]:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
@@ -172,6 +171,7 @@ class Binance(Exchange):
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
+        :param other_trades: List of other open trades in the same wallet
 
         # * Only required for Cross
         :param mm_ex_1: (TMM)
@@ -180,14 +180,30 @@ class Binance(Exchange):
         :param upnl_ex_1: (UPNL)
             Cross-Margin Mode: Unrealized PNL of all other contracts, excluding Contract 1.
             Isolated-Margin Mode: 0
+        :param other
         """
-
-        side_1 = -1 if is_short else 1
-        cross_vars = upnl_ex_1 - mm_ex_1 if self.margin_mode == MarginMode.CROSS else 0.0
+        cross_vars: float = 0.0
 
         # mm_ratio: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
         # maintenance_amt: (CUM) Maintenance Amount of position
         mm_ratio, maintenance_amt = self.get_maintenance_ratio_and_amt(pair, stake_amount)
+
+        if self.margin_mode == MarginMode.CROSS:
+            mm_ex_1: float = 0.0
+            upnl_ex_1: float = 0.0
+            for trade in other_trades:
+                mm_ratio1, maint_amnt1 = self.get_maintenance_ratio_and_amt(
+                    trade["pair"], trade["stake_amount"]
+                )
+                maint_margin = trade["amount"] * trade["mark_price"] * mm_ratio1 - maint_amnt1
+                mm_ex_1 += maint_margin
+
+                upnl_ex_1 += (
+                    trade["amount"] * trade["mark_price"] - trade["amount"] * trade["open_rate"]
+                )
+            cross_vars = upnl_ex_1 - mm_ex_1
+
+        side_1 = -1 if is_short else 1
 
         if maintenance_amt is None:
             raise OperationalException(
