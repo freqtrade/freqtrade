@@ -17,7 +17,6 @@ import rapidjson
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
 from joblib.externals import cloudpickle
 from pandas import DataFrame
-from rich.align import Align
 from rich.console import Console
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT, FTHYPT_FILEVERSION, LAST_BT_RESULT_FN, Config
@@ -80,7 +79,7 @@ class Hyperopt:
         self.max_open_trades_space: List[Dimension] = []
         self.dimensions: List[Dimension] = []
 
-        self._hyper_out: HyperoptOutput = HyperoptOutput()
+        self._hyper_out: HyperoptOutput = HyperoptOutput(streaming=True)
 
         self.config = config
         self.min_date: datetime
@@ -635,7 +634,7 @@ class Hyperopt:
                 # Define progressbar
                 with get_progress_tracker(
                     console=console,
-                    cust_objs=[Align.center(self._hyper_out.table)],
+                    cust_callables=[self._hyper_out],
                 ) as pbar:
                     task = pbar.add_task("Epochs", total=self.total_epochs)
 
