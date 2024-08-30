@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from freqtrade.enums import MarginMode
 from freqtrade.exceptions import DependencyException
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def update_liquidation_prices(
-    trade: LocalTrade,
+    trade: Optional[LocalTrade] = None,
     *,
     exchange: Exchange,
     wallets: Wallets,
@@ -30,7 +31,8 @@ def update_liquidation_prices(
                 total_wallet_stake = wallets.get_total(stake_currency)
 
             logger.info("Updating liquidation price for all open trades.")
-            for t in Trade.get_open_trades():
+            open_trades = Trade.get_open_trades()
+            for t in open_trades:
                 # TODO: This should be done in a batch update
                 t.set_liquidation_price(
                     exchange.get_liquidation_price(
@@ -41,10 +43,10 @@ def update_liquidation_prices(
                         stake_amount=t.stake_amount,
                         leverage=trade.leverage,
                         wallet_balance=total_wallet_stake,
-                        other_trades=[],  # TODO: Add other trades
+                        other_trades=[tr for tr in open_trades if t.id != tr.id],
                     )
                 )
-        else:
+        elif trade:
             trade.set_liquidation_price(
                 exchange.get_liquidation_price(
                     pair=trade.pair,
@@ -56,6 +58,10 @@ def update_liquidation_prices(
                     wallet_balance=trade.stake_amount,
                     other_trades=[],
                 )
+            )
+        else:
+            raise DependencyException(
+                "Trade object is required for updating liquidation price in isolated margin mode."
             )
     except DependencyException:
         logger.warning("Unable to calculate liquidation price")
