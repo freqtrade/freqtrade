@@ -294,8 +294,6 @@ def test_liquidation_price_binance(
                     stake_amount=open_rate * amount,
                     leverage=5,
                     other_trades=other_contracts,
-                    # mm_ex_1=mm_ex_1,
-                    # upnl_ex_1=upnl_ex_1,
                 ),
                 2,
             )

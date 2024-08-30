@@ -3532,7 +3532,7 @@ class Exchange:
         stake_amount: float,
         leverage: float,
         wallet_balance: float,
-        other_trades: list,
+        other_trades: Optional[list] = None,
     ) -> Optional[float]:
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
@@ -3554,7 +3554,7 @@ class Exchange:
                 leverage=leverage,
                 stake_amount=stake_amount,
                 wallet_balance=wallet_balance,
-                other_trades=other_trades,
+                other_trades=other_trades or [],
             )
         else:
             positions = self.fetch_positions(pair)

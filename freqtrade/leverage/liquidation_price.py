@@ -56,7 +56,6 @@ def update_liquidation_prices(
                     stake_amount=trade.stake_amount,
                     leverage=trade.leverage,
                     wallet_balance=trade.stake_amount,
-                    other_trades=[],
                 )
             )
         else:
