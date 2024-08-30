@@ -2233,16 +2233,13 @@ class FreqtradeBot(LoggingMixin):
                 # Must also run for partial exits
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
-                try:
-                    update_liquidation_prices(
-                        trade,
-                        exchange=self.exchange,
-                        wallets=self.wallets,
-                        stake_currency=self.config["stake_currency"],
-                        dry_run=self.config["dry_run"],
-                    )
-                except DependencyException:
-                    logger.warning("Unable to calculate liquidation price")
+                update_liquidation_prices(
+                    trade,
+                    exchange=self.exchange,
+                    wallets=self.wallets,
+                    stake_currency=self.config["stake_currency"],
+                    dry_run=self.config["dry_run"],
+                )
                 if self.strategy.use_custom_stoploss:
                     current_rate = self.exchange.get_rate(
                         trade.pair, side="exit", is_short=trade.is_short, refresh=True
