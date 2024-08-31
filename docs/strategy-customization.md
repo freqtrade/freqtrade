@@ -717,6 +717,7 @@ This is where calling `self.dp.current_whitelist()` comes in handy.
 
 ??? Note "Plotting with current_whitelist"
     Current whitelist is not supported for `plot-dataframe`, as this command is usually used by providing an explicit pairlist - and would therefore make the return values of this method misleading.
+    It's also not supported for freqUI visualization in [webserver mode](utils.md#webserver-mode) - as the configuration for webserver mode doesn't require a pairlist to be set.
 
 ### *get_pair_dataframe(pair, timeframe)*
 

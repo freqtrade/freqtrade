@@ -58,7 +58,6 @@ The plot configuration can be accessed via the "Plot Configurator" (Cog icon) bu
 
 ### Settings
 
-
 Several UI related settings can be changed by accessing the settings page.
 
 Things you can change (among others):
