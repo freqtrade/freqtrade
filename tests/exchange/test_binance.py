@@ -172,7 +172,7 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
 
 @pytest.mark.parametrize(
     "pair, is_short, trading_mode, margin_mode, wallet_balance, "
-    "maintenance_amt, amount, open_rate, mark_price, open_trades,"
+    "maintenance_amt, amount, open_rate, open_trades,"
     "mm_ratio, expected",
     [
         (
@@ -184,7 +184,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             135365.00,
             3683.979,
             1456.84,
-            1456.84,  # mark price
             [],
             0.10,
             1114.78,
@@ -197,7 +196,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             1535443.01,
             16300.000,
             109.488,
-            32481.980,
             32481.980,
             [],
             0.025,
@@ -214,7 +212,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             135365.00,
             3683.979,  # amount
             1456.84,  # open_rate
-            1335.18,  # mark_price
             [
                 {
                     # From calc example
@@ -251,7 +248,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             16300.0,
             109.488,  # amount
             32481.980,  # open_rate
-            31967.27,  # mark_price
             [
                 {
                     # From calc example
@@ -290,7 +286,6 @@ def test_liquidation_price_binance(
     maintenance_amt,
     amount,
     open_rate,
-    mark_price,
     open_trades,
     mm_ratio,
     expected,
@@ -306,7 +301,18 @@ def test_liquidation_price_binance(
             return oc["mm_ratio"], oc["maintenance_amt"]
         return mm_ratio, maintenance_amt
 
+    def fetch_funding_rates(*args, **kwargs):
+        return {
+            t["pair"]: {
+                "symbol": t["pair"],
+                "markPrice": t["mark_price"],
+            }
+            for t in open_trades
+        }
+
     exchange.get_maintenance_ratio_and_amt = get_maint_ratio
+    exchange.fetch_funding_rates = fetch_funding_rates
+
     assert (
         pytest.approx(
             round(

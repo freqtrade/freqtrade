@@ -144,6 +144,27 @@ class Binance(Exchange):
         """
         return open_date.minute == 0 and open_date.second < 15
 
+    def fetch_funding_rates(self, symbols: Optional[List[str]] = None) -> Dict[str, float]:
+        """
+        Fetch funding rates for the given symbols.
+        :param symbols: List of symbols to fetch funding rates for
+        :return: Dict of funding rates for the given symbols
+        """
+        try:
+            if self.trading_mode == TradingMode.FUTURES:
+                rates = self._api.fetch_funding_rates(symbols)
+                return rates
+            return {}
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f"Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}"
+            ) from e
+
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
     def dry_run_liquidation_price(
         self,
         pair: str,
@@ -191,19 +212,20 @@ class Binance(Exchange):
         if self.margin_mode == MarginMode.CROSS:
             mm_ex_1: float = 0.0
             upnl_ex_1: float = 0.0
+            pairs = [trade["pair"] for trade in open_trades]
+            funding_rates = self.fetch_funding_rates(pairs)
             for trade in open_trades:
                 if trade["pair"] == pair:
                     # Only "other" trades are considered
                     continue
+                mark_price = funding_rates[trade["pair"]]["markPrice"]
                 mm_ratio1, maint_amnt1 = self.get_maintenance_ratio_and_amt(
                     trade["pair"], trade["stake_amount"]
                 )
-                maint_margin = trade["amount"] * trade["mark_price"] * mm_ratio1 - maint_amnt1
+                maint_margin = trade["amount"] * mark_price * mm_ratio1 - maint_amnt1
                 mm_ex_1 += maint_margin
 
-                upnl_ex_1 += (
-                    trade["amount"] * trade["mark_price"] - trade["amount"] * trade["open_rate"]
-                )
+                upnl_ex_1 += trade["amount"] * mark_price - trade["amount"] * trade["open_rate"]
             cross_vars = upnl_ex_1 - mm_ex_1
 
         side_1 = -1 if is_short else 1
