@@ -192,6 +192,9 @@ class Binance(Exchange):
             mm_ex_1: float = 0.0
             upnl_ex_1: float = 0.0
             for trade in open_trades:
+                if trade["pair"] == pair:
+                    # Only "other" trades are considered
+                    continue
                 mm_ratio1, maint_amnt1 = self.get_maintenance_ratio_and_amt(
                     trade["pair"], trade["stake_amount"]
                 )
