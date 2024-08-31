@@ -153,7 +153,7 @@ class Binance(Exchange):
         stake_amount: float,
         leverage: float,
         wallet_balance: float,  # Or margin balance
-        other_trades: list,
+        open_trades: list,
     ) -> Optional[float]:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
@@ -171,7 +171,7 @@ class Binance(Exchange):
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
-        :param other_trades: List of other open trades in the same wallet
+        :param open_trades: List of open trades in the same wallet
 
         # * Only required for Cross
         :param mm_ex_1: (TMM)
@@ -191,7 +191,7 @@ class Binance(Exchange):
         if self.margin_mode == MarginMode.CROSS:
             mm_ex_1: float = 0.0
             upnl_ex_1: float = 0.0
-            for trade in other_trades:
+            for trade in open_trades:
                 mm_ratio1, maint_amnt1 = self.get_maintenance_ratio_and_amt(
                     trade["pair"], trade["stake_amount"]
                 )

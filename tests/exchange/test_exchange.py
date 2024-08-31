@@ -6009,7 +6009,7 @@ def test_get_liquidation_price1(mocker, default_conf):
             stake_amount=18.884 * 0.8,
             leverage=leverage,
             wallet_balance=18.884 * 0.8,
-            other_trades=[],
+            open_trades=[],
         )
 
 
@@ -6140,7 +6140,7 @@ def test_get_liquidation_price(
         wallet_balance=amount * open_rate / leverage,
         leverage=leverage,
         is_short=is_short,
-        other_trades=[],
+        open_trades=[],
     )
     if expected_liq is None:
         assert liq is None

@@ -3532,7 +3532,7 @@ class Exchange:
         stake_amount: float,
         leverage: float,
         wallet_balance: float,
-        other_trades: Optional[list] = None,
+        open_trades: Optional[list] = None,
     ) -> Optional[float]:
         """
         Set's the margin mode on the exchange to cross or isolated for a specific pair
@@ -3554,7 +3554,7 @@ class Exchange:
                 leverage=leverage,
                 stake_amount=stake_amount,
                 wallet_balance=wallet_balance,
-                other_trades=other_trades or [],
+                open_trades=open_trades or [],
             )
         else:
             positions = self.fetch_positions(pair)
@@ -3580,7 +3580,7 @@ class Exchange:
         stake_amount: float,
         leverage: float,
         wallet_balance: float,  # Or margin balance
-        other_trades: list,
+        open_trades: list,
     ) -> Optional[float]:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
@@ -3605,7 +3605,7 @@ class Exchange:
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
-        :param other_trades: List of other open trades in the same wallet
+        :param open_trades: List of other open trades in the same wallet
         """
 
         market = self.markets[pair]
