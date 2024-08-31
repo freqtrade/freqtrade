@@ -2719,13 +2719,17 @@ pip install -U -r requirements.txt
 </details>
 <h2 id="releases">Releases<a class="headerlink" href="#releases" title="Permanent link">&para;</a></h2>
 <h3 id="pypi">pypi<a class="headerlink" href="#pypi" title="Permanent link">&para;</a></h3>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This process is now automated as part of Github Actions.</p>
+<div class="admonition warning">
+<p class="admonition-title">Manual Releases</p>
+<p>This process is automated as part of Github Actions.<br />
+Manual pypi pushes should not be necessary.</p>
 </div>
-<p>To create a pypi release, please run the following commands:</p>
+<details class="example">
+<summary>Manual release</summary>
+<p>To manually create a pypi release, please run the following commands:</p>
 <p>Additional requirement: <code>wheel</code>, <code>twine</code> (for uploading), account on pypi with proper permissions.</p>
-<div class="highlight"><pre><span></span><code>python<span class="w"> </span>setup.py<span class="w"> </span>sdist<span class="w"> </span>bdist_wheel
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>build
+python<span class="w"> </span>-m<span class="w"> </span>build<span class="w"> </span>--sdist<span class="w"> </span>--wheel
 
 <span class="c1"># For pypi test (to check if some change to the installation did work)</span>
 twine<span class="w"> </span>upload<span class="w"> </span>--repository-url<span class="w"> </span>https://test.pypi.org/legacy/<span class="w"> </span>dist/*
@@ -2734,6 +2738,7 @@ twine<span class="w"> </span>upload<span class="w"> </span>--repository-url<span
 twine<span class="w"> </span>upload<span class="w"> </span>dist/*
 </code></pre></div>
 <p>Please don't push non-releases to the productive / real pypi instance.</p>
+</details>
 
 
 
