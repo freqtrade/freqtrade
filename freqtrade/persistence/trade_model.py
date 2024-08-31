@@ -760,7 +760,7 @@ class LocalTrade:
         Method you should use to set self.liquidation price.
         Assures stop_loss is not passed the liquidation price
         """
-        if not liquidation_price:
+        if liquidation_price is None:
             return
         self.liquidation_price = liquidation_price
 
