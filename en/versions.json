@@ -7,11 +7,16 @@
     ]
   },
   {
-    "version": "2024.7.1",
-    "title": "2024.7.1",
+    "version": "2024.8",
+    "title": "2024.8",
     "aliases": [
       "stable"
     ]
+  },
+  {
+    "version": "2024.7.1",
+    "title": "2024.7.1",
+    "aliases": []
   },
   {
     "version": "2024.7",

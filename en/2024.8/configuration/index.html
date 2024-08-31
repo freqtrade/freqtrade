@@ -1,0 +1,3816 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Freqtrade is a free and open source crypto trading bot written in Python, designed to support all major exchanges and be controlled via Telegram or builtin Web UI">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/en/latest/2024.8/configuration/">
+      
+      
+        <link rel="prev" href="../bot-basics/">
+      
+      
+        <link rel="next" href="../strategy-customization/">
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.33">
+    
+    
+      
+        <title>Configuration - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.3cba04c6.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#configure-the-bot" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Configuration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart with Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Installation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux/MacOS/Raspberry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../windows_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Windows
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Freqtrade Basics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-freqtrade-configuration-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      The Freqtrade configuration file
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Freqtrade configuration file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-configuration-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple configuration files
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#editor-autocomplete-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Editor autocomplete and validation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-option-prevalence" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration option prevalence
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters table
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-in-the-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters in the strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-amount-per-trade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring amount per trade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring amount per trade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimum-trade-stake" class="md-nav__link">
+    <span class="md-ellipsis">
+      Minimum trade stake
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tradable-balance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tradable balance
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-available-capital" class="md-nav__link">
+    <span class="md-ellipsis">
+      Assign available Capital
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#amend-last-stake-amount" class="md-nav__link">
+    <span class="md-ellipsis">
+      Amend last stake amount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#static-stake-amount" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static stake amount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-stake-amount" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dynamic stake amount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-stake-amount-with-position-adjustment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dynamic stake amount with position adjustment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prices-used-for-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prices used for orders
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prices used for orders">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entry-price" class="md-nav__link">
+    <span class="md-ellipsis">
+      Entry price
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Entry price">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enter-price-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enter price side
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entry-price-with-orderbook-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Entry price with Orderbook enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entry-price-without-orderbook-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Entry price without Orderbook enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-depth-of-market" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check depth of market
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-price" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit price
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exit price">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exit-price-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit price side
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-price-with-orderbook-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit price with Orderbook enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-price-without-orderbook-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit price without Orderbook enabled
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#market-order-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Market order pricing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#further-configuration-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further Configuration details
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Further Configuration details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#understand-minimal_roi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand minimal_roi
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-force_entry_enable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand force_entry_enable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ignoring-expired-candles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ignoring expired candles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-order_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand order_types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-order_time_in_force" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand order_time_in_force
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand order_time_in_force">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time_in_force-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      time_in_force config
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fiat-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fiat conversion
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fiat conversion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-values-can-be-used-for-fiat_display_currency" class="md-nav__link">
+    <span class="md-ellipsis">
+      What values can be used for fiat_display_currency?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coingecko-rate-limit-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coingecko Rate limit problems
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consuming-exchange-websockets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Consuming exchange Websockets
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-dry-run-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Dry-run mode
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using Dry-run mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#considerations-for-dry-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      Considerations for dry-run
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switch-to-production-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Switch to production mode
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Switch to production mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-your-exchange-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup your exchange account
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-switch-your-bot-in-production-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      To switch your bot in production mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-a-proxy-with-freqtrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using a proxy with Freqtrade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using a proxy with Freqtrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxy-exchange-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Proxy exchange requests
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next step
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Customization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-callbacks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Callbacks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Stoploss
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Start the bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Control the bot
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Control the bot
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Telegram
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freq-ui/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    freqUI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    REST API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Web Hook
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtesting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    FreqAI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            FreqAI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter table
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Feature engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Running FreqAI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reinforcement Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Short / Leverage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Utility Sub-commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Plotting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exchange-specific Notes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Data Analysis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            Data Analysis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Jupyter Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backtest analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced Topics
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Topics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Post-installation Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Trade Object
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lookahead-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Lookahead analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recursive-analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Recursive analysis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Hyperopt
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-orderflow/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Orderflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Producer/Consumer mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SQL Cheat-sheet
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Edge Positioning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating Freqtrade
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deprecated Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributors Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-freqtrade-configuration-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      The Freqtrade configuration file
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Freqtrade configuration file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-configuration-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple configuration files
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#editor-autocomplete-and-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Editor autocomplete and validation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-option-prevalence" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration option prevalence
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters table
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-in-the-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters in the strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-amount-per-trade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring amount per trade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring amount per trade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimum-trade-stake" class="md-nav__link">
+    <span class="md-ellipsis">
+      Minimum trade stake
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tradable-balance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tradable balance
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-available-capital" class="md-nav__link">
+    <span class="md-ellipsis">
+      Assign available Capital
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#amend-last-stake-amount" class="md-nav__link">
+    <span class="md-ellipsis">
+      Amend last stake amount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#static-stake-amount" class="md-nav__link">
+    <span class="md-ellipsis">
+      Static stake amount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-stake-amount" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dynamic stake amount
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-stake-amount-with-position-adjustment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dynamic stake amount with position adjustment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prices-used-for-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prices used for orders
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prices used for orders">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entry-price" class="md-nav__link">
+    <span class="md-ellipsis">
+      Entry price
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Entry price">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enter-price-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enter price side
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entry-price-with-orderbook-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Entry price with Orderbook enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entry-price-without-orderbook-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Entry price without Orderbook enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-depth-of-market" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check depth of market
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-price" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit price
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exit price">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exit-price-side" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit price side
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-price-with-orderbook-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit price with Orderbook enabled
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit-price-without-orderbook-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit price without Orderbook enabled
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#market-order-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Market order pricing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#further-configuration-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further Configuration details
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Further Configuration details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#understand-minimal_roi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand minimal_roi
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-force_entry_enable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand force_entry_enable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ignoring-expired-candles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Ignoring expired candles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-order_types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand order_types
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#understand-order_time_in_force" class="md-nav__link">
+    <span class="md-ellipsis">
+      Understand order_time_in_force
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Understand order_time_in_force">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time_in_force-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      time_in_force config
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fiat-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fiat conversion
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fiat conversion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-values-can-be-used-for-fiat_display_currency" class="md-nav__link">
+    <span class="md-ellipsis">
+      What values can be used for fiat_display_currency?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coingecko-rate-limit-problems" class="md-nav__link">
+    <span class="md-ellipsis">
+      Coingecko Rate limit problems
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consuming-exchange-websockets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Consuming exchange Websockets
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-dry-run-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using Dry-run mode
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using Dry-run mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#considerations-for-dry-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      Considerations for dry-run
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switch-to-production-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Switch to production mode
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Switch to production mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-your-exchange-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup your exchange account
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-switch-your-bot-in-production-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      To switch your bot in production mode
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-a-proxy-with-freqtrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using a proxy with Freqtrade
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using a proxy with Freqtrade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxy-exchange-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Proxy exchange requests
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next step
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="configure-the-bot">Configure the bot<a class="headerlink" href="#configure-the-bot" title="Permanent link">&para;</a></h1>
+<p>Freqtrade has many configurable features and possibilities.
+By default, these settings are configured via the configuration file (see below).</p>
+<h2 id="the-freqtrade-configuration-file">The Freqtrade configuration file<a class="headerlink" href="#the-freqtrade-configuration-file" title="Permanent link">&para;</a></h2>
+<p>The bot uses a set of configuration parameters during its operation that all together conform to the bot configuration. It normally reads its configuration from a file (Freqtrade configuration file).</p>
+<p>Per default, the bot loads the configuration from the <code>config.json</code> file, located in the current working directory.</p>
+<p>You can specify a different configuration file used by the bot with the <code>-c/--config</code> command-line option.</p>
+<p>If you used the <a href="../docker_quickstart/#docker-quick-start">Quick start</a> method for installing
+the bot, the installation script should have already created the default configuration file (<code>config.json</code>) for you.</p>
+<p>If the default configuration file is not created we recommend to use <code>freqtrade new-config --config user_data/config.json</code> to generate a basic configuration file.</p>
+<p>The Freqtrade configuration file is to be written in JSON format.</p>
+<p>Additionally to the standard JSON syntax, you may use one-line <code>// ...</code> and multi-line <code>/* ... */</code> comments in your configuration files and trailing commas in the lists of parameters.</p>
+<p>Do not worry if you are not familiar with JSON format -- simply open the configuration file with an editor of your choice, make some changes to the parameters you need, save your changes and, finally, restart the bot or, if it was previously stopped, run it again with the changes you made to the configuration. The bot validates the syntax of the configuration file at startup and will warn you if you made any errors editing it, pointing out problematic lines.</p>
+<h3 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
+<p>Set options in the Freqtrade configuration via environment variables.
+This takes priority over the corresponding value in configuration or strategy.</p>
+<p>Environment variables must be prefixed with  <code>FREQTRADE__</code> to be loaded to the freqtrade configuration.</p>
+<p><code>__</code> serves as level separator, so the format used should correspond to <code>FREQTRADE__{section}__{key}</code>.
+As such - an environment variable defined as  <code>export FREQTRADE__STAKE_AMOUNT=200</code> would result in <code>{stake_amount: 200}</code>.</p>
+<p>A more complex example might be <code>export FREQTRADE__EXCHANGE__KEY=&lt;yourExchangeKey&gt;</code> to keep your exchange key secret. This will move the value to the <code>exchange.key</code> section of the configuration.
+Using this scheme, all configuration settings will also be available as environment variables.</p>
+<p>Please note that Environment variables will overwrite corresponding settings in your configuration, but command line Arguments will always win.</p>
+<p>Common example:</p>
+<div class="highlight"><pre><span></span><code>FREQTRADE__TELEGRAM__CHAT_ID=&lt;telegramchatid&gt;
+FREQTRADE__TELEGRAM__TOKEN=&lt;telegramToken&gt;
+FREQTRADE__EXCHANGE__KEY=&lt;yourExchangeKey&gt;
+FREQTRADE__EXCHANGE__SECRET=&lt;yourExchangeSecret&gt;
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Environment variables detected are logged at startup - so if you can't find why a value is not what you think it should be based on the configuration, make sure it's not loaded from an environment variable.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Validate combined result</p>
+<p>You can use the <a href="../utils/#show-config">show-config subcommand</a> to see the final, combined configuration.</p>
+</div>
+<details class="warning">
+<summary>Loading sequence</summary>
+<p>Environment variables are loaded after the initial configuration. As such, you cannot provide the path to the configuration through environment variables. Please use <code>--config path/to/config.json</code> for that.
+This also applies to user_dir to some degree. while the user directory can be set through environment variables - the configuration will <strong>not</strong> be loaded from that location.</p>
+</details>
+<h3 id="multiple-configuration-files">Multiple configuration files<a class="headerlink" href="#multiple-configuration-files" title="Permanent link">&para;</a></h3>
+<p>Multiple configuration files can be specified and used by the bot or the bot can read its configuration parameters from the process standard input stream.</p>
+<p>You can specify additional configuration files in <code>add_config_files</code>. Files specified in this parameter will be loaded and merged with the initial config file. The files are resolved relative to the initial configuration file.
+This is similar to using multiple <code>--config</code> parameters, but simpler in usage as you don't have to specify all files for all commands.</p>
+<div class="admonition tip">
+<p class="admonition-title">Validate combined result</p>
+<p>You can use the <a href="../utils/#show-config">show-config subcommand</a> to see the final, combined configuration.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Use multiple configuration files to keep secrets secret</p>
+<p>You can use a 2<sup>nd</sup> configuration file containing your secrets. That way you can share your "primary" configuration file, while still keeping your API keys for yourself.
+The 2<sup>nd</sup> file should only specify what you intend to override.
+If a key is in more than one of the configurations, then the "last specified configuration" wins (in the above example, <code>config-private.json</code>).</p>
+<p>For one-off commands, you can also use the below syntax by specifying multiple "--config" parameters.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--config<span class="w"> </span>user_data/config1.json<span class="w"> </span>--config<span class="w"> </span>user_data/config-private.json<span class="w"> </span>&lt;...&gt;
+</code></pre></div>
+<p>The below is equivalent to the example above - but having 2 configuration files in the configuration, for easier reuse.</p>
+<div class="highlight"><span class="filename">user_data/config.json</span><pre><span></span><code><span class="nt">&quot;add_config_files&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;config1.json&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;config-private.json&quot;</span>
+<span class="p">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--config<span class="w"> </span>user_data/config.json<span class="w"> </span>&lt;...&gt;
+</code></pre></div>
+</div>
+<details class="note">
+<summary>config collision handling</summary>
+<p>If the same configuration setting takes place in both <code>config.json</code> and <code>config-import.json</code>, then the parent configuration wins.
+In the below case, <code>max_open_trades</code> would be 3 after the merging - as the reusable "import" configuration has this key overwritten.</p>
+<div class="highlight"><span class="filename">user_data/config.json</span><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;max_open_trades&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;stake_currency&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;add_config_files&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;config-import.json&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><span class="filename">user_data/config-import.json</span><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;max_open_trades&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;stake_amount&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unlimited&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Resulting combined configuration:</p>
+<div class="highlight"><span class="filename">Result</span><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;max_open_trades&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;stake_currency&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;stake_amount&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unlimited&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>If multiple files are in the <code>add_config_files</code> section, then they will be assumed to be at identical levels, having the last occurrence override the earlier config (unless a parent already defined such a key).</p>
+</details>
+<h2 id="editor-autocomplete-and-validation">Editor autocomplete and validation<a class="headerlink" href="#editor-autocomplete-and-validation" title="Permanent link">&para;</a></h2>
+<p>If you are using an editor that supports JSON schema, you can use the schema provided by Freqtrade to get autocompletion and validation of your configuration file by adding the following line to the top of your configuration file:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;$schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://schema.freqtrade.io/schema.json&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+<details class="note">
+<summary>Develop version</summary>
+<p>The develop schema is available as <code>https://schema.freqtrade.io/schema_dev.json</code> - though we recommend to stick to the stable version for the best experience.</p>
+</details>
+<h2 id="configuration-parameters">Configuration parameters<a class="headerlink" href="#configuration-parameters" title="Permanent link">&para;</a></h2>
+<p>The table below will list all configuration parameters available.</p>
+<p>Freqtrade can also load many options via command line (CLI) arguments (check out the commands <code>--help</code> output for details).</p>
+<h3 id="configuration-option-prevalence">Configuration option prevalence<a class="headerlink" href="#configuration-option-prevalence" title="Permanent link">&para;</a></h3>
+<p>The prevalence for all Options is as follows:</p>
+<ul>
+<li>CLI arguments override any other option</li>
+<li><a href="#environment-variables">Environment Variables</a></li>
+<li>Configuration files are used in sequence (the last file wins) and override Strategy configurations.</li>
+<li>Strategy configurations are only used if they are not set via configuration or command-line arguments. These options are marked with <a href="#parameters-in-the-strategy">Strategy Override</a> in the below table.</li>
+</ul>
+<h3 id="parameters-table">Parameters table<a class="headerlink" href="#parameters-table" title="Permanent link">&para;</a></h3>
+<p>Mandatory parameters are marked as <strong>Required</strong>, which means that they are required to be set in one of the possible ways.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_open_trades</code></td>
+<td><strong>Required.</strong> Number of open trades your bot is allowed to have. Only one open trade per pair is possible, so the length of your pairlist is another limitation that can apply. If -1 then it is ignored (i.e. potentially unlimited open trades, limited by the pairlist). <a href="#configuring-amount-per-trade">More information below</a>. <a href="#parameters-in-the-strategy">Strategy Override</a>.<br> <strong>Datatype:</strong> Positive integer or -1.</td>
+</tr>
+<tr>
+<td><code>stake_currency</code></td>
+<td><strong>Required.</strong> Crypto-currency used for trading. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>stake_amount</code></td>
+<td><strong>Required.</strong> Amount of crypto-currency your bot will use for each trade. Set it to <code>"unlimited"</code> to allow the bot to use all available balance. <a href="#configuring-amount-per-trade">More information below</a>. <br> <strong>Datatype:</strong> Positive float or <code>"unlimited"</code>.</td>
+</tr>
+<tr>
+<td><code>tradable_balance_ratio</code></td>
+<td>Ratio of the total account balance the bot is allowed to trade. <a href="#configuring-amount-per-trade">More information below</a>. <br><em>Defaults to <code>0.99</code> 99%).</em><br> <strong>Datatype:</strong> Positive float between <code>0.1</code> and <code>1.0</code>.</td>
+</tr>
+<tr>
+<td><code>available_capital</code></td>
+<td>Available starting capital for the bot. Useful when running multiple bots on the same exchange account. <a href="#configuring-amount-per-trade">More information below</a>. <br> <strong>Datatype:</strong> Positive float.</td>
+</tr>
+<tr>
+<td><code>amend_last_stake_amount</code></td>
+<td>Use reduced last stake amount if necessary. <a href="#configuring-amount-per-trade">More information below</a>. <br><em>Defaults to <code>false</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>last_stake_amount_min_ratio</code></td>
+<td>Defines minimum stake amount that has to be left and executed. Applies only to the last stake amount when it's amended to a reduced value (i.e. if <code>amend_last_stake_amount</code> is set to <code>true</code>). <a href="#configuring-amount-per-trade">More information below</a>. <br><em>Defaults to <code>0.5</code>.</em> <br> <strong>Datatype:</strong> Float (as ratio)</td>
+</tr>
+<tr>
+<td><code>amount_reserve_percent</code></td>
+<td>Reserve some amount in min pair stake amount. The bot will reserve <code>amount_reserve_percent</code> + stoploss value when calculating min pair stake amount in order to avoid possible trade refusals. <br><em>Defaults to <code>0.05</code> (5%).</em> <br> <strong>Datatype:</strong> Positive Float as ratio.</td>
+</tr>
+<tr>
+<td><code>timeframe</code></td>
+<td>The timeframe to use (e.g <code>1m</code>, <code>5m</code>, <code>15m</code>, <code>30m</code>, <code>1h</code> ...). Usually missing in configuration, and specified in the strategy. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>fiat_display_currency</code></td>
+<td>Fiat currency used to show your profits. <a href="#what-values-can-be-used-for-fiat_display_currency">More information below</a>. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>dry_run</code></td>
+<td><strong>Required.</strong> Define if the bot must be in Dry Run or production mode. <br><em>Defaults to <code>true</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>dry_run_wallet</code></td>
+<td>Define the starting amount in stake currency for the simulated wallet used by the bot running in Dry Run mode.<br><em>Defaults to <code>1000</code>.</em> <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>cancel_open_orders_on_exit</code></td>
+<td>Cancel open orders when the <code>/stop</code> RPC command is issued, <code>Ctrl+C</code> is pressed or the bot dies unexpectedly. When set to <code>true</code>, this allows you to use <code>/stop</code> to cancel unfilled and partially filled orders in the event of a market crash. It does not impact open positions. <br><em>Defaults to <code>false</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>process_only_new_candles</code></td>
+<td>Enable processing of indicators only when new candles arrive. If false each loop populates the indicators, this will mean the same candle is processed many times creating system load but can be useful of your strategy depends on tick data not only candle. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br><em>Defaults to <code>true</code>.</em>  <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>minimal_roi</code></td>
+<td><strong>Required.</strong> Set the threshold as ratio the bot will use to exit a trade. <a href="#understand-minimal_roi">More information below</a>. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br> <strong>Datatype:</strong> Dict</td>
+</tr>
+<tr>
+<td><code>stoploss</code></td>
+<td><strong>Required.</strong> Value as ratio of the stoploss used by the bot. More details in the <a href="../stoploss/">stoploss documentation</a>. <a href="#parameters-in-the-strategy">Strategy Override</a>.  <br> <strong>Datatype:</strong> Float (as ratio)</td>
+</tr>
+<tr>
+<td><code>trailing_stop</code></td>
+<td>Enables trailing stoploss (based on <code>stoploss</code> in either configuration or strategy file). More details in the <a href="../stoploss/#trailing-stop-loss">stoploss documentation</a>. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>trailing_stop_positive</code></td>
+<td>Changes stoploss once profit has been reached. More details in the <a href="../stoploss/#trailing-stop-loss-custom-positive-loss">stoploss documentation</a>. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>trailing_stop_positive_offset</code></td>
+<td>Offset on when to apply <code>trailing_stop_positive</code>. Percentage value which should be positive. More details in the <a href="../stoploss/#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset">stoploss documentation</a>. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br><em>Defaults to <code>0.0</code> (no offset).</em> <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>trailing_only_offset_is_reached</code></td>
+<td>Only apply trailing stoploss when the offset is reached. <a href="../stoploss/">stoploss documentation</a>. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br><em>Defaults to <code>false</code>.</em>  <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>fee</code></td>
+<td>Fee used during backtesting / dry-runs. Should normally not be configured, which has freqtrade fall back to the exchange default fee. Set as ratio (e.g. 0.001 = 0.1%). Fee is applied twice for each trade, once when buying, once when selling. <br> <strong>Datatype:</strong> Float (as ratio)</td>
+</tr>
+<tr>
+<td><code>futures_funding_rate</code></td>
+<td>User-specified funding rate to be used when historical funding rates are not available from the exchange. This does not overwrite real historical rates. It is recommended that this be set to 0 unless you are testing a specific coin and you understand how the funding rate will affect freqtrade's profit calculations. <a href="../leverage/#unavailable-funding-rates">More information here</a> <br><em>Defaults to <code>None</code>.</em><br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td><code>trading_mode</code></td>
+<td>Specifies if you want to trade regularly, trade with leverage, or trade contracts whose prices are derived from matching cryptocurrency prices. <a href="../leverage/">leverage documentation</a>. <br><em>Defaults to <code>"spot"</code>.</em>  <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>margin_mode</code></td>
+<td>When trading with leverage, this determines if the collateral owned by the trader will be shared or isolated to each trading pair <a href="../leverage/">leverage documentation</a>. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>liquidation_buffer</code></td>
+<td>A ratio specifying how large of a safety net to place between the liquidation price and the stoploss to prevent a position from reaching the liquidation price <a href="../leverage/">leverage documentation</a>. <br><em>Defaults to <code>0.05</code>.</em>  <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Unfilled timeout</strong></td>
+</tr>
+<tr>
+<td><code>unfilledtimeout.entry</code></td>
+<td><strong>Required.</strong> How long (in minutes or seconds) the bot will wait for an unfilled entry order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. <a href="#parameters-in-the-strategy">Strategy Override</a>.<br> <strong>Datatype:</strong> Integer</td>
+</tr>
+<tr>
+<td><code>unfilledtimeout.exit</code></td>
+<td><strong>Required.</strong> How long (in minutes or seconds) the bot will wait for an unfilled exit order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. <a href="#parameters-in-the-strategy">Strategy Override</a>.<br> <strong>Datatype:</strong> Integer</td>
+</tr>
+<tr>
+<td><code>unfilledtimeout.unit</code></td>
+<td>Unit to use in unfilledtimeout setting. Note: If you set unfilledtimeout.unit to "seconds", "internals.process_throttle_secs" must be inferior or equal to timeout <a href="#parameters-in-the-strategy">Strategy Override</a>. <br> <em>Defaults to <code>"minutes"</code>.</em> <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>unfilledtimeout.exit_timeout_count</code></td>
+<td>How many times can exit orders time out. Once this number of timeouts is reached, an emergency exit is triggered. 0 to disable and allow unlimited order cancels. <a href="#parameters-in-the-strategy">Strategy Override</a>.<br><em>Defaults to <code>0</code>.</em> <br> <strong>Datatype:</strong> Integer</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Pricing</strong></td>
+</tr>
+<tr>
+<td><code>entry_pricing.price_side</code></td>
+<td>Select the side of the spread the bot should look at to get the entry rate. <a href="#entry-price">More information below</a>.<br> <em>Defaults to <code>"same"</code>.</em> <br> <strong>Datatype:</strong> String (either <code>ask</code>, <code>bid</code>, <code>same</code> or <code>other</code>).</td>
+</tr>
+<tr>
+<td><code>entry_pricing.price_last_balance</code></td>
+<td><strong>Required.</strong> Interpolate the bidding price. More information <a href="#entry-price-without-orderbook-enabled">below</a>.</td>
+</tr>
+<tr>
+<td><code>entry_pricing.use_order_book</code></td>
+<td>Enable entering using the rates in <a href="#entry-price-with-orderbook-enabled">Order Book Entry</a>. <br> <em>Defaults to <code>true</code>.</em><br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>entry_pricing.order_book_top</code></td>
+<td>Bot will use the top N rate in Order Book "price_side" to enter a trade. I.e. a value of 2 will allow the bot to pick the 2<sup>nd</sup> entry in <a href="#entry-price-with-orderbook-enabled">Order Book Entry</a>. <br><em>Defaults to <code>1</code>.</em>  <br> <strong>Datatype:</strong> Positive Integer</td>
+</tr>
+<tr>
+<td><code>entry_pricing. check_depth_of_market.enabled</code></td>
+<td>Do not enter if the difference of buy orders and sell orders is met in Order Book. <a href="#check-depth-of-market">Check market depth</a>. <br><em>Defaults to <code>false</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>entry_pricing. check_depth_of_market.bids_to_ask_delta</code></td>
+<td>The difference ratio of buy orders and sell orders found in Order Book. A value below 1 means sell order size is greater, while value greater than 1 means buy order size is higher. <a href="#check-depth-of-market">Check market depth</a> <br> <em>Defaults to <code>0</code>.</em>  <br> <strong>Datatype:</strong> Float (as ratio)</td>
+</tr>
+<tr>
+<td><code>exit_pricing.price_side</code></td>
+<td>Select the side of the spread the bot should look at to get the exit rate. <a href="#exit-price-side">More information below</a>.<br> <em>Defaults to <code>"same"</code>.</em> <br> <strong>Datatype:</strong> String (either <code>ask</code>, <code>bid</code>, <code>same</code> or <code>other</code>).</td>
+</tr>
+<tr>
+<td><code>exit_pricing.price_last_balance</code></td>
+<td>Interpolate the exiting price. More information <a href="#exit-price-without-orderbook-enabled">below</a>.</td>
+</tr>
+<tr>
+<td><code>exit_pricing.use_order_book</code></td>
+<td>Enable exiting of open trades using <a href="#exit-price-with-orderbook-enabled">Order Book Exit</a>. <br> <em>Defaults to <code>true</code>.</em><br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>exit_pricing.order_book_top</code></td>
+<td>Bot will use the top N rate in Order Book "price_side" to exit. I.e. a value of 2 will allow the bot to pick the 2<sup>nd</sup> ask rate in <a href="#exit-price-with-orderbook-enabled">Order Book Exit</a><br><em>Defaults to <code>1</code>.</em> <br> <strong>Datatype:</strong> Positive Integer</td>
+</tr>
+<tr>
+<td><code>custom_price_max_distance_ratio</code></td>
+<td>Configure maximum distance ratio between current and custom entry or exit price. <br><em>Defaults to <code>0.02</code> 2%).</em><br> <strong>Datatype:</strong> Positive float</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>TODO</strong></td>
+</tr>
+<tr>
+<td><code>use_exit_signal</code></td>
+<td>Use exit signals produced by the strategy in addition to the <code>minimal_roi</code>. <br>Setting this to false disables the usage of <code>"exit_long"</code> and <code>"exit_short"</code> columns. Has no influence on other exit methods (Stoploss, ROI, callbacks). <a href="#parameters-in-the-strategy">Strategy Override</a>. <br><em>Defaults to <code>true</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>exit_profit_only</code></td>
+<td>Wait until the bot reaches <code>exit_profit_offset</code> before taking an exit decision. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br><em>Defaults to <code>false</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>exit_profit_offset</code></td>
+<td>Exit-signal is only active above this value. Only active in combination with <code>exit_profit_only=True</code>. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br><em>Defaults to <code>0.0</code>.</em> <br> <strong>Datatype:</strong> Float (as ratio)</td>
+</tr>
+<tr>
+<td><code>ignore_roi_if_entry_signal</code></td>
+<td>Do not exit if the entry signal is still active. This setting takes preference over <code>minimal_roi</code> and <code>use_exit_signal</code>. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br><em>Defaults to <code>false</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>ignore_buying_expired_candle_after</code></td>
+<td>Specifies the number of seconds until a buy signal is no longer used. <br> <strong>Datatype:</strong> Integer</td>
+</tr>
+<tr>
+<td><code>order_types</code></td>
+<td>Configure order-types depending on the action (<code>"entry"</code>, <code>"exit"</code>, <code>"stoploss"</code>, <code>"stoploss_on_exchange"</code>). <a href="#understand-order_types">More information below</a>. <a href="#parameters-in-the-strategy">Strategy Override</a>.<br> <strong>Datatype:</strong> Dict</td>
+</tr>
+<tr>
+<td><code>order_time_in_force</code></td>
+<td>Configure time in force for entry and exit orders. <a href="#understand-order_time_in_force">More information below</a>. <a href="#parameters-in-the-strategy">Strategy Override</a>. <br> <strong>Datatype:</strong> Dict</td>
+</tr>
+<tr>
+<td><code>position_adjustment_enable</code></td>
+<td>Enables the strategy to use position adjustments (additional buys or sells). <a href="../strategy-callbacks/#adjust-trade-position">More information here</a>. <br> <a href="#parameters-in-the-strategy">Strategy Override</a>. <br><em>Defaults to <code>false</code>.</em><br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>max_entry_position_adjustment</code></td>
+<td>Maximum additional order(s) for each open trade on top of the first entry Order. Set it to <code>-1</code> for unlimited additional orders. <a href="../strategy-callbacks/#adjust-trade-position">More information here</a>. <br> <a href="#parameters-in-the-strategy">Strategy Override</a>. <br><em>Defaults to <code>-1</code>.</em><br> <strong>Datatype:</strong> Positive Integer or -1</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Exchange</strong></td>
+</tr>
+<tr>
+<td><code>exchange.name</code></td>
+<td><strong>Required.</strong> Name of the exchange class to use. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>exchange.key</code></td>
+<td>API key to use for the exchange. Only required when you are in production mode.<br><strong>Keep it in secret, do not disclose publicly.</strong> <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>exchange.secret</code></td>
+<td>API secret to use for the exchange. Only required when you are in production mode.<br><strong>Keep it in secret, do not disclose publicly.</strong> <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>exchange.password</code></td>
+<td>API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests.<br><strong>Keep it in secret, do not disclose publicly.</strong> <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>exchange.uid</code></td>
+<td>API uid to use for the exchange. Only required when you are in production mode and for exchanges that use uid for API requests.<br><strong>Keep it in secret, do not disclose publicly.</strong> <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>exchange.pair_whitelist</code></td>
+<td>List of pairs to use by the bot for trading and to check for potential trades during backtesting. Supports regex pairs as <code>.*/BTC</code>. Not used by VolumePairList. <a href="../plugins/#pairlists-and-pairlist-handlers">More information</a>. <br> <strong>Datatype:</strong> List</td>
+</tr>
+<tr>
+<td><code>exchange.pair_blacklist</code></td>
+<td>List of pairs the bot must absolutely avoid for trading and backtesting. <a href="../plugins/#pairlists-and-pairlist-handlers">More information</a>. <br> <strong>Datatype:</strong> List</td>
+</tr>
+<tr>
+<td><code>exchange.ccxt_config</code></td>
+<td>Additional CCXT parameters passed to both ccxt instances (sync and async). This is usually the correct place for additional ccxt configurations. Parameters may differ from exchange to exchange and are documented in the <a href="https://docs.ccxt.com/#/README?id=overriding-exchange-properties-upon-instantiation">ccxt documentation</a>. Please avoid adding exchange secrets here (use the dedicated fields instead), as they may be contained in logs. <br> <strong>Datatype:</strong> Dict</td>
+</tr>
+<tr>
+<td><code>exchange.ccxt_sync_config</code></td>
+<td>Additional CCXT parameters passed to the regular (sync) ccxt instance. Parameters may differ from exchange to exchange and are documented in the <a href="https://docs.ccxt.com/#/README?id=overriding-exchange-properties-upon-instantiation">ccxt documentation</a> <br> <strong>Datatype:</strong> Dict</td>
+</tr>
+<tr>
+<td><code>exchange.ccxt_async_config</code></td>
+<td>Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the <a href="https://docs.ccxt.com/#/README?id=overriding-exchange-properties-upon-instantiation">ccxt documentation</a> <br> <strong>Datatype:</strong> Dict</td>
+</tr>
+<tr>
+<td><code>exchange.enable_ws</code></td>
+<td>Enable the usage of Websockets for the exchange. <br><a href="#consuming-exchange-websockets">More information</a>.<br><em>Defaults to <code>true</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>exchange.markets_refresh_interval</code></td>
+<td>The interval in minutes in which markets are reloaded. <br><em>Defaults to <code>60</code> minutes.</em> <br> <strong>Datatype:</strong> Positive Integer</td>
+</tr>
+<tr>
+<td><code>exchange.skip_pair_validation</code></td>
+<td>Skip pairlist validation on startup.<br><em>Defaults to <code>false</code></em><br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>exchange.skip_open_order_update</code></td>
+<td>Skips open order updates on startup should the exchange cause problems. Only relevant in live conditions.<br><em>Defaults to <code>false</code></em><br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>exchange.unknown_fee_rate</code></td>
+<td>Fallback value to use when calculating trading fees. This can be useful for exchanges which have fees in non-tradable currencies. The value provided here will be multiplied with the "fee cost".<br><em>Defaults to <code>None</code><br> </em><em>Datatype:</em>* float</td>
+</tr>
+<tr>
+<td><code>exchange.log_responses</code></td>
+<td>Log relevant exchange responses. For debug mode only - use with care.<br><em>Defaults to <code>false</code></em><br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>experimental.block_bad_exchanges</code></td>
+<td>Block exchanges known to not work with freqtrade. Leave on default unless you want to test if that exchange works now. <br><em>Defaults to <code>true</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Plugins</strong></td>
+</tr>
+<tr>
+<td><code>edge.*</code></td>
+<td>Please refer to <a href="../edge/">edge configuration document</a> for detailed explanation of all possible configuration options.</td>
+</tr>
+<tr>
+<td><code>pairlists</code></td>
+<td>Define one or more pairlists to be used. <a href="../plugins/#pairlists-and-pairlist-handlers">More information</a>. <br><em>Defaults to <code>StaticPairList</code>.</em>  <br> <strong>Datatype:</strong> List of Dicts</td>
+</tr>
+<tr>
+<td><code>protections</code></td>
+<td>Define one or more protections to be used. <a href="../plugins/#protections">More information</a>. <br> <strong>Datatype:</strong> List of Dicts</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Telegram</strong></td>
+</tr>
+<tr>
+<td><code>telegram.enabled</code></td>
+<td>Enable the usage of Telegram. <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>telegram.token</code></td>
+<td>Your Telegram bot token. Only required if <code>telegram.enabled</code> is <code>true</code>. <br><strong>Keep it in secret, do not disclose publicly.</strong> <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>telegram.chat_id</code></td>
+<td>Your personal Telegram account id. Only required if <code>telegram.enabled</code> is <code>true</code>. <br><strong>Keep it in secret, do not disclose publicly.</strong> <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>telegram.balance_dust_level</code></td>
+<td>Dust-level (in stake currency) - currencies with a balance below this will not be shown by <code>/balance</code>. <br> <strong>Datatype:</strong> float</td>
+</tr>
+<tr>
+<td><code>telegram.reload</code></td>
+<td>Allow "reload" buttons on telegram messages. <br><em>Defaults to <code>true</code>.<br> </em><em>Datatype:</em>* boolean</td>
+</tr>
+<tr>
+<td><code>telegram.notification_settings.*</code></td>
+<td>Detailed notification settings. Refer to the <a href="../telegram-usage/">telegram documentation</a> for details.<br> <strong>Datatype:</strong> dictionary</td>
+</tr>
+<tr>
+<td><code>telegram.allow_custom_messages</code></td>
+<td>Enable the sending of Telegram messages from strategies via the dataprovider.send_msg() function. <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Webhook</strong></td>
+</tr>
+<tr>
+<td><code>webhook.enabled</code></td>
+<td>Enable usage of Webhook notifications <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>webhook.url</code></td>
+<td>URL for the webhook. Only required if <code>webhook.enabled</code> is <code>true</code>. See the <a href="../webhook-config/">webhook documentation</a> for more details. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>webhook.entry</code></td>
+<td>Payload to send on entry. Only required if <code>webhook.enabled</code> is <code>true</code>. See the <a href="../webhook-config/">webhook documentation</a> for more details. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>webhook.entry_cancel</code></td>
+<td>Payload to send on entry order cancel. Only required if <code>webhook.enabled</code> is <code>true</code>. See the <a href="../webhook-config/">webhook documentation</a> for more details. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>webhook.entry_fill</code></td>
+<td>Payload to send on entry order filled. Only required if <code>webhook.enabled</code> is <code>true</code>. See the <a href="../webhook-config/">webhook documentation</a> for more details. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>webhook.exit</code></td>
+<td>Payload to send on exit. Only required if <code>webhook.enabled</code> is <code>true</code>. See the <a href="../webhook-config/">webhook documentation</a> for more details. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>webhook.exit_cancel</code></td>
+<td>Payload to send on exit order cancel. Only required if <code>webhook.enabled</code> is <code>true</code>. See the <a href="../webhook-config/">webhook documentation</a> for more details. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>webhook.exit_fill</code></td>
+<td>Payload to send on exit order filled. Only required if <code>webhook.enabled</code> is <code>true</code>. See the <a href="../webhook-config/">webhook documentation</a> for more details. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>webhook.status</code></td>
+<td>Payload to send on status calls. Only required if <code>webhook.enabled</code> is <code>true</code>. See the <a href="../webhook-config/">webhook documentation</a> for more details. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>webhook.allow_custom_messages</code></td>
+<td>Enable the sending of Webhook messages from strategies via the dataprovider.send_msg() function. <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Rest API / FreqUI / Producer-Consumer</strong></td>
+</tr>
+<tr>
+<td><code>api_server.enabled</code></td>
+<td>Enable usage of API Server. See the <a href="../rest-api/">API Server documentation</a> for more details. <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>api_server.listen_ip_address</code></td>
+<td>Bind IP address. See the <a href="../rest-api/">API Server documentation</a> for more details. <br> <strong>Datatype:</strong> IPv4</td>
+</tr>
+<tr>
+<td><code>api_server.listen_port</code></td>
+<td>Bind Port. See the <a href="../rest-api/">API Server documentation</a> for more details. <br><strong>Datatype:</strong> Integer between 1024 and 65535</td>
+</tr>
+<tr>
+<td><code>api_server.verbosity</code></td>
+<td>Logging verbosity. <code>info</code> will print all RPC Calls, while "error" will only display errors. <br><strong>Datatype:</strong> Enum, either <code>info</code> or <code>error</code>. Defaults to <code>info</code>.</td>
+</tr>
+<tr>
+<td><code>api_server.username</code></td>
+<td>Username for API server. See the <a href="../rest-api/">API Server documentation</a> for more details. <br><strong>Keep it in secret, do not disclose publicly.</strong><br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>api_server.password</code></td>
+<td>Password for API server. See the <a href="../rest-api/">API Server documentation</a> for more details. <br><strong>Keep it in secret, do not disclose publicly.</strong><br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>api_server.ws_token</code></td>
+<td>API token for the Message WebSocket. See the <a href="../rest-api/">API Server documentation</a> for more details.  <br><strong>Keep it in secret, do not disclose publicly.</strong> <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>bot_name</code></td>
+<td>Name of the bot. Passed via API to a client - can be shown to distinguish / name bots.<br> <em>Defaults to <code>freqtrade</code></em><br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>external_message_consumer</code></td>
+<td>Enable <a href="../producer-consumer/">Producer/Consumer mode</a> for more details. <br> <strong>Datatype:</strong> Dict</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Other</strong></td>
+</tr>
+<tr>
+<td><code>initial_state</code></td>
+<td>Defines the initial application state. If set to stopped, then the bot has to be explicitly started via <code>/start</code> RPC command. <br><em>Defaults to <code>stopped</code>.</em> <br> <strong>Datatype:</strong> Enum, either <code>stopped</code> or <code>running</code></td>
+</tr>
+<tr>
+<td><code>force_entry_enable</code></td>
+<td>Enables the RPC Commands to force a Trade entry. More information below. <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>disable_dataframe_checks</code></td>
+<td>Disable checking the OHLCV dataframe returned from the strategy methods for correctness. Only use when intentionally changing the dataframe and understand what you are doing. <a href="#parameters-in-the-strategy">Strategy Override</a>.<br> <em>Defaults to <code>False</code></em>. <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>internals.process_throttle_secs</code></td>
+<td>Set the process throttle, or minimum loop duration for one bot iteration loop. Value in second. <br><em>Defaults to <code>5</code> seconds.</em> <br> <strong>Datatype:</strong> Positive Integer</td>
+</tr>
+<tr>
+<td><code>internals.heartbeat_interval</code></td>
+<td>Print heartbeat message every N seconds. Set to 0 to disable heartbeat messages. <br><em>Defaults to <code>60</code> seconds.</em> <br> <strong>Datatype:</strong> Positive Integer or 0</td>
+</tr>
+<tr>
+<td><code>internals.sd_notify</code></td>
+<td>Enables use of the sd_notify protocol to tell systemd service manager about changes in the bot state and issue keep-alive pings. See <a href="../advanced-setup/#configure-the-bot-running-as-a-systemd-service">here</a> for more details. <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>strategy</code></td>
+<td><strong>Required</strong> Defines Strategy class to use. Recommended to be set via <code>--strategy NAME</code>. <br> <strong>Datatype:</strong> ClassName</td>
+</tr>
+<tr>
+<td><code>strategy_path</code></td>
+<td>Adds an additional strategy lookup path (must be a directory). <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>recursive_strategy_search</code></td>
+<td>Set to <code>true</code> to recursively search sub-directories inside <code>user_data/strategies</code> for a strategy. <br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
+<td><code>user_data_dir</code></td>
+<td>Directory containing user data. <br> <em>Defaults to <code>./user_data/</code></em>. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>db_url</code></td>
+<td>Declares database URL to use. NOTE: This defaults to <code>sqlite:///tradesv3.dryrun.sqlite</code> if <code>dry_run</code> is <code>true</code>, and to <code>sqlite:///tradesv3.sqlite</code> for production instances. <br> <strong>Datatype:</strong> String, SQLAlchemy connect string</td>
+</tr>
+<tr>
+<td><code>logfile</code></td>
+<td>Specifies logfile name. Uses a rolling strategy for log file rotation for 10 files with the 1MB limit per file. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>add_config_files</code></td>
+<td>Additional config files. These files will be loaded and merged with the current config file. The files are resolved relative to the initial file.<br> <em>Defaults to <code>[]</code></em>. <br> <strong>Datatype:</strong> List of strings</td>
+</tr>
+<tr>
+<td><code>dataformat_ohlcv</code></td>
+<td>Data format to use to store historical candle (OHLCV) data. <br> <em>Defaults to <code>feather</code></em>. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>dataformat_trades</code></td>
+<td>Data format to use to store historical trades data. <br> <em>Defaults to <code>feather</code></em>. <br> <strong>Datatype:</strong> String</td>
+</tr>
+<tr>
+<td><code>reduce_df_footprint</code></td>
+<td>Recast all numeric columns to float32/int32, with the objective of reducing ram/disk usage (and decreasing train/inference timing in FreqAI). (Currently only affects FreqAI use-cases) <br> <strong>Datatype:</strong> Boolean. <br> Default: <code>False</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="parameters-in-the-strategy">Parameters in the strategy<a class="headerlink" href="#parameters-in-the-strategy" title="Permanent link">&para;</a></h3>
+<p>The following parameters can be set in the configuration file or strategy.
+Values set in the configuration file always overwrite values set in the strategy.</p>
+<ul>
+<li><code>minimal_roi</code></li>
+<li><code>timeframe</code></li>
+<li><code>stoploss</code></li>
+<li><code>max_open_trades</code></li>
+<li><code>trailing_stop</code></li>
+<li><code>trailing_stop_positive</code></li>
+<li><code>trailing_stop_positive_offset</code></li>
+<li><code>trailing_only_offset_is_reached</code></li>
+<li><code>use_custom_stoploss</code></li>
+<li><code>process_only_new_candles</code></li>
+<li><code>order_types</code></li>
+<li><code>order_time_in_force</code></li>
+<li><code>unfilledtimeout</code></li>
+<li><code>disable_dataframe_checks</code></li>
+<li><code>use_exit_signal</code></li>
+<li><code>exit_profit_only</code></li>
+<li><code>exit_profit_offset</code></li>
+<li><code>ignore_roi_if_entry_signal</code></li>
+<li><code>ignore_buying_expired_candle_after</code></li>
+<li><code>position_adjustment_enable</code></li>
+<li><code>max_entry_position_adjustment</code></li>
+</ul>
+<h3 id="configuring-amount-per-trade">Configuring amount per trade<a class="headerlink" href="#configuring-amount-per-trade" title="Permanent link">&para;</a></h3>
+<p>There are several methods to configure how much of the stake currency the bot will use to enter a trade. All methods respect the <a href="#tradable-balance">available balance configuration</a> as explained below.</p>
+<h4 id="minimum-trade-stake">Minimum trade stake<a class="headerlink" href="#minimum-trade-stake" title="Permanent link">&para;</a></h4>
+<p>The minimum stake amount will depend on exchange and pair and is usually listed in the exchange support pages.</p>
+<p>Assuming the minimum tradable amount for XRP/USD is 20 XRP (given by the exchange), and the price is 0.6<span class="arithmatex">\(, the minimum stake amount to buy this pair is <code>20 * 0.6 ~= 12</code>.
+This exchange has also a limit on USD - where all orders must be &gt; 10\)</span> - which however does not apply in this case.</p>
+<p>To guarantee safe execution, freqtrade will not allow buying with a stake-amount of 10.1$, instead, it'll make sure that there's enough space to place a stoploss below the pair (+ an offset, defined by <code>amount_reserve_percent</code>, which defaults to 5%).</p>
+<p>With a reserve of 5%, the minimum stake amount would be ~12.6$ (<code>12 * (1 + 0.05)</code>). If we take into account a stoploss of 10% on top of that - we'd end up with a value of ~14$ (<code>12.6 / (1 - 0.1)</code>).</p>
+<p>To limit this calculation in case of large stoploss values, the calculated minimum stake-limit will never be more than 50% above the real limit.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Since the limits on exchanges are usually stable and are not updated often, some pairs can show pretty high minimum limits, simply because the price increased a lot since the last limit adjustment by the exchange. Freqtrade adjusts the stake-amount to this value, unless it's &gt; 30% more than the calculated/desired stake-amount - in which case the trade is rejected.</p>
+</div>
+<h4 id="tradable-balance">Tradable balance<a class="headerlink" href="#tradable-balance" title="Permanent link">&para;</a></h4>
+<p>By default, the bot assumes that the <code>complete amount - 1%</code> is at it's disposal, and when using <a href="#dynamic-stake-amount">dynamic stake amount</a>, it will split the complete balance into <code>max_open_trades</code> buckets per trade.
+Freqtrade will reserve 1% for eventual fees when entering a trade and will therefore not touch that by default.</p>
+<p>You can configure the "untouched" amount by using the <code>tradable_balance_ratio</code> setting.</p>
+<p>For example, if you have 10 ETH available in your wallet on the exchange and <code>tradable_balance_ratio=0.5</code> (which is 50%), then the bot will use a maximum amount of 5 ETH for trading and considers this as an available balance. The rest of the wallet is untouched by the trades.</p>
+<div class="admonition danger">
+<p class="admonition-title">Danger</p>
+<p>This setting should <strong>not</strong> be used when running multiple bots on the same account. Please look at <a href="#assign-available-capital">Available Capital to the bot</a> instead.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <code>tradable_balance_ratio</code> setting applies to the current balance (free balance + tied up in trades). Therefore, assuming the starting balance of 1000, a configuration with <code>tradable_balance_ratio=0.99</code> will not guarantee that 10 currency units will always remain available on the exchange. For example, the free amount may reduce to 5 units if the total balance is reduced to 500 (either by a losing streak or by withdrawing balance).</p>
+</div>
+<h4 id="assign-available-capital">Assign available Capital<a class="headerlink" href="#assign-available-capital" title="Permanent link">&para;</a></h4>
+<p>To fully utilize compounding profits when using multiple bots on the same exchange account, you'll want to limit each bot to a certain starting balance.
+This can be accomplished by setting <code>available_capital</code> to the desired starting balance.</p>
+<p>Assuming your account has 10000 USDT and you want to run 2 different strategies on this exchange.
+You'd set <code>available_capital=5000</code> - granting each bot an initial capital of 5000 USDT.
+The bot will then split this starting balance equally into <code>max_open_trades</code> buckets.
+Profitable trades will result in increased stake-sizes for this bot - without affecting the stake-sizes of the other bot.</p>
+<p>Adjusting <code>available_capital</code> requires reloading the configuration to take effect. Adjusting the <code>available_capital</code> adds the difference between the previous <code>available_capital</code> and the new <code>available_capital</code>. Decreasing the available capital when trades are open doesn't exit the trades. The difference is returned to the wallet when the trades conclude. The outcome of this differs depending on the price movement between the adjustment and exiting the trades.</p>
+<div class="admonition warning">
+<p class="admonition-title">Incompatible with <code>tradable_balance_ratio</code></p>
+<p>Setting this option will replace any configuration of <code>tradable_balance_ratio</code>.</p>
+</div>
+<h4 id="amend-last-stake-amount">Amend last stake amount<a class="headerlink" href="#amend-last-stake-amount" title="Permanent link">&para;</a></h4>
+<p>Assuming we have the tradable balance of 1000 USDT, <code>stake_amount=400</code>, and <code>max_open_trades=3</code>.
+The bot would open 2 trades and will be unable to fill the last trading slot, since the requested 400 USDT are no longer available since 800 USDT are already tied in other trades.</p>
+<p>To overcome this, the option <code>amend_last_stake_amount</code> can be set to <code>True</code>, which will enable the bot to reduce stake_amount to the available balance to fill the last trade slot.</p>
+<p>In the example above this would mean:</p>
+<ul>
+<li>Trade1: 400 USDT</li>
+<li>Trade2: 400 USDT</li>
+<li>Trade3: 200 USDT</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This option only applies with <a href="#static-stake-amount">Static stake amount</a> - since <a href="#dynamic-stake-amount">Dynamic stake amount</a> divides the balances evenly.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The minimum last stake amount can be configured using <code>last_stake_amount_min_ratio</code> - which defaults to 0.5 (50%). This means that the minimum stake amount that's ever used is <code>stake_amount * 0.5</code>. This avoids very low stake amounts, that are close to the minimum tradable amount for the pair and can be refused by the exchange.</p>
+</div>
+<h4 id="static-stake-amount">Static stake amount<a class="headerlink" href="#static-stake-amount" title="Permanent link">&para;</a></h4>
+<p>The <code>stake_amount</code> configuration statically configures the amount of stake-currency your bot will use for each trade.</p>
+<p>The minimal configuration value is 0.0001, however, please check your exchange's trading minimums for the stake currency you're using to avoid problems.</p>
+<p>This setting works in combination with <code>max_open_trades</code>. The maximum capital engaged in trades is <code>stake_amount * max_open_trades</code>.
+For example, the bot will at most use (0.05 BTC x 3) = 0.15 BTC, assuming a configuration of <code>max_open_trades=3</code> and <code>stake_amount=0.05</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This setting respects the <a href="#tradable-balance">available balance configuration</a>.</p>
+</div>
+<h4 id="dynamic-stake-amount">Dynamic stake amount<a class="headerlink" href="#dynamic-stake-amount" title="Permanent link">&para;</a></h4>
+<p>Alternatively, you can use a dynamic stake amount, which will use the available balance on the exchange, and divide that equally by the number of allowed trades (<code>max_open_trades</code>).</p>
+<p>To configure this, set <code>stake_amount="unlimited"</code>. We also recommend to set <code>tradable_balance_ratio=0.99</code> (99%) - to keep a minimum balance for eventual fees.</p>
+<p>In this case a trade amount is calculated as:</p>
+<div class="highlight"><pre><span></span><code><span class="n">currency_balance</span> <span class="o">/</span> <span class="p">(</span><span class="n">max_open_trades</span> <span class="o">-</span> <span class="n">current_open_trades</span><span class="p">)</span>
+</code></pre></div>
+<p>To allow the bot to trade all the available <code>stake_currency</code> in your account (minus <code>tradable_balance_ratio</code>) set</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;stake_amount&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unlimited&quot;</span><span class="p">,</span>
+<span class="nt">&quot;tradable_balance_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Compounding profits</p>
+<p>This configuration will allow increasing/decreasing stakes depending on the performance of the bot (lower stake if the bot is losing, higher stakes if the bot has a winning record since higher balances are available), and will result in profit compounding.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">When using Dry-Run Mode</p>
+<p>When using <code>"stake_amount" : "unlimited",</code> in combination with Dry-Run, Backtesting or Hyperopt, the balance will be simulated starting with a stake of <code>dry_run_wallet</code> which will evolve.
+It is therefore important to set <code>dry_run_wallet</code> to a sensible value (like 0.05 or 0.01 for BTC and 1000 or 100 for USDT, for example), otherwise, it may simulate trades with 100 BTC (or more) or 0.05 USDT (or less) at once - which may not correspond to your real available balance or is less than the exchange minimal limit for the order amount for the stake currency.</p>
+</div>
+<h4 id="dynamic-stake-amount-with-position-adjustment">Dynamic stake amount with position adjustment<a class="headerlink" href="#dynamic-stake-amount-with-position-adjustment" title="Permanent link">&para;</a></h4>
+<p>When you want to use position adjustment with unlimited stakes, you must also implement <code>custom_stake_amount</code> to a return a value depending on your strategy.
+Typical value would be in the range of 25% - 50% of the proposed stakes, but depends highly on your strategy and how much you wish to leave into the wallet as position adjustment buffer.</p>
+<p>For example if your position adjustment assumes it can do 2 additional buys with the same stake amounts then your buffer should be 66.6667% of the initially proposed unlimited stake amount.</p>
+<p>Or another example if your position adjustment assumes it can do 1 additional buy with 3x the original stake amount then <code>custom_stake_amount</code> should return 25% of proposed stake amount and leave 75% for possible later position adjustments.</p>
+<h2 id="prices-used-for-orders">Prices used for orders<a class="headerlink" href="#prices-used-for-orders" title="Permanent link">&para;</a></h2>
+<p>Prices for regular orders can be controlled via the parameter structures <code>entry_pricing</code> for trade entries and <code>exit_pricing</code> for trade exits.
+Prices are always retrieved right before an order is placed, either by querying the exchange tickers or by using the orderbook data.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Orderbook data used by Freqtrade are the data retrieved from exchange by the ccxt's function <code>fetch_order_book()</code>, i.e. are usually data from the L2-aggregated orderbook, while the ticker data are the structures returned by the ccxt's <code>fetch_ticker()</code>/<code>fetch_tickers()</code> functions. Refer to the ccxt library <a href="https://github.com/ccxt/ccxt/wiki/Manual#market-data">documentation</a> for more details.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Using market orders</p>
+<p>Please read the section <a href="#market-order-pricing">Market order pricing</a> section when using market orders.</p>
+</div>
+<h3 id="entry-price">Entry price<a class="headerlink" href="#entry-price" title="Permanent link">&para;</a></h3>
+<h4 id="enter-price-side">Enter price side<a class="headerlink" href="#enter-price-side" title="Permanent link">&para;</a></h4>
+<p>The configuration setting <code>entry_pricing.price_side</code> defines the side of the orderbook the bot looks for when buying.</p>
+<p>The following displays an orderbook.</p>
+<div class="highlight"><pre><span></span><code>...
+103
+102
+101  # ask
+-------------Current spread
+99   # bid
+98
+97
+...
+</code></pre></div>
+<p>If <code>entry_pricing.price_side</code> is set to <code>"bid"</code>, then the bot will use 99 as entry price.<br />
+In line with that, if <code>entry_pricing.price_side</code> is set to <code>"ask"</code>, then the bot will use 101 as entry price.</p>
+<p>Depending on the order direction (<em>long</em>/<em>short</em>), this will lead to different results. Therefore we recommend to use <code>"same"</code> or <code>"other"</code> for this configuration instead.
+This would result in the following pricing matrix:</p>
+<table>
+<thead>
+<tr>
+<th>direction</th>
+<th>Order</th>
+<th>setting</th>
+<th>price</th>
+<th>crosses spread</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>long</td>
+<td>buy</td>
+<td>ask</td>
+<td>101</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>long</td>
+<td>buy</td>
+<td>bid</td>
+<td>99</td>
+<td>no</td>
+</tr>
+<tr>
+<td>long</td>
+<td>buy</td>
+<td>same</td>
+<td>99</td>
+<td>no</td>
+</tr>
+<tr>
+<td>long</td>
+<td>buy</td>
+<td>other</td>
+<td>101</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>short</td>
+<td>sell</td>
+<td>ask</td>
+<td>101</td>
+<td>no</td>
+</tr>
+<tr>
+<td>short</td>
+<td>sell</td>
+<td>bid</td>
+<td>99</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>short</td>
+<td>sell</td>
+<td>same</td>
+<td>101</td>
+<td>no</td>
+</tr>
+<tr>
+<td>short</td>
+<td>sell</td>
+<td>other</td>
+<td>99</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<p>Using the other side of the orderbook often guarantees quicker filled orders, but the bot can also end up paying more than what would have been necessary.
+Taker fees instead of maker fees will most likely apply even when using limit buy orders.
+Also, prices at the "other" side of the spread are higher than prices at the "bid" side in the orderbook, so the order behaves similar to a market order (however with a maximum price).</p>
+<h4 id="entry-price-with-orderbook-enabled">Entry price with Orderbook enabled<a class="headerlink" href="#entry-price-with-orderbook-enabled" title="Permanent link">&para;</a></h4>
+<p>When entering a trade with the orderbook enabled (<code>entry_pricing.use_order_book=True</code>), Freqtrade fetches the <code>entry_pricing.order_book_top</code> entries from the orderbook and uses the entry specified as <code>entry_pricing.order_book_top</code> on the configured side (<code>entry_pricing.price_side</code>) of the orderbook. 1 specifies the topmost entry in the orderbook, while 2 would use the 2<sup>nd</sup> entry in the orderbook, and so on.</p>
+<h4 id="entry-price-without-orderbook-enabled">Entry price without Orderbook enabled<a class="headerlink" href="#entry-price-without-orderbook-enabled" title="Permanent link">&para;</a></h4>
+<p>The following section uses <code>side</code> as the configured <code>entry_pricing.price_side</code> (defaults to <code>"same"</code>).</p>
+<p>When not using orderbook (<code>entry_pricing.use_order_book=False</code>), Freqtrade uses the best <code>side</code> price from the ticker if it's below the <code>last</code> traded price from the ticker. Otherwise (when the <code>side</code> price is above the <code>last</code> price), it calculates a rate between <code>side</code> and <code>last</code> price based on <code>entry_pricing.price_last_balance</code>.</p>
+<p>The <code>entry_pricing.price_last_balance</code> configuration parameter controls this. A value of <code>0.0</code> will use <code>side</code> price, while <code>1.0</code> will use the <code>last</code> price and values between those interpolate between ask and last price.</p>
+<h4 id="check-depth-of-market">Check depth of market<a class="headerlink" href="#check-depth-of-market" title="Permanent link">&para;</a></h4>
+<p>When check depth of market is enabled (<code>entry_pricing.check_depth_of_market.enabled=True</code>), the entry signals are filtered based on the orderbook depth (sum of all amounts) for each orderbook side.</p>
+<p>Orderbook <code>bid</code> (buy) side depth is then divided by the orderbook <code>ask</code> (sell) side depth and the resulting delta is compared to the value of the <code>entry_pricing.check_depth_of_market.bids_to_ask_delta</code> parameter. The entry order is only executed if the orderbook delta is greater than or equal to the configured delta value.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A delta value below 1 means that <code>ask</code> (sell) orderbook side depth is greater than the depth of the <code>bid</code> (buy) orderbook side, while a value greater than 1 means opposite (depth of the buy side is higher than the depth of the sell side).</p>
+</div>
+<h3 id="exit-price">Exit price<a class="headerlink" href="#exit-price" title="Permanent link">&para;</a></h3>
+<h4 id="exit-price-side">Exit price side<a class="headerlink" href="#exit-price-side" title="Permanent link">&para;</a></h4>
+<p>The configuration setting <code>exit_pricing.price_side</code> defines the side of the spread the bot looks for when exiting a trade.</p>
+<p>The following displays an orderbook:</p>
+<div class="highlight"><pre><span></span><code>...
+103
+102
+101  # ask
+-------------Current spread
+99   # bid
+98
+97
+...
+</code></pre></div>
+<p>If <code>exit_pricing.price_side</code> is set to <code>"ask"</code>, then the bot will use 101 as exiting price.<br />
+In line with that, if <code>exit_pricing.price_side</code> is set to <code>"bid"</code>, then the bot will use 99 as exiting price.</p>
+<p>Depending on the order direction (<em>long</em>/<em>short</em>), this will lead to different results. Therefore we recommend to use <code>"same"</code> or <code>"other"</code> for this configuration instead.
+This would result in the following pricing matrix:</p>
+<table>
+<thead>
+<tr>
+<th>Direction</th>
+<th>Order</th>
+<th>setting</th>
+<th>price</th>
+<th>crosses spread</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>long</td>
+<td>sell</td>
+<td>ask</td>
+<td>101</td>
+<td>no</td>
+</tr>
+<tr>
+<td>long</td>
+<td>sell</td>
+<td>bid</td>
+<td>99</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>long</td>
+<td>sell</td>
+<td>same</td>
+<td>101</td>
+<td>no</td>
+</tr>
+<tr>
+<td>long</td>
+<td>sell</td>
+<td>other</td>
+<td>99</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>short</td>
+<td>buy</td>
+<td>ask</td>
+<td>101</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>short</td>
+<td>buy</td>
+<td>bid</td>
+<td>99</td>
+<td>no</td>
+</tr>
+<tr>
+<td>short</td>
+<td>buy</td>
+<td>same</td>
+<td>99</td>
+<td>no</td>
+</tr>
+<tr>
+<td>short</td>
+<td>buy</td>
+<td>other</td>
+<td>101</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<h4 id="exit-price-with-orderbook-enabled">Exit price with Orderbook enabled<a class="headerlink" href="#exit-price-with-orderbook-enabled" title="Permanent link">&para;</a></h4>
+<p>When exiting with the orderbook enabled (<code>exit_pricing.use_order_book=True</code>), Freqtrade fetches the <code>exit_pricing.order_book_top</code> entries in the orderbook and uses the entry specified as <code>exit_pricing.order_book_top</code> from the configured side (<code>exit_pricing.price_side</code>) as trade exit price.</p>
+<p>1 specifies the topmost entry in the orderbook, while 2 would use the 2<sup>nd</sup> entry in the orderbook, and so on.</p>
+<h4 id="exit-price-without-orderbook-enabled">Exit price without Orderbook enabled<a class="headerlink" href="#exit-price-without-orderbook-enabled" title="Permanent link">&para;</a></h4>
+<p>The following section uses <code>side</code> as the configured <code>exit_pricing.price_side</code> (defaults to <code>"ask"</code>).</p>
+<p>When not using orderbook (<code>exit_pricing.use_order_book=False</code>), Freqtrade uses the best <code>side</code> price from the ticker if it's above the <code>last</code> traded price from the ticker. Otherwise (when the <code>side</code> price is below the <code>last</code> price), it calculates a rate between <code>side</code> and <code>last</code> price based on <code>exit_pricing.price_last_balance</code>.</p>
+<p>The <code>exit_pricing.price_last_balance</code> configuration parameter controls this. A value of <code>0.0</code> will use <code>side</code> price, while <code>1.0</code> will use the last price and values between those interpolate between <code>side</code> and last price.</p>
+<h3 id="market-order-pricing">Market order pricing<a class="headerlink" href="#market-order-pricing" title="Permanent link">&para;</a></h3>
+<p>When using market orders, prices should be configured to use the "correct" side of the orderbook to allow realistic pricing detection.
+Assuming both entry and exits are using market orders, a configuration similar to the following must be used</p>
+<div class="highlight"><pre><span></span><code>  &quot;order_types&quot;: {
+    &quot;entry&quot;: &quot;market&quot;,
+    &quot;exit&quot;: &quot;market&quot;
+    // ...
+  },
+  &quot;entry_pricing&quot;: {
+    &quot;price_side&quot;: &quot;other&quot;,
+    // ...
+  },
+  &quot;exit_pricing&quot;:{
+    &quot;price_side&quot;: &quot;other&quot;,
+    // ...
+  },
+</code></pre></div>
+<p>Obviously, if only one side is using limit orders, different pricing combinations can be used.</p>
+<h2 id="further-configuration-details">Further Configuration details<a class="headerlink" href="#further-configuration-details" title="Permanent link">&para;</a></h2>
+<h3 id="understand-minimal_roi">Understand minimal_roi<a class="headerlink" href="#understand-minimal_roi" title="Permanent link">&para;</a></h3>
+<p>The <code>minimal_roi</code> configuration parameter is a JSON object where the key is a duration
+in minutes and the value is the minimum ROI as a ratio.
+See the example below:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;minimal_roi&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;40&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">fter</span><span class="w"> </span><span class="mi">40</span><span class="w"> </span><span class="err">mi</span><span class="kc">nutes</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="kc">n</span><span class="err">o</span><span class="kc">t</span><span class="w"> </span><span class="kc">ne</span><span class="err">ga</span><span class="kc">t</span><span class="err">ive</span>
+<span class="w">    </span><span class="nt">&quot;30&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">fter</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="err">mi</span><span class="kc">nutes</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">here</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">leas</span><span class="kc">t</span><span class="w"> </span><span class="mi">1</span><span class="err">%</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span>
+<span class="w">    </span><span class="nt">&quot;20&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.02</span><span class="p">,</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">fter</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="err">mi</span><span class="kc">nutes</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">here</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">leas</span><span class="kc">t</span><span class="w"> </span><span class="mi">2</span><span class="err">%</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span>
+<span class="w">    </span><span class="nt">&quot;0&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.04</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">immedia</span><span class="kc">tel</span><span class="err">y</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">here</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">leas</span><span class="kc">t</span><span class="w"> </span><span class="mi">4</span><span class="err">%</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span>
+<span class="p">},</span>
+</code></pre></div>
+<p>Most of the strategy files already include the optimal <code>minimal_roi</code> value.
+This parameter can be set in either Strategy or Configuration file. If you use it in the configuration file, it will override the
+<code>minimal_roi</code> value from the strategy file.
+If it is not set in either Strategy or Configuration, a default of 1000% <code>{"0": 10}</code> is used, and minimal ROI is disabled unless your trade generates 1000% profit.</p>
+<div class="admonition note">
+<p class="admonition-title">Special case to forceexit after a specific time</p>
+<p>A special case presents using <code>"&lt;N&gt;": -1</code> as ROI. This forces the bot to exit a trade after N Minutes, no matter if it's positive or negative, so represents a time-limited force-exit.</p>
+</div>
+<h3 id="understand-force_entry_enable">Understand force_entry_enable<a class="headerlink" href="#understand-force_entry_enable" title="Permanent link">&para;</a></h3>
+<p>The <code>force_entry_enable</code> configuration parameter enables the usage of force-enter (<code>/forcelong</code>, <code>/forceshort</code>) commands via Telegram and REST API.
+For security reasons, it's disabled by default, and freqtrade will show a warning message on startup if enabled.
+For example, you can send <code>/forceenter ETH/BTC</code> to the bot, which will result in freqtrade buying the pair and holds it until a regular exit-signal (ROI, stoploss, /forceexit) appears.</p>
+<p>This can be dangerous with some strategies, so use with care.</p>
+<p>See <a href="../telegram-usage/">the telegram documentation</a> for details on usage.</p>
+<h3 id="ignoring-expired-candles">Ignoring expired candles<a class="headerlink" href="#ignoring-expired-candles" title="Permanent link">&para;</a></h3>
+<p>When working with larger timeframes (for example 1h or more) and using a low <code>max_open_trades</code> value, the last candle can be processed as soon as a trade slot becomes available. When processing the last candle, this can lead to a situation where it may not be desirable to use the buy signal on that candle. For example, when using a condition in your strategy where you use a cross-over, that point may have passed too long ago for you to start a trade on it.</p>
+<p>In these situations, you can enable the functionality to ignore candles that are beyond a specified period by setting <code>ignore_buying_expired_candle_after</code> to a positive number, indicating the number of seconds after which the buy signal becomes expired.</p>
+<p>For example, if your strategy is using a 1h timeframe, and you only want to buy within the first 5 minutes when a new candle comes in, you can add the following configuration to your strategy:</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">//...</span>
+<span class="w">    </span><span class="nt">&quot;ignore_buying_expired_candle_after&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">// ...</span>
+<span class="w">  </span><span class="p">}</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This setting resets with each new candle, so it will not prevent sticking-signals from executing on the 2<sup>nd</sup> or 3<sup>rd</sup> candle they're active. Best use a "trigger" selector for buy signals, which are only active for one candle.</p>
+</div>
+<h3 id="understand-order_types">Understand order_types<a class="headerlink" href="#understand-order_types" title="Permanent link">&para;</a></h3>
+<p>The <code>order_types</code> configuration parameter maps actions (<code>entry</code>, <code>exit</code>, <code>stoploss</code>, <code>emergency_exit</code>, <code>force_exit</code>, <code>force_entry</code>) to order-types (<code>market</code>, <code>limit</code>, ...) as well as configures stoploss to be on the exchange and defines stoploss on exchange update interval in seconds.</p>
+<p>This allows to enter using limit orders, exit using limit-orders, and create stoplosses using market orders.
+It also allows to set the
+stoploss "on exchange" which means stoploss order would be placed immediately once the buy order is fulfilled.</p>
+<p><code>order_types</code> set in the configuration file overwrites values set in the strategy as a whole, so you need to configure the whole <code>order_types</code> dictionary in one place.</p>
+<p>If this is configured, the following 4 values (<code>entry</code>, <code>exit</code>, <code>stoploss</code> and <code>stoploss_on_exchange</code>) need to be present, otherwise, the bot will fail to start.</p>
+<p>For information on (<code>emergency_exit</code>,<code>force_exit</code>, <code>force_entry</code>, <code>stoploss_on_exchange</code>,<code>stoploss_on_exchange_interval</code>,<code>stoploss_on_exchange_limit_ratio</code>) please see stop loss documentation <a href="../stoploss/">stop loss on exchange</a></p>
+<p>Syntax for Strategy:</p>
+<div class="highlight"><pre><span></span><code><span class="n">order_types</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;emergency_exit&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;force_entry&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;force_exit&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss_on_exchange_interval&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss_on_exchange_limit_ratio&quot;</span><span class="p">:</span> <span class="mf">0.99</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;order_types&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;entry&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;emergency_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;market&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;force_entry&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;market&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;force_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;market&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;stoploss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;market&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;stoploss_on_exchange_interval&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Market order support</p>
+<p>Not all exchanges support "market" orders.
+The following message will be shown if your exchange does not support market orders:
+<code>"Exchange &lt;yourexchange&gt; does not support market orders."</code> and the bot will refuse to start.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Using market orders</p>
+<p>Please carefully read the section <a href="#market-order-pricing">Market order pricing</a> section when using market orders.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Stoploss on exchange</p>
+<p><code>order_types.stoploss_on_exchange_interval</code> is not mandatory. Do not change its value if you are
+unsure of what you are doing. For more information about how stoploss works please
+refer to <a href="../stoploss/">the stoploss documentation</a>.</p>
+<p>If <code>order_types.stoploss_on_exchange</code> is enabled and the stoploss is cancelled manually on the exchange, then the bot will create a new stoploss order.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning: order_types.stoploss_on_exchange failures</p>
+<p>If stoploss on exchange creation fails for some reason, then an "emergency exit" is initiated. By default, this will exit the trade using a market order. The order-type for the emergency-exit can be changed by setting the <code>emergency_exit</code> value in the <code>order_types</code> dictionary - however, this is not advised.</p>
+</div>
+<h3 id="understand-order_time_in_force">Understand order_time_in_force<a class="headerlink" href="#understand-order_time_in_force" title="Permanent link">&para;</a></h3>
+<p>The <code>order_time_in_force</code> configuration parameter defines the policy by which the order
+is executed on the exchange. Three commonly used time in force are:</p>
+<p><strong>GTC (Good Till Canceled):</strong></p>
+<p>This is most of the time the default time in force. It means the order will remain
+on exchange till it is cancelled by the user. It can be fully or partially fulfilled.
+If partially fulfilled, the remaining will stay on the exchange till cancelled.</p>
+<p><strong>FOK (Fill Or Kill):</strong></p>
+<p>It means if the order is not executed immediately AND fully then it is cancelled by the exchange.</p>
+<p><strong>IOC (Immediate Or Canceled):</strong></p>
+<p>It is the same as FOK (above) except it can be partially fulfilled. The remaining part
+is automatically cancelled by the exchange.</p>
+<p><strong>PO (Post only):</strong></p>
+<p>Post only order. The order is either placed as a maker order, or it is canceled.
+This means the order must be placed on orderbook for at least time in an unfilled state.</p>
+<h4 id="time_in_force-config">time_in_force config<a class="headerlink" href="#time_in_force-config" title="Permanent link">&para;</a></h4>
+<p>The <code>order_time_in_force</code> parameter contains a dict with entry and exit time in force policy values.
+This can be set in the configuration file or in the strategy.
+Values set in the configuration file overwrites values set in the strategy.</p>
+<p>The possible values are: <code>GTC</code> (default), <code>FOK</code> or <code>IOC</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="s2">&quot;order_time_in_force&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="s2">&quot;GTC&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="s2">&quot;GTC&quot;</span>
+<span class="p">},</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This is ongoing work. For now, it is supported only for binance, gate and kucoin.
+Please don't change the default value unless you know what you are doing and have researched the impact of using different values for your particular exchange.</p>
+</div>
+<h3 id="fiat-conversion">Fiat conversion<a class="headerlink" href="#fiat-conversion" title="Permanent link">&para;</a></h3>
+<p>Freqtrade uses the Coingecko API to convert the coin value to it's corresponding fiat value for the Telegram reports.
+The FIAT currency can be set in the configuration file as <code>fiat_display_currency</code>.</p>
+<p>Removing <code>fiat_display_currency</code> completely from the configuration will skip initializing coingecko, and will not show any FIAT currency conversion. This has no importance for the correct functioning of the bot.</p>
+<h4 id="what-values-can-be-used-for-fiat_display_currency">What values can be used for fiat_display_currency?<a class="headerlink" href="#what-values-can-be-used-for-fiat_display_currency" title="Permanent link">&para;</a></h4>
+<p>The <code>fiat_display_currency</code> configuration parameter sets the base currency to use for the
+conversion from coin to fiat in the bot Telegram reports.</p>
+<p>The valid values are:</p>
+<div class="highlight"><pre><span></span><code><span class="s2">&quot;AUD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;BRL&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CAD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CHF&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CLP&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CNY&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CZK&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;DKK&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;EUR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;GBP&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;HKD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;HUF&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;IDR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ILS&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;INR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;JPY&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;KRW&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;MXN&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;MYR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;NOK&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;NZD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PHP&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PKR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PLN&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;RUB&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;SEK&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;SGD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;THB&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;TRY&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;TWD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ZAR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;USD&quot;</span>
+</code></pre></div>
+<p>In addition to fiat currencies, a range of crypto currencies is supported.</p>
+<p>The valid values are:</p>
+<div class="highlight"><pre><span></span><code><span class="s2">&quot;BTC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ETH&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;XRP&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;LTC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;BCH&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;BNB&quot;</span>
+</code></pre></div>
+<h4 id="coingecko-rate-limit-problems">Coingecko Rate limit problems<a class="headerlink" href="#coingecko-rate-limit-problems" title="Permanent link">&para;</a></h4>
+<p>On some IP ranges, coingecko is heavily rate-limiting.
+In such cases, you may want to add your coingecko API key to the configuration.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;fiat_display_currency&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USD&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;coingecko&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your-api&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;is_demo&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Freqtrade supports both Demo and Pro coingecko API keys.</p>
+<p>The Coingecko API key is NOT required for the bot to function correctly.
+It is only used for the conversion of coin to fiat in the Telegram reports, which usually also work without API key.</p>
+<h2 id="consuming-exchange-websockets">Consuming exchange Websockets<a class="headerlink" href="#consuming-exchange-websockets" title="Permanent link">&para;</a></h2>
+<p>Freqtrade can consume websockets through ccxt.pro.</p>
+<p>Freqtrade aims ensure data is available at all times.
+Should the websocket connection fail (or be disabled), the bot will fall back to REST API calls.</p>
+<p>Should you experience problems you suspect are caused by websockets, you can disable these via the setting <code>exchange.enable_ws</code>, which defaults to true.</p>
+<div class="highlight"><pre><span></span><code>&quot;exchange&quot;: {
+    // ...
+    &quot;enable_ws&quot;: false,
+    // ...
+}
+</code></pre></div>
+<p>Should you be required to use a proxy, please refer to the <a href="#using-proxy-with-freqtrade">proxy section</a> for more information.</p>
+<div class="admonition info">
+<p class="admonition-title">Rollout</p>
+<p>We're implementing this out slowly, ensuring stability of your bots.
+Currently, usage is limited to ohlcv data streams.
+It's also limited to a few exchanges, with new exchanges being added on an ongoing basis.</p>
+</div>
+<h2 id="using-dry-run-mode">Using Dry-run mode<a class="headerlink" href="#using-dry-run-mode" title="Permanent link">&para;</a></h2>
+<p>We recommend starting the bot in the Dry-run mode to see how your bot will
+behave and what is the performance of your strategy. In the Dry-run mode, the
+bot does not engage your money. It only runs a live simulation without
+creating trades on the exchange.</p>
+<ol>
+<li>Edit your <code>config.json</code> configuration file.</li>
+<li>Switch <code>dry-run</code> to <code>true</code> and specify <code>db_url</code> for a persistence database.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;dry_run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="nt">&quot;db_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sqlite:///tradesv3.dryrun.sqlite&quot;</span><span class="p">,</span>
+</code></pre></div>
+<ol>
+<li>Remove your Exchange API key and secret (change them by empty values or fake credentials):</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;binance&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;key&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;secret&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="err">...</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Once you will be happy with your bot performance running in the Dry-run mode, you can switch it to production mode.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A simulated wallet is available during dry-run mode and will assume a starting capital of <code>dry_run_wallet</code> (defaults to 1000).</p>
+</div>
+<h3 id="considerations-for-dry-run">Considerations for dry-run<a class="headerlink" href="#considerations-for-dry-run" title="Permanent link">&para;</a></h3>
+<ul>
+<li>API-keys may or may not be provided. Only Read-Only operations (i.e. operations that do not alter account state) on the exchange are performed in dry-run mode.</li>
+<li>Wallets (<code>/balance</code>) are simulated based on <code>dry_run_wallet</code>.</li>
+<li>Orders are simulated, and will not be posted to the exchange.</li>
+<li>Market orders fill based on orderbook volume the moment the order is placed, with a maximum slippage of 5%.</li>
+<li>Limit orders fill once the price reaches the defined level - or time out based on <code>unfilledtimeout</code> settings.</li>
+<li>Limit orders will be converted to market orders if they cross the price by more than 1%, and will be filled immediately based regular market order rules (see point about Market orders above).</li>
+<li>In combination with <code>stoploss_on_exchange</code>, the stop_loss price is assumed to be filled.</li>
+<li>Open orders (not trades, which are stored in the database) are kept open after bot restarts, with the assumption that they were not filled while being offline.</li>
+</ul>
+<h2 id="switch-to-production-mode">Switch to production mode<a class="headerlink" href="#switch-to-production-mode" title="Permanent link">&para;</a></h2>
+<p>In production mode, the bot will engage your money. Be careful, since a wrong strategy can lose all your money.
+Be aware of what you are doing when you run it in production mode.</p>
+<p>When switching to Production mode, please make sure to use a different / fresh database to avoid dry-run trades messing with your exchange money and eventually tainting your statistics.</p>
+<h3 id="setup-your-exchange-account">Setup your exchange account<a class="headerlink" href="#setup-your-exchange-account" title="Permanent link">&para;</a></h3>
+<p>You will need to create API Keys (usually you get <code>key</code> and <code>secret</code>, some exchanges require an additional <code>password</code>) from the Exchange website and you'll need to insert this into the appropriate fields in the configuration or when asked by the <code>freqtrade new-config</code> command.
+API Keys are usually only required for live trading (trading for real money, bot running in "production mode", executing real orders on the exchange) and are not required for the bot running in dry-run (trade simulation) mode. When you set up the bot in dry-run mode, you may fill these fields with empty values.</p>
+<h3 id="to-switch-your-bot-in-production-mode">To switch your bot in production mode<a class="headerlink" href="#to-switch-your-bot-in-production-mode" title="Permanent link">&para;</a></h3>
+<p><strong>Edit your <code>config.json</code>  file.</strong></p>
+<p><strong>Switch dry-run to false and don't forget to adapt your database URL if set:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;dry_run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</code></pre></div>
+<p><strong>Insert your Exchange API key (change them by fake API keys):</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;binance&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;af8ddd35195e9dc500b9a6f799f6f5c93d89193b&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="c1">//&quot;password&quot;: &quot;&quot;, // Optional, not needed by all exchanges)</span>
+<span class="w">        </span><span class="c1">// ...</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">//...</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>You should also make sure to read the <a href="../exchanges/">Exchanges</a> section of the documentation to be aware of potential configuration details specific to your exchange.</p>
+<div class="admonition hint">
+<p class="admonition-title">Keep your secrets secret</p>
+<p>To keep your secrets secret, we recommend using a 2<sup>nd</sup> configuration for your API keys.
+Simply use the above snippet in a new configuration file (e.g. <code>config-private.json</code>) and keep your settings in this file.
+You can then start the bot with <code>freqtrade trade --config user_data/config.json --config user_data/config-private.json &lt;...&gt;</code> to have your keys loaded.</p>
+<p><strong>NEVER</strong> share your private configuration file or your exchange keys with anyone!</p>
+</div>
+<h2 id="using-a-proxy-with-freqtrade">Using a proxy with Freqtrade<a class="headerlink" href="#using-a-proxy-with-freqtrade" title="Permanent link">&para;</a></h2>
+<p>To use a proxy with freqtrade, export your proxy settings using the variables <code>"HTTP_PROXY"</code> and <code>"HTTPS_PROXY"</code> set to the appropriate values.
+This will have the proxy settings applied to everything (telegram, coingecko, ...) <strong>except</strong> for exchange requests.</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">HTTP_PROXY</span><span class="o">=</span><span class="s2">&quot;http://addr:port&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">HTTPS_PROXY</span><span class="o">=</span><span class="s2">&quot;http://addr:port&quot;</span>
+freqtrade
+</code></pre></div>
+<h3 id="proxy-exchange-requests">Proxy exchange requests<a class="headerlink" href="#proxy-exchange-requests" title="Permanent link">&para;</a></h3>
+<p>To use a proxy for exchange connections - you will have to define the proxies as part of the ccxt configuration.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;httpsProxy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://addr:port&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;wsProxy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://addr:port&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>For more information on available proxy types, please consult the <a href="https://docs.ccxt.com/#/README?id=proxy">ccxt proxy documentation</a>.</p>
+<h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
+<p>Now you have configured your config.json, the next step is to <a href="../bot-usage/">start your bot</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../bot-basics/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Freqtrade Basics">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Freqtrade Basics
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../strategy-customization/" class="md-footer__link md-footer__link--next" aria-label="Next: Strategy Customization">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Strategy Customization
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.af256bd8.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
