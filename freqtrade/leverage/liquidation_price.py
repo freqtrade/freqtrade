@@ -43,7 +43,7 @@ def update_liquidation_prices(
                         stake_amount=t.stake_amount,
                         leverage=trade.leverage,
                         wallet_balance=total_wallet_stake,
-                        open_trades=[tr for tr in open_trades],
+                        open_trades=open_trades,
                     )
                 )
         elif trade:
