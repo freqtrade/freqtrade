@@ -3037,7 +3037,8 @@ It is not available in <code>populate_buy()</code> and <code>populate_sell()</co
 </code></pre></div>
 <details class="note">
 <summary>Plotting with current_whitelist</summary>
-<p>Current whitelist is not supported for <code>plot-dataframe</code>, as this command is usually used by providing an explicit pairlist - and would therefore make the return values of this method misleading.</p>
+<p>Current whitelist is not supported for <code>plot-dataframe</code>, as this command is usually used by providing an explicit pairlist - and would therefore make the return values of this method misleading.
+It's also not supported for freqUI visualization in <a href="../utils/#webserver-mode">webserver mode</a> - as the configuration for webserver mode doesn't require a pairlist to be set.</p>
 </details>
 <h3 id="get_pair_dataframepair-timeframe"><em>get_pair_dataframe(pair, timeframe)</em><a class="headerlink" href="#get_pair_dataframepair-timeframe" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># fetch live / historical candle (OHLCV) data for the first informative pair</span>
