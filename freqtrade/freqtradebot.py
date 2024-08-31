@@ -22,6 +22,7 @@ from freqtrade.edge import Edge
 from freqtrade.enums import (
     ExitCheckTuple,
     ExitType,
+    MarginMode,
     RPCMessageType,
     SignalDirection,
     State,
@@ -241,6 +242,7 @@ class FreqtradeBot(LoggingMixin):
         # Only update open orders on startup
         # This will update the database after the initial migration
         self.startup_update_open_orders()
+        self.update_all_liquidation_prices()
         self.update_funding_fees()
 
     def process(self) -> None:
@@ -356,6 +358,16 @@ class FreqtradeBot(LoggingMixin):
         """
         open_trades = Trade.get_open_trade_count()
         return max(0, self.config["max_open_trades"] - open_trades)
+
+    def update_all_liquidation_prices(self) -> None:
+        if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.CROSS:
+            # Update liquidation prices for all trades in cross margin mode
+            update_liquidation_prices(
+                exchange=self.exchange,
+                wallets=self.wallets,
+                stake_currency=self.config["stake_currency"],
+                dry_run=self.config["dry_run"],
+            )
 
     def update_funding_fees(self) -> None:
         if self.trading_mode == TradingMode.FUTURES:
