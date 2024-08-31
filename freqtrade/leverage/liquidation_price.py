@@ -41,7 +41,7 @@ def update_liquidation_prices(
                         is_short=t.is_short,
                         amount=t.amount,
                         stake_amount=t.stake_amount,
-                        leverage=trade.leverage,
+                        leverage=t.leverage,
                         wallet_balance=total_wallet_stake,
                         open_trades=open_trades,
                     )
