@@ -1,6 +1,8 @@
 import sys
-from typing import List, Optional, Union
+from os import get_terminal_size
+from typing import Any, List, Optional
 
+from rich.align import Align
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
@@ -11,7 +13,16 @@ from freqtrade.util import fmt_coin
 
 
 class HyperoptOutput:
-    def __init__(self):
+    def __init__(self, streaming=False) -> None:
+        self._results: List[Any] = []
+        self._streaming = streaming
+        self.__init_table()
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        return Align.center(self.table)
+
+    def __init_table(self) -> None:
+        """Initialize table"""
         self.table = Table(
             title="Hyperopt results",
         )
@@ -25,17 +36,6 @@ class HyperoptOutput:
         self.table.add_column("Avg duration", justify="right")
         self.table.add_column("Objective", justify="right")
         self.table.add_column("Max Drawdown (Acct)", justify="right")
-
-    def _add_row(self, data: List[Union[str, Text]]):
-        """Add single row"""
-        row_to_add: List[Union[str, Text]] = [r if isinstance(r, Text) else str(r) for r in data]
-
-        self.table.add_row(*row_to_add)
-
-    def _add_rows(self, data: List[List[Union[str, Text]]]):
-        """add multiple rows"""
-        for row in data:
-            self._add_row(row)
 
     def print(self, console: Optional[Console] = None, *, print_colorized=True):
         if not console:
@@ -55,8 +55,28 @@ class HyperoptOutput:
     ) -> None:
         """Format one or multiple rows and add them"""
         stake_currency = config["stake_currency"]
+        self._results.extend(results)
 
-        for r in results:
+        max_rows: Optional[int] = None
+
+        if self._streaming:
+            try:
+                ts = get_terminal_size()
+                # Get terminal size.
+                # Account for header, borders, and for the progress bar.
+                # This assumes that lines don't wrap.
+                if ts.columns < 148:
+                    # If the terminal is too small, we can't display the table properly.
+                    # We will halve the number of rows to display.
+                    max_rows = -(int(ts.lines / 2) - 6)
+                else:
+                    max_rows = -(ts.lines - 6)
+            except OSError:
+                # If we can't get the terminal size, we will just display the last 10 rows.
+                pass
+
+        self.__init_table()
+        for r in self._results[max_rows:]:
             self.table.add_row(
                 *[
                     # "Best":

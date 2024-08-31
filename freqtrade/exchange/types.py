@@ -12,7 +12,11 @@ class Ticker(TypedDict):
     last: Optional[float]
     quoteVolume: Optional[float]
     baseVolume: Optional[float]
+    percentage: Optional[float]
     # Several more - only listing required.
+
+
+Tickers = Dict[str, Ticker]
 
 
 class OrderBook(TypedDict):
@@ -24,7 +28,24 @@ class OrderBook(TypedDict):
     nonce: Optional[int]
 
 
-Tickers = Dict[str, Ticker]
+class CcxtBalance(TypedDict):
+    free: float
+    used: float
+    total: float
+
+
+CcxtBalances = Dict[str, CcxtBalance]
+
+
+class CcxtPosition(TypedDict):
+    symbol: str
+    side: str
+    contracts: float
+    leverage: float
+    collateral: Optional[float]
+    initialMargin: Optional[float]
+    liquidationPrice: Optional[float]
+
 
 # pair, timeframe, candleType, OHLCV, drop last?,
 OHLCVResponse = Tuple[str, str, CandleType, List, bool]

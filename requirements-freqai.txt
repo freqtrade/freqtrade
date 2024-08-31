@@ -6,7 +6,10 @@
 scikit-learn==1.5.1
 joblib==1.4.2
 catboost==1.2.5; 'arm' not in platform_machine
-lightgbm==4.4.0
+# Pin Matplotlib - it's depended on by catboost
+# Temporary downgrade of matplotlib due to https://github.com/matplotlib/matplotlib/issues/28551
+matplotlib==3.9.2
+lightgbm==4.5.0
 xgboost==2.0.3
-tensorboard==2.17.0
+tensorboard==2.17.1
 datasieve==0.1.7

@@ -170,6 +170,106 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     assert not exchange.stoploss_adjust(sl2, order, side=side)
 
 
+@pytest.mark.parametrize(
+    "is_short, trading_mode, margin_mode, wallet_balance, "
+    "mm_ex_1, upnl_ex_1, maintenance_amt, amount, open_rate, "
+    "mm_ratio, expected",
+    [
+        (
+            False,
+            "futures",
+            "isolated",
+            1535443.01,
+            0.0,
+            0.0,
+            135365.00,
+            3683.979,
+            1456.84,
+            0.10,
+            1114.78,
+        ),
+        (
+            False,
+            "futures",
+            "isolated",
+            1535443.01,
+            0.0,
+            0.0,
+            16300.000,
+            109.488,
+            32481.980,
+            0.025,
+            18778.73,
+        ),
+        (
+            False,
+            "futures",
+            "cross",
+            1535443.01,
+            71200.81144,
+            -56354.57,
+            135365.00,
+            3683.979,
+            1456.84,
+            0.10,
+            1153.26,
+        ),
+        (
+            False,
+            "futures",
+            "cross",
+            1535443.01,
+            356512.508,
+            -448192.89,
+            16300.000,
+            109.488,
+            32481.980,
+            0.025,
+            26316.89,
+        ),
+    ],
+)
+def test_liquidation_price_binance(
+    mocker,
+    default_conf,
+    open_rate,
+    is_short,
+    trading_mode,
+    margin_mode,
+    wallet_balance,
+    mm_ex_1,
+    upnl_ex_1,
+    maintenance_amt,
+    amount,
+    mm_ratio,
+    expected,
+):
+    default_conf["trading_mode"] = trading_mode
+    default_conf["margin_mode"] = margin_mode
+    default_conf["liquidation_buffer"] = 0.0
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
+    exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
+    assert (
+        pytest.approx(
+            round(
+                exchange.get_liquidation_price(
+                    pair="DOGE/USDT",
+                    open_rate=open_rate,
+                    is_short=is_short,
+                    wallet_balance=wallet_balance,
+                    mm_ex_1=mm_ex_1,
+                    upnl_ex_1=upnl_ex_1,
+                    amount=amount,
+                    stake_amount=open_rate * amount,
+                    leverage=5,
+                ),
+                2,
+            )
+        )
+        == expected
+    )
+
+
 def test_fill_leverage_tiers_binance(default_conf, mocker):
     api_mock = MagicMock()
     api_mock.fetch_leverage_tiers = MagicMock(
@@ -560,7 +660,6 @@ def test__set_leverage_binance(mocker, default_conf):
     )
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("candle_type", [CandleType.MARK, ""])
 async def test__async_get_historic_ohlcv_binance(default_conf, mocker, caplog, candle_type):
     ohlcv = [

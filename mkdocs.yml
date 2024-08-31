@@ -112,3 +112,12 @@ markdown_extensions:
       custom_checkbox: true
   - pymdownx.tilde
   - mdx_truly_sane_lists
+extra:
+  version:
+    provider: mike
+    alias: true
+plugins:
+  - search:
+      enabled: true
+  - mike:
+      deploy_prefix: 'en'

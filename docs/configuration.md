@@ -123,6 +123,19 @@ This is similar to using multiple `--config` parameters, but simpler in usage as
 
     If multiple files are in the `add_config_files` section, then they will be assumed to be at identical levels, having the last occurrence override the earlier config (unless a parent already defined such a key).
 
+## Editor autocomplete and validation
+
+If you are using an editor that supports JSON schema, you can use the schema provided by Freqtrade to get autocompletion and validation of your configuration file by adding the following line to the top of your configuration file:
+
+``` json
+{
+    "$schema": "https://schema.freqtrade.io/schema.json",
+}
+```
+
+??? Note "Develop version"
+    The develop schema is available as `https://schema.freqtrade.io/schema_dev.json` - though we recommend to stick to the stable version for the best experience.
+
 ## Configuration parameters
 
 The table below will list all configuration parameters available.

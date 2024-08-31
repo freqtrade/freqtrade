@@ -990,6 +990,79 @@ async def test_telegram_balance_handle(default_conf, update, mocker, rpc_balance
     assert "*Estimated Value (Bot managed assets only)*:" in result
 
 
+async def test_telegram_balance_handle_futures(
+    default_conf, update, rpc_balance, mocker, tickers
+) -> None:
+    default_conf.update(
+        {
+            "dry_run": False,
+            "trading_mode": "futures",
+            "margin_mode": "isolated",
+        }
+    )
+    mock_pos = [
+        {
+            "symbol": "ETH/USDT:USDT",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 10.0,
+            "leverage": 5.0,
+            "unrealizedPnl": 0.0,
+            "contracts": 1.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 2896.41,
+            "collateral": 20,
+            "marginType": "isolated",
+            "side": "short",
+            "percentage": None,
+        },
+        {
+            "symbol": "XRP/USDT:USDT",
+            "timestamp": None,
+            "datetime": None,
+            "initialMargin": 0.0,
+            "initialMarginPercentage": None,
+            "maintenanceMargin": 0.0,
+            "maintenanceMarginPercentage": 0.005,
+            "entryPrice": 0.0,
+            "notional": 10.0,
+            "leverage": None,
+            "unrealizedPnl": 0.0,
+            "contracts": 1.0,
+            "contractSize": 1,
+            "marginRatio": None,
+            "liquidationPrice": 0.0,
+            "markPrice": 2896.41,
+            "collateral": 20,
+            "marginType": "isolated",
+            "side": "short",
+            "percentage": None,
+        },
+    ]
+    mocker.patch(f"{EXMS}.get_balances", return_value=rpc_balance)
+    mocker.patch(f"{EXMS}.fetch_positions", return_value=mock_pos)
+    mocker.patch(f"{EXMS}.get_tickers", tickers)
+    mocker.patch(f"{EXMS}.get_valid_pair_combination", side_effect=lambda a, b: f"{a}/{b}")
+
+    telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+
+    await telegram._balance(update=update, context=MagicMock())
+    result = msg_mock.call_args_list[0][0][0]
+    assert msg_mock.call_count == 1
+
+    assert "ETH/USDT:USDT" in result
+    assert "`short: 10" in result
+    assert "XRP/USDT:USDT" in result
+
+
 async def test_balance_handle_empty_response(default_conf, update, mocker) -> None:
     default_conf["dry_run"] = False
     mocker.patch(f"{EXMS}.get_balances", return_value={})

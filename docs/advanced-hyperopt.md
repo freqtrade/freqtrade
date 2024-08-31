@@ -30,11 +30,17 @@ class SuperDuperHyperOptLoss(IHyperOptLoss):
     """
 
     @staticmethod
-    def hyperopt_loss_function(results: DataFrame, trade_count: int,
-                               min_date: datetime, max_date: datetime,
-                               config: Config, processed: Dict[str, DataFrame],
-                               backtest_stats: Dict[str, Any],
-                               *args, **kwargs) -> float:
+    def hyperopt_loss_function(
+        *,
+        results: DataFrame,
+        trade_count: int,
+        min_date: datetime,
+        max_date: datetime,
+        config: Config,
+        processed: Dict[str, DataFrame],
+        backtest_stats: Dict[str, Any],
+        **kwargs,
+    ) -> float:
         """
         Objective function, returns smaller number for better results
         This is the legacy algorithm (used until now in freqtrade).

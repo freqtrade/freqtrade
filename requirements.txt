@@ -4,25 +4,27 @@ bottleneck==1.4.0
 numexpr==2.10.1
 pandas-ta==0.3.14b
 
-ccxt==4.3.65
+ccxt==4.3.88
 cryptography==42.0.8; platform_machine == 'armv7l'
 cryptography==43.0.0; platform_machine != 'armv7l'
-aiohttp==3.9.5
-SQLAlchemy==2.0.31
+aiohttp==3.10.5
+SQLAlchemy==2.0.32
 python-telegram-bot==21.4
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.24.1
 humanize==4.10.0
-cachetools==5.4.0
+cachetools==5.5.0
 requests==2.32.3
 urllib3==2.2.2
 jsonschema==4.23.0
 TA-Lib==0.4.32
-technical==1.4.3
+technical==1.4.4
 tabulate==0.9.0
 pycoingecko==3.1.0
 jinja2==3.1.4
-tables==3.9.1
+# Tables 3.10 dropped support for Python 3.9
+tables==3.9.1; python_version < "3.10"
+tables==3.10.1; python_version >= "3.10"
 joblib==1.4.2
 rich==13.7.1
 pyarrow==17.0.0; platform_machine != 'armv7l'
@@ -31,18 +33,18 @@ pyarrow==17.0.0; platform_machine != 'armv7l'
 py_find_1st==1.1.6
 
 # Load ticker files 30% faster
-python-rapidjson==1.18
+python-rapidjson==1.20
 # Properly format api responses
-orjson==3.10.6
+orjson==3.10.7
 
 # Notify systemd
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.111.1
+fastapi==0.112.2
 pydantic==2.8.2
-uvicorn==0.30.3
-pyjwt==2.8.0
+uvicorn==0.30.6
+pyjwt==2.9.0
 aiofiles==24.1.0
 psutil==6.0.0
 
@@ -57,7 +59,7 @@ pytz==2024.1
 schedule==1.2.2
 
 #WS Messages
-websockets==12.0
+websockets==13.0
 janus==1.0.0
 
 ast-comments==1.2.2

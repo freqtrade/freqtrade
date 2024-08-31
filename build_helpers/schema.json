@@ -9,11 +9,6 @@
       ],
       "minimum": -1
     },
-    "new_pairs_days": {
-      "description": "Download data of new pairs for given number of days",
-      "type": "integer",
-      "default": 30
-    },
     "timeframe": {
       "description": "The timeframe to use (e.g `1m`, `5m`, `15m`, `30m`, `1h` ...). \nUsually specified in the strategy and missing in the configuration.",
       "type": "string"
@@ -562,6 +557,7 @@
             "enum": [
               "StaticPairList",
               "VolumePairList",
+              "PercentChangePairList",
               "ProducerPairList",
               "RemotePairList",
               "MarketCapPairList",
@@ -608,6 +604,10 @@
             "description": "Duration to lock the pair after a protection is triggered, in number of candles.",
             "type": "number",
             "minimum": 0
+          },
+          "unlock_at": {
+            "description": "Time when trading will be unlocked regularly. Format: HH:MM",
+            "type": "string"
           },
           "trade_limit": {
             "description": "Minimum number of trades required during lookback period.",
@@ -1064,7 +1064,7 @@
       "default": {},
       "properties": {
         "process_throttle_secs": {
-          "description": "Throttle time in seconds for processing.",
+          "description": "Minimum loop duration for one bot iteration in seconds.",
           "type": "integer"
         },
         "interval": {
@@ -1105,6 +1105,15 @@
       "description": "Enable position adjustment. \nUsually specified in the strategy and missing in the configuration.",
       "type": "boolean"
     },
+    "new_pairs_days": {
+      "description": "Download data of new pairs for given number of days",
+      "type": "integer",
+      "default": 30
+    },
+    "download_trades": {
+      "description": "Download trades data by default (instead of ohlcv data).",
+      "type": "boolean"
+    },
     "max_entry_position_adjustment": {
       "description": "Maximum entry position adjustment allowed. \nUsually specified in the strategy and missing in the configuration.",
       "type": [
@@ -1112,6 +1121,13 @@
         "number"
       ],
       "minimum": -1
+    },
+    "add_config_files": {
+      "description": "Additional configuration files to load.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "orderflow": {
       "description": "Settings related to order flow.",
@@ -1207,6 +1223,11 @@
             "type": "string"
           },
           "uniqueItems": true
+        },
+        "log_responses": {
+          "description": "Log responses from the exchange.Useful/required to debug issues with order processing.",
+          "type": "boolean",
+          "default": false
         },
         "unknown_fee_rate": {
           "description": "Fee rate for unknown markets.",

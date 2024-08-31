@@ -521,15 +521,12 @@ class DataProvider:
                 (pair, timeframe or self._config["timeframe"], _candle_type), copy=copy
             )
         elif self.runmode in (RunMode.BACKTEST, RunMode.HYPEROPT):
-            _candle_type = (
-                CandleType.from_string(candle_type)
-                if candle_type != ""
-                else self._config["candle_type_def"]
-            )
             data_handler = get_datahandler(
                 self._config["datadir"], data_format=self._config["dataformat_trades"]
             )
-            trades_df = data_handler.trades_load(pair, TradingMode.FUTURES)
+            trades_df = data_handler.trades_load(
+                pair, self._config.get("trading_mode", TradingMode.SPOT)
+            )
             return trades_df
 
         else:

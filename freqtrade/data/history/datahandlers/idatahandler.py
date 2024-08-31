@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Tuple, Type
 
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class IDataHandler(ABC):
     _OHLCV_REGEX = r"^([a-zA-Z_\d-]+)\-(\d+[a-zA-Z]{1,2})\-?([a-zA-Z_]*)?(?=\.)"
+    _TRADES_REGEX = r"^([a-zA-Z_\d-]+)\-(trades)?(?=\.)"
 
     def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
@@ -167,6 +168,50 @@ class IDataHandler(ABC):
         """
 
     @classmethod
+    def trades_get_available_data(cls, datadir: Path, trading_mode: TradingMode) -> List[str]:
+        """
+        Returns a list of all pairs with ohlcv data available in this datadir
+        :param datadir: Directory to search for ohlcv files
+        :param trading_mode: trading-mode to be used
+        :return: List of Tuples of (pair, timeframe, CandleType)
+        """
+        if trading_mode == TradingMode.FUTURES:
+            datadir = datadir.joinpath("futures")
+        _tmp = [
+            re.search(cls._TRADES_REGEX, p.name)
+            for p in datadir.glob(f"*.{cls._get_file_extension()}")
+        ]
+        return [
+            cls.rebuild_pair_from_filename(match[1])
+            for match in _tmp
+            if match and len(match.groups()) > 1
+        ]
+
+    def trades_data_min_max(
+        self,
+        pair: str,
+        trading_mode: TradingMode,
+    ) -> Tuple[datetime, datetime, int]:
+        """
+        Returns the min and max timestamp for the given pair's trades data.
+        :param pair: Pair to get min/max for
+        :param trading_mode: Trading mode to use (used to determine the filename)
+        :return: (min, max, len)
+        """
+        df = self._trades_load(pair, trading_mode)
+        if df.empty:
+            return (
+                datetime.fromtimestamp(0, tz=timezone.utc),
+                datetime.fromtimestamp(0, tz=timezone.utc),
+                0,
+            )
+        return (
+            to_datetime(df.iloc[0]["timestamp"], unit="ms", utc=True).to_pydatetime(),
+            to_datetime(df.iloc[-1]["timestamp"], unit="ms", utc=True).to_pydatetime(),
+            len(df),
+        )
+
+    @classmethod
     def trades_get_pairs(cls, datadir: Path) -> List[str]:
         """
         Returns a list of all pairs for which trade data is available in this
@@ -247,9 +292,13 @@ class IDataHandler(ABC):
         :param timerange: Timerange to load trades for - currently not implemented
         :return: List of trades
         """
-        trades = trades_df_remove_duplicates(
-            self._trades_load(pair, trading_mode, timerange=timerange)
-        )
+        try:
+            trades = self._trades_load(pair, trading_mode, timerange=timerange)
+        except Exception:
+            logger.exception(f"Error loading trades for {pair}")
+            return DataFrame(columns=DEFAULT_TRADES_COLUMNS)
+
+        trades = trades_df_remove_duplicates(trades)
 
         trades = trades_convert_types(trades)
         return trades

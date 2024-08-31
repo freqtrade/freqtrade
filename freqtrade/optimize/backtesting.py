@@ -181,6 +181,7 @@ class Backtesting:
             self.fee = max(fee for fee in fees if fee is not None)
             logger.info(f"Using fee {self.fee:.4%} - worst case fee from exchange (lowest tier).")
         self.precision_mode = self.exchange.precisionMode
+        self.precision_mode_price = self.exchange.precision_mode_price
 
         if self.config.get("freqai_backtest_live_models", False):
             from freqtrade.freqai.utils import get_timerange_backtest_live_models
@@ -329,15 +330,15 @@ class Backtesting:
         else:
             self.detail_data = {}
         if self.trading_mode == TradingMode.FUTURES:
-            self.funding_fee_timeframe: str = self.exchange.get_option("funding_fee_timeframe")
-            self.funding_fee_timeframe_secs: int = timeframe_to_seconds(self.funding_fee_timeframe)
+            funding_fee_timeframe: str = self.exchange.get_option("funding_fee_timeframe")
+            self.funding_fee_timeframe_secs: int = timeframe_to_seconds(funding_fee_timeframe)
             mark_timeframe: str = self.exchange.get_option("mark_ohlcv_timeframe")
 
             # Load additional futures data.
             funding_rates_dict = history.load_data(
                 datadir=self.config["datadir"],
                 pairs=self.pairlists.whitelist,
-                timeframe=self.funding_fee_timeframe,
+                timeframe=funding_fee_timeframe,
                 timerange=self.timerange,
                 startup_candles=0,
                 fail_without_data=True,
@@ -785,7 +786,7 @@ class Backtesting:
                     )
                     if rate is not None and rate != close_rate:
                         close_rate = price_to_precision(
-                            rate, trade.price_precision, self.precision_mode
+                            rate, trade.price_precision, self.precision_mode_price
                         )
                     # We can't place orders lower than current low.
                     # freqtrade does not support this in live, and the order would fill immediately
@@ -929,7 +930,9 @@ class Backtesting:
             # We can't place orders higher than current high (otherwise it'd be a stop limit entry)
             # which freqtrade does not support in live.
             if new_rate is not None and new_rate != propose_rate:
-                propose_rate = price_to_precision(new_rate, price_precision, self.precision_mode)
+                propose_rate = price_to_precision(
+                    new_rate, price_precision, self.precision_mode_price
+                )
             if direction == "short":
                 propose_rate = max(propose_rate, row[LOW_IDX])
             else:
@@ -1109,6 +1112,7 @@ class Backtesting:
                     amount_precision=precision_amount,
                     price_precision=precision_price,
                     precision_mode=self.precision_mode,
+                    precision_mode_price=self.precision_mode_price,
                     contract_size=contract_size,
                     orders=[],
                 )
@@ -1332,10 +1336,9 @@ class Backtesting:
         pair: str,
         current_time: datetime,
         end_date: datetime,
-        open_trade_count_start: int,
         trade_dir: Optional[LongShort],
         is_first: bool = True,
-    ) -> int:
+    ) -> None:
         """
         NOTE: This method is used by Hyperopt at each iteration. Please keep it optimized.
 
@@ -1345,7 +1348,6 @@ class Backtesting:
             # 1. Manage currently open orders of active trades
             if self.manage_open_orders(t, current_time, row):
                 # Close trade
-                open_trade_count_start -= 1
                 LocalTrade.remove_bt_trade(t)
                 self.wallets.update()
 
@@ -1361,13 +1363,9 @@ class Backtesting:
             and trade_dir is not None
             and not PairLocks.is_pair_locked(pair, row[DATE_IDX], trade_dir)
         ):
-            if self.trade_slot_available(open_trade_count_start):
+            if self.trade_slot_available(LocalTrade.bt_open_open_trade_count):
                 trade = self._enter_trade(pair, row, trade_dir)
                 if trade:
-                    # TODO: hacky workaround to avoid opening > max_open_trades
-                    # This emulates previous behavior - not sure if this is correct
-                    # Prevents entering if the trade-slot was freed in this candle
-                    open_trade_count_start += 1
                     self.wallets.update()
             else:
                 self._collate_rejected(pair, row)
@@ -1386,7 +1384,28 @@ class Backtesting:
             order = trade.select_order(trade.exit_side, is_open=True)
             if order:
                 self._process_exit_order(order, trade, current_time, row, pair)
-        return open_trade_count_start
+
+    def time_pair_generator(
+        self, start_date: datetime, end_date: datetime, increment: timedelta, pairs: List[str]
+    ):
+        """
+        Backtest time and pair generator
+        """
+        current_time = start_date + increment
+        self.progress.init_step(
+            BacktestState.BACKTEST, int((end_date - start_date) / self.timeframe_td)
+        )
+        while current_time <= end_date:
+            is_first = True
+            # Pairs that have open trades should be processed first
+            new_pairlist = list(dict.fromkeys([t.pair for t in LocalTrade.bt_trades_open] + pairs))
+
+            for pair in new_pairlist:
+                yield current_time, pair, is_first
+                is_first = False
+
+            self.progress.increment()
+            current_time += increment
 
     def backtest(self, processed: Dict, start_date: datetime, end_date: datetime) -> Dict[str, Any]:
         """
@@ -1411,87 +1430,75 @@ class Backtesting:
 
         # Indexes per pair, so some pairs are allowed to have a missing start.
         indexes: Dict = defaultdict(int)
-        current_time = start_date + self.timeframe_td
 
-        self.progress.init_step(
-            BacktestState.BACKTEST, int((end_date - start_date) / self.timeframe_td)
-        )
         # Loop timerange and get candle for each pair at that point in time
-        while current_time <= end_date:
-            open_trade_count_start = LocalTrade.bt_open_open_trade_count
-            self.check_abort()
-            strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)(
-                current_time=current_time
-            )
-            for i, pair in enumerate(data):
-                row_index = indexes[pair]
-                row = self.validate_row(data, pair, row_index, current_time)
-                if not row:
+        for current_time, pair, is_first in self.time_pair_generator(
+            start_date, end_date, self.timeframe_td, list(data.keys())
+        ):
+            if is_first:
+                self.check_abort()
+                strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)(
+                    current_time=current_time
+                )
+            row_index = indexes[pair]
+            row = self.validate_row(data, pair, row_index, current_time)
+            if not row:
+                continue
+
+            row_index += 1
+            indexes[pair] = row_index
+            self.dataprovider._set_dataframe_max_index(self.required_startup + row_index)
+            self.dataprovider._set_dataframe_max_date(current_time)
+            current_detail_time: datetime = row[DATE_IDX].to_pydatetime()
+            trade_dir: Optional[LongShort] = self.check_for_trade_entry(row)
+
+            if (
+                (trade_dir is not None or len(LocalTrade.bt_trades_open_pp[pair]) > 0)
+                and self.timeframe_detail
+                and pair in self.detail_data
+            ):
+                # Spread out into detail timeframe.
+                # Should only happen when we are either in a trade for this pair
+                # or when we got the signal for a new trade.
+                exit_candle_end = current_detail_time + self.timeframe_td
+
+                detail_data = self.detail_data[pair]
+                detail_data = detail_data.loc[
+                    (detail_data["date"] >= current_detail_time)
+                    & (detail_data["date"] < exit_candle_end)
+                ].copy()
+                if len(detail_data) == 0:
+                    # Fall back to "regular" data if no detail data was found for this candle
+                    self.backtest_loop(row, pair, current_time, end_date, trade_dir)
                     continue
-
-                row_index += 1
-                indexes[pair] = row_index
-                self.dataprovider._set_dataframe_max_index(self.required_startup + row_index)
-                self.dataprovider._set_dataframe_max_date(current_time)
-                current_detail_time: datetime = row[DATE_IDX].to_pydatetime()
-                trade_dir: Optional[LongShort] = self.check_for_trade_entry(row)
-
-                if (
-                    (trade_dir is not None or len(LocalTrade.bt_trades_open_pp[pair]) > 0)
-                    and self.timeframe_detail
-                    and pair in self.detail_data
-                ):
-                    # Spread out into detail timeframe.
-                    # Should only happen when we are either in a trade for this pair
-                    # or when we got the signal for a new trade.
-                    exit_candle_end = current_detail_time + self.timeframe_td
-
-                    detail_data = self.detail_data[pair]
-                    detail_data = detail_data.loc[
-                        (detail_data["date"] >= current_detail_time)
-                        & (detail_data["date"] < exit_candle_end)
-                    ].copy()
-                    if len(detail_data) == 0:
-                        # Fall back to "regular" data if no detail data was found for this candle
-                        open_trade_count_start = self.backtest_loop(
-                            row, pair, current_time, end_date, open_trade_count_start, trade_dir
-                        )
-                        continue
-                    detail_data.loc[:, "enter_long"] = row[LONG_IDX]
-                    detail_data.loc[:, "exit_long"] = row[ELONG_IDX]
-                    detail_data.loc[:, "enter_short"] = row[SHORT_IDX]
-                    detail_data.loc[:, "exit_short"] = row[ESHORT_IDX]
-                    detail_data.loc[:, "enter_tag"] = row[ENTER_TAG_IDX]
-                    detail_data.loc[:, "exit_tag"] = row[EXIT_TAG_IDX]
-                    is_first = True
-                    current_time_det = current_time
-                    for det_row in detail_data[HEADERS].values.tolist():
-                        self.dataprovider._set_dataframe_max_date(current_time_det)
-                        open_trade_count_start = self.backtest_loop(
-                            det_row,
-                            pair,
-                            current_time_det,
-                            end_date,
-                            open_trade_count_start,
-                            trade_dir,
-                            is_first,
-                        )
-                        current_time_det += self.timeframe_detail_td
-                        is_first = False
-                else:
-                    self.dataprovider._set_dataframe_max_date(current_time)
-                    open_trade_count_start = self.backtest_loop(
-                        row, pair, current_time, end_date, open_trade_count_start, trade_dir
+                detail_data.loc[:, "enter_long"] = row[LONG_IDX]
+                detail_data.loc[:, "exit_long"] = row[ELONG_IDX]
+                detail_data.loc[:, "enter_short"] = row[SHORT_IDX]
+                detail_data.loc[:, "exit_short"] = row[ESHORT_IDX]
+                detail_data.loc[:, "enter_tag"] = row[ENTER_TAG_IDX]
+                detail_data.loc[:, "exit_tag"] = row[EXIT_TAG_IDX]
+                is_first = True
+                current_time_det = current_time
+                for det_row in detail_data[HEADERS].values.tolist():
+                    self.dataprovider._set_dataframe_max_date(current_time_det)
+                    self.backtest_loop(
+                        det_row,
+                        pair,
+                        current_time_det,
+                        end_date,
+                        trade_dir,
+                        is_first,
                     )
-
-            # Move time one configured time_interval ahead.
-            self.progress.increment()
-            current_time += self.timeframe_td
+                    current_time_det += self.timeframe_detail_td
+                    is_first = False
+            else:
+                self.dataprovider._set_dataframe_max_date(current_time)
+                self.backtest_loop(row, pair, current_time, end_date, trade_dir)
 
         self.handle_left_open(LocalTrade.bt_trades_open_pp, data=data)
         self.wallets.update()
 
-        results = trade_list_to_dataframe(LocalTrade.trades)
+        results = trade_list_to_dataframe(LocalTrade.bt_trades)
         return {
             "results": results,
             "config": self.strategy.config,

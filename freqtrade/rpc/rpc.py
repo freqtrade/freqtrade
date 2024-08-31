@@ -296,7 +296,10 @@ class RPC:
                     else:
                         trade_profit = 0.0
                         profit_str = f"{0.0:.2f}"
-                direction_str = ("S" if trade.is_short else "L") if nonspot else ""
+                leverage = f"{trade.leverage:.3g}"
+                direction_str = (
+                    (f"S {leverage}x" if trade.is_short else f"L {leverage}x") if nonspot else ""
+                )
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit, stake_currency, fiat_display_currency
@@ -742,7 +745,6 @@ class RPC:
                     "est_stake_bot": est_stake_bot if is_bot_managed else 0,
                     "stake": stake_currency,
                     "side": "long",
-                    "leverage": 1,
                     "position": 0,
                     "is_bot_managed": is_bot_managed,
                     "is_position": False,
@@ -764,7 +766,6 @@ class RPC:
                     "est_stake": position.collateral,
                     "est_stake_bot": position.collateral,
                     "stake": stake_currency,
-                    "leverage": position.leverage,
                     "side": position.side,
                     "is_bot_managed": True,
                     "is_position": True,

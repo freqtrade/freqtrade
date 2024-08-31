@@ -1133,7 +1133,6 @@ class Telegram(RPCHandler):
                     curr_output = (
                         f"*{curr['currency']}:*\n"
                         f"\t`{curr['side']}: {curr['position']:.8f}`\n"
-                        f"\t`Leverage: {curr['leverage']:.1f}`\n"
                         f"\t`Est. {curr['stake']}: "
                         f"{fmt_coin(curr['est_stake'], curr['stake'], False)}`\n"
                     )

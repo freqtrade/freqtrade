@@ -102,56 +102,94 @@ def test_protectionmanager(mocker, default_conf):
 
 
 @pytest.mark.parametrize(
-    "timeframe,expected,protconf",
+    "timeframe,expected_lookback,expected_stop,protconf",
     [
         (
             "1m",
-            [20, 10],
+            20,
+            10,
             [{"method": "StoplossGuard", "lookback_period_candles": 20, "stop_duration": 10}],
         ),
         (
             "5m",
-            [100, 15],
+            100,
+            15,
             [{"method": "StoplossGuard", "lookback_period_candles": 20, "stop_duration": 15}],
         ),
         (
             "1h",
-            [1200, 40],
+            1200,
+            40,
             [{"method": "StoplossGuard", "lookback_period_candles": 20, "stop_duration": 40}],
         ),
         (
             "1d",
-            [1440, 5],
+            1440,
+            5,
             [{"method": "StoplossGuard", "lookback_period_candles": 1, "stop_duration": 5}],
         ),
         (
             "1m",
-            [20, 5],
+            20,
+            5,
             [{"method": "StoplossGuard", "lookback_period": 20, "stop_duration_candles": 5}],
         ),
         (
             "5m",
-            [15, 25],
+            15,
+            25,
             [{"method": "StoplossGuard", "lookback_period": 15, "stop_duration_candles": 5}],
         ),
         (
             "1h",
-            [50, 600],
+            50,
+            600,
             [{"method": "StoplossGuard", "lookback_period": 50, "stop_duration_candles": 10}],
         ),
         (
             "1h",
-            [60, 540],
+            60,
+            540,
             [{"method": "StoplossGuard", "lookback_period_candles": 1, "stop_duration_candles": 9}],
+        ),
+        (
+            "1m",
+            20,
+            "01:00",
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "01:00"}],
+        ),
+        (
+            "5m",
+            100,
+            "02:00",
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "02:00"}],
+        ),
+        (
+            "1h",
+            1200,
+            "03:00",
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "03:00"}],
+        ),
+        (
+            "1d",
+            1440,
+            "04:00",
+            [{"method": "StoplossGuard", "lookback_period_candles": 1, "unlock_at": "04:00"}],
         ),
     ],
 )
-def test_protections_init(default_conf, timeframe, expected, protconf):
+def test_protections_init(default_conf, timeframe, expected_lookback, expected_stop, protconf):
+    """
+    Test the initialization of protections with different configurations, including unlock_at.
+    """
     default_conf["timeframe"] = timeframe
     man = ProtectionManager(default_conf, protconf)
     assert len(man._protection_handlers) == len(protconf)
-    assert man._protection_handlers[0]._lookback_period == expected[0]
-    assert man._protection_handlers[0]._stop_duration == expected[1]
+    assert man._protection_handlers[0]._lookback_period == expected_lookback
+    if isinstance(expected_stop, int):
+        assert man._protection_handlers[0]._stop_duration == expected_stop
+    else:
+        assert man._protection_handlers[0]._unlock_at == expected_stop
 
 
 @pytest.mark.parametrize("is_short", [False, True])
@@ -385,6 +423,89 @@ def test_CooldownPeriod(mocker, default_conf, fee, caplog):
     assert not PairLocks.is_global_lock()
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_CooldownPeriod_unlock_at(mocker, default_conf, fee, caplog, time_machine):
+    default_conf["protections"] = [
+        {
+            "method": "CooldownPeriod",
+            "unlock_at": "05:00",
+        }
+    ]
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    message = r"Trading stopped due to .*"
+    assert not freqtrade.protections.global_stop()
+    assert not freqtrade.protections.stop_per_pair("XRP/BTC")
+
+    assert not log_has_re(message, caplog)
+    caplog.clear()
+
+    start_dt = datetime(2024, 5, 2, 0, 30, 0, tzinfo=timezone.utc)
+    time_machine.move_to(start_dt, tick=False)
+
+    generate_mock_trade(
+        "XRP/BTC",
+        fee.return_value,
+        False,
+        exit_reason=ExitType.STOP_LOSS.value,
+        min_ago_open=20,
+        min_ago_close=10,
+    )
+
+    assert not freqtrade.protections.global_stop()
+    assert freqtrade.protections.stop_per_pair("XRP/BTC")
+    assert PairLocks.is_pair_locked("XRP/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move time to "4:30"
+    time_machine.move_to(start_dt + timedelta(hours=4), tick=False)
+    assert PairLocks.is_pair_locked("XRP/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move time to "past 5:00"
+    time_machine.move_to(start_dt + timedelta(hours=5), tick=False)
+    assert not PairLocks.is_pair_locked("XRP/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Force rollover to the next day.
+    start_dt = datetime(2024, 5, 2, 22, 00, 0, tzinfo=timezone.utc)
+    time_machine.move_to(start_dt, tick=False)
+    generate_mock_trade(
+        "ETH/BTC",
+        fee.return_value,
+        False,
+        exit_reason=ExitType.ROI.value,
+        min_ago_open=20,
+        min_ago_close=10,
+    )
+
+    assert not freqtrade.protections.global_stop()
+    assert not PairLocks.is_pair_locked("ETH/BTC")
+    assert freqtrade.protections.stop_per_pair("ETH/BTC")
+    assert PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+    # Move to 23:00
+    time_machine.move_to(start_dt + timedelta(hours=1), tick=False)
+    assert PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move to 04:59 (should still be locked)
+    time_machine.move_to(start_dt + timedelta(hours=6, minutes=59), tick=False)
+    assert PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move to 05:01 (should still be locked - it unlocks once the 05:00 candle stops at 05:05)
+    time_machine.move_to(start_dt + timedelta(hours=7, minutes=1), tick=False)
+
+    assert PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+
+    # Move to 05:01 (unlocked).
+    time_machine.move_to(start_dt + timedelta(hours=7, minutes=5), tick=False)
+
+    assert not PairLocks.is_pair_locked("ETH/BTC")
+    assert not PairLocks.is_global_lock()
+
+
 @pytest.mark.parametrize("only_per_side", [False, True])
 @pytest.mark.usefixtures("init_persistence")
 def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
@@ -610,7 +731,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
         ),
         (
             {"method": "CooldownPeriod", "stop_duration": 60},
-            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 60 minutes.'}]",
+            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period for 60 minutes.'}]",
             None,
         ),
         (
@@ -639,7 +760,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
         ),
         (
             {"method": "CooldownPeriod", "stop_duration_candles": 5},
-            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period of 5 candles.'}]",
+            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period for 5 candles.'}]",
             None,
         ),
         (
@@ -650,6 +771,38 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
         ),
         (
             {"method": "MaxDrawdown", "lookback_period_candles": 20, "stop_duration": 60},
+            "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
+            "if drawdown is > 0.0 within 20 candles.'}]",
+            None,
+        ),
+        (
+            {
+                "method": "CooldownPeriod",
+                "unlock_at": "01:00",
+            },
+            "[{'CooldownPeriod': 'CooldownPeriod - Cooldown period until 01:00.'}]",
+            None,
+        ),
+        (
+            {
+                "method": "StoplossGuard",
+                "lookback_period_candles": 12,
+                "trade_limit": 2,
+                "required_profit": -0.05,
+                "unlock_at": "01:00",
+            },
+            "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
+            "2 stoplosses with profit < -5.00% within 12 candles.'}]",
+            None,
+        ),
+        (
+            {"method": "LowProfitPairs", "lookback_period_candles": 11, "unlock_at": "03:00"},
+            "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
+            "profit < 0.0 within 11 candles.'}]",
+            None,
+        ),
+        (
+            {"method": "MaxDrawdown", "lookback_period_candles": 20, "unlock_at": "04:00"},
             "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
             "if drawdown is > 0.0 within 20 candles.'}]",
             None,

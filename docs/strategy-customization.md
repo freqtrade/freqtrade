@@ -158,7 +158,7 @@ Out of the box, freqtrade installs the following technical libraries:
 
 - [ta-lib](https://ta-lib.github.io/ta-lib-python/)
 - [pandas-ta](https://twopirllc.github.io/pandas-ta/)
-- [technical](https://github.com/freqtrade/technical/)
+- [technical](https://technical.freqtrade.io)
 
 Additional technical libraries can be installed as necessary, or custom indicators may be written / invented by the strategy author.
 
@@ -406,6 +406,8 @@ Currently this is `pair`, which can be accessed using `metadata['pair']` - and w
 
 The Metadata-dict should not be modified and does not persist information across multiple calls.
 Instead, have a look at the [Storing information](strategy-advanced.md#storing-information-persistent) section.
+
+--8<-- "includes/strategy-imports.md"
 
 ## Strategy file loading
 

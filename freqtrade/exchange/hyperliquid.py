@@ -3,6 +3,8 @@
 import logging
 from typing import Dict
 
+from ccxt import SIGNIFICANT_DIGITS
+
 from freqtrade.exchange import Exchange
 
 
@@ -17,8 +19,15 @@ class Hyperliquid(Exchange):
     _ft_has: Dict = {
         # Only the most recent 5000 candles are available according to the
         # exchange's API documentation.
-        "ohlcv_has_history": True,
+        "ohlcv_has_history": False,
         "ohlcv_candle_limit": 5000,
         "trades_has_history": False,  # Trades endpoint doesn't seem available.
         "exchange_has_overrides": {"fetchTrades": False},
     }
+
+    @property
+    def precision_mode_price(self) -> int:
+        """
+        Override the default precision mode for price.
+        """
+        return SIGNIFICANT_DIGITS

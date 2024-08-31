@@ -14,6 +14,7 @@ from freqtrade.data.history import download_data_main
 from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import ConfigurationError
 from freqtrade.exchange import timeframe_to_minutes
+from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.util import print_rich_table
@@ -115,8 +116,12 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
 
 def start_list_data(args: Dict[str, Any]) -> None:
     """
-    List available backtest data
+    List available OHLCV data
     """
+
+    if args["trades"]:
+        start_list_trades_data(args)
+        return
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
@@ -127,7 +132,6 @@ def start_list_data(args: Dict[str, Any]) -> None:
     paircombs = dhc.ohlcv_get_available_data(
         config["datadir"], config.get("trading_mode", TradingMode.SPOT)
     )
-
     if args["pairs"]:
         paircombs = [comb for comb in paircombs if comb[0] in args["pairs"]]
     title = f"Found {len(paircombs)} pair / timeframe combinations."
@@ -168,6 +172,54 @@ def start_list_data(args: Dict[str, Any]) -> None:
                 )
             ],
             ("Pair", "Timeframe", "Type", "From", "To", "Candles"),
+            summary=title,
+            table_kwargs={"min_width": 50},
+        )
+
+
+def start_list_trades_data(args: Dict[str, Any]) -> None:
+    """
+    List available Trades data
+    """
+
+    config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
+
+    from freqtrade.data.history import get_datahandler
+
+    dhc = get_datahandler(config["datadir"], config["dataformat_trades"])
+
+    paircombs = dhc.trades_get_available_data(
+        config["datadir"], config.get("trading_mode", TradingMode.SPOT)
+    )
+
+    if args["pairs"]:
+        paircombs = [comb for comb in paircombs if comb in args["pairs"]]
+
+    title = f"Found trades data for {len(paircombs)} {plural(len(paircombs), 'pair')}."
+    if not config.get("show_timerange"):
+        print_rich_table(
+            [(pair, config.get("candle_type_def", CandleType.SPOT)) for pair in sorted(paircombs)],
+            ("Pair", "Type"),
+            title,
+            table_kwargs={"min_width": 50},
+        )
+    else:
+        paircombs1 = [
+            (pair, *dhc.trades_data_min_max(pair, config.get("trading_mode", TradingMode.SPOT)))
+            for pair in paircombs
+        ]
+        print_rich_table(
+            [
+                (
+                    pair,
+                    config.get("candle_type_def", CandleType.SPOT),
+                    start.strftime(DATETIME_PRINT_FORMAT),
+                    end.strftime(DATETIME_PRINT_FORMAT),
+                    str(length),
+                )
+                for pair, start, end, length in sorted(paircombs1, key=lambda x: (x[0]))
+            ],
+            ("Pair", "Type", "From", "To", "Trades"),
             summary=title,
             table_kwargs={"min_width": 50},
         )

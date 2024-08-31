@@ -840,6 +840,25 @@ def test_validate_whitelist(default_conf):
             ],
             r"Protections must specify either `stop_duration`.*",
         ),
+        (
+            [
+                {
+                    "method": "StoplossGuard",
+                    "lookback_period": 20,
+                    "stop_duration": 10,
+                    "unlock_at": "20:02",
+                }
+            ],
+            r"Protections must specify either `unlock_at`, `stop_duration` or.*",
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "20:02"}],
+            None,
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "55:102"}],
+            "Invalid date format for unlock_at: 55:102.",
+        ),
     ],
 )
 def test_validate_protections(default_conf, protconf, expected):
@@ -1634,9 +1653,12 @@ def test_sanitize_config(default_conf_usdt):
     res = sanitize_config(default_conf_usdt)
     # Didn't modify original dict
     assert default_conf_usdt["exchange"]["key"] != "REDACTED"
+    assert "accountId" not in default_conf_usdt["exchange"]
 
     assert res["exchange"]["key"] == "REDACTED"
     assert res["exchange"]["secret"] == "REDACTED"
+    # Didn't add a non-existing key
+    assert "accountId" not in res["exchange"]
 
     res = sanitize_config(default_conf_usdt, show_sensitive=True)
     assert res["exchange"]["key"] == default_conf_usdt["exchange"]["key"]

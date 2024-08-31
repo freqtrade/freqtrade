@@ -1692,6 +1692,54 @@ def test_start_list_data(testdatadir, capsys):
     )
 
 
+def test_start_list_trades_data(testdatadir, capsys):
+    args = [
+        "list-data",
+        "--datadir",
+        str(testdatadir),
+        "--trades",
+    ]
+    pargs = get_args(args)
+    pargs["config"] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+    assert "Found trades data for 1 pair." in captured.out
+    assert re.search(r".*Pair.*Type.*\n", captured.out)
+    assert re.search(r"\n.* XRP/ETH .* spot |\n", captured.out)
+
+    args = [
+        "list-data",
+        "--datadir",
+        str(testdatadir),
+        "--trades",
+        "--show-timerange",
+    ]
+    pargs = get_args(args)
+    pargs["config"] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+    assert "Found trades data for 1 pair." in captured.out
+    assert re.search(r".*Pair.*Type.*From.*To.*Trades.*\n", captured.out)
+    assert re.search(
+        r"\n.* XRP/ETH .* spot .* 2019-10-11 00:00:01 .* 2019-10-13 11:19:28 .* 12477 .*|\n",
+        captured.out,
+    )
+
+    args = [
+        "list-data",
+        "--datadir",
+        str(testdatadir),
+        "--trades",
+        "--trading-mode",
+        "futures",
+    ]
+    pargs = get_args(args)
+    pargs["config"] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+    assert "Found trades data for 0 pairs." in captured.out
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_show_trades(mocker, fee, capsys, caplog):
     mocker.patch("freqtrade.persistence.init_db")

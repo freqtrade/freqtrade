@@ -519,6 +519,39 @@ def test_datahandler_trades_purge(mocker, testdatadir, datahandler):
     assert unlinkmock.call_count == 1
 
 
+def test_datahandler_trades_get_available_data(testdatadir):
+    paircombs = FeatherDataHandler.trades_get_available_data(testdatadir, TradingMode.SPOT)
+    # Convert to set to avoid failures due to sorting
+    assert set(paircombs) == {"XRP/ETH"}
+
+    paircombs = FeatherDataHandler.trades_get_available_data(testdatadir, TradingMode.FUTURES)
+    # Convert to set to avoid failures due to sorting
+    assert set(paircombs) == set()
+
+    paircombs = JsonGzDataHandler.trades_get_available_data(testdatadir, TradingMode.SPOT)
+    assert set(paircombs) == {"XRP/ETH", "XRP/OLD"}
+    paircombs = HDF5DataHandler.trades_get_available_data(testdatadir, TradingMode.SPOT)
+    assert set(paircombs) == {"XRP/ETH"}
+
+
+def test_datahandler_trades_data_min_max(testdatadir):
+    dh = FeatherDataHandler(testdatadir)
+    min_max = dh.trades_data_min_max("XRP/ETH", TradingMode.SPOT)
+    assert len(min_max) == 3
+
+    # Empty pair
+    min_max = dh.trades_data_min_max("NADA/ETH", TradingMode.SPOT)
+    assert len(min_max) == 3
+    assert min_max[0] == datetime.fromtimestamp(0, tz=timezone.utc)
+    assert min_max[0] == min_max[1]
+
+    # Existing pair ...
+    min_max = dh.trades_data_min_max("XRP/ETH", TradingMode.SPOT)
+    assert len(min_max) == 3
+    assert min_max[0] == datetime(2019, 10, 11, 0, 0, 11, 620000, tzinfo=timezone.utc)
+    assert min_max[1] == datetime(2019, 10, 13, 11, 19, 28, 844000, tzinfo=timezone.utc)
+
+
 def test_gethandlerclass():
     cl = get_datahandlerclass("json")
     assert cl == JsonDataHandler

@@ -4909,7 +4909,7 @@ def test_handle_onexchange_order_changed_amount(
         leverage=1,
     )
     freqtrade.wallets = MagicMock()
-    freqtrade.wallets.get_total = MagicMock(return_value=entry_order["amount"] * factor)
+    freqtrade.wallets.get_owned = MagicMock(return_value=entry_order["amount"] * factor)
 
     trade.orders.append(Order.parse_from_ccxt_object(entry_order, "ADA/USDT", entry_side(is_short)))
     Trade.session.add(trade)

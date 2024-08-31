@@ -55,7 +55,7 @@ jobs:
 
     - name: Installation - *nix
       run: |
-        python -m pip install --upgrade "pip<=24.0" wheel
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -197,7 +197,7 @@ jobs:
 
     - name: Installation (python)
       run: |
-        python -m pip install --upgrade "pip<=24.0" wheel
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include
@@ -384,7 +384,6 @@ jobs:
     - name: Documentation build
       run: |
         pip install -r docs/requirements-docs.txt
-        pip install mkdocs
         mkdocs build
 
     - name: Discord notification
@@ -427,7 +426,7 @@ jobs:
 
     - name: Installation - *nix
       run: |
-        python -m pip install --upgrade "pip<=24.0" wheel
+        python -m pip install --upgrade pip wheel
         export LD_LIBRARY_PATH=${HOME}/dependencies/lib:$LD_LIBRARY_PATH
         export TA_LIBRARY_PATH=${HOME}/dependencies/lib
         export TA_INCLUDE_PATH=${HOME}/dependencies/include

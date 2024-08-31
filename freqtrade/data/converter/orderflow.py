@@ -78,6 +78,8 @@ def populate_dataframe_with_trades(
 
     # create columns for trades
     _init_dataframe_with_trades_columns(dataframe)
+    if trades is None or trades.empty:
+        return dataframe, cached_grouped_trades
 
     try:
         start_time = time.time()
@@ -88,7 +90,7 @@ def populate_dataframe_with_trades(
         max_candles = config_orderflow["max_candles"]
         start_date = dataframe.tail(max_candles).date.iat[0]
         # slice of trades that are before current ohlcv candles to make groupby faster
-        trades = trades.loc[trades.candle_start >= start_date]
+        trades = trades.loc[trades["candle_start"] >= start_date]
         trades.reset_index(inplace=True, drop=True)
 
         # group trades by candle start

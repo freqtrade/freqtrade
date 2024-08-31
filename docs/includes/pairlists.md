@@ -2,11 +2,11 @@
 
 Pairlist Handlers define the list of pairs (pairlist) that the bot should trade. They are configured in the `pairlists` section of the configuration settings.
 
-In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) Pairlist Handler).
+In your configuration, you can use Static Pairlist (defined by the [`StaticPairList`](#static-pair-list) Pairlist Handler) and Dynamic Pairlist (defined by the [`VolumePairList`](#volume-pair-list) and [`PercentChangePairList`](#percent-change-pair-list) Pairlist Handlers).
 
 Additionally, [`AgeFilter`](#agefilter), [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter), [`SpreadFilter`](#spreadfilter) and [`VolatilityFilter`](#volatilityfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
 
-If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You can define either `StaticPairList`, `VolumePairList`, `ProducerPairList`, `RemotePairList` or `MarketCapPairList` as the starting Pairlist Handler.
+If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You can define either `StaticPairList`, `VolumePairList`, `ProducerPairList`, `RemotePairList`, `MarketCapPairList` or `PercentChangePairList` as the starting Pairlist Handler.
 
 Inactive markets are always removed from the resulting pairlist. Explicitly blacklisted pairs (those in the `pair_blacklist` configuration setting) are also always removed from the resulting pairlist.
 
@@ -22,6 +22,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
 * [`VolumePairList`](#volume-pair-list)
+* [`PercentChangePairList`](#percent-change-pair-list)
 * [`ProducerPairList`](#producerpairlist)
 * [`RemotePairList`](#remotepairlist)
 * [`MarketCapPairList`](#marketcappairlist)
@@ -151,6 +152,89 @@ More sophisticated approach can be used, by using `lookback_timeframe` for candl
 
 !!! Note
     `VolumePairList` does not support backtesting mode.
+
+#### Percent Change Pair List
+
+`PercentChangePairList` filters and sorts pairs based on the percentage change in their price over the last 24 hours or any defined timeframe as part of advanced options. This allows traders to focus on assets that have experienced significant price movements, either positive or negative.
+
+**Configuration Options**
+
+* `number_assets`: Specifies the number of top pairs to select based on the 24-hour percentage change.
+* `min_value`: Sets a minimum percentage change threshold. Pairs with a percentage change below this value will be filtered out.
+* `max_value`: Sets a maximum percentage change threshold. Pairs with a percentage change above this value will be filtered out.
+* `sort_direction`: Specifies the order in which pairs are sorted based on their percentage change. Accepts two values: `asc` for ascending order and `desc` for descending order.
+* `refresh_period`: Defines the interval (in seconds) at which the pairlist will be refreshed. The default is 1800 seconds (30 minutes).
+* `lookback_days`: Number of days to look back. When `lookback_days` is selected, the `lookback_timeframe` is defaulted to 1 day.
+* `lookback_timeframe`: Timeframe to use for the lookback period.
+* `lookback_period`: Number of periods to look back at. 
+
+When PercentChangePairList is used after other Pairlist Handlers, it will operate on the outputs of those handlers. If it is the leading Pairlist Handler, it will select pairs from all available markets with the specified stake currency.
+
+`PercentChangePairList` uses ticker data from the exchange, provided via the ccxt library:
+The percentage change is calculated as the change in price over the last 24 hours.
+
+??? Note "Unsupported exchanges"
+    On some exchanges (like HTX), regular PercentChangePairList does not work as the api does not natively provide 24h percent change in price. This can be worked around by using candle data to calculate the percentage change. To roughly simulate 24h percent change, you can use the following configuration. Please note that these pairlists will only refresh once per day.
+    ```json
+    "pairlists": [
+        {
+            "method": "PercentChangePairList",
+            "number_assets": 20,
+            "min_value": 0,
+            "refresh_period": 86400,
+            "lookback_days": 1
+        }
+    ],
+    ```
+
+**Example Configuration to Read from Ticker**
+
+```json
+"pairlists": [
+    {
+        "method": "PercentChangePairList",
+        "number_assets": 15,
+        "min_value": -10,
+        "max_value": 50
+    }
+],
+```
+
+In this configuration:
+
+1. The top 15 pairs are selected based on the highest percentage change in price over the last 24 hours.
+2. Only pairs with a percentage change between -10% and 50% are considered.
+
+**Example Configuration to Read from Candles**
+
+```json
+"pairlists": [
+    {
+        "method": "PercentChangePairList",
+        "number_assets": 15,
+        "sort_key": "percentage",
+        "min_value": 0,
+        "refresh_period": 3600,
+        "lookback_timeframe": "1h",
+        "lookback_period": 72
+    }
+],
+```
+
+This example builds the percent change pairs based on a rolling period of 3 days of 1-hour candles by using `lookback_timeframe` for candle size and `lookback_period` which specifies the number of candles.
+
+The percent change in price is calculated using the following formula, which expresses the percentage difference between the current candle's close price and the previous candle's close price, as defined by the specified timeframe and lookback period:
+
+$$ Percent Change = (\frac{Current Close - Previous Close}{Previous Close}) * 100 $$
+
+!!! Warning "Range look back and refresh period"
+    When used in conjunction with `lookback_days` and `lookback_timeframe` the `refresh_period` can not be smaller than the candle size in seconds. As this will result in unnecessary requests to the exchanges API.
+
+!!! Warning "Performance implications when using lookback range"
+    If used in first position in combination with lookback, the computation of the range-based percent change can be time and resource consuming, as it downloads candles for all tradable pairs. Hence it's highly advised to use the standard approach with `PercentChangePairList` to narrow the pairlist down for further percent-change calculation.
+
+!!! Note "Backtesting"
+    `PercentChangePairList` does not support backtesting mode.
 
 #### ProducerPairList
 

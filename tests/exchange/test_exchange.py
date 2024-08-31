@@ -342,6 +342,27 @@ def test_validate_orderflow(default_conf, mocker, caplog):
     ex.validate_orderflow({"use_public_trades": True})
 
 
+def test_validate_freqai_compat(default_conf, mocker, caplog):
+    caplog.set_level(logging.INFO)
+    # Test kraken - as it doesn't support historic trades data.
+    ex = get_patched_exchange(mocker, default_conf, exchange="kraken")
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
+
+    default_conf["freqai"] = {"enabled": False}
+    ex.validate_freqai(default_conf)
+
+    default_conf["freqai"] = {"enabled": True}
+    with pytest.raises(ConfigurationError, match=r"Historic OHLCV data not available for.*"):
+        ex.validate_freqai(default_conf)
+
+    # Binance supports historic data.
+    ex = get_patched_exchange(mocker, default_conf, exchange="binance")
+    default_conf["freqai"] = {"enabled": True}
+    ex.validate_freqai(default_conf)
+    default_conf["freqai"] = {"enabled": False}
+    ex.validate_freqai(default_conf)
+
+
 @pytest.mark.parametrize(
     "price,precision_mode,precision,expected",
     [
@@ -365,6 +386,7 @@ def test_price_get_one_pip(default_conf, mocker, price, precision_mode, precisio
     exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
     mocker.patch(f"{EXMS}.markets", markets)
     mocker.patch(f"{EXMS}.precisionMode", PropertyMock(return_value=precision_mode))
+    mocker.patch(f"{EXMS}.precision_mode_price", PropertyMock(return_value=precision_mode))
     pair = "ETH/BTC"
     assert pytest.approx(exchange.price_get_one_pip(pair, price)) == expected
 
@@ -2239,7 +2261,6 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     assert log_has_re(r"Async code raised an exception: .*", caplog)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 @pytest.mark.parametrize("candle_type", [CandleType.MARK, CandleType.SPOT])
 async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_type):
@@ -3213,7 +3234,6 @@ def test_get_rates_testing_exit(
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
-@pytest.mark.asyncio
 async def test___async_get_candle_history_sort(default_conf, mocker, exchange_name):
     def sort_data(data, key):
         return sorted(data, key=key)
@@ -3415,7 +3435,6 @@ async def test__async_fetch_trades_contract_size(
     exchange.close()
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_trade_history_id(
     default_conf, mocker, exchange_name, fetch_trades_result
@@ -3484,7 +3503,6 @@ def test__valid_trade_pagination_id(mocker, default_conf_usdt, exchange_name, tr
     assert exchange._valid_trade_pagination_id("XRP/USDT", trade_id) == expected
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_trade_history_time(
     default_conf, mocker, caplog, exchange_name, fetch_trades_result
@@ -3526,7 +3544,6 @@ async def test__async_get_trade_history_time(
     assert log_has_re(r"Stopping because until was reached.*", caplog)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 async def test__async_get_trade_history_time_empty(
     default_conf, mocker, caplog, exchange_name, trades_history
@@ -5642,111 +5659,6 @@ def test_liquidation_price_is_none(
             upnl_ex_1=0.0,
         )
         is None
-    )
-
-
-@pytest.mark.parametrize(
-    "exchange_name, is_short, trading_mode, margin_mode, wallet_balance, "
-    "mm_ex_1, upnl_ex_1, maintenance_amt, amount, open_rate, "
-    "mm_ratio, expected",
-    [
-        (
-            "binance",
-            False,
-            "futures",
-            "isolated",
-            1535443.01,
-            0.0,
-            0.0,
-            135365.00,
-            3683.979,
-            1456.84,
-            0.10,
-            1114.78,
-        ),
-        (
-            "binance",
-            False,
-            "futures",
-            "isolated",
-            1535443.01,
-            0.0,
-            0.0,
-            16300.000,
-            109.488,
-            32481.980,
-            0.025,
-            18778.73,
-        ),
-        (
-            "binance",
-            False,
-            "futures",
-            "cross",
-            1535443.01,
-            71200.81144,
-            -56354.57,
-            135365.00,
-            3683.979,
-            1456.84,
-            0.10,
-            1153.26,
-        ),
-        (
-            "binance",
-            False,
-            "futures",
-            "cross",
-            1535443.01,
-            356512.508,
-            -448192.89,
-            16300.000,
-            109.488,
-            32481.980,
-            0.025,
-            26316.89,
-        ),
-    ],
-)
-def test_liquidation_price_binance(
-    mocker,
-    default_conf,
-    exchange_name,
-    open_rate,
-    is_short,
-    trading_mode,
-    margin_mode,
-    wallet_balance,
-    mm_ex_1,
-    upnl_ex_1,
-    maintenance_amt,
-    amount,
-    mm_ratio,
-    expected,
-):
-    default_conf["trading_mode"] = trading_mode
-    default_conf["margin_mode"] = margin_mode
-    default_conf["liquidation_buffer"] = 0.0
-    exchange = get_patched_exchange(mocker, default_conf, exchange=exchange_name)
-    exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
-    assert (
-        pytest.approx(
-            round(
-                exchange.get_liquidation_price(
-                    pair="DOGE/USDT",
-                    open_rate=open_rate,
-                    is_short=is_short,
-                    wallet_balance=wallet_balance,
-                    mm_ex_1=mm_ex_1,
-                    upnl_ex_1=upnl_ex_1,
-                    amount=amount,
-                    stake_amount=open_rate * amount,
-                    leverage=5,
-                ),
-                2,
-            )
-        )
-        == expected
     )
 
 

@@ -374,6 +374,7 @@ class FreqtradeBot(LoggingMixin):
             if trade.exchange != self.exchange.id:
                 continue
             trade.precision_mode = self.exchange.precisionMode
+            trade.precision_mode_price = self.exchange.precision_mode_price
             trade.amount_precision = self.exchange.get_precision_amount(trade.pair)
             trade.price_precision = self.exchange.get_precision_price(trade.pair)
             trade.contract_size = self.exchange.get_contract_size(trade.pair)
@@ -541,7 +542,11 @@ class FreqtradeBot(LoggingMixin):
                 )
             else:
                 trade.exit_reason = prev_exit_reason
-                total = self.wallets.get_total(trade.base_currency) if trade.base_currency else 0
+                total = (
+                    self.wallets.get_owned(trade.pair, trade.base_currency)
+                    if trade.base_currency
+                    else 0
+                )
                 if total < trade.amount:
                     if trade.fully_canceled_entry_order_count == len(trade.orders):
                         logger.warning(
@@ -992,6 +997,7 @@ class FreqtradeBot(LoggingMixin):
                 amount_precision=self.exchange.get_precision_amount(pair),
                 price_precision=self.exchange.get_precision_price(pair),
                 precision_mode=self.exchange.precisionMode,
+                precision_mode_price=self.exchange.precision_mode_price,
                 contract_size=self.exchange.get_contract_size(pair),
             )
             stoploss = self.strategy.stoploss if not self.edge else self.edge.get_stoploss(pair)

@@ -37,9 +37,11 @@ def print_rich_table(
             row_to_add: List[Union[str, Text]] = [r if isinstance(r, Text) else str(r) for r in row]
             table.add_row(*row_to_add)
 
-    console = Console(
-        width=200 if "pytest" in sys.modules else None,
-    )
+    width = None
+    if any(module in ["pytest", "ipykernel"] for module in sys.modules):
+        width = 200
+
+    console = Console(width=width)
     console.print(table)
 
 
@@ -71,7 +73,9 @@ def print_df_rich_table(
         row = [_format_value(x, floatfmt=".3f") for x in value_list]
         table.add_row(*row)
 
-    console = Console(
-        width=200 if "pytest" in sys.modules else None,
-    )
+    width = None
+    if any(module in ["pytest", "ipykernel"] for module in sys.modules):
+        width = 200
+
+    console = Console(width=width)
     console.print(table)

@@ -49,7 +49,7 @@ function updateenv() {
     source .venv/bin/activate
     SYS_ARCH=$(uname -m)
     echo "pip install in-progress. Please wait..."
-    ${PYTHON} -m pip install --upgrade "pip<=24.0" wheel setuptools
+    ${PYTHON} -m pip install --upgrade pip wheel setuptools
     REQUIREMENTS_HYPEROPT=""
     REQUIREMENTS_PLOT=""
     REQUIREMENTS_FREQAI=""
