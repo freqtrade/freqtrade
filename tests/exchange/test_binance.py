@@ -7,6 +7,7 @@ import pytest
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
+from freqtrade.persistence.trade_model import Trade
 from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
@@ -313,6 +314,17 @@ def test_liquidation_price_binance(
     exchange.get_maintenance_ratio_and_amt = get_maint_ratio
     exchange.fetch_funding_rates = fetch_funding_rates
 
+    open_trade_objects = [
+        Trade(
+            pair=t["pair"],
+            open_rate=t["open_rate"],
+            amount=t["amount"],
+            stake_amount=t["stake_amount"],
+            fee_open=0,
+        )
+        for t in open_trades
+    ]
+
     assert (
         pytest.approx(
             round(
@@ -324,7 +336,7 @@ def test_liquidation_price_binance(
                     amount=amount,
                     stake_amount=open_rate * amount,
                     leverage=5,
-                    open_trades=open_trades,
+                    open_trades=open_trade_objects,
                 ),
                 2,
             )

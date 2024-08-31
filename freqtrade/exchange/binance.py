@@ -212,20 +212,20 @@ class Binance(Exchange):
         if self.margin_mode == MarginMode.CROSS:
             mm_ex_1: float = 0.0
             upnl_ex_1: float = 0.0
-            pairs = [trade["pair"] for trade in open_trades]
+            pairs = [trade.pair for trade in open_trades]
             funding_rates = self.fetch_funding_rates(pairs)
             for trade in open_trades:
-                if trade["pair"] == pair:
+                if trade.pair == pair:
                     # Only "other" trades are considered
                     continue
-                mark_price = funding_rates[trade["pair"]]["markPrice"]
+                mark_price = funding_rates[trade.pair]["markPrice"]
                 mm_ratio1, maint_amnt1 = self.get_maintenance_ratio_and_amt(
-                    trade["pair"], trade["stake_amount"]
+                    trade.pair, trade.stake_amount
                 )
-                maint_margin = trade["amount"] * mark_price * mm_ratio1 - maint_amnt1
+                maint_margin = trade.amount * mark_price * mm_ratio1 - maint_amnt1
                 mm_ex_1 += maint_margin
 
-                upnl_ex_1 += trade["amount"] * mark_price - trade["amount"] * trade["open_rate"]
+                upnl_ex_1 += trade.amount * mark_price - trade.amount * trade.open_rate
             cross_vars = upnl_ex_1 - mm_ex_1
 
         side_1 = -1 if is_short else 1
