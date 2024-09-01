@@ -468,7 +468,7 @@ class Configuration:
             else:
                 logger.info(logstring.format(config[argname]))
             if deprecated_msg:
-                warnings.warn(f"DEPRECATED: {deprecated_msg}", DeprecationWarning)
+                warnings.warn(f"DEPRECATED: {deprecated_msg}", DeprecationWarning, stacklevel=1)
 
     def _resolve_pairs_list(self, config: Config) -> None:
         """
