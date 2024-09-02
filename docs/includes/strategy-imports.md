@@ -15,10 +15,9 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 from pandas import DataFrame
 from typing import Dict, Optional, Union, Tuple
-
+from freqtrade.persistence import Trade
 from freqtrade.strategy import (
     IStrategy,
-    Trade, 
     Order,
     PairLocks,
     informative,  # @informative decorator
