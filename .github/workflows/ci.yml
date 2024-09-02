@@ -537,12 +537,12 @@ jobs:
 
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@v1.9.0
+      uses: pypa/gh-action-pypi-publish@v1.10.0
       with:
         repository-url: https://test.pypi.org/legacy/
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.9.0
+      uses: pypa/gh-action-pypi-publish@v1.10.0
 
 
   deploy-docker:
