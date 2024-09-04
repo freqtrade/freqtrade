@@ -36,6 +36,7 @@ from freqtrade.exchange import (
     timeframe_to_seconds,
 )
 from freqtrade.exchange.exchange import Exchange
+from freqtrade.ft_types import BacktestResultType, get_BacktestResultType_default
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
@@ -61,7 +62,6 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from freqtrade.types import BacktestResultType, get_BacktestResultType_default
 from freqtrade.util import FtPrecise
 from freqtrade.util.migrations import migrate_data
 from freqtrade.wallets import Wallets

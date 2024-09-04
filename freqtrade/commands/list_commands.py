@@ -12,9 +12,9 @@ from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.exchange import list_available_exchanges, market_is_active
+from freqtrade.ft_types import ValidExchangesType
 from freqtrade.misc import parse_db_uri_for_logging, plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.types.valid_exchanges_type import ValidExchangesType
 from freqtrade.util import print_rich_table
 
 
