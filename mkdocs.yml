@@ -116,6 +116,9 @@ extra:
   version:
     provider: mike
     alias: true
+  analytics:
+    provider: google
+    property: G-VH170LG9M5
 plugins:
   - search:
       enabled: true
