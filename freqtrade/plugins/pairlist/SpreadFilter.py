@@ -6,7 +6,7 @@ import logging
 from typing import Dict, Optional
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange.types import Ticker
+from freqtrade.exchange.exchange_types import Ticker
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 
 

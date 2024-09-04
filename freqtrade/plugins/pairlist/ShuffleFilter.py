@@ -8,7 +8,7 @@ from typing import Dict, List, Literal
 
 from freqtrade.enums import RunMode
 from freqtrade.exchange import timeframe_to_seconds
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util.periodic_cache import PeriodicCache
 

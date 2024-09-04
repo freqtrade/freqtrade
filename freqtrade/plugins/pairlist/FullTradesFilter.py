@@ -5,7 +5,7 @@ Full trade slots pair list filter
 import logging
 from typing import List
 
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.IPairList import IPairList, SupportsBacktesting
 

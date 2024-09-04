@@ -23,7 +23,7 @@ from freqtrade.data.history import get_datahandler, load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode, TradingMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_prev_date, timeframe_to_seconds
-from freqtrade.exchange.types import OrderBook
+from freqtrade.exchange.exchange_types import OrderBook
 from freqtrade.misc import append_candles_to_dataframe
 from freqtrade.rpc import RPCManager
 from freqtrade.rpc.rpc_types import RPCAnalyzedDFMsg

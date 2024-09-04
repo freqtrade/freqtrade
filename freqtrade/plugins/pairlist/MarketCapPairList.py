@@ -10,7 +10,7 @@ from typing import Dict, List
 from cachetools import TTLCache
 
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util.coin_gecko import FtCoinGeckoApi
 

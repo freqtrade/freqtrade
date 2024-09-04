@@ -15,7 +15,7 @@ from cachetools import TTLCache
 from freqtrade import __version__
 from freqtrade.configuration.load_config import CONFIG_PARSE_MODE
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 

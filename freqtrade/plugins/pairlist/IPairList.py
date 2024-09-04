@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange, market_is_active
-from freqtrade.exchange.types import Ticker, Tickers
+from freqtrade.exchange.exchange_types import Ticker, Tickers
 from freqtrade.mixins import LoggingMixin
 
 

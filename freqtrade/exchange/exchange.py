@@ -67,6 +67,14 @@ from freqtrade.exchange.common import (
     retrier,
     retrier_async,
 )
+from freqtrade.exchange.exchange_types import (
+    CcxtBalances,
+    CcxtPosition,
+    OHLCVResponse,
+    OrderBook,
+    Ticker,
+    Tickers,
+)
 from freqtrade.exchange.exchange_utils import (
     ROUND,
     ROUND_DOWN,
@@ -88,14 +96,6 @@ from freqtrade.exchange.exchange_utils_timeframe import (
     timeframe_to_seconds,
 )
 from freqtrade.exchange.exchange_ws import ExchangeWS
-from freqtrade.exchange.types import (
-    CcxtBalances,
-    CcxtPosition,
-    OHLCVResponse,
-    OrderBook,
-    Ticker,
-    Tickers,
-)
 from freqtrade.misc import (
     chunks,
     deep_merge_dicts,

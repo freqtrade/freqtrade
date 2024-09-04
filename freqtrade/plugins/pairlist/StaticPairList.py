@@ -8,7 +8,7 @@ import logging
 from copy import deepcopy
 from typing import Dict, List
 
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 
 

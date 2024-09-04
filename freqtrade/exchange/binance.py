@@ -11,7 +11,7 @@ from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.types import OHLCVResponse, Tickers
+from freqtrade.exchange.exchange_types import OHLCVResponse, Tickers
 from freqtrade.misc import deep_merge_dicts, json_load
 
 
