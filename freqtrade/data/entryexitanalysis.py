@@ -51,7 +51,9 @@ def _load_exit_signal_candles(backtest_dir: Path) -> Dict[str, Dict[str, pd.Data
     return _load_backtest_analysis_data(backtest_dir, "exited")
 
 
-def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_candles, date_col: str):
+def _process_candles_and_indicators(
+    pairlist, strategy_name, trades, signal_candles, date_col: str = "open_date"
+):
     analysed_trades_dict: Dict[str, Dict] = {strategy_name: {}}
 
     try:
@@ -69,7 +71,7 @@ def _process_candles_and_indicators(pairlist, strategy_name, trades, signal_cand
 
 
 def _analyze_candles_and_indicators(
-    pair: str, trades: pd.DataFrame, signal_candles: pd.DataFrame, date_col: str
+    pair: str, trades: pd.DataFrame, signal_candles: pd.DataFrame, date_col: str = "open_date"
 ) -> pd.DataFrame:
     buyf = signal_candles
 

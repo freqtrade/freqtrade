@@ -122,6 +122,27 @@ automatically accessible by including them on the indicator-list, and these incl
 - **profit_ratio  :** trade profit ratio
 - **profit_abs    :** absolute profit return of the trade 
 
+#### Sample Output for Indicator Values
+
+```bash
+freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen 
+```
+In this example,
+we aim to display the `chikou_span` and `tenkan_sen` indicator values at both the entry and exit points of trades.
+
+A sample output for indicators might look like this:
+
+| pair      | open_date                 | enter_reason | exit_reason | chikou_span (entry) | tenkan_sen (entry) | chikou_span (exit) | tenkan_sen (exit) |
+|-----------|---------------------------|--------------|-------------|---------------------|--------------------|--------------------|-------------------|
+| DOGE/USDT | 2024-07-06 00:35:00+00:00 |              | exit_signal | 0.105               | 0.106              | 0.105              | 0.107             |
+| BTC/USDT  | 2024-08-05 14:20:00+00:00 |              | roi         | 54643.440           | 51696.400          | 54386.000          | 52072.010         |
+
+As shown in the table, `chikou_span (entry)` represents the indicator value at the time of trade entry, 
+while `chikou_span (exit)` reflects its value at the time of exit. 
+This detailed view of indicator values enhances the analysis.
+
+The `(entry)` and `(exit)` suffixes are added to indicators
+to distinguish the values at the entry and exit points of the trade.
 
 ### Filtering the trade output by date
 
