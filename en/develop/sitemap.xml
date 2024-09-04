@@ -2,218 +2,218 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/advanced-backtesting/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/advanced-hyperopt/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/advanced-orderflow/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/advanced-setup/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/backtesting/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/bot-basics/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/bot-usage/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/configuration/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/data-analysis/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/data-download/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/deprecated/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/developer/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/docker_quickstart/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/edge/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/exchanges/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/faq/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/freq-ui/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/freqai-configuration/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/freqai-developers/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/freqai-feature-engineering/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/freqai-parameter-table/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/freqai-reinforcement-learning/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/freqai-running/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/freqai/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/hyperopt/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/installation/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/leverage/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/lookahead-analysis/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/plotting/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/plugins/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/producer-consumer/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/recursive-analysis/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/rest-api/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/sql_cheatsheet/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/stoploss/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/strategy-advanced/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/strategy-callbacks/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/strategy-customization/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/strategy_analysis_example/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/strategy_migration/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/telegram-usage/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/trade-object/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/updating/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/utils/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/webhook-config/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/windows_installation/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/includes/cors/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/includes/pairlists/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/includes/pricing/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/includes/protections/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/includes/release_template/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/includes/showcase/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
     <url>
          <loc>https://www.freqtrade.io/en/latest/develop/includes/strategy-imports/</loc>
-         <lastmod>2024-09-03</lastmod>
+         <lastmod>2024-09-04</lastmod>
     </url>
 </urlset>
