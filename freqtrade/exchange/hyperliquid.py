@@ -7,6 +7,7 @@ from ccxt import SIGNIFICANT_DIGITS
 
 from freqtrade.enums import TradingMode
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.exchange_types import FtHas
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class Hyperliquid(Exchange):
     Contains adjustments needed for Freqtrade to work with this exchange.
     """
 
-    _ft_has: Dict = {
+    _ft_has: FtHas = {
         # Only the most recent 5000 candles are available according to the
         # exchange's API documentation.
         "ohlcv_has_history": False,

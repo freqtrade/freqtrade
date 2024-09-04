@@ -5,6 +5,7 @@ from typing import Dict
 
 from freqtrade.constants import BuySell
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.exchange_types import FtHas
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ class Htx(Exchange):
     with this exchange.
     """
 
-    _ft_has: Dict = {
+    _ft_has: FtHas = {
         "stoploss_on_exchange": True,
         "stop_price_param": "stopPrice",
         "stop_price_prop": "stopPrice",

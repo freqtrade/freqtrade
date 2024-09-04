@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, PriceType, TradingMode
 from freqtrade.exchange import Exchange
+from freqtrade.exchange.exchange_types import FtHas
 from freqtrade.misc import safe_value_fallback2
 
 
@@ -23,7 +24,7 @@ class Gate(Exchange):
     may still not work as expected.
     """
 
-    _ft_has: Dict = {
+    _ft_has: FtHas = {
         "ohlcv_candle_limit": 1000,
         "order_time_in_force": ["GTC", "IOC"],
         "stoploss_on_exchange": True,
@@ -34,7 +35,7 @@ class Gate(Exchange):
         "trades_has_history": False,  # Endpoint would support this - but ccxt doesn't.
     }
 
-    _ft_has_futures: Dict = {
+    _ft_has_futures: FtHas = {
         "needs_trading_fees": True,
         "marketOrderRequiresPrice": False,
         "stop_price_type_field": "price_type",
