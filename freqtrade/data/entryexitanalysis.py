@@ -303,6 +303,15 @@ def print_results(
 
 def _merge_dfs(entry_df, exit_df, available_inds):
     merge_on = ["pair", "open_date"]
+    trade_wide_indicators = [
+        "open_date",
+        "close_date",
+        "min_rate",
+        "max_rate",
+        "profit_ratio",
+        "profit_abs",
+    ]
+    signal_wide_indicators = list(set(available_inds) - set(trade_wide_indicators))
     columns_to_keep = merge_on + ["enter_reason", "exit_reason"] + available_inds
 
     if exit_df is None or exit_df.empty:
@@ -310,7 +319,7 @@ def _merge_dfs(entry_df, exit_df, available_inds):
 
     return pd.merge(
         entry_df[columns_to_keep],
-        exit_df[merge_on + available_inds],
+        exit_df[merge_on + signal_wide_indicators],
         on=merge_on,
         suffixes=(" (entry)", " (exit)"),
     )

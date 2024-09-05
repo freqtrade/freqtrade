@@ -168,6 +168,7 @@ def test_backtest_analysis_on_entry_and_rejected_signals_nomock(
     assert "close (exit)" in captured.out
     assert "rsi (exit)" in captured.out
     assert "52.829" in captured.out
+    assert "profit_abs" in captured.out
 
     # test group 1
     args = get_args(base_args + ["--analysis-groups", "1"])
