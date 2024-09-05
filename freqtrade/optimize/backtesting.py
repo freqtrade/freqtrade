@@ -26,6 +26,7 @@ from freqtrade.enums import (
     CandleType,
     ExitCheckTuple,
     ExitType,
+    MarginMode,
     RunMode,
     TradingMode,
 )
@@ -207,6 +208,7 @@ class Backtesting:
             self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
 
         self.trading_mode: TradingMode = config.get("trading_mode", TradingMode.SPOT)
+        self.margin_mode: MarginMode = config.get("margin_mode", MarginMode.ISOLATED)
         # strategies which define "can_short=True" will fail to load in Spot mode.
         self._can_short = self.trading_mode != TradingMode.SPOT
         self._position_stacking: bool = self.config.get("position_stacking", False)
@@ -699,8 +701,11 @@ class Backtesting:
                 current_time=current_date,
             )
 
-            if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
-                # trade is still open
+            if self.margin_mode == MarginMode.CROSS or not (
+                order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount
+            ):
+                # trade is still open or we are in cross margin mode and
+                # must update all liquidation prices
                 update_liquidation_prices(
                     trade,
                     exchange=self.exchange,
@@ -708,8 +713,8 @@ class Backtesting:
                     stake_currency=self.config["stake_currency"],
                     dry_run=self.config["dry_run"],
                 )
+            if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
                 self._call_adjust_stop(current_date, trade, order.ft_price)
-                # pass
             return True
         return False
 
