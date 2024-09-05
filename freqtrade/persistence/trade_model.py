@@ -1232,7 +1232,7 @@ class LocalTrade:
         current_amount_tr = amount_to_contract_precision(
             float(current_amount), self.amount_precision, self.precision_mode, self.contract_size
         )
-        if current_amount_tr > 0.0:
+        if current_amount_tr >= 0.0:
             # Trade is still open
             # Leverage not updated, as we don't allow changing leverage through DCA at the moment.
             self.open_rate = float(current_stake / current_amount)
