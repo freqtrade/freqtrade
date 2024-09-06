@@ -144,7 +144,9 @@ class Binance(Exchange):
         """
         return open_date.minute == 0 and open_date.second < 15
 
-    def fetch_funding_rates(self, symbols: Optional[List[str]] = None) -> Dict[str, float]:
+    def fetch_funding_rates(
+        self, symbols: Optional[List[str]] = None
+    ) -> Dict[str, Dict[str, float]]:
         """
         Fetch funding rates for the given symbols.
         :param symbols: List of symbols to fetch funding rates for
