@@ -617,6 +617,8 @@ def get_default_conf(testdatadir):
         "dataformat_ohlcv": "feather",
         "dataformat_trades": "feather",
         "runmode": "dry_run",
+        "trading_mode": "spot",
+        "margin_mode": "",
         "candle_type_def": CandleType.SPOT,
     }
     return configuration
