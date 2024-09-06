@@ -21,6 +21,7 @@ from freqtrade.data.btanalysis import (
 from freqtrade.enums import BacktestState
 from freqtrade.exceptions import ConfigurationError, DependencyException, OperationalException
 from freqtrade.exchange.common import remove_exchange_credentials
+from freqtrade.ft_types import get_BacktestResultType_default
 from freqtrade.misc import deep_merge_dicts, is_file_in_dir
 from freqtrade.rpc.api_server.api_schemas import (
     BacktestHistoryEntry,
@@ -32,7 +33,6 @@ from freqtrade.rpc.api_server.api_schemas import (
 from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
-from freqtrade.types import get_BacktestResultType_default
 
 
 logger = logging.getLogger(__name__)
@@ -182,7 +182,7 @@ def api_get_backtest():
                 ApiBG.bt["bt"].progress.action if ApiBG.bt["bt"] else str(BacktestState.STARTUP)
             ),
             "progress": ApiBG.bt["bt"].progress.progress if ApiBG.bt["bt"] else 0,
-            "trade_count": len(LocalTrade.trades),
+            "trade_count": len(LocalTrade.bt_trades),
             "status_msg": "Backtest running",
         }
 

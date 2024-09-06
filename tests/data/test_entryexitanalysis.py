@@ -154,10 +154,10 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, use
     assert "-3.5" in captured.out
     assert "50" in captured.out
     assert "0" in captured.out
-    assert "0.01616" in captured.out
+    assert "0.016" in captured.out
     assert "34.049" in captured.out
-    assert "0.104411" in captured.out
-    assert "52.8292" in captured.out
+    assert "0.104" in captured.out
+    assert "52.829" in captured.out
 
     # test group 1
     args = get_args(base_args + ["--analysis-groups", "1"])

@@ -15,6 +15,7 @@ if sys.version_info < (3, 9):  # pragma: no cover
 
 from freqtrade import __version__
 from freqtrade.commands import Arguments
+from freqtrade.configuration import asyncio_setup
 from freqtrade.constants import DOCS_LINK
 from freqtrade.exceptions import ConfigurationError, FreqtradeException, OperationalException
 from freqtrade.loggers import setup_logging_pre
@@ -33,6 +34,7 @@ def main(sysargv: Optional[List[str]] = None) -> None:
     return_code: Any = 1
     try:
         setup_logging_pre()
+        asyncio_setup()
         arguments = Arguments(sysargv)
         args = arguments.get_parsed_arg()
 

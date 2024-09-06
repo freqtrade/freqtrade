@@ -5,6 +5,7 @@ This module defines the interface to apply for strategies
 
 import logging
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from math import isinf, isnan
 from typing import Dict, List, Optional, Tuple, Union
@@ -12,6 +13,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from pandas import DataFrame
 
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, Config, IntOrInf, ListPairsWithTimeframes
+from freqtrade.data.converter import populate_dataframe_with_trades
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (
     CandleType,
@@ -138,6 +140,11 @@ class IStrategy(ABC, HyperStrategyMixin):
 
     # A self set parameter that represents the market direction. filled from configuration
     market_direction: MarketDirection = MarketDirection.NONE
+
+    # Global cache dictionary
+    _cached_grouped_trades_per_pair: Dict[
+        str, OrderedDict[Tuple[datetime, datetime], DataFrame]
+    ] = {}
 
     def __init__(self, config: Config) -> None:
         self.config = config
@@ -1040,6 +1047,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe = self.advise_indicators(dataframe, metadata)
         dataframe = self.advise_entry(dataframe, metadata)
         dataframe = self.advise_exit(dataframe, metadata)
+        logger.debug("TA Analysis Ended")
         return dataframe
 
     def _analyze_ticker_internal(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -1594,6 +1602,29 @@ class IStrategy(ABC, HyperStrategyMixin):
         dataframe = self.advise_exit(dataframe, metadata)
         return dataframe
 
+    def _if_enabled_populate_trades(self, dataframe: DataFrame, metadata: dict):
+        use_public_trades = self.config.get("exchange", {}).get("use_public_trades", False)
+        if use_public_trades:
+            trades = self.dp.trades(pair=metadata["pair"], copy=False)
+
+            config = self.config
+            config["timeframe"] = self.timeframe
+            pair = metadata["pair"]
+            # TODO: slice trades to size of dataframe for faster backtesting
+            cached_grouped_trades: OrderedDict[Tuple[datetime, datetime], DataFrame] = (
+                self._cached_grouped_trades_per_pair.get(pair, OrderedDict())
+            )
+            dataframe, cached_grouped_trades = populate_dataframe_with_trades(
+                cached_grouped_trades, config, dataframe, trades
+            )
+
+            # dereference old cache
+            if pair in self._cached_grouped_trades_per_pair:
+                del self._cached_grouped_trades_per_pair[pair]
+            self._cached_grouped_trades_per_pair[pair] = cached_grouped_trades
+
+            logger.debug("Populated dataframe with trades.")
+
     def advise_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """
         Populate indicators that will be used in the Buy, Sell, short, exit_short strategy
@@ -1610,6 +1641,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 self, dataframe, metadata, inf_data, populate_fn
             )
 
+        self._if_enabled_populate_trades(dataframe, metadata)
         return self.populate_indicators(dataframe, metadata)
 
     def advise_entry(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

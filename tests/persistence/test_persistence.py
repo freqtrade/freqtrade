@@ -1404,6 +1404,7 @@ def test_to_json(fee):
         exchange="binance",
         enter_tag=None,
         precision_mode=1,
+        precision_mode_price=1,
         amount_precision=8.0,
         price_precision=7.0,
         contract_size=1,
@@ -1473,6 +1474,7 @@ def test_to_json(fee):
         "amount_precision": 8.0,
         "price_precision": 7.0,
         "precision_mode": 1,
+        "precision_mode_price": 1,
         "contract_size": 1,
         "orders": [],
         "has_open_orders": False,
@@ -1493,6 +1495,7 @@ def test_to_json(fee):
         enter_tag="buys_signal_001",
         exchange="binance",
         precision_mode=2,
+        precision_mode_price=1,
         amount_precision=7.0,
         price_precision=8.0,
         contract_size=1,
@@ -1562,6 +1565,7 @@ def test_to_json(fee):
         "amount_precision": 7.0,
         "price_precision": 8.0,
         "precision_mode": 2,
+        "precision_mode_price": 1,
         "contract_size": 1,
         "orders": [],
         "has_open_orders": False,
@@ -2136,11 +2140,11 @@ def test_Trade_object_idem():
         "custom_data",
     )
     EXCLUDES2 = (
-        "trades",
-        "trades_open",
+        "bt_trades",
+        "bt_trades_open",
         "bt_trades_open_pp",
         "bt_open_open_trade_count",
-        "total_profit",
+        "bt_total_profit",
         "from_json",
     )
 
@@ -2571,7 +2575,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.amount == 2 * o1_amount
     assert trade.stake_amount == 2 * o1_amount
     assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == 2 * o1_fee_cost
+    assert trade.fee_open_cost == trade.nr_of_successful_entries * o1_fee_cost
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_entries == 2
 
@@ -2598,7 +2602,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.amount == o1_amount
     assert trade.stake_amount == o1_amount
     assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == o1_fee_cost
+    assert trade.fee_open_cost == trade.nr_of_successful_entries * o1_fee_cost
     assert trade.open_trade_value == o1_trade_val
     assert trade.nr_of_successful_entries == 2
 
@@ -2626,7 +2630,7 @@ def test_recalc_trade_from_orders_ignores_bad_orders(fee, is_short):
     assert trade.amount == 2 * o1_amount
     assert trade.stake_amount == 2 * o1_amount
     assert trade.open_rate == o1_rate
-    assert trade.fee_open_cost == 2 * o1_fee_cost
+    assert trade.fee_open_cost == trade.nr_of_successful_entries * o1_fee_cost
     assert trade.open_trade_value == 2 * o1_trade_val
     assert trade.nr_of_successful_entries == 3
 

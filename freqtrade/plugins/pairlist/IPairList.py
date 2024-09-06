@@ -5,12 +5,13 @@ PairList Handler base class
 import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange, market_is_active
-from freqtrade.exchange.types import Ticker, Tickers
+from freqtrade.exchange.exchange_types import Ticker, Tickers
 from freqtrade.mixins import LoggingMixin
 
 
@@ -51,8 +52,20 @@ PairlistParameter = Union[
 ]
 
 
+class SupportsBacktesting(str, Enum):
+    """
+    Enum to indicate if a Pairlist Handler supports backtesting.
+    """
+
+    YES = "yes"
+    NO = "no"
+    NO_ACTION = "no_action"
+    BIASED = "biased"
+
+
 class IPairList(LoggingMixin, ABC):
     is_pairlist_generator = False
+    supports_backtesting: SupportsBacktesting = SupportsBacktesting.NO
 
     def __init__(
         self,

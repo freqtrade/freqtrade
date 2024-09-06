@@ -14,6 +14,7 @@ from freqtrade.exceptions import (
 )
 from freqtrade.exchange import Exchange, date_minus_candles
 from freqtrade.exchange.common import retrier
+from freqtrade.exchange.exchange_types import FtHas
 from freqtrade.misc import safe_value_fallback2
 from freqtrade.util import dt_now, dt_ts
 
@@ -27,15 +28,16 @@ class Okx(Exchange):
     Contains adjustments needed for Freqtrade to work with this exchange.
     """
 
-    _ft_has: Dict = {
+    _ft_has: FtHas = {
         "ohlcv_candle_limit": 100,  # Warning, special case with data prior to X months
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
         "stoploss_order_types": {"limit": "limit"},
         "stoploss_on_exchange": True,
         "trades_has_history": False,  # Endpoint doesn't have a "since" parameter
+        "ws_enabled": True,
     }
-    _ft_has_futures: Dict = {
+    _ft_has_futures: FtHas = {
         "tickers_have_quoteVolume": False,
         "stop_price_type_field": "slTriggerPxType",
         "stop_price_type_value_mapping": {
@@ -43,6 +45,7 @@ class Okx(Exchange):
             PriceType.MARK: "index",
             PriceType.INDEX: "mark",
         },
+        "ws_enabled": True,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [

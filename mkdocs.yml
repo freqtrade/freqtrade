@@ -1,5 +1,5 @@
 site_name: Freqtrade
-site_url: !ENV [READTHEDOCS_CANONICAL_URL, 'https://www.freqtrade.io/en/latest/']
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, 'https://www.freqtrade.io/en/']
 site_description: Freqtrade is a free and open source crypto trading bot written in Python, designed to support all major exchanges and be controlled via Telegram or builtin Web UI
 repo_url: https://github.com/freqtrade/freqtrade
 edit_uri: edit/develop/docs/
@@ -48,6 +48,7 @@ nav:
         - Recursive analysis: recursive-analysis.md
         - Advanced Strategy: strategy-advanced.md
         - Advanced Hyperopt: advanced-hyperopt.md
+        - Orderflow: advanced-orderflow.md
         - Producer/Consumer mode: producer-consumer.md
         - SQL Cheat-sheet: sql_cheatsheet.md
         - Edge Positioning: edge.md
@@ -111,3 +112,15 @@ markdown_extensions:
       custom_checkbox: true
   - pymdownx.tilde
   - mdx_truly_sane_lists
+extra:
+  version:
+    provider: mike
+    alias: true
+  analytics:
+    provider: google
+    property: G-VH170LG9M5
+plugins:
+  - search:
+      enabled: true
+  - mike:
+      deploy_prefix: 'en'

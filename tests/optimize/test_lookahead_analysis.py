@@ -147,7 +147,7 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
 
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
     instance.current_analysis = analysis
-    _table, _headers, data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
+    data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
         lookahead_conf, [instance]
     )
 
@@ -163,14 +163,14 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     analysis.false_exit_signals = 10
     instance = LookaheadAnalysis(lookahead_conf, strategy_obj)
     instance.current_analysis = analysis
-    _table, _headers, data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
+    data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
         lookahead_conf, [instance]
     )
     assert data[0][2].__contains__("error")
 
     # edit it into not showing an error
     instance.failed_bias_check = False
-    _table, _headers, data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
+    data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
         lookahead_conf, [instance]
     )
     assert data[0][0] == "strategy_test_v3_with_lookahead_bias.py"
@@ -183,7 +183,7 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
 
     analysis.false_indicators.append("falseIndicator1")
     analysis.false_indicators.append("falseIndicator2")
-    _table, _headers, data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
+    data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
         lookahead_conf, [instance]
     )
 
@@ -193,7 +193,7 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     assert len(data) == 1
 
     # check amount of multiple rows
-    _table, _headers, data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
+    data = LookaheadAnalysisSubFunctions.text_table_lookahead_analysis_instances(
         lookahead_conf, [instance, instance, instance]
     )
     assert len(data) == 3

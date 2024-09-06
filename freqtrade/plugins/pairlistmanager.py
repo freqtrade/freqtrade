@@ -11,10 +11,11 @@ from cachetools import TTLCache, cached
 from freqtrade.constants import Config, ListPairsWithTimeframes
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType
+from freqtrade.enums.runmode import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.mixins import LoggingMixin
-from freqtrade.plugins.pairlist.IPairList import IPairList
+from freqtrade.plugins.pairlist.IPairList import IPairList, SupportsBacktesting
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.resolvers import PairListResolver
 
@@ -57,8 +58,43 @@ class PairListManager(LoggingMixin):
                 f"{invalid}."
             )
 
+        self._check_backtest()
+
         refresh_period = config.get("pairlist_refresh_period", 3600)
         LoggingMixin.__init__(self, logger, refresh_period)
+
+    def _check_backtest(self) -> None:
+        if self._config["runmode"] not in (RunMode.BACKTEST, RunMode.EDGE, RunMode.HYPEROPT):
+            return
+
+        pairlist_errors: List[str] = []
+        noaction_pairlists: List[str] = []
+        biased_pairlists: List[str] = []
+        for pairlist_handler in self._pairlist_handlers:
+            if pairlist_handler.supports_backtesting == SupportsBacktesting.NO:
+                pairlist_errors.append(pairlist_handler.name)
+            if pairlist_handler.supports_backtesting == SupportsBacktesting.NO_ACTION:
+                noaction_pairlists.append(pairlist_handler.name)
+            if pairlist_handler.supports_backtesting == SupportsBacktesting.BIASED:
+                biased_pairlists.append(pairlist_handler.name)
+
+        if noaction_pairlists:
+            logger.warning(
+                f"Pairlist Handlers {', '.join(noaction_pairlists)} do not generate "
+                "any changes during backtesting. While it's safe to leave them enabled, they will "
+                "not behave like in dry/live modes. "
+            )
+
+        if biased_pairlists:
+            logger.warning(
+                f"Pairlist Handlers {', '.join(biased_pairlists)} will introduce a lookahead bias "
+                "to your backtest results, as they use today's data - which inheritly suffers from "
+                "'winner bias'."
+            )
+        if pairlist_errors:
+            raise OperationalException(
+                f"Pairlist Handlers {', '.join(pairlist_errors)} do not support backtesting."
+            )
 
     @property
     def whitelist(self) -> List[str]:

@@ -52,4 +52,4 @@ class EdgeCli:
         result = self.edge.calculate(self.config["exchange"]["pair_whitelist"])
         if result:
             print("")  # blank line for readability
-            print(generate_edge_table(self.edge._cached_pairs))
+            generate_edge_table(self.edge._cached_pairs)

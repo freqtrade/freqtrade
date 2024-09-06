@@ -15,8 +15,8 @@ from cachetools import TTLCache
 from freqtrade import __version__
 from freqtrade.configuration.load_config import CONFIG_PARSE_MODE
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.exchange.exchange_types import Tickers
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 
 
@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 class RemotePairList(IPairList):
     is_pairlist_generator = True
+    # Potential winner bias
+    supports_backtesting = SupportsBacktesting.BIASED
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

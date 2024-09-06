@@ -116,7 +116,7 @@ def test_list_exchanges(capsys):
 
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
-    assert re.match(r"Exchanges available for Freqtrade.*", captured.out)
+    assert re.search(r".*Exchanges available for Freqtrade.*", captured.out)
     assert re.search(r".*binance.*", captured.out)
     assert re.search(r".*bybit.*", captured.out)
 
@@ -139,7 +139,7 @@ def test_list_exchanges(capsys):
 
     start_list_exchanges(get_args(args))
     captured = capsys.readouterr()
-    assert re.match(r"All exchanges supported by the ccxt library.*", captured.out)
+    assert re.search(r"All exchanges supported by the ccxt library.*", captured.out)
     assert re.search(r".*binance.*", captured.out)
     assert re.search(r".*bingx.*", captured.out)
     assert re.search(r".*bitmex.*", captured.out)
@@ -167,7 +167,7 @@ def test_list_timeframes(mocker, capsys):
         "1h": "hour",
         "1d": "day",
     }
-    patch_exchange(mocker, api_mock=api_mock, id="bybit")
+    patch_exchange(mocker, api_mock=api_mock, exchange="bybit")
     args = [
         "list-timeframes",
     ]
@@ -213,7 +213,7 @@ def test_list_timeframes(mocker, capsys):
         "1d": "1d",
         "3d": "3d",
     }
-    patch_exchange(mocker, api_mock=api_mock, id="binance")
+    patch_exchange(mocker, api_mock=api_mock, exchange="binance")
     # Test with --exchange binance
     args = [
         "list-timeframes",
@@ -258,7 +258,7 @@ def test_list_timeframes(mocker, capsys):
 
 def test_list_markets(mocker, markets_static, capsys):
     api_mock = MagicMock()
-    patch_exchange(mocker, api_mock=api_mock, id="binance", mock_markets=markets_static)
+    patch_exchange(mocker, api_mock=api_mock, exchange="binance", mock_markets=markets_static)
 
     # Test with no --config
     args = [
@@ -286,16 +286,16 @@ def test_list_markets(mocker, markets_static, capsys):
         "LTC/ETH, LTC/USD, NEO/BTC, TKN/BTC, XLTCUSDT, XRP/BTC.\n" in captured.out
     )
 
-    patch_exchange(mocker, api_mock=api_mock, id="binance", mock_markets=markets_static)
+    patch_exchange(mocker, api_mock=api_mock, exchange="binance", mock_markets=markets_static)
     # Test with --exchange
     args = ["list-markets", "--exchange", "binance"]
     pargs = get_args(args)
     pargs["config"] = None
     start_list_markets(pargs, False)
     captured = capsys.readouterr()
-    assert re.match("\nExchange Binance has 12 active markets:\n", captured.out)
+    assert re.search(r".*Exchange Binance has 12 active markets.*", captured.out)
 
-    patch_exchange(mocker, api_mock=api_mock, id="binance", mock_markets=markets_static)
+    patch_exchange(mocker, api_mock=api_mock, exchange="binance", mock_markets=markets_static)
     # Test with --all: all markets
     args = [
         "list-markets",
@@ -491,7 +491,7 @@ def test_list_markets(mocker, markets_static, capsys):
     ]
     start_list_markets(get_args(args), False)
     captured = capsys.readouterr()
-    assert "Exchange Binance has 12 active markets:\n" in captured.out
+    assert "Exchange Binance has 12 active markets" in captured.out
 
     # Test tabular output, no markets found
     args = [
@@ -823,7 +823,7 @@ def test_download_data_no_markets(mocker, caplog):
         "freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data",
         MagicMock(return_value=["ETH/BTC", "XRP/BTC"]),
     )
-    patch_exchange(mocker, id="binance")
+    patch_exchange(mocker, exchange="binance")
     mocker.patch(f"{EXMS}.get_markets", return_value={})
     args = [
         "download-data",
@@ -952,7 +952,7 @@ def test_download_data_trades(mocker):
 
 
 def test_download_data_data_invalid(mocker):
-    patch_exchange(mocker, id="kraken")
+    patch_exchange(mocker, exchange="kraken")
     mocker.patch(f"{EXMS}.get_markets", return_value={})
     args = [
         "download-data",
@@ -1633,8 +1633,8 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 16 pair / timeframe combinations." in captured.out
-    assert "\n|         Pair |       Timeframe |   Type |\n" in captured.out
-    assert "\n| UNITTEST/BTC | 1m, 5m, 8m, 30m |   spot |\n" in captured.out
+    assert re.search(r".*Pair.*Timeframe.*Type.*\n", captured.out)
+    assert re.search(r"\n.* UNITTEST/BTC .* 1m, 5m, 8m, 30m .* spot |\n", captured.out)
 
     args = [
         "list-data",
@@ -1650,9 +1650,9 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 2 pair / timeframe combinations." in captured.out
-    assert "\n|    Pair |   Timeframe |   Type |\n" in captured.out
+    assert re.search(r".*Pair.*Timeframe.*Type.*\n", captured.out)
     assert "UNITTEST/BTC" not in captured.out
-    assert "\n| XRP/ETH |      1m, 5m |   spot |\n" in captured.out
+    assert re.search(r"\n.* XRP/ETH .* 1m, 5m .* spot |\n", captured.out)
 
     args = [
         "list-data",
@@ -1667,9 +1667,9 @@ def test_start_list_data(testdatadir, capsys):
     captured = capsys.readouterr()
 
     assert "Found 6 pair / timeframe combinations." in captured.out
-    assert "\n|               Pair |   Timeframe |         Type |\n" in captured.out
-    assert "\n|      XRP/USDT:USDT |      5m, 1h |      futures |\n" in captured.out
-    assert "\n|      XRP/USDT:USDT |      1h, 8h |         mark |\n" in captured.out
+    assert re.search(r".*Pair.*Timeframe.*Type.*\n", captured.out)
+    assert re.search(r"\n.* XRP/USDT:USDT .* 5m, 1h .* futures |\n", captured.out)
+    assert re.search(r"\n.* XRP/USDT:USDT .* 1h, 8h .* mark |\n", captured.out)
 
     args = [
         "list-data",
@@ -1684,15 +1684,60 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
     assert "Found 2 pair / timeframe combinations." in captured.out
-    assert (
-        "\n|    Pair |   Timeframe |   Type "
-        "|                From |                  To |   Candles |\n"
-    ) in captured.out
+    assert re.search(r".*Pair.*Timeframe.*Type.*From .* To .* Candles .*\n", captured.out)
     assert "UNITTEST/BTC" not in captured.out
-    assert (
-        "\n| XRP/ETH |          1m |   spot | "
-        "2019-10-11 00:00:00 | 2019-10-13 11:19:00 |      2469 |\n"
-    ) in captured.out
+    assert re.search(
+        r"\n.* XRP/USDT .* 1m .* spot .* 2019-10-11 00:00:00 .* 2019-10-13 11:19:00 .* 2469 |\n",
+        captured.out,
+    )
+
+
+def test_start_list_trades_data(testdatadir, capsys):
+    args = [
+        "list-data",
+        "--datadir",
+        str(testdatadir),
+        "--trades",
+    ]
+    pargs = get_args(args)
+    pargs["config"] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+    assert "Found trades data for 1 pair." in captured.out
+    assert re.search(r".*Pair.*Type.*\n", captured.out)
+    assert re.search(r"\n.* XRP/ETH .* spot |\n", captured.out)
+
+    args = [
+        "list-data",
+        "--datadir",
+        str(testdatadir),
+        "--trades",
+        "--show-timerange",
+    ]
+    pargs = get_args(args)
+    pargs["config"] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+    assert "Found trades data for 1 pair." in captured.out
+    assert re.search(r".*Pair.*Type.*From.*To.*Trades.*\n", captured.out)
+    assert re.search(
+        r"\n.* XRP/ETH .* spot .* 2019-10-11 00:00:01 .* 2019-10-13 11:19:28 .* 12477 .*|\n",
+        captured.out,
+    )
+
+    args = [
+        "list-data",
+        "--datadir",
+        str(testdatadir),
+        "--trades",
+        "--trading-mode",
+        "futures",
+    ]
+    pargs = get_args(args)
+    pargs["config"] = None
+    start_list_data(pargs)
+    captured = capsys.readouterr()
+    assert "Found trades data for 0 pairs." in captured.out
 
 
 @pytest.mark.usefixtures("init_persistence")

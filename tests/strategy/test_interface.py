@@ -579,6 +579,7 @@ def test_ft_stoploss_reached(
         liquidation_price=liq,
         price_precision=4,
         precision_mode=2,
+        precision_mode_price=2,
     )
     trade.adjust_min_max_rates(trade.open_rate, trade.open_rate)
     strategy.trailing_stop = trailing

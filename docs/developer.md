@@ -22,7 +22,7 @@ This will spin up a local server (usually on port 8000) so you can see if everyt
 ## Developer setup
 
 To configure a development environment, you can either use the provided [DevContainer](#devcontainer-setup), or use the `setup.sh` script and answer "y" when asked "Do you want to install dependencies for dev [y/N]? ".
-Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -e .[all]`.
+Alternatively (e.g. if your system is not supported by the setup.sh script), follow the manual installation process and run `pip3 install -r requirements-dev.txt` - followed by `pip3 install -e .[all]`.
 
 This will install all required tools for development, including `pytest`, `ruff`, `mypy`, and `coveralls`.
 
@@ -481,21 +481,24 @@ Once the PR against stable is merged (best right after merging):
 
 ### pypi
 
-!!! Note
-    This process is now automated as part of Github Actions.
+!!! Warning "Manual Releases"
+    This process is automated as part of Github Actions.  
+    Manual pypi pushes should not be necessary.
 
-To create a pypi release, please run the following commands:
+??? example "Manual release"
+    To manually create a pypi release, please run the following commands:
 
-Additional requirement: `wheel`, `twine` (for uploading), account on pypi with proper permissions.
+    Additional requirement: `wheel`, `twine` (for uploading), account on pypi with proper permissions.
 
-``` bash
-python setup.py sdist bdist_wheel
+    ``` bash
+    pip install -U build
+    python -m build --sdist --wheel
 
-# For pypi test (to check if some change to the installation did work)
-twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+    # For pypi test (to check if some change to the installation did work)
+    twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
-# For production:
-twine upload dist/*
-```
+    # For production:
+    twine upload dist/*
+    ```
 
-Please don't push non-releases to the productive / real pypi instance.
+    Please don't push non-releases to the productive / real pypi instance.

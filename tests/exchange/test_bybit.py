@@ -18,7 +18,7 @@ def test_additional_exchange_init_bybit(default_conf, mocker, caplog):
     api_mock.set_position_mode = MagicMock(return_value={"dualSidePosition": False})
     api_mock.is_unified_enabled = MagicMock(return_value=[False, False])
 
-    exchange = get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, exchange="bybit", api_mock=api_mock)
     assert api_mock.set_position_mode.call_count == 1
     assert api_mock.is_unified_enabled.call_count == 1
     assert exchange.unified_account is False
@@ -28,9 +28,9 @@ def test_additional_exchange_init_bybit(default_conf, mocker, caplog):
     api_mock.set_position_mode.reset_mock()
     api_mock.is_unified_enabled = MagicMock(return_value=[False, True])
     with pytest.raises(OperationalException, match=r"Bybit: Unified account is not supported.*"):
-        get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+        get_patched_exchange(mocker, default_conf, exchange="bybit", api_mock=api_mock)
     assert log_has("Bybit: Unified account.", caplog)
-    # exchange = get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+    # exchange = get_patched_exchange(mocker, default_conf, exchange="bybit", api_mock=api_mock)
     # assert api_mock.set_position_mode.call_count == 1
     # assert api_mock.is_unified_enabled.call_count == 1
     # assert exchange.unified_account is True
@@ -45,7 +45,7 @@ async def test_bybit_fetch_funding_rate(default_conf, mocker):
     default_conf["margin_mode"] = "isolated"
     api_mock = MagicMock()
     api_mock.fetch_funding_rate_history = get_mock_coro(return_value=[])
-    exchange = get_patched_exchange(mocker, default_conf, id="bybit", api_mock=api_mock)
+    exchange = get_patched_exchange(mocker, default_conf, exchange="bybit", api_mock=api_mock)
     limit = 200
     # Test fetch_funding_rate_history (current data)
     await exchange._fetch_funding_rate_history(
@@ -77,14 +77,14 @@ async def test_bybit_fetch_funding_rate(default_conf, mocker):
 
 def test_bybit_get_funding_fees(default_conf, mocker):
     now = datetime.now(timezone.utc)
-    exchange = get_patched_exchange(mocker, default_conf, id="bybit")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="bybit")
     exchange._fetch_and_calculate_funding_fees = MagicMock()
     exchange.get_funding_fees("BTC/USDT:USDT", 1, False, now)
     assert exchange._fetch_and_calculate_funding_fees.call_count == 0
 
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
-    exchange = get_patched_exchange(mocker, default_conf, id="bybit")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="bybit")
     exchange._fetch_and_calculate_funding_fees = MagicMock()
     exchange.get_funding_fees("BTC/USDT:USDT", 1, False, now)
 
@@ -105,13 +105,13 @@ def test_bybit_fetch_orders(default_conf, mocker, limit_order):
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     start_time = datetime.now(timezone.utc) - timedelta(days=20)
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="bybit")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="bybit")
     # Not available in dry-run
     assert exchange.fetch_orders("mocked", start_time) == []
     assert api_mock.fetch_orders.call_count == 0
     default_conf["dry_run"] = False
 
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, id="bybit")
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="bybit")
     res = exchange.fetch_orders("mocked", start_time)
     # Bybit will call the endpoint 3 times, as it has a limit of 7 days per call
     assert api_mock.fetch_orders.call_count == 3
@@ -136,7 +136,7 @@ def test_bybit_fetch_order_canceled_empty(default_conf_usdt, mocker):
     )
 
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
-    exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, id="bybit")
+    exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, exchange="bybit")
 
     res = exchange.fetch_order("123", "BTC/USDT")
     assert res["remaining"] is None

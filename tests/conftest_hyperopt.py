@@ -324,7 +324,8 @@ def hyperopt_test_result():
                 "profit_mean": None,
                 "profit_median": None,
                 "profit_total": 0,
-                "profit": 0.0,
+                "max_drawdown_account": 0.0,
+                "max_drawdown_abs": 0.0,
                 "holding_avg": timedelta(),
             },  # noqa: E501
             "results_explanation": "     0 trades. Avg profit    nan%. Total profit  0.00000000 BTC (   0.00Σ%). Avg duration   nan min.",  # noqa: E501

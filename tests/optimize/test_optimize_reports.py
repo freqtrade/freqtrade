@@ -59,7 +59,7 @@ def _backup_file(file: Path, copy_file: bool = False) -> None:
             copyfile(file_swp, file)
 
 
-def test_text_table_bt_results():
+def test_text_table_bt_results(capsys):
     results = pd.DataFrame(
         {
             "pair": ["ETH/BTC", "ETH/BTC", "ETH/BTC"],
@@ -69,21 +69,23 @@ def test_text_table_bt_results():
         }
     )
 
-    result_str = (
-        "|    Pair |   Trades |   Avg Profit % |   Tot Profit BTC |   "
-        "Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |\n"
-        "|---------+----------+----------------+------------------+"
-        "----------------+----------------+-------------------------|\n"
-        "| ETH/BTC |        3 |           8.33 |       0.50000000 |          "
-        "12.50 |        0:20:00 |     2     0     1  66.7 |\n"
-        "|   TOTAL |        3 |           8.33 |       0.50000000 |          "
-        "12.50 |        0:20:00 |     2     0     1  66.7 |"
-    )
-
     pair_results = generate_pair_metrics(
         ["ETH/BTC"], stake_currency="BTC", starting_balance=4, results=results
     )
-    assert text_table_bt_results(pair_results, stake_currency="BTC") == result_str
+    text_table_bt_results(pair_results, stake_currency="BTC", title="title")
+    text = capsys.readouterr().out
+    re.search(
+        r".* Pair .* Trades .* Avg Profit % .* Tot Profit BTC .* Tot Profit % .* "
+        r"Avg Duration .* Win  Draw  Loss  Win% .*",
+        text,
+    )
+    re.search(
+        r".* ETH/BTC .* 3 .* 8.33 .* 0.50000000 .* 12.50 .* 0:20:00 .* 2     0     1  66.7 .*",
+        text,
+    )
+    re.search(
+        r".* TOTAL .* 3 .* 8.33 .* 0.50000000 .* 12.50 .* 0:20:00 .* 2     0     1  66.7 .*", text
+    )
 
 
 def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
@@ -434,7 +436,7 @@ def test_calc_streak(testdatadir):
     assert calc_streak(bt_data) == (7, 18)
 
 
-def test_text_table_exit_reason():
+def test_text_table_exit_reason(capsys):
     results = pd.DataFrame(
         {
             "pair": ["ETH/BTC", "ETH/BTC", "ETH/BTC"],
@@ -448,23 +450,28 @@ def test_text_table_exit_reason():
         }
     )
 
-    result_str = (
-        "|   Exit Reason |   Exits |   Avg Profit % |   Tot Profit BTC |   Tot Profit % |"
-        "   Avg Duration |   Win  Draw  Loss  Win% |\n"
-        "|---------------+---------+----------------+------------------+----------------+"
-        "----------------+-------------------------|\n"
-        "|           roi |       2 |          15.00 |       0.60000000 |           2.73 |"
-        "        0:20:00 |     2     0     0   100 |\n"
-        "|     stop_loss |       1 |         -10.00 |      -0.20000000 |          -0.91 |"
-        "        0:10:00 |     0     0     1     0 |\n"
-        "|         TOTAL |       3 |           6.67 |       0.40000000 |           1.82 |"
-        "        0:17:00 |     2     0     1  66.7 |"
-    )
-
     exit_reason_stats = generate_tag_metrics(
         "exit_reason", starting_balance=22, results=results, skip_nan=False
     )
-    assert text_table_tags("exit_tag", exit_reason_stats, "BTC") == result_str
+    text_table_tags("exit_tag", exit_reason_stats, "BTC")
+    text = capsys.readouterr().out
+
+    assert re.search(
+        r".* Exit Reason .* Exits .* Avg Profit % .* Tot Profit BTC .* Tot Profit % .* "
+        r"Avg Duration .* Win  Draw  Loss  Win% .*",
+        text,
+    )
+    assert re.search(
+        r".* roi .* 2 .* 15.0 .* 0.60000000 .* 2.73 .* 0:20:00 .* 2     0     0   100 .*",
+        text,
+    )
+    assert re.search(
+        r".* stop_loss .* 1 .* -10.0 .* -0.20000000 .* -0.91 .* 0:10:00 .* 0     0     1     0 .*",
+        text,
+    )
+    assert re.search(
+        r".* TOTAL .* 3 .* 6.67 .* 0.40000000 .* 1.82 .* 0:17:00 .* 2     0     1  66.7 .*", text
+    )
 
 
 def test_generate_sell_reason_stats():
@@ -502,39 +509,42 @@ def test_generate_sell_reason_stats():
     assert stop_result["profit_mean_pct"] == round(stop_result["profit_mean"] * 100, 2)
 
 
-def test_text_table_strategy(testdatadir):
+def test_text_table_strategy(testdatadir, capsys):
     filename = testdatadir / "backtest_results/backtest-result_multistrat.json"
     bt_res_data = load_backtest_stats(filename)
 
     bt_res_data_comparison = bt_res_data.pop("strategy_comparison")
 
-    result_str = (
-        "|       Strategy |   Trades |   Avg Profit % |   Tot Profit BTC |"
-        "   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |              Drawdown |\n"
-        "|----------------+----------+----------------+------------------+"
-        "----------------+----------------+-------------------------+-----------------------|\n"
-        "| StrategyTestV2 |      179 |           0.08 |       0.02608550 |"
-        "         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |\n"
-        "|   TestStrategy |      179 |           0.08 |       0.02608550 |"
-        "         260.85 |        3:40:00 |   170     0     9  95.0 | 0.00308222 BTC  8.67% |"
-    )
-
     strategy_results = generate_strategy_comparison(bt_stats=bt_res_data["strategy"])
     assert strategy_results == bt_res_data_comparison
-    assert text_table_strategy(strategy_results, "BTC") == result_str
+    text_table_strategy(strategy_results, "BTC", "STRATEGY SUMMARY")
+
+    captured = capsys.readouterr()
+    text = captured.out
+    assert re.search(
+        r".* Strategy .* Trades .* Avg Profit % .* Tot Profit BTC .* Tot Profit % .* "
+        r"Avg Duration .* Win  Draw  Loss  Win% .* Drawdown .*",
+        text,
+    )
+    assert re.search(
+        r".*StrategyTestV2 .* 179 .* 0.08 .* 0.02608550 .* "
+        r"260.85 .* 3:40:00 .* 170     0     9  95.0 .* 0.00308222 BTC  8.67%.*",
+        text,
+    )
+    assert re.search(
+        r".*TestStrategy .* 179 .* 0.08 .* 0.02608550 .* "
+        r"260.85 .* 3:40:00 .* 170     0     9  95.0 .* 0.00308222 BTC  8.67%.*",
+        text,
+    )
 
 
-def test_generate_edge_table():
+def test_generate_edge_table(capsys):
     results = {}
     results["ETH/BTC"] = PairInfo(-0.01, 0.60, 2, 1, 3, 10, 60)
-    assert generate_edge_table(results).count("+") == 7
-    assert generate_edge_table(results).count("| ETH/BTC |") == 1
-    assert (
-        generate_edge_table(results).count(
-            "|   Risk Reward Ratio |   Required Risk Reward |   Expectancy |"
-        )
-        == 1
-    )
+    generate_edge_table(results)
+    text = capsys.readouterr().out
+    assert re.search(r".* ETH/BTC .*", text)
+    assert re.search(r".* Risk Reward Ratio .* Required Risk Reward .* Expectancy .*", text)
 
 
 def test_generate_periodic_breakdown_stats(testdatadir):

@@ -36,6 +36,7 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 | `lookback_period_candles` | Only trades that completed within the last `lookback_period_candles` candles will be considered. This setting may be ignored by some Protections. <br> **Datatype:** Positive integer (in candles).
 | `lookback_period` | Only trades that completed after `current_time - lookback_period` will be considered. <br>Cannot be used together with `lookback_period_candles`. <br>This setting may be ignored by some Protections. <br> **Datatype:**  Float (in minutes)
 | `trade_limit` | Number of trades required at minimum (not used by all Protections). <br> **Datatype:** Positive integer
+| `unlock_at` | Time when trading will be unlocked regularly (not used by all Protections). <br> **Datatype:** string <br>**Input Format:** "HH:MM" (24-hours)
 
 !!! Note "Durations"
     Durations (`stop_duration*` and `lookback_period*` can be defined in either minutes or candles).
@@ -44,7 +45,7 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 #### Stoploss Guard
 
 `StoplossGuard` selects all trades within `lookback_period` in minutes (or in candles when using `lookback_period_candles`).
-If `trade_limit` or more trades resulted in stoploss, trading will stop for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
+If `trade_limit` or more trades resulted in stoploss, trading will stop for `stop_duration` in minutes (or in candles when using `stop_duration_candles`, or until the set time when using `unlock_at`).
 
 This applies across all pairs, unless `only_per_pair` is set to true, which will then only look at one pair at a time.
 
@@ -97,7 +98,7 @@ def protections(self):
 #### Low Profit Pairs
 
 `LowProfitPairs` uses all trades for a pair within `lookback_period` in minutes (or in candles when using `lookback_period_candles`) to determine the overall profit ratio.
-If that ratio is below `required_profit`, that pair will be locked for `stop_duration` in minutes (or in candles when using `stop_duration_candles`).
+If that ratio is below `required_profit`, that pair will be locked for `stop_duration` in minutes (or in candles when using `stop_duration_candles`, or until the set time when using `unlock_at`).
 
 For futures bots, setting `only_per_side` will make the bot only consider one side, and will then only lock this one side, allowing for example shorts to continue after a series of long losses.
 
@@ -120,7 +121,7 @@ def protections(self):
 
 #### Cooldown Period
 
-`CooldownPeriod` locks a pair for `stop_duration` in minutes (or in candles when using `stop_duration_candles`) after selling, avoiding a re-entry for this pair for `stop_duration` minutes.
+`CooldownPeriod` locks a pair for `stop_duration` in minutes (or in candles when using `stop_duration_candles`, or until the set time when using `unlock_at`) after exiting, avoiding a re-entry for this pair for `stop_duration` minutes.
 
 The below example will stop trading a pair for 2 candles after closing a trade, allowing this pair to "cool down".
 

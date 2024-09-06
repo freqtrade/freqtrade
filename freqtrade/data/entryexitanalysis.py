@@ -4,7 +4,6 @@ from typing import List
 
 import joblib
 import pandas as pd
-from tabulate import tabulate
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
@@ -14,6 +13,7 @@ from freqtrade.data.btanalysis import (
     load_backtest_stats,
 )
 from freqtrade.exceptions import OperationalException
+from freqtrade.util import print_df_rich_table
 
 
 logger = logging.getLogger(__name__)
@@ -307,7 +307,7 @@ def _print_table(
         if name is not None:
             print(name)
 
-        print(tabulate(data, headers="keys", tablefmt="psql", showindex=show_index))
+        print_df_rich_table(data, data.keys(), show_index=show_index)
 
 
 def process_entry_exit_reasons(config: Config):

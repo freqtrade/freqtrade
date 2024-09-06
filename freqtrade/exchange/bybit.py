@@ -11,6 +11,7 @@ from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, ExchangeError, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.exchange.exchange_types import FtHas
 from freqtrade.util.datetime_helpers import dt_now, dt_ts
 
 
@@ -29,13 +30,14 @@ class Bybit(Exchange):
 
     unified_account = False
 
-    _ft_has: Dict = {
+    _ft_has: FtHas = {
         "ohlcv_candle_limit": 1000,
         "ohlcv_has_history": True,
         "order_time_in_force": ["GTC", "FOK", "IOC", "PO"],
+        "ws_enabled": True,
         "trades_has_history": False,  # Endpoint doesn't support pagination
     }
-    _ft_has_futures: Dict = {
+    _ft_has_futures: FtHas = {
         "ohlcv_has_history": True,
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",

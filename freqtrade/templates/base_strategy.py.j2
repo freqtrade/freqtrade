@@ -1,15 +1,34 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 # flake8: noqa: F401
 # isort: skip_file
-# --- Do not remove these libs ---
+# --- Do not remove these imports ---
 import numpy as np
 import pandas as pd
+from datetime import datetime, timedelta, timezone
 from pandas import DataFrame
-from datetime import datetime
-from typing import Optional, Union
+from typing import Dict, Optional, Union, Tuple
 
-from freqtrade.strategy import (BooleanParameter, CategoricalParameter, DecimalParameter,
-                                IntParameter, IStrategy, merge_informative_pair)
+from freqtrade.strategy import (
+    IStrategy,
+    Trade,
+    Order,
+    PairLocks,
+    informative,  # @informative decorator
+    # Hyperopt Parameters
+    BooleanParameter,
+    CategoricalParameter,
+    DecimalParameter,
+    IntParameter,
+    RealParameter,
+    # timeframe helpers
+    timeframe_to_minutes,
+    timeframe_to_next_date,
+    timeframe_to_prev_date,
+    # Strategy helper functions
+    merge_informative_pair,
+    stoploss_from_absolute,
+    stoploss_from_open,
+)
 
 # --------------------------------
 # Add your lib to import here
@@ -40,7 +59,7 @@ class {{ strategy }}(IStrategy):
     INTERFACE_VERSION = 3
 
     # Optimal timeframe for the strategy.
-    timeframe = '5m'
+    timeframe = "5m"
 
     # Can this strategy go short?
     can_short: bool = False
@@ -78,8 +97,8 @@ class {{ strategy }}(IStrategy):
     buy_rsi = IntParameter(10, 40, default=30, space="buy")
     sell_rsi = IntParameter(60, 90, default=70, space="sell")
 
-    {{ attributes | indent(4) }}
-    {{ plot_config | indent(4) }}
+    {{- attributes | indent(4) }}
+    {{- plot_config | indent(4) }}
 
     def informative_pairs(self):
         """
@@ -105,7 +124,7 @@ class {{ strategy }}(IStrategy):
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
-        {{ indicators | indent(8) }}
+        {{- indicators | indent(8) }}
 
         return dataframe
 
@@ -119,9 +138,9 @@ class {{ strategy }}(IStrategy):
         dataframe.loc[
             (
                 {{ buy_trend | indent(16) }}
-                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+                (dataframe["volume"] > 0)  # Make sure Volume is not 0
             ),
-            'enter_long'] = 1
+            "enter_long"] = 1
         # Uncomment to use shorts (Only used in futures/margin mode. Check the documentation for more info)
         """
         dataframe.loc[
@@ -144,9 +163,9 @@ class {{ strategy }}(IStrategy):
         dataframe.loc[
             (
                 {{ sell_trend | indent(16) }}
-                (dataframe['volume'] > 0)  # Make sure Volume is not 0
+                (dataframe["volume"] > 0)  # Make sure Volume is not 0
             ),
-            'exit_long'] = 1
+            "exit_long"] = 1
         # Uncomment to use shorts (Only used in futures/margin mode. Check the documentation for more info)
         """
         dataframe.loc[
@@ -157,4 +176,4 @@ class {{ strategy }}(IStrategy):
             'exit_short'] = 1
         """
         return dataframe
-    {{ additional_methods | indent(4) }}
+    {{- additional_methods | indent(4) }}

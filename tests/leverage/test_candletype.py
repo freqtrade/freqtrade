@@ -4,7 +4,7 @@ from freqtrade.enums import CandleType
 
 
 @pytest.mark.parametrize(
-    "input,expected",
+    "candle_type,expected",
     [
         ("", CandleType.SPOT),
         ("spot", CandleType.SPOT),
@@ -17,17 +17,17 @@ from freqtrade.enums import CandleType
         ("premiumIndex", CandleType.PREMIUMINDEX),
     ],
 )
-def test_CandleType_from_string(input, expected):
-    assert CandleType.from_string(input) == expected
+def test_CandleType_from_string(candle_type, expected):
+    assert CandleType.from_string(candle_type) == expected
 
 
 @pytest.mark.parametrize(
-    "input,expected",
+    "candle_type,expected",
     [
         ("futures", CandleType.FUTURES),
         ("spot", CandleType.SPOT),
         ("margin", CandleType.SPOT),
     ],
 )
-def test_CandleType_get_default(input, expected):
-    assert CandleType.get_default(input) == expected
+def test_CandleType_get_default(candle_type, expected):
+    assert CandleType.get_default(candle_type) == expected

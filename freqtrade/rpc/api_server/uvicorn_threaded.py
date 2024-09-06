@@ -1,4 +1,3 @@
-import contextlib
 import threading
 import time
 
@@ -9,6 +8,7 @@ def asyncio_setup() -> None:  # pragma: no cover
     # Set eventloop for win32 setups
     # Reverts a change done in uvicorn 0.15.0 - which now sets the eventloop
     # via policy.
+    # TODO: is this workaround actually needed?
     import sys
 
     if sys.version_info >= (3, 8) and sys.platform == "win32":
@@ -53,7 +53,6 @@ class UvicornServer(uvicorn.Server):
             loop = asyncio.new_event_loop()
         loop.run_until_complete(self.serve(sockets=sockets))
 
-    @contextlib.contextmanager
     def run_in_thread(self):
         self.thread = threading.Thread(target=self.run, name="FTUvicorn")
         self.thread.start()

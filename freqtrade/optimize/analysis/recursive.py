@@ -14,6 +14,7 @@ from freqtrade.loggers.set_log_levels import (
 )
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.optimize.base_analysis import BaseAnalysis, VarHolder
+from freqtrade.resolvers import StrategyResolver
 
 
 logger = logging.getLogger(__name__)
@@ -21,9 +22,18 @@ logger = logging.getLogger(__name__)
 
 class RecursiveAnalysis(BaseAnalysis):
     def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
-        self._startup_candle = config.get("startup_candle", [199, 399, 499, 999, 1999])
+        self._startup_candle = list(
+            map(int, config.get("startup_candle", [199, 399, 499, 999, 1999]))
+        )
 
         super().__init__(config, strategy_obj)
+
+        strat = StrategyResolver.load_strategy(config)
+        self._strat_scc = strat.startup_candle_count
+
+        if self._strat_scc not in self._startup_candle:
+            self._startup_candle.append(self._strat_scc)
+        self._startup_candle.sort()
 
         self.partial_varHolder_array: List[VarHolder] = []
         self.partial_varHolder_lookahead_array: List[VarHolder] = []
@@ -58,9 +68,13 @@ class RecursiveAnalysis(BaseAnalysis):
                         values_diff = compare_df.loc[indicator]
                         values_diff_self = values_diff.loc["self"]
                         values_diff_other = values_diff.loc["other"]
-                        diff = (values_diff_other - values_diff_self) / values_diff_self * 100
 
-                        self.dict_recursive[indicator][part.startup_candle] = f"{diff:.3f}%"
+                        if values_diff_self and values_diff_other:
+                            diff = (values_diff_other - values_diff_self) / values_diff_self * 100
+                            str_diff = f"{diff:.3f}%"
+                        else:
+                            str_diff = "NaN"
+                        self.dict_recursive[indicator][part.startup_candle] = str_diff
 
             else:
                 logger.info("No variance on indicator(s) found due to recursive formula.")
@@ -174,7 +188,7 @@ class RecursiveAnalysis(BaseAnalysis):
         start_date_partial = end_date_full - timedelta(minutes=int(timeframe_minutes))
 
         for startup_candle in self._startup_candle:
-            self.fill_partial_varholder(start_date_partial, int(startup_candle))
+            self.fill_partial_varholder(start_date_partial, startup_candle)
 
         # Restore verbosity, so it's not too quiet for the next strategy
         restore_verbosity_for_bias_tester()

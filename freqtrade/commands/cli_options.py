@@ -446,8 +446,12 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     "download_trades": Arg(
         "--dl-trades",
-        help="Download trades instead of OHLCV data. The bot will resample trades to the "
-        "desired timeframe as specified as --timeframes/-t.",
+        help="Download trades instead of OHLCV data.",
+        action="store_true",
+    ),
+    "trades": Arg(
+        "--trades",
+        help="Work on trades data instead of OHLCV data.",
         action="store_true",
     ),
     "convert_trades": Arg(

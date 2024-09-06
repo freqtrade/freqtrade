@@ -7,6 +7,7 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.analysis.recursive import RecursiveAnalysis
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.util import print_rich_table
 
 
 logger = logging.getLogger(__name__)
@@ -16,9 +17,13 @@ class RecursiveAnalysisSubFunctions:
     @staticmethod
     def text_table_recursive_analysis_instances(recursive_instances: List[RecursiveAnalysis]):
         startups = recursive_instances[0]._startup_candle
-        headers = ["indicators"]
+        strat_scc = recursive_instances[0]._strat_scc
+        headers = ["Indicators"]
         for candle in startups:
-            headers.append(candle)
+            if candle == strat_scc:
+                headers.append(f"{candle} (from strategy)")
+            else:
+                headers.append(str(candle))
 
         data = []
         for inst in recursive_instances:
@@ -30,13 +35,11 @@ class RecursiveAnalysisSubFunctions:
                     data.append(temp_data)
 
         if len(data) > 0:
-            from tabulate import tabulate
+            print_rich_table(data, headers, summary="Recursive Analysis")
 
-            table = tabulate(data, headers=headers, tablefmt="orgtbl")
-            print(table)
-            return table, headers, data
+            return data
 
-        return None, None, data
+        return data
 
     @staticmethod
     def calculate_config_overrides(config: Config):

@@ -1,13 +1,22 @@
 import logging
 from collections import Counter
 from copy import deepcopy
+from datetime import datetime
 from typing import Any, Dict
 
 from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
 
-from freqtrade import constants
+from freqtrade.configuration.config_schema import (
+    CONF_SCHEMA,
+    SCHEMA_BACKTEST_REQUIRED,
+    SCHEMA_BACKTEST_REQUIRED_FINAL,
+    SCHEMA_MINIMAL_REQUIRED,
+    SCHEMA_MINIMAL_WEBSERVER,
+    SCHEMA_TRADE_REQUIRED,
+)
 from freqtrade.configuration.deprecated_settings import process_deprecated_setting
+from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import ConfigurationError
 
@@ -41,18 +50,18 @@ def validate_config_schema(conf: Dict[str, Any], preliminary: bool = False) -> D
     :param conf: Config in JSON format
     :return: Returns the config if valid, otherwise throw an exception
     """
-    conf_schema = deepcopy(constants.CONF_SCHEMA)
+    conf_schema = deepcopy(CONF_SCHEMA)
     if conf.get("runmode", RunMode.OTHER) in (RunMode.DRY_RUN, RunMode.LIVE):
-        conf_schema["required"] = constants.SCHEMA_TRADE_REQUIRED
+        conf_schema["required"] = SCHEMA_TRADE_REQUIRED
     elif conf.get("runmode", RunMode.OTHER) in (RunMode.BACKTEST, RunMode.HYPEROPT):
         if preliminary:
-            conf_schema["required"] = constants.SCHEMA_BACKTEST_REQUIRED
+            conf_schema["required"] = SCHEMA_BACKTEST_REQUIRED
         else:
-            conf_schema["required"] = constants.SCHEMA_BACKTEST_REQUIRED_FINAL
+            conf_schema["required"] = SCHEMA_BACKTEST_REQUIRED_FINAL
     elif conf.get("runmode", RunMode.OTHER) == RunMode.WEBSERVER:
-        conf_schema["required"] = constants.SCHEMA_MINIMAL_WEBSERVER
+        conf_schema["required"] = SCHEMA_MINIMAL_WEBSERVER
     else:
-        conf_schema["required"] = constants.SCHEMA_MINIMAL_REQUIRED
+        conf_schema["required"] = SCHEMA_MINIMAL_REQUIRED
     try:
         FreqtradeValidator(conf_schema).validate(conf)
         return conf
@@ -83,6 +92,7 @@ def validate_config_consistency(conf: Dict[str, Any], *, preliminary: bool = Fal
     _validate_freqai_include_timeframes(conf, preliminary=preliminary)
     _validate_consumers(conf)
     validate_migrated_strategy_settings(conf)
+    _validate_orderflow(conf)
 
     # validate configuration before returning
     logger.info("Validating configuration ...")
@@ -97,7 +107,7 @@ def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
     if (
         not conf.get("edge", {}).get("enabled")
         and conf.get("max_open_trades") == float("inf")
-        and conf.get("stake_amount") == constants.UNLIMITED_STAKE_AMOUNT
+        and conf.get("stake_amount") == UNLIMITED_STAKE_AMOUNT
     ):
         raise ConfigurationError("`max_open_trades` and `stake_amount` cannot both be unlimited.")
 
@@ -192,16 +202,32 @@ def _validate_protections(conf: Dict[str, Any]) -> None:
     """
 
     for prot in conf.get("protections", []):
+        parsed_unlock_at = None
+        if (config_unlock_at := prot.get("unlock_at")) is not None:
+            try:
+                parsed_unlock_at = datetime.strptime(config_unlock_at, "%H:%M")
+            except ValueError:
+                raise ConfigurationError(f"Invalid date format for unlock_at: {config_unlock_at}.")
+
         if "stop_duration" in prot and "stop_duration_candles" in prot:
             raise ConfigurationError(
                 "Protections must specify either `stop_duration` or `stop_duration_candles`.\n"
-                f"Please fix the protection {prot.get('method')}"
+                f"Please fix the protection {prot.get('method')}."
             )
 
         if "lookback_period" in prot and "lookback_period_candles" in prot:
             raise ConfigurationError(
                 "Protections must specify either `lookback_period` or `lookback_period_candles`.\n"
-                f"Please fix the protection {prot.get('method')}"
+                f"Please fix the protection {prot.get('method')}."
+            )
+
+        if parsed_unlock_at is not None and (
+            "stop_duration" in prot or "stop_duration_candles" in prot
+        ):
+            raise ConfigurationError(
+                "Protections must specify either `unlock_at`, `stop_duration` or "
+                "`stop_duration_candles`.\n"
+                f"Please fix the protection {prot.get('method')}."
             )
 
 
@@ -418,6 +444,14 @@ def _validate_consumers(conf: Dict[str, Any]) -> None:
             logger.warning(
                 "To receive best performance with external data, "
                 "please set `process_only_new_candles` to False"
+            )
+
+
+def _validate_orderflow(conf: Dict[str, Any]) -> None:
+    if conf.get("exchange", {}).get("use_public_trades"):
+        if "orderflow" not in conf:
+            raise ConfigurationError(
+                "Orderflow is a required configuration key when using public trades."
             )
 
 

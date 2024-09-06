@@ -33,7 +33,7 @@ def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = 
         if log:
             logger.info(f'dumping json to "{filename}"')
 
-        with gzip.open(filename, "w") as fpz:
+        with gzip.open(filename, "wt", encoding="utf-8") as fpz:
             rapidjson.dump(data, fpz, default=str, number_mode=rapidjson.NM_NATIVE)
     else:
         if log:
@@ -60,7 +60,7 @@ def file_dump_joblib(filename: Path, data: Any, log: bool = True) -> None:
     logger.debug(f'done joblib dump to "{filename}"')
 
 
-def json_load(datafile: Union[gzip.GzipFile, TextIO]) -> Any:
+def json_load(datafile: TextIO) -> Any:
     """
     load data with rapidjson
     Use this to have a consistent experience,
@@ -77,7 +77,7 @@ def file_load_json(file: Path):
     # Try gzip file first, otherwise regular json file.
     if gzipfile.is_file():
         logger.debug(f"Loading historical data from file {gzipfile}")
-        with gzip.open(gzipfile) as datafile:
+        with gzip.open(gzipfile, "rt", encoding="utf-8") as datafile:
             pairdata = json_load(datafile)
     elif file.is_file():
         logger.debug(f"Loading historical data from file {file}")
@@ -128,7 +128,10 @@ def round_dict(d, n):
     return {k: (round(v, n) if isinstance(v, float) else v) for k, v in d.items()}
 
 
-def safe_value_fallback(obj: dict, key1: str, key2: Optional[str] = None, default_value=None):
+DictMap = Union[Dict[str, Any], Mapping[str, Any]]
+
+
+def safe_value_fallback(obj: DictMap, key1: str, key2: Optional[str] = None, default_value=None):
     """
     Search a value in obj, return this if it's not None.
     Then search key2 in obj - return that if it's not none - then use default_value.
@@ -142,10 +145,7 @@ def safe_value_fallback(obj: dict, key1: str, key2: Optional[str] = None, defaul
     return default_value
 
 
-dictMap = Union[Dict[str, Any], Mapping[str, Any]]
-
-
-def safe_value_fallback2(dict1: dictMap, dict2: dictMap, key1: str, key2: str, default_value=None):
+def safe_value_fallback2(dict1: DictMap, dict2: DictMap, key1: str, key2: str, default_value=None):
     """
     Search a value in dict1, return this if it's not None.
     Fall back to dict2 - return key2 from dict2 if it's not None.

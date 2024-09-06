@@ -92,9 +92,8 @@ class TestCCXTExchange:
         if trades := EXCHANGES[exchange_name].get("sample_my_trades"):
             pair = "SOL/USDT"
             for trade in trades:
-                market = exch._api.markets[pair]
                 po = exch._api.parse_trade(trade)
-                (trade, market)
+                assert po["symbol"] == pair
                 assert isinstance(po["id"], str)
                 assert isinstance(po["side"], str)
                 assert isinstance(po["amount"], float)
@@ -106,9 +105,7 @@ class TestCCXTExchange:
                     assert isinstance(fees, list)
                     for fee in fees:
                         assert isinstance(fee, dict)
-                        assert isinstance(fee["cost"], str)
-                        # TODO: this should be a float!
-                        # assert isinstance(fee["cost"], float)
+                        assert isinstance(fee["cost"], float)
                         assert isinstance(fee["currency"], str)
 
         else:

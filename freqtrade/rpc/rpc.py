@@ -11,7 +11,7 @@ from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 import psutil
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
-from numpy import NAN, inf, int64, mean
+from numpy import inf, int64, mean, nan
 from pandas import DataFrame, NaT
 from sqlalchemy import func, select
 
@@ -31,7 +31,7 @@ from freqtrade.enums import (
 )
 from freqtrade.exceptions import ExchangeError, PricingError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_msecs
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.loggers import bufferHandler
 from freqtrade.persistence import KeyStoreKeys, KeyValueStore, PairLocks, Trade
 from freqtrade.persistence.models import PairLock
@@ -204,9 +204,9 @@ class RPC:
                             trade.pair, side="exit", is_short=trade.is_short, refresh=False
                         )
                     except (ExchangeError, PricingError):
-                        current_rate = NAN
+                        current_rate = nan
                     if len(trade.select_filled_orders(trade.entry_side)) > 0:
-                        current_profit = current_profit_abs = current_profit_fiat = NAN
+                        current_profit = current_profit_abs = current_profit_fiat = nan
                         if not isnan(current_rate):
                             prof = trade.calculate_profit(current_rate)
                             current_profit = prof.profit_ratio
@@ -277,7 +277,7 @@ class RPC:
             raise RPCException("no active trade")
         else:
             trades_list = []
-            fiat_profit_sum = NAN
+            fiat_profit_sum = nan
             for trade in trades:
                 # calculate profit and send message to user
                 try:
@@ -285,9 +285,9 @@ class RPC:
                         trade.pair, side="exit", is_short=trade.is_short, refresh=False
                     )
                 except (PricingError, ExchangeError):
-                    current_rate = NAN
-                    trade_profit = NAN
-                    profit_str = f"{NAN:.2%}"
+                    current_rate = nan
+                    trade_profit = nan
+                    profit_str = f"{nan:.2%}"
                 else:
                     if trade.nr_of_successful_entries > 0:
                         profit = trade.calculate_profit(current_rate)
@@ -296,7 +296,10 @@ class RPC:
                     else:
                         trade_profit = 0.0
                         profit_str = f"{0.0:.2f}"
-                direction_str = ("S" if trade.is_short else "L") if nonspot else ""
+                leverage = f"{trade.leverage:.3g}"
+                direction_str = (
+                    (f"S {leverage}x" if trade.is_short else f"L {leverage}x") if nonspot else ""
+                )
                 if self._fiat_converter:
                     fiat_profit = self._fiat_converter.convert_amount(
                         trade_profit, stake_currency, fiat_display_currency
@@ -533,9 +536,9 @@ class RPC:
                         trade.pair, side="exit", is_short=trade.is_short, refresh=False
                     )
                 except (PricingError, ExchangeError):
-                    current_rate = NAN
-                    profit_ratio = NAN
-                    profit_abs = NAN
+                    current_rate = nan
+                    profit_ratio = nan
+                    profit_abs = nan
                 else:
                     _profit = trade.calculate_profit(trade.close_rate or current_rate)
 
@@ -742,7 +745,6 @@ class RPC:
                     "est_stake_bot": est_stake_bot if is_bot_managed else 0,
                     "stake": stake_currency,
                     "side": "long",
-                    "leverage": 1,
                     "position": 0,
                     "is_bot_managed": is_bot_managed,
                     "is_position": False,
@@ -764,7 +766,6 @@ class RPC:
                     "est_stake": position.collateral,
                     "est_stake_bot": position.collateral,
                     "stake": stake_currency,
-                    "leverage": position.leverage,
                     "side": position.side,
                     "is_bot_managed": True,
                     "is_position": True,
@@ -1317,7 +1318,7 @@ class RPC:
                 # replace NaT with `None`
                 dataframe[date_column] = dataframe[date_column].astype(object).replace({NaT: None})
 
-            dataframe = dataframe.replace({inf: None, -inf: None, NAN: None})
+            dataframe = dataframe.replace({inf: None, -inf: None, nan: None})
 
         res = {
             "pair": pair,

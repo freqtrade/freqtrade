@@ -168,6 +168,8 @@ class FreqtradeBot(LoggingMixin):
                     t = str(time(time_slot, minutes, 2))
                     self._schedule.every().day.at(t).do(update)
 
+        self._schedule.every().day.at("00:02").do(self.exchange.ws_connection_reset)
+
         self.strategy.ft_bot_start()
         # Initialize protections AFTER bot start - otherwise parameters are not loaded.
         self.protections = ProtectionManager(self.config, self.strategy.protections)
@@ -289,8 +291,7 @@ class FreqtradeBot(LoggingMixin):
         # Then looking for entry opportunities
         if self.get_free_open_trades():
             self.enter_positions()
-        if self.trading_mode == TradingMode.FUTURES:
-            self._schedule.run_pending()
+        self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
         self.last_process = datetime.now(timezone.utc)
@@ -373,6 +374,7 @@ class FreqtradeBot(LoggingMixin):
             if trade.exchange != self.exchange.id:
                 continue
             trade.precision_mode = self.exchange.precisionMode
+            trade.precision_mode_price = self.exchange.precision_mode_price
             trade.amount_precision = self.exchange.get_precision_amount(trade.pair)
             trade.price_precision = self.exchange.get_precision_price(trade.pair)
             trade.contract_size = self.exchange.get_contract_size(trade.pair)
@@ -540,7 +542,11 @@ class FreqtradeBot(LoggingMixin):
                 )
             else:
                 trade.exit_reason = prev_exit_reason
-                total = self.wallets.get_total(trade.base_currency) if trade.base_currency else 0
+                total = (
+                    self.wallets.get_owned(trade.pair, trade.base_currency)
+                    if trade.base_currency
+                    else 0
+                )
                 if total < trade.amount:
                     if trade.fully_canceled_entry_order_count == len(trade.orders):
                         logger.warning(
@@ -987,6 +993,7 @@ class FreqtradeBot(LoggingMixin):
                 amount_precision=self.exchange.get_precision_amount(pair),
                 price_precision=self.exchange.get_precision_price(pair),
                 precision_mode=self.exchange.precisionMode,
+                precision_mode_price=self.exchange.precision_mode_price,
                 contract_size=self.exchange.get_contract_size(pair),
             )
             stoploss = self.strategy.stoploss if not self.edge else self.edge.get_stoploss(pair)
@@ -2365,6 +2372,18 @@ class FreqtradeBot(LoggingMixin):
             trade, order, order_obj, order_amount, order.get("trades", [])
         )
 
+    def _trades_valid_for_fee(self, trades: List[Dict[str, Any]]) -> bool:
+        """
+        Check if trades are valid for fee detection.
+        :return: True if trades are valid for fee detection, False otherwise
+        """
+        if not trades:
+            return False
+        # We expect amount and cost to be present in all trade objects.
+        if any(trade.get("amount") is None or trade.get("cost") is None for trade in trades):
+            return False
+        return True
+
     def fee_detection_from_trades(
         self, trade: Trade, order: Dict, order_obj: Order, order_amount: float, trades: List
     ) -> Optional[float]:
@@ -2372,7 +2391,7 @@ class FreqtradeBot(LoggingMixin):
         fee-detection fallback to Trades.
         Either uses provided trades list or the result of fetch_my_trades to get correct fee.
         """
-        if not trades:
+        if not self._trades_valid_for_fee(trades):
             trades = self.exchange.get_trades_for_order(
                 self.exchange.get_order_id_conditional(order), trade.pair, order_obj.order_date
             )

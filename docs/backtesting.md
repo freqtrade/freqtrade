@@ -530,10 +530,10 @@ You can then load the trades to perform further analysis as shown in the [data a
 Since backtesting lacks some detailed information about what happens within a candle, it needs to take a few assumptions:
 
 - Exchange [trading limits](#trading-limits-in-backtesting) are respected
-- Entries happen at open-price
+- Entries happen at open-price unless a custom price logic has been specified
 - All orders are filled at the requested price (no slippage) as long as the price is within the candle's high/low range
 - Exit-signal exits happen at open-price of the consecutive candle
-- Exits don't free their trade slot for a new trade until the next candle
+- Exits free their trade slot for a new trade with a different pair
 - Exit-signal is favored over Stoploss, because exit-signals are assumed to trigger on candle's open
 - ROI
   - Exits are compared to high - but the ROI value is used (e.g. ROI = 2%, high=5% - so the exit will be at 2%)

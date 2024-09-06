@@ -27,7 +27,7 @@ from freqtrade.configuration.load_config import (
 )
 from freqtrade.constants import DEFAULT_DB_DRYRUN_URL, DEFAULT_DB_PROD_URL, ENV_VAR_PREFIX
 from freqtrade.enums import RunMode
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import ConfigurationError, OperationalException
 from tests.conftest import (
     CURRENT_TEST_STRATEGY,
     log_has,
@@ -840,6 +840,25 @@ def test_validate_whitelist(default_conf):
             ],
             r"Protections must specify either `stop_duration`.*",
         ),
+        (
+            [
+                {
+                    "method": "StoplossGuard",
+                    "lookback_period": 20,
+                    "stop_duration": 10,
+                    "unlock_at": "20:02",
+                }
+            ],
+            r"Protections must specify either `unlock_at`, `stop_duration` or.*",
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "20:02"}],
+            None,
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "55:102"}],
+            "Invalid date format for unlock_at: 55:102.",
+        ),
     ],
 )
 def test_validate_protections(default_conf, protconf, expected):
@@ -1082,6 +1101,29 @@ def test__validate_consumers(default_conf, caplog) -> None:
     )
     validate_config_consistency(conf)
     assert log_has_re("To receive best performance with external data.*", caplog)
+
+
+def test__validate_orderflow(default_conf) -> None:
+    conf = deepcopy(default_conf)
+    conf["exchange"]["use_public_trades"] = True
+    with pytest.raises(
+        ConfigurationError,
+        match="Orderflow is a required configuration key when using public trades.",
+    ):
+        validate_config_consistency(conf)
+
+    conf.update(
+        {
+            "orderflow": {
+                "scale": 0.5,
+                "stacked_imbalance_range": 3,
+                "imbalance_volume": 100,
+                "imbalance_ratio": 3,
+            }
+        }
+    )
+    # Should pass.
+    validate_config_consistency(conf)
 
 
 def test_load_config_test_comments() -> None:
@@ -1611,9 +1653,12 @@ def test_sanitize_config(default_conf_usdt):
     res = sanitize_config(default_conf_usdt)
     # Didn't modify original dict
     assert default_conf_usdt["exchange"]["key"] != "REDACTED"
+    assert "accountId" not in default_conf_usdt["exchange"]
 
     assert res["exchange"]["key"] == "REDACTED"
     assert res["exchange"]["secret"] == "REDACTED"
+    # Didn't add a non-existing key
+    assert "accountId" not in res["exchange"]
 
     res = sanitize_config(default_conf_usdt, show_sensitive=True)
     assert res["exchange"]["key"] == default_conf_usdt["exchange"]["key"]

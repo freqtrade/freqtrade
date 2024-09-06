@@ -39,7 +39,7 @@ class MaxDrawdown(IProtection):
         """
         return (
             f"{drawdown} passed {self._max_allowed_drawdown} in {self.lookback_period_str}, "
-            f"locking for {self.stop_duration_str}."
+            f"locking {self.unlock_reason_time_element}."
         )
 
     def _max_drawdown(self, date_now: datetime) -> Optional[ProtectionReturn]:
@@ -70,7 +70,8 @@ class MaxDrawdown(IProtection):
                 f" within {self.lookback_period_str}.",
                 logger.info,
             )
-            until = self.calculate_lock_end(trades, self._stop_duration)
+
+            until = self.calculate_lock_end(trades)
 
             return ProtectionReturn(
                 lock=True,

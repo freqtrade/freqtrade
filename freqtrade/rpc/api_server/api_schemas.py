@@ -5,7 +5,7 @@ from pydantic import AwareDatetime, BaseModel, RootModel, SerializeAsAny
 
 from freqtrade.constants import IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
-from freqtrade.types import ValidExchangesType
+from freqtrade.ft_types import ValidExchangesType
 
 
 class ExchangeModePayloadMixin(BaseModel):
@@ -67,7 +67,6 @@ class Balance(BaseModel):
     stake: str
     # Starting with 2.x
     side: str
-    leverage: float
     is_position: bool
     position: float
     is_bot_managed: bool

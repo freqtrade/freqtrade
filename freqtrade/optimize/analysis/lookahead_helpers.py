@@ -4,11 +4,13 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
+from rich.text import Text
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.analysis.lookahead import LookaheadAnalysis
 from freqtrade.resolvers import StrategyResolver
+from freqtrade.util import print_rich_table
 
 
 logger = logging.getLogger(__name__)
@@ -53,18 +55,18 @@ class LookaheadAnalysisSubFunctions:
                     [
                         inst.strategy_obj["location"].parts[-1],
                         inst.strategy_obj["name"],
-                        inst.current_analysis.has_bias,
+                        Text("Yes", style="bold red")
+                        if inst.current_analysis.has_bias
+                        else Text("No", style="bold green"),
                         inst.current_analysis.total_signals,
                         inst.current_analysis.false_entry_signals,
                         inst.current_analysis.false_exit_signals,
                         ", ".join(inst.current_analysis.false_indicators),
                     ]
                 )
-        from tabulate import tabulate
 
-        table = tabulate(data, headers=headers, tablefmt="orgtbl")
-        print(table)
-        return table, headers, data
+        print_rich_table(data, headers, summary="Lookahead Analysis")
+        return data
 
     @staticmethod
     def export_to_csv(config: Dict[str, Any], lookahead_analysis: List[LookaheadAnalysis]):

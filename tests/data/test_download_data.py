@@ -14,7 +14,7 @@ def test_download_data_main_no_markets(mocker, caplog):
         "freqtrade.data.history.history_utils.refresh_backtest_ohlcv_data",
         MagicMock(return_value=["ETH/BTC", "XRP/BTC"]),
     )
-    patch_exchange(mocker, id="binance")
+    patch_exchange(mocker, exchange="binance")
     mocker.patch(f"{EXMS}.get_markets", return_value={})
     config = setup_utils_configuration({"exchange": "binance"}, RunMode.UTIL_EXCHANGE)
     config.update({"days": 20, "pairs": ["ETH/BTC", "XRP/BTC"], "timeframes": ["5m", "1h"]})
@@ -86,12 +86,11 @@ def test_download_data_main_trades(mocker):
     # Exchange that doesn't support historic downloads
     config["exchange"]["name"] = "bybit"
     with pytest.raises(OperationalException, match=r"Trade history not available for .*"):
-        config
         download_data_main(config)
 
 
 def test_download_data_main_data_invalid(mocker):
-    patch_exchange(mocker, id="kraken")
+    patch_exchange(mocker, exchange="kraken")
     mocker.patch(f"{EXMS}.get_markets", return_value={})
     config = setup_utils_configuration({"exchange": "kraken"}, RunMode.UTIL_EXCHANGE)
     config.update(

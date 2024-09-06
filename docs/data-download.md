@@ -423,7 +423,8 @@ You can get a list of downloaded data using the `list-data` sub-command.
 usage: freqtrade list-data [-h] [-v] [--logfile FILE] [-V] [-c PATH] [-d PATH]
                            [--userdir PATH] [--exchange EXCHANGE]
                            [--data-format-ohlcv {json,jsongz,hdf5,feather,parquet}]
-                           [-p PAIRS [PAIRS ...]]
+                           [--data-format-trades {json,jsongz,hdf5,feather,parquet}]
+                           [--trades] [-p PAIRS [PAIRS ...]]
                            [--trading-mode {spot,margin,futures}]
                            [--show-timerange]
 
@@ -433,6 +434,10 @@ options:
   --data-format-ohlcv {json,jsongz,hdf5,feather,parquet}
                         Storage format for downloaded candle (OHLCV) data.
                         (default: `feather`).
+  --data-format-trades {json,jsongz,hdf5,feather,parquet}
+                        Storage format for downloaded trades data. (default:
+                        `feather`).
+  --trades              Work on trades data instead of OHLCV data.
   -p PAIRS [PAIRS ...], --pairs PAIRS [PAIRS ...]
                         Limit command to these pairs. Pairs are space-
                         separated.
@@ -465,13 +470,29 @@ Common arguments:
 ```bash
 > freqtrade list-data --userdir ~/.freqtrade/user_data/
 
-Found 33 pair / timeframe combinations.
-pairs       timeframe
-----------  -----------------------------------------
-ADA/BTC     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
-ADA/ETH     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
-ETH/BTC     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d
-ETH/USDT    5m, 15m, 30m, 1h, 2h, 4h
+              Found 33 pair / timeframe combinations.
+┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┓
+┃          Pair ┃                                 Timeframe ┃ Type ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━┩
+│       ADA/BTC │     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d │ spot │
+│       ADA/ETH │     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d │ spot │
+│       ETH/BTC │     5m, 15m, 30m, 1h, 2h, 4h, 6h, 12h, 1d │ spot │
+│      ETH/USDT │                  5m, 15m, 30m, 1h, 2h, 4h │ spot │
+└───────────────┴───────────────────────────────────────────┴──────┘
+
+```
+
+Show all trades data including from/to timerange
+
+``` bash
+> freqtrade list-data --show --trades
+                     Found trades data for 1 pair.                     
+┏━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┓
+┃    Pair ┃ Type ┃                From ┃                  To ┃ Trades ┃
+┡━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━┩
+│ XRP/ETH │ spot │ 2019-10-11 00:00:11 │ 2019-10-13 11:19:28 │  12477 │
+└─────────┴──────┴─────────────────────┴─────────────────────┴────────┘
+
 ```
 
 ## Trades (tick) data

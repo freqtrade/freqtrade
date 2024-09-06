@@ -137,7 +137,7 @@ def generate_trades_history(n_rows, start_date: Optional[datetime] = None, days=
     random_timestamps_in_seconds = np.random.uniform(_start_timestamp, _end_timestamp, n_rows)
     timestamp = pd.to_datetime(random_timestamps_in_seconds, unit="s")
 
-    id = [
+    trade_id = [
         f"a{np.random.randint(1e6, 1e7 - 1)}cd{np.random.randint(100, 999)}" for _ in range(n_rows)
     ]
 
@@ -155,7 +155,7 @@ def generate_trades_history(n_rows, start_date: Optional[datetime] = None, days=
     df = pd.DataFrame(
         {
             "timestamp": timestamp,
-            "id": id,
+            "id": trade_id,
             "type": None,
             "side": side,
             "price": price,
@@ -236,13 +236,14 @@ def patched_configuration_load_config_file(mocker, config) -> None:
 
 
 def patch_exchange(
-    mocker, api_mock=None, id="binance", mock_markets=True, mock_supported_modes=True
+    mocker, api_mock=None, exchange="binance", mock_markets=True, mock_supported_modes=True
 ) -> None:
     mocker.patch(f"{EXMS}.validate_config", MagicMock())
     mocker.patch(f"{EXMS}.validate_timeframes", MagicMock())
-    mocker.patch(f"{EXMS}.id", PropertyMock(return_value=id))
-    mocker.patch(f"{EXMS}.name", PropertyMock(return_value=id.title()))
+    mocker.patch(f"{EXMS}.id", PropertyMock(return_value=exchange))
+    mocker.patch(f"{EXMS}.name", PropertyMock(return_value=exchange.title()))
     mocker.patch(f"{EXMS}.precisionMode", PropertyMock(return_value=2))
+    mocker.patch(f"{EXMS}.precision_mode_price", PropertyMock(return_value=2))
     # Temporary patch ...
     mocker.patch("freqtrade.exchange.bybit.Bybit.cache_leverage_tiers")
 
@@ -254,7 +255,8 @@ def patch_exchange(
 
     if mock_supported_modes:
         mocker.patch(
-            f"freqtrade.exchange.{id}.{id.capitalize()}._supported_trading_mode_margin_pairs",
+            f"freqtrade.exchange.{exchange}.{exchange.capitalize()}"
+            "._supported_trading_mode_margin_pairs",
             PropertyMock(
                 return_value=[
                     (TradingMode.MARGIN, MarginMode.CROSS),
@@ -274,10 +276,10 @@ def patch_exchange(
 
 
 def get_patched_exchange(
-    mocker, config, api_mock=None, id="binance", mock_markets=True, mock_supported_modes=True
+    mocker, config, api_mock=None, exchange="binance", mock_markets=True, mock_supported_modes=True
 ) -> Exchange:
-    patch_exchange(mocker, api_mock, id, mock_markets, mock_supported_modes)
-    config["exchange"]["name"] = id
+    patch_exchange(mocker, api_mock, exchange, mock_markets, mock_supported_modes)
+    config["exchange"]["name"] = exchange
     try:
         exchange = ExchangeResolver.load_exchange(config, load_leverage_tiers=True)
     except ImportError:
@@ -587,6 +589,7 @@ def get_default_conf(testdatadir):
         "exchange": {
             "name": "binance",
             "key": "key",
+            "enable_ws": False,
             "secret": "secret",
             "pair_whitelist": ["ETH/BTC", "LTC/BTC", "XRP/BTC", "NEO/BTC"],
             "pair_blacklist": [
@@ -612,7 +615,10 @@ def get_default_conf(testdatadir):
         "internals": {},
         "export": "none",
         "dataformat_ohlcv": "feather",
+        "dataformat_trades": "feather",
         "runmode": "dry_run",
+        "trading_mode": "spot",
+        "margin_mode": "",
         "candle_type_def": CandleType.SPOT,
     }
     return configuration
@@ -628,6 +634,7 @@ def get_default_conf_usdt(testdatadir):
                 "name": "binance",
                 "enabled": True,
                 "key": "key",
+                "enable_ws": False,
                 "secret": "secret",
                 "pair_whitelist": [
                     "ETH/USDT",
@@ -2184,7 +2191,7 @@ def tickers():
                 "first": None,
                 "last": 530.21,
                 "change": 0.558,
-                "percentage": None,
+                "percentage": 2.349,
                 "average": None,
                 "baseVolume": 72300.0659,
                 "quoteVolume": 37670097.3022171,

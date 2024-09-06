@@ -63,8 +63,8 @@ class IResolver:
 
         # Add extra directory to the top of the search paths
         if extra_dirs:
-            for dir in extra_dirs:
-                abs_paths.insert(0, Path(dir).resolve())
+            for directory in extra_dirs:
+                abs_paths.insert(0, Path(directory).resolve())
 
         if cls.extra_path and (extra := config.get(cls.extra_path)):
             abs_paths.insert(0, Path(extra).resolve())

@@ -2,8 +2,6 @@ import logging
 from operator import itemgetter
 from typing import Any, Dict
 
-from colorama import init as colorama_init
-
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.data.btanalysis import get_latest_hyperopt_file
 from freqtrade.enums import RunMode
@@ -18,6 +16,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     """
     List hyperopt epochs previously evaluated
     """
+    from freqtrade.optimize.hyperopt_output import HyperoptOutput
     from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
@@ -35,21 +34,17 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     # Previous evaluations
     epochs, total_epochs = HyperoptTools.load_filtered_results(results_file, config)
 
-    if print_colorized:
-        colorama_init(autoreset=True)
-
     if not export_csv:
         try:
-            print(
-                HyperoptTools.get_result_table(
-                    config,
-                    epochs,
-                    total_epochs,
-                    not config.get("hyperopt_list_best", False),
-                    print_colorized,
-                    0,
-                )
+            h_out = HyperoptOutput()
+            h_out.add_data(
+                config,
+                epochs,
+                total_epochs,
+                not config.get("hyperopt_list_best", False),
             )
+            h_out.print(print_colorized=print_colorized)
+
         except KeyboardInterrupt:
             print("User interrupted..")
 

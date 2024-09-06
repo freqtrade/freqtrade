@@ -8,8 +8,8 @@ import logging
 from copy import deepcopy
 from typing import Dict, List
 
-from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.exchange.exchange_types import Tickers
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class StaticPairList(IPairList):
     is_pairlist_generator = True
+    supports_backtesting = SupportsBacktesting.YES
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

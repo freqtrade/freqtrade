@@ -4,17 +4,18 @@ import sys
 from typing import Any, Dict, List, Union
 
 import rapidjson
-from colorama import Fore, Style
-from colorama import init as colorama_init
-from tabulate import tabulate
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.exchange import list_available_exchanges, market_is_active
+from freqtrade.ft_types import ValidExchangesType
 from freqtrade.misc import parse_db_uri_for_logging, plural
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
-from freqtrade.types import ValidExchangesType
+from freqtrade.util import print_rich_table
 
 
 logger = logging.getLogger(__name__)
@@ -26,71 +27,76 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
-    exchanges = list_available_exchanges(args["list_exchanges_all"])
+    available_exchanges: List[ValidExchangesType] = list_available_exchanges(
+        args["list_exchanges_all"]
+    )
 
     if args["print_one_column"]:
-        print("\n".join([e["name"] for e in exchanges]))
+        print("\n".join([e["classname"] for e in available_exchanges]))
     else:
-        headers = {
-            "name": "Exchange name",
-            "supported": "Supported",
-            "trade_modes": "Markets",
-            "comment": "Reason",
-        }
-        headers.update({"valid": "Valid"} if args["list_exchanges_all"] else {})
+        if args["list_exchanges_all"]:
+            title = (
+                f"All exchanges supported by the ccxt library "
+                f"({len(available_exchanges)} exchanges):"
+            )
+        else:
+            available_exchanges = [e for e in available_exchanges if e["valid"] is not False]
+            title = f"Exchanges available for Freqtrade ({len(available_exchanges)} exchanges):"
 
-        def build_entry(exchange: ValidExchangesType, valid: bool):
-            valid_entry = {"valid": exchange["valid"]} if valid else {}
-            result: Dict[str, Union[str, bool]] = {
-                "name": exchange["name"],
-                **valid_entry,
-                "supported": "Official" if exchange["supported"] else "",
-                "trade_modes": ", ".join(
-                    (f"{a['margin_mode']} " if a["margin_mode"] else "") + a["trading_mode"]
+        table = Table(title=title)
+
+        table.add_column("Exchange Name")
+        table.add_column("Class Name")
+        table.add_column("Markets")
+        table.add_column("Reason")
+
+        for exchange in available_exchanges:
+            name = Text(exchange["name"])
+            if exchange["supported"]:
+                name.append(" (Supported)", style="italic")
+                name.stylize("green bold")
+            classname = Text(exchange["classname"])
+            if exchange["is_alias"]:
+                name.stylize("strike")
+                classname.stylize("strike")
+                classname.append(f" (use {exchange['alias_for']})", style="italic")
+
+            trade_modes = Text(
+                ", ".join(
+                    (f"{a.get('margin_mode', '')} {a['trading_mode']}").lstrip()
                     for a in exchange["trade_modes"]
                 ),
-                "comment": exchange["comment"],
-            }
-
-            return result
-
-        if args["list_exchanges_all"]:
-            print("All exchanges supported by the ccxt library:")
-            exchanges = [build_entry(e, True) for e in exchanges]
-        else:
-            print("Exchanges available for Freqtrade:")
-            exchanges = [build_entry(e, False) for e in exchanges if e["valid"] is not False]
-
-        print(
-            tabulate(
-                exchanges,
-                headers=headers,
+                style="",
             )
-        )
+            if exchange["dex"]:
+                trade_modes = Text("DEX: ") + trade_modes
+                trade_modes.stylize("bold", 0, 3)
+
+            table.add_row(
+                name,
+                classname,
+                trade_modes,
+                exchange["comment"],
+                style=None if exchange["valid"] else "red",
+            )
+            # table.add_row(*[exchange[header] for header in headers])
+
+        console = Console()
+        console.print(table)
 
 
 def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
-    if print_colorized:
-        colorama_init(autoreset=True)
-        red = Fore.RED
-        yellow = Fore.YELLOW
-        reset = Style.RESET_ALL
-    else:
-        red = ""
-        yellow = ""
-        reset = ""
-
     names = [s["name"] for s in objs]
-    objs_to_print = [
+    objs_to_print: List[Dict[str, Union[Text, str]]] = [
         {
-            "name": s["name"] if s["name"] else "--",
+            "name": Text(s["name"] if s["name"] else "--"),
             "location": s["location_rel"],
             "status": (
-                red + "LOAD FAILED" + reset
+                Text("LOAD FAILED", style="bold red")
                 if s["class"] is None
-                else "OK"
+                else Text("OK", style="bold green")
                 if names.count(s["name"]) == 1
-                else yellow + "DUPLICATE NAME" + reset
+                else Text("DUPLICATE NAME", style="bold yellow")
             ),
         }
         for s in objs
@@ -100,11 +106,23 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
             objs_to_print[idx].update(
                 {
                     "hyperoptable": "Yes" if s["hyperoptable"]["count"] > 0 else "No",
-                    "buy-Params": len(s["hyperoptable"].get("buy", [])),
-                    "sell-Params": len(s["hyperoptable"].get("sell", [])),
+                    "buy-Params": str(len(s["hyperoptable"].get("buy", []))),
+                    "sell-Params": str(len(s["hyperoptable"].get("sell", []))),
                 }
             )
-    print(tabulate(objs_to_print, headers="keys", tablefmt="psql", stralign="right"))
+    table = Table()
+
+    for header in objs_to_print[0].keys():
+        table.add_column(header.capitalize(), justify="right")
+
+    for row in objs_to_print:
+        table.add_row(*[row[header] for header in objs_to_print[0].keys()])
+
+    console = Console(
+        color_system="auto" if print_colorized else None,
+        width=200 if "pytest" in sys.modules else None,
+    )
+    console.print(table)
 
 
 def start_list_strategies(args: Dict[str, Any]) -> None:
@@ -269,9 +287,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
                 writer.writeheader()
                 writer.writerows(tabular_data)
             else:
-                # print data as a table, with the human-readable summary
-                print(f"{summary_str}:")
-                print(tabulate(tabular_data, headers="keys", tablefmt="psql", stralign="right"))
+                print_rich_table(tabular_data, headers, summary_str)
         elif not (
             args.get("print_one_column", False)
             or args.get("list_pairs_print_json", False)

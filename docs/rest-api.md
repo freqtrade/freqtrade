@@ -2,7 +2,7 @@
 
 ## FreqUI
 
-FreqUI now has it's own dedicated [documentation section](frequi.md) - please refer to that section for all information regarding the FreqUI.
+FreqUI now has it's own dedicated [documentation section](freq-ui.md) - please refer to that section for all information regarding the FreqUI.
 
 ## Configuration
 

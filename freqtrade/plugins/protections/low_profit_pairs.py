@@ -36,7 +36,7 @@ class LowProfitPairs(IProtection):
         """
         return (
             f"{profit} < {self._required_profit} in {self.lookback_period_str}, "
-            f"locking for {self.stop_duration_str}."
+            f"locking {self.unlock_reason_time_element}."
         )
 
     def _low_profit(
@@ -70,7 +70,7 @@ class LowProfitPairs(IProtection):
                 f"within {self._lookback_period} minutes.",
                 logger.info,
             )
-            until = self.calculate_lock_end(trades, self._stop_duration)
+            until = self.calculate_lock_end(trades)
 
             return ProtectionReturn(
                 lock=True,

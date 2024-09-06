@@ -1,5 +1,4 @@
 ---
-version: '3'
 services:
   freqtrade:
     image: freqtradeorg/freqtrade:stable

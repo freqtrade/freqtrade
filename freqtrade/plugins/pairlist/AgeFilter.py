@@ -11,9 +11,9 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.misc import plural
-from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util import PeriodicCache, dt_floor_day, dt_now, dt_ts
 
 
@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class AgeFilter(IPairList):
+    supports_backtesting = SupportsBacktesting.NO
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 

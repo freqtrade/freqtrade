@@ -11,7 +11,7 @@ from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.types import OHLCVResponse, Tickers
+from freqtrade.exchange.exchange_types import FtHas, OHLCVResponse, Tickers
 from freqtrade.misc import deep_merge_dicts, json_load
 
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class Binance(Exchange):
-    _ft_has: Dict = {
+    _ft_has: FtHas = {
         "stoploss_on_exchange": True,
         "stop_price_param": "stopPrice",
         "stop_price_prop": "stopPrice",
@@ -30,8 +30,9 @@ class Binance(Exchange):
         "trades_pagination_arg": "fromId",
         "trades_has_history": True,
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
+        "ws_enabled": True,
     }
-    _ft_has_futures: Dict = {
+    _ft_has_futures: FtHas = {
         "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
         "order_time_in_force": ["GTC", "FOK", "IOC"],
         "tickers_have_price": False,
@@ -42,6 +43,7 @@ class Binance(Exchange):
             PriceType.LAST: "CONTRACT_PRICE",
             PriceType.MARK: "MARK_PRICE",
         },
+        "ws_enabled": False,
     }
 
     _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
@@ -190,7 +192,7 @@ class Binance(Exchange):
         if maintenance_amt is None:
             raise OperationalException(
                 "Parameter maintenance_amt is required by Binance.liquidation_price"
-                f"for {self.trading_mode.value}"
+                f"for {self.trading_mode}"
             )
 
         if self.trading_mode == TradingMode.FUTURES:

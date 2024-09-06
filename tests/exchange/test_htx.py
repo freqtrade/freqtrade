@@ -128,7 +128,7 @@ def test_create_stoploss_order_dry_run_htx(default_conf, mocker):
 
 
 def test_stoploss_adjust_htx(mocker, default_conf):
-    exchange = get_patched_exchange(mocker, default_conf, id="htx")
+    exchange = get_patched_exchange(mocker, default_conf, exchange="htx")
     order = {
         "type": "stop",
         "price": 1500,

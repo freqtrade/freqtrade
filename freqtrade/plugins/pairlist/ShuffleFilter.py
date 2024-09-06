@@ -8,8 +8,8 @@ from typing import Dict, List, Literal
 
 from freqtrade.enums import RunMode
 from freqtrade.exchange import timeframe_to_seconds
-from freqtrade.exchange.types import Tickers
-from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter
+from freqtrade.exchange.exchange_types import Tickers
+from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util.periodic_cache import PeriodicCache
 
 
@@ -19,6 +19,8 @@ ShuffleValues = Literal["candle", "iteration"]
 
 
 class ShuffleFilter(IPairList):
+    supports_backtesting = SupportsBacktesting.YES
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
