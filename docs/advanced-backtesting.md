@@ -145,8 +145,10 @@ The `(entry)` and `(exit)` suffixes are added to indicators
 to distinguish the values at the entry and exit points of the trade.
 
 !!! note "Trade-wide Indicators"
-    Certain trade-wide indicators do not have the `(entry)` or `(exit)` suffix. These indicators include: 
-    `"open_date"`, `"close_date"`, `"min_rate"`, `"max_rate"`, `"profit_ratio"`, and `"profit_abs"`.
+    Certain trade-wide indicators do not have the `(entry)` or `(exit)` suffix. These indicators include: `pair`, `stake_amount`, 
+    `max_stake_amount`, `amount`, `open_date`, `close_date`, `open_rate`, `close_rate`, `fee_open`, `fee_close`, `trade_duration`, 
+    `profit_ratio`, `profit_abs`, `exit_reason`,`initial_stop_loss_abs`, `initial_stop_loss_ratio`, `stop_loss_abs`, `stop_loss_ratio`, 
+    `min_rate`, `max_rate`, `is_open`, `enter_tag`, `leverage`, `is_short`, `open_timestamp`, `close_timestamp` and `orders`
 
 ### Filtering the trade output by date
 

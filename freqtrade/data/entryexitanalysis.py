@@ -8,6 +8,7 @@ import pandas as pd
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
 from freqtrade.data.btanalysis import (
+    BT_DATA_COLUMNS,
     get_latest_backtest_filename,
     load_backtest_data,
     load_backtest_stats,
@@ -303,15 +304,7 @@ def print_results(
 
 def _merge_dfs(entry_df, exit_df, available_inds):
     merge_on = ["pair", "open_date"]
-    trade_wide_indicators = [
-        "open_date",
-        "close_date",
-        "min_rate",
-        "max_rate",
-        "profit_ratio",
-        "profit_abs",
-    ]
-    signal_wide_indicators = list(set(available_inds) - set(trade_wide_indicators))
+    signal_wide_indicators = list(set(available_inds) - set(BT_DATA_COLUMNS))
     columns_to_keep = merge_on + ["enter_reason", "exit_reason"] + available_inds
 
     if exit_df is None or exit_df.empty:
