@@ -707,7 +707,7 @@ class Exchange:
             # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
             if self.markets and pair not in self.markets:
                 raise OperationalException(
-                    f"Pair {pair} is not available on {self.name} {self.trading_mode.value}. "
+                    f"Pair {pair} is not available on {self.name} {self.trading_mode}. "
                     f"Please remove {pair} from your whitelist."
                 )
 
@@ -890,7 +890,7 @@ class Exchange:
         ):
             mm_value = margin_mode and margin_mode.value
             raise OperationalException(
-                f"Freqtrade does not support {mm_value} {trading_mode.value} on {self.name}"
+                f"Freqtrade does not support {mm_value} {trading_mode} on {self.name}"
             )
 
     def get_option(self, param: str, default: Optional[Any] = None) -> Any:

@@ -11,3 +11,6 @@ class MarginMode(str, Enum):
     CROSS = "cross"
     ISOLATED = "isolated"
     NONE = ""
+
+    def __str__(self):
+        return f"{self.name.lower()}"

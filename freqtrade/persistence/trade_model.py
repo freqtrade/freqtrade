@@ -623,7 +623,7 @@ class LocalTrade:
         self.orders = []
         if self.trading_mode == TradingMode.MARGIN and self.interest_rate is None:
             raise OperationalException(
-                f"{self.trading_mode.value} trading requires param interest_rate on trades"
+                f"{self.trading_mode} trading requires param interest_rate on trades"
             )
 
     def __repr__(self):
@@ -1079,7 +1079,7 @@ class LocalTrade:
                 return float(self._calc_base_close(amount1, rate, self.fee_close)) + funding_fees
         else:
             raise OperationalException(
-                f"{self.trading_mode.value} trading is not yet available using freqtrade"
+                f"{self.trading_mode} trading is not yet available using freqtrade"
             )
 
     def calc_profit(

@@ -192,7 +192,7 @@ class Binance(Exchange):
         if maintenance_amt is None:
             raise OperationalException(
                 "Parameter maintenance_amt is required by Binance.liquidation_price"
-                f"for {self.trading_mode.value}"
+                f"for {self.trading_mode}"
             )
 
         if self.trading_mode == TradingMode.FUTURES:
