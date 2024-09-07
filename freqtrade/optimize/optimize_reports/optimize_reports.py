@@ -504,6 +504,8 @@ def generate_strategy_stats(
         "exit_profit_only": config["exit_profit_only"],
         "exit_profit_offset": config["exit_profit_offset"],
         "ignore_roi_if_entry_signal": config["ignore_roi_if_entry_signal"],
+        "trading_mode": config["trading_mode"],
+        "margin_mode": config["margin_mode"],
         **periodic_breakdown,
         **daily_stats,
         **trade_stats,
