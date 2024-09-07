@@ -22,6 +22,7 @@ from freqtrade.edge import Edge
 from freqtrade.enums import (
     ExitCheckTuple,
     ExitType,
+    MarginMode,
     RPCMessageType,
     SignalDirection,
     State,
@@ -108,6 +109,7 @@ class FreqtradeBot(LoggingMixin):
         PairLocks.timeframe = self.config["timeframe"]
 
         self.trading_mode: TradingMode = self.config.get("trading_mode", TradingMode.SPOT)
+        self.margin_mode: MarginMode = self.config.get("margin_mode", MarginMode.NONE)
         self.last_process: Optional[datetime] = None
 
         # RPC runs in separate threads, can start handling external commands just after
@@ -2216,7 +2218,11 @@ class FreqtradeBot(LoggingMixin):
                     # TODO: should shorting/leverage be supported by Edge,
                     # then this will need to be fixed.
                     trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
-            if order.ft_order_side == trade.entry_side or (trade.amount > 0 and trade.is_open):
+            if (
+                order.ft_order_side == trade.entry_side
+                or (trade.amount > 0 and trade.is_open)
+                or self.margin_mode == MarginMode.CROSS
+            ):
                 # Must also run for partial exits
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
