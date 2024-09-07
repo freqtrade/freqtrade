@@ -2215,15 +2215,20 @@ OKX also only provides MARK candles for the past ~3 months. Backtesting futures 
 <p>Gate.io allows the use of <code>POINT</code> to pay for fees. As this is not a tradable currency (no regular market available), automatic fee calculations will fail (and default to a fee of 0).
 The configuration parameter <code>exchange.unknown_fee_rate</code> can be used to specify the exchange rate between Point and the stake currency. Obviously, changing the stake-currency will also require changes to this value.</p>
 <h2 id="bybit">Bybit<a class="headerlink" href="#bybit" title="Permanent link">&para;</a></h2>
-<p>Futures trading on bybit is currently supported for USDT markets, and will use isolated futures mode.
-Users with unified accounts (there's no way back) can create a Sub-account which will start as "non-unified", and can therefore use isolated futures.
-On startup, freqtrade will set the position mode to "One-way Mode" for the whole (sub)account. This avoids making this call over and over again (slowing down bot operations), but means that changes to this setting may result in exceptions and errors</p>
+<p>Futures trading on bybit is currently supported for USDT markets, and will use isolated futures mode.</p>
+<p>On startup, freqtrade will set the position mode to "One-way Mode" for the whole (sub)account. This avoids making this call over and over again (slowing down bot operations), but means that changes to this setting may result in exceptions and errors.</p>
 <p>As bybit doesn't provide funding rate history, the dry-run calculation is used for live trades as well.</p>
-<p>API Keys for live futures trading (Subaccount on non-unified) must have the following permissions:
+<p>API Keys for live futures trading must have the following permissions:
 * Read-write
 * Contract - Orders
 * Contract - Positions</p>
 <p>We do strongly recommend to limit all API keys to the IP you're going to use it from.</p>
+<div class="admonition warning">
+<p class="admonition-title">Unified accounts</p>
+<p>Freqtrade assumes accounts to be dedicated to the bot.
+We therefore recommend the usage of one subaccount per bot. This is especially important when using unified accounts.<br />
+Other configurations (multiple bots on one account, manual non-bot trades on the bot account) are not supported and may lead to unexpected behavior.</p>
+</div>
 <div class="admonition tip">
 <p class="admonition-title">Stoploss on Exchange</p>
 <p>Bybit (futures only) supports <code>stoploss_on_exchange</code> and uses <code>stop-loss-limit</code> orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.
