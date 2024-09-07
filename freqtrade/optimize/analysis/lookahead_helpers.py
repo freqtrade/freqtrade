@@ -1,7 +1,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 from rich.text import Text
@@ -21,7 +21,7 @@ class LookaheadAnalysisSubFunctions:
     def text_table_lookahead_analysis_instances(
         config: Dict[str, Any],
         lookahead_instances: List[LookaheadAnalysis],
-        caption: str | None = None,
+        caption: Union[str, None] = None,
     ):
         headers = [
             "filename",
@@ -246,7 +246,7 @@ class LookaheadAnalysisSubFunctions:
 
         # report the results
         if lookaheadAnalysis_instances:
-            caption: str | None = None
+            caption: Union[str, None] = None
             if any([
                 any([
                     indicator.startswith("&")
