@@ -18,7 +18,9 @@ def entryexitanalysis_cleanup() -> None:
     Backtesting.cleanup()
 
 
-def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, user_dir, capsys):
+def test_backtest_analysis_on_entry_and_rejected_signals_nomock(
+    default_conf, mocker, caplog, testdatadir, user_dir, capsys
+):
     caplog.set_level(logging.INFO)
     (user_dir / "backtest_results").mkdir(parents=True, exist_ok=True)
 
@@ -158,6 +160,15 @@ def test_backtest_analysis_nomock(default_conf, mocker, caplog, testdatadir, use
     assert "34.049" in captured.out
     assert "0.104" in captured.out
     assert "52.829" in captured.out
+    # assert indicator list
+    assert "close (entry)" in captured.out
+    assert "0.016" in captured.out
+    assert "rsi (entry)" in captured.out
+    assert "54.320" in captured.out
+    assert "close (exit)" in captured.out
+    assert "rsi (exit)" in captured.out
+    assert "52.829" in captured.out
+    assert "profit_abs" in captured.out
 
     # test group 1
     args = get_args(base_args + ["--analysis-groups", "1"])

@@ -122,6 +122,7 @@ class Backtesting:
         self.processed_dfs: Dict[str, Dict] = {}
         self.rejected_dict: Dict[str, List] = {}
         self.rejected_df: Dict[str, Dict] = {}
+        self.exited_dfs: Dict[str, Dict] = {}
 
         self._exchange_name = self.config["exchange"]["name"]
         if not exchange:
@@ -1564,10 +1565,13 @@ class Backtesting:
             and self.dataprovider.runmode == RunMode.BACKTEST
         ):
             self.processed_dfs[strategy_name] = generate_trade_signal_candles(
-                preprocessed_tmp, results
+                preprocessed_tmp, results, "open_date"
             )
             self.rejected_df[strategy_name] = generate_rejected_signals(
                 preprocessed_tmp, self.rejected_dict
+            )
+            self.exited_dfs[strategy_name] = generate_trade_signal_candles(
+                preprocessed_tmp, results, "close_date"
             )
 
         return min_date, max_date
@@ -1644,7 +1648,11 @@ class Backtesting:
                 and self.dataprovider.runmode == RunMode.BACKTEST
             ):
                 store_backtest_analysis_results(
-                    self.config["exportfilename"], self.processed_dfs, self.rejected_df, dt_appendix
+                    self.config["exportfilename"],
+                    self.processed_dfs,
+                    self.rejected_df,
+                    self.exited_dfs,
+                    dt_appendix,
                 )
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.

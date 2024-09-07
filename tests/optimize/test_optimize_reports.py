@@ -293,20 +293,25 @@ def test_store_backtest_candles(testdatadir, mocker):
     candle_dict = {"DefStrat": {"UNITTEST/BTC": pd.DataFrame()}}
 
     # mock directory exporting
-    store_backtest_analysis_results(testdatadir, candle_dict, {}, "2022_01_01_15_05_13")
+    store_backtest_analysis_results(testdatadir, candle_dict, {}, {}, "2022_01_01_15_05_13")
 
-    assert dump_mock.call_count == 2
+    assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     assert str(dump_mock.call_args_list[0][0][0]).endswith("_signals.pkl")
+    assert str(dump_mock.call_args_list[1][0][0]).endswith("_rejected.pkl")
+    assert str(dump_mock.call_args_list[2][0][0]).endswith("_exited.pkl")
 
     dump_mock.reset_mock()
     # mock file exporting
     filename = Path(testdatadir / "testresult")
-    store_backtest_analysis_results(filename, candle_dict, {}, "2022_01_01_15_05_13")
-    assert dump_mock.call_count == 2
+    store_backtest_analysis_results(filename, candle_dict, {}, {}, "2022_01_01_15_05_13")
+    assert dump_mock.call_count == 3
     assert isinstance(dump_mock.call_args_list[0][0][0], Path)
     # result will be testdatadir / testresult-<timestamp>_signals.pkl
     assert str(dump_mock.call_args_list[0][0][0]).endswith("_signals.pkl")
+    assert str(dump_mock.call_args_list[1][0][0]).endswith("_rejected.pkl")
+    assert str(dump_mock.call_args_list[2][0][0]).endswith("_exited.pkl")
+
     dump_mock.reset_mock()
 
 
@@ -315,7 +320,7 @@ def test_write_read_backtest_candles(tmp_path):
 
     # test directory exporting
     sample_date = "2022_01_01_15_05_13"
-    store_backtest_analysis_results(tmp_path, candle_dict, {}, sample_date)
+    store_backtest_analysis_results(tmp_path, candle_dict, {}, {}, sample_date)
     stored_file = tmp_path / f"backtest-result-{sample_date}_signals.pkl"
     with stored_file.open("rb") as scp:
         pickled_signal_candles = joblib.load(scp)
@@ -330,7 +335,7 @@ def test_write_read_backtest_candles(tmp_path):
 
     # test file exporting
     filename = tmp_path / "testresult"
-    store_backtest_analysis_results(filename, candle_dict, {}, sample_date)
+    store_backtest_analysis_results(filename, candle_dict, {}, {}, sample_date)
     stored_file = tmp_path / f"testresult-{sample_date}_signals.pkl"
     with stored_file.open("rb") as scp:
         pickled_signal_candles = joblib.load(scp)
