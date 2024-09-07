@@ -1154,6 +1154,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Outputting signal candle indicators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sample-output-for-indicator-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample Output for Indicator Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -1619,6 +1634,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Outputting signal candle indicators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sample-output-for-indicator-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample Output for Indicator Values
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -1686,13 +1716,11 @@ signals <strong>and</strong> trades:</p>
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--timeframe<span class="w"> </span>&lt;tf&gt;<span class="w"> </span>--strategy<span class="w"> </span>&lt;strategy_name&gt;<span class="w"> </span>--timerange<span class="o">=</span>&lt;timerange&gt;<span class="w"> </span>--export<span class="o">=</span>signals
 </code></pre></div>
 <p>This will tell freqtrade to output a pickled dictionary of strategy, pairs and corresponding
-DataFrame of the candles that resulted in buy signals. Depending on how many buys your strategy
-makes, this file may get quite large, so periodically check your <code>user_data/backtest_results</code>
-folder to delete old exports.</p>
+DataFrame of the candles that resulted in entry and exit signals.
+Depending on how many entries your strategy makes, this file may get quite large, so periodically check your <code>user_data/backtest_results</code> folder to delete old exports.</p>
 <p>Before running your next backtest, make sure you either delete your old backtest results or run
 backtesting with the <code>--cache none</code> option to make sure no cached results are used.</p>
-<p>If all goes well, you should now see a <code>backtest-result-{timestamp}_signals.pkl</code> file in the
-<code>user_data/backtest_results</code> folder.</p>
+<p>If all goes well, you should now see a <code>backtest-result-{timestamp}_signals.pkl</code> and <code>backtest-result-{timestamp}_exited.pkl</code> files in the <code>user_data/backtest_results</code> folder.</p>
 <p>To analyze the entry/exit tags, we now need to use the <code>freqtrade backtesting-analysis</code> command
 with <code>--analysis-groups</code> option provided with space-separated arguments:</p>
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="m">5</span>
@@ -1742,6 +1770,11 @@ option:</p>
 <p>The indicators have to be present in your strategy's main DataFrame (either for your main
 timeframe or for informative timeframes) otherwise they will simply be ignored in the script
 output.</p>
+<div class="admonition note">
+<p class="admonition-title">Indicator List</p>
+<p>The indicator values will be displayed for both entry and exit points. If <code>--indicator-list all</code> is specified, 
+only the indicators at the entry point will be shown to avoid excessively large lists, which could occur depending on the strategy.</p>
+</div>
 <p>There are a range of candle and trade-related fields that are included in the analysis so are 
 automatically accessible by including them on the indicator-list, and these include:</p>
 <ul>
@@ -1757,6 +1790,60 @@ automatically accessible by including them on the indicator-list, and these incl
 <li><strong>profit_ratio  :</strong> trade profit ratio</li>
 <li><strong>profit_abs    :</strong> absolute profit return of the trade </li>
 </ul>
+<h4 id="sample-output-for-indicator-values">Sample Output for Indicator Values<a class="headerlink" href="#sample-output-for-indicator-values" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>user_data/config.json<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span>--indicator-list<span class="w"> </span>chikou_span<span class="w"> </span>tenkan_sen<span class="w"> </span>
+</code></pre></div>
+<p>In this example,
+we aim to display the <code>chikou_span</code> and <code>tenkan_sen</code> indicator values at both the entry and exit points of trades.</p>
+<p>A sample output for indicators might look like this:</p>
+<table>
+<thead>
+<tr>
+<th>pair</th>
+<th>open_date</th>
+<th>enter_reason</th>
+<th>exit_reason</th>
+<th>chikou_span (entry)</th>
+<th>tenkan_sen (entry)</th>
+<th>chikou_span (exit)</th>
+<th>tenkan_sen (exit)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DOGE/USDT</td>
+<td>2024-07-06 00:35:00+00:00</td>
+<td></td>
+<td>exit_signal</td>
+<td>0.105</td>
+<td>0.106</td>
+<td>0.105</td>
+<td>0.107</td>
+</tr>
+<tr>
+<td>BTC/USDT</td>
+<td>2024-08-05 14:20:00+00:00</td>
+<td></td>
+<td>roi</td>
+<td>54643.440</td>
+<td>51696.400</td>
+<td>54386.000</td>
+<td>52072.010</td>
+</tr>
+</tbody>
+</table>
+<p>As shown in the table, <code>chikou_span (entry)</code> represents the indicator value at the time of trade entry, 
+while <code>chikou_span (exit)</code> reflects its value at the time of exit. 
+This detailed view of indicator values enhances the analysis.</p>
+<p>The <code>(entry)</code> and <code>(exit)</code> suffixes are added to indicators
+to distinguish the values at the entry and exit points of the trade.</p>
+<div class="admonition note">
+<p class="admonition-title">Trade-wide Indicators</p>
+<p>Certain trade-wide indicators do not have the <code>(entry)</code> or <code>(exit)</code> suffix. These indicators include: <code>pair</code>, <code>stake_amount</code>, 
+<code>max_stake_amount</code>, <code>amount</code>, <code>open_date</code>, <code>close_date</code>, <code>open_rate</code>, <code>close_rate</code>, <code>fee_open</code>, <code>fee_close</code>, <code>trade_duration</code>, 
+<code>profit_ratio</code>, <code>profit_abs</code>, <code>exit_reason</code>,<code>initial_stop_loss_abs</code>, <code>initial_stop_loss_ratio</code>, <code>stop_loss_abs</code>, <code>stop_loss_ratio</code>, 
+<code>min_rate</code>, <code>max_rate</code>, <code>is_open</code>, <code>enter_tag</code>, <code>leverage</code>, <code>is_short</code>, <code>open_timestamp</code>, <code>close_timestamp</code> and <code>orders</code></p>
+</div>
 <h3 id="filtering-the-trade-output-by-date">Filtering the trade output by date<a class="headerlink" href="#filtering-the-trade-output-by-date" title="Permanent link">&para;</a></h3>
 <p>To show only trades between dates within your backtested timerange, supply the usual <code>timerange</code> option in <code>YYYYMMDD-[YYYYMMDD]</code> format:</p>
 <div class="highlight"><pre><span></span><code>--timerange : Timerange to filter output trades, start date inclusive, end date exclusive. e.g. 20220101-20221231
