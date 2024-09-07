@@ -2151,6 +2151,7 @@ This fee must be a ratio, and will be applied twice (once for trade entry, and o
 |-----------------------------+---------------------|
 | Backtesting from            | 2019-01-01 00:00:00 |
 | Backtesting to              | 2019-05-01 00:00:00 |
+| Trading Mode                | Spot                |
 | Max open trades             | 3                   |
 |                             |                     |
 | Total/Daily Avg Trades      | 429 / 3.575         |
@@ -2236,6 +2237,7 @@ It contains some useful key metrics about performance of your strategy on backte
 |-----------------------------+---------------------|
 | Backtesting from            | 2019-01-01 00:00:00 |
 | Backtesting to              | 2019-05-01 00:00:00 |
+| Trading Mode                | Spot                |
 | Max open trades             | 3                   |
 |                             |                     |
 | Total/Daily Avg Trades      | 429 / 3.575         |
@@ -2289,6 +2291,7 @@ It contains some useful key metrics about performance of your strategy on backte
 <ul>
 <li><code>Backtesting from</code> / <code>Backtesting to</code>: Backtesting range (usually defined with the <code>--timerange</code> option).</li>
 <li><code>Max open trades</code>: Setting of <code>max_open_trades</code> (or <code>--max-open-trades</code>) - or number of pairs in the pairlist (whatever is lower).</li>
+<li><code>Trading Mode</code>: Spot or Futures trading.</li>
 <li><code>Total/Daily Avg Trades</code>: Identical to the total trades of the backtest output table / Total trades divided by the backtesting duration in days (this will give you information about how many trades to expect from the strategy).</li>
 <li><code>Starting balance</code>: Start balance - as given by dry-run-wallet (config or command line).</li>
 <li><code>Final balance</code>: Final balance - starting balance + absolute profit.</li>
