@@ -265,7 +265,6 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
     assert len(data) == 3
 
 
-
 @pytest.mark.parametrize(
     "caption",
     [
