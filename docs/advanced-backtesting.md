@@ -19,14 +19,12 @@ freqtrade backtesting -c <config.json> --timeframe <tf> --strategy <strategy_nam
 
 This will tell freqtrade to output a pickled dictionary of strategy, pairs and corresponding
 DataFrame of the candles that resulted in entry and exit signals.
-Depending on how many buys your strategy makes, this file may get quite large, 
-so periodically check your `user_data/backtest_results` folder to delete old exports.
+Depending on how many entries your strategy makes, this file may get quite large, so periodically check your `user_data/backtest_results` folder to delete old exports.
 
 Before running your next backtest, make sure you either delete your old backtest results or run
 backtesting with the `--cache none` option to make sure no cached results are used.
 
-If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl` and
-`backtest-result-{timestamp}_exited.pkl` files in the `user_data/backtest_results` folder.
+If all goes well, you should now see a `backtest-result-{timestamp}_signals.pkl` and `backtest-result-{timestamp}_exited.pkl` files in the `user_data/backtest_results` folder.
 
 To analyze the entry/exit tags, we now need to use the `freqtrade backtesting-analysis` command
 with `--analysis-groups` option provided with space-separated arguments:
@@ -103,7 +101,7 @@ The indicators have to be present in your strategy's main DataFrame (either for 
 timeframe or for informative timeframes) otherwise they will simply be ignored in the script
 output.
 
-!!! note "Indicator List"
+!!! Note "Indicator List"
     The indicator values will be displayed for both entry and exit points. If `--indicator-list all` is specified, 
     only the indicators at the entry point will be shown to avoid excessively large lists, which could occur depending on the strategy.
 
@@ -127,6 +125,7 @@ automatically accessible by including them on the indicator-list, and these incl
 ```bash
 freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen 
 ```
+
 In this example,
 we aim to display the `chikou_span` and `tenkan_sen` indicator values at both the entry and exit points of trades.
 
@@ -144,7 +143,7 @@ This detailed view of indicator values enhances the analysis.
 The `(entry)` and `(exit)` suffixes are added to indicators
 to distinguish the values at the entry and exit points of the trade.
 
-!!! note "Trade-wide Indicators"
+!!! Note "Trade-wide Indicators"
     Certain trade-wide indicators do not have the `(entry)` or `(exit)` suffix. These indicators include: `pair`, `stake_amount`, 
     `max_stake_amount`, `amount`, `open_date`, `close_date`, `open_rate`, `close_rate`, `fee_open`, `fee_close`, `trade_duration`, 
     `profit_ratio`, `profit_abs`, `exit_reason`,`initial_stop_loss_abs`, `initial_stop_loss_ratio`, `stop_loss_abs`, `stop_loss_ratio`, 
