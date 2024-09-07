@@ -1165,12 +1165,10 @@ class Backtesting:
                 self._exit_trade(
                     trade, exit_row, exit_row[OPEN_IDX], trade.amount, ExitType.FORCE_EXIT.value
                 )
-                trade.orders[-1].close_bt_order(exit_row[DATE_IDX].to_pydatetime(), trade)
-
-                trade.close_date = exit_row[DATE_IDX].to_pydatetime()
                 trade.exit_reason = ExitType.FORCE_EXIT.value
-                trade.close(exit_row[OPEN_IDX], show_msg=False)
-                LocalTrade.close_bt_trade(trade)
+                self._process_exit_order(
+                    trade.orders[-1], trade, exit_row[DATE_IDX].to_pydatetime(), exit_row, pair
+                )
 
     def trade_slot_available(self, open_trade_count: int) -> bool:
         # Always allow trades when max_open_trades is enabled.
