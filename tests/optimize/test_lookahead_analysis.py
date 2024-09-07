@@ -13,6 +13,12 @@ from freqtrade.optimize.analysis.lookahead_helpers import LookaheadAnalysisSubFu
 from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
 
+IGNORE_BIASED_INDICATORS_CAPTION = (
+    "Any indicators in 'biased_indicators' which are used within "
+    "set_freqai_targets() can be ignored."
+)
+
+
 @pytest.fixture
 def lookahead_conf(default_conf_usdt, tmp_path):
     default_conf_usdt["user_data_dir"] = tmp_path
@@ -138,18 +144,15 @@ def test_lookahead_helper_start(lookahead_conf, mocker) -> None:
     [
         (
             ["&indicator1", "indicator2"],
-            "Any indicators in 'biased_indicators' which are used "
-            "within set_freqai_targets() can be ignored."
+            IGNORE_BIASED_INDICATORS_CAPTION,
         ),
         (
             ["indicator1", "&indicator2"],
-            "Any indicators in 'biased_indicators' which are used "
-            "within set_freqai_targets() can be ignored."
+            IGNORE_BIASED_INDICATORS_CAPTION,
         ),
         (
             ["&indicator1", "&indicator2"],
-            "Any indicators in 'biased_indicators' which are used "
-            "within set_freqai_targets() can be ignored."
+            IGNORE_BIASED_INDICATORS_CAPTION,
         ),
         (
             ["indicator1", "indicator2"],
@@ -158,7 +161,7 @@ def test_lookahead_helper_start(lookahead_conf, mocker) -> None:
         (
             [],
             None
-        )
+        ),
     ],
     ids=(
         "First of two biased indicators starts with '&'",
@@ -166,7 +169,7 @@ def test_lookahead_helper_start(lookahead_conf, mocker) -> None:
         "Both biased indicators start with '&'",
         "No biased indicators start with '&'",
         "Empty biased indicators list",
-    )
+    ),
 )
 def test_lookahead_helper_start__caption_based_on_indicators(
     indicators,
@@ -278,7 +281,7 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances(lookahead_conf
         "Pass non-empty string",
         "Pass None",
         "Don't pass caption",
-    )
+    ),
 )
 def test_lookahead_helper_text_table_lookahead_analysis_instances__caption(
     caption,
