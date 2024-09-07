@@ -27,13 +27,11 @@ def test_additional_exchange_init_bybit(default_conf, mocker, caplog):
 
     api_mock.set_position_mode.reset_mock()
     api_mock.is_unified_enabled = MagicMock(return_value=[False, True])
-    with pytest.raises(OperationalException, match=r"Bybit: Unified account is not supported.*"):
-        get_patched_exchange(mocker, default_conf, exchange="bybit", api_mock=api_mock)
-    assert log_has("Bybit: Unified account.", caplog)
-    # exchange = get_patched_exchange(mocker, default_conf, exchange="bybit", api_mock=api_mock)
-    # assert api_mock.set_position_mode.call_count == 1
-    # assert api_mock.is_unified_enabled.call_count == 1
-    # assert exchange.unified_account is True
+    exchange = get_patched_exchange(mocker, default_conf, exchange="bybit", api_mock=api_mock)
+    assert log_has("Bybit: Unified account. Assuming dedicated subaccount for this bot.", caplog)
+    assert api_mock.set_position_mode.call_count == 1
+    assert api_mock.is_unified_enabled.call_count == 1
+    assert exchange.unified_account is True
 
     ccxt_exceptionhandlers(
         mocker, default_conf, api_mock, "bybit", "additional_exchange_init", "set_position_mode"
