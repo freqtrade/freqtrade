@@ -154,14 +154,8 @@ def test_lookahead_helper_start(lookahead_conf, mocker) -> None:
             ["&indicator1", "&indicator2"],
             IGNORE_BIASED_INDICATORS_CAPTION,
         ),
-        (
-            ["indicator1", "indicator2"],
-            None
-        ),
-        (
-            [],
-            None
-        ),
+        (["indicator1", "indicator2"], None),
+        ([], None),
     ],
     ids=(
         "First of two biased indicators starts with '&'",
@@ -172,10 +166,7 @@ def test_lookahead_helper_start(lookahead_conf, mocker) -> None:
     ),
 )
 def test_lookahead_helper_start__caption_based_on_indicators(
-    indicators,
-    expected_caption_text,
-    lookahead_conf,
-    mocker
+    indicators, expected_caption_text, lookahead_conf, mocker
 ):
     """Test that the table caption is only populated if a biased_indicator starts with '&'."""
 
@@ -196,9 +187,7 @@ def test_lookahead_helper_start__caption_based_on_indicators(
     LookaheadAnalysisSubFunctions.start(lookahead_conf)
 
     text_table_mock.assert_called_once_with(
-        lookahead_conf,
-        [lookahead_analysis],
-        caption=expected_caption_text
+        lookahead_conf, [lookahead_analysis], caption=expected_caption_text
     )
 
 
@@ -300,7 +289,7 @@ def test_lookahead_helper_text_table_lookahead_analysis_instances__caption(
         {
             "name": "strategy_test_v3_with_lookahead_bias",
             "location": Path(lookahead_conf["strategy_path"], f"{lookahead_conf['strategy']}.py"),
-        }
+        },
     )
     kwargs = {}
     if caption is not False:

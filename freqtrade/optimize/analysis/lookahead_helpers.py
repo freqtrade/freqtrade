@@ -68,10 +68,7 @@ class LookaheadAnalysisSubFunctions:
                 )
 
         print_rich_table(
-            data,
-            headers,
-            summary="Lookahead Analysis",
-            table_kwargs={"caption": caption}
+            data, headers, summary="Lookahead Analysis", table_kwargs={"caption": caption}
         )
         return data
 
@@ -247,12 +244,17 @@ class LookaheadAnalysisSubFunctions:
         # report the results
         if lookaheadAnalysis_instances:
             caption: Union[str, None] = None
-            if any([
-                any([
-                    indicator.startswith("&")
-                    for indicator in inst.current_analysis.false_indicators
-                ]) for inst in lookaheadAnalysis_instances
-            ]):
+            if any(
+                [
+                    any(
+                        [
+                            indicator.startswith("&")
+                            for indicator in inst.current_analysis.false_indicators
+                        ]
+                    )
+                    for inst in lookaheadAnalysis_instances
+                ]
+            ):
                 caption = (
                     "Any indicators in 'biased_indicators' which are used within "
                     "set_freqai_targets() can be ignored."
