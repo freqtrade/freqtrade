@@ -26,7 +26,7 @@ jobs:
     - name: Run auto-update
       run: pre-commit autoupdate
 
-    - uses: peter-evans/create-pull-request@v6
+    - uses: peter-evans/create-pull-request@v7
       with:
         token: ${{ secrets.REPO_SCOPED_TOKEN }}
         add-paths: .pre-commit-config.yaml
