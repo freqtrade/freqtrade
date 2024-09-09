@@ -178,6 +178,7 @@ class Order(ModelBase):
         return (
             f"Order(id={self.id}, trade={self.ft_trade_id}, order_id={self.order_id}, "
             f"side={self.side}, filled={self.safe_filled}, price={self.safe_price}, "
+            f"amount={self.amount}, "
             f"status={self.status}, date={self.order_date_utc:{DATETIME_PRINT_FORMAT}})"
         )
 
@@ -616,10 +617,7 @@ class LocalTrade:
         return (entry_orders_filled_qty - exit_orders_filled_qty) > 0
 
     @property
-    def has_untied_assets(self) -> bool:
-        """
-        True if there is still remaining position not yet tied up to exit order
-        """
+    def untied_assets(self) -> float:
         entry_orders = [
             o for o in self.orders
             if o.ft_order_side == self.entry_side
@@ -633,7 +631,21 @@ class LocalTrade:
         exit_orders_remaining_qty = sum(exo.safe_remaining for exo in exit_orders)
         untied_remaining = entry_orders_filled_qty - exit_orders_remaining_qty
 
-        return untied_remaining > 0
+        logger.info(f"entry_orders: {entry_orders}")
+        logger.info(f"exit_orders: {exit_orders}")
+        logger.info(f"entry_orders_filled_qty: {entry_orders_filled_qty}")
+        logger.info(f"exit_orders_remaining_qty: {exit_orders_remaining_qty}")
+
+        logger.info(f"untied_remaining: {untied_remaining}")
+
+        return untied_remaining
+    
+    @property
+    def has_untied_assets(self) -> bool:
+        """
+        True if there is still remaining position not yet tied up to exit order
+        """
+        return self.untied_assets > 0
 
     @property
     def open_sl_orders(self) -> List[Order]:
