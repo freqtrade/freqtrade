@@ -713,13 +713,14 @@ class FreqtradeBot(LoggingMixin):
         """
         # Walk through each pair and check if it needs changes
         for trade in Trade.get_open_trades():
-            # Do a wallets update (will be ratelimited to once per hour)
-            self.wallets.update(False)
-            try:
-                self.check_and_call_adjust_trade_position(trade)
-            except DependencyException as exception:
-                logger.warning(
-                    f"Unable to adjust position of trade for {trade.pair}: {exception}")
+            if not trade.has_open_orders:
+                # Do a wallets update (will be ratelimited to once per hour)
+                self.wallets.update(False)
+                try:
+                    self.check_and_call_adjust_trade_position(trade)
+                except DependencyException as exception:
+                    logger.warning(
+                        f"Unable to adjust position of trade for {trade.pair}: {exception}")
 
     def check_and_call_adjust_trade_position(self, trade: Trade):
         """
