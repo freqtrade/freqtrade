@@ -32,7 +32,7 @@ jobs:
       run: python build_helpers/binance_update_lev_tiers.py
 
 
-    - uses: peter-evans/create-pull-request@v6
+    - uses: peter-evans/create-pull-request@v7
       with:
         token: ${{ secrets.REPO_SCOPED_TOKEN }}
         add-paths: freqtrade/exchange/binance_leverage_tiers.json
