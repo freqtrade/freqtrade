@@ -263,6 +263,8 @@ def print_results(
     exit_df: pd.DataFrame,
     analysis_groups: List[str],
     indicator_list: List[str],
+    entry_only: bool,
+    exit_only: bool,
     csv_path: Path,
     rejected_signals=None,
     to_csv=False,
@@ -288,7 +290,7 @@ def print_results(
                 if ind in res_df:
                     available_inds.append(ind)
 
-            merged_df = _merge_dfs(res_df, exit_df, available_inds)
+            merged_df = _merge_dfs(res_df, exit_df, available_inds, entry_only, exit_only)
 
             _print_table(
                 merged_df,
@@ -302,16 +304,30 @@ def print_results(
         print("\\No trades to show")
 
 
-def _merge_dfs(entry_df, exit_df, available_inds):
+def _merge_dfs(
+    entry_df: pd.DataFrame,
+    exit_df: pd.DataFrame,
+    available_inds: List[str],
+    entry_only: bool,
+    exit_only: bool,
+):
     merge_on = ["pair", "open_date"]
     signal_wide_indicators = list(set(available_inds) - set(BT_DATA_COLUMNS))
-    columns_to_keep = merge_on + ["enter_reason", "exit_reason"] + available_inds
+    columns_to_keep = merge_on + ["enter_reason", "exit_reason"]
 
-    if exit_df is None or exit_df.empty:
-        return entry_df[columns_to_keep]
+    if exit_df is None or exit_df.empty or entry_only is True:
+        return entry_df[columns_to_keep + available_inds]
+
+    if exit_only is True:
+        return pd.merge(
+            entry_df[columns_to_keep],
+            exit_df[merge_on + signal_wide_indicators],
+            on=merge_on,
+            suffixes=(" (entry)", " (exit)"),
+        )
 
     return pd.merge(
-        entry_df[columns_to_keep],
+        entry_df[columns_to_keep + available_inds],
         exit_df[merge_on + signal_wide_indicators],
         on=merge_on,
         suffixes=(" (entry)", " (exit)"),
@@ -343,9 +359,16 @@ def process_entry_exit_reasons(config: Config):
         enter_reason_list = config.get("enter_reason_list", ["all"])
         exit_reason_list = config.get("exit_reason_list", ["all"])
         indicator_list = config.get("indicator_list", [])
+        entry_only = config.get("entry_only", False)
+        exit_only = config.get("exit_only", False)
         do_rejected = config.get("analysis_rejected", False)
         to_csv = config.get("analysis_to_csv", False)
         csv_path = Path(config.get("analysis_csv_path", config["exportfilename"]))
+
+        if entry_only is True and exit_only is True:
+            raise OperationalException(
+                "Cannot use --entry-only and --exit-only at the same time. Please choose one."
+            )
         if to_csv and not csv_path.is_dir():
             raise OperationalException(f"Specified directory {csv_path} does not exist.")
 
@@ -400,6 +423,8 @@ def process_entry_exit_reasons(config: Config):
                     exit_df,
                     analysis_groups,
                     indicator_list,
+                    entry_only,
+                    exit_only,
                     rejected_signals=rej_df,
                     to_csv=to_csv,
                     csv_path=csv_path,

@@ -228,6 +228,8 @@ ARGS_ANALYZE_ENTRIES_EXITS = [
     "enter_reason_list",
     "exit_reason_list",
     "indicator_list",
+    "entry_only",
+    "exit_only",
     "timerange",
     "analysis_rejected",
     "analysis_to_csv",
