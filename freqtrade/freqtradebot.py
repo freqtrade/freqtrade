@@ -1246,8 +1246,7 @@ class FreqtradeBot(LoggingMixin):
         trades_closed = 0
         for trade in trades:
             if (
-                not trade.has_open_orders
-                and not trade.has_open_sl_orders
+                not trade.has_open_sl_orders
                 and not self.wallets.check_exit_amount(trade)
             ):
                 logger.warning(
@@ -1272,7 +1271,7 @@ class FreqtradeBot(LoggingMixin):
                         f"Unable to handle stoploss on exchange for {trade.pair}: {exception}"
                     )
                 # Check if we can sell our current pair
-                if trade.has_untied_assets and trade.is_open and self.handle_trade(trade):
+                if trade.is_open and self.handle_trade(trade):
                     trades_closed += 1
 
             except DependencyException as exception:
@@ -1416,7 +1415,7 @@ class FreqtradeBot(LoggingMixin):
                 self.handle_protections(trade.pair, trade.trade_direction)
                 return True
 
-        if trade.has_open_orders or not trade.is_open:
+        if not trade.is_open:
             # Trade has an open order, Stoploss-handling can't happen in this case
             # as the Amount on the exchange is tied up in another trade.
             # The trade can be closed already (sell-order fill confirmation came in this iteration)
