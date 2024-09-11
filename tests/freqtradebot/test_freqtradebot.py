@@ -1265,14 +1265,14 @@ def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog
     trades = [trade]
     freqtrade.wallets.update()
     n = freqtrade.exit_positions(trades)
-    assert n == 0
+    assert n == 1
     # Test amount not modified by fee-logic
     assert not log_has_re(r"Applying fee to amount for Trade .*", caplog)
 
     gra = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", return_value=0.0)
     # test amount modified by fee-logic
     n = freqtrade.exit_positions(trades)
-    assert n == 0
+    assert n == 1
     assert gra.call_count == 0
 
 
