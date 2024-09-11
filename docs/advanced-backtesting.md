@@ -149,6 +149,25 @@ to distinguish the values at the entry and exit points of the trade.
     `profit_ratio`, `profit_abs`, `exit_reason`,`initial_stop_loss_abs`, `initial_stop_loss_ratio`, `stop_loss_abs`, `stop_loss_ratio`, 
     `min_rate`, `max_rate`, `is_open`, `enter_tag`, `leverage`, `is_short`, `open_timestamp`, `close_timestamp` and `orders`
 
+#### Filtering Indicators Based on Entry or Exit Signals
+
+The `--indicator-list` option, by default, displays indicator values for both entry and exit signals. To filter the indicator values exclusively for entry signals, you can use the `--entry-only` argument. Similarly, to display indicator values only at exit signals, use the `--exit-only` argument.
+
+Example: Display indicator values at entry signals:
+
+```bash
+freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen --entry-only
+```
+
+Example: Display indicator values at exit signals:
+
+```bash
+freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen --exit-only
+```
+
+!!! note 
+    When using these filters, the indicator names will not be suffixed with `(entry)` or `(exit)`.
+
 ### Filtering the trade output by date
 
 To show only trades between dates within your backtested timerange, supply the usual `timerange` option in `YYYYMMDD-[YYYYMMDD]` format:
