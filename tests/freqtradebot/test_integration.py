@@ -480,22 +480,11 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker,
     assert pytest.approx(trade.orders[-1].amount) == 91.689215 * leverage
     assert freqtrade.strategy.adjust_entry_price.call_count == 0
 
-    print("BEFORE Process trade.orders")
-    print(trade.orders)
-
-    # adding this will prevent the second exit order creation, but this test case must be handled properly
-    #freqtrade.strategy.custom_exit = MagicMock(return_value=None)
-
     caplog.clear()
     caplog.set_level(logging.DEBUG)
     # Process again, should not adjust entry price
     freqtrade.process()
     trade = Trade.get_trades().first()
-
-    print(f"DEBUG TEST")
-    print(caplog.text)
-    print("AFTER Process trade.orders")
-    print(trade.orders)
 
     assert trade.orders[-2].status == "canceled"
     assert len(trade.orders) == 6

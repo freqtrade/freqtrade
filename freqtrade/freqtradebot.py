@@ -1710,7 +1710,7 @@ class FreqtradeBot(LoggingMixin):
                         self.handle_cancel_exit(
                             trade, order, open_order, reason
                         )
-    
+
     def cancel_all_open_orders(self) -> None:
         """
         Cancel all orders that are currently open
@@ -1975,7 +1975,7 @@ class FreqtradeBot(LoggingMixin):
                 [trade.exit_side]
             )
             Trade.commit()
-            
+
         # First cancelling stoploss on exchange ...
         trade = self.cancel_stoploss_on_exchange(trade)
 

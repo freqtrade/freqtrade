@@ -639,7 +639,7 @@ class LocalTrade:
         logger.info(f"untied_remaining: {untied_remaining}")
 
         return untied_remaining
-    
+
     @property
     def has_untied_assets(self) -> bool:
         """
