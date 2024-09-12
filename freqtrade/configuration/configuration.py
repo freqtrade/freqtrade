@@ -407,6 +407,8 @@ class Configuration:
             ("enter_reason_list", "Analysis enter tag list: {}"),
             ("exit_reason_list", "Analysis exit tag list: {}"),
             ("indicator_list", "Analysis indicator list: {}"),
+            ("entry_only", "Only analyze entry signals: {}"),
+            ("exit_only", "Only analyze exit signals: {}"),
             ("timerange", "Filter trades by timerange: {}"),
             ("analysis_rejected", "Analyse rejected signals: {}"),
             ("analysis_to_csv", "Store analysis tables to CSV: {}"),
