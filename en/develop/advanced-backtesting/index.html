@@ -1166,6 +1166,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#filtering-indicators-based-on-entry-or-exit-signals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Filtering Indicators Based on Entry or Exit Signals
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1646,6 +1655,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#filtering-indicators-based-on-entry-or-exit-signals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Filtering Indicators Based on Entry or Exit Signals
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1843,6 +1861,18 @@ to distinguish the values at the entry and exit points of the trade.</p>
 <code>max_stake_amount</code>, <code>amount</code>, <code>open_date</code>, <code>close_date</code>, <code>open_rate</code>, <code>close_rate</code>, <code>fee_open</code>, <code>fee_close</code>, <code>trade_duration</code>, 
 <code>profit_ratio</code>, <code>profit_abs</code>, <code>exit_reason</code>,<code>initial_stop_loss_abs</code>, <code>initial_stop_loss_ratio</code>, <code>stop_loss_abs</code>, <code>stop_loss_ratio</code>, 
 <code>min_rate</code>, <code>max_rate</code>, <code>is_open</code>, <code>enter_tag</code>, <code>leverage</code>, <code>is_short</code>, <code>open_timestamp</code>, <code>close_timestamp</code> and <code>orders</code></p>
+</div>
+<h4 id="filtering-indicators-based-on-entry-or-exit-signals">Filtering Indicators Based on Entry or Exit Signals<a class="headerlink" href="#filtering-indicators-based-on-entry-or-exit-signals" title="Permanent link">&para;</a></h4>
+<p>The <code>--indicator-list</code> option, by default, displays indicator values for both entry and exit signals. To filter the indicator values exclusively for entry signals, you can use the <code>--entry-only</code> argument. Similarly, to display indicator values only at exit signals, use the <code>--exit-only</code> argument.</p>
+<p>Example: Display indicator values at entry signals:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>user_data/config.json<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span>--indicator-list<span class="w"> </span>chikou_span<span class="w"> </span>tenkan_sen<span class="w"> </span>--entry-only
+</code></pre></div>
+<p>Example: Display indicator values at exit signals:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>user_data/config.json<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span>--indicator-list<span class="w"> </span>chikou_span<span class="w"> </span>tenkan_sen<span class="w"> </span>--exit-only
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using these filters, the indicator names will not be suffixed with <code>(entry)</code> or <code>(exit)</code>.</p>
 </div>
 <h3 id="filtering-the-trade-output-by-date">Filtering the trade output by date<a class="headerlink" href="#filtering-the-trade-output-by-date" title="Permanent link">&para;</a></h3>
 <p>To show only trades between dates within your backtested timerange, supply the usual <code>timerange</code> option in <code>YYYYMMDD-[YYYYMMDD]</code> format:</p>
