@@ -497,7 +497,9 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker,
     print("AFTER Process trade.orders")
     print(trade.orders)
 
-    assert len(trade.orders) == 5
+    assert trade.orders[-2].status == "canceled"
+    assert len(trade.orders) == 6
+    assert trade.orders[-1].side == trade.exit_side
     assert trade.orders[-1].status == "open"
     assert trade.orders[-1].price == 2.02
     # Adjust entry price cannot be called - this is an exit order
