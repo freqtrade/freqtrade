@@ -623,11 +623,21 @@ class Exchange:
         if self._exchange_ws:
             self._exchange_ws.reset_connections()
 
+    async def _api_reload_markets(self, reload: bool = False) -> None:
+        try:
+            return await self._api_async.load_markets(reload=reload, params={})
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f"Error in reload_markets due to {e.__class__.__name__}. Message: {e}"
+            ) from e
+        except ccxt.BaseError as e:
+            raise TemporaryError(e) from e
+
     def _load_async_markets(self, reload: bool = False) -> Dict[str, Any]:
         try:
-            markets = self.loop.run_until_complete(
-                self._api_async.load_markets(reload=reload, params={})
-            )
+            markets = self.loop.run_until_complete(self._api_reload_markets(reload=reload))
 
             if isinstance(markets, Exception):
                 raise markets
@@ -652,7 +662,12 @@ class Exchange:
         logger.debug("Performing scheduled market reload..")
         try:
             # Reload async markets, then assign them to sync api
-            self._markets = self._load_async_markets(reload=True)
+            if force:
+                # Force reload of markets - retry several times
+                self._markets = retrier(self._load_async_markets, retries=3)(reload=True)
+            else:
+                # Normal market reload - accept temporary errors and use "old" markets
+                self._markets = self._load_async_markets(reload=True)
             self._api.set_markets(self._api_async.markets, self._api_async.currencies)
             # Assign options array, as it contains some temporary information from the exchange.
             self._api.options = self._api_async.options
