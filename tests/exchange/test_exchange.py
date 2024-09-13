@@ -638,6 +638,21 @@ def test_reload_markets(default_conf, mocker, caplog, time_machine):
     exchange.reload_markets()
     assert lam_spy.call_count == 0
 
+    # Another reload should happen but it fails.
+    time_machine.move_to(start_dt + timedelta(minutes=51), tick=False)
+    api_mock.load_markets = get_mock_coro(side_effect=ccxt.NetworkError("LoadError"))
+
+    exchange.reload_markets(force=False)
+    assert exchange.markets == updated_markets
+    assert lam_spy.call_count == 1
+    # Tried once, failed
+
+    lam_spy.reset_mock()
+    # When forceing (bot startup), it should retry 3 times.
+    exchange.reload_markets(force=True)
+    assert lam_spy.call_count == 4
+    assert exchange.markets == updated_markets
+
 
 def test_reload_markets_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)

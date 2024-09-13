@@ -662,7 +662,7 @@ class Exchange:
         logger.debug("Performing scheduled market reload..")
         try:
             # on initial load, we retry 3 times to ensure we get the markets
-            retries = 3 if force else 1
+            retries = 3 if force else 0
             # Reload async markets, then assign them to sync api
             self._markets = retrier(self._load_async_markets, retries=retries)(reload=True)
             self._api.set_markets(self._api_async.markets, self._api_async.currencies)
