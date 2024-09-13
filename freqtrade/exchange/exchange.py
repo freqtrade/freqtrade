@@ -623,7 +623,7 @@ class Exchange:
         if self._exchange_ws:
             self._exchange_ws.reset_connections()
 
-    async def _api_reload_markets(self, reload: bool = False) -> None:
+    async def _api_reload_markets(self, reload: bool = False) -> Dict[str, Any]:
         try:
             return await self._api_async.load_markets(reload=reload, params={})
         except ccxt.DDoSProtection as e:
@@ -662,7 +662,7 @@ class Exchange:
         logger.debug("Performing scheduled market reload..")
         try:
             # on initial load, we retry 3 times to ensure we get the markets
-            retries = 3 if force else 0
+            retries: int = 3 if force else 0
             # Reload async markets, then assign them to sync api
             self._markets = retrier(self._load_async_markets, retries=retries)(reload=True)
             self._api.set_markets(self._api_async.markets, self._api_async.currencies)
