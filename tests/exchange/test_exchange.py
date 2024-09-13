@@ -567,7 +567,15 @@ def test__load_async_markets(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
 
     exchange._api_async.load_markets = get_mock_coro(side_effect=ccxt.BaseError("deadbeef"))
-    with pytest.raises(ccxt.BaseError, match="deadbeef"):
+    with pytest.raises(TemporaryError, match="deadbeef"):
+        exchange._load_async_markets()
+
+    exchange._api_async.load_markets = get_mock_coro(side_effect=ccxt.DDoSProtection("deadbeef"))
+    with pytest.raises(DDosProtection, match="deadbeef"):
+        exchange._load_async_markets()
+
+    exchange._api_async.load_markets = get_mock_coro(side_effect=ccxt.OperationFailed("deadbeef"))
+    with pytest.raises(TemporaryError, match="deadbeef"):
         exchange._load_async_markets()
 
 
