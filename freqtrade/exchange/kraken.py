@@ -78,6 +78,7 @@ class Kraken(Exchange):
                     # x["side"], x["amount"],
                 )
                 for x in orders
+                if x["remaining"] is not None and (x["side"] == "sell" or x["price"] is not None)
             ]
             for bal in balances:
                 if not isinstance(balances[bal], dict):
