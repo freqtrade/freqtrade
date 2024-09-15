@@ -205,7 +205,7 @@ This is called with each iteration of the bot (only if the Pairlist Handler is a
 
 It must return the resulting pairlist (which may then be passed into the chain of Pairlist Handlers).
 
-Validations are optional, the parent class exposes a `_verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filtering. Use this if you limit your result to a certain number of pairs - so the end-result is not shorter than expected.
+Validations are optional, the parent class exposes a `verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filtering. Use this if you limit your result to a certain number of pairs - so the end-result is not shorter than expected.
 
 #### filter_pairlist
 
@@ -219,7 +219,7 @@ The default implementation in the base class simply calls the `_validate_pair()`
 
 If overridden, it must return the resulting pairlist (which may then be passed into the next Pairlist Handler in the chain).
 
-Validations are optional, the parent class exposes a `_verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filters. Use this if you limit your result to a certain number of pairs - so the end result is not shorter than expected.
+Validations are optional, the parent class exposes a `verify_blacklist(pairlist)` and `_whitelist_for_active_markets(pairlist)` to do default filters. Use this if you limit your result to a certain number of pairs - so the end result is not shorter than expected.
 
 In `VolumePairList`, this implements different methods of sorting, does early validation so only the expected number of pairs is returned.
 
