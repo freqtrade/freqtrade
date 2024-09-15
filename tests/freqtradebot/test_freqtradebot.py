@@ -2204,7 +2204,6 @@ def test_manage_open_orders_buy_exception(
     patch_exchange(mocker)
     mocker.patch.multiple(
         EXMS,
-        validate_pairs=MagicMock(),
         fetch_ticker=ticker_usdt,
         fetch_order=MagicMock(side_effect=ExchangeError),
         cancel_order=cancel_order_mock,
