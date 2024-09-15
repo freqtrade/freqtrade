@@ -729,16 +729,6 @@ class Exchange:
                 # The internal info array is different for each particular market,
                 # its contents depend on the exchange.
                 # It can also be a string or similar ... so we need to verify that first.
-            elif isinstance(self.markets[pair].get("info"), dict) and self.markets[pair].get(
-                "info", {}
-            ).get("prohibitedIn", False):
-                # Warn users about restricted pairs in whitelist.
-                # We cannot determine reliably if Users are affected.
-                logger.warning(
-                    f"Pair {pair} is restricted for some users on this exchange."
-                    f"Please check if you are impacted by this restriction "
-                    f"on the exchange and eventually remove {pair} from your whitelist."
-                )
             if (
                 self._config["stake_currency"]
                 and self.get_pair_quote_currency(pair) != self._config["stake_currency"]

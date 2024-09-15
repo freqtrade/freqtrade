@@ -812,30 +812,6 @@ def test_validate_pairs_exception(default_conf, mocker, caplog):
     assert log_has("Unable to validate pairs (assuming they are correct).", caplog)
 
 
-def test_validate_pairs_restricted(default_conf, mocker, caplog):
-    api_mock = MagicMock()
-    type(api_mock).load_markets = get_mock_coro(
-        return_value={
-            "ETH/BTC": {"quote": "BTC"},
-            "LTC/BTC": {"quote": "BTC"},
-            "XRP/BTC": {"quote": "BTC", "info": {"prohibitedIn": ["US"]}},
-            "NEO/BTC": {"quote": "BTC", "info": "TestString"},  # info can also be a string ...
-        }
-    )
-    mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_timeframes")
-    mocker.patch(f"{EXMS}.validate_pricing")
-    mocker.patch(f"{EXMS}.validate_stakecurrency")
-
-    Exchange(default_conf)
-    assert log_has(
-        "Pair XRP/BTC is restricted for some users on this exchange."
-        "Please check if you are impacted by this restriction "
-        "on the exchange and eventually remove XRP/BTC from your whitelist.",
-        caplog,
-    )
-
-
 def test_validate_pairs_stakecompatibility(default_conf, mocker):
     api_mock = MagicMock()
     type(api_mock).load_markets = get_mock_coro(
