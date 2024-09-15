@@ -104,7 +104,6 @@ from freqtrade.misc import (
     file_load_json,
     safe_value_fallback2,
 )
-from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.util import dt_from_ts, dt_now
 from freqtrade.util.datetime_helpers import dt_humanize_delta, dt_ts, format_ms_time
 from freqtrade.util.periodic_cache import PeriodicCache
@@ -331,8 +330,6 @@ class Exchange:
 
         # Check if all pairs are available
         self.validate_stakecurrency(config["stake_currency"])
-        if not config["exchange"].get("skip_pair_validation"):
-            self.validate_pairs(config["exchange"]["pair_whitelist"])
         self.validate_ordertypes(config.get("order_types", {}))
         self.validate_order_time_in_force(config.get("order_time_in_force", {}))
         self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
@@ -700,44 +697,6 @@ class Exchange:
             raise ConfigurationError(
                 f"{stake_currency} is not available as stake on {self.name}. "
                 f"Available currencies are: {', '.join(quote_currencies)}"
-            )
-
-    def validate_pairs(self, pairs: List[str]) -> None:
-        """
-        Checks if all given pairs are tradable on the current exchange.
-        :param pairs: list of pairs
-        :raise: OperationalException if one pair is not available
-        :return: None
-        """
-
-        if not self.markets:
-            logger.warning("Unable to validate pairs (assuming they are correct).")
-            return
-        extended_pairs = expand_pairlist(pairs, list(self.markets), keep_invalid=True)
-        invalid_pairs = []
-        for pair in extended_pairs:
-            # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
-            if self.markets and pair not in self.markets:
-                raise OperationalException(
-                    f"Pair {pair} is not available on {self.name} {self.trading_mode}. "
-                    f"Please remove {pair} from your whitelist."
-                )
-
-                # From ccxt Documentation:
-                # markets.info: An associative array of non-common market properties,
-                # including fees, rates, limits and other general market information.
-                # The internal info array is different for each particular market,
-                # its contents depend on the exchange.
-                # It can also be a string or similar ... so we need to verify that first.
-            if (
-                self._config["stake_currency"]
-                and self.get_pair_quote_currency(pair) != self._config["stake_currency"]
-            ):
-                invalid_pairs.append(pair)
-        if invalid_pairs:
-            raise OperationalException(
-                f"Stake-currency '{self._config['stake_currency']}' not compatible with "
-                f"pair-whitelist. Please remove the following pairs: {invalid_pairs}"
             )
 
     def get_valid_pair_combination(self, curr_1: str, curr_2: str) -> str:
