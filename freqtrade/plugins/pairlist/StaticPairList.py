@@ -67,6 +67,8 @@ class StaticPairList(IPairList):
         if self._allow_inactive:
             return wl
         else:
+            # Avoid implicit filtering of "verify_whitelist" to keep
+            # proper warnings in the log
             return self._whitelist_for_active_markets(wl)
 
     def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
