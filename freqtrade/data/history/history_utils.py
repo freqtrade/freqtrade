@@ -610,9 +610,6 @@ def download_data_main(config: Config) -> None:
     if "timeframes" not in config:
         config["timeframes"] = DL_DATA_TIMEFRAMES
 
-    # Manual validations of relevant settings
-    if not config["exchange"].get("skip_pair_validation", False):
-        exchange.validate_pairs(expanded_pairs)
     logger.info(
         f"About to download pairs: {expanded_pairs}, "
         f"intervals: {config['timeframes']} to {config['datadir']}"
