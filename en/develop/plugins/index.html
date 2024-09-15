@@ -2157,8 +2157,7 @@ You may also use something like <code>.*DOWN/BTC</code> or <code>.*UP/BTC</code>
 </code></pre></div>
 <p>By default, only currently enabled pairs are allowed.
 To skip pair validation against active markets, set <code>"allow_inactive": true</code> within the <code>StaticPairList</code> configuration.
-This can be useful for backtesting expired pairs (like quarterly spot-markets).
-This option must be configured along with <code>exchange.skip_pair_validation</code> in the exchange configuration.</p>
+This can be useful for backtesting expired pairs (like quarterly spot-markets).</p>
 <p>When used in a "follow-up" position (e.g. after VolumePairlist), all pairs in <code>'pair_whitelist'</code> will be added to the end of the pairlist.</p>
 <h4 id="volume-pair-list">Volume Pair List<a class="headerlink" href="#volume-pair-list" title="Permanent link">&para;</a></h4>
 <p><code>VolumePairList</code> employs sorting/filtering of pairs by their trading volume. It selects <code>number_assets</code> top pairs with sorting based on the <code>sort_key</code> (which can only be <code>quoteVolume</code>).</p>
