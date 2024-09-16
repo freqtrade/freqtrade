@@ -53,7 +53,7 @@ questionary==2.0.1
 prompt-toolkit==3.0.36
 # Extensions to datetime library
 python-dateutil==2.9.0.post0
-pytz==2024.1
+pytz==2024.2
 
 #Futures
 schedule==1.2.2
