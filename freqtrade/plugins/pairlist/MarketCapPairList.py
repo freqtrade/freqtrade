@@ -34,9 +34,11 @@ class MarketCapPairList(IPairList):
         self._stake_currency = self._config["stake_currency"]
         self._number_assets = self._pairlistconfig["number_assets"]
         self._max_rank = self._pairlistconfig.get("max_rank", 30)
-        self._refresh_period = self._pairlistconfig.get("refresh_period", 86400)
+        self._refresh_period = self._pairlistconfig.get(
+            "refresh_period", 86400)
         self._category = self._pairlistconfig.get("category", None)
-        self._marketcap_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
+        self._marketcap_cache: TTLCache = TTLCache(
+            maxsize=1, ttl=self._refresh_period)
         self._def_candletype = self._config["candle_type_def"]
 
         _coingecko_config = self._config.get("coingecko", {})
@@ -47,7 +49,8 @@ class MarketCapPairList(IPairList):
         )
 
         if self._max_rank > 250:
-            raise OperationalException("This filter only support marketcap rank up to 250.")
+            raise OperationalException(
+                "This filter only support marketcap rank up to 250.")
 
     @property
     def needstickers(self) -> bool:
