@@ -35,6 +35,7 @@ class MarketCapPairList(IPairList):
         self._number_assets = self._pairlistconfig["number_assets"]
         self._max_rank = self._pairlistconfig.get("max_rank", 30)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 86400)
+        self._category = self._pairlistconfig.get("category", None)
         self._marketcap_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
         self._def_candletype = self._config["candle_type_def"]
 
@@ -85,6 +86,12 @@ class MarketCapPairList(IPairList):
                 "description": "Max rank of assets",
                 "help": "Maximum rank of assets to use from the pairlist",
             },
+            "category": {
+                "type": "string",
+                "default": None,
+                "description": "The Category",
+                "help": "Th Category of the coin e.g layer-1 default None",
+            },
             "refresh_period": {
                 "type": "number",
                 "default": 86400,
@@ -133,6 +140,9 @@ class MarketCapPairList(IPairList):
         marketcap_list = self._marketcap_cache.get("marketcap")
 
         if marketcap_list is None:
+            # categories = self._coingecko.get_coins_categories()
+            # print([cat['id'] for cat in categories])
+
             data = self._coingecko.get_coins_markets(
                 vs_currency="usd",
                 order="market_cap_desc",
@@ -140,6 +150,7 @@ class MarketCapPairList(IPairList):
                 page="1",
                 sparkline="false",
                 locale="en",
+                **({"category": self._category} if self._category else {})
             )
             if data:
                 marketcap_list = [row["symbol"] for row in data]
@@ -153,11 +164,11 @@ class MarketCapPairList(IPairList):
             if market == "futures":
                 pair_format += f":{self._stake_currency.upper()}"
 
-            top_marketcap = marketcap_list[: self._max_rank :]
+            top_marketcap = marketcap_list[: self._max_rank:]
 
             for mc_pair in top_marketcap:
                 test_pair = f"{mc_pair.upper()}/{pair_format}"
-                if test_pair in pairlist:
+                if test_pair in pairlist and test_pair not in filtered_pairlist:
                     filtered_pairlist.append(test_pair)
                     if len(filtered_pairlist) == self._number_assets:
                         break
