@@ -15,7 +15,7 @@ httpx>=0.24.1
 humanize==4.10.0
 cachetools==5.5.0
 requests==2.32.3
-urllib3==2.2.2
+urllib3==2.2.3
 jsonschema==4.23.0
 TA-Lib==0.4.32
 technical==1.4.4
