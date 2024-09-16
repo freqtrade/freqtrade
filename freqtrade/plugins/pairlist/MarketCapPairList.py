@@ -143,8 +143,6 @@ class MarketCapPairList(IPairList):
         marketcap_list = self._marketcap_cache.get("marketcap")
 
         if marketcap_list is None:
-            # categories = self._coingecko.get_coins_categories()
-            # print([cat['id'] for cat in categories])
 
             data = self._coingecko.get_coins_markets(
                 vs_currency="usd",
