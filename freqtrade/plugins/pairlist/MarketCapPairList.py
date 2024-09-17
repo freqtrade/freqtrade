@@ -14,6 +14,7 @@ from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util.coin_gecko import FtCoinGeckoApi
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -46,10 +47,12 @@ class MarketCapPairList(IPairList):
         )
 
         categories = self._coingecko.get_coins_categories_list()
-        category_ids = [cat['category_id'] for cat in categories]
+        category_ids = [cat["category_id"] for cat in categories]
 
         if self._category not in category_ids:
-            raise OperationalException(f"category not in coingecko category list you can choose from {category_ids}")
+            raise OperationalException(
+                f"category not in coingecko category list you can choose from {category_ids}"
+            )
 
         if self._max_rank > 250:
             raise OperationalException("This filter only support marketcap rank up to 250.")
@@ -145,7 +148,6 @@ class MarketCapPairList(IPairList):
         marketcap_list = self._marketcap_cache.get("marketcap")
 
         if marketcap_list is None:
-
             data = self._coingecko.get_coins_markets(
                 vs_currency="usd",
                 order="market_cap_desc",
@@ -153,7 +155,7 @@ class MarketCapPairList(IPairList):
                 page="1",
                 sparkline="false",
                 locale="en",
-                **({"category": self._category} if self._category else {})
+                **({"category": self._category} if self._category else {}),
             )
             if data:
                 marketcap_list = [row["symbol"] for row in data]
@@ -167,7 +169,7 @@ class MarketCapPairList(IPairList):
             if market == "futures":
                 pair_format += f":{self._stake_currency.upper()}"
 
-            top_marketcap = marketcap_list[: self._max_rank:]
+            top_marketcap = marketcap_list[: self._max_rank :]
 
             for mc_pair in top_marketcap:
                 test_pair = f"{mc_pair.upper()}/{pair_format}"
