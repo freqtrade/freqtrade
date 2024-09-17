@@ -46,13 +46,14 @@ class MarketCapPairList(IPairList):
             is_demo=_coingecko_config.get("is_demo", True),
         )
 
-        categories = self._coingecko.get_coins_categories_list()
-        category_ids = [cat["category_id"] for cat in categories]
+        if self._category:
+            categories = self._coingecko.get_coins_categories_list()
+            category_ids = [cat["category_id"] for cat in categories]
 
-        if self._category not in category_ids:
-            raise OperationalException(
-                f"category not in coingecko category list you can choose from {category_ids}"
-            )
+            if self._category not in category_ids:
+                raise OperationalException(
+                    f"category not in coingecko category list you can choose from {category_ids}"
+                )
 
         if self._max_rank > 250:
             raise OperationalException("This filter only support marketcap rank up to 250.")
@@ -173,7 +174,7 @@ class MarketCapPairList(IPairList):
 
             for mc_pair in top_marketcap:
                 test_pair = f"{mc_pair.upper()}/{pair_format}"
-                if test_pair in pairlist and test_pair not in filtered_pairlist:
+                if test_pair in pairlist:
                     filtered_pairlist.append(test_pair)
                     if len(filtered_pairlist) == self._number_assets:
                         break
