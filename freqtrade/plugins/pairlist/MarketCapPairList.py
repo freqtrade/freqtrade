@@ -14,7 +14,6 @@ from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util.coin_gecko import FtCoinGeckoApi
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -34,11 +33,9 @@ class MarketCapPairList(IPairList):
         self._stake_currency = self._config["stake_currency"]
         self._number_assets = self._pairlistconfig["number_assets"]
         self._max_rank = self._pairlistconfig.get("max_rank", 30)
-        self._refresh_period = self._pairlistconfig.get(
-            "refresh_period", 86400)
+        self._refresh_period = self._pairlistconfig.get("refresh_period", 86400)
         self._category = self._pairlistconfig.get("category", None)
-        self._marketcap_cache: TTLCache = TTLCache(
-            maxsize=1, ttl=self._refresh_period)
+        self._marketcap_cache: TTLCache = TTLCache(maxsize=1, ttl=self._refresh_period)
         self._def_candletype = self._config["candle_type_def"]
 
         _coingecko_config = self._config.get("coingecko", {})
@@ -48,9 +45,14 @@ class MarketCapPairList(IPairList):
             is_demo=_coingecko_config.get("is_demo", True),
         )
 
+        categories = self._coingecko.get_coins_categories_list()
+        category_ids = [cat['category_id'] for cat in categories]
+
+        if self._category not in category_ids:
+            raise OperationalException(f"category not in coingecko category list you can choose from {category_ids}")
+
         if self._max_rank > 250:
-            raise OperationalException(
-                "This filter only support marketcap rank up to 250.")
+            raise OperationalException("This filter only support marketcap rank up to 250.")
 
     @property
     def needstickers(self) -> bool:
