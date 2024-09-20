@@ -17,7 +17,6 @@ from freqtrade.constants import (
 from freqtrade.data.converter import (
     clean_ohlcv_dataframe,
     convert_trades_to_ohlcv,
-    ohlcv_to_dataframe,
     trades_df_remove_duplicates,
     trades_list_to_df,
 )
@@ -273,7 +272,7 @@ def _download_pair_history(
         )
 
         # Default since_ms to 30 days if nothing is given
-        new_data = exchange.get_historic_ohlcv(
+        new_dataframe = exchange.get_historic_ohlcv(
             pair=pair,
             timeframe=timeframe,
             since_ms=(
@@ -284,10 +283,6 @@ def _download_pair_history(
             is_new_pair=data.empty,
             candle_type=candle_type,
             until_ms=until_ms if until_ms else None,
-        )
-        # TODO: Maybe move parsing to exchange class (?)
-        new_dataframe = ohlcv_to_dataframe(
-            new_data, timeframe, pair, fill_missing=False, drop_incomplete=True
         )
         if data.empty:
             data = new_dataframe

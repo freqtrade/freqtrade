@@ -2223,7 +2223,7 @@ class Exchange:
         candle_type: CandleType,
         is_new_pair: bool = False,
         until_ms: Optional[int] = None,
-    ) -> List:
+    ) -> DataFrame:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
@@ -2233,7 +2233,7 @@ class Exchange:
         :param since_ms: Timestamp in milliseconds to get history from
         :param until_ms: Timestamp in milliseconds to get history up to
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
-        :return: List with candle (OHLCV) data
+        :return: Dataframe with candle (OHLCV) data
         """
         pair, _, _, data, _ = self.loop.run_until_complete(
             self._async_get_historic_ohlcv(
@@ -2246,7 +2246,7 @@ class Exchange:
             )
         )
         logger.info(f"Downloaded data for {pair} with length {len(data)}.")
-        return data
+        return ohlcv_to_dataframe(data, timeframe, pair, fill_missing=False, drop_incomplete=True)
 
     async def _async_get_historic_ohlcv(
         self,
