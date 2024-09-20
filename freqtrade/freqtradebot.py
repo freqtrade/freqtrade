@@ -1685,7 +1685,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Cancel trade orders of specified sides that are currently open
         :param trade: Trade object of the trade we're analyzing
-        :param reason: The reason for that cancelation
+        :param reason: The reason for that cancellation
         :param sides: The sides where cancellation should take place
         :return: None
         """
