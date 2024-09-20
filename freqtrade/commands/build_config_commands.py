@@ -274,8 +274,6 @@ def start_new_config(args: Dict[str, Any]) -> None:
 def start_show_config(args: Dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE, set_dry=False)
 
-    # TODO: Sanitize from sensitive info before printing
-
     print("Your combined configuration is:")
     config_sanitized = sanitize_config(
         config["original_config"], show_sensitive=args.get("show_sensitive", False)
