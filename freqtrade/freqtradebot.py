@@ -720,7 +720,8 @@ class FreqtradeBot(LoggingMixin):
                     self.check_and_call_adjust_trade_position(trade)
                 except DependencyException as exception:
                     logger.warning(
-                        f"Unable to adjust position of trade for {trade.pair}: {exception}")
+                        f"Unable to adjust position of trade for {trade.pair}: {exception}"
+                    )
 
     def check_and_call_adjust_trade_position(self, trade: Trade):
         """
@@ -1245,10 +1246,7 @@ class FreqtradeBot(LoggingMixin):
         """
         trades_closed = 0
         for trade in trades:
-            if (
-                not trade.has_open_sl_orders
-                and not self.wallets.check_exit_amount(trade)
-            ):
+            if not trade.has_open_sl_orders and not self.wallets.check_exit_amount(trade):
                 logger.warning(
                     f"Not enough {trade.safe_base_currency} in wallet to exit {trade}. "
                     "Trying to recover."
@@ -1700,16 +1698,12 @@ class FreqtradeBot(LoggingMixin):
                 continue
 
             for side in sides:
-                if (order["side"] == side):
+                if order["side"] == side:
                     if order["side"] == trade.entry_side:
-                        self.handle_cancel_enter(
-                            trade, order, open_order, reason
-                        )
+                        self.handle_cancel_enter(trade, order, open_order, reason)
 
                     elif order["side"] == trade.exit_side:
-                        self.handle_cancel_exit(
-                            trade, order, open_order, reason
-                        )
+                        self.handle_cancel_exit(trade, order, open_order, reason)
 
     def cancel_all_open_orders(self) -> None:
         """
@@ -1719,8 +1713,7 @@ class FreqtradeBot(LoggingMixin):
 
         for trade in Trade.get_open_trades():
             self.cancel_open_orders_of_trade(
-                trade, constants.CANCEL_REASON["ALL_CANCELLED"],
-                [trade.entry_side, trade.exit_side]
+                trade, constants.CANCEL_REASON["ALL_CANCELLED"], [trade.entry_side, trade.exit_side]
             )
 
         Trade.commit()
@@ -1971,8 +1964,7 @@ class FreqtradeBot(LoggingMixin):
         if trade.has_open_orders:
             # cancel any open order of this trade
             self.cancel_open_orders_of_trade(
-                trade, constants.CANCEL_REASON["REPLACE"],
-                [trade.exit_side]
+                trade, constants.CANCEL_REASON["REPLACE"], [trade.exit_side]
             )
             Trade.commit()
 
