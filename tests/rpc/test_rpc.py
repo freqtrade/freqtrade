@@ -149,7 +149,10 @@ def test_rpc_trade_status(default_conf, ticker, fee, mocker) -> None:
     # Different from "filled" response:
     response_unfilled.update(
         {
-            "amount": 91.07468124,
+            "amount": 0.0,
+            "open_trade_value": 0.0,
+            "stoploss_entry_dist": 0.0,
+            "stoploss_entry_dist_ratio": 0.0,
             "profit_ratio": 0.0,
             "profit_pct": 0.0,
             "profit_abs": 0.0,
