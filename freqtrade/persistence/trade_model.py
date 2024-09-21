@@ -341,8 +341,8 @@ class Order(ModelBase):
             order_id=str(order["id"]),
             ft_order_side=side,
             ft_pair=pair,
-            ft_amount=amount if amount else order["amount"],
-            ft_price=price if price else order["price"],
+            ft_amount=amount or order.get("amount", None) or 0.0,
+            ft_price=price or order.get("price", None),
         )
 
         o.update_from_ccxt_object(order)
