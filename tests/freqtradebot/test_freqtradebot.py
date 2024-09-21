@@ -1684,7 +1684,7 @@ def test_handle_trade_roi(
         create_order=MagicMock(
             side_effect=[
                 open_order,
-                {"id": 1234553382},
+                {"id": 1234553382, "amount": open_order["amount"]},
             ]
         ),
         get_fee=fee,
