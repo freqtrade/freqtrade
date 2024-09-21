@@ -2090,13 +2090,14 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     exchange = get_patched_exchange(mocker, default_conf, exchange=exchange_name)
     pair = "ETH/BTC"
     calls = 0
+    now = dt_now()
 
     async def mock_candle_hist(pair, timeframe, candle_type, since_ms):
         nonlocal calls
         calls += 1
         ohlcv = [
             [
-                dt_ts(dt_now() + timedelta(minutes=5 * (calls + i))),  # unix timestamp ms
+                dt_ts(now + timedelta(minutes=5 * (calls + i))),  # unix timestamp ms
                 1,  # open
                 2,  # high
                 3,  # low
