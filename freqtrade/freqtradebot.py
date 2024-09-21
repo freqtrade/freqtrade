@@ -987,7 +987,7 @@ class FreqtradeBot(LoggingMixin):
                 base_currency=base_currency,
                 stake_currency=self.config["stake_currency"],
                 stake_amount=stake_amount,
-                amount=amount,
+                amount=0,
                 is_open=True,
                 amount_requested=amount_requested,
                 fee_open=fee,
