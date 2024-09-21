@@ -2882,7 +2882,7 @@ def test_execute_trade_exit_up(
         EXMS,
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _dry_is_price_crossed=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(side_effect=[True, False]),
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -2974,7 +2974,7 @@ def test_execute_trade_exit_down(
         EXMS,
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _dry_is_price_crossed=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(side_effect=[True, False]),
     )
     patch_whitelist(mocker, default_conf_usdt)
     freqtrade = FreqtradeBot(default_conf_usdt)
@@ -2997,7 +2997,7 @@ def test_execute_trade_exit_down(
         exit_check=ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
     )
 
-    assert rpc_mock.call_count == 2
+    assert rpc_mock.call_count == 3
     last_msg = rpc_mock.call_args_list[-1][0][0]
     assert {
         "type": RPCMessageType.EXIT,
@@ -3061,7 +3061,7 @@ def test_execute_trade_exit_custom_exit_price(
         EXMS,
         fetch_ticker=ticker_usdt,
         get_fee=fee,
-        _dry_is_price_crossed=MagicMock(return_value=False),
+        _dry_is_price_crossed=MagicMock(side_effect=[True, False]),
     )
     config = deepcopy(default_conf_usdt)
     config["custom_price_max_distance_ratio"] = 0.1
