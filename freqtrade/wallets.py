@@ -99,11 +99,21 @@ class Wallets:
         used_stake = 0.0
 
         if self._config.get("trading_mode", "spot") != TradingMode.FUTURES:
-            current_stake = self.start_cap + tot_profit - tot_in_trades
-            total_stake = current_stake
             for trade in open_trades:
                 curr = self._exchange.get_pair_base_currency(trade.pair)
-                _wallets[curr] = Wallet(curr, trade.amount, 0, trade.amount)
+                used_stake += sum(
+                    o.stake_amount for o in trade.open_orders if o.ft_order_side == trade.entry_side
+                )
+                pending = sum(
+                    o.amount
+                    for o in trade.open_orders
+                    if o.amount and o.ft_order_side == trade.exit_side
+                )
+
+                _wallets[curr] = Wallet(curr, trade.amount - pending, pending, trade.amount)
+
+            current_stake = self.start_cap + tot_profit - tot_in_trades
+            total_stake = current_stake + used_stake
         else:
             tot_in_trades = 0
             for position in open_trades:
