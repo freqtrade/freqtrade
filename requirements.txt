@@ -1,5 +1,5 @@
 numpy==1.26.4
-pandas==2.2.2
+pandas==2.2.3
 bottleneck==1.4.0
 numexpr==2.10.1
 pandas-ta==0.3.14b
@@ -9,7 +9,7 @@ cryptography==42.0.8; platform_machine == 'armv7l'
 cryptography==43.0.1; platform_machine != 'armv7l'
 aiohttp==3.10.5
 SQLAlchemy==2.0.35
-python-telegram-bot==21.5
+python-telegram-bot==21.6
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.24.1
 humanize==4.10.0
@@ -42,7 +42,7 @@ sdnotify==0.3.2
 
 # API Server
 fastapi==0.114.2
-pydantic==2.9.1
+pydantic==2.9.2
 uvicorn==0.30.6
 pyjwt==2.9.0
 aiofiles==24.1.0
@@ -59,7 +59,7 @@ pytz==2024.2
 schedule==1.2.2
 
 #WS Messages
-websockets==13.0.1
+websockets==13.1
 janus==1.0.0
 
 ast-comments==1.2.2
