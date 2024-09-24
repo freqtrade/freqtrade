@@ -1161,10 +1161,7 @@ class LocalTrade:
         else:
             open_trade_value = self._calc_open_trade_value(amount, open_rate)
 
-        short_close_zero = self.is_short and close_trade_value == 0.0
-        long_close_zero = not self.is_short and open_trade_value == 0.0
-
-        if short_close_zero or long_close_zero:
+        if open_trade_value == 0.0:
             return 0.0
         else:
             if self.is_short:

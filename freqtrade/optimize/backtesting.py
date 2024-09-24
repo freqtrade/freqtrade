@@ -1099,7 +1099,7 @@ class Backtesting:
                     open_rate_requested=propose_rate,
                     open_date=current_time,
                     stake_amount=stake_amount,
-                    amount=amount,
+                    amount=0,
                     amount_requested=amount,
                     fee_open=self.fee,
                     fee_close=self.fee,

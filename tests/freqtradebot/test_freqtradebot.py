@@ -689,13 +689,29 @@ def test_process_trade_creation(
     assert trade.open_date is not None
     assert trade.exchange == "binance"
     assert trade.open_rate == ticker_usdt.return_value[ticker_side]
-    assert pytest.approx(trade.amount) == 60 / ticker_usdt.return_value[ticker_side]
+    # Trade opens with 0 amount. Only trade filling will set the amount
+    assert pytest.approx(trade.amount) == 0
+    assert pytest.approx(trade.amount_requested) == 60 / ticker_usdt.return_value[ticker_side]
 
     assert log_has(
         f'{"Short" if is_short else "Long"} signal found: about create a new trade for ETH/USDT '
         "with stake_amount: 60.0 ...",
         caplog,
     )
+    mocker.patch("freqtrade.freqtradebot.FreqtradeBot._check_and_execute_exit")
+
+    # Fill trade.
+    freqtrade.process()
+    trades = Trade.get_open_trades()
+    assert len(trades) == 1
+    trade = trades[0]
+    assert trade is not None
+    assert trade.is_open
+    assert trade.open_date is not None
+    assert trade.exchange == "binance"
+    assert trade.open_rate == limit_order[entry_side(is_short)]["price"]
+    # Filled trade has amount set to filled order amount
+    assert pytest.approx(trade.amount) == limit_order[entry_side(is_short)]["filled"]
 
 
 def test_process_exchange_failures(default_conf_usdt, ticker_usdt, mocker) -> None:
@@ -1684,7 +1700,7 @@ def test_handle_trade_roi(
         create_order=MagicMock(
             side_effect=[
                 open_order,
-                {"id": 1234553382},
+                {"id": 1234553382, "amount": open_order["amount"]},
             ]
         ),
         get_fee=fee,

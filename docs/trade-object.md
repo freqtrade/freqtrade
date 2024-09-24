@@ -18,7 +18,7 @@ The following attributes / properties are available for each individual trade - 
 | `open_rate` | float | Rate this trade was entered at (Avg. entry rate in case of trade-adjustments). |
 | `close_rate` | float | Close rate - only set when is_open = False. |
 | `stake_amount` | float | Amount in Stake (or Quote) currency. |
-| `amount` | float | Amount in Asset / Base currency that is currently owned. |
+| `amount` | float | Amount in Asset / Base currency that is currently owned. Will be 0.0 until the initial order fills. |
 | `open_date` | datetime | Timestamp when trade was opened **use `open_date_utc` instead** |
 | `open_date_utc` | datetime | Timestamp when trade was opened - in UTC. |
 | `close_date` | datetime | Timestamp when trade was closed **use `close_date_utc` instead** |
