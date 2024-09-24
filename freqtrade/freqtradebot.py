@@ -1279,8 +1279,8 @@ class FreqtradeBot(LoggingMixin):
                     logger.warning(
                         f"Unable to handle stoploss on exchange for {trade.pair}: {exception}"
                     )
-                # Check if we can sell our current pair
-                if trade.is_open and self.handle_trade(trade):
+                # Check if we can exit our current position for this trade
+                if trade.has_open_position and trade.is_open and self.handle_trade(trade):
                     trades_closed += 1
 
             except DependencyException as exception:
