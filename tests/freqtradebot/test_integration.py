@@ -480,8 +480,6 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker,
     assert pytest.approx(trade.orders[-1].amount) == 91.689215 * leverage
     assert freqtrade.strategy.adjust_entry_price.call_count == 0
 
-    caplog.clear()
-    caplog.set_level(logging.DEBUG)
     # Process again, should not adjust entry price
     freqtrade.process()
     trade = Trade.get_trades().first()
