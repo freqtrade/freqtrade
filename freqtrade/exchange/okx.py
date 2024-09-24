@@ -1,6 +1,6 @@
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import ccxt
 
@@ -229,6 +229,9 @@ class Okx(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+        return self._fetch_stop_order_fallback(order_id, pair)
+
+    def _fetch_stop_order_fallback(self, order_id: str, pair: str) -> Dict:
         params2 = {"stop": True, "ordType": "conditional"}
         for method in (
             self._api.fetch_open_orders,
