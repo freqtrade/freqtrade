@@ -13,7 +13,7 @@ from freqtrade.exceptions import (
     TemporaryError,
 )
 from freqtrade.exchange import Exchange, date_minus_candles
-from freqtrade.exchange.common import retrier
+from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT, retrier
 from freqtrade.exchange.exchange_types import FtHas
 from freqtrade.misc import safe_value_fallback2
 from freqtrade.util import dt_now, dt_ts
@@ -208,6 +208,7 @@ class Okx(Exchange):
         order["type"] = "stoploss"
         return order
 
+    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         if self._config["dry_run"]:
             return self.fetch_dry_run_order(order_id)
@@ -217,8 +218,17 @@ class Okx(Exchange):
             order_reg = self._api.fetch_order(order_id, pair, params=params1)
             self._log_exchange_response("fetch_stoploss_order", order_reg)
             return self._convert_stop_order(pair, order_id, order_reg)
-        except ccxt.OrderNotFound:
+        except (ccxt.OrderNotFound, ccxt.InvalidOrder):
             pass
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f"Could not get order due to {e.__class__.__name__}. Message: {e}"
+            ) from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
         params2 = {"stop": True, "ordType": "conditional"}
         for method in (
             self._api.fetch_open_orders,
@@ -231,8 +241,16 @@ class Okx(Exchange):
                 if orders_f:
                     order = orders_f[0]
                     return self._convert_stop_order(pair, order_id, order)
-            except ccxt.BaseError:
+            except (ccxt.OrderNotFound, ccxt.InvalidOrder):
                 pass
+            except ccxt.DDoSProtection as e:
+                raise DDosProtection(e) from e
+            except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+                raise TemporaryError(
+                    f"Could not get order due to {e.__class__.__name__}. Message: {e}"
+                ) from e
+            except ccxt.BaseError as e:
+                raise OperationalException(e) from e
         raise RetryableOrderError(f"StoplossOrder not found (pair: {pair} id: {order_id}).")
 
     def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
