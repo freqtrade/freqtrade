@@ -552,6 +552,7 @@ def test__set_leverage_okx(mocker, default_conf):
 @pytest.mark.usefixtures("init_persistence")
 def test_fetch_stoploss_order_okx(default_conf, mocker):
     default_conf["dry_run"] = False
+    mocker.patch("freqtrade.exchange.common.time.sleep")
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock()
 
@@ -570,10 +571,10 @@ def test_fetch_stoploss_order_okx(default_conf, mocker):
 
     with pytest.raises(RetryableOrderError):
         exchange.fetch_stoploss_order("1234", "ETH/BTC")
-    assert api_mock.fetch_order.call_count == 1
-    assert api_mock.fetch_open_orders.call_count == 1
-    assert api_mock.fetch_closed_orders.call_count == 1
-    assert api_mock.fetch_canceled_orders.call_count == 1
+    assert api_mock.fetch_order.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_open_orders.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_closed_orders.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_canceled_orders.call_count == API_RETRY_COUNT + 1
 
     api_mock.fetch_order.reset_mock()
     api_mock.fetch_open_orders.reset_mock()
