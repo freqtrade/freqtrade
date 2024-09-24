@@ -13,7 +13,7 @@ from freqtrade.exceptions import (
     TemporaryError,
 )
 from freqtrade.exchange import Exchange, date_minus_candles
-from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT, retrier
+from freqtrade.exchange.common import API_RETRY_COUNT, retrier
 from freqtrade.exchange.exchange_types import FtHas
 from freqtrade.misc import safe_value_fallback2
 from freqtrade.util import dt_now, dt_ts
@@ -208,7 +208,7 @@ class Okx(Exchange):
         order["type"] = "stoploss"
         return order
 
-    @retrier(retries=API_FETCH_ORDER_RETRY_COUNT)
+    @retrier(retries=API_RETRY_COUNT)
     def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
         if self._config["dry_run"]:
             return self.fetch_dry_run_order(order_id)

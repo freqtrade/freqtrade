@@ -6,7 +6,7 @@ import pytest
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import RetryableOrderError, TemporaryError
-from freqtrade.exchange.common import API_FETCH_ORDER_RETRY_COUNT
+from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.exchange.exchange import timeframe_to_minutes
 from tests.conftest import EXMS, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
@@ -621,7 +621,7 @@ def test_fetch_stoploss_order_okx_exceptions(default_conf_usdt, mocker):
         "okx",
         "fetch_stoploss_order",
         "fetch_order",
-        retries=API_FETCH_ORDER_RETRY_COUNT + 1,
+        retries=API_RETRY_COUNT + 1,
         order_id="12345",
         pair="ETH/USDT",
     )
@@ -638,7 +638,7 @@ def test_fetch_stoploss_order_okx_exceptions(default_conf_usdt, mocker):
         "okx",
         "fetch_stoploss_order",
         "fetch_open_orders",
-        retries=API_FETCH_ORDER_RETRY_COUNT + 1,
+        retries=API_RETRY_COUNT + 1,
         order_id="12345",
         pair="ETH/USDT",
     )
