@@ -22,6 +22,7 @@ from freqtrade.edge import Edge
 from freqtrade.enums import (
     ExitCheckTuple,
     ExitType,
+    MarginMode,
     RPCMessageType,
     SignalDirection,
     State,
@@ -61,7 +62,7 @@ from freqtrade.rpc.rpc_types import (
 )
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from freqtrade.util import MeasureTime
+from freqtrade.util import FtPrecise, MeasureTime
 from freqtrade.util.migrations.binance_mig import migrate_binance_futures_names
 from freqtrade.wallets import Wallets
 
@@ -108,6 +109,7 @@ class FreqtradeBot(LoggingMixin):
         PairLocks.timeframe = self.config["timeframe"]
 
         self.trading_mode: TradingMode = self.config.get("trading_mode", TradingMode.SPOT)
+        self.margin_mode: MarginMode = self.config.get("margin_mode", MarginMode.NONE)
         self.last_process: Optional[datetime] = None
 
         # RPC runs in separate threads, can start handling external commands just after
@@ -780,7 +782,14 @@ class FreqtradeBot(LoggingMixin):
         if stake_amount is not None and stake_amount < 0.0:
             # We should decrease our position
             amount = self.exchange.amount_to_contract_precision(
-                trade.pair, abs(float(stake_amount * trade.amount / trade.stake_amount))
+                trade.pair,
+                abs(
+                    float(
+                        FtPrecise(stake_amount)
+                        * FtPrecise(trade.amount)
+                        / FtPrecise(trade.stake_amount)
+                    )
+                ),
             )
 
             if amount == 0.0:
@@ -976,7 +985,7 @@ class FreqtradeBot(LoggingMixin):
                 base_currency=base_currency,
                 stake_currency=self.config["stake_currency"],
                 stake_amount=stake_amount,
-                amount=amount,
+                amount=0,
                 is_open=True,
                 amount_requested=amount_requested,
                 fee_open=fee,
@@ -2229,7 +2238,11 @@ class FreqtradeBot(LoggingMixin):
                     # TODO: should shorting/leverage be supported by Edge,
                     # then this will need to be fixed.
                     trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
-            if order.ft_order_side == trade.entry_side or (trade.amount > 0 and trade.is_open):
+            if (
+                order.ft_order_side == trade.entry_side
+                or (trade.amount > 0 and trade.is_open)
+                or self.margin_mode == MarginMode.CROSS
+            ):
                 # Must also run for partial exits
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()

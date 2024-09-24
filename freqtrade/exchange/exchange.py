@@ -104,7 +104,6 @@ from freqtrade.misc import (
     file_load_json,
     safe_value_fallback2,
 )
-from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.util import dt_from_ts, dt_now
 from freqtrade.util.datetime_helpers import dt_humanize_delta, dt_ts, format_ms_time
 from freqtrade.util.periodic_cache import PeriodicCache
@@ -331,8 +330,6 @@ class Exchange:
 
         # Check if all pairs are available
         self.validate_stakecurrency(config["stake_currency"])
-        if not config["exchange"].get("skip_pair_validation"):
-            self.validate_pairs(config["exchange"]["pair_whitelist"])
         self.validate_ordertypes(config.get("order_types", {}))
         self.validate_order_time_in_force(config.get("order_time_in_force", {}))
         self.validate_trading_mode_and_margin_mode(self.trading_mode, self.margin_mode)
@@ -623,11 +620,21 @@ class Exchange:
         if self._exchange_ws:
             self._exchange_ws.reset_connections()
 
+    async def _api_reload_markets(self, reload: bool = False) -> Dict[str, Any]:
+        try:
+            return await self._api_async.load_markets(reload=reload, params={})
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f"Error in reload_markets due to {e.__class__.__name__}. Message: {e}"
+            ) from e
+        except ccxt.BaseError as e:
+            raise TemporaryError(e) from e
+
     def _load_async_markets(self, reload: bool = False) -> Dict[str, Any]:
         try:
-            markets = self.loop.run_until_complete(
-                self._api_async.load_markets(reload=reload, params={})
-            )
+            markets = self.loop.run_until_complete(self._api_reload_markets(reload=reload))
 
             if isinstance(markets, Exception):
                 raise markets
@@ -651,8 +658,10 @@ class Exchange:
             return None
         logger.debug("Performing scheduled market reload..")
         try:
+            # on initial load, we retry 3 times to ensure we get the markets
+            retries: int = 3 if force else 0
             # Reload async markets, then assign them to sync api
-            self._markets = self._load_async_markets(reload=True)
+            self._markets = retrier(self._load_async_markets, retries=retries)(reload=True)
             self._api.set_markets(self._api_async.markets, self._api_async.currencies)
             # Assign options array, as it contains some temporary information from the exchange.
             self._api.options = self._api_async.options
@@ -688,54 +697,6 @@ class Exchange:
             raise ConfigurationError(
                 f"{stake_currency} is not available as stake on {self.name}. "
                 f"Available currencies are: {', '.join(quote_currencies)}"
-            )
-
-    def validate_pairs(self, pairs: List[str]) -> None:
-        """
-        Checks if all given pairs are tradable on the current exchange.
-        :param pairs: list of pairs
-        :raise: OperationalException if one pair is not available
-        :return: None
-        """
-
-        if not self.markets:
-            logger.warning("Unable to validate pairs (assuming they are correct).")
-            return
-        extended_pairs = expand_pairlist(pairs, list(self.markets), keep_invalid=True)
-        invalid_pairs = []
-        for pair in extended_pairs:
-            # Note: ccxt has BaseCurrency/QuoteCurrency format for pairs
-            if self.markets and pair not in self.markets:
-                raise OperationalException(
-                    f"Pair {pair} is not available on {self.name} {self.trading_mode}. "
-                    f"Please remove {pair} from your whitelist."
-                )
-
-                # From ccxt Documentation:
-                # markets.info: An associative array of non-common market properties,
-                # including fees, rates, limits and other general market information.
-                # The internal info array is different for each particular market,
-                # its contents depend on the exchange.
-                # It can also be a string or similar ... so we need to verify that first.
-            elif isinstance(self.markets[pair].get("info"), dict) and self.markets[pair].get(
-                "info", {}
-            ).get("prohibitedIn", False):
-                # Warn users about restricted pairs in whitelist.
-                # We cannot determine reliably if Users are affected.
-                logger.warning(
-                    f"Pair {pair} is restricted for some users on this exchange."
-                    f"Please check if you are impacted by this restriction "
-                    f"on the exchange and eventually remove {pair} from your whitelist."
-                )
-            if (
-                self._config["stake_currency"]
-                and self.get_pair_quote_currency(pair) != self._config["stake_currency"]
-            ):
-                invalid_pairs.append(pair)
-        if invalid_pairs:
-            raise OperationalException(
-                f"Stake-currency '{self._config['stake_currency']}' not compatible with "
-                f"pair-whitelist. Please remove the following pairs: {invalid_pairs}"
             )
 
     def get_valid_pair_combination(self, curr_1: str, curr_2: str) -> str:
@@ -2262,7 +2223,7 @@ class Exchange:
         candle_type: CandleType,
         is_new_pair: bool = False,
         until_ms: Optional[int] = None,
-    ) -> List:
+    ) -> DataFrame:
         """
         Get candle history using asyncio and returns the list of candles.
         Handles all async work for this.
@@ -2272,7 +2233,7 @@ class Exchange:
         :param since_ms: Timestamp in milliseconds to get history from
         :param until_ms: Timestamp in milliseconds to get history up to
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
-        :return: List with candle (OHLCV) data
+        :return: Dataframe with candle (OHLCV) data
         """
         pair, _, _, data, _ = self.loop.run_until_complete(
             self._async_get_historic_ohlcv(
@@ -2285,7 +2246,7 @@ class Exchange:
             )
         )
         logger.info(f"Downloaded data for {pair} with length {len(data)}.")
-        return data
+        return ohlcv_to_dataframe(data, timeframe, pair, fill_missing=False, drop_incomplete=True)
 
     async def _async_get_historic_ohlcv(
         self,
@@ -3633,7 +3594,7 @@ class Exchange:
             Wherein, "+" or "-" depends on whether the contract goes long or short:
             "-" for long, and "+" for short.
 
-         okex: https://www.okex.com/support/hc/en-us/articles/
+         okex: https://www.okx.com/support/hc/en-us/articles/
             360053909592-VI-Introduction-to-the-isolated-mode-of-Single-Multi-currency-Portfolio-margin
 
         :param pair: Pair to calculate liquidation price for

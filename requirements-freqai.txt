@@ -3,9 +3,9 @@
 -r requirements-plot.txt
 
 # Required for freqai
-scikit-learn==1.5.1
+scikit-learn==1.5.2
 joblib==1.4.2
-catboost==1.2.5; 'arm' not in platform_machine
+catboost==1.2.7; 'arm' not in platform_machine
 # Pin Matplotlib - it's depended on by catboost
 # Temporary downgrade of matplotlib due to https://github.com/matplotlib/matplotlib/issues/28551
 matplotlib==3.9.2

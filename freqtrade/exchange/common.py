@@ -165,6 +165,10 @@ def retrier(_func: F) -> F: ...
 
 
 @overload
+def retrier(_func: F, *, retries=API_RETRY_COUNT) -> F: ...
+
+
+@overload
 def retrier(*, retries=API_RETRY_COUNT) -> Callable[[F], F]: ...
 
 

@@ -520,7 +520,7 @@ class DataProvider:
             return self._exchange.trades(
                 (pair, timeframe or self._config["timeframe"], _candle_type), copy=copy
             )
-        elif self.runmode in (RunMode.BACKTEST, RunMode.HYPEROPT):
+        else:
             data_handler = get_datahandler(
                 self._config["datadir"], data_format=self._config["dataformat_trades"]
             )
@@ -528,9 +528,6 @@ class DataProvider:
                 pair, self._config.get("trading_mode", TradingMode.SPOT)
             )
             return trades_df
-
-        else:
-            return DataFrame()
 
     def market(self, pair: str) -> Optional[Dict[str, Any]]:
         """

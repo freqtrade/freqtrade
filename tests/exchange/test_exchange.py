@@ -255,7 +255,6 @@ def test_init_exception(default_conf, mocker):
 def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=MagicMock()))
     mocker.patch(f"{EXMS}._load_async_markets")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
@@ -555,7 +554,6 @@ def test_get_min_pair_stake_amount_real_data(mocker, default_conf) -> None:
 
 def test__load_async_markets(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}._init_ccxt")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
@@ -567,7 +565,15 @@ def test__load_async_markets(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
 
     exchange._api_async.load_markets = get_mock_coro(side_effect=ccxt.BaseError("deadbeef"))
-    with pytest.raises(ccxt.BaseError, match="deadbeef"):
+    with pytest.raises(TemporaryError, match="deadbeef"):
+        exchange._load_async_markets()
+
+    exchange._api_async.load_markets = get_mock_coro(side_effect=ccxt.DDoSProtection("deadbeef"))
+    with pytest.raises(DDosProtection, match="deadbeef"):
+        exchange._load_async_markets()
+
+    exchange._api_async.load_markets = get_mock_coro(side_effect=ccxt.OperationFailed("deadbeef"))
+    with pytest.raises(TemporaryError, match="deadbeef"):
         exchange._load_async_markets()
 
 
@@ -576,7 +582,6 @@ def test__load_markets(default_conf, mocker, caplog):
     api_mock = MagicMock()
     api_mock.load_markets = get_mock_coro(side_effect=ccxt.BaseError("SomeError"))
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
@@ -630,6 +635,21 @@ def test_reload_markets(default_conf, mocker, caplog, time_machine):
     exchange.reload_markets()
     assert lam_spy.call_count == 0
 
+    # Another reload should happen but it fails.
+    time_machine.move_to(start_dt + timedelta(minutes=51), tick=False)
+    api_mock.load_markets = get_mock_coro(side_effect=ccxt.NetworkError("LoadError"))
+
+    exchange.reload_markets(force=False)
+    assert exchange.markets == updated_markets
+    assert lam_spy.call_count == 1
+    # Tried once, failed
+
+    lam_spy.reset_mock()
+    # When forceing (bot startup), it should retry 3 times.
+    exchange.reload_markets(force=True)
+    assert lam_spy.call_count == 4
+    assert exchange.markets == updated_markets
+
 
 def test_reload_markets_exception(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
@@ -661,7 +681,6 @@ def test_validate_stakecurrency(default_conf, stake_currency, mocker, caplog):
         }
     )
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_pricing")
     Exchange(default_conf)
@@ -679,7 +698,6 @@ def test_validate_stakecurrency_error(default_conf, mocker, caplog):
         }
     )
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     with pytest.raises(
         ConfigurationError,
@@ -732,147 +750,6 @@ def test_get_pair_base_currency(default_conf, mocker, pair, expected):
     assert ex.get_pair_base_currency(pair) == expected
 
 
-def test_validate_pairs(default_conf, mocker):
-    api_mock = MagicMock()
-    id_mock = PropertyMock(return_value="test_exchange")
-    type(api_mock).id = id_mock
-
-    mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_timeframes")
-    mocker.patch(
-        f"{EXMS}._load_async_markets",
-        return_value={
-            "ETH/BTC": {"quote": "BTC"},
-            "LTC/BTC": {"quote": "BTC"},
-            "XRP/BTC": {"quote": "BTC"},
-            "NEO/BTC": {"quote": "BTC"},
-        },
-    )
-    mocker.patch(f"{EXMS}.validate_stakecurrency")
-    mocker.patch(f"{EXMS}.validate_pricing")
-    # test exchange.validate_pairs directly
-    # No assert - but this should not fail (!)
-    Exchange(default_conf)
-
-
-def test_validate_pairs_not_available(default_conf, mocker):
-    api_mock = MagicMock()
-    type(api_mock).markets = PropertyMock(
-        return_value={"XRP/BTC": {"inactive": True, "base": "XRP", "quote": "BTC"}}
-    )
-    mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_timeframes")
-    mocker.patch(f"{EXMS}.validate_stakecurrency")
-    mocker.patch(f"{EXMS}._load_async_markets")
-
-    with pytest.raises(OperationalException, match=r"not available"):
-        Exchange(default_conf)
-
-
-def test_validate_pairs_exception(default_conf, mocker, caplog):
-    caplog.set_level(logging.INFO)
-    api_mock = MagicMock()
-    mocker.patch(f"{EXMS}.name", PropertyMock(return_value="Binance"))
-
-    type(api_mock).markets = PropertyMock(return_value={})
-    mocker.patch(f"{EXMS}._init_ccxt", api_mock)
-    mocker.patch(f"{EXMS}.validate_timeframes")
-    mocker.patch(f"{EXMS}.validate_stakecurrency")
-    mocker.patch(f"{EXMS}.validate_pricing")
-    mocker.patch(f"{EXMS}._load_async_markets")
-
-    with pytest.raises(OperationalException, match=r"Pair ETH/BTC is not available on Binance"):
-        Exchange(default_conf)
-
-    mocker.patch(f"{EXMS}.markets", PropertyMock(return_value={}))
-    Exchange(default_conf)
-    assert log_has("Unable to validate pairs (assuming they are correct).", caplog)
-
-
-def test_validate_pairs_restricted(default_conf, mocker, caplog):
-    api_mock = MagicMock()
-    type(api_mock).load_markets = get_mock_coro(
-        return_value={
-            "ETH/BTC": {"quote": "BTC"},
-            "LTC/BTC": {"quote": "BTC"},
-            "XRP/BTC": {"quote": "BTC", "info": {"prohibitedIn": ["US"]}},
-            "NEO/BTC": {"quote": "BTC", "info": "TestString"},  # info can also be a string ...
-        }
-    )
-    mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_timeframes")
-    mocker.patch(f"{EXMS}.validate_pricing")
-    mocker.patch(f"{EXMS}.validate_stakecurrency")
-
-    Exchange(default_conf)
-    assert log_has(
-        "Pair XRP/BTC is restricted for some users on this exchange."
-        "Please check if you are impacted by this restriction "
-        "on the exchange and eventually remove XRP/BTC from your whitelist.",
-        caplog,
-    )
-
-
-def test_validate_pairs_stakecompatibility(default_conf, mocker):
-    api_mock = MagicMock()
-    type(api_mock).load_markets = get_mock_coro(
-        return_value={
-            "ETH/BTC": {"quote": "BTC"},
-            "LTC/BTC": {"quote": "BTC"},
-            "XRP/BTC": {"quote": "BTC"},
-            "NEO/BTC": {"quote": "BTC"},
-            "HELLO-WORLD": {"quote": "BTC"},
-        }
-    )
-    mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_timeframes")
-    mocker.patch(f"{EXMS}.validate_stakecurrency")
-    mocker.patch(f"{EXMS}.validate_pricing")
-
-    Exchange(default_conf)
-
-
-def test_validate_pairs_stakecompatibility_downloaddata(default_conf, mocker):
-    api_mock = MagicMock()
-    default_conf["stake_currency"] = ""
-    type(api_mock).load_markets = get_mock_coro(
-        return_value={
-            "ETH/BTC": {"quote": "BTC"},
-            "LTC/BTC": {"quote": "BTC"},
-            "XRP/BTC": {"quote": "BTC"},
-            "NEO/BTC": {"quote": "BTC"},
-            "HELLO-WORLD": {"quote": "BTC"},
-        }
-    )
-    mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_timeframes")
-    mocker.patch(f"{EXMS}.validate_stakecurrency")
-    mocker.patch(f"{EXMS}.validate_pricing")
-
-    Exchange(default_conf)
-    assert type(api_mock).load_markets.call_count == 1
-
-
-def test_validate_pairs_stakecompatibility_fail(default_conf, mocker):
-    default_conf["exchange"]["pair_whitelist"].append("HELLO-WORLD")
-    api_mock = MagicMock()
-    type(api_mock).load_markets = get_mock_coro(
-        return_value={
-            "ETH/BTC": {"quote": "BTC"},
-            "LTC/BTC": {"quote": "BTC"},
-            "XRP/BTC": {"quote": "BTC"},
-            "NEO/BTC": {"quote": "BTC"},
-            "HELLO-WORLD": {"quote": "USDT"},
-        }
-    )
-    mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
-    mocker.patch(f"{EXMS}.validate_timeframes")
-    mocker.patch(f"{EXMS}.validate_stakecurrency")
-
-    with pytest.raises(OperationalException, match=r"Stake-currency 'BTC' not compatible with.*"):
-        Exchange(default_conf)
-
-
 @pytest.mark.parametrize("timeframe", [("5m"), ("1m"), ("15m"), ("1h")])
 def test_validate_timeframes(default_conf, mocker, timeframe):
     default_conf["timeframe"] = timeframe
@@ -884,7 +761,6 @@ def test_validate_timeframes(default_conf, mocker, timeframe):
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
     mocker.patch(f"{EXMS}.reload_markets")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
     Exchange(default_conf)
@@ -902,7 +778,6 @@ def test_validate_timeframes_failed(default_conf, mocker):
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
     mocker.patch(f"{EXMS}.reload_markets")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
     with pytest.raises(
@@ -932,7 +807,6 @@ def test_validate_timeframes_emulated_ohlcv_1(default_conf, mocker):
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
     mocker.patch(f"{EXMS}.reload_markets")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     with pytest.raises(
         OperationalException,
@@ -954,7 +828,6 @@ def test_validate_timeframes_emulated_ohlcvi_2(default_conf, mocker):
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
     mocker.patch(f"{EXMS}.reload_markets")
-    mocker.patch(f"{EXMS}.validate_pairs", MagicMock())
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     with pytest.raises(
         OperationalException,
@@ -976,7 +849,6 @@ def test_validate_timeframes_not_in_config(default_conf, mocker):
 
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
     mocker.patch(f"{EXMS}.reload_markets")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
     mocker.patch(f"{EXMS}.validate_required_startup_candles")
@@ -993,7 +865,6 @@ def test_validate_pricing(default_conf, mocker):
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
     mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_trading_mode_and_margin_mode")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.name", "Binance")
@@ -1028,7 +899,6 @@ def test_validate_ordertypes(default_conf, mocker):
     type(api_mock).has = PropertyMock(return_value={"createMarketOrder": True})
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
     mocker.patch(f"{EXMS}.reload_markets")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
@@ -1087,7 +957,6 @@ def test_validate_ordertypes_stop_advanced(default_conf, mocker, exchange_name, 
     type(api_mock).has = PropertyMock(return_value={"createMarketOrder": True})
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
     mocker.patch(f"{EXMS}.reload_markets")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
     mocker.patch(f"{EXMS}.validate_pricing")
@@ -1112,7 +981,6 @@ def test_validate_order_types_not_in_config(default_conf, mocker):
     api_mock = MagicMock()
     mocker.patch(f"{EXMS}._init_ccxt", MagicMock(return_value=api_mock))
     mocker.patch(f"{EXMS}.reload_markets")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}.validate_pricing")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
@@ -1128,7 +996,6 @@ def test_validate_required_startup_candles(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}._init_ccxt", api_mock)
     mocker.patch(f"{EXMS}.validate_timeframes")
     mocker.patch(f"{EXMS}._load_async_markets")
-    mocker.patch(f"{EXMS}.validate_pairs")
     mocker.patch(f"{EXMS}.validate_pricing")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
 
@@ -2217,24 +2084,29 @@ def test___now_is_time_to_refresh(default_conf, mocker, exchange_name, time_mach
     assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is True
 
 
-@pytest.mark.parametrize("exchange_name", EXCHANGES)
 @pytest.mark.parametrize("candle_type", ["mark", ""])
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_type):
     exchange = get_patched_exchange(mocker, default_conf, exchange=exchange_name)
-    ohlcv = [
-        [
-            dt_ts(),  # unix timestamp ms
-            1,  # open
-            2,  # high
-            3,  # low
-            4,  # close
-            5,  # volume (in quote currency)
-        ]
-    ]
     pair = "ETH/BTC"
+    calls = 0
+    now = dt_now()
 
     async def mock_candle_hist(pair, timeframe, candle_type, since_ms):
-        return pair, timeframe, candle_type, ohlcv, True
+        nonlocal calls
+        calls += 1
+        ohlcv = [
+            [
+                dt_ts(now + timedelta(minutes=5 * (calls + i))),  # unix timestamp ms
+                1,  # open
+                2,  # high
+                3,  # low
+                4,  # close
+                5,  # volume (in quote currency)
+            ]
+            for i in range(2)
+        ]
+        return (pair, timeframe, candle_type, ohlcv, True)
 
     exchange._async_get_candle_history = Mock(wraps=mock_candle_hist)
     # one_call calculation * 1.8 should do 2 calls
@@ -2245,7 +2117,7 @@ def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_
     )
 
     assert exchange._async_get_candle_history.call_count == 2
-    # Returns twice the above OHLCV data
+    # Returns twice the above OHLCV data after truncating the open candle.
     assert len(ret) == 2
     assert log_has_re(r"Downloaded data for .* with length .*\.", caplog)
 
@@ -4162,7 +4034,6 @@ def test_merge_ft_has_dict(default_conf, mocker):
         EXMS,
         _init_ccxt=MagicMock(return_value=MagicMock()),
         _load_async_markets=MagicMock(),
-        validate_pairs=MagicMock(),
         validate_timeframes=MagicMock(),
         validate_stakecurrency=MagicMock(),
         validate_pricing=MagicMock(),
@@ -4197,7 +4068,6 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         EXMS,
         _init_ccxt=MagicMock(return_value=MagicMock()),
         _load_async_markets=MagicMock(),
-        validate_pairs=MagicMock(),
         validate_timeframes=MagicMock(),
         validate_pricing=MagicMock(),
         markets=PropertyMock(return_value=markets),
@@ -4477,7 +4347,6 @@ def test_get_markets(
         EXMS,
         _init_ccxt=MagicMock(return_value=MagicMock()),
         _load_async_markets=MagicMock(),
-        validate_pairs=MagicMock(),
         validate_timeframes=MagicMock(),
         validate_pricing=MagicMock(),
         markets=PropertyMock(return_value=markets_static),

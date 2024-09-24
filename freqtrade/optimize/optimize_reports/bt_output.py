@@ -263,12 +263,32 @@ def text_table_add_metrics(strat_results: Dict) -> None:
             else []
         )
 
+        trading_mode = (
+            (
+                [
+                    (
+                        "Trading Mode",
+                        (
+                            ""
+                            if not strat_results.get("margin_mode")
+                            or strat_results.get("trading_mode", "spot") == "spot"
+                            else f"{strat_results['margin_mode'].capitalize()} "
+                        )
+                        + f"{strat_results['trading_mode'].capitalize()}",
+                    )
+                ]
+            )
+            if "trading_mode" in strat_results
+            else []
+        )
+
         # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
         # command stores these results and newer version of freqtrade must be able to handle old
         # results with missing new fields.
         metrics = [
             ("Backtesting from", strat_results["backtest_start"]),
             ("Backtesting to", strat_results["backtest_end"]),
+            *trading_mode,
             ("Max open trades", strat_results["max_open_trades"]),
             ("", ""),  # Empty line to improve readability
             (

@@ -342,8 +342,8 @@ class Order(ModelBase):
             order_id=str(order["id"]),
             ft_order_side=side,
             ft_pair=pair,
-            ft_amount=amount if amount else order["amount"],
-            ft_price=price if price else order["price"],
+            ft_amount=amount or order.get("amount", None) or 0.0,
+            ft_price=price or order.get("price", None),
         )
 
         o.update_from_ccxt_object(order)
@@ -1175,10 +1175,7 @@ class LocalTrade:
         else:
             open_trade_value = self._calc_open_trade_value(amount, open_rate)
 
-        short_close_zero = self.is_short and close_trade_value == 0.0
-        long_close_zero = not self.is_short and open_trade_value == 0.0
-
-        if short_close_zero or long_close_zero:
+        if open_trade_value == 0.0:
             return 0.0
         else:
             if self.is_short:

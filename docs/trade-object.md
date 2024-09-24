@@ -18,7 +18,7 @@ The following attributes / properties are available for each individual trade - 
 | `open_rate` | float | Rate this trade was entered at (Avg. entry rate in case of trade-adjustments). |
 | `close_rate` | float | Close rate - only set when is_open = False. |
 | `stake_amount` | float | Amount in Stake (or Quote) currency. |
-| `amount` | float | Amount in Asset / Base currency that is currently owned. |
+| `amount` | float | Amount in Asset / Base currency that is currently owned. Will be 0.0 until the initial order fills. |
 | `open_date` | datetime | Timestamp when trade was opened **use `open_date_utc` instead** |
 | `open_date_utc` | datetime | Timestamp when trade was opened - in UTC. |
 | `close_date` | datetime | Timestamp when trade was closed **use `close_date_utc` instead** |
@@ -130,20 +130,20 @@ Most properties here can be None as they are dependent on the exchange response.
 
 |  Attribute | DataType | Description |
 |------------|-------------|-------------|
-`trade` | Trade | Trade object this order is attached to
-`ft_pair` | string | Pair this order is for
-`ft_is_open` | boolean | is the order filled?
-`order_type` | string | Order type as defined on the exchange - usually market, limit or stoploss
-`status` | string | Status as defined by ccxt. Usually open, closed, expired or canceled
-`side` | string | Buy or Sell
-`price` | float | Price the order was placed at
-`average` | float | Average price the order filled at
-`amount` | float | Amount in base currency
-`filled` | float | Filled amount (in base currency)
-`remaining` | float | Remaining amount
-`cost` | float | Cost of the order - usually average * filled (*Exchange dependent on futures, may contain the cost with or without leverage and may be in contracts.*)
-`stake_amount` | float | Stake amount used for this order. *Added in 2023.7.*
-`order_date` | datetime | Order creation date **use `order_date_utc` instead**
-`order_date_utc` | datetime | Order creation date (in UTC)
-`order_fill_date` | datetime |  Order fill date **use `order_fill_utc` instead**
-`order_fill_date_utc` | datetime | Order fill date
+| `trade` | Trade | Trade object this order is attached to |
+| `ft_pair` | string | Pair this order is for |
+| `ft_is_open` | boolean | is the order filled? |
+| `order_type` | string | Order type as defined on the exchange - usually market, limit or stoploss |
+| `status` | string | Status as defined by ccxt. Usually open, closed, expired or canceled |
+| `side` | string | Buy or Sell |
+| `price` | float | Price the order was placed at |
+| `average` | float | Average price the order filled at |
+| `amount` | float | Amount in base currency |
+| `filled` | float | Filled amount (in base currency) |
+| `remaining` | float | Remaining amount |
+| `cost` | float | Cost of the order - usually average * filled (*Exchange dependent on futures, may contain the cost with or without leverage and may be in contracts.*) |
+| `stake_amount` | float | Stake amount used for this order. *Added in 2023.7.* |
+| `order_date` | datetime | Order creation date **use `order_date_utc` instead** |
+| `order_date_utc` | datetime | Order creation date (in UTC) |
+| `order_fill_date` | datetime |  Order fill date **use `order_fill_utc` instead** |
+| `order_fill_date_utc` | datetime | Order fill date |

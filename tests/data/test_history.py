@@ -123,12 +123,12 @@ def test_load_data_startup_candles(mocker, testdatadir) -> None:
 
 @pytest.mark.parametrize("candle_type", ["mark", ""])
 def test_load_data_with_new_pair_1min(
-    ohlcv_history_list, mocker, caplog, default_conf, tmp_path, candle_type
+    ohlcv_history, mocker, caplog, default_conf, tmp_path, candle_type
 ) -> None:
     """
     Test load_pair_history() with 1 min timeframe
     """
-    mocker.patch(f"{EXMS}.get_historic_ohlcv", return_value=ohlcv_history_list)
+    mocker.patch(f"{EXMS}.get_historic_ohlcv", return_value=ohlcv_history)
     exchange = get_patched_exchange(mocker, default_conf)
     file = tmp_path / "MEME_BTC-1m.feather"
 
@@ -303,9 +303,9 @@ def test_load_cached_data_for_updating(mocker, testdatadir) -> None:
     ],
 )
 def test_download_pair_history(
-    ohlcv_history_list, mocker, default_conf, tmp_path, candle_type, subdir, file_tail
+    ohlcv_history, mocker, default_conf, tmp_path, candle_type, subdir, file_tail
 ) -> None:
-    mocker.patch(f"{EXMS}.get_historic_ohlcv", return_value=ohlcv_history_list)
+    mocker.patch(f"{EXMS}.get_historic_ohlcv", return_value=ohlcv_history)
     exchange = get_patched_exchange(mocker, default_conf)
     file1_1 = tmp_path / f"{subdir}MEME_BTC-1m{file_tail}.feather"
     file1_5 = tmp_path / f"{subdir}MEME_BTC-5m{file_tail}.feather"
@@ -351,16 +351,12 @@ def test_download_pair_history(
     assert file2_5.is_file()
 
 
-def test_download_pair_history2(mocker, default_conf, testdatadir) -> None:
-    tick = [
-        [1509836520000, 0.00162008, 0.00162008, 0.00162008, 0.00162008, 108.14853839],
-        [1509836580000, 0.00161, 0.00161, 0.00161, 0.00161, 82.390199],
-    ]
+def test_download_pair_history2(mocker, default_conf, testdatadir, ohlcv_history) -> None:
     json_dump_mock = mocker.patch(
         "freqtrade.data.history.datahandlers.featherdatahandler.FeatherDataHandler.ohlcv_store",
         return_value=None,
     )
-    mocker.patch(f"{EXMS}.get_historic_ohlcv", return_value=tick)
+    mocker.patch(f"{EXMS}.get_historic_ohlcv", return_value=ohlcv_history)
     exchange = get_patched_exchange(mocker, default_conf)
     _download_pair_history(
         datadir=testdatadir,

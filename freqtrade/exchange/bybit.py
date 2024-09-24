@@ -90,10 +90,8 @@ class Bybit(Exchange):
                 # Returns a tuple of bools, first for margin, second for Account
                 if is_unified and len(is_unified) > 1 and is_unified[1]:
                     self.unified_account = True
-                    logger.info("Bybit: Unified account.")
-                    raise OperationalException(
-                        "Bybit: Unified account is not supported. "
-                        "Please use a standard (sub)account."
+                    logger.info(
+                        "Bybit: Unified account. Assuming dedicated subaccount for this bot."
                     )
                 else:
                     self.unified_account = False
