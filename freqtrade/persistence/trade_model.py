@@ -591,13 +591,7 @@ class LocalTrade:
         """
         True if there is an open position for this trade
         """
-        entry_orders = [o for o in self.orders if o.ft_order_side == self.entry_side]
-        entry_orders_filled_qty = sum(eno.safe_filled for eno in entry_orders)
-
-        exit_orders = [o for o in self.orders if o.ft_order_side == self.exit_side]
-        exit_orders_filled_qty = sum(exo.safe_filled for exo in exit_orders)
-
-        return (entry_orders_filled_qty - exit_orders_filled_qty) > 0
+        return self.amount > 0
 
     @property
     def open_sl_orders(self) -> List[Order]:
