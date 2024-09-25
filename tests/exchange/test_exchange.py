@@ -3569,7 +3569,7 @@ def test_cancel_order_with_result(
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     api_mock = MagicMock()
     api_mock.cancel_order = MagicMock(return_value=corder)
-    api_mock.fetch_order = MagicMock(return_value={})
+    api_mock.fetch_order = MagicMock(return_value={"id": "1234"})
     exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange=exchange_name)
     res = exchange.cancel_order_with_result("1234", "ETH/BTC", 1234)
     assert isinstance(res, dict)
