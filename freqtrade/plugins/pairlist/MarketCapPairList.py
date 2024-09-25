@@ -47,12 +47,13 @@ class MarketCapPairList(IPairList):
 
         if self._categories:
             categories = self._coingecko.get_coins_categories_list()
-            category_ids = [cat['category_id'] for cat in categories]
+            category_ids = [cat["category_id"] for cat in categories]
 
             for category in self._categories:
                 if category not in category_ids:
                     raise OperationalException(
-                        f"category not in coingecko category list you can choose from {category_ids}")
+                        f"category not in coingecko category list you can choose from {category_ids}"
+                    )
 
         if self._max_rank > 250:
             raise OperationalException("This filter only support marketcap rank up to 250.")
@@ -160,18 +161,15 @@ class MarketCapPairList(IPairList):
             data = []
 
             if not self._categories:
-                data = self._coingecko.get_coins_markets(
-                    **default_kwargs
-                )
+                data = self._coingecko.get_coins_markets(**default_kwargs)
             else:
                 for category in self._categories:
                     category_data = self._coingecko.get_coins_markets(
-                        **default_kwargs,
-                        **({"category": category} if category else {})
+                        **default_kwargs, **({"category": category} if category else {})
                     )
                     data += category_data
 
-            data.sort(key=lambda d: float(d['market_cap'] or 0.0), reverse=True)
+            data.sort(key=lambda d: float(d["market_cap"] or 0.0), reverse=True)
 
             if data:
                 marketcap_list = [row["symbol"] for row in data]
@@ -185,7 +183,7 @@ class MarketCapPairList(IPairList):
             if market == "futures":
                 pair_format += f":{self._stake_currency.upper()}"
 
-            top_marketcap = marketcap_list[: self._max_rank:]
+            top_marketcap = marketcap_list[: self._max_rank :]
 
             for mc_pair in top_marketcap:
                 test_pair = f"{mc_pair.upper()}/{pair_format}"
