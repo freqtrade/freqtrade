@@ -244,7 +244,7 @@ class Bybit(Exchange):
 
         order = super().fetch_order(order_id, pair, params)
         if not order:
-            order = self.fetch_order_emulated(order_id, pair, params)
+            order = self.fetch_order_emulated(order_id, pair, {})
         if (
             order.get("status") == "canceled"
             and order.get("filled") == 0.0
