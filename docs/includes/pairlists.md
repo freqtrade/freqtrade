@@ -360,7 +360,8 @@ The optional `bearer_token` will be included in the requests Authorization Heade
         "method": "MarketCapPairList",
         "number_assets": 20,
         "max_rank": 50,
-        "refresh_period": 86400
+        "refresh_period": 86400,
+        "categories": ['layer-1']
     }
 ]
 ```
@@ -368,6 +369,8 @@ The optional `bearer_token` will be included in the requests Authorization Heade
 `number_assets` defines the maximum number of pairs returned by the pairlist. `max_rank` will determine the maximum rank used in creating/filtering the pairlist. It's expected that some coins within the top `max_rank` marketcap will not be included in the resulting pairlist since not all pairs will have active trading pairs in your preferred market/stake/exchange combination.
 
 `refresh_period` setting defines the period (in seconds) at which the marketcap rank data will be refreshed. Defaults to 86,400s (1 day). The pairlist cache (`refresh_period`) is applicable on both generating pairlists (first position in the list) and filtering instances (not the first position in the list).
+
+`categories`  settings this defines takes the list of coins from a category on coingecko. (https://www.coingecko.com/en/categories). Defaults to []. If you choose a wrong category string the Plugin will print the categories you that you can choose from on coingecko. Category is the id of the category so e.g. https://www.coingecko.com/en/categories/layer-1 -> `layer-1` would be the category. You can pass in a list `["layer-1", "meme-token"]` is possible if you choose to.
 
 #### AgeFilter
 
