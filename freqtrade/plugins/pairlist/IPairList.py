@@ -38,6 +38,11 @@ class __OptionPairlistParameter(__PairlistParameterBase):
     default: Union[str, None]
     options: List[str]
 
+class __ListPairListParamenter(__PairlistParameterBase):
+    type: Literal["list"]
+    default: Union[List[str], None]
+    options: List[str]
+
 
 class __BoolPairlistParameter(__PairlistParameterBase):
     type: Literal["boolean"]
@@ -49,6 +54,7 @@ PairlistParameter = Union[
     __StringPairlistParameter,
     __OptionPairlistParameter,
     __BoolPairlistParameter,
+    __ListPairListParamenter
 ]
 
 
@@ -68,12 +74,12 @@ class IPairList(LoggingMixin, ABC):
     supports_backtesting: SupportsBacktesting = SupportsBacktesting.NO
 
     def __init__(
-        self,
-        exchange: Exchange,
-        pairlistmanager,
-        config: Config,
-        pairlistconfig: Dict[str, Any],
-        pairlist_pos: int,
+            self,
+            exchange: Exchange,
+            pairlistmanager,
+            config: Config,
+            pairlistconfig: Dict[str, Any],
+            pairlist_pos: int,
     ) -> None:
         """
         :param exchange: Exchange instance
@@ -213,7 +219,7 @@ class IPairList(LoggingMixin, ABC):
         return self._pairlistmanager.verify_blacklist(pairlist, logmethod)
 
     def verify_whitelist(
-        self, pairlist: List[str], logmethod, keep_invalid: bool = False
+            self, pairlist: List[str], logmethod, keep_invalid: bool = False
     ) -> List[str]:
         """
         Proxy method to verify_whitelist for easy access for child classes.
