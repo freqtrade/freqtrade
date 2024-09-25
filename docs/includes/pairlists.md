@@ -361,7 +361,7 @@ The optional `bearer_token` will be included in the requests Authorization Heade
         "number_assets": 20,
         "max_rank": 50,
         "refresh_period": 86400,
-        "categories": ['layer-1']
+        "categories": ["layer-1"]
     }
 ]
 ```
