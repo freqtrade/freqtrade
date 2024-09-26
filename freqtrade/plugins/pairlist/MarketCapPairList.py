@@ -173,7 +173,7 @@ class MarketCapPairList(IPairList):
                     )
                     data += category_data
 
-            data.sort(key=lambda d: float(d["market_cap"] or 0.0), reverse=True)
+            data.sort(key=lambda d: float(d.get("market_cap") or 0.0), reverse=True)
 
             if data:
                 marketcap_list = [row["symbol"] for row in data]
