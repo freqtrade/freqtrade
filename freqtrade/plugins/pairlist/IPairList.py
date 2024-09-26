@@ -42,7 +42,6 @@ class __OptionPairlistParameter(__PairlistParameterBase):
 class __ListPairListParamenter(__PairlistParameterBase):
     type: Literal["list"]
     default: Union[List[str], None]
-    options: List[str]
 
 
 class __BoolPairlistParameter(__PairlistParameterBase):
