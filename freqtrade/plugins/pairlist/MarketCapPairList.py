@@ -14,6 +14,7 @@ from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util.coin_gecko import FtCoinGeckoApi
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -98,8 +99,11 @@ class MarketCapPairList(IPairList):
             "categories": {
                 "type": "list",
                 "default": [],
-                "description": "The Categories to be set",
-                "help": "The Category of the coin e.g layer-1 default [] (https://www.coingecko.com/en/categories)",
+                "description": "Coin Categories",
+                "help": (
+                    "The Category of the coin e.g layer-1 default [] "
+                    "(https://www.coingecko.com/en/categories)"
+                ),
             },
             "refresh_period": {
                 "type": "number",
