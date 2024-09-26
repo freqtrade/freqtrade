@@ -53,7 +53,8 @@ class MarketCapPairList(IPairList):
             for category in self._categories:
                 if category not in category_ids:
                     raise OperationalException(
-                        f"category not in coingecko category list you can choose from {category_ids}"
+                        f"category {category} not in coingecko category list. "
+                        f"You can choose from {category_ids}"
                     )
 
         if self._max_rank > 250:
