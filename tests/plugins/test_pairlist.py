@@ -2438,6 +2438,27 @@ def test_MarketCapPairList_exceptions(mocker, default_conf_usdt):
     ):
         PairListManager(exchange, default_conf_usdt)
 
+    # Test invalid coinmarkets list
+    mocker.patch(
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_categories_list",
+        return_value=[
+            {"category_id": "layer-1"},
+            {"category_id": "protocol"},
+            {"category_id": "defi"},
+        ],
+    )
+    default_conf_usdt["pairlists"] = [
+        {
+            "method": "MarketCapPairList",
+            "number_assets": 20,
+            "categories": ["layer-1", "defi", "layer250"],
+        }
+    ]
+    with pytest.raises(
+        OperationalException, match="category layer250 not in coingecko category list."
+    ):
+        PairListManager(exchange, default_conf_usdt)
+
 
 @pytest.mark.parametrize(
     "pairlists,expected_error,expected_warning",
