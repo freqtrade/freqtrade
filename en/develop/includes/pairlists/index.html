@@ -1985,12 +1985,19 @@ Obviously in complex such configurations, the Producer may not provide data for 
 <span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MarketCapPairList&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;max_rank&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;categories&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;layer-1&quot;</span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
 <p><code>number_assets</code> defines the maximum number of pairs returned by the pairlist. <code>max_rank</code> will determine the maximum rank used in creating/filtering the pairlist. It's expected that some coins within the top <code>max_rank</code> marketcap will not be included in the resulting pairlist since not all pairs will have active trading pairs in your preferred market/stake/exchange combination.</p>
-<p><code>refresh_period</code> setting defines the period (in seconds) at which the marketcap rank data will be refreshed. Defaults to 86,400s (1 day). The pairlist cache (<code>refresh_period</code>) is applicable on both generating pairlists (first position in the list) and filtering instances (not the first position in the list).</p>
+<p>The <code>refresh_period</code> setting defines the interval (in seconds) at which the marketcap rank data will be refreshed. The default is 86,400 seconds (1 day). The pairlist cache (<code>refresh_period</code>) applies to both generating pairlists (when in the first position in the list) and filtering instances (when not in the first position in the list).</p>
+<p>The <code>categories</code> setting specifies the <a href="https://www.coingecko.com/en/categories">coingecko categories</a> from which to select coins from. The default is an empty list <code>[]</code>, meaning no category filtering is applied.
+If an incorrect category string is chosen, the plugin will print the available categories from CoinGecko and fail. The category should be the ID of the category, for example, for <code>https://www.coingecko.com/en/categories/layer-1</code>, the category ID would be <code>layer-1</code>. You can pass multiple categories such as <code>["layer-1", "meme-token"]</code> to select from several categories.</p>
+<div class="admonition warning">
+<p class="admonition-title">Many categories</p>
+<p>Each added category corresponds to one API call to CoinGecko. The more categories you add, the longer the pairlist generation will take, potentially causing rate limit issues.</p>
+</div>
 <h4 id="agefilter">AgeFilter<a class="headerlink" href="#agefilter" title="Permanent link">&para;</a></h4>
 <p>Removes pairs that have been listed on the exchange for less than <code>min_days_listed</code> days (defaults to <code>10</code>) or more than <code>max_days_listed</code> days (defaults <code>None</code> mean infinity).</p>
 <p>When pairs are first listed on an exchange they can suffer huge price drops and volatility
