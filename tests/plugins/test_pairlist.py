@@ -2423,6 +2423,33 @@ def test_MarketCapPairList_timing(mocker, default_conf_usdt, markets, time_machi
     assert markets_mock.call_count == 3
 
 
+def test_MarketCapPairList_filter_special_no_pair_from_coingecko(
+    mocker,
+    default_conf_usdt,
+    markets,
+):
+    default_conf_usdt["pairlists"] = [{"method": "MarketCapPairList", "number_assets": 2}]
+
+    mocker.patch.multiple(
+        EXMS,
+        markets=PropertyMock(return_value=markets),
+        exchange_has=MagicMock(return_value=True),
+    )
+
+    # Simulate no pair returned from coingecko
+    gcm_mock = mocker.patch(
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_markets",
+        return_value=[],
+    )
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+
+    pm = PairListManager(exchange, default_conf_usdt)
+    pm.refresh_pairlist()
+    assert gcm_mock.call_count == 1
+    assert pm.whitelist == []
+
+
 def test_MarketCapPairList_exceptions(mocker, default_conf_usdt):
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     default_conf_usdt["pairlists"] = [{"method": "MarketCapPairList"}]
