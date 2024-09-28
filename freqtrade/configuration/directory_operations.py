@@ -82,6 +82,11 @@ def create_userdata_dir(directory: str, create_dir: bool = False) -> Path:
     for f in sub_dirs:
         subfolder = folder / f
         if not subfolder.is_dir():
+            if subfolder.exists(follow_symlinks=False):
+                raise OperationalException(
+                    f"File `{subfolder}` exists already and is not a directory. "
+                    "Freqtrade requires this to be a directory."
+                )
             subfolder.mkdir(parents=False)
     return folder
 
