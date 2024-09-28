@@ -200,4 +200,5 @@ class MarketCapPairList(IPairList):
             if len(filtered_pairlist) > 0:
                 return filtered_pairlist
 
-        return pairlist
+        # If no pairs are found, return the original pairlist
+        return []
