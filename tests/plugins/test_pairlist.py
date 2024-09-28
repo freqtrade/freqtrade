@@ -2455,7 +2455,7 @@ def test_MarketCapPairList_exceptions(mocker, default_conf_usdt):
         }
     ]
     with pytest.raises(
-        OperationalException, match="category layer250 not in coingecko category list."
+        OperationalException, match="Category layer250 not in coingecko category list."
     ):
         PairListManager(exchange, default_conf_usdt)
 
