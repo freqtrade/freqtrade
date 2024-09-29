@@ -4,7 +4,6 @@ from typing import Dict
 from freqtrade.constants import (
     AVAILABLE_DATAHANDLERS,
     AVAILABLE_PAIRLISTS,
-    AVAILABLE_PROTECTIONS,
     BACKTEST_BREAKDOWNS,
     DRY_RUN_WALLET,
     EXPORT_OPTIONS,
