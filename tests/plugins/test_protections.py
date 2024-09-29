@@ -3,13 +3,15 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from freqtrade import constants
 from freqtrade.enums import ExitType
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.trade_model import Order
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from tests.conftest import get_patched_freqtradebot, log_has_re
+
+
+AVAILABLE_PROTECTIONS = ["CooldownPeriod", "LowProfitPairs", "MaxDrawdown", "StoplossGuard"]
 
 
 def generate_mock_trade(
@@ -90,12 +92,12 @@ def generate_mock_trade(
 
 def test_protectionmanager(mocker, default_conf):
     default_conf["_strategy_protections"] = [
-        {"method": protection} for protection in constants.AVAILABLE_PROTECTIONS
+        {"method": protection} for protection in AVAILABLE_PROTECTIONS
     ]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     for handler in freqtrade.protections._protection_handlers:
-        assert handler.name in constants.AVAILABLE_PROTECTIONS
+        assert handler.name in AVAILABLE_PROTECTIONS
         if not handler.has_global_stop:
             assert handler.global_stop(datetime.now(timezone.utc), "*") is None
         if not handler.has_local_stop:
