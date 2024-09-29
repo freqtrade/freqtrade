@@ -77,7 +77,6 @@ def __run_backtest_bg(btconfig: Config):
 
         lastconfig["timerange"] = btconfig["timerange"]
         lastconfig["timeframe"] = strat.timeframe
-        lastconfig["protections"] = btconfig.get("protections", [])
         lastconfig["enable_protections"] = btconfig.get("enable_protections")
         lastconfig["dry_run_wallet"] = btconfig.get("dry_run_wallet")
 

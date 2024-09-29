@@ -69,7 +69,6 @@ class StrategyResolver(IResolver):
             ("order_time_in_force", None),
             ("stake_currency", None),
             ("stake_amount", None),
-            ("protections", None),
             ("startup_candle_count", None),
             ("unfilledtimeout", None),
             ("use_exit_signal", True),
