@@ -5,6 +5,7 @@ import pytest
 
 from freqtrade import constants
 from freqtrade.enums import ExitType
+from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.trade_model import Order
 from freqtrade.plugins.protectionmanager import ProtectionManager
@@ -99,6 +100,63 @@ def test_protectionmanager(mocker, default_conf):
             assert handler.global_stop(datetime.now(timezone.utc), "*") is None
         if not handler.has_local_stop:
             assert handler.stop_per_pair("XRP/BTC", datetime.now(timezone.utc), "*") is None
+
+
+@pytest.mark.parametrize(
+    "protconf,expected",
+    [
+        ([], None),
+        ([{"method": "StoplossGuard", "lookback_period": 2000, "stop_duration_candles": 10}], None),
+        ([{"method": "StoplossGuard", "lookback_period_candles": 20, "stop_duration": 10}], None),
+        (
+            [
+                {
+                    "method": "StoplossGuard",
+                    "lookback_period_candles": 20,
+                    "lookback_period": 2000,
+                    "stop_duration": 10,
+                }
+            ],
+            r"Protections must specify either `lookback_period`.*",
+        ),
+        (
+            [
+                {
+                    "method": "StoplossGuard",
+                    "lookback_period": 20,
+                    "stop_duration": 10,
+                    "stop_duration_candles": 10,
+                }
+            ],
+            r"Protections must specify either `stop_duration`.*",
+        ),
+        (
+            [
+                {
+                    "method": "StoplossGuard",
+                    "lookback_period": 20,
+                    "stop_duration": 10,
+                    "unlock_at": "20:02",
+                }
+            ],
+            r"Protections must specify either `unlock_at`, `stop_duration` or.*",
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "20:02"}],
+            None,
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "55:102"}],
+            "Invalid date format for unlock_at: 55:102.",
+        ),
+    ],
+)
+def test_validate_protections(protconf, expected):
+    if expected:
+        with pytest.raises(OperationalException, match=expected):
+            ProtectionManager.validate_protections(protconf)
+    else:
+        ProtectionManager.validate_protections(protconf)
 
 
 @pytest.mark.parametrize(
