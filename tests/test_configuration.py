@@ -1533,8 +1533,8 @@ def test_process_deprecated_protections(default_conf, caplog):
     assert not log_has(message, caplog)
 
     config["protections"] = []
-    process_temporary_deprecated_settings(config)
-    assert log_has(message, caplog)
+    with pytest.raises(ConfigurationError, match=message):
+        process_temporary_deprecated_settings(config)
 
 
 def test_flat_vars_to_nested_dict(caplog):

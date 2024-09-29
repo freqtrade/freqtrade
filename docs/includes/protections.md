@@ -11,10 +11,6 @@ All protection end times are rounded up to the next candle to avoid sudden, unex
 !!! Note "Backtesting"
     Protections are supported by backtesting and hyperopt, but must be explicitly enabled by using the `--enable-protections` flag.
 
-!!! Warning "Setting protections from the configuration"
-    Setting protections from the configuration via `"protections": [],` key should be considered deprecated and will be removed in a future version.
-    It is also no longer guaranteed that your protections apply to the strategy in cases where the strategy defines [protections as property](hyperopt.md#optimizing-protections).
-
 ### Available Protections
 
 * [`StoplossGuard`](#stoploss-guard) Stop trading if a certain amount of stoploss occurred within a certain time window.
