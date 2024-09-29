@@ -88,7 +88,7 @@ def generate_mock_trade(
 
 
 def test_protectionmanager(mocker, default_conf):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {"method": protection} for protection in constants.AVAILABLE_PROTECTIONS
     ]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
@@ -196,7 +196,7 @@ def test_protections_init(default_conf, timeframe, expected_lookback, expected_s
 @pytest.mark.usefixtures("init_persistence")
 def test_stoploss_guard(mocker, default_conf, fee, caplog, is_short):
     # Active for both sides (long and short)
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {"method": "StoplossGuard", "lookback_period": 60, "stop_duration": 40, "trade_limit": 3}
     ]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
@@ -268,7 +268,7 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog, is_short):
 @pytest.mark.parametrize("only_per_side", [False, True])
 @pytest.mark.usefixtures("init_persistence")
 def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair, only_per_side):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "StoplossGuard",
             "lookback_period": 60,
@@ -379,7 +379,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
 
 @pytest.mark.usefixtures("init_persistence")
 def test_CooldownPeriod(mocker, default_conf, fee, caplog):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "CooldownPeriod",
             "stop_duration": 60,
@@ -425,7 +425,7 @@ def test_CooldownPeriod(mocker, default_conf, fee, caplog):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_CooldownPeriod_unlock_at(mocker, default_conf, fee, caplog, time_machine):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "CooldownPeriod",
             "unlock_at": "05:00",
@@ -509,7 +509,7 @@ def test_CooldownPeriod_unlock_at(mocker, default_conf, fee, caplog, time_machin
 @pytest.mark.parametrize("only_per_side", [False, True])
 @pytest.mark.usefixtures("init_persistence")
 def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "LowProfitPairs",
             "lookback_period": 400,
@@ -599,7 +599,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_MaxDrawdown(mocker, default_conf, fee, caplog):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "MaxDrawdown",
             "lookback_period": 1000,
@@ -812,7 +812,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
 def test_protection_manager_desc(
     mocker, default_conf, protectionconf, desc_expected, exception_expected
 ):
-    default_conf["protections"] = [protectionconf]
+    default_conf["_strategy_protections"] = [protectionconf]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     short_desc = str(freqtrade.protections.short_desc())

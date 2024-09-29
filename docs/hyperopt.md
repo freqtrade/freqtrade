@@ -445,7 +445,6 @@ While this strategy is most likely too simple to provide consistent profit, it s
 
     Whether you are using `.range` functionality or the alternatives above, you should try to use space ranges as small as possible since this will improve CPU/RAM usage.
 
-
 ## Optimizing protections
 
 Freqtrade can also optimize protections. How you optimize protections is up to you, and the following should be considered as example only.

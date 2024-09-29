@@ -1299,7 +1299,7 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
     # While this test IS a copy of test_backtest_pricecontours, it's needed to ensure
     # results do not carry-over to the next run, which is not given by using parametrize.
     patch_exchange(mocker)
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "CooldownPeriod",
             "stop_duration": 3,
@@ -1358,7 +1358,7 @@ def test_backtest_pricecontours(
     default_conf, mocker, testdatadir, protections, contour, expected
 ) -> None:
     if protections:
-        default_conf["protections"] = protections
+        default_conf["_strategy_protections"] = protections
         default_conf["enable_protections"] = True
 
     patch_exchange(mocker)
