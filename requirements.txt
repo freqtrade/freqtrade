@@ -4,7 +4,7 @@ bottleneck==1.4.0
 numexpr==2.10.1
 pandas-ta==0.3.14b
 
-ccxt==4.4.6
+ccxt==4.4.9
 cryptography==42.0.8; platform_machine == 'armv7l'
 cryptography==43.0.1; platform_machine != 'armv7l'
 aiohttp==3.10.5
