@@ -1,6 +1,6 @@
 markdown==3.7
 mkdocs==1.6.1
-mkdocs-material==9.5.36
+mkdocs-material==9.5.39
 mdx_truly_sane_lists==1.3
 pymdown-extensions==10.10.1
 jinja2==3.1.4
