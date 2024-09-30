@@ -812,65 +812,6 @@ def test_validate_whitelist(default_conf):
     validate_config_consistency(conf)
 
 
-@pytest.mark.parametrize(
-    "protconf,expected",
-    [
-        ([], None),
-        ([{"method": "StoplossGuard", "lookback_period": 2000, "stop_duration_candles": 10}], None),
-        ([{"method": "StoplossGuard", "lookback_period_candles": 20, "stop_duration": 10}], None),
-        (
-            [
-                {
-                    "method": "StoplossGuard",
-                    "lookback_period_candles": 20,
-                    "lookback_period": 2000,
-                    "stop_duration": 10,
-                }
-            ],
-            r"Protections must specify either `lookback_period`.*",
-        ),
-        (
-            [
-                {
-                    "method": "StoplossGuard",
-                    "lookback_period": 20,
-                    "stop_duration": 10,
-                    "stop_duration_candles": 10,
-                }
-            ],
-            r"Protections must specify either `stop_duration`.*",
-        ),
-        (
-            [
-                {
-                    "method": "StoplossGuard",
-                    "lookback_period": 20,
-                    "stop_duration": 10,
-                    "unlock_at": "20:02",
-                }
-            ],
-            r"Protections must specify either `unlock_at`, `stop_duration` or.*",
-        ),
-        (
-            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "20:02"}],
-            None,
-        ),
-        (
-            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "55:102"}],
-            "Invalid date format for unlock_at: 55:102.",
-        ),
-    ],
-)
-def test_validate_protections(default_conf, protconf, expected):
-    conf = deepcopy(default_conf)
-    conf["protections"] = protconf
-    if expected:
-        with pytest.raises(OperationalException, match=expected):
-            validate_config_consistency(conf)
-    else:
-        validate_config_consistency(conf)
-
-
 def test_validate_ask_orderbook(default_conf, caplog) -> None:
     conf = deepcopy(default_conf)
     conf["exit_pricing"]["use_order_book"] = True
@@ -1533,8 +1474,8 @@ def test_process_deprecated_protections(default_conf, caplog):
     assert not log_has(message, caplog)
 
     config["protections"] = []
-    process_temporary_deprecated_settings(config)
-    assert log_has(message, caplog)
+    with pytest.raises(ConfigurationError, match=message):
+        process_temporary_deprecated_settings(config)
 
 
 def test_flat_vars_to_nested_dict(caplog):

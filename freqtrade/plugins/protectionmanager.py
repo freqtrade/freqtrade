@@ -4,9 +4,10 @@ Protection manager class
 
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from freqtrade.constants import Config, LongShort
+from freqtrade.exceptions import ConfigurationError
 from freqtrade.persistence import PairLocks
 from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections import IProtection
@@ -21,6 +22,7 @@ class ProtectionManager:
         self._config = config
 
         self._protection_handlers: List[IProtection] = []
+        self.validate_protections(protections)
         for protection_handler_config in protections:
             protection_handler = ProtectionResolver.load_protection(
                 protection_handler_config["method"],
@@ -76,3 +78,40 @@ class ProtectionManager:
                             pair, lock.until, lock.reason, now=now, side=lock.lock_side
                         )
         return result
+
+    @staticmethod
+    def validate_protections(protections: List[Dict[str, Any]]) -> None:
+        """
+        Validate protection setup validity
+        """
+
+        for prot in protections:
+            parsed_unlock_at = None
+            if (config_unlock_at := prot.get("unlock_at")) is not None:
+                try:
+                    parsed_unlock_at = datetime.strptime(config_unlock_at, "%H:%M")
+                except ValueError:
+                    raise ConfigurationError(
+                        f"Invalid date format for unlock_at: {config_unlock_at}."
+                    )
+
+            if "stop_duration" in prot and "stop_duration_candles" in prot:
+                raise ConfigurationError(
+                    "Protections must specify either `stop_duration` or `stop_duration_candles`.\n"
+                    f"Please fix the protection {prot.get('method')}."
+                )
+
+            if "lookback_period" in prot and "lookback_period_candles" in prot:
+                raise ConfigurationError(
+                    "Protections must specify either `lookback_period` or "
+                    f"`lookback_period_candles`.\n Please fix the protection {prot.get('method')}."
+                )
+
+            if parsed_unlock_at is not None and (
+                "stop_duration" in prot or "stop_duration_candles" in prot
+            ):
+                raise ConfigurationError(
+                    "Protections must specify either `unlock_at`, `stop_duration` or "
+                    "`stop_duration_candles`.\n"
+                    f"Please fix the protection {prot.get('method')}."
+                )

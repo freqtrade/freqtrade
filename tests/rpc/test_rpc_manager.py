@@ -173,7 +173,7 @@ def test_startupmessages_telegram_enabled(mocker, default_conf) -> None:
     telegram_mock.reset_mock()
     default_conf["dry_run"] = True
     default_conf["whitelist"] = {"method": "VolumePairList", "config": {"number_assets": 20}}
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {"method": "StoplossGuard", "lookback_period": 60, "trade_limit": 2, "stop_duration": 60}
     ]
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)

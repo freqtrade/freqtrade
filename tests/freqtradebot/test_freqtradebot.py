@@ -553,7 +553,7 @@ def test_enter_positions_global_pairlock(
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_handle_protections(mocker, default_conf_usdt, fee, is_short):
-    default_conf_usdt["protections"] = [
+    default_conf_usdt["_strategy_protections"] = [
         {"method": "CooldownPeriod", "stop_duration": 60},
         {
             "method": "StoplossGuard",

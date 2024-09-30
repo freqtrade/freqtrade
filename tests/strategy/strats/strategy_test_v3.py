@@ -75,15 +75,13 @@ class StrategyTestV3(IStrategy):
     protection_cooldown_lookback = IntParameter([0, 50], default=30)
 
     # TODO: Can this work with protection tests? (replace HyperoptableStrategy implicitly ... )
-    # @property
-    # def protections(self):
-    #     prot = []
-    #     if self.protection_enabled.value:
-    #         prot.append({
-    #             "method": "CooldownPeriod",
-    #             "stop_duration_candles": self.protection_cooldown_lookback.value
-    #         })
-    #     return prot
+    @property
+    def protections(self):
+        prot = []
+        if self.protection_enabled.value:
+            # Workaround to simplify tests. This will not work in real scenarios.
+            prot = self.config.get("_strategy_protections", {})
+        return prot
 
     bot_started = False
 

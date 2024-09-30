@@ -177,4 +177,6 @@ def process_temporary_deprecated_settings(config: Config) -> None:
         )
 
     if "protections" in config:
-        logger.warning("DEPRECATED: Setting 'protections' in the configuration is deprecated.")
+        raise ConfigurationError(
+            "DEPRECATED: Setting 'protections' in the configuration is deprecated."
+        )

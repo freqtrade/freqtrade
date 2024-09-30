@@ -4,7 +4,6 @@ from typing import Dict
 from freqtrade.constants import (
     AVAILABLE_DATAHANDLERS,
     AVAILABLE_PAIRLISTS,
-    AVAILABLE_PROTECTIONS,
     BACKTEST_BREAKDOWNS,
     DRY_RUN_WALLET,
     EXPORT_OPTIONS,
@@ -444,60 +443,6 @@ CONF_SCHEMA = {
                         "description": "Method used for generating the pairlist.",
                         "type": "string",
                         "enum": AVAILABLE_PAIRLISTS,
-                    },
-                },
-                "required": ["method"],
-            },
-        },
-        "protections": {
-            "description": "Configuration for various protections.",
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "method": {
-                        "description": "Method used for the protection.",
-                        "type": "string",
-                        "enum": AVAILABLE_PROTECTIONS,
-                    },
-                    "stop_duration": {
-                        "description": (
-                            "Duration to lock the pair after a protection is triggered, "
-                            "in minutes."
-                        ),
-                        "type": "number",
-                        "minimum": 0.0,
-                    },
-                    "stop_duration_candles": {
-                        "description": (
-                            "Duration to lock the pair after a protection is triggered, in "
-                            "number of candles."
-                        ),
-                        "type": "number",
-                        "minimum": 0,
-                    },
-                    "unlock_at": {
-                        "description": (
-                            "Time when trading will be unlocked regularly. Format: HH:MM"
-                        ),
-                        "type": "string",
-                    },
-                    "trade_limit": {
-                        "description": "Minimum number of trades required during lookback period.",
-                        "type": "number",
-                        "minimum": 1,
-                    },
-                    "lookback_period": {
-                        "description": "Period to look back for protection checks, in minutes.",
-                        "type": "number",
-                        "minimum": 1,
-                    },
-                    "lookback_period_candles": {
-                        "description": (
-                            "Period to look back for protection checks, in number " "of candles."
-                        ),
-                        "type": "number",
-                        "minimum": 1,
                     },
                 },
                 "required": ["method"],
