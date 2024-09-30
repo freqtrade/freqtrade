@@ -3,8 +3,6 @@
 import logging
 from typing import Dict
 
-from ccxt import SIGNIFICANT_DIGITS
-
 from freqtrade.enums import TradingMode
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.exchange_types import FtHas
@@ -36,10 +34,3 @@ class Hyperliquid(Exchange):
             config.update({"options": {"defaultType": "spot"}})
         config.update(super()._ccxt_config)
         return config
-
-    @property
-    def precision_mode_price(self) -> int:
-        """
-        Override the default precision mode for price.
-        """
-        return SIGNIFICANT_DIGITS
