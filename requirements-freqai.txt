@@ -11,5 +11,5 @@ catboost==1.2.7; 'arm' not in platform_machine
 matplotlib==3.9.2
 lightgbm==4.5.0
 xgboost==2.0.3
-tensorboard==2.17.1
+tensorboard==2.18.0
 datasieve==0.1.7
