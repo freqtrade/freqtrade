@@ -90,13 +90,6 @@ def test_historic_trades(mocker, default_conf, trades_history_df):
     assert isinstance(data, DataFrame)
     assert len(data) == len(trades_history_df)
 
-    # Random other runmode
-    default_conf["runmode"] = RunMode.UTIL_EXCHANGE
-    dp = DataProvider(default_conf, None)
-    data = dp.trades("UNITTEST/BTC", "5m")
-    assert isinstance(data, DataFrame)
-    assert len(data) == 0
-
 
 def test_historic_ohlcv_dataformat(mocker, default_conf, ohlcv_history):
     hdf5loadmock = MagicMock(return_value=ohlcv_history)

@@ -86,7 +86,6 @@ def test_download_data_main_trades(mocker):
     # Exchange that doesn't support historic downloads
     config["exchange"]["name"] = "bybit"
     with pytest.raises(OperationalException, match=r"Trade history not available for .*"):
-        config
         download_data_main(config)
 
 

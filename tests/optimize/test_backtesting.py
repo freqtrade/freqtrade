@@ -941,7 +941,7 @@ def test_backtest_one_detail(default_conf_usdt, mocker, testdatadir, use_detail)
     "use_detail,exp_funding_fee, exp_ff_updates",
     [
         (True, -0.018054162, 11),
-        (False, -0.01780296, 5),
+        (False, -0.01780296, 6),
     ],
 )
 def test_backtest_one_detail_futures(
@@ -1051,8 +1051,8 @@ def test_backtest_one_detail_futures(
 @pytest.mark.parametrize(
     "use_detail,entries,max_stake,ff_updates,expected_ff",
     [
-        (True, 50, 3000, 54, -1.18038144),
-        (False, 6, 360, 10, -0.14679994),
+        (True, 50, 3000, 55, -1.18038144),
+        (False, 6, 360, 11, -0.14679994),
     ],
 )
 def test_backtest_one_detail_futures_funding_fees(

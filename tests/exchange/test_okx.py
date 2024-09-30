@@ -6,6 +6,7 @@ import pytest
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import RetryableOrderError, TemporaryError
+from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.exchange.exchange import timeframe_to_minutes
 from tests.conftest import EXMS, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
@@ -551,6 +552,7 @@ def test__set_leverage_okx(mocker, default_conf):
 @pytest.mark.usefixtures("init_persistence")
 def test_fetch_stoploss_order_okx(default_conf, mocker):
     default_conf["dry_run"] = False
+    mocker.patch("freqtrade.exchange.common.time.sleep")
     api_mock = MagicMock()
     api_mock.fetch_order = MagicMock()
 
@@ -569,10 +571,10 @@ def test_fetch_stoploss_order_okx(default_conf, mocker):
 
     with pytest.raises(RetryableOrderError):
         exchange.fetch_stoploss_order("1234", "ETH/BTC")
-    assert api_mock.fetch_order.call_count == 1
-    assert api_mock.fetch_open_orders.call_count == 1
-    assert api_mock.fetch_closed_orders.call_count == 1
-    assert api_mock.fetch_canceled_orders.call_count == 1
+    assert api_mock.fetch_order.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_open_orders.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_closed_orders.call_count == API_RETRY_COUNT + 1
+    assert api_mock.fetch_canceled_orders.call_count == API_RETRY_COUNT + 1
 
     api_mock.fetch_order.reset_mock()
     api_mock.fetch_open_orders.reset_mock()
@@ -608,6 +610,39 @@ def test_fetch_stoploss_order_okx(default_conf, mocker):
     assert api_mock.fetch_closed_orders.call_count == 0
     assert api_mock.fetch_canceled_orders.call_count == 0
     assert dro_mock.call_count == 1
+
+
+def test_fetch_stoploss_order_okx_exceptions(default_conf_usdt, mocker):
+    default_conf_usdt["dry_run"] = False
+    api_mock = MagicMock()
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf_usdt,
+        api_mock,
+        "okx",
+        "fetch_stoploss_order",
+        "fetch_order",
+        retries=API_RETRY_COUNT + 1,
+        order_id="12345",
+        pair="ETH/USDT",
+    )
+
+    # Test 2nd part of the function
+    api_mock.fetch_order = MagicMock(side_effect=ccxt.OrderNotFound())
+    api_mock.fetch_closed_orders = MagicMock(return_value=[])
+    api_mock.fetch_canceled_orders = MagicMock(return_value=[])
+
+    ccxt_exceptionhandlers(
+        mocker,
+        default_conf_usdt,
+        api_mock,
+        "okx",
+        "fetch_stoploss_order",
+        "fetch_open_orders",
+        retries=API_RETRY_COUNT + 1,
+        order_id="12345",
+        pair="ETH/USDT",
+    )
 
 
 @pytest.mark.parametrize(

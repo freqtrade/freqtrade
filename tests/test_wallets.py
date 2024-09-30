@@ -365,13 +365,18 @@ def test_sync_wallet_dry(mocker, default_conf_usdt, fee):
     assert bal["NEO"].total == 10
     assert bal["XRP"].total == 10
     assert bal["LTC"].total == 2
-    assert bal["USDT"].total == 922.74
+    usdt_bal = bal["USDT"]
+    assert usdt_bal.free == 922.74
+    assert usdt_bal.total == 942.74
+    assert usdt_bal.used == 20.0
+    # sum of used and free should be total.
+    assert usdt_bal.total == usdt_bal.free + usdt_bal.used
 
     assert freqtrade.wallets.get_starting_balance() == default_conf_usdt["dry_run_wallet"]
     total = freqtrade.wallets.get_total("LTC")
     free = freqtrade.wallets.get_free("LTC")
     used = freqtrade.wallets.get_used("LTC")
-    assert free != 0
+    assert used != 0
     assert free + used == total
 
 

@@ -719,6 +719,12 @@ AVAILABLE_CLI_OPTIONS = {
         nargs="+",
         default=[],
     ),
+    "entry_only": Arg(
+        "--entry-only", help=("Only analyze entry signals."), action="store_true", default=False
+    ),
+    "exit_only": Arg(
+        "--exit-only", help=("Only analyze exit signals."), action="store_true", default=False
+    ),
     "analysis_rejected": Arg(
         "--rejected-signals",
         help="Analyse rejected signals",

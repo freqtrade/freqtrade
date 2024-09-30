@@ -7,7 +7,7 @@ from typing import Optional
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import ROUND_UP
-from freqtrade.exchange.types import Ticker
+from freqtrade.exchange.exchange_types import Ticker
 from freqtrade.plugins.pairlist.IPairList import IPairList, SupportsBacktesting
 
 

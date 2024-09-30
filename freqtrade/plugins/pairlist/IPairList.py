@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange, market_is_active
-from freqtrade.exchange.types import Ticker, Tickers
+from freqtrade.exchange.exchange_types import Ticker, Tickers
 from freqtrade.mixins import LoggingMixin
 
 
@@ -39,6 +39,11 @@ class __OptionPairlistParameter(__PairlistParameterBase):
     options: List[str]
 
 
+class __ListPairListParamenter(__PairlistParameterBase):
+    type: Literal["list"]
+    default: Union[List[str], None]
+
+
 class __BoolPairlistParameter(__PairlistParameterBase):
     type: Literal["boolean"]
     default: Union[bool, None]
@@ -49,6 +54,7 @@ PairlistParameter = Union[
     __StringPairlistParameter,
     __OptionPairlistParameter,
     __BoolPairlistParameter,
+    __ListPairListParamenter,
 ]
 
 

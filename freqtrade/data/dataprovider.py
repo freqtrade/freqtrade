@@ -23,7 +23,7 @@ from freqtrade.data.history import get_datahandler, load_pair_history
 from freqtrade.enums import CandleType, RPCMessageType, RunMode, TradingMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_prev_date, timeframe_to_seconds
-from freqtrade.exchange.types import OrderBook
+from freqtrade.exchange.exchange_types import OrderBook
 from freqtrade.misc import append_candles_to_dataframe
 from freqtrade.rpc import RPCManager
 from freqtrade.rpc.rpc_types import RPCAnalyzedDFMsg
@@ -520,7 +520,7 @@ class DataProvider:
             return self._exchange.trades(
                 (pair, timeframe or self._config["timeframe"], _candle_type), copy=copy
             )
-        elif self.runmode in (RunMode.BACKTEST, RunMode.HYPEROPT):
+        else:
             data_handler = get_datahandler(
                 self._config["datadir"], data_format=self._config["dataformat_trades"]
             )
@@ -528,9 +528,6 @@ class DataProvider:
                 pair, self._config.get("trading_mode", TradingMode.SPOT)
             )
             return trades_df
-
-        else:
-            return DataFrame()
 
     def market(self, pair: str) -> Optional[Dict[str, Any]]:
         """

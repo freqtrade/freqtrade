@@ -225,7 +225,7 @@ EXCHANGES = {
                 "id": "123412341234",
                 "create_time": "167997798",
                 "create_time_ms": "167997798825.566200",
-                "currency_pair": "ETH_USDT",
+                "currency_pair": "SOL_USDT",
                 "side": "sell",
                 "role": "taker",
                 "amount": "0.0115",

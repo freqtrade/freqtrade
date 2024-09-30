@@ -13,7 +13,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType
 from freqtrade.enums.runmode import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange.types import Tickers
+from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.mixins import LoggingMixin
 from freqtrade.plugins.pairlist.IPairList import IPairList, SupportsBacktesting
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist

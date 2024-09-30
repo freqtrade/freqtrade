@@ -11,6 +11,7 @@ from freqtrade.enums import CandleType, MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, ExchangeError, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
+from freqtrade.exchange.exchange_types import FtHas
 from freqtrade.util.datetime_helpers import dt_now, dt_ts
 
 
@@ -29,14 +30,14 @@ class Bybit(Exchange):
 
     unified_account = False
 
-    _ft_has: Dict = {
+    _ft_has: FtHas = {
         "ohlcv_candle_limit": 1000,
         "ohlcv_has_history": True,
         "order_time_in_force": ["GTC", "FOK", "IOC", "PO"],
-        "ws.enabled": True,
+        "ws_enabled": True,
         "trades_has_history": False,  # Endpoint doesn't support pagination
     }
-    _ft_has_futures: Dict = {
+    _ft_has_futures: FtHas = {
         "ohlcv_has_history": True,
         "mark_ohlcv_timeframe": "4h",
         "funding_fee_timeframe": "8h",
@@ -89,10 +90,8 @@ class Bybit(Exchange):
                 # Returns a tuple of bools, first for margin, second for Account
                 if is_unified and len(is_unified) > 1 and is_unified[1]:
                     self.unified_account = True
-                    logger.info("Bybit: Unified account.")
-                    raise OperationalException(
-                        "Bybit: Unified account is not supported. "
-                        "Please use a standard (sub)account."
+                    logger.info(
+                        "Bybit: Unified account. Assuming dedicated subaccount for this bot."
                     )
                 else:
                     self.unified_account = False
@@ -239,7 +238,13 @@ class Bybit(Exchange):
         return orders
 
     def fetch_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
+        if self.exchange_has("fetchOrder"):
+            # Set acknowledged to True to avoid ccxt exception
+            params = {"acknowledged": True}
+
         order = super().fetch_order(order_id, pair, params)
+        if not order:
+            order = self.fetch_order_emulated(order_id, pair, {})
         if (
             order.get("status") == "canceled"
             and order.get("filled") == 0.0

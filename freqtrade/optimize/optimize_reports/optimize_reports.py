@@ -17,7 +17,7 @@ from freqtrade.data.metrics import (
     calculate_sharpe,
     calculate_sortino,
 )
-from freqtrade.types import BacktestResultType
+from freqtrade.ft_types import BacktestResultType
 from freqtrade.util import decimals_per_coin, fmt_coin
 
 
@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 def generate_trade_signal_candles(
-    preprocessed_df: Dict[str, DataFrame], bt_results: Dict[str, Any]
-) -> DataFrame:
+    preprocessed_df: Dict[str, DataFrame], bt_results: Dict[str, Any], date_col: str
+) -> Dict[str, DataFrame]:
     signal_candles_only = {}
     for pair in preprocessed_df.keys():
         signal_candles_only_df = DataFrame()
@@ -36,8 +36,8 @@ def generate_trade_signal_candles(
         pairresults = resdf.loc[(resdf["pair"] == pair)]
 
         if pairdf.shape[0] > 0:
-            for t, v in pairresults.open_date.items():
-                allinds = pairdf.loc[(pairdf["date"] < v)]
+            for t, v in pairresults.iterrows():
+                allinds = pairdf.loc[(pairdf["date"] < v[date_col])]
                 signal_inds = allinds.iloc[[-1]]
                 signal_candles_only_df = concat(
                     [signal_candles_only_df.infer_objects(), signal_inds.infer_objects()]
@@ -504,6 +504,8 @@ def generate_strategy_stats(
         "exit_profit_only": config["exit_profit_only"],
         "exit_profit_offset": config["exit_profit_offset"],
         "ignore_roi_if_entry_signal": config["ignore_roi_if_entry_signal"],
+        "trading_mode": config["trading_mode"],
+        "margin_mode": config["margin_mode"],
         **periodic_breakdown,
         **daily_stats,
         **trade_stats,

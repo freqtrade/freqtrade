@@ -54,6 +54,7 @@ SUPPORTED_EXCHANGES = [
     "binance",
     "bingx",
     "bitmart",
+    "bybit",
     "gate",
     "htx",
     "kraken",
@@ -161,6 +162,10 @@ F = TypeVar("F", bound=Callable[..., Any])
 # Type shenanigans
 @overload
 def retrier(_func: F) -> F: ...
+
+
+@overload
+def retrier(_func: F, *, retries=API_RETRY_COUNT) -> F: ...
 
 
 @overload

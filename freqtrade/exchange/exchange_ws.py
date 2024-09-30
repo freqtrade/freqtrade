@@ -11,7 +11,7 @@ import ccxt
 from freqtrade.constants import Config, PairWithTimeframe
 from freqtrade.enums.candletype import CandleType
 from freqtrade.exchange.exchange import timeframe_to_seconds
-from freqtrade.exchange.types import OHLCVResponse
+from freqtrade.exchange.exchange_types import OHLCVResponse
 from freqtrade.util import dt_ts, format_ms_time
 
 

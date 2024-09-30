@@ -1,21 +1,21 @@
 numpy==1.26.4
-pandas==2.2.2
+pandas==2.2.3
 bottleneck==1.4.0
 numexpr==2.10.1
 pandas-ta==0.3.14b
 
-ccxt==4.3.88
+ccxt==4.4.6
 cryptography==42.0.8; platform_machine == 'armv7l'
-cryptography==43.0.0; platform_machine != 'armv7l'
+cryptography==43.0.1; platform_machine != 'armv7l'
 aiohttp==3.10.5
-SQLAlchemy==2.0.32
-python-telegram-bot==21.4
+SQLAlchemy==2.0.35
+python-telegram-bot==21.6
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.24.1
 humanize==4.10.0
 cachetools==5.5.0
 requests==2.32.3
-urllib3==2.2.2
+urllib3==2.2.3
 jsonschema==4.23.0
 TA-Lib==0.4.32
 technical==1.4.4
@@ -26,7 +26,7 @@ jinja2==3.1.4
 tables==3.9.1; python_version < "3.10"
 tables==3.10.1; python_version >= "3.10"
 joblib==1.4.2
-rich==13.7.1
+rich==13.8.1
 pyarrow==17.0.0; platform_machine != 'armv7l'
 
 # find first, C search in arrays
@@ -41,8 +41,8 @@ orjson==3.10.7
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.112.2
-pydantic==2.8.2
+fastapi==0.115.0
+pydantic==2.9.2
 uvicorn==0.30.6
 pyjwt==2.9.0
 aiofiles==24.1.0
@@ -53,13 +53,13 @@ questionary==2.0.1
 prompt-toolkit==3.0.36
 # Extensions to datetime library
 python-dateutil==2.9.0.post0
-pytz==2024.1
+pytz==2024.2
 
 #Futures
 schedule==1.2.2
 
 #WS Messages
-websockets==13.0
+websockets==13.1
 janus==1.0.0
 
 ast-comments==1.2.2

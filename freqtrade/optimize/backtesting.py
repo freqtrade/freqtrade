@@ -36,6 +36,7 @@ from freqtrade.exchange import (
     timeframe_to_seconds,
 )
 from freqtrade.exchange.exchange import Exchange
+from freqtrade.ft_types import BacktestResultType, get_BacktestResultType_default
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
@@ -61,7 +62,6 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from freqtrade.types import BacktestResultType, get_BacktestResultType_default
 from freqtrade.util import FtPrecise
 from freqtrade.util.migrations import migrate_data
 from freqtrade.wallets import Wallets
@@ -122,6 +122,7 @@ class Backtesting:
         self.processed_dfs: Dict[str, Dict] = {}
         self.rejected_dict: Dict[str, List] = {}
         self.rejected_df: Dict[str, Dict] = {}
+        self.exited_dfs: Dict[str, Dict] = {}
 
         self._exchange_name = self.config["exchange"]["name"]
         if not exchange:
@@ -1098,7 +1099,7 @@ class Backtesting:
                     open_rate_requested=propose_rate,
                     open_date=current_time,
                     stake_amount=stake_amount,
-                    amount=amount,
+                    amount=0,
                     amount_requested=amount,
                     fee_open=self.fee,
                     fee_close=self.fee,
@@ -1165,12 +1166,10 @@ class Backtesting:
                 self._exit_trade(
                     trade, exit_row, exit_row[OPEN_IDX], trade.amount, ExitType.FORCE_EXIT.value
                 )
-                trade.orders[-1].close_bt_order(exit_row[DATE_IDX].to_pydatetime(), trade)
-
-                trade.close_date = exit_row[DATE_IDX].to_pydatetime()
                 trade.exit_reason = ExitType.FORCE_EXIT.value
-                trade.close(exit_row[OPEN_IDX], show_msg=False)
-                LocalTrade.close_bt_trade(trade)
+                self._process_exit_order(
+                    trade.orders[-1], trade, exit_row[DATE_IDX].to_pydatetime(), exit_row, pair
+                )
 
     def trade_slot_available(self, open_trade_count: int) -> bool:
         # Always allow trades when max_open_trades is enabled.
@@ -1566,10 +1565,13 @@ class Backtesting:
             and self.dataprovider.runmode == RunMode.BACKTEST
         ):
             self.processed_dfs[strategy_name] = generate_trade_signal_candles(
-                preprocessed_tmp, results
+                preprocessed_tmp, results, "open_date"
             )
             self.rejected_df[strategy_name] = generate_rejected_signals(
                 preprocessed_tmp, self.rejected_dict
+            )
+            self.exited_dfs[strategy_name] = generate_trade_signal_candles(
+                preprocessed_tmp, results, "close_date"
             )
 
         return min_date, max_date
@@ -1646,7 +1648,11 @@ class Backtesting:
                 and self.dataprovider.runmode == RunMode.BACKTEST
             ):
                 store_backtest_analysis_results(
-                    self.config["exportfilename"], self.processed_dfs, self.rejected_df, dt_appendix
+                    self.config["exportfilename"],
+                    self.processed_dfs,
+                    self.rejected_df,
+                    self.exited_dfs,
+                    dt_appendix,
                 )
 
         # Results may be mixed up now. Sort them so they follow --strategy-list order.

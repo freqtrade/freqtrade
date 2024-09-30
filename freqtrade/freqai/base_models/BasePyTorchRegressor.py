@@ -86,9 +86,6 @@ class BasePyTorchRegressor(BasePyTorchModel):
         dk.feature_pipeline = self.define_data_pipeline(threads=dk.thread_count)
         dk.label_pipeline = self.define_label_pipeline(threads=dk.thread_count)
 
-        dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
-        dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
-
         (dd["train_features"], dd["train_labels"], dd["train_weights"]) = (
             dk.feature_pipeline.fit_transform(
                 dd["train_features"], dd["train_labels"], dd["train_weights"]

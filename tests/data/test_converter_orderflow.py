@@ -13,7 +13,8 @@ from freqtrade.data.converter.trade_converter import trades_list_to_df
 BIN_SIZE_SCALE = 0.5
 
 
-def read_csv(filename, converter_columns: list = ["side", "type"]):
+def read_csv(filename):
+    converter_columns: list = ["side", "type"]
     return pd.read_csv(
         filename,
         skipinitialspace=True,

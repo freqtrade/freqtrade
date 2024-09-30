@@ -5,9 +5,9 @@ from typing import Dict, Optional
 from pandas import DataFrame
 
 from freqtrade.constants import LAST_BT_RESULT_FN
+from freqtrade.ft_types import BacktestResultType
 from freqtrade.misc import file_dump_joblib, file_dump_json
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
-from freqtrade.types import BacktestResultType
 
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,12 @@ def _store_backtest_analysis_data(
 
 
 def store_backtest_analysis_results(
-    recordfilename: Path, candles: Dict[str, Dict], trades: Dict[str, Dict], dtappendix: str
+    recordfilename: Path,
+    candles: Dict[str, Dict],
+    trades: Dict[str, Dict],
+    exited: Dict[str, Dict],
+    dtappendix: str,
 ) -> None:
     _store_backtest_analysis_data(recordfilename, candles, dtappendix, "signals")
     _store_backtest_analysis_data(recordfilename, trades, dtappendix, "rejected")
+    _store_backtest_analysis_data(recordfilename, exited, dtappendix, "exited")

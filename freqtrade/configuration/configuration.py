@@ -15,7 +15,14 @@ from freqtrade.configuration.directory_operations import create_datadir, create_
 from freqtrade.configuration.environment_vars import enironment_vars_to_dict
 from freqtrade.configuration.load_config import load_file, load_from_files
 from freqtrade.constants import Config
-from freqtrade.enums import NON_UTIL_MODES, TRADE_MODES, CandleType, RunMode, TradingMode
+from freqtrade.enums import (
+    NON_UTIL_MODES,
+    TRADE_MODES,
+    CandleType,
+    MarginMode,
+    RunMode,
+    TradingMode,
+)
 from freqtrade.exceptions import OperationalException
 from freqtrade.loggers import setup_logging
 from freqtrade.misc import deep_merge_dicts, parse_db_uri_for_logging
@@ -389,6 +396,7 @@ class Configuration:
             config.get("trading_mode", "spot") or "spot"
         )
         config["trading_mode"] = TradingMode(config.get("trading_mode", "spot") or "spot")
+        config["margin_mode"] = MarginMode(config.get("margin_mode", "") or "")
         self._args_to_config(
             config, argname="candle_types", logstring="Detected --candle-types: {}"
         )
@@ -399,6 +407,8 @@ class Configuration:
             ("enter_reason_list", "Analysis enter tag list: {}"),
             ("exit_reason_list", "Analysis exit tag list: {}"),
             ("indicator_list", "Analysis indicator list: {}"),
+            ("entry_only", "Only analyze entry signals: {}"),
+            ("exit_only", "Only analyze exit signals: {}"),
             ("timerange", "Filter trades by timerange: {}"),
             ("analysis_rejected", "Analyse rejected signals: {}"),
             ("analysis_to_csv", "Store analysis tables to CSV: {}"),
@@ -468,7 +478,7 @@ class Configuration:
             else:
                 logger.info(logstring.format(config[argname]))
             if deprecated_msg:
-                warnings.warn(f"DEPRECATED: {deprecated_msg}", DeprecationWarning)
+                warnings.warn(f"DEPRECATED: {deprecated_msg}", DeprecationWarning, stacklevel=1)
 
     def _resolve_pairs_list(self, config: Config) -> None:
         """

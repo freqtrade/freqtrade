@@ -55,7 +55,6 @@ It uses configuration from `exchange.pair_whitelist` and `exchange.pair_blacklis
 By default, only currently enabled pairs are allowed.
 To skip pair validation against active markets, set `"allow_inactive": true` within the `StaticPairList` configuration.
 This can be useful for backtesting expired pairs (like quarterly spot-markets).
-This option must be configured along with `exchange.skip_pair_validation` in the exchange configuration.
 
 When used in a "follow-up" position (e.g. after VolumePairlist), all pairs in `'pair_whitelist'` will be added to the end of the pairlist.
 
@@ -361,14 +360,21 @@ The optional `bearer_token` will be included in the requests Authorization Heade
         "method": "MarketCapPairList",
         "number_assets": 20,
         "max_rank": 50,
-        "refresh_period": 86400
+        "refresh_period": 86400,
+        "categories": ["layer-1"]
     }
 ]
 ```
 
 `number_assets` defines the maximum number of pairs returned by the pairlist. `max_rank` will determine the maximum rank used in creating/filtering the pairlist. It's expected that some coins within the top `max_rank` marketcap will not be included in the resulting pairlist since not all pairs will have active trading pairs in your preferred market/stake/exchange combination.
 
-`refresh_period` setting defines the period (in seconds) at which the marketcap rank data will be refreshed. Defaults to 86,400s (1 day). The pairlist cache (`refresh_period`) is applicable on both generating pairlists (first position in the list) and filtering instances (not the first position in the list).
+The `refresh_period` setting defines the interval (in seconds) at which the marketcap rank data will be refreshed. The default is 86,400 seconds (1 day). The pairlist cache (`refresh_period`) applies to both generating pairlists (when in the first position in the list) and filtering instances (when not in the first position in the list).
+
+The `categories` setting specifies the [coingecko categories](https://www.coingecko.com/en/categories) from which to select coins from. The default is an empty list `[]`, meaning no category filtering is applied.
+If an incorrect category string is chosen, the plugin will print the available categories from CoinGecko and fail. The category should be the ID of the category, for example, for `https://www.coingecko.com/en/categories/layer-1`, the category ID would be `layer-1`. You can pass multiple categories such as `["layer-1", "meme-token"]` to select from several categories.
+
+!!! Warning "Many categories"
+    Each added category corresponds to one API call to CoinGecko. The more categories you add, the longer the pairlist generation will take, potentially causing rate limit issues.
 
 #### AgeFilter
 
