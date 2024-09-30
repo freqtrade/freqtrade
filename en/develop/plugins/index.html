@@ -2606,28 +2606,16 @@ If the volatility over the last 10 days is not in the range of 0.05-0.50, remove
 <span class="p">],</span>
 </code></pre></div>
 <h2 id="protections">Protections<a class="headerlink" href="#protections" title="Permanent link">&para;</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Beta feature</p>
-<p>This feature is still in it's testing phase. Should you notice something you think is wrong please let us know via Discord or via Github Issue.</p>
-</div>
 <p>Protections will protect your strategy from unexpected events and market conditions by temporarily stop trading for either one pair, or for all pairs.
 All protection end times are rounded up to the next candle to avoid sudden, unexpected intra-candle buys.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Not all Protections will work for all strategies, and parameters will need to be tuned for your strategy to improve performance.  </p>
-</div>
 <div class="admonition tip">
-<p class="admonition-title">Tip</p>
+<p class="admonition-title">Usage tips</p>
+<p>Not all Protections will work for all strategies, and parameters will need to be tuned for your strategy to improve performance.  </p>
 <p>Each Protection can be configured multiple times with different parameters, to allow different levels of protection (short-term / long-term).</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Backtesting</p>
 <p>Protections are supported by backtesting and hyperopt, but must be explicitly enabled by using the <code>--enable-protections</code> flag.</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Setting protections from the configuration</p>
-<p>Setting protections from the configuration via <code>"protections": [],</code> key should be considered deprecated and will be removed in a future version.
-It is also no longer guaranteed that your protections apply to the strategy in cases where the strategy defines <a href="../hyperopt/#optimizing-protections">protections as property</a>.</p>
 </div>
 <h3 id="available-protections">Available Protections<a class="headerlink" href="#available-protections" title="Permanent link">&para;</a></h3>
 <ul>

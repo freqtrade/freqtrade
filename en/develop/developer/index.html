@@ -2505,8 +2505,7 @@ This Guide is directed towards Developers who want to develop a new protection.<
 <p>No protection should use datetime directly, but use the provided <code>date_now</code> variable for date calculations. This preserves the ability to backtest protections.</p>
 <div class="admonition tip">
 <p class="admonition-title">Writing a new Protection</p>
-<p>Best copy one of the existing Protections to have a good example.
-Don't forget to register your protection in <code>constants.py</code> under the variable <code>AVAILABLE_PROTECTIONS</code> - otherwise it will not be selectable.</p>
+<p>Best copy one of the existing Protections to have a good example.</p>
 </div>
 <h4 id="implementation-of-a-new-protection">Implementation of a new protection<a class="headerlink" href="#implementation-of-a-new-protection" title="Permanent link">&para;</a></h4>
 <p>All Protection implementations must have <code>IProtection</code> as parent class.
