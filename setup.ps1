@@ -159,7 +159,7 @@ function Find-PythonExecutable {
     "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python310\python.exe",
     "C:\Python312\python.exe",
     "C:\Python311\python.exe",
-    "C:\Python310\python.exe",
+    "C:\Python310\python.exe"
   )
 
 
