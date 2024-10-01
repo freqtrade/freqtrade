@@ -153,16 +153,13 @@ function Find-PythonExecutable {
     "python3.12",
     "python3.11",
     "python3.10",
-    "python3.9",
     "python3",
     "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python312\python.exe",
     "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python311\python.exe",
     "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python310\python.exe",
-    "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python39\python.exe",
     "C:\Python312\python.exe",
     "C:\Python311\python.exe",
-    "C:\Python310\python.exe",
-    "C:\Python39\python.exe"
+    "C:\Python310\python.exe"
   )
 
 
@@ -178,10 +175,10 @@ function Main {
   "Starting the operations..." | Out-File $LogFilePath -Append
   "Current directory: $(Get-Location)" | Out-File $LogFilePath -Append
 
-  # Exit on lower versions than Python 3.9 or when Python executable not found
+  # Exit on lower versions than Python 3.10 or when Python executable not found
   $PythonExecutable = Find-PythonExecutable
   if ($null -eq $PythonExecutable) {
-    Write-Log "No suitable Python executable found. Please ensure that Python 3.9 or higher is installed and available in the system PATH." -Level 'ERROR'
+    Write-Log "No suitable Python executable found. Please ensure that Python 3.10 or higher is installed and available in the system PATH." -Level 'ERROR'
     Exit 1
   }
 

@@ -31,16 +31,6 @@ async def ui_version():
     }
 
 
-def is_relative_to(path: Path, base: Path) -> bool:
-    # Helper function simulating behaviour of is_relative_to, which was only added in python 3.9
-    try:
-        path.relative_to(base)
-        return True
-    except ValueError:
-        pass
-    return False
-
-
 @router_ui.get("/{rest_of_path:path}", include_in_schema=False)
 async def index_html(rest_of_path: str):
     """
@@ -56,7 +46,7 @@ async def index_html(rest_of_path: str):
     if filename.suffix == ".js":
         # Force text/javascript for .js files - Circumvent faulty system configuration
         media_type = "application/javascript"
-    if filename.is_file() and is_relative_to(filename, uibase):
+    if filename.is_file() and filename.is_relative_to(uibase):
         return FileResponse(str(filename), media_type=media_type)
 
     index_file = uibase / "index.html"
