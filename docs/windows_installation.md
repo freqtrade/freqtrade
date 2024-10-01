@@ -5,7 +5,7 @@ We **strongly** recommend that Windows users use [Docker](docker_quickstart.md) 
 If that is not possible, try using the Windows Linux subsystem (WSL) - for which the Ubuntu instructions should work.
 Otherwise, please follow the instructions below.
 
-All instructions assume that python 3.9+ is installed and available.
+All instructions assume that python 3.10+ is installed and available.
 
 ## Clone the git repository
 
@@ -42,7 +42,7 @@ cd freqtrade
 
 Install ta-lib according to the [ta-lib documentation](https://github.com/TA-Lib/ta-lib-python#windows).
 
-As compiling from source on windows has heavy dependencies (requires a partial visual studio installation), Freqtrade provides these dependencies (in the binary wheel format) for the latest 3 Python versions (3.9, 3.10, 3.11 and 3.12) and for 64bit Windows.
+As compiling from source on windows has heavy dependencies (requires a partial visual studio installation), Freqtrade provides these dependencies (in the binary wheel format) for the latest 3 Python versions (3.10, 3.11 and 3.12) and for 64bit Windows.
 These Wheels are also used by CI running on windows, and are therefore tested together with freqtrade.
 
 Other versions must be downloaded from the above link.

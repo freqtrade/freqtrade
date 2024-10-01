@@ -39,6 +39,11 @@ class __OptionPairlistParameter(__PairlistParameterBase):
     options: List[str]
 
 
+class __ListPairListParamenter(__PairlistParameterBase):
+    type: Literal["list"]
+    default: Union[List[str], None]
+
+
 class __BoolPairlistParameter(__PairlistParameterBase):
     type: Literal["boolean"]
     default: Union[bool, None]
@@ -49,6 +54,7 @@ PairlistParameter = Union[
     __StringPairlistParameter,
     __OptionPairlistParameter,
     __BoolPairlistParameter,
+    __ListPairListParamenter,
 ]
 
 

@@ -3,12 +3,15 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from freqtrade import constants
 from freqtrade.enums import ExitType
+from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.persistence.trade_model import Order
 from freqtrade.plugins.protectionmanager import ProtectionManager
 from tests.conftest import get_patched_freqtradebot, log_has_re
+
+
+AVAILABLE_PROTECTIONS = ["CooldownPeriod", "LowProfitPairs", "MaxDrawdown", "StoplossGuard"]
 
 
 def generate_mock_trade(
@@ -88,17 +91,74 @@ def generate_mock_trade(
 
 
 def test_protectionmanager(mocker, default_conf):
-    default_conf["protections"] = [
-        {"method": protection} for protection in constants.AVAILABLE_PROTECTIONS
+    default_conf["_strategy_protections"] = [
+        {"method": protection} for protection in AVAILABLE_PROTECTIONS
     ]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     for handler in freqtrade.protections._protection_handlers:
-        assert handler.name in constants.AVAILABLE_PROTECTIONS
+        assert handler.name in AVAILABLE_PROTECTIONS
         if not handler.has_global_stop:
             assert handler.global_stop(datetime.now(timezone.utc), "*") is None
         if not handler.has_local_stop:
             assert handler.stop_per_pair("XRP/BTC", datetime.now(timezone.utc), "*") is None
+
+
+@pytest.mark.parametrize(
+    "protconf,expected",
+    [
+        ([], None),
+        ([{"method": "StoplossGuard", "lookback_period": 2000, "stop_duration_candles": 10}], None),
+        ([{"method": "StoplossGuard", "lookback_period_candles": 20, "stop_duration": 10}], None),
+        (
+            [
+                {
+                    "method": "StoplossGuard",
+                    "lookback_period_candles": 20,
+                    "lookback_period": 2000,
+                    "stop_duration": 10,
+                }
+            ],
+            r"Protections must specify either `lookback_period`.*",
+        ),
+        (
+            [
+                {
+                    "method": "StoplossGuard",
+                    "lookback_period": 20,
+                    "stop_duration": 10,
+                    "stop_duration_candles": 10,
+                }
+            ],
+            r"Protections must specify either `stop_duration`.*",
+        ),
+        (
+            [
+                {
+                    "method": "StoplossGuard",
+                    "lookback_period": 20,
+                    "stop_duration": 10,
+                    "unlock_at": "20:02",
+                }
+            ],
+            r"Protections must specify either `unlock_at`, `stop_duration` or.*",
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "20:02"}],
+            None,
+        ),
+        (
+            [{"method": "StoplossGuard", "lookback_period_candles": 20, "unlock_at": "55:102"}],
+            "Invalid date format for unlock_at: 55:102.",
+        ),
+    ],
+)
+def test_validate_protections(protconf, expected):
+    if expected:
+        with pytest.raises(OperationalException, match=expected):
+            ProtectionManager.validate_protections(protconf)
+    else:
+        ProtectionManager.validate_protections(protconf)
 
 
 @pytest.mark.parametrize(
@@ -196,7 +256,7 @@ def test_protections_init(default_conf, timeframe, expected_lookback, expected_s
 @pytest.mark.usefixtures("init_persistence")
 def test_stoploss_guard(mocker, default_conf, fee, caplog, is_short):
     # Active for both sides (long and short)
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {"method": "StoplossGuard", "lookback_period": 60, "stop_duration": 40, "trade_limit": 3}
     ]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
@@ -268,7 +328,7 @@ def test_stoploss_guard(mocker, default_conf, fee, caplog, is_short):
 @pytest.mark.parametrize("only_per_side", [False, True])
 @pytest.mark.usefixtures("init_persistence")
 def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair, only_per_side):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "StoplossGuard",
             "lookback_period": 60,
@@ -379,7 +439,7 @@ def test_stoploss_guard_perpair(mocker, default_conf, fee, caplog, only_per_pair
 
 @pytest.mark.usefixtures("init_persistence")
 def test_CooldownPeriod(mocker, default_conf, fee, caplog):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "CooldownPeriod",
             "stop_duration": 60,
@@ -425,7 +485,7 @@ def test_CooldownPeriod(mocker, default_conf, fee, caplog):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_CooldownPeriod_unlock_at(mocker, default_conf, fee, caplog, time_machine):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "CooldownPeriod",
             "unlock_at": "05:00",
@@ -509,7 +569,7 @@ def test_CooldownPeriod_unlock_at(mocker, default_conf, fee, caplog, time_machin
 @pytest.mark.parametrize("only_per_side", [False, True])
 @pytest.mark.usefixtures("init_persistence")
 def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "LowProfitPairs",
             "lookback_period": 400,
@@ -599,7 +659,7 @@ def test_LowProfitPairs(mocker, default_conf, fee, caplog, only_per_side):
 
 @pytest.mark.usefixtures("init_persistence")
 def test_MaxDrawdown(mocker, default_conf, fee, caplog):
-    default_conf["protections"] = [
+    default_conf["_strategy_protections"] = [
         {
             "method": "MaxDrawdown",
             "lookback_period": 1000,
@@ -812,7 +872,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
 def test_protection_manager_desc(
     mocker, default_conf, protectionconf, desc_expected, exception_expected
 ):
-    default_conf["protections"] = [protectionconf]
+    default_conf["_strategy_protections"] = [protectionconf]
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     short_desc = str(freqtrade.protections.short_desc())

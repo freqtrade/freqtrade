@@ -38,7 +38,7 @@ def mock_trade_1(fee, is_short: bool):
     trade = Trade(
         pair="ETH/BTC",
         stake_amount=0.001,
-        amount=123.0,
+        amount=50.0,
         amount_requested=123.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,
@@ -201,7 +201,7 @@ def mock_trade_4(fee, is_short: bool):
     trade = Trade(
         pair="ETC/BTC",
         stake_amount=0.001,
-        amount=123.0,
+        amount=0.0,
         amount_requested=124.0,
         fee_open=fee.return_value,
         fee_close=fee.return_value,

@@ -238,7 +238,13 @@ class Bybit(Exchange):
         return orders
 
     def fetch_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
+        if self.exchange_has("fetchOrder"):
+            # Set acknowledged to True to avoid ccxt exception
+            params = {"acknowledged": True}
+
         order = super().fetch_order(order_id, pair, params)
+        if not order:
+            order = self.fetch_order_emulated(order_id, pair, {})
         if (
             order.get("status") == "canceled"
             and order.get("filled") == 0.0

@@ -241,7 +241,6 @@ No protection should use datetime directly, but use the provided `date_now` vari
 
 !!! Tip "Writing a new Protection"
     Best copy one of the existing Protections to have a good example.
-    Don't forget to register your protection in `constants.py` under the variable `AVAILABLE_PROTECTIONS` - otherwise it will not be selectable.
 
 #### Implementation of a new protection
 

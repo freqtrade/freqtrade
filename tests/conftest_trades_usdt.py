@@ -224,7 +224,7 @@ def mock_trade_usdt_4(fee, is_short: bool):
     trade = Trade(
         pair="NEO/USDT",
         stake_amount=20.0,
-        amount=10.0,
+        amount=0.0,
         amount_requested=10.01,
         fee_open=fee.return_value,
         fee_close=fee.return_value,

@@ -2212,7 +2212,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
 
 
 @pytest.mark.parametrize(
-    "pairlists,trade_mode,result",
+    "pairlists,trade_mode,result,coin_market_calls",
     [
         (
             [
@@ -2222,6 +2222,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
             ],
             "spot",
             ["BTC/USDT", "ETH/USDT"],
+            1,
         ),
         (
             [
@@ -2231,6 +2232,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
             ],
             "spot",
             ["BTC/USDT", "ETH/USDT", "XRP/USDT", "ADA/USDT"],
+            1,
         ),
         (
             [
@@ -2240,6 +2242,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
             ],
             "spot",
             ["BTC/USDT", "ETH/USDT", "XRP/USDT"],
+            1,
         ),
         (
             [
@@ -2249,6 +2252,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
             ],
             "spot",
             ["BTC/USDT", "ETH/USDT", "XRP/USDT"],
+            1,
         ),
         (
             [
@@ -2257,6 +2261,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
             ],
             "spot",
             ["BTC/USDT", "ETH/USDT", "XRP/USDT"],
+            1,
         ),
         (
             [
@@ -2265,6 +2270,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
             ],
             "spot",
             ["BTC/USDT", "ETH/USDT"],
+            1,
         ),
         (
             [
@@ -2273,6 +2279,7 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
             ],
             "futures",
             ["ETH/USDT:USDT"],
+            1,
         ),
         (
             [
@@ -2281,11 +2288,34 @@ def test_FullTradesFilter(mocker, default_conf_usdt, fee, caplog) -> None:
             ],
             "futures",
             ["ETH/USDT:USDT", "ADA/USDT:USDT"],
+            1,
+        ),
+        (
+            [
+                # MarketCapPairList as generator - futures, 1 category
+                {"method": "MarketCapPairList", "number_assets": 2, "categories": ["layer-1"]}
+            ],
+            "futures",
+            ["ETH/USDT:USDT", "ADA/USDT:USDT"],
+            ["layer-1"],
+        ),
+        (
+            [
+                # MarketCapPairList as generator - futures, 1 category
+                {
+                    "method": "MarketCapPairList",
+                    "number_assets": 2,
+                    "categories": ["layer-1", "protocol"],
+                }
+            ],
+            "futures",
+            ["ETH/USDT:USDT", "ADA/USDT:USDT"],
+            ["layer-1", "protocol"],
         ),
     ],
 )
 def test_MarketCapPairList_filter(
-    mocker, default_conf_usdt, trade_mode, markets, pairlists, result
+    mocker, default_conf_usdt, trade_mode, markets, pairlists, result, coin_market_calls
 ):
     test_value = [
         {"symbol": "btc"},
@@ -2309,8 +2339,16 @@ def test_MarketCapPairList_filter(
         markets=PropertyMock(return_value=markets),
         exchange_has=MagicMock(return_value=True),
     )
-
     mocker.patch(
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_categories_list",
+        return_value=[
+            {"category_id": "layer-1"},
+            {"category_id": "protocol"},
+            {"category_id": "defi"},
+        ],
+    )
+
+    gcm_mock = mocker.patch(
         "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_markets",
         return_value=test_value,
     )
@@ -2319,6 +2357,15 @@ def test_MarketCapPairList_filter(
 
     pm = PairListManager(exchange, default_conf_usdt)
     pm.refresh_pairlist()
+    if isinstance(coin_market_calls, int):
+        assert gcm_mock.call_count == coin_market_calls
+    else:
+        assert gcm_mock.call_count == len(coin_market_calls)
+        for call in coin_market_calls:
+            assert any(
+                "category" in c.kwargs and c.kwargs["category"] == call
+                for c in gcm_mock.call_args_list
+            )
 
     assert pm.whitelist == result
 
@@ -2376,6 +2423,33 @@ def test_MarketCapPairList_timing(mocker, default_conf_usdt, markets, time_machi
     assert markets_mock.call_count == 3
 
 
+def test_MarketCapPairList_filter_special_no_pair_from_coingecko(
+    mocker,
+    default_conf_usdt,
+    markets,
+):
+    default_conf_usdt["pairlists"] = [{"method": "MarketCapPairList", "number_assets": 2}]
+
+    mocker.patch.multiple(
+        EXMS,
+        markets=PropertyMock(return_value=markets),
+        exchange_has=MagicMock(return_value=True),
+    )
+
+    # Simulate no pair returned from coingecko
+    gcm_mock = mocker.patch(
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_markets",
+        return_value=[],
+    )
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+
+    pm = PairListManager(exchange, default_conf_usdt)
+    pm.refresh_pairlist()
+    assert gcm_mock.call_count == 1
+    assert pm.whitelist == []
+
+
 def test_MarketCapPairList_exceptions(mocker, default_conf_usdt):
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     default_conf_usdt["pairlists"] = [{"method": "MarketCapPairList"}]
@@ -2388,6 +2462,27 @@ def test_MarketCapPairList_exceptions(mocker, default_conf_usdt):
     ]
     with pytest.raises(
         OperationalException, match="This filter only support marketcap rank up to 250."
+    ):
+        PairListManager(exchange, default_conf_usdt)
+
+    # Test invalid coinmarkets list
+    mocker.patch(
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_categories_list",
+        return_value=[
+            {"category_id": "layer-1"},
+            {"category_id": "protocol"},
+            {"category_id": "defi"},
+        ],
+    )
+    default_conf_usdt["pairlists"] = [
+        {
+            "method": "MarketCapPairList",
+            "number_assets": 20,
+            "categories": ["layer-1", "defi", "layer250"],
+        }
+    ]
+    with pytest.raises(
+        OperationalException, match="Category layer250 not in coingecko category list."
     ):
         PairListManager(exchange, default_conf_usdt)
 
