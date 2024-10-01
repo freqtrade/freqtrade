@@ -362,7 +362,8 @@ def test_sync_wallet_dry(mocker, default_conf_usdt, fee):
     assert len(freqtrade.wallets._wallets) == 5
     assert len(freqtrade.wallets._positions) == 0
     bal = freqtrade.wallets.get_all_balances()
-    assert bal["NEO"].total == 10
+    # NEO trade is not filled yet.
+    assert bal["NEO"].total == 0
     assert bal["XRP"].total == 10
     assert bal["LTC"].total == 2
     usdt_bal = bal["USDT"]
