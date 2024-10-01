@@ -2316,7 +2316,7 @@ The <code>stable</code> branch contains the code of the last release (done usual
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Python3.9 or higher and the corresponding <code>pip</code> are assumed to be available. The install-script will warn you and stop if that's not the case. <code>git</code> is also needed to clone the Freqtrade repository.<br />
+<p>Python3.10 or higher and the corresponding <code>pip</code> are assumed to be available. The install-script will warn you and stop if that's not the case. <code>git</code> is also needed to clone the Freqtrade repository.<br />
 Also, python headers (<code>python&lt;yourversion&gt;-dev</code> / <code>python&lt;yourversion&gt;-devel</code>) must be available for the installation to complete successfully.</p>
 </div>
 <div class="admonition warning">
@@ -2333,7 +2333,7 @@ While native installation is possible with some manual effort, this is not suppo
 </div>
 <h3 id="install-guide">Install guide<a class="headerlink" href="#install-guide" title="Permanent link">&para;</a></h3>
 <ul>
-<li><a href="http://docs.python-guide.org/en/latest/starting/installation/">Python &gt;= 3.9</a></li>
+<li><a href="http://docs.python-guide.org/en/latest/starting/installation/">Python &gt;= 3.10</a></li>
 <li><a href="https://pip.pypa.io/en/stable/installing/">pip</a></li>
 <li><a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">git</a></li>
 <li><a href="https://virtualenv.pypa.io/en/stable/installation.html">virtualenv</a> (Recommended)</li>
@@ -2344,7 +2344,7 @@ While native installation is possible with some manual effort, this is not suppo
 OS Specific steps are listed first, the common section below is necessary for all systems.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Python3.9 or higher and the corresponding pip are assumed to be available.</p>
+<p>Python3.10 or higher and the corresponding pip are assumed to be available.</p>
 </div>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Debian/Ubuntu</label><label for="__tabbed_1_2">RaspberryPi/Raspbian</label></div>
 <div class="tabbed-content">
@@ -2359,7 +2359,7 @@ sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> <
 </div>
 <div class="tabbed-block">
 <p>The following assumes the latest <a href="https://www.raspberrypi.org/downloads/raspbian/">Raspbian Buster lite image</a>.
-This image comes with python3.9 preinstalled, making it easy to get freqtrade up and running.</p>
+This image comes with python3.11 preinstalled, making it easy to get freqtrade up and running.</p>
 <p>Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>python3-venv<span class="w"> </span>libatlas-base-dev<span class="w"> </span>cmake<span class="w"> </span>curl
 <span class="c1"># Use pywheels.org to speed up installation</span>
@@ -2432,7 +2432,7 @@ git<span class="w"> </span>checkout<span class="w"> </span>develop
 <div class="highlight"><pre><span></span><code>** --install **
 
 With this option, the script will install the bot and most dependencies:
-You will need to have git and python3.9+ installed beforehand for this to work.
+You will need to have git and python3.10+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
 * Setup your virtualenv under `.venv/`
