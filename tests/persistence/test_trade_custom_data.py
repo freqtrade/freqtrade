@@ -87,9 +87,8 @@ def test_trade_custom_data_strategy_compat(mocker, default_conf_usdt, fee):
     assert trade_after.get_custom_data("test_str") == "test_value"
     assert trade_after.get_custom_data("test_int") == 1
     # 2 trades filled entry, with open exit order
-    # 1 trade with unfilled open entry order
     # 1 trade with filled entry order
-    assert ff_spy.call_count == 4
+    assert ff_spy.call_count == 3
 
     assert trade_after.exit_reason == "test_value_1"
 
