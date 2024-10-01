@@ -411,11 +411,11 @@ def test_sync_wallet_futures_dry(mocker, default_conf, fee):
 def test_check_exit_amount(mocker, default_conf, fee):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     update_mock = mocker.patch("freqtrade.wallets.Wallets.update")
-    total_mock = mocker.patch("freqtrade.wallets.Wallets.get_total", return_value=123)
+    total_mock = mocker.patch("freqtrade.wallets.Wallets.get_total", return_value=50.0)
 
     create_mock_trades(fee, is_short=None)
     trade = Trade.session.scalars(select(Trade)).first()
-    assert trade.amount == 123
+    assert trade.amount == 50.0
 
     assert freqtrade.wallets.check_exit_amount(trade) is True
     assert update_mock.call_count == 0
@@ -424,7 +424,7 @@ def test_check_exit_amount(mocker, default_conf, fee):
     update_mock.reset_mock()
     # Reduce returned amount to below the trade amount - which should
     # trigger a wallet update and return False, triggering "order refinding"
-    total_mock = mocker.patch("freqtrade.wallets.Wallets.get_total", return_value=100)
+    total_mock = mocker.patch("freqtrade.wallets.Wallets.get_total", return_value=40)
     assert freqtrade.wallets.check_exit_amount(trade) is False
     assert update_mock.call_count == 1
     assert total_mock.call_count == 2
@@ -434,12 +434,12 @@ def test_check_exit_amount_futures(mocker, default_conf, fee):
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
-    total_mock = mocker.patch("freqtrade.wallets.Wallets.get_total", return_value=123)
+    total_mock = mocker.patch("freqtrade.wallets.Wallets.get_total", return_value=50)
 
     create_mock_trades(fee, is_short=None)
     trade = Trade.session.scalars(select(Trade)).first()
     trade.trading_mode = "futures"
-    assert trade.amount == 123
+    assert trade.amount == 50
 
     assert freqtrade.wallets.check_exit_amount(trade) is True
     assert total_mock.call_count == 0

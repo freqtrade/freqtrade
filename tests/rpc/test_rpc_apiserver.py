@@ -1269,7 +1269,7 @@ def test_api_mix_tag(botclient, fee):
 
 @pytest.mark.parametrize(
     "is_short,current_rate,open_trade_value",
-    [(True, 1.098e-05, 15.0911775), (False, 1.099e-05, 15.1668225)],
+    [(True, 1.098e-05, 6.134625), (False, 1.099e-05, 6.165375)],
 )
 def test_api_status(
     botclient, mocker, ticker, fee, markets, is_short, current_rate, open_trade_value
@@ -1294,7 +1294,7 @@ def test_api_status(
     assert_response(rc)
     assert len(rc.json()) == 4
     assert rc.json()[0] == {
-        "amount": 123.0,
+        "amount": 50.0,
         "amount_requested": 123.0,
         "close_date": None,
         "close_timestamp": None,
