@@ -347,8 +347,8 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     assert trade.nr_of_successful_exits == 1
 
 
-@pytest.mark.parametrize("leverage", [1])
-def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker, caplog) -> None:
+@pytest.mark.parametrize("leverage", [1, 2])
+def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker) -> None:
     default_conf_usdt["position_adjustment_enable"] = True
     default_conf_usdt["trading_mode"] = "futures"
     default_conf_usdt["margin_mode"] = "isolated"
