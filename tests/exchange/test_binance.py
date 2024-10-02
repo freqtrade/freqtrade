@@ -208,8 +208,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             "futures",
             "cross",
             1535443.01,
-            # 71200.81144,  # tmm1
-            # -56354.57,  # upnl1
             135365.00,
             3683.979,  # amount
             1456.84,  # open_rate
@@ -244,8 +242,6 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
             "futures",
             "cross",
             1535443.01,
-            # 356512.508,  # tmm1
-            # -448192.89,  # upnl1
             16300.0,
             109.488,  # amount
             32481.980,  # open_rate
