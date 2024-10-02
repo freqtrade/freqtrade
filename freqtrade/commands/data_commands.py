@@ -1,7 +1,7 @@
 import logging
 import sys
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
 from freqtrade.constants import DATETIME_PRINT_FORMAT, DL_DATA_TIMEFRAMES, Config
@@ -15,6 +15,7 @@ from freqtrade.enums import CandleType, RunMode, TradingMode
 from freqtrade.exceptions import ConfigurationError
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import plural
+from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.util import print_rich_table
@@ -78,6 +79,11 @@ def start_convert_trades(args: Dict[str, Any]) -> None:
     ]
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)
+
+    # ensure we download data for opened positions pairs
+    trades: List[Trade] = Trade.get_open_trades()
+    info_list = [trade.pair for trade in trades if trade.pair not in expanded_pairs]
+    expanded_pairs += info_list
 
     # Convert downloaded trade data to different timeframes
     convert_trades_to_ohlcv(

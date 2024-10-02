@@ -26,6 +26,7 @@ from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.utils import get_tb_logger, plot_feature_importance, record_params
+from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
 
 
@@ -90,7 +91,11 @@ class IFreqaiModel(ABC):
         self.class_names: List[str] = []  # used in classification subclasses
         self.pair_it = 0
         self.pair_it_train = 0
-        self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
+        full_pair_list = self.config.get("exchange", {}).get("pair_whitelist")
+        # ensure we download data for opened positions pairs
+        trades: List[Trade] = Trade.get_open_trades()
+        full_pair_list += [trade.pair for trade in trades if trade.pair not in full_pair_list]
+        self.total_pairs = len(full_pair_list)
         self.train_queue = self._set_train_queue()
         self.inference_time: float = 0
         self.train_time: float = 0
@@ -761,7 +766,12 @@ class IFreqaiModel(ABC):
         Sets train queue from existing train timestamps if they exist
         otherwise it sets the train queue based on the provided whitelist.
         """
+
+        # ensure we download data for opened positions pairs
         current_pairlist = self.config.get("exchange", {}).get("pair_whitelist")
+        trades: List[Trade] = Trade.get_open_trades()
+        current_pairlist += [trade.pair for trade in trades if trade.pair not in current_pairlist]
+
         if not self.dd.pair_dict:
             logger.info("Set fresh train queue from whitelist. Queue: {current_pairlist}")
             return deque(current_pairlist)

@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.persistence import Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
 
 
@@ -40,6 +41,11 @@ def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
     ]
 
     all_pairs = dynamic_expand_pairlist(config, markets)
+
+    # ensure we download data for opened positions pairs
+    trades: List[Trade] = Trade.get_open_trades()
+    new_pairs_list = [trade.pair for trade in trades if trade.pair not in all_pairs]
+    all_pairs += new_pairs_list
 
     timerange = get_required_data_timerange(config)
 
