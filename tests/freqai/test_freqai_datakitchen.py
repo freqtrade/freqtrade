@@ -151,7 +151,9 @@ def test_get_pair_data_for_features_with_prealoaded_data(mocker, freqai_conf):
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
     _, base_df = freqai.dd.get_base_and_corr_dataframes(timerange, "LTC/BTC", freqai.dk)
-    df = freqai.dk.get_pair_data_for_features("LTC/BTC", "5m", strategy, base_dataframes=base_df)
+    df = freqai.dk.get_pair_data_for_features(
+        "LTC/BTC", "5m", strategy, {}, base_dataframes=base_df
+    )
 
     assert df is base_df["5m"]
     assert not df.empty
@@ -171,7 +173,9 @@ def test_get_pair_data_for_features_without_preloaded_data(mocker, freqai_conf):
     freqai.dd.load_all_pair_histories(timerange, freqai.dk)
 
     base_df = {"5m": pd.DataFrame()}
-    df = freqai.dk.get_pair_data_for_features("LTC/BTC", "5m", strategy, base_dataframes=base_df)
+    df = freqai.dk.get_pair_data_for_features(
+        "LTC/BTC", "5m", strategy, {}, base_dataframes=base_df
+    )
 
     assert df is not base_df["5m"]
     assert not df.empty

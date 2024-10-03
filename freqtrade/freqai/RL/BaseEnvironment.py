@@ -47,19 +47,20 @@ class BaseEnvironment(gym.Env):
 
     def __init__(
         self,
-        df: DataFrame = DataFrame(),
-        prices: DataFrame = DataFrame(),
-        reward_kwargs: dict = {},
+        *,
+        df: DataFrame,
+        prices: DataFrame,
+        reward_kwargs: dict,
         window_size=10,
         starting_point=True,
         id: str = "baseenv-1",  # noqa: A002
         seed: int = 1,
-        config: dict = {},
+        config: dict,
         live: bool = False,
         fee: float = 0.0015,
         can_short: bool = False,
         pair: str = "",
-        df_raw: DataFrame = DataFrame(),
+        df_raw: DataFrame,
     ):
         """
         Initializes the training/eval environment.

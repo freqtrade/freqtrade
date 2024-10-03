@@ -488,7 +488,7 @@ def make_env(
     seed: int,
     train_df: DataFrame,
     price: DataFrame,
-    env_info: Dict[str, Any] = {},
+    env_info: Dict[str, Any],
 ) -> Callable:
     """
     Utility function for multiprocessed env.

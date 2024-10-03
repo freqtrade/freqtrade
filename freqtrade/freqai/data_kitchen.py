@@ -214,7 +214,7 @@ class FreqaiDataKitchen:
         self,
         unfiltered_df: DataFrame,
         training_feature_list: List,
-        label_list: List = list(),
+        label_list: Optional[List] = None,
         training_filter: bool = True,
     ) -> Tuple[DataFrame, DataFrame]:
         """
@@ -244,7 +244,7 @@ class FreqaiDataKitchen:
             # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
-            labels = unfiltered_df.filter(label_list, axis=1)
+            labels = unfiltered_df.filter(label_list or [], axis=1)
             drop_index_labels = pd.isnull(labels).any(axis=1)
             drop_index_labels = (
                 drop_index_labels.replace(True, 1).replace(False, 0).infer_objects(copy=False)
@@ -654,8 +654,8 @@ class FreqaiDataKitchen:
         pair: str,
         tf: str,
         strategy: IStrategy,
-        corr_dataframes: dict = {},
-        base_dataframes: dict = {},
+        corr_dataframes: dict,
+        base_dataframes: dict,
         is_corr_pairs: bool = False,
     ) -> DataFrame:
         """
@@ -776,7 +776,7 @@ class FreqaiDataKitchen:
         corr_dataframes: dict = {},
         base_dataframes: dict = {},
         pair: str = "",
-        prediction_dataframe: DataFrame = pd.DataFrame(),
+        prediction_dataframe: Optional[DataFrame] = None,
         do_corr_pairs: bool = True,
     ) -> DataFrame:
         """
@@ -822,7 +822,7 @@ class FreqaiDataKitchen:
                 if tf not in corr_dataframes[p]:
                     corr_dataframes[p][tf] = pd.DataFrame()
 
-        if not prediction_dataframe.empty:
+        if prediction_dataframe is not None and not prediction_dataframe.empty:
             dataframe = prediction_dataframe.copy()
             base_dataframes[self.config["timeframe"]] = dataframe.copy()
         else:
