@@ -2,7 +2,10 @@
 Helpers when analyzing backtest data
 """
 
+from __future__ import annotations
+
 import logging
+import typing
 from copy import copy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,7 +19,10 @@ from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.ft_types import BacktestHistoryEntryType, BacktestResultType
 from freqtrade.misc import file_dump_json, json_load
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
-from freqtrade.persistence import LocalTrade, Trade, init_db
+
+
+if typing.TYPE_CHECKING:
+    from freqtrade.persistence import LocalTrade, Trade
 
 
 logger = logging.getLogger(__name__)
@@ -460,6 +466,8 @@ def load_trades_from_db(db_url: str, strategy: Optional[str] = None) -> pd.DataF
                      Can also serve as protection to load the correct result.
     :return: Dataframe containing Trades
     """
+    from freqtrade.persistence import Trade, init_db
+
     init_db(db_url)
 
     filters = []

@@ -146,7 +146,7 @@ def test_load_backtest_data_multi(testdatadir):
 def test_load_trades_from_db(default_conf, fee, is_short, mocker):
     create_mock_trades(fee, is_short)
     # remove init so it does not init again
-    init_mock = mocker.patch("freqtrade.data.btanalysis.init_db", MagicMock())
+    init_mock = mocker.patch("freqtrade.persistence.init_db", MagicMock())
 
     trades = load_trades_from_db(db_url=default_conf["db_url"])
     assert init_mock.call_count == 1

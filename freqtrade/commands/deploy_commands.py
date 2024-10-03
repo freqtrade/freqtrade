@@ -3,14 +3,9 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-import requests
-
-from freqtrade.configuration import setup_utils_configuration
-from freqtrade.configuration.directory_operations import copy_sample_files, create_userdata_dir
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
-from freqtrade.util import render_template, render_template_with_fallback
 
 
 logger = logging.getLogger(__name__)
@@ -26,6 +21,8 @@ def start_create_userdir(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
+    from freqtrade.configuration.directory_operations import copy_sample_files, create_userdata_dir
+
     if "user_data_dir" in args and args["user_data_dir"]:
         userdir = create_userdata_dir(args["user_data_dir"], create_dir=True)
         copy_sample_files(userdir, overwrite=args["reset"])
@@ -38,6 +35,8 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     """
     Deploy new strategy from template to strategy_path
     """
+    from freqtrade.util import render_template, render_template_with_fallback
+
     fallback = "full"
     attributes = render_template_with_fallback(
         templatefile=f"strategy_subtemplates/strategy_attributes_{subtemplate}.j2",
@@ -82,6 +81,8 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
 
 
 def start_new_strategy(args: Dict[str, Any]) -> None:
+    from freqtrade.configuration import setup_utils_configuration
+
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if "strategy" in args and args["strategy"]:
@@ -124,6 +125,8 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     from io import BytesIO
     from zipfile import ZipFile
 
+    import requests
+
     logger.info(f"Downloading {dl_url}")
     resp = requests.get(dl_url, timeout=req_timeout).content
     dest_folder.mkdir(parents=True, exist_ok=True)
@@ -140,6 +143,8 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
 
 
 def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
+    import requests
+
     base_url = "https://api.github.com/repos/freqtrade/frequi/"
     # Get base UI Repo path
 

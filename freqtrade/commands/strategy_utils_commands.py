@@ -4,10 +4,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict
 
-from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
-from freqtrade.resolvers import StrategyResolver
-from freqtrade.strategy.strategyupdater import StrategyUpdater
 
 
 logger = logging.getLogger(__name__)
@@ -19,6 +16,8 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
+    from freqtrade.configuration import setup_utils_configuration
+    from freqtrade.resolvers import StrategyResolver
 
     if sys.version_info == (3, 8):  # pragma: no cover
         sys.exit("Freqtrade strategy updater requires Python version >= 3.9")
@@ -49,6 +48,8 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
 
 
 def start_conversion(strategy_obj, config):
+    from freqtrade.strategy.strategyupdater import StrategyUpdater
+
     print(f"Conversion of {Path(strategy_obj['location']).name} started.")
     instance_strategy_updater = StrategyUpdater()
     start = time.perf_counter()

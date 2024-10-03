@@ -2,10 +2,8 @@ import logging
 from typing import Any, Dict
 
 from freqtrade import constants
-from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
-from freqtrade.util import fmt_coin
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +16,9 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
     :param method: Bot running mode
     :return: Configuration
     """
+    from freqtrade.configuration import setup_utils_configuration
+    from freqtrade.util import fmt_coin
+
     config = setup_utils_configuration(args, method)
 
     no_unlimited_runmodes = {
@@ -64,6 +65,7 @@ def start_backtesting_show(args: Dict[str, Any]) -> None:
     """
     Show previous backtest result
     """
+    from freqtrade.configuration import setup_utils_configuration
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
@@ -144,6 +146,7 @@ def start_lookahead_analysis(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
+    from freqtrade.configuration import setup_utils_configuration
     from freqtrade.optimize.analysis.lookahead_helpers import LookaheadAnalysisSubFunctions
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
@@ -156,6 +159,7 @@ def start_recursive_analysis(args: Dict[str, Any]) -> None:
     :param args: Cli args from Arguments()
     :return: None
     """
+    from freqtrade.configuration import setup_utils_configuration
     from freqtrade.optimize.analysis.recursive_helpers import RecursiveAnalysisSubFunctions
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)

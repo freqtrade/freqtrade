@@ -1,9 +1,21 @@
+"""System specific or performance tuning"""
+
 import gc
 import logging
 import platform
+import sys
 
 
 logger = logging.getLogger(__name__)
+
+
+def asyncio_setup() -> None:  # pragma: no cover
+    # Set eventloop for win32 setups
+
+    if sys.platform == "win32":
+        import asyncio
+
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 def gc_set_threshold():

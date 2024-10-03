@@ -2,11 +2,8 @@ import logging
 from operator import itemgetter
 from typing import Any, Dict
 
-from freqtrade.configuration import setup_utils_configuration
-from freqtrade.data.btanalysis import get_latest_hyperopt_file
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.optimize.optimize_reports import show_backtest_result
 
 
 logger = logging.getLogger(__name__)
@@ -16,6 +13,8 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
     """
     List hyperopt epochs previously evaluated
     """
+    from freqtrade.configuration import setup_utils_configuration
+    from freqtrade.data.btanalysis import get_latest_hyperopt_file
     from freqtrade.optimize.hyperopt_output import HyperoptOutput
     from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
@@ -61,7 +60,10 @@ def start_hyperopt_show(args: Dict[str, Any]) -> None:
     """
     Show details of a hyperopt epoch previously evaluated
     """
+    from freqtrade.configuration import setup_utils_configuration
+    from freqtrade.data.btanalysis import get_latest_hyperopt_file
     from freqtrade.optimize.hyperopt_tools import HyperoptTools
+    from freqtrade.optimize.optimize_reports import show_backtest_result
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 

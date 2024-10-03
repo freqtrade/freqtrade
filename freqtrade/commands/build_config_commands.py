@@ -3,17 +3,9 @@ import secrets
 from pathlib import Path
 from typing import Any, Dict, List
 
-from questionary import Separator, prompt
-
-from freqtrade.configuration import sanitize_config
-from freqtrade.configuration.config_setup import setup_utils_configuration
-from freqtrade.configuration.detect_environment import running_in_docker
-from freqtrade.configuration.directory_operations import chown_user_directory
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS, available_exchanges
-from freqtrade.util import render_template
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +28,8 @@ def validate_is_float(val):
 
 
 def ask_user_overwrite(config_path: Path) -> bool:
+    from questionary import prompt
+
     questions = [
         {
             "type": "confirm",
@@ -54,6 +48,11 @@ def ask_user_config() -> Dict[str, Any]:
     Interactive questions built using https://github.com/tmbo/questionary
     :returns: Dict with keys to put into template
     """
+    from questionary import Separator, prompt
+
+    from freqtrade.configuration.detect_environment import running_in_docker
+    from freqtrade.exchange import available_exchanges
+
     questions: List[Dict[str, Any]] = [
         {
             "type": "confirm",
@@ -227,6 +226,9 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
     """
     from jinja2.exceptions import TemplateNotFound
 
+    from freqtrade.exchange import MAP_EXCHANGE_CHILDCLASS
+    from freqtrade.util import render_template
+
     try:
         exchange_template = MAP_EXCHANGE_CHILDCLASS.get(
             selections["exchange_name"], selections["exchange_name"]
@@ -256,6 +258,8 @@ def start_new_config(args: Dict[str, Any]) -> None:
     Asking the user questions to fill out the template accordingly.
     """
 
+    from freqtrade.configuration.directory_operations import chown_user_directory
+
     config_path = Path(args["config"][0])
     chown_user_directory(config_path.parent)
     if config_path.exists():
@@ -272,6 +276,9 @@ def start_new_config(args: Dict[str, Any]) -> None:
 
 
 def start_show_config(args: Dict[str, Any]) -> None:
+    from freqtrade.configuration import sanitize_config
+    from freqtrade.configuration.config_setup import setup_utils_configuration
+
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE, set_dry=False)
 
     print("Your combined configuration is:")
