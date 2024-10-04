@@ -693,7 +693,9 @@ def test_get_ui_download_url(mocker):
             [{"browser_download_url": "http://download.zip"}],
         ]
     )
-    get_mock = mocker.patch("requests.get", return_value=response)
+    get_mock = mocker.patch(
+        "freqtrade.commands.deploy_commands.requests.get", return_value=response
+    )
     x, last_version = get_ui_download_url()
     assert get_mock.call_count == 2
     assert last_version == "0.0.1"
@@ -716,7 +718,9 @@ def test_get_ui_download_url_direct(mocker):
             },
         ]
     )
-    get_mock = mocker.patch("requests.get", return_value=response)
+    get_mock = mocker.patch(
+        "freqtrade.commands.deploy_commands.requests.get", return_value=response
+    )
     x, last_version = get_ui_download_url()
     assert get_mock.call_count == 1
     assert last_version == "0.0.2"

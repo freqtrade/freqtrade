@@ -3,6 +3,8 @@ import secrets
 from pathlib import Path
 from typing import Any, Dict, List
 
+from questionary import Separator, prompt
+
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -28,8 +30,6 @@ def validate_is_float(val):
 
 
 def ask_user_overwrite(config_path: Path) -> bool:
-    from questionary import prompt
-
     questions = [
         {
             "type": "confirm",
@@ -48,7 +48,6 @@ def ask_user_config() -> Dict[str, Any]:
     Interactive questions built using https://github.com/tmbo/questionary
     :returns: Dict with keys to put into template
     """
-    from questionary import Separator, prompt
 
     from freqtrade.configuration.detect_environment import running_in_docker
     from freqtrade.exchange import available_exchanges
