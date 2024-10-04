@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from freqtrade.constants import Config, LongShort
 from freqtrade.exchange import timeframe_to_minutes
@@ -28,7 +28,7 @@ class IProtection(LoggingMixin, ABC):
     # Can stop trading for one pair
     has_local_stop: bool = False
 
-    def __init__(self, config: Config, protection_config: Dict[str, Any]) -> None:
+    def __init__(self, config: Config, protection_config: dict[str, Any]) -> None:
         self._config = config
         self._protection_config = protection_config
         self._stop_duration_candles: Optional[int] = None
@@ -119,7 +119,7 @@ class IProtection(LoggingMixin, ABC):
             If true, this pair will be locked with <reason> until <until>
         """
 
-    def calculate_lock_end(self, trades: List[LocalTrade]) -> datetime:
+    def calculate_lock_end(self, trades: list[LocalTrade]) -> datetime:
         """
         Get lock end time
         Implicitly uses `self._stop_duration` or `self._unlock_at` depending on the configuration.

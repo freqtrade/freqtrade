@@ -3,7 +3,6 @@ Full trade slots pair list filter
 """
 
 import logging
-from typing import List
 
 from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.persistence import Trade
@@ -35,7 +34,7 @@ class FullTradesFilter(IPairList):
     def description() -> str:
         return "Shrink whitelist when trade slots are full."
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
         """
         Filters and sorts pairlist and returns the allowlist again.
         Called on each bot iteration - please use internal caching if necessary

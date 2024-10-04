@@ -4,7 +4,7 @@ Shuffle pair list filter
 
 import logging
 import random
-from typing import Dict, List, Literal
+from typing import Literal
 
 from freqtrade.enums import RunMode
 from freqtrade.exchange import timeframe_to_seconds
@@ -61,7 +61,7 @@ class ShuffleFilter(IPairList):
         return "Randomize pairlist order."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "shuffle_frequency": {
                 "type": "option",
@@ -78,7 +78,7 @@ class ShuffleFilter(IPairList):
             },
         }
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
