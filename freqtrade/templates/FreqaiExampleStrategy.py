@@ -1,6 +1,5 @@
 import logging
 from functools import reduce
-from typing import Dict
 
 import talib.abstract as ta
 from pandas import DataFrame
@@ -46,7 +45,7 @@ class FreqaiExampleStrategy(IStrategy):
     can_short = True
 
     def feature_engineering_expand_all(
-        self, dataframe: DataFrame, period: int, metadata: Dict, **kwargs
+        self, dataframe: DataFrame, period: int, metadata: dict, **kwargs
     ) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
@@ -103,7 +102,7 @@ class FreqaiExampleStrategy(IStrategy):
         return dataframe
 
     def feature_engineering_expand_basic(
-        self, dataframe: DataFrame, metadata: Dict, **kwargs
+        self, dataframe: DataFrame, metadata: dict, **kwargs
     ) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
@@ -141,7 +140,7 @@ class FreqaiExampleStrategy(IStrategy):
         return dataframe
 
     def feature_engineering_standard(
-        self, dataframe: DataFrame, metadata: Dict, **kwargs
+        self, dataframe: DataFrame, metadata: dict, **kwargs
     ) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
@@ -172,7 +171,7 @@ class FreqaiExampleStrategy(IStrategy):
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
         return dataframe
 
-    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.

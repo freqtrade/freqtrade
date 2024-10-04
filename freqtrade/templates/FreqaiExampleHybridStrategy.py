@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 import numpy as np  # noqa
 import pandas as pd  # noqa
@@ -98,7 +97,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
     exit_short_rsi = IntParameter(low=1, high=50, default=30, space="buy", optimize=True, load=True)
 
     def feature_engineering_expand_all(
-        self, dataframe: DataFrame, period: int, metadata: Dict, **kwargs
+        self, dataframe: DataFrame, period: int, metadata: dict, **kwargs
     ) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
@@ -151,7 +150,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         return dataframe
 
     def feature_engineering_expand_basic(
-        self, dataframe: DataFrame, metadata: Dict, **kwargs
+        self, dataframe: DataFrame, metadata: dict, **kwargs
     ) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
@@ -185,7 +184,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         return dataframe
 
     def feature_engineering_standard(
-        self, dataframe: DataFrame, metadata: Dict, **kwargs
+        self, dataframe: DataFrame, metadata: dict, **kwargs
     ) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
@@ -212,7 +211,7 @@ class FreqaiExampleHybridStrategy(IStrategy):
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
         return dataframe
 
-    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs) -> DataFrame:
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: dict, **kwargs) -> DataFrame:
         """
         *Only functional with FreqAI enabled strategies*
         Required function to set the targets for the model.
