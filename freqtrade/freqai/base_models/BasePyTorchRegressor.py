@@ -1,6 +1,6 @@
 import logging
 from time import time
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -24,7 +24,7 @@ class BasePyTorchRegressor(BasePyTorchModel):
 
     def predict(
         self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
-    ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
+    ) -> tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
         :param unfiltered_df: Full dataframe for the current backtest period.

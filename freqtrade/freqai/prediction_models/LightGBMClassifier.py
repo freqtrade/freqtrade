@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from lightgbm import LGBMClassifier
 
@@ -20,7 +20,7 @@ class LightGBMClassifier(BaseClassifierModel):
     top level config.json file.
     """
 
-    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
+    def fit(self, data_dictionary: dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
         :param data_dictionary: the dictionary holding all data for train, test,

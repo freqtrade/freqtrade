@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List
 
 import pandas as pd
 import torch
@@ -9,7 +8,7 @@ from torch import nn
 
 class PyTorchTrainerInterface(ABC):
     @abstractmethod
-    def fit(self, data_dictionary: Dict[str, pd.DataFrame], splits: List[str]) -> None:
+    def fit(self, data_dictionary: dict[str, pd.DataFrame], splits: list[str]) -> None:
         """
         :param data_dictionary: the dictionary constructed by DataHandler to hold
         all the training and test data/labels.
@@ -41,7 +40,7 @@ class PyTorchTrainerInterface(ABC):
         return self.load_from_checkpoint(checkpoint)
 
     @abstractmethod
-    def load_from_checkpoint(self, checkpoint: Dict) -> nn.Module:
+    def load_from_checkpoint(self, checkpoint: dict) -> nn.Module:
         """
         when using continual_learning, DataDrawer will load the dictionary
         (containing state dicts and model_meta_data) by calling torch.load(path).

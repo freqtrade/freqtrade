@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from catboost import CatBoostRegressor, Pool
 
@@ -22,7 +22,7 @@ class CatboostRegressorMultiTarget(BaseRegressionModel):
     top level config.json file.
     """
 
-    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
+    def fit(self, data_dictionary: dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
         :param data_dictionary: the dictionary holding all data for train, test,
