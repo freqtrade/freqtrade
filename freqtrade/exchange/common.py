@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, TypeVar, cast, overload
+from typing import Any, Callable, Optional, TypeVar, cast, overload
 
 from freqtrade.constants import ExchangeConfig
 from freqtrade.exceptions import DDosProtection, RetryableOrderError, TemporaryError
@@ -62,7 +62,7 @@ SUPPORTED_EXCHANGES = [
 ]
 
 # either the main, or replacement methods (array) is required
-EXCHANGE_HAS_REQUIRED: Dict[str, List[str]] = {
+EXCHANGE_HAS_REQUIRED: dict[str, list[str]] = {
     # Required / private
     "fetchOrder": ["fetchOpenOrder", "fetchClosedOrder"],
     "fetchL2OrderBook": ["fetchTicker"],
