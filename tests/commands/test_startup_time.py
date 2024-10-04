@@ -6,6 +6,9 @@ MAXIMUM_STARTUP_TIME = 0.5
 
 
 def test_startup_time():
+    # warm up to generate pyc
+    subprocess.run(["freqtrade", "-h"])
+
     start = time.time()
     subprocess.run(["freqtrade", "-h"])
     elapsed = time.time() - start
