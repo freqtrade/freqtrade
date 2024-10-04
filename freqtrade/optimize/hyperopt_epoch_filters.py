@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from freqtrade.exceptions import OperationalException
 
@@ -7,7 +6,7 @@ from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 
 
-def hyperopt_filter_epochs(epochs: List, filteroptions: dict, log: bool = True) -> List:
+def hyperopt_filter_epochs(epochs: list, filteroptions: dict, log: bool = True) -> list:
     """
     Filter our items from the list of hyperopt results
     """
@@ -33,14 +32,14 @@ def hyperopt_filter_epochs(epochs: List, filteroptions: dict, log: bool = True) 
     return epochs
 
 
-def _hyperopt_filter_epochs_trade(epochs: List, trade_count: int):
+def _hyperopt_filter_epochs_trade(epochs: list, trade_count: int):
     """
     Filter epochs with trade-counts > trades
     """
     return [x for x in epochs if x["results_metrics"].get("total_trades", 0) > trade_count]
 
 
-def _hyperopt_filter_epochs_trade_count(epochs: List, filteroptions: dict) -> List:
+def _hyperopt_filter_epochs_trade_count(epochs: list, filteroptions: dict) -> list:
     if filteroptions["filter_min_trades"] > 0:
         epochs = _hyperopt_filter_epochs_trade(epochs, filteroptions["filter_min_trades"])
 
@@ -53,7 +52,7 @@ def _hyperopt_filter_epochs_trade_count(epochs: List, filteroptions: dict) -> Li
     return epochs
 
 
-def _hyperopt_filter_epochs_duration(epochs: List, filteroptions: dict) -> List:
+def _hyperopt_filter_epochs_duration(epochs: list, filteroptions: dict) -> list:
     def get_duration_value(x):
         # Duration in minutes ...
         if "holding_avg_s" in x["results_metrics"]:
@@ -74,7 +73,7 @@ def _hyperopt_filter_epochs_duration(epochs: List, filteroptions: dict) -> List:
     return epochs
 
 
-def _hyperopt_filter_epochs_profit(epochs: List, filteroptions: dict) -> List:
+def _hyperopt_filter_epochs_profit(epochs: list, filteroptions: dict) -> list:
     if filteroptions["filter_min_avg_profit"] is not None:
         epochs = _hyperopt_filter_epochs_trade(epochs, 0)
         epochs = [
@@ -110,7 +109,7 @@ def _hyperopt_filter_epochs_profit(epochs: List, filteroptions: dict) -> List:
     return epochs
 
 
-def _hyperopt_filter_epochs_objective(epochs: List, filteroptions: dict) -> List:
+def _hyperopt_filter_epochs_objective(epochs: list, filteroptions: dict) -> list:
     if filteroptions["filter_min_objective"] is not None:
         epochs = _hyperopt_filter_epochs_trade(epochs, 0)
 

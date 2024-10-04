@@ -6,7 +6,7 @@ This module defines the interface to apply for hyperopt
 import logging
 import math
 from abc import ABC
-from typing import Dict, List, Union
+from typing import Union
 
 from sklearn.base import RegressorMixin
 from skopt.space import Categorical, Dimension, Integer
@@ -41,7 +41,7 @@ class IHyperOpt(ABC):
         # Assign timeframe to be used in hyperopt
         IHyperOpt.timeframe = str(config["timeframe"])
 
-    def generate_estimator(self, dimensions: List[Dimension], **kwargs) -> EstimatorType:
+    def generate_estimator(self, dimensions: list[Dimension], **kwargs) -> EstimatorType:
         """
         Return base_estimator.
         Can be any of "GP", "RF", "ET", "GBRT" or an instance of a class
@@ -49,7 +49,7 @@ class IHyperOpt(ABC):
         """
         return "ET"
 
-    def generate_roi_table(self, params: Dict) -> Dict[int, float]:
+    def generate_roi_table(self, params: dict) -> dict[int, float]:
         """
         Create a ROI table.
 
@@ -64,7 +64,7 @@ class IHyperOpt(ABC):
 
         return roi_table
 
-    def roi_space(self) -> List[Dimension]:
+    def roi_space(self) -> list[Dimension]:
         """
         Create a ROI space.
 
@@ -146,7 +146,7 @@ class IHyperOpt(ABC):
             ),
         ]
 
-    def stoploss_space(self) -> List[Dimension]:
+    def stoploss_space(self) -> list[Dimension]:
         """
         Create a stoploss space.
 
@@ -157,7 +157,7 @@ class IHyperOpt(ABC):
             SKDecimal(-0.35, -0.02, decimals=3, name="stoploss"),
         ]
 
-    def generate_trailing_params(self, params: Dict) -> Dict:
+    def generate_trailing_params(self, params: dict) -> dict:
         """
         Create dict with trailing stop parameters.
         """
@@ -170,7 +170,7 @@ class IHyperOpt(ABC):
             "trailing_only_offset_is_reached": params["trailing_only_offset_is_reached"],
         }
 
-    def trailing_space(self) -> List[Dimension]:
+    def trailing_space(self) -> list[Dimension]:
         """
         Create a trailing stoploss space.
 
@@ -194,7 +194,7 @@ class IHyperOpt(ABC):
             Categorical([True, False], name="trailing_only_offset_is_reached"),
         ]
 
-    def max_open_trades_space(self) -> List[Dimension]:
+    def max_open_trades_space(self) -> list[Dimension]:
         """
         Create a max open trades space.
 

@@ -1,7 +1,7 @@
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Literal, Tuple, Union
+from typing import Any, Literal, Union
 
 import numpy as np
 from pandas import DataFrame, Series, concat, to_datetime
@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 def generate_trade_signal_candles(
-    preprocessed_df: Dict[str, DataFrame], bt_results: Dict[str, Any], date_col: str
-) -> Dict[str, DataFrame]:
+    preprocessed_df: dict[str, DataFrame], bt_results: dict[str, Any], date_col: str
+) -> dict[str, DataFrame]:
     signal_candles_only = {}
     for pair in preprocessed_df.keys():
         signal_candles_only_df = DataFrame()
@@ -48,8 +48,8 @@ def generate_trade_signal_candles(
 
 
 def generate_rejected_signals(
-    preprocessed_df: Dict[str, DataFrame], rejected_dict: Dict[str, DataFrame]
-) -> Dict[str, DataFrame]:
+    preprocessed_df: dict[str, DataFrame], rejected_dict: dict[str, DataFrame]
+) -> dict[str, DataFrame]:
     rejected_candles_only = {}
     for pair, signals in rejected_dict.items():
         rejected_signals_only_df = DataFrame()
@@ -69,8 +69,8 @@ def generate_rejected_signals(
 
 
 def _generate_result_line(
-    result: DataFrame, starting_balance: int, first_column: Union[str, List[str]]
-) -> Dict:
+    result: DataFrame, starting_balance: int, first_column: Union[str, list[str]]
+) -> dict:
     """
     Generate one result dict, with "first_column" as key.
     """
@@ -109,12 +109,12 @@ def _generate_result_line(
 
 
 def generate_pair_metrics(
-    pairlist: List[str],
+    pairlist: list[str],
     stake_currency: str,
     starting_balance: int,
     results: DataFrame,
     skip_nan: bool = False,
-) -> List[Dict]:
+) -> list[dict]:
     """
     Generates and returns a list  for the given backtest data and the results dataframe
     :param pairlist: Pairlist used
@@ -143,11 +143,11 @@ def generate_pair_metrics(
 
 
 def generate_tag_metrics(
-    tag_type: Union[Literal["enter_tag", "exit_reason"], List[Literal["enter_tag", "exit_reason"]]],
+    tag_type: Union[Literal["enter_tag", "exit_reason"], list[Literal["enter_tag", "exit_reason"]]],
     starting_balance: int,
     results: DataFrame,
     skip_nan: bool = False,
-) -> List[Dict]:
+) -> list[dict]:
     """
     Generates and returns a list of metrics for the given tag trades and the results dataframe
     :param starting_balance: Starting balance
@@ -177,7 +177,7 @@ def generate_tag_metrics(
         return []
 
 
-def generate_strategy_comparison(bt_stats: Dict) -> List[Dict]:
+def generate_strategy_comparison(bt_stats: dict) -> list[dict]:
     """
     Generate summary per strategy
     :param bt_stats: Dict of <Strategyname: DataFrame> containing results for all strategies
@@ -208,8 +208,8 @@ def _get_resample_from_period(period: str) -> str:
 
 
 def generate_periodic_breakdown_stats(
-    trade_list: Union[List, DataFrame], period: str
-) -> List[Dict[str, Any]]:
+    trade_list: Union[list, DataFrame], period: str
+) -> list[dict[str, Any]]:
     results = trade_list if not isinstance(trade_list, list) else DataFrame.from_records(trade_list)
     if len(results) == 0:
         return []
@@ -237,14 +237,14 @@ def generate_periodic_breakdown_stats(
     return stats
 
 
-def generate_all_periodic_breakdown_stats(trade_list: List) -> Dict[str, List]:
+def generate_all_periodic_breakdown_stats(trade_list: list) -> dict[str, list]:
     result = {}
     for period in BACKTEST_BREAKDOWNS:
         result[period] = generate_periodic_breakdown_stats(trade_list, period)
     return result
 
 
-def calc_streak(dataframe: DataFrame) -> Tuple[int, int]:
+def calc_streak(dataframe: DataFrame) -> tuple[int, int]:
     """
     Calculate consecutive win and loss streaks
     :param dataframe: Dataframe containing the trades dataframe, with profit_ratio column
@@ -261,7 +261,7 @@ def calc_streak(dataframe: DataFrame) -> Tuple[int, int]:
     return cons_wins, cons_losses
 
 
-def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
+def generate_trading_stats(results: DataFrame) -> dict[str, Any]:
     """Generate overall trade statistics"""
     if len(results) == 0:
         return {
@@ -313,7 +313,7 @@ def generate_trading_stats(results: DataFrame) -> Dict[str, Any]:
     }
 
 
-def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
+def generate_daily_stats(results: DataFrame) -> dict[str, Any]:
     """Generate daily statistics"""
     if len(results) == 0:
         return {
@@ -350,14 +350,14 @@ def generate_daily_stats(results: DataFrame) -> Dict[str, Any]:
 
 
 def generate_strategy_stats(
-    pairlist: List[str],
+    pairlist: list[str],
     strategy: str,
-    content: Dict[str, Any],
+    content: dict[str, Any],
     min_date: datetime,
     max_date: datetime,
     market_change: float,
     is_hyperopt: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     :param pairlist: List of pairs to backtest
     :param strategy: Strategy name
@@ -368,7 +368,7 @@ def generate_strategy_stats(
     :param market_change: float indicating the market change
     :return: Dictionary containing results per strategy and a strategy summary.
     """
-    results: Dict[str, DataFrame] = content["results"]
+    results: dict[str, DataFrame] = content["results"]
     if not isinstance(results, DataFrame):
         return {}
     config = content["config"]
@@ -558,8 +558,8 @@ def generate_strategy_stats(
 
 
 def generate_backtest_stats(
-    btdata: Dict[str, DataFrame],
-    all_results: Dict[str, Dict[str, Union[DataFrame, Dict]]],
+    btdata: dict[str, DataFrame],
+    all_results: dict[str, dict[str, Union[DataFrame, dict]]],
     min_date: datetime,
     max_date: datetime,
 ) -> BacktestResultType:

@@ -6,7 +6,7 @@ This module implements a convenience auto-hyperopt class, which can be used toge
 
 import logging
 from contextlib import suppress
-from typing import Callable, Dict, List
+from typing import Callable
 
 from freqtrade.exceptions import OperationalException
 
@@ -59,7 +59,7 @@ class HyperOptAuto(IHyperOpt):
             if attr.optimize:
                 yield attr.get_space(attr_name)
 
-    def _get_indicator_space(self, category) -> List:
+    def _get_indicator_space(self, category) -> list:
         # TODO: is this necessary, or can we call "generate_space" directly?
         indicator_space = list(self._generate_indicator_space(category))
         if len(indicator_space) > 0:
@@ -70,32 +70,32 @@ class HyperOptAuto(IHyperOpt):
             )
             return []
 
-    def buy_indicator_space(self) -> List["Dimension"]:
+    def buy_indicator_space(self) -> list["Dimension"]:
         return self._get_indicator_space("buy")
 
-    def sell_indicator_space(self) -> List["Dimension"]:
+    def sell_indicator_space(self) -> list["Dimension"]:
         return self._get_indicator_space("sell")
 
-    def protection_space(self) -> List["Dimension"]:
+    def protection_space(self) -> list["Dimension"]:
         return self._get_indicator_space("protection")
 
-    def generate_roi_table(self, params: Dict) -> Dict[int, float]:
+    def generate_roi_table(self, params: dict) -> dict[int, float]:
         return self._get_func("generate_roi_table")(params)
 
-    def roi_space(self) -> List["Dimension"]:
+    def roi_space(self) -> list["Dimension"]:
         return self._get_func("roi_space")()
 
-    def stoploss_space(self) -> List["Dimension"]:
+    def stoploss_space(self) -> list["Dimension"]:
         return self._get_func("stoploss_space")()
 
-    def generate_trailing_params(self, params: Dict) -> Dict:
+    def generate_trailing_params(self, params: dict) -> dict:
         return self._get_func("generate_trailing_params")(params)
 
-    def trailing_space(self) -> List["Dimension"]:
+    def trailing_space(self) -> list["Dimension"]:
         return self._get_func("trailing_space")()
 
-    def max_open_trades_space(self) -> List["Dimension"]:
+    def max_open_trades_space(self) -> list["Dimension"]:
         return self._get_func("max_open_trades_space")()
 
-    def generate_estimator(self, dimensions: List["Dimension"], **kwargs) -> EstimatorType:
+    def generate_estimator(self, dimensions: list["Dimension"], **kwargs) -> EstimatorType:
         return self._get_func("generate_estimator")(dimensions=dimensions, **kwargs)
