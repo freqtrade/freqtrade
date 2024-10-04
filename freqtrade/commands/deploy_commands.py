@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
+import requests
+
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
@@ -125,8 +127,6 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     from io import BytesIO
     from zipfile import ZipFile
 
-    import requests
-
     logger.info(f"Downloading {dl_url}")
     resp = requests.get(dl_url, timeout=req_timeout).content
     dest_folder.mkdir(parents=True, exist_ok=True)
@@ -143,8 +143,6 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
 
 
 def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
-    import requests
-
     base_url = "https://api.github.com/repos/freqtrade/frequi/"
     # Get base UI Repo path
 
