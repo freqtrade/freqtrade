@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from sqlalchemy import inspect, select, text, update
 
@@ -10,19 +10,19 @@ from freqtrade.persistence.trade_model import Order, Trade
 logger = logging.getLogger(__name__)
 
 
-def get_table_names_for_table(inspector, tabletype) -> List[str]:
+def get_table_names_for_table(inspector, tabletype) -> list[str]:
     return [t for t in inspector.get_table_names() if t.startswith(tabletype)]
 
 
-def has_column(columns: List, searchname: str) -> bool:
+def has_column(columns: list, searchname: str) -> bool:
     return len(list(filter(lambda x: x["name"] == searchname, columns))) == 1
 
 
-def get_column_def(columns: List, column: str, default: str) -> str:
+def get_column_def(columns: list, column: str, default: str) -> str:
     return default if not has_column(columns, column) else column
 
 
-def get_backup_name(tabs: List[str], backup_prefix: str):
+def get_backup_name(tabs: list[str], backup_prefix: str):
     table_back_name = backup_prefix
     for i, table_back_name in enumerate(tabs):
         table_back_name = f"{backup_prefix}{i}"
@@ -77,9 +77,9 @@ def migrate_trades_and_orders_table(
     inspector,
     engine,
     trade_back_name: str,
-    cols: List,
+    cols: list,
     order_back_name: str,
-    cols_order: List,
+    cols_order: list,
 ):
     base_currency = get_column_def(cols, "base_currency", "null")
     stake_currency = get_column_def(cols, "stake_currency", "null")
@@ -230,7 +230,7 @@ def drop_orders_table(engine, table_back_name: str):
         connection.execute(text("drop table orders"))
 
 
-def migrate_orders_table(engine, table_back_name: str, cols_order: List):
+def migrate_orders_table(engine, table_back_name: str, cols_order: list):
     ft_fee_base = get_column_def(cols_order, "ft_fee_base", "null")
     average = get_column_def(cols_order, "average", "null")
     stop_price = get_column_def(cols_order, "stop_price", "null")
@@ -262,7 +262,7 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: List):
         )
 
 
-def migrate_pairlocks_table(decl_base, inspector, engine, pairlock_back_name: str, cols: List):
+def migrate_pairlocks_table(decl_base, inspector, engine, pairlock_back_name: str, cols: list):
     # Schema migration necessary
     with engine.begin() as connection:
         connection.execute(text(f"alter table pairlocks rename to {pairlock_back_name}"))
