@@ -9,7 +9,7 @@ import asyncio
 import logging
 import socket
 from threading import Thread
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Callable, TypedDict, Union
 
 import websockets
 from pydantic import ValidationError
@@ -56,7 +56,7 @@ class ExternalMessageConsumer:
     other freqtrade bot's
     """
 
-    def __init__(self, config: Dict[str, Any], dataprovider: DataProvider):
+    def __init__(self, config: dict[str, Any], dataprovider: DataProvider):
         self._config = config
         self._dp = dataprovider
 
@@ -69,7 +69,7 @@ class ExternalMessageConsumer:
         self._emc_config = self._config.get("external_message_consumer", {})
 
         self.enabled = self._emc_config.get("enabled", False)
-        self.producers: List[Producer] = self._emc_config.get("producers", [])
+        self.producers: list[Producer] = self._emc_config.get("producers", [])
 
         self.wait_timeout = self._emc_config.get("wait_timeout", 30)  # in seconds
         self.ping_timeout = self._emc_config.get("ping_timeout", 10)  # in seconds
@@ -88,19 +88,19 @@ class ExternalMessageConsumer:
         self.topics = [RPCMessageType.WHITELIST, RPCMessageType.ANALYZED_DF]
 
         # Allow setting data for each initial request
-        self._initial_requests: List[WSRequestSchema] = [
+        self._initial_requests: list[WSRequestSchema] = [
             WSSubscribeRequest(data=self.topics),
             WSWhitelistRequest(),
             WSAnalyzedDFRequest(),
         ]
 
         # Specify which function to use for which RPCMessageType
-        self._message_handlers: Dict[str, Callable[[str, WSMessageSchema], None]] = {
+        self._message_handlers: dict[str, Callable[[str, WSMessageSchema], None]] = {
             RPCMessageType.WHITELIST: self._consume_whitelist_message,
             RPCMessageType.ANALYZED_DF: self._consume_analyzed_df_message,
         }
 
-        self._channel_streams: Dict[str, MessageStream] = {}
+        self._channel_streams: dict[str, MessageStream] = {}
 
         self.start()
 
@@ -287,7 +287,7 @@ class ExternalMessageConsumer:
                     raise
 
     def send_producer_request(
-        self, producer_name: str, request: Union[WSRequestSchema, Dict[str, Any]]
+        self, producer_name: str, request: Union[WSRequestSchema, dict[str, Any]]
     ):
         """
         Publish a message to the producer's message stream to be
@@ -302,7 +302,7 @@ class ExternalMessageConsumer:
         if channel_stream := self._channel_streams.get(producer_name):
             channel_stream.publish(request)
 
-    def handle_producer_message(self, producer: Producer, message: Dict[str, Any]):
+    def handle_producer_message(self, producer: Producer, message: dict[str, Any]):
         """
         Handles external messages from a Producer
         """

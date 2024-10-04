@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, List, Literal, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict, Union
 
 from freqtrade.constants import PairWithTimeframe
 from freqtrade.enums import RPCMessageType
@@ -43,7 +43,7 @@ class RPCProtectionMsg(RPCSendMsgBase):
 
 class RPCWhitelistMsg(RPCSendMsgBase):
     type: Literal[RPCMessageType.WHITELIST]
-    data: List[str]
+    data: list[str]
 
 
 class __RPCEntryExitMsgBase(RPCSendMsgBase):

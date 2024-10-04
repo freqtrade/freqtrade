@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from fastapi.websockets import WebSocket
@@ -61,7 +61,7 @@ async def channel_broadcaster(channel: WebSocketChannel, message_stream: Message
             await channel.send(message, use_timeout=True)
 
 
-async def _process_consumer_request(request: Dict[str, Any], channel: WebSocketChannel, rpc: RPC):
+async def _process_consumer_request(request: dict[str, Any], channel: WebSocketChannel, rpc: RPC):
     """
     Validate and handle a request from a websocket consumer
     """

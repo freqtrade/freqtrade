@@ -3,7 +3,7 @@ import logging
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.exceptions import HTTPException
@@ -260,7 +260,7 @@ def api_backtest_abort():
 
 
 @router.get(
-    "/backtest/history", response_model=List[BacktestHistoryEntry], tags=["webserver", "backtest"]
+    "/backtest/history", response_model=list[BacktestHistoryEntry], tags=["webserver", "backtest"]
 )
 def api_backtest_history(config=Depends(get_config)):
     # Get backtest result history, read from metadata files
@@ -275,7 +275,7 @@ def api_backtest_history_result(filename: str, strategy: str, config=Depends(get
     bt_results_base: Path = config["user_data_dir"] / "backtest_results"
     fn = (bt_results_base / filename).with_suffix(".json")
 
-    results: Dict[str, Any] = {
+    results: dict[str, Any] = {
         "metadata": {},
         "strategy": {},
         "strategy_comparison": [],
@@ -295,7 +295,7 @@ def api_backtest_history_result(filename: str, strategy: str, config=Depends(get
 
 @router.delete(
     "/backtest/history/{file}",
-    response_model=List[BacktestHistoryEntry],
+    response_model=list[BacktestHistoryEntry],
     tags=["webserver", "backtest"],
 )
 def api_delete_backtest_history_entry(file: str, config=Depends(get_config)):
@@ -312,7 +312,7 @@ def api_delete_backtest_history_entry(file: str, config=Depends(get_config)):
 
 @router.patch(
     "/backtest/history/{file}",
-    response_model=List[BacktestHistoryEntry],
+    response_model=list[BacktestHistoryEntry],
     tags=["webserver", "backtest"],
 )
 def api_update_backtest_history_entry(

@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Union
+from typing import Any, Union
 
 from fastapi import WebSocket as FastAPIWebSocket
 from websockets.client import WebSocketClientProtocol as WebSocket
@@ -20,7 +20,7 @@ class WebSocketProxy:
         return self._websocket
 
     @property
-    def remote_addr(self) -> Tuple[Any, ...]:
+    def remote_addr(self) -> tuple[Any, ...]:
         if isinstance(self._websocket, WebSocket):
             return self._websocket.remote_address
         elif isinstance(self._websocket, FastAPIWebSocket):

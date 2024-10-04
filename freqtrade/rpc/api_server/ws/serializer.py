@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 import orjson
 import rapidjson
@@ -26,7 +26,7 @@ class WebSocketSerializer(ABC):
     def _deserialize(self, data):
         raise NotImplementedError()
 
-    async def send(self, data: Union[WSMessageSchemaType, Dict[str, Any]]):
+    async def send(self, data: Union[WSMessageSchemaType, dict[str, Any]]):
         await self._websocket.send(self._serialize(data))
 
     async def recv(self) -> bytes:
