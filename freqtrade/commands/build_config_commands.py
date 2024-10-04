@@ -1,7 +1,7 @@
 import logging
 import secrets
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from questionary import Separator, prompt
 
@@ -48,13 +48,13 @@ def ask_user_overwrite(config_path: Path) -> bool:
     return answers["overwrite"]
 
 
-def ask_user_config() -> Dict[str, Any]:
+def ask_user_config() -> dict[str, Any]:
     """
     Ask user a few questions to build the configuration.
     Interactive questions built using https://github.com/tmbo/questionary
     :returns: Dict with keys to put into template
     """
-    questions: List[Dict[str, Any]] = [
+    questions: list[dict[str, Any]] = [
         {
             "type": "confirm",
             "name": "dry_run",
@@ -219,7 +219,7 @@ def ask_user_config() -> Dict[str, Any]:
     return answers
 
 
-def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
+def deploy_new_config(config_path: Path, selections: dict[str, Any]) -> None:
     """
     Applies selections to the template and writes the result to config_path
     :param config_path: Path object for new config file. Should not exist yet
@@ -250,7 +250,7 @@ def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
     config_path.write_text(config_text)
 
 
-def start_new_config(args: Dict[str, Any]) -> None:
+def start_new_config(args: dict[str, Any]) -> None:
     """
     Create a new strategy from a template
     Asking the user questions to fill out the template accordingly.
@@ -271,7 +271,7 @@ def start_new_config(args: Dict[str, Any]) -> None:
     deploy_new_config(config_path, selections)
 
 
-def start_show_config(args: Dict[str, Any]) -> None:
+def start_show_config(args: dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE, set_dry=False)
 
     print("Your combined configuration is:")

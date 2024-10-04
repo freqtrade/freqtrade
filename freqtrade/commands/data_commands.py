@@ -1,7 +1,7 @@
 import logging
 import sys
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.configuration import TimeRange, setup_utils_configuration
 from freqtrade.constants import DATETIME_PRINT_FORMAT, DL_DATA_TIMEFRAMES, Config
@@ -38,7 +38,7 @@ def _check_data_config_download_sanity(config: Config) -> None:
         )
 
 
-def start_download_data(args: Dict[str, Any]) -> None:
+def start_download_data(args: dict[str, Any]) -> None:
     """
     Download data (former download_backtest_data.py script)
     """
@@ -53,7 +53,7 @@ def start_download_data(args: Dict[str, Any]) -> None:
         sys.exit("SIGINT received, aborting ...")
 
 
-def start_convert_trades(args: Dict[str, Any]) -> None:
+def start_convert_trades(args: dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
     timerange = TimeRange()
@@ -92,7 +92,7 @@ def start_convert_trades(args: Dict[str, Any]) -> None:
     )
 
 
-def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
+def start_convert_data(args: dict[str, Any], ohlcv: bool = True) -> None:
     """
     Convert data from one format to another
     """
@@ -114,7 +114,7 @@ def start_convert_data(args: Dict[str, Any], ohlcv: bool = True) -> None:
         )
 
 
-def start_list_data(args: Dict[str, Any]) -> None:
+def start_list_data(args: dict[str, Any]) -> None:
     """
     List available OHLCV data
     """
@@ -177,7 +177,7 @@ def start_list_data(args: Dict[str, Any]) -> None:
         )
 
 
-def start_list_trades_data(args: Dict[str, Any]) -> None:
+def start_list_trades_data(args: dict[str, Any]) -> None:
     """
     List available Trades data
     """

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from sqlalchemy import func, select
 
@@ -10,7 +10,7 @@ from freqtrade.enums import RunMode
 logger = logging.getLogger(__name__)
 
 
-def start_convert_db(args: Dict[str, Any]) -> None:
+def start_convert_db(args: dict[str, Any]) -> None:
     from sqlalchemy.orm import make_transient
 
     from freqtrade.persistence import Order, Trade, init_db

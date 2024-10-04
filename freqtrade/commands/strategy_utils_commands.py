@@ -1,7 +1,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
@@ -12,7 +12,7 @@ from freqtrade.strategy.strategyupdater import StrategyUpdater
 logger = logging.getLogger(__name__)
 
 
-def start_strategy_update(args: Dict[str, Any]) -> None:
+def start_strategy_update(args: dict[str, Any]) -> None:
     """
     Start the strategy updating script
     :param args: Cli args from Arguments()

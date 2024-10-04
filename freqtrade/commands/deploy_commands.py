@@ -1,7 +1,7 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import requests
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 req_timeout = 30
 
 
-def start_create_userdir(args: Dict[str, Any]) -> None:
+def start_create_userdir(args: dict[str, Any]) -> None:
     """
     Create "user_data" directory to contain user data strategies, hyperopt, ...)
     :param args: Cli args from Arguments()
@@ -81,7 +81,7 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     strategy_path.write_text(strategy_text)
 
 
-def start_new_strategy(args: Dict[str, Any]) -> None:
+def start_new_strategy(args: dict[str, Any]) -> None:
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
     if "strategy" in args and args["strategy"]:
@@ -139,7 +139,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
         f.write(version)
 
 
-def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
+def get_ui_download_url(version: Optional[str] = None) -> tuple[str, str]:
     base_url = "https://api.github.com/repos/freqtrade/frequi/"
     # Get base UI Repo path
 
@@ -171,7 +171,7 @@ def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
     return dl_url, latest_version
 
 
-def start_install_ui(args: Dict[str, Any]) -> None:
+def start_install_ui(args: dict[str, Any]) -> None:
     dest_folder = Path(__file__).parents[1] / "rpc/api_server/ui/installed/"
     # First make sure the assets are removed.
     dl_url, latest_version = get_ui_download_url(args.get("ui_version"))
