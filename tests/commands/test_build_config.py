@@ -97,9 +97,8 @@ def test_ask_user_overwrite(mocker):
     assert prompt_mock.call_count == 1
 
     prompt_mock.reset_mock()
-
     prompt_mock = mocker.patch(
-        "freqtrade.commands.build_config_commands.prompt", return_value={"overwrite": False}
+        "freqtrade.commands.build_config_commands.prompt", return_value={"overwrite": True}
     )
     assert ask_user_overwrite(Path("test.json"))
     assert prompt_mock.call_count == 1
@@ -116,9 +115,7 @@ def test_ask_user_config(mocker):
     assert isinstance(answers, dict)
     assert prompt_mock.call_count == 1
 
-    prompt_mock = mocker.patch(
-        "freqtrade.commands.build_config_commands.prompt", return_value={"overwrite": False}
-    )
+    prompt_mock = mocker.patch("freqtrade.commands.build_config_commands.prompt", return_value={})
 
     with pytest.raises(OperationalException, match=r"User interrupted interactive questions\."):
         ask_user_config()
