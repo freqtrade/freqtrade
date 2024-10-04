@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from pandas import DataFrame
 
@@ -73,7 +73,7 @@ def informative(
     return decorator
 
 
-def __get_pair_formats(market: Optional[Dict[str, Any]]) -> Dict[str, str]:
+def __get_pair_formats(market: Optional[dict[str, Any]]) -> dict[str, str]:
     if not market:
         return {}
     base = market["base"]
@@ -86,7 +86,7 @@ def __get_pair_formats(market: Optional[Dict[str, Any]]) -> Dict[str, str]:
     }
 
 
-def _format_pair_name(config, pair: str, market: Optional[Dict[str, Any]] = None) -> str:
+def _format_pair_name(config, pair: str, market: Optional[dict[str, Any]] = None) -> str:
     return pair.format(
         stake_currency=config["stake_currency"],
         stake=config["stake_currency"],

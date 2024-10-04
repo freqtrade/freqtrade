@@ -4,8 +4,9 @@ This module defines a base class for auto-hyperoptable strategies.
 """
 
 import logging
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
+from typing import Any, Optional, Union
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
@@ -28,9 +29,9 @@ class HyperStrategyMixin:
         Initialize hyperoptable strategy mixin.
         """
         self.config = config
-        self.ft_buy_params: List[BaseParameter] = []
-        self.ft_sell_params: List[BaseParameter] = []
-        self.ft_protection_params: List[BaseParameter] = []
+        self.ft_buy_params: list[BaseParameter] = []
+        self.ft_sell_params: list[BaseParameter] = []
+        self.ft_protection_params: list[BaseParameter] = []
 
         params = self.load_params_from_file()
         params = params.get("params", {})
@@ -39,7 +40,7 @@ class HyperStrategyMixin:
 
     def enumerate_parameters(
         self, category: Optional[str] = None
-    ) -> Iterator[Tuple[str, BaseParameter]]:
+    ) -> Iterator[tuple[str, BaseParameter]]:
         """
         Find all optimizable parameters and return (name, attr) iterator.
         :param category:
@@ -59,9 +60,9 @@ class HyperStrategyMixin:
             yield par.name, par
 
     @classmethod
-    def detect_all_parameters(cls) -> Dict:
+    def detect_all_parameters(cls) -> dict:
         """Detect all parameters and return them as a list"""
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "buy": list(detect_parameters(cls, "buy")),
             "sell": list(detect_parameters(cls, "sell")),
             "protection": list(detect_parameters(cls, "protection")),
@@ -124,7 +125,7 @@ class HyperStrategyMixin:
         self._ft_load_params(sell_params, "sell", hyperopt)
         self._ft_load_params(protection_params, "protection", hyperopt)
 
-    def load_params_from_file(self) -> Dict:
+    def load_params_from_file(self) -> dict:
         filename_str = getattr(self, "__file__", "")
         if not filename_str:
             return {}
@@ -144,14 +145,14 @@ class HyperStrategyMixin:
 
         return {}
 
-    def _ft_load_params(self, params: Dict, space: str, hyperopt: bool = False) -> None:
+    def _ft_load_params(self, params: dict, space: str, hyperopt: bool = False) -> None:
         """
         Set optimizable parameter values.
         :param params: Dictionary with new parameter values.
         """
         if not params:
             logger.info(f"No params for {space} found, using default values.")
-        param_container: List[BaseParameter] = getattr(self, f"ft_{space}_params")
+        param_container: list[BaseParameter] = getattr(self, f"ft_{space}_params")
 
         for attr_name, attr in detect_parameters(self, space):
             attr.name = attr_name
@@ -173,11 +174,11 @@ class HyperStrategyMixin:
             else:
                 logger.info(f"Strategy Parameter(default): {attr_name} = {attr.value}")
 
-    def get_no_optimize_params(self) -> Dict[str, Dict]:
+    def get_no_optimize_params(self) -> dict[str, dict]:
         """
         Returns list of Parameters that are not part of the current optimize job
         """
-        params: Dict[str, Dict] = {
+        params: dict[str, dict] = {
             "buy": {},
             "sell": {},
             "protection": {},
@@ -189,8 +190,8 @@ class HyperStrategyMixin:
 
 
 def detect_parameters(
-    obj: Union[HyperStrategyMixin, Type[HyperStrategyMixin]], category: str
-) -> Iterator[Tuple[str, BaseParameter]]:
+    obj: Union[HyperStrategyMixin, type[HyperStrategyMixin]], category: str
+) -> Iterator[tuple[str, BaseParameter]]:
     """
     Detect all parameters for 'category' for "obj"
     :param obj: Strategy object or class
