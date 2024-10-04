@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from typing import Dict, List
 
 import joblib
 import pandas as pd
@@ -48,14 +47,14 @@ def _load_signal_candles(backtest_dir: Path):
     return _load_backtest_analysis_data(backtest_dir, "signals")
 
 
-def _load_exit_signal_candles(backtest_dir: Path) -> Dict[str, Dict[str, pd.DataFrame]]:
+def _load_exit_signal_candles(backtest_dir: Path) -> dict[str, dict[str, pd.DataFrame]]:
     return _load_backtest_analysis_data(backtest_dir, "exited")
 
 
 def _process_candles_and_indicators(
     pairlist, strategy_name, trades, signal_candles, date_col: str = "open_date"
 ):
-    analysed_trades_dict: Dict[str, Dict] = {strategy_name: {}}
+    analysed_trades_dict: dict[str, dict] = {strategy_name: {}}
 
     try:
         logger.info(f"Processing {strategy_name} : {len(pairlist)} pairs")
@@ -261,8 +260,8 @@ def prepare_results(
 def print_results(
     res_df: pd.DataFrame,
     exit_df: pd.DataFrame,
-    analysis_groups: List[str],
-    indicator_list: List[str],
+    analysis_groups: list[str],
+    indicator_list: list[str],
     entry_only: bool,
     exit_only: bool,
     csv_path: Path,
@@ -307,7 +306,7 @@ def print_results(
 def _merge_dfs(
     entry_df: pd.DataFrame,
     exit_df: pd.DataFrame,
-    available_inds: List[str],
+    available_inds: list[str],
     entry_only: bool,
     exit_only: bool,
 ):
@@ -438,7 +437,7 @@ def _generate_dfs(
     pairlist: list,
     enter_reason_list: list,
     exit_reason_list: list,
-    signal_candles: Dict,
+    signal_candles: dict,
     strategy_name: str,
     timerange: TimeRange,
     trades: pd.DataFrame,
