@@ -7,7 +7,7 @@ import re
 import sys
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import rapidjson
 
@@ -42,7 +42,7 @@ def log_config_error_range(path: str, errmsg: str) -> str:
     return ""
 
 
-def load_file(path: Path) -> Dict[str, Any]:
+def load_file(path: Path) -> dict[str, Any]:
     try:
         with path.open("r") as file:
             config = rapidjson.load(file, parse_mode=CONFIG_PARSE_MODE)
@@ -51,7 +51,7 @@ def load_file(path: Path) -> Dict[str, Any]:
     return config
 
 
-def load_config_file(path: str) -> Dict[str, Any]:
+def load_config_file(path: str) -> dict[str, Any]:
     """
     Loads a config file from the given path
     :param path: path as str
@@ -78,8 +78,8 @@ def load_config_file(path: str) -> Dict[str, Any]:
 
 
 def load_from_files(
-    files: List[str], base_path: Optional[Path] = None, level: int = 0
-) -> Dict[str, Any]:
+    files: list[str], base_path: Optional[Path] = None, level: int = 0
+) -> dict[str, Any]:
     """
     Recursively load configuration files if specified.
     Sub-files are assumed to be relative to the initial config.
