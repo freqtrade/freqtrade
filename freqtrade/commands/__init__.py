@@ -63,7 +63,7 @@ def start_list_trades_data(args: Dict[str, Any]) -> None:
 def start_convert_db(args: Dict[str, Any]) -> None:
     from freqtrade.commands.db_commands import start_convert_db
 
-    start_convert_data(args)
+    start_convert_db(args)
 
 
 def start_create_userdir(args: Dict[str, Any]) -> None:
