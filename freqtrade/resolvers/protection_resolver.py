@@ -4,7 +4,6 @@ This module load custom pairlists
 
 import logging
 from pathlib import Path
-from typing import Dict
 
 from freqtrade.constants import Config
 from freqtrade.plugins.protections import IProtection
@@ -26,7 +25,7 @@ class ProtectionResolver(IResolver):
 
     @staticmethod
     def load_protection(
-        protection_name: str, config: Config, protection_config: Dict
+        protection_name: str, config: Config, protection_config: dict
     ) -> IProtection:
         """
         Load the protection with protection_name
