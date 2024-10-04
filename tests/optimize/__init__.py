@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Dict, List, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 from pandas import DataFrame
 
