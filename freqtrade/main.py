@@ -6,7 +6,7 @@ Read the documentation to know what cli arguments you need.
 
 import logging
 import sys
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 
 # check min. python version
@@ -25,7 +25,7 @@ from freqtrade.util.gc_setup import gc_set_threshold
 logger = logging.getLogger("freqtrade")
 
 
-def main(sysargv: Optional[List[str]] = None) -> None:
+def main(sysargv: Optional[list[str]] = None) -> None:
     """
     This function will initiate the bot and start the trading loop.
     :return: None

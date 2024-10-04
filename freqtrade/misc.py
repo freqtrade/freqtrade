@@ -4,9 +4,10 @@ Various tool function for Freqtrade and scripts
 
 import gzip
 import logging
+from collections.abc import Iterator, Mapping
 from io import StringIO
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Mapping, Optional, TextIO, Union
+from typing import Any, Optional, TextIO, Union
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -128,7 +129,7 @@ def round_dict(d, n):
     return {k: (round(v, n) if isinstance(v, float) else v) for k, v in d.items()}
 
 
-DictMap = Union[Dict[str, Any], Mapping[str, Any]]
+DictMap = Union[dict[str, Any], Mapping[str, Any]]
 
 
 def safe_value_fallback(obj: DictMap, key1: str, key2: Optional[str] = None, default_value=None):
@@ -164,7 +165,7 @@ def plural(num: float, singular: str, plural: Optional[str] = None) -> str:
     return singular if (num == 1 or num == -1) else plural or singular + "s"
 
 
-def chunks(lst: List[Any], n: int) -> Iterator[List[Any]]:
+def chunks(lst: list[Any], n: int) -> Iterator[list[Any]]:
     """
     Split lst into chunks of the size n.
     :param lst: list to split into chunks

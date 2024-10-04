@@ -6,7 +6,7 @@ import logging
 import time
 import traceback
 from os import getpid
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 import sdnotify
 
@@ -27,7 +27,7 @@ class Worker:
     Freqtradebot worker class
     """
 
-    def __init__(self, args: Dict[str, Any], config: Optional[Config] = None) -> None:
+    def __init__(self, args: dict[str, Any], config: Optional[Config] = None) -> None:
         """
         Init all variables and objects the bot needs to work
         """
