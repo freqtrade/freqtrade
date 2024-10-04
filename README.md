@@ -61,7 +61,7 @@ Please find the complete documentation on the [freqtrade website](https://www.fr
 
 ## Features
 
-- [x] **Based on Python 3.9+**: For botting on any operating system - Windows, macOS and Linux.
+- [x] **Based on Python 3.10+**: For botting on any operating system - Windows, macOS and Linux.
 - [x] **Persistence**: Persistence is achieved through sqlite.
 - [x] **Dry-run**: Run the bot without paying money.
 - [x] **Backtesting**: Run a simulation of your buy/sell strategy.
@@ -218,7 +218,7 @@ To run this bot we recommend you a cloud instance with a minimum of:
 
 ### Software requirements
 
-- [Python >= 3.9](http://docs.python-guide.org/en/latest/starting/installation/)
+- [Python >= 3.10](http://docs.python-guide.org/en/latest/starting/installation/)
 - [pip](https://pip.pypa.io/en/stable/installing/)
 - [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [TA-Lib](https://ta-lib.github.io/ta-lib-python/)

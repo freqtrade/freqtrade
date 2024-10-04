@@ -1,5 +1,4 @@
 import logging
-import sys
 import time
 from pathlib import Path
 from typing import Any, Dict
@@ -18,9 +17,6 @@ def start_strategy_update(args: Dict[str, Any]) -> None:
     """
     from freqtrade.configuration import setup_utils_configuration
     from freqtrade.resolvers import StrategyResolver
-
-    if sys.version_info == (3, 8):  # pragma: no cover
-        sys.exit("Freqtrade strategy updater requires Python version >= 3.9")
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 

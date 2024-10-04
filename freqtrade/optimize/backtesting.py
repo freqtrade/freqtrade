@@ -26,6 +26,7 @@ from freqtrade.enums import (
     CandleType,
     ExitCheckTuple,
     ExitType,
+    MarginMode,
     RunMode,
     TradingMode,
 )
@@ -37,6 +38,7 @@ from freqtrade.exchange import (
 )
 from freqtrade.exchange.exchange import Exchange
 from freqtrade.ft_types import BacktestResultType, get_BacktestResultType_default
+from freqtrade.leverage.liquidation_price import update_liquidation_prices
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
@@ -206,6 +208,7 @@ class Backtesting:
             self.required_startup = self.dataprovider.get_required_startup(self.timeframe)
 
         self.trading_mode: TradingMode = config.get("trading_mode", TradingMode.SPOT)
+        self.margin_mode: MarginMode = config.get("margin_mode", MarginMode.ISOLATED)
         # strategies which define "can_short=True" will fail to load in Spot mode.
         self._can_short = self.trading_mode != TradingMode.SPOT
         self._position_stacking: bool = self.config.get("position_stacking", False)
@@ -698,21 +701,20 @@ class Backtesting:
                 current_time=current_date,
             )
 
-            if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
-                # trade is still open
-                trade.set_liquidation_price(
-                    self.exchange.get_liquidation_price(
-                        pair=trade.pair,
-                        open_rate=trade.open_rate,
-                        is_short=trade.is_short,
-                        amount=trade.amount,
-                        stake_amount=trade.stake_amount,
-                        leverage=trade.leverage,
-                        wallet_balance=trade.stake_amount,
-                    )
+            if self.margin_mode == MarginMode.CROSS or not (
+                order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount
+            ):
+                # trade is still open or we are in cross margin mode and
+                # must update all liquidation prices
+                update_liquidation_prices(
+                    trade,
+                    exchange=self.exchange,
+                    wallets=self.wallets,
+                    stake_currency=self.config["stake_currency"],
+                    dry_run=self.config["dry_run"],
                 )
+            if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
                 self._call_adjust_stop(current_date, trade, order.ft_price)
-                # pass
             return True
         return False
 

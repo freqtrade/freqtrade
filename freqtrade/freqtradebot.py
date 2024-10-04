@@ -43,6 +43,7 @@ from freqtrade.exchange import (
     timeframe_to_next_date,
     timeframe_to_seconds,
 )
+from freqtrade.leverage.liquidation_price import update_liquidation_prices
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import Order, PairLocks, Trade, init_db
@@ -241,6 +242,7 @@ class FreqtradeBot(LoggingMixin):
         # Only update open orders on startup
         # This will update the database after the initial migration
         self.startup_update_open_orders()
+        self.update_all_liquidation_prices()
         self.update_funding_fees()
 
     def process(self) -> None:
@@ -356,6 +358,16 @@ class FreqtradeBot(LoggingMixin):
         """
         open_trades = Trade.get_open_trade_count()
         return max(0, self.config["max_open_trades"] - open_trades)
+
+    def update_all_liquidation_prices(self) -> None:
+        if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.CROSS:
+            # Update liquidation prices for all trades in cross margin mode
+            update_liquidation_prices(
+                exchange=self.exchange,
+                wallets=self.wallets,
+                stake_currency=self.config["stake_currency"],
+                dry_run=self.config["dry_run"],
+            )
 
     def update_funding_fees(self) -> None:
         if self.trading_mode == TradingMode.FUTURES:
@@ -2233,20 +2245,13 @@ class FreqtradeBot(LoggingMixin):
                 # Must also run for partial exits
                 # TODO: Margin will need to use interest_rate as well.
                 # interest_rate = self.exchange.get_interest_rate()
-                try:
-                    trade.set_liquidation_price(
-                        self.exchange.get_liquidation_price(
-                            pair=trade.pair,
-                            open_rate=trade.open_rate,
-                            is_short=trade.is_short,
-                            amount=trade.amount,
-                            stake_amount=trade.stake_amount,
-                            leverage=trade.leverage,
-                            wallet_balance=trade.stake_amount,
-                        )
-                    )
-                except DependencyException:
-                    logger.warning("Unable to calculate liquidation price")
+                update_liquidation_prices(
+                    trade,
+                    exchange=self.exchange,
+                    wallets=self.wallets,
+                    stake_currency=self.config["stake_currency"],
+                    dry_run=self.config["dry_run"],
+                )
                 if self.strategy.use_custom_stoploss:
                     current_rate = self.exchange.get_rate(
                         trade.pair, side="exit", is_short=trade.is_short, refresh=True
