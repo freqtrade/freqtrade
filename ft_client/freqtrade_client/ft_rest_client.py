@@ -7,7 +7,7 @@ so it can be used as a standalone script, and can be installed independently.
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 from urllib.parse import urlencode, urlparse, urlunparse
 
 import requests
@@ -16,8 +16,8 @@ from requests.exceptions import ConnectionError
 
 logger = logging.getLogger("ft_rest_client")
 
-ParamsT = Optional[Dict[str, Any]]
-PostDataT = Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]
+ParamsT = Optional[dict[str, Any]]
+PostDataT = Optional[Union[dict[str, Any], list[dict[str, Any]]]]
 
 
 class FtRestClient:
