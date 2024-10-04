@@ -1,19 +1,13 @@
-from __future__ import annotations
-
 import csv
 import logging
 import sys
-import typing
 from typing import Any, Dict, List, Union
 
 import rapidjson
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
-
-
-if typing.TYPE_CHECKING:
-    from freqtrade.ft_types import ValidExchangesType
+from freqtrade.ft_types import ValidExchangesType
 
 
 logger = logging.getLogger(__name__)
