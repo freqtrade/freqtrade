@@ -18,8 +18,7 @@ from freqtrade.commands import Arguments
 from freqtrade.constants import DOCS_LINK
 from freqtrade.exceptions import ConfigurationError, FreqtradeException, OperationalException
 from freqtrade.loggers import setup_logging_pre
-from freqtrade.system.asyncio_config import asyncio_setup
-from freqtrade.system.gc_setup import gc_set_threshold
+from freqtrade.system import asyncio_setup, gc_set_threshold
 
 
 logger = logging.getLogger("freqtrade")
