@@ -109,15 +109,21 @@ class IResolver:
                 if enum_failed:
                     return iter([None])
 
+            def is_valid_class(obj):
+                try:
+                    return (
+                        inspect.isclass(obj)
+                        and issubclass(obj, cls.object_type)
+                        and obj is not cls.object_type
+                        and obj.__module__ == module_name
+                    )
+                except TypeError:
+                    return False
+
             valid_objects_gen = (
                 (obj, inspect.getsource(module))
-                for name, obj in inspect.getmembers(module, inspect.isclass)
-                if (
-                    (object_name is None or object_name == name)
-                    and issubclass(obj, cls.object_type)
-                    and obj is not cls.object_type
-                    and obj.__module__ == module_name
-                )
+                for name, obj in inspect.getmembers(module, is_valid_class)
+                if (object_name is None or object_name == name)
             )
             # The __module__ check ensures we only use strategies that are defined in this folder.
             return valid_objects_gen
