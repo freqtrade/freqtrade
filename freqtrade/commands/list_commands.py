@@ -3,8 +3,6 @@ import logging
 import sys
 from typing import Any, Dict, List, Union
 
-import rapidjson
-
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
 from freqtrade.ft_types import ValidExchangesType
@@ -297,6 +295,8 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             elif args.get("print_one_column", False):
                 print("\n".join(pairs.keys()))
             elif args.get("list_pairs_print_json", False):
+                import rapidjson
+
                 print(rapidjson.dumps(list(pairs.keys()), default=str))
             elif args.get("print_csv", False):
                 writer = csv.DictWriter(sys.stdout, fieldnames=headers)
