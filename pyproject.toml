@@ -157,8 +157,6 @@ extend-ignore = [
   "S607",  # Starting a process with a partial executable path
   "S608",  # Possible SQL injection vector through string-based query construction
   "NPY002",  # Numpy legacy random generator
-  "UP006", # non-pep585-annotation
-  "UP007", # non-pep604-annotation
 ]
 
 [tool.ruff.lint.mccabe]
