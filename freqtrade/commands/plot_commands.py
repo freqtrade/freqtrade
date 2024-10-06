@@ -1,6 +1,5 @@
 from typing import Any
 
-from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError
 
@@ -18,6 +17,7 @@ def start_plot_dataframe(args: dict[str, Any]) -> None:
     Entrypoint for dataframe plotting
     """
     # Import here to avoid errors if plot-dependencies are not installed.
+    from freqtrade.configuration import setup_utils_configuration
     from freqtrade.plot.plotting import load_and_plot_trades
 
     validate_plot_args(args)
@@ -31,6 +31,7 @@ def start_plot_profit(args: dict[str, Any]) -> None:
     Entrypoint for plot_profit
     """
     # Import here to avoid errors if plot-dependencies are not installed.
+    from freqtrade.configuration import setup_utils_configuration
     from freqtrade.plot.plotting import plot_profit
 
     validate_plot_args(args)

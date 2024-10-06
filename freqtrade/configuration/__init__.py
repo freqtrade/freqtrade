@@ -1,6 +1,5 @@
 # flake8: noqa: F401
 
-from freqtrade.configuration.asyncio_config import asyncio_setup
 from freqtrade.configuration.config_secrets import sanitize_config
 from freqtrade.configuration.config_setup import setup_utils_configuration
 from freqtrade.configuration.config_validation import validate_config_consistency
