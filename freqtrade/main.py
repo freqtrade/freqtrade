@@ -15,11 +15,10 @@ if sys.version_info < (3, 10):  # pragma: no cover
 
 from freqtrade import __version__
 from freqtrade.commands import Arguments
-from freqtrade.configuration import asyncio_setup
 from freqtrade.constants import DOCS_LINK
 from freqtrade.exceptions import ConfigurationError, FreqtradeException, OperationalException
 from freqtrade.loggers import setup_logging_pre
-from freqtrade.util.gc_setup import gc_set_threshold
+from freqtrade.system import asyncio_setup, gc_set_threshold
 
 
 logger = logging.getLogger("freqtrade")

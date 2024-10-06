@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 from typing import Any, Dict
 
-from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
 
@@ -17,6 +16,8 @@ def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[s
     :param method: Bot running mode
     :return: Configuration
     """
+    from freqtrade.configuration import setup_utils_configuration
+
     config = setup_utils_configuration(args, method)
 
     no_unlimited_runmodes = {

@@ -3,9 +3,7 @@ from typing import Any, Dict
 
 import rapidjson
 
-from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
-from freqtrade.resolvers import ExchangeResolver
 
 
 logger = logging.getLogger(__name__)
@@ -15,8 +13,10 @@ def start_test_pairlist(args: Dict[str, Any]) -> None:
     """
     Test Pairlist configuration
     """
+    from freqtrade.configuration import setup_utils_configuration
     from freqtrade.persistence import FtNoDBContext
     from freqtrade.plugins.pairlistmanager import PairListManager
+    from freqtrade.resolvers import ExchangeResolver
 
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
 
