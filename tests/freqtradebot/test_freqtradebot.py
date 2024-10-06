@@ -5,7 +5,6 @@ import logging
 import time
 from copy import deepcopy
 from datetime import timedelta
-from typing import List
 from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
 import pytest
@@ -5442,7 +5441,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert trade.amount == 10
     assert trade.stake_amount == 110
     assert not trade.fee_updated("buy")
-    trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
+    trades: list[Trade] = Trade.get_open_trades_without_assigned_fees()
     assert len(trades) == 1
     assert trade.is_open
     assert not trade.fee_updated("buy")
@@ -5468,7 +5467,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert orders
     assert len(orders) == 2
     # Assert that the trade is found as open and without fees
-    trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
+    trades: list[Trade] = Trade.get_open_trades_without_assigned_fees()
     assert len(trades) == 1
     # Assert trade is as expected
     trade = Trade.session.scalars(select(Trade)).first()
@@ -5525,7 +5524,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert order.order_id == "651"
 
     # Assert that the trade is not found as open and without fees
-    trades: List[Trade] = Trade.get_open_trades_without_assigned_fees()
+    trades: list[Trade] = Trade.get_open_trades_without_assigned_fees()
     assert len(trades) == 1
 
     # Add a second DCA
@@ -5725,7 +5724,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
         exit_check=ExitCheckTuple(exit_type=ExitType.PARTIAL_EXIT),
         sub_trade_amt=amount,
     )
-    trades: List[Trade] = trade.get_open_trades_without_assigned_fees()
+    trades: list[Trade] = trade.get_open_trades_without_assigned_fees()
     assert len(trades) == 1
     # Assert trade is as expected (averaged dca)
 

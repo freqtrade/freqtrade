@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.constants import ENV_VAR_PREFIX
 from freqtrade.misc import deep_merge_dicts
@@ -24,7 +24,7 @@ def _get_var_typed(val):
     return val
 
 
-def _flat_vars_to_nested_dict(env_dict: Dict[str, Any], prefix: str) -> Dict[str, Any]:
+def _flat_vars_to_nested_dict(env_dict: dict[str, Any], prefix: str) -> dict[str, Any]:
     """
     Environment variables must be prefixed with FREQTRADE.
     FREQTRADE__{section}__{key}
@@ -33,7 +33,7 @@ def _flat_vars_to_nested_dict(env_dict: Dict[str, Any], prefix: str) -> Dict[str
     :return: Nested dict based on available and relevant variables.
     """
     no_convert = ["CHAT_ID", "PASSWORD"]
-    relevant_vars: Dict[str, Any] = {}
+    relevant_vars: dict[str, Any] = {}
 
     for env_var, val in sorted(env_dict.items()):
         if env_var.startswith(prefix):
@@ -51,7 +51,7 @@ def _flat_vars_to_nested_dict(env_dict: Dict[str, Any], prefix: str) -> Dict[str
     return relevant_vars
 
 
-def enironment_vars_to_dict() -> Dict[str, Any]:
+def enironment_vars_to_dict() -> dict[str, Any]:
     """
     Read environment variables and return a nested dict for relevant variables
     Relevant variables must follow the FREQTRADE__{section}__{key} pattern

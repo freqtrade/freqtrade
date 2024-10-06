@@ -1,7 +1,7 @@
 import logging
 import secrets
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from questionary import Separator, prompt
 
@@ -41,7 +41,7 @@ def ask_user_overwrite(config_path: Path) -> bool:
     return answers["overwrite"]
 
 
-def ask_user_config() -> Dict[str, Any]:
+def ask_user_config() -> dict[str, Any]:
     """
     Ask user a few questions to build the configuration.
     Interactive questions built using https://github.com/tmbo/questionary
@@ -51,7 +51,7 @@ def ask_user_config() -> Dict[str, Any]:
     from freqtrade.configuration.detect_environment import running_in_docker
     from freqtrade.exchange import available_exchanges
 
-    questions: List[Dict[str, Any]] = [
+    questions: list[dict[str, Any]] = [
         {
             "type": "confirm",
             "name": "dry_run",
@@ -216,7 +216,7 @@ def ask_user_config() -> Dict[str, Any]:
     return answers
 
 
-def deploy_new_config(config_path: Path, selections: Dict[str, Any]) -> None:
+def deploy_new_config(config_path: Path, selections: dict[str, Any]) -> None:
     """
     Applies selections to the template and writes the result to config_path
     :param config_path: Path object for new config file. Should not exist yet

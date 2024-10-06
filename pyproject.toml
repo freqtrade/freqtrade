@@ -120,7 +120,7 @@ ignore = ["freqtrade/vendor/**"]
 [tool.ruff]
 line-length = 100
 extend-exclude = [".env", ".venv"]
-target-version = "py38"
+target-version = "py39"
 
 [tool.ruff.lint]
 extend-select = [

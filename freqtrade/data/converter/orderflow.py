@@ -7,7 +7,6 @@ import time
 import typing
 from collections import OrderedDict
 from datetime import datetime
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -62,11 +61,11 @@ def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
 
 
 def populate_dataframe_with_trades(
-    cached_grouped_trades: OrderedDict[Tuple[datetime, datetime], pd.DataFrame],
+    cached_grouped_trades: OrderedDict[tuple[datetime, datetime], pd.DataFrame],
     config: Config,
     dataframe: pd.DataFrame,
     trades: pd.DataFrame,
-) -> Tuple[pd.DataFrame, OrderedDict[Tuple[datetime, datetime], pd.DataFrame]]:
+) -> tuple[pd.DataFrame, OrderedDict[tuple[datetime, datetime], pd.DataFrame]]:
     """
     Populates a dataframe with trades
     :param dataframe: Dataframe to populate

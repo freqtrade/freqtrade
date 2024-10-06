@@ -9,7 +9,7 @@ from datetime import datetime, time, timedelta, timezone
 from math import isclose
 from threading import Lock
 from time import sleep
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from schedule import Scheduler
 
@@ -83,7 +83,7 @@ class FreqtradeBot(LoggingMixin):
         :param config: configuration dict, you can use Configuration.get_config()
         to get the config dict.
         """
-        self.active_pair_whitelist: List[str] = []
+        self.active_pair_whitelist: list[str] = []
 
         # Init bot state
         self.state = State.STOPPED
@@ -258,7 +258,7 @@ class FreqtradeBot(LoggingMixin):
         self.update_trades_without_assigned_fees()
 
         # Query trades from persistence layer
-        trades: List[Trade] = Trade.get_open_trades()
+        trades: list[Trade] = Trade.get_open_trades()
 
         self.active_pair_whitelist = self._refresh_active_whitelist(trades)
 
@@ -325,7 +325,7 @@ class FreqtradeBot(LoggingMixin):
             }
             self.rpc.send_msg(msg)
 
-    def _refresh_active_whitelist(self, trades: Optional[List[Trade]] = None) -> List[str]:
+    def _refresh_active_whitelist(self, trades: Optional[list[Trade]] = None) -> list[str]:
         """
         Refresh active whitelist from pairlist or edge and extend it with
         pairs that have open trades.
@@ -371,7 +371,7 @@ class FreqtradeBot(LoggingMixin):
 
     def update_funding_fees(self) -> None:
         if self.trading_mode == TradingMode.FUTURES:
-            trades: List[Trade] = Trade.get_open_trades()
+            trades: list[Trade] = Trade.get_open_trades()
             for trade in trades:
                 trade.set_funding_fees(
                     self.exchange.get_funding_fees(
@@ -450,7 +450,7 @@ class FreqtradeBot(LoggingMixin):
             # Updating open orders in dry-run does not make sense and will fail.
             return
 
-        trades: List[Trade] = Trade.get_closed_trades_without_assigned_fees()
+        trades: list[Trade] = Trade.get_closed_trades_without_assigned_fees()
         for trade in trades:
             if not trade.is_open and not trade.fee_updated(trade.exit_side):
                 # Get sell fee
@@ -826,7 +826,7 @@ class FreqtradeBot(LoggingMixin):
                 exit_tag=order_tag,
             )
 
-    def _check_depth_of_market(self, pair: str, conf: Dict, side: SignalDirection) -> bool:
+    def _check_depth_of_market(self, pair: str, conf: dict, side: SignalDirection) -> bool:
         """
         Checks depth of market before executing an entry
         """
@@ -1085,7 +1085,7 @@ class FreqtradeBot(LoggingMixin):
         trade: Optional[Trade],
         mode: EntryExecuteMode,
         leverage_: Optional[float],
-    ) -> Tuple[float, float, float]:
+    ) -> tuple[float, float, float]:
         """
         Validate and eventually adjust (within limits) limit, amount and leverage
         :return: Tuple with (price, amount, leverage)
@@ -1263,7 +1263,7 @@ class FreqtradeBot(LoggingMixin):
     # SELL / exit positions / close trades logic and methods
     #
 
-    def exit_positions(self, trades: List[Trade]) -> int:
+    def exit_positions(self, trades: list[Trade]) -> int:
         """
         Tries to execute exit orders for open trades (positions)
         """
@@ -1349,7 +1349,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Check and execute trade exit
         """
-        exits: List[ExitCheckTuple] = self.strategy.should_exit(
+        exits: list[ExitCheckTuple] = self.strategy.should_exit(
             trade,
             exit_rate,
             datetime.now(timezone.utc),
@@ -1466,7 +1466,7 @@ class FreqtradeBot(LoggingMixin):
 
         return False
 
-    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: Dict) -> None:
+    def handle_trailing_stoploss_on_exchange(self, trade: Trade, order: dict) -> None:
         """
         Check to see if stoploss on exchange should be updated
         in case of trailing stoploss on exchange
@@ -1504,7 +1504,7 @@ class FreqtradeBot(LoggingMixin):
                         f"Could not create trailing stoploss order for pair {trade.pair}."
                     )
 
-    def manage_trade_stoploss_orders(self, trade: Trade, stoploss_orders: List[Dict]):
+    def manage_trade_stoploss_orders(self, trade: Trade, stoploss_orders: list[dict]):
         """
         Perform required actions according to existing stoploss orders of trade
         :param trade: Corresponding Trade
@@ -1580,7 +1580,7 @@ class FreqtradeBot(LoggingMixin):
                     else:
                         self.replace_order(order, open_order, trade)
 
-    def handle_cancel_order(self, order: Dict, order_obj: Order, trade: Trade, reason: str) -> None:
+    def handle_cancel_order(self, order: dict, order_obj: Order, trade: Trade, reason: str) -> None:
         """
         Check if current analyzed order timed out and cancel if necessary.
         :param order: Order dict grabbed with exchange.fetch_order()
@@ -1632,7 +1632,7 @@ class FreqtradeBot(LoggingMixin):
             )
             trade.delete()
 
-    def replace_order(self, order: Dict, order_obj: Optional[Order], trade: Trade) -> None:
+    def replace_order(self, order: dict, order_obj: Optional[Order], trade: Trade) -> None:
         """
         Check if current analyzed entry order should be replaced or simply cancelled.
         To simply cancel the existing order(no replacement) adjust_entry_price() should return None
@@ -1736,7 +1736,7 @@ class FreqtradeBot(LoggingMixin):
     def handle_cancel_enter(
         self,
         trade: Trade,
-        order: Dict,
+        order: dict,
         order_obj: Order,
         reason: str,
         replacing: Optional[bool] = False,
@@ -1820,7 +1820,7 @@ class FreqtradeBot(LoggingMixin):
         )
         return was_trade_fully_canceled
 
-    def handle_cancel_exit(self, trade: Trade, order: Dict, order_obj: Order, reason: str) -> bool:
+    def handle_cancel_exit(self, trade: Trade, order: dict, order_obj: Order, reason: str) -> bool:
         """
         exit order cancel - cancel order and update trade
         :return: True if exit order was cancelled, false otherwise
@@ -2173,7 +2173,7 @@ class FreqtradeBot(LoggingMixin):
         self,
         trade: Trade,
         order_id: Optional[str],
-        action_order: Optional[Dict[str, Any]] = None,
+        action_order: Optional[dict[str, Any]] = None,
         *,
         stoploss_order: bool = False,
         send_msg: bool = True,
@@ -2338,7 +2338,7 @@ class FreqtradeBot(LoggingMixin):
             return fee_abs
         return None
 
-    def handle_order_fee(self, trade: Trade, order_obj: Order, order: Dict[str, Any]) -> None:
+    def handle_order_fee(self, trade: Trade, order_obj: Order, order: dict[str, Any]) -> None:
         # Try update amount (binance-fix)
         try:
             fee_abs = self.get_real_amount(trade, order, order_obj)
@@ -2347,7 +2347,7 @@ class FreqtradeBot(LoggingMixin):
         except DependencyException as exception:
             logger.warning("Could not update trade amount: %s", exception)
 
-    def get_real_amount(self, trade: Trade, order: Dict, order_obj: Order) -> Optional[float]:
+    def get_real_amount(self, trade: Trade, order: dict, order_obj: Order) -> Optional[float]:
         """
         Detect and update trade fee.
         Calls trade.update_fee() upon correct detection.
@@ -2394,7 +2394,7 @@ class FreqtradeBot(LoggingMixin):
             trade, order, order_obj, order_amount, order.get("trades", [])
         )
 
-    def _trades_valid_for_fee(self, trades: List[Dict[str, Any]]) -> bool:
+    def _trades_valid_for_fee(self, trades: list[dict[str, Any]]) -> bool:
         """
         Check if trades are valid for fee detection.
         :return: True if trades are valid for fee detection, False otherwise
@@ -2407,7 +2407,7 @@ class FreqtradeBot(LoggingMixin):
         return True
 
     def fee_detection_from_trades(
-        self, trade: Trade, order: Dict, order_obj: Order, order_amount: float, trades: List
+        self, trade: Trade, order: dict, order_obj: Order, order_amount: float, trades: list
     ) -> Optional[float]:
         """
         fee-detection fallback to Trades.
@@ -2426,7 +2426,7 @@ class FreqtradeBot(LoggingMixin):
         fee_abs = 0.0
         fee_cost = 0.0
         trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
-        fee_rate_array: List[float] = []
+        fee_rate_array: list[float] = []
         for exectrade in trades:
             amount += exectrade["amount"]
             if self.exchange.order_has_fee(exectrade):

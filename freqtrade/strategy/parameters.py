@@ -5,8 +5,9 @@ This module defines a base class for auto-hyperoptable strategies.
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from contextlib import suppress
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Union
 
 from freqtrade.enums import HyperoptState
 from freqtrade.optimize.hyperopt_tools import HyperoptStateContainer

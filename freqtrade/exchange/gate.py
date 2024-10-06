@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, PriceType, TradingMode
@@ -46,7 +46,7 @@ class Gate(Exchange):
         },
     }
 
-    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
+    _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, MarginMode.CROSS),
         # (TradingMode.FUTURES, MarginMode.CROSS),
@@ -60,7 +60,7 @@ class Gate(Exchange):
         leverage: float,
         reduceOnly: bool,
         time_in_force: str = "GTC",
-    ) -> Dict:
+    ) -> dict:
         params = super()._get_params(
             side=side,
             ordertype=ordertype,
@@ -74,8 +74,8 @@ class Gate(Exchange):
         return params
 
     def get_trades_for_order(
-        self, order_id: str, pair: str, since: datetime, params: Optional[Dict] = None
-    ) -> List:
+        self, order_id: str, pair: str, since: datetime, params: Optional[dict] = None
+    ) -> list:
         trades = super().get_trades_for_order(order_id, pair, since, params)
 
         if self.trading_mode == TradingMode.FUTURES:
@@ -99,10 +99,10 @@ class Gate(Exchange):
                             }
         return trades
 
-    def get_order_id_conditional(self, order: Dict[str, Any]) -> str:
+    def get_order_id_conditional(self, order: dict[str, Any]) -> str:
         return safe_value_fallback2(order, order, "id_stop", "id")
 
-    def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
+    def fetch_stoploss_order(self, order_id: str, pair: str, params: Optional[dict] = None) -> dict:
         order = self.fetch_order(order_id=order_id, pair=pair, params={"stop": True})
         if order.get("status", "open") == "closed":
             # Places a real order - which we need to fetch explicitly.
@@ -120,6 +120,6 @@ class Gate(Exchange):
         return order
 
     def cancel_stoploss_order(
-        self, order_id: str, pair: str, params: Optional[Dict] = None
-    ) -> Dict:
+        self, order_id: str, pair: str, params: Optional[dict] = None
+    ) -> dict:
         return self.cancel_order(order_id=order_id, pair=pair, params={"stop": True})

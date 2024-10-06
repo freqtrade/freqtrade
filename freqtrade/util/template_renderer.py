@@ -2,10 +2,10 @@
 Jinja2 rendering utils, used to generate new strategy and configurations.
 """
 
-from typing import Dict, Optional
+from typing import Optional
 
 
-def render_template(templatefile: str, arguments: Dict) -> str:
+def render_template(templatefile: str, arguments: dict) -> str:
     from jinja2 import Environment, PackageLoader, select_autoescape
 
     env = Environment(
@@ -17,7 +17,7 @@ def render_template(templatefile: str, arguments: Dict) -> str:
 
 
 def render_template_with_fallback(
-    templatefile: str, templatefallbackfile: str, arguments: Optional[Dict] = None
+    templatefile: str, templatefallbackfile: str, arguments: Optional[dict] = None
 ) -> str:
     """
     Use templatefile if possible, otherwise fall back to templatefallbackfile

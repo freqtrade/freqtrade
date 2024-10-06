@@ -1,5 +1,4 @@
 # Required json-schema for user specified config
-from typing import Dict
 
 from freqtrade.constants import (
     AVAILABLE_DATAHANDLERS,
@@ -23,7 +22,7 @@ from freqtrade.constants import (
 from freqtrade.enums import RPCMessageType
 
 
-__MESSAGE_TYPE_DICT: Dict[str, Dict[str, str]] = {x: {"type": "object"} for x in RPCMessageType}
+__MESSAGE_TYPE_DICT: dict[str, dict[str, str]] = {x: {"type": "object"} for x in RPCMessageType}
 
 __IN_STRATEGY = "\nUsually specified in the strategy and missing in the configuration."
 

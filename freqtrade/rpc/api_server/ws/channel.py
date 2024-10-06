@@ -2,8 +2,9 @@ import asyncio
 import logging
 import time
 from collections import deque
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Deque, Dict, List, Optional, Type, Union
+from typing import Any, Optional, Union
 from uuid import uuid4
 
 from fastapi import WebSocketDisconnect
@@ -30,7 +31,7 @@ class WebSocketChannel:
         self,
         websocket: WebSocketType,
         channel_id: Optional[str] = None,
-        serializer_cls: Type[WebSocketSerializer] = HybridJSONWebSocketSerializer,
+        serializer_cls: type[WebSocketSerializer] = HybridJSONWebSocketSerializer,
         send_throttle: float = 0.01,
     ):
         self.channel_id = channel_id if channel_id else uuid4().hex[:8]
@@ -39,16 +40,16 @@ class WebSocketChannel:
         # Internal event to signify a closed websocket
         self._closed = asyncio.Event()
         # The async tasks created for the channel
-        self._channel_tasks: List[asyncio.Task] = []
+        self._channel_tasks: list[asyncio.Task] = []
 
         # Deque for average send times
-        self._send_times: Deque[float] = deque([], maxlen=10)
+        self._send_times: deque[float] = deque([], maxlen=10)
         # High limit defaults to 3 to start
         self._send_high_limit = 3
         self._send_throttle = send_throttle
 
         # The subscribed message types
-        self._subscriptions: List[str] = []
+        self._subscriptions: list[str] = []
 
         # Wrap the WebSocket in the Serializing class
         self._wrapped_ws = serializer_cls(self._websocket)
@@ -80,7 +81,7 @@ class WebSocketChannel:
             self._send_high_limit = min(max(self.avg_send_time * 2, 1), 3)
 
     async def send(
-        self, message: Union[WSMessageSchemaType, Dict[str, Any]], use_timeout: bool = False
+        self, message: Union[WSMessageSchemaType, dict[str, Any]], use_timeout: bool = False
     ):
         """
         Send a message on the wrapped websocket. If the sending
@@ -153,7 +154,7 @@ class WebSocketChannel:
         """
         return self._closed.is_set()
 
-    def set_subscriptions(self, subscriptions: List[str]) -> None:
+    def set_subscriptions(self, subscriptions: list[str]) -> None:
         """
         Set which subscriptions this channel is subscribed to
 

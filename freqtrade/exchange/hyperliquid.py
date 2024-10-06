@@ -1,7 +1,6 @@
 """Hyperliquid exchange subclass"""
 
 import logging
-from typing import Dict
 
 from freqtrade.enums import TradingMode
 from freqtrade.exchange import Exchange
@@ -26,7 +25,7 @@ class Hyperliquid(Exchange):
     }
 
     @property
-    def _ccxt_config(self) -> Dict:
+    def _ccxt_config(self) -> dict:
         # Parameters to add directly to ccxt sync/async initialization.
         # ccxt defaults to swap mode.
         config = {}

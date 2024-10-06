@@ -1,6 +1,6 @@
 import logging
 from operator import itemgetter
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -9,7 +9,7 @@ from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 
 
-def start_hyperopt_list(args: Dict[str, Any]) -> None:
+def start_hyperopt_list(args: dict[str, Any]) -> None:
     """
     List hyperopt epochs previously evaluated
     """
@@ -56,7 +56,7 @@ def start_hyperopt_list(args: Dict[str, Any]) -> None:
         HyperoptTools.export_csv_file(config, epochs, export_csv)
 
 
-def start_hyperopt_show(args: Dict[str, Any]) -> None:
+def start_hyperopt_show(args: dict[str, Any]) -> None:
     """
     Show details of a hyperopt epoch previously evaluated
     """

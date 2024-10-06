@@ -4,7 +4,7 @@ Protection manager class
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from freqtrade.constants import Config, LongShort
 from freqtrade.exceptions import ConfigurationError
@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 class ProtectionManager:
-    def __init__(self, config: Config, protections: List) -> None:
+    def __init__(self, config: Config, protections: list) -> None:
         self._config = config
 
-        self._protection_handlers: List[IProtection] = []
+        self._protection_handlers: list[IProtection] = []
         self.validate_protections(protections)
         for protection_handler_config in protections:
             protection_handler = ProtectionResolver.load_protection(
@@ -35,13 +35,13 @@ class ProtectionManager:
             logger.info("No protection Handlers defined.")
 
     @property
-    def name_list(self) -> List[str]:
+    def name_list(self) -> list[str]:
         """
         Get list of loaded Protection Handler names
         """
         return [p.name for p in self._protection_handlers]
 
-    def short_desc(self) -> List[Dict]:
+    def short_desc(self) -> list[dict]:
         """
         List of short_desc for each Pairlist Handler
         """
@@ -80,7 +80,7 @@ class ProtectionManager:
         return result
 
     @staticmethod
-    def validate_protections(protections: List[Dict[str, Any]]) -> None:
+    def validate_protections(protections: list[dict[str, Any]]) -> None:
         """
         Validate protection setup validity
         """

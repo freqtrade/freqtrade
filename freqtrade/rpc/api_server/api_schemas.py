@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from pydantic import AwareDatetime, BaseModel, RootModel, SerializeAsAny
 
@@ -73,7 +73,7 @@ class Balance(BaseModel):
 
 
 class Balances(BaseModel):
-    currencies: List[Balance]
+    currencies: list[Balance]
     total: float
     total_bot: float
     symbol: str
@@ -172,8 +172,8 @@ class SellReason(BaseModel):
 
 
 class Stats(BaseModel):
-    exit_reasons: Dict[str, SellReason]
-    durations: Dict[str, Optional[float]]
+    exit_reasons: dict[str, SellReason]
+    durations: dict[str, Optional[float]]
 
 
 class DailyWeeklyMonthlyRecord(BaseModel):
@@ -186,7 +186,7 @@ class DailyWeeklyMonthlyRecord(BaseModel):
 
 
 class DailyWeeklyMonthly(BaseModel):
-    data: List[DailyWeeklyMonthlyRecord]
+    data: list[DailyWeeklyMonthlyRecord]
     fiat_display_currency: str
     stake_currency: str
 
@@ -221,7 +221,7 @@ class ShowConfig(BaseModel):
     available_capital: Optional[float] = None
     stake_currency_decimals: int
     max_open_trades: IntOrInf
-    minimal_roi: Dict[str, Any]
+    minimal_roi: dict[str, Any]
     stoploss: Optional[float] = None
     stoploss_on_exchange: bool
     trailing_stop: Optional[bool] = None
@@ -237,8 +237,8 @@ class ShowConfig(BaseModel):
     exchange: str
     strategy: Optional[str] = None
     force_entry_enable: bool
-    exit_pricing: Dict[str, Any]
-    entry_pricing: Dict[str, Any]
+    exit_pricing: dict[str, Any]
+    entry_pricing: dict[str, Any]
     bot_name: str
     state: str
     runmode: str
@@ -326,7 +326,7 @@ class TradeSchema(BaseModel):
     min_rate: Optional[float] = None
     max_rate: Optional[float] = None
     has_open_orders: bool
-    orders: List[OrderSchema]
+    orders: list[OrderSchema]
 
     leverage: Optional[float] = None
     interest_rate: Optional[float] = None
@@ -352,7 +352,7 @@ class OpenTradeSchema(TradeSchema):
 
 
 class TradeResponse(BaseModel):
-    trades: List[TradeSchema]
+    trades: list[TradeSchema]
     trades_count: int
     offset: int
     total_trades: int
@@ -375,7 +375,7 @@ class LockModel(BaseModel):
 
 class Locks(BaseModel):
     lock_count: int
-    locks: List[LockModel]
+    locks: list[LockModel]
 
 
 class LocksPayload(BaseModel):
@@ -392,7 +392,7 @@ class DeleteLockRequest(BaseModel):
 
 class Logs(BaseModel):
     log_count: int
-    logs: List[List]
+    logs: list[list]
 
 
 class ForceEnterPayload(BaseModel):
@@ -412,21 +412,21 @@ class ForceExitPayload(BaseModel):
 
 
 class BlacklistPayload(BaseModel):
-    blacklist: List[str]
+    blacklist: list[str]
 
 
 class BlacklistResponse(BaseModel):
-    blacklist: List[str]
-    blacklist_expanded: List[str]
-    errors: Dict
+    blacklist: list[str]
+    blacklist_expanded: list[str]
+    errors: dict
     length: int
-    method: List[str]
+    method: list[str]
 
 
 class WhitelistResponse(BaseModel):
-    whitelist: List[str]
+    whitelist: list[str]
     length: int
-    method: List[str]
+    method: list[str]
 
 
 class WhitelistEvaluateResponse(BackgroundTaskResult):
@@ -441,40 +441,40 @@ class DeleteTrade(BaseModel):
 
 
 class PlotConfig_(BaseModel):
-    main_plot: Dict[str, Any]
-    subplots: Dict[str, Any]
+    main_plot: dict[str, Any]
+    subplots: dict[str, Any]
 
 
-PlotConfig = RootModel[Union[PlotConfig_, Dict]]
+PlotConfig = RootModel[Union[PlotConfig_, dict]]
 
 
 class StrategyListResponse(BaseModel):
-    strategies: List[str]
+    strategies: list[str]
 
 
 class ExchangeListResponse(BaseModel):
-    exchanges: List[ValidExchangesType]
+    exchanges: list[ValidExchangesType]
 
 
 class PairListResponse(BaseModel):
     name: str
     description: str
     is_pairlist_generator: bool
-    params: Dict[str, Any]
+    params: dict[str, Any]
 
 
 class PairListsResponse(BaseModel):
-    pairlists: List[PairListResponse]
+    pairlists: list[PairListResponse]
 
 
 class PairListsPayload(ExchangeModePayloadMixin, BaseModel):
-    pairlists: List[Dict[str, Any]]
-    blacklist: List[str]
+    pairlists: list[dict[str, Any]]
+    blacklist: list[str]
     stake_currency: str
 
 
 class FreqAIModelListResponse(BaseModel):
-    freqaimodels: List[str]
+    freqaimodels: list[str]
 
 
 class StrategyResponse(BaseModel):
@@ -485,15 +485,15 @@ class StrategyResponse(BaseModel):
 
 class AvailablePairs(BaseModel):
     length: int
-    pairs: List[str]
-    pair_interval: List[List[str]]
+    pairs: list[str]
+    pair_interval: list[list[str]]
 
 
 class PairCandlesRequest(BaseModel):
     pair: str
     timeframe: str
     limit: Optional[int] = None
-    columns: Optional[List[str]] = None
+    columns: Optional[list[str]] = None
 
 
 class PairHistoryRequest(PairCandlesRequest):
@@ -507,9 +507,9 @@ class PairHistory(BaseModel):
     pair: str
     timeframe: str
     timeframe_ms: int
-    columns: List[str]
-    all_columns: List[str] = []
-    data: SerializeAsAny[List[Any]]
+    columns: list[str]
+    all_columns: list[str] = []
+    data: SerializeAsAny[list[Any]]
     length: int
     buy_signals: int
     sell_signals: int
@@ -551,7 +551,7 @@ class BacktestResponse(BaseModel):
     progress: float
     trade_count: Optional[float] = None
     # TODO: Properly type backtestresult...
-    backtest_result: Optional[Dict[str, Any]] = None
+    backtest_result: Optional[dict[str, Any]] = None
 
 
 # TODO: This is a copy of BacktestHistoryEntryType
@@ -573,13 +573,13 @@ class BacktestMetadataUpdate(BaseModel):
 
 
 class BacktestMarketChange(BaseModel):
-    columns: List[str]
+    columns: list[str]
     length: int
-    data: List[List[Any]]
+    data: list[list[Any]]
 
 
 class SysInfo(BaseModel):
-    cpu_pct: List[float]
+    cpu_pct: list[float]
     ram_pct: float
 
 

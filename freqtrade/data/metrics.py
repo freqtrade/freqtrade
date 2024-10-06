@@ -2,7 +2,6 @@ import logging
 import math
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -11,7 +10,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def calculate_market_change(data: Dict[str, pd.DataFrame], column: str = "close") -> float:
+def calculate_market_change(data: dict[str, pd.DataFrame], column: str = "close") -> float:
     """
     Calculate market change based on "column".
     Calculation is done by taking the first non-null and the last non-null element of each column
@@ -32,7 +31,7 @@ def calculate_market_change(data: Dict[str, pd.DataFrame], column: str = "close"
 
 
 def combine_dataframes_by_column(
-    data: Dict[str, pd.DataFrame], column: str = "close"
+    data: dict[str, pd.DataFrame], column: str = "close"
 ) -> pd.DataFrame:
     """
     Combine multiple dataframes "column"
@@ -50,7 +49,7 @@ def combine_dataframes_by_column(
 
 
 def combined_dataframes_with_rel_mean(
-    data: Dict[str, pd.DataFrame], fromdt: datetime, todt: datetime, column: str = "close"
+    data: dict[str, pd.DataFrame], fromdt: datetime, todt: datetime, column: str = "close"
 ) -> pd.DataFrame:
     """
     Combine multiple dataframes "column"
@@ -70,7 +69,7 @@ def combined_dataframes_with_rel_mean(
 
 
 def combine_dataframes_with_mean(
-    data: Dict[str, pd.DataFrame], column: str = "close"
+    data: dict[str, pd.DataFrame], column: str = "close"
 ) -> pd.DataFrame:
     """
     Combine multiple dataframes "column"
@@ -222,7 +221,7 @@ def calculate_max_drawdown(
     )
 
 
-def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> Tuple[float, float]:
+def calculate_csum(trades: pd.DataFrame, starting_balance: float = 0) -> tuple[float, float]:
     """
     Calculate min/max cumsum of trades, to show if the wallet/stake amount ratio is sane
     :param trades: DataFrame containing trades (requires columns close_date and profit_percent)
@@ -255,7 +254,7 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
 
 
-def calculate_expectancy(trades: pd.DataFrame) -> Tuple[float, float]:
+def calculate_expectancy(trades: pd.DataFrame) -> tuple[float, float]:
     """
     Calculate expectancy
     :param trades: DataFrame containing trades (requires columns close_date and profit_abs)

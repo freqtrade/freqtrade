@@ -1,6 +1,7 @@
 import logging
+from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import List, Optional, Sequence
+from typing import Optional
 
 from sqlalchemy import select
 
@@ -19,7 +20,7 @@ class PairLocks:
     """
 
     use_db = True
-    locks: List[PairLock] = []
+    locks: list[PairLock] = []
 
     timeframe: str = ""
 

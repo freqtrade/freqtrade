@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 from pandas import DataFrame
 
@@ -70,7 +70,7 @@ def store_backtest_stats(
 
 
 def _store_backtest_analysis_data(
-    recordfilename: Path, data: Dict[str, Dict], dtappendix: str, name: str
+    recordfilename: Path, data: dict[str, dict], dtappendix: str, name: str
 ) -> Path:
     """
     Stores backtest trade candles for analysis
@@ -91,9 +91,9 @@ def _store_backtest_analysis_data(
 
 def store_backtest_analysis_results(
     recordfilename: Path,
-    candles: Dict[str, Dict],
-    trades: Dict[str, Dict],
-    exited: Dict[str, Dict],
+    candles: dict[str, dict],
+    trades: dict[str, dict],
+    exited: dict[str, dict],
     dtappendix: str,
 ) -> None:
     _store_backtest_analysis_data(recordfilename, candles, dtappendix, "signals")

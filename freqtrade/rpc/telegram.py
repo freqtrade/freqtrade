@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import re
+from collections.abc import Coroutine
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -16,7 +17,7 @@ from html import escape
 from itertools import chain
 from math import isnan
 from threading import Thread
-from typing import Any, Callable, Coroutine, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union
 
 from tabulate import tabulate
 from telegram import (
@@ -145,7 +146,7 @@ class Telegram(RPCHandler):
         Validates the keyboard configuration from telegram config
         section.
         """
-        self._keyboard: List[List[Union[str, KeyboardButton]]] = [
+        self._keyboard: list[list[Union[str, KeyboardButton]]] = [
             ["/daily", "/profit", "/balance"],
             ["/status", "/status table", "/performance"],
             ["/count", "/start", "/stop", "/help"],
@@ -154,7 +155,7 @@ class Telegram(RPCHandler):
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
         #       this needs refactoring of the whole telegram module (same
         #       problem in _help()).
-        valid_keys: List[str] = [
+        valid_keys: list[str] = [
             r"/start$",
             r"/stop$",
             r"/status$",
@@ -594,16 +595,16 @@ class Telegram(RPCHandler):
         else:
             return "\N{CROSS MARK}"
 
-    def _prepare_order_details(self, filled_orders: List, quote_currency: str, is_open: bool):
+    def _prepare_order_details(self, filled_orders: list, quote_currency: str, is_open: bool):
         """
         Prepare details of trade with entry adjustment enabled
         """
-        lines_detail: List[str] = []
+        lines_detail: list[str] = []
         if len(filled_orders) > 0:
             first_avg = filled_orders[0]["safe_price"]
         order_nr = 0
         for order in filled_orders:
-            lines: List[str] = []
+            lines: list[str] = []
             if order["is_open"] is True:
                 continue
             order_nr += 1
@@ -662,7 +663,7 @@ class Telegram(RPCHandler):
             lines.extend(lines_detail if lines_detail else "")
             await self.__send_order_msg(lines, r)
 
-    async def __send_order_msg(self, lines: List[str], r: Dict[str, Any]) -> None:
+    async def __send_order_msg(self, lines: list[str], r: dict[str, Any]) -> None:
         """
         Send status message.
         """
@@ -805,7 +806,7 @@ class Telegram(RPCHandler):
 
             await self.__send_status_msg(lines, r)
 
-    async def __send_status_msg(self, lines: List[str], r: Dict[str, Any]) -> None:
+    async def __send_status_msg(self, lines: list[str], r: dict[str, Any]) -> None:
         """
         Send status message.
         """
@@ -1344,8 +1345,8 @@ class Telegram(RPCHandler):
 
     @staticmethod
     def _layout_inline_keyboard(
-        buttons: List[InlineKeyboardButton], cols=3
-    ) -> List[List[InlineKeyboardButton]]:
+        buttons: list[InlineKeyboardButton], cols=3
+    ) -> list[list[InlineKeyboardButton]]:
         return [buttons[i : i + cols] for i in range(0, len(buttons), cols)]
 
     @authorized_only
@@ -1689,7 +1690,7 @@ class Telegram(RPCHandler):
         """
         await self.send_blacklist_msg(self._rpc._rpc_blacklist(context.args))
 
-    async def send_blacklist_msg(self, blacklist: Dict):
+    async def send_blacklist_msg(self, blacklist: dict):
         errmsgs = []
         for _, error in blacklist["errors"].items():
             errmsgs.append(f"Error: {error['error_msg']}")
@@ -1998,7 +1999,7 @@ class Telegram(RPCHandler):
         msg: str,
         parse_mode: str = ParseMode.MARKDOWN,
         disable_notification: bool = False,
-        keyboard: Optional[List[List[InlineKeyboardButton]]] = None,
+        keyboard: Optional[list[list[InlineKeyboardButton]]] = None,
         callback_path: str = "",
         reload_able: bool = False,
         query: Optional[CallbackQuery] = None,

@@ -1,4 +1,5 @@
-from typing import Any, AsyncIterator, Dict, Optional
+from collections.abc import AsyncIterator
+from typing import Any, Optional
 from uuid import uuid4
 
 from fastapi import Depends, HTTPException
@@ -35,11 +36,11 @@ async def get_rpc() -> Optional[AsyncIterator[RPC]]:
         raise RPCException("Bot is not in the correct state")
 
 
-def get_config() -> Dict[str, Any]:
+def get_config() -> dict[str, Any]:
     return ApiServer._config
 
 
-def get_api_config() -> Dict[str, Any]:
+def get_api_config() -> dict[str, Any]:
     return ApiServer._config["api_server"]
 
 

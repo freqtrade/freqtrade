@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from typing_extensions import TypedDict
 
@@ -9,9 +9,9 @@ class BacktestMetadataType(TypedDict):
 
 
 class BacktestResultType(TypedDict):
-    metadata: Dict[str, Any]  # BacktestMetadataType
-    strategy: Dict[str, Any]
-    strategy_comparison: List[Any]
+    metadata: dict[str, Any]  # BacktestMetadataType
+    strategy: dict[str, Any]
+    strategy_comparison: list[Any]
 
 
 def get_BacktestResultType_default() -> BacktestResultType:

@@ -4,7 +4,7 @@ Rate of change pairlist filter
 
 import logging
 from datetime import timedelta
-from typing import Dict, List, Optional
+from typing import Optional
 
 from cachetools import TTLCache
 from pandas import DataFrame
@@ -76,7 +76,7 @@ class RangeStabilityFilter(IPairList):
         return "Filters pairs by their rate of change."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "lookback_days": {
                 "type": "number",
@@ -106,7 +106,7 @@ class RangeStabilityFilter(IPairList):
             **IPairList.refresh_period_parameter(),
         }
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
         """
         Validate trading range
         :param pairlist: pairlist to filter or sort
@@ -120,8 +120,8 @@ class RangeStabilityFilter(IPairList):
         since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days + 1))
         candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms=since_ms)
 
-        resulting_pairlist: List[str] = []
-        pct_changes: Dict[str, float] = {}
+        resulting_pairlist: list[str] = []
+        pct_changes: dict[str, float] = {}
 
         for p in pairlist:
             daily_candles = candles.get((p, "1d", self._def_candletype), None)

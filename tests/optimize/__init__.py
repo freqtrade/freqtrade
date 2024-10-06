@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Dict, List, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 from pandas import DataFrame
 
@@ -29,10 +29,10 @@ class BTContainer(NamedTuple):
     Minimal BacktestContainer defining Backtest inputs and results.
     """
 
-    data: List[List[float]]
+    data: list[list[float]]
     stop_loss: float
-    roi: Dict[str, float]
-    trades: List[BTrade]
+    roi: dict[str, float]
+    trades: list[BTrade]
     profit_perc: float
     trailing_stop: bool = False
     trailing_only_offset_is_reached: bool = False

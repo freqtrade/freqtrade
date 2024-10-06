@@ -1,12 +1,11 @@
 import re
-from typing import List
 
 from freqtrade.constants import Config
 
 
 def expand_pairlist(
-    wildcardpl: List[str], available_pairs: List[str], keep_invalid: bool = False
-) -> List[str]:
+    wildcardpl: list[str], available_pairs: list[str], keep_invalid: bool = False
+) -> list[str]:
     """
     Expand pairlist potentially containing wildcards based on available markets.
     This will implicitly filter all pairs in the wildcard-list which are not in available_pairs.
@@ -41,7 +40,7 @@ def expand_pairlist(
     return result
 
 
-def dynamic_expand_pairlist(config: Config, markets: List[str]) -> List[str]:
+def dynamic_expand_pairlist(config: Config, markets: list[str]) -> list[str]:
     expanded_pairs = expand_pairlist(config["pairs"], markets)
     if config.get("freqai", {}).get("enabled", False):
         corr_pairlist = config["freqai"]["feature_parameters"]["include_corr_pairlist"]

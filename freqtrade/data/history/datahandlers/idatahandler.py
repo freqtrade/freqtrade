@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional, Tuple, Type
+from typing import Optional
 
 from pandas import DataFrame, to_datetime
 
@@ -71,7 +71,7 @@ class IDataHandler(ABC):
         ]
 
     @classmethod
-    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> List[str]:
+    def ohlcv_get_pairs(cls, datadir: Path, timeframe: str, candle_type: CandleType) -> list[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         for the specified timeframe
@@ -107,7 +107,7 @@ class IDataHandler(ABC):
 
     def ohlcv_data_min_max(
         self, pair: str, timeframe: str, candle_type: CandleType
-    ) -> Tuple[datetime, datetime, int]:
+    ) -> tuple[datetime, datetime, int]:
         """
         Returns the min and max timestamp for the given pair and timeframe.
         :param pair: Pair to get min/max for
@@ -168,7 +168,7 @@ class IDataHandler(ABC):
         """
 
     @classmethod
-    def trades_get_available_data(cls, datadir: Path, trading_mode: TradingMode) -> List[str]:
+    def trades_get_available_data(cls, datadir: Path, trading_mode: TradingMode) -> list[str]:
         """
         Returns a list of all pairs with ohlcv data available in this datadir
         :param datadir: Directory to search for ohlcv files
@@ -191,7 +191,7 @@ class IDataHandler(ABC):
         self,
         pair: str,
         trading_mode: TradingMode,
-    ) -> Tuple[datetime, datetime, int]:
+    ) -> tuple[datetime, datetime, int]:
         """
         Returns the min and max timestamp for the given pair's trades data.
         :param pair: Pair to get min/max for
@@ -212,7 +212,7 @@ class IDataHandler(ABC):
         )
 
     @classmethod
-    def trades_get_pairs(cls, datadir: Path) -> List[str]:
+    def trades_get_pairs(cls, datadir: Path) -> list[str]:
         """
         Returns a list of all pairs for which trade data is available in this
         :param datadir: Directory to search for ohlcv files
@@ -532,7 +532,7 @@ class IDataHandler(ABC):
             Path(old_name).rename(new_name)
 
 
-def get_datahandlerclass(datatype: str) -> Type[IDataHandler]:
+def get_datahandlerclass(datatype: str) -> type[IDataHandler]:
     """
     Get datahandler class.
     Could be done using Resolvers, but since this may be called often and resolvers

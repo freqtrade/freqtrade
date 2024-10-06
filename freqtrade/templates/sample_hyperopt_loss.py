@@ -1,6 +1,5 @@
 from datetime import datetime
 from math import exp
-from typing import Dict
 
 from pandas import DataFrame
 
@@ -41,7 +40,7 @@ class SampleHyperOptLoss(IHyperOptLoss):
         min_date: datetime,
         max_date: datetime,
         config: Config,
-        processed: Dict[str, DataFrame],
+        processed: dict[str, DataFrame],
         *args,
         **kwargs,
     ) -> float:

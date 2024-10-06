@@ -4,7 +4,7 @@ This module manages webhook communication
 
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from requests import RequestException, post
 
@@ -44,7 +44,7 @@ class Webhook(RPCHandler):
         """
         pass
 
-    def _get_value_dict(self, msg: RPCSendMsg) -> Optional[Dict[str, Any]]:
+    def _get_value_dict(self, msg: RPCSendMsg) -> Optional[dict[str, Any]]:
         whconfig = self._config["webhook"]
         if msg["type"].value in whconfig:
             # Explicit types should have priority

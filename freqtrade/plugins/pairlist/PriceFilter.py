@@ -3,7 +3,7 @@ Price pair list filter
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Optional
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange_types import Ticker
@@ -71,7 +71,7 @@ class PriceFilter(IPairList):
         return "Filter pairs by price."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "low_price_ratio": {
                 "type": "number",

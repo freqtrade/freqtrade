@@ -1,6 +1,6 @@
 import sys
 from os import get_terminal_size
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from rich.align import Align
 from rich.console import Console
@@ -14,7 +14,7 @@ from freqtrade.util import fmt_coin
 
 class HyperoptOutput:
     def __init__(self, streaming=False) -> None:
-        self._results: List[Any] = []
+        self._results: list[Any] = []
         self._streaming = streaming
         self.__init_table()
 

@@ -1,12 +1,12 @@
 import logging
 import signal
-from typing import Any, Dict
+from typing import Any
 
 
 logger = logging.getLogger(__name__)
 
 
-def start_trading(args: Dict[str, Any]) -> int:
+def start_trading(args: dict[str, Any]) -> int:
     """
     Main entry point for trading mode
     """

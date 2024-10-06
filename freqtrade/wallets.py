@@ -4,7 +4,7 @@
 import logging
 from copy import deepcopy
 from datetime import datetime, timedelta
-from typing import Dict, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config, IntOrInf
 from freqtrade.enums import RunMode, TradingMode
@@ -39,8 +39,8 @@ class Wallets:
         self._config = config
         self._is_backtest = is_backtest
         self._exchange = exchange
-        self._wallets: Dict[str, Wallet] = {}
-        self._positions: Dict[str, PositionWallet] = {}
+        self._wallets: dict[str, Wallet] = {}
+        self._positions: dict[str, PositionWallet] = {}
         self.start_cap = config["dry_run_wallet"]
         self._last_wallet_refresh: Optional[datetime] = None
         self.update()
@@ -199,10 +199,10 @@ class Wallets:
                 logger.info("Wallets synced.")
             self._last_wallet_refresh = dt_now()
 
-    def get_all_balances(self) -> Dict[str, Wallet]:
+    def get_all_balances(self) -> dict[str, Wallet]:
         return self._wallets
 
-    def get_all_positions(self) -> Dict[str, PositionWallet]:
+    def get_all_positions(self) -> dict[str, PositionWallet]:
         return self._positions
 
     def _check_exit_amount(self, trade: Trade) -> bool:

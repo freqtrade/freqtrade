@@ -1,7 +1,7 @@
 import csv
 import logging
 import sys
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
@@ -11,7 +11,7 @@ from freqtrade.ft_types import ValidExchangesType
 logger = logging.getLogger(__name__)
 
 
-def start_list_exchanges(args: Dict[str, Any]) -> None:
+def start_list_exchanges(args: dict[str, Any]) -> None:
     """
     Print available exchanges
     :param args: Cli args from Arguments()
@@ -23,7 +23,7 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
 
     from freqtrade.exchange import list_available_exchanges
 
-    available_exchanges: List[ValidExchangesType] = list_available_exchanges(
+    available_exchanges: list[ValidExchangesType] = list_available_exchanges(
         args["list_exchanges_all"]
     )
 
@@ -81,13 +81,13 @@ def start_list_exchanges(args: Dict[str, Any]) -> None:
         console.print(table)
 
 
-def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
+def _print_objs_tabular(objs: list, print_colorized: bool) -> None:
     from rich.console import Console
     from rich.table import Table
     from rich.text import Text
 
     names = [s["name"] for s in objs]
-    objs_to_print: List[Dict[str, Union[Text, str]]] = [
+    objs_to_print: list[dict[str, Union[Text, str]]] = [
         {
             "name": Text(s["name"] if s["name"] else "--"),
             "location": s["location_rel"],
@@ -125,7 +125,7 @@ def _print_objs_tabular(objs: List, print_colorized: bool) -> None:
     console.print(table)
 
 
-def start_list_strategies(args: Dict[str, Any]) -> None:
+def start_list_strategies(args: dict[str, Any]) -> None:
     """
     Print files with Strategy custom classes available in the directory
     """
@@ -151,7 +151,7 @@ def start_list_strategies(args: Dict[str, Any]) -> None:
         _print_objs_tabular(strategy_objs, config.get("print_colorized", False))
 
 
-def start_list_freqAI_models(args: Dict[str, Any]) -> None:
+def start_list_freqAI_models(args: dict[str, Any]) -> None:
     """
     Print files with FreqAI models custom classes available in the directory
     """
@@ -169,7 +169,7 @@ def start_list_freqAI_models(args: Dict[str, Any]) -> None:
         _print_objs_tabular(model_objs, config.get("print_colorized", False))
 
 
-def start_list_timeframes(args: Dict[str, Any]) -> None:
+def start_list_timeframes(args: dict[str, Any]) -> None:
     """
     Print timeframes available on Exchange
     """
@@ -192,7 +192,7 @@ def start_list_timeframes(args: Dict[str, Any]) -> None:
         )
 
 
-def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
+def start_list_markets(args: dict[str, Any], pairs_only: bool = False) -> None:
     """
     Print pairs/markets on the exchange
     :param args: Cli args from Arguments()
@@ -312,7 +312,7 @@ def start_list_markets(args: Dict[str, Any], pairs_only: bool = False) -> None:
             print(f"{summary_str}.")
 
 
-def start_show_trades(args: Dict[str, Any]) -> None:
+def start_show_trades(args: dict[str, Any]) -> None:
     """
     Show trades
     """

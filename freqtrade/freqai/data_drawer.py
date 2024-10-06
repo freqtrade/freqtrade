@@ -7,7 +7,7 @@ import threading
 import warnings
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Tuple, TypedDict
+from typing import Any, TypedDict
 
 import numpy as np
 import pandas as pd
@@ -69,14 +69,14 @@ class FreqaiDataDrawer:
         self.config = config
         self.freqai_info = config.get("freqai", {})
         # dictionary holding all pair metadata necessary to load in from disk
-        self.pair_dict: Dict[str, pair_info] = {}
+        self.pair_dict: dict[str, pair_info] = {}
         # dictionary holding all actively inferenced models in memory given a model filename
-        self.model_dictionary: Dict[str, Any] = {}
+        self.model_dictionary: dict[str, Any] = {}
         # all additional metadata that we want to keep in ram
-        self.meta_data_dictionary: Dict[str, Dict[str, Any]] = {}
-        self.model_return_values: Dict[str, DataFrame] = {}
-        self.historic_data: Dict[str, Dict[str, DataFrame]] = {}
-        self.historic_predictions: Dict[str, DataFrame] = {}
+        self.meta_data_dictionary: dict[str, dict[str, Any]] = {}
+        self.model_return_values: dict[str, DataFrame] = {}
+        self.historic_data: dict[str, dict[str, DataFrame]] = {}
+        self.historic_predictions: dict[str, DataFrame] = {}
         self.full_path = full_path
         self.historic_predictions_path = Path(self.full_path / "historic_predictions.pkl")
         self.historic_predictions_bkp_path = Path(
@@ -87,14 +87,14 @@ class FreqaiDataDrawer:
         self.metric_tracker_path = Path(self.full_path / "metric_tracker.json")
         self.load_drawer_from_disk()
         self.load_historic_predictions_from_disk()
-        self.metric_tracker: Dict[str, Dict[str, Dict[str, list]]] = {}
+        self.metric_tracker: dict[str, dict[str, dict[str, list]]] = {}
         self.load_metric_tracker_from_disk()
-        self.training_queue: Dict[str, int] = {}
+        self.training_queue: dict[str, int] = {}
         self.history_lock = threading.Lock()
         self.save_lock = threading.Lock()
         self.pair_dict_lock = threading.Lock()
         self.metric_tracker_lock = threading.Lock()
-        self.old_DBSCAN_eps: Dict[str, float] = {}
+        self.old_DBSCAN_eps: dict[str, float] = {}
         self.empty_pair_dict: pair_info = {
             "model_filename": "",
             "trained_timestamp": 0,
@@ -228,7 +228,7 @@ class FreqaiDataDrawer:
                     self.pair_dict, fp, default=self.np_encoder, number_mode=rapidjson.NM_NATIVE
                 )
 
-    def save_global_metadata_to_disk(self, metadata: Dict[str, Any]):
+    def save_global_metadata_to_disk(self, metadata: dict[str, Any]):
         """
         Save global metadata json to disk
         """
@@ -242,7 +242,7 @@ class FreqaiDataDrawer:
         if isinstance(obj, np.generic):
             return obj.item()
 
-    def get_pair_dict_info(self, pair: str) -> Tuple[str, int]:
+    def get_pair_dict_info(self, pair: str) -> tuple[str, int]:
         """
         Locate and load existing model metadata from persistent storage. If not located,
         create a new one and append the current pair to it and prepare it for its first
@@ -446,7 +446,7 @@ class FreqaiDataDrawer:
 
         pattern = re.compile(r"sub-train-(\w+)_(\d{10})")
 
-        delete_dict: Dict[str, Any] = {}
+        delete_dict: dict[str, Any] = {}
 
         for directory in model_folders:
             result = pattern.match(str(directory.name))
@@ -704,7 +704,7 @@ class FreqaiDataDrawer:
 
     def get_base_and_corr_dataframes(
         self, timerange: TimeRange, pair: str, dk: FreqaiDataKitchen
-    ) -> Tuple[Dict[Any, Any], Dict[Any, Any]]:
+    ) -> tuple[dict[Any, Any], dict[Any, Any]]:
         """
         Searches through our historic_data in memory and returns the dataframes relevant
         to the present pair.
@@ -713,8 +713,8 @@ class FreqaiDataDrawer:
         :param metadata: dict = strategy furnished pair metadata
         """
         with self.history_lock:
-            corr_dataframes: Dict[Any, Any] = {}
-            base_dataframes: Dict[Any, Any] = {}
+            corr_dataframes: dict[Any, Any] = {}
+            base_dataframes: dict[Any, Any] = {}
             historic_data = self.historic_data
             pairs = self.freqai_info["feature_parameters"].get("include_corr_pairlist", [])
 

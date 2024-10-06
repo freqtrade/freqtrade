@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import ccxt
 
@@ -46,14 +46,14 @@ class Binance(Exchange):
         "ws_enabled": False,
     }
 
-    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
+    _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, MarginMode.CROSS),
         # (TradingMode.FUTURES, MarginMode.CROSS),
         (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
 
-    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
+    def get_tickers(self, symbols: Optional[list[str]] = None, cached: bool = False) -> Tickers:
         tickers = super().get_tickers(symbols=symbols, cached=cached)
         if self.trading_mode == TradingMode.FUTURES:
             # Binance's future result has no bid/ask values.
@@ -145,8 +145,8 @@ class Binance(Exchange):
         return open_date.minute == 0 and open_date.second < 15
 
     def fetch_funding_rates(
-        self, symbols: Optional[List[str]] = None
-    ) -> Dict[str, Dict[str, float]]:
+        self, symbols: Optional[list[str]] = None
+    ) -> dict[str, dict[str, float]]:
         """
         Fetch funding rates for the given symbols.
         :param symbols: List of symbols to fetch funding rates for
@@ -253,7 +253,7 @@ class Binance(Exchange):
                 "Freqtrade only supports isolated futures for leverage trading"
             )
 
-    def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
+    def load_leverage_tiers(self) -> dict[str, list[dict]]:
         if self.trading_mode == TradingMode.FUTURES:
             if self._config["dry_run"]:
                 leverage_tiers_path = Path(__file__).parent / "binance_leverage_tiers.json"

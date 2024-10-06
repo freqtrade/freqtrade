@@ -1,7 +1,7 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.enums import RunMode
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 req_timeout = 30
 
 
-def start_create_userdir(args: Dict[str, Any]) -> None:
+def start_create_userdir(args: dict[str, Any]) -> None:
     """
     Create "user_data" directory to contain user data strategies, hyperopt, ...)
     :param args: Cli args from Arguments()
@@ -80,7 +80,7 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     strategy_path.write_text(strategy_text)
 
 
-def start_new_strategy(args: Dict[str, Any]) -> None:
+def start_new_strategy(args: dict[str, Any]) -> None:
     from freqtrade.configuration import setup_utils_configuration
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
@@ -99,7 +99,7 @@ def start_new_strategy(args: Dict[str, Any]) -> None:
         raise ConfigurationError("`new-strategy` requires --strategy to be set.")
 
 
-def start_install_ui(args: Dict[str, Any]) -> None:
+def start_install_ui(args: dict[str, Any]) -> None:
     from freqtrade.commands.deploy_ui import (
         clean_ui_subdir,
         download_and_install_ui,

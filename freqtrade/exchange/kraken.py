@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import ccxt
 from pandas import DataFrame
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class Kraken(Exchange):
-    _params: Dict = {"trading_agreement": "agree"}
+    _params: dict = {"trading_agreement": "agree"}
     _ft_has: FtHas = {
         "stoploss_on_exchange": True,
         "stop_price_param": "stopLossPrice",
@@ -35,13 +35,13 @@ class Kraken(Exchange):
         "mark_ohlcv_timeframe": "4h",
     }
 
-    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
+    _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, MarginMode.CROSS),
         # (TradingMode.FUTURES, MarginMode.CROSS)
     ]
 
-    def market_is_tradable(self, market: Dict[str, Any]) -> bool:
+    def market_is_tradable(self, market: dict[str, Any]) -> bool:
         """
         Check if the market symbol is tradable by Freqtrade.
         Default checks + check if pair is darkpool pair.
@@ -50,7 +50,7 @@ class Kraken(Exchange):
 
         return parent_check and market.get("darkpool", False) is False
 
-    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
+    def get_tickers(self, symbols: Optional[list[str]] = None, cached: bool = False) -> Tickers:
         # Only fetch tickers for current stake currency
         # Otherwise the request for kraken becomes too large.
         symbols = list(self.get_markets(quote_currencies=[self._config["stake_currency"]]))
@@ -115,7 +115,7 @@ class Kraken(Exchange):
         leverage: float,
         reduceOnly: bool,
         time_in_force: str = "GTC",
-    ) -> Dict:
+    ) -> dict:
         params = super()._get_params(
             side=side,
             ordertype=ordertype,
@@ -165,7 +165,7 @@ class Kraken(Exchange):
 
         return fees if is_short else -fees
 
-    def _get_trade_pagination_next_value(self, trades: List[Dict]):
+    def _get_trade_pagination_next_value(self, trades: list[dict]):
         """
         Extract pagination id for the next "from_id" value
         Applies only to fetch_trade_history by id.

@@ -10,7 +10,7 @@ from base64 import urlsafe_b64decode
 from inspect import getfullargspec
 from os import walk
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from freqtrade.configuration.config_validation import validate_migrated_strategy_settings
 from freqtrade.constants import REQUIRED_ORDERTIF, REQUIRED_ORDERTYPES, USERPATH_STRATEGIES, Config
@@ -256,7 +256,7 @@ class StrategyResolver(IResolver):
         :return: Strategy instance or None
         """
         if config.get("recursive_strategy_search", False):
-            extra_dirs: List[str] = [
+            extra_dirs: list[str] = [
                 path[0] for path in walk(f"{config['user_data_dir']}/{USERPATH_STRATEGIES}")
             ]  # sub-directories
         else:

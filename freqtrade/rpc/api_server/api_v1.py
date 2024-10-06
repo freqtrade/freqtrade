@@ -1,6 +1,6 @@
 import logging
 from copy import deepcopy
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
@@ -116,22 +116,22 @@ def count(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_count()
 
 
-@router.get("/entries", response_model=List[Entry], tags=["info"])
+@router.get("/entries", response_model=list[Entry], tags=["info"])
 def entries(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_enter_tag_performance(pair)
 
 
-@router.get("/exits", response_model=List[Exit], tags=["info"])
+@router.get("/exits", response_model=list[Exit], tags=["info"])
 def exits(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_exit_reason_performance(pair)
 
 
-@router.get("/mix_tags", response_model=List[MixTag], tags=["info"])
+@router.get("/mix_tags", response_model=list[MixTag], tags=["info"])
 def mix_tags(pair: Optional[str] = None, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_mix_tag_performance(pair)
 
 
-@router.get("/performance", response_model=List[PerformanceEntry], tags=["info"])
+@router.get("/performance", response_model=list[PerformanceEntry], tags=["info"])
 def performance(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_performance()
 
@@ -167,7 +167,7 @@ def monthly(timescale: int = 3, rpc: RPC = Depends(get_rpc), config=Depends(get_
     )
 
 
-@router.get("/status", response_model=List[OpenTradeSchema], tags=["info"])
+@router.get("/status", response_model=list[OpenTradeSchema], tags=["info"])
 def status(rpc: RPC = Depends(get_rpc)):
     try:
         return rpc._rpc_trade_status()
@@ -268,7 +268,7 @@ def blacklist_post(payload: BlacklistPayload, rpc: RPC = Depends(get_rpc)):
 
 
 @router.delete("/blacklist", response_model=BlacklistResponse, tags=["info", "pairlist"])
-def blacklist_delete(pairs_to_delete: List[str] = Query([]), rpc: RPC = Depends(get_rpc)):
+def blacklist_delete(pairs_to_delete: list[str] = Query([]), rpc: RPC = Depends(get_rpc)):
     """Provide a list of pairs to delete from the blacklist"""
 
     return rpc._rpc_blacklist_delete(pairs_to_delete)
@@ -295,7 +295,7 @@ def delete_lock_pair(payload: DeleteLockRequest, rpc: RPC = Depends(get_rpc)):
 
 
 @router.post("/locks", response_model=Locks, tags=["info", "locks"])
-def add_locks(payload: List[LocksPayload], rpc: RPC = Depends(get_rpc)):
+def add_locks(payload: list[LocksPayload], rpc: RPC = Depends(get_rpc)):
     for lock in payload:
         rpc._rpc_add_lock(lock.pair, lock.until, lock.reason, lock.side)
     return rpc._rpc_locks()

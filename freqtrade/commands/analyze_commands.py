@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
@@ -9,7 +9,7 @@ from freqtrade.exceptions import ConfigurationError, OperationalException
 logger = logging.getLogger(__name__)
 
 
-def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
+def setup_analyze_configuration(args: dict[str, Any], method: RunMode) -> dict[str, Any]:
     """
     Prepare the configuration for the entry/exit reason analysis module
     :param args: Cli args from Arguments()
@@ -48,7 +48,7 @@ def setup_analyze_configuration(args: Dict[str, Any], method: RunMode) -> Dict[s
     return config
 
 
-def start_analysis_entries_exits(args: Dict[str, Any]) -> None:
+def start_analysis_entries_exits(args: dict[str, Any]) -> None:
     """
     Start analysis script
     :param args: Cli args from Arguments()

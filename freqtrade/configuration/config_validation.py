@@ -1,7 +1,7 @@
 import logging
 from collections import Counter
 from copy import deepcopy
-from typing import Any, Dict
+from typing import Any
 
 from jsonschema import Draft4Validator, validators
 from jsonschema.exceptions import ValidationError, best_match
@@ -43,7 +43,7 @@ def _extend_validator(validator_class):
 FreqtradeValidator = _extend_validator(Draft4Validator)
 
 
-def validate_config_schema(conf: Dict[str, Any], preliminary: bool = False) -> Dict[str, Any]:
+def validate_config_schema(conf: dict[str, Any], preliminary: bool = False) -> dict[str, Any]:
     """
     Validate the configuration follow the Config Schema
     :param conf: Config in JSON format
@@ -69,7 +69,7 @@ def validate_config_schema(conf: Dict[str, Any], preliminary: bool = False) -> D
         raise ValidationError(best_match(Draft4Validator(conf_schema).iter_errors(conf)).message)
 
 
-def validate_config_consistency(conf: Dict[str, Any], *, preliminary: bool = False) -> None:
+def validate_config_consistency(conf: dict[str, Any], *, preliminary: bool = False) -> None:
     """
     Validate the configuration consistency.
     Should be ran after loading both configuration and strategy,
@@ -97,7 +97,7 @@ def validate_config_consistency(conf: Dict[str, Any], *, preliminary: bool = Fal
     validate_config_schema(conf, preliminary=preliminary)
 
 
-def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
+def _validate_unlimited_amount(conf: dict[str, Any]) -> None:
     """
     If edge is disabled, either max_open_trades or stake_amount need to be set.
     :raise: ConfigurationError if config validation failed
@@ -110,7 +110,7 @@ def _validate_unlimited_amount(conf: Dict[str, Any]) -> None:
         raise ConfigurationError("`max_open_trades` and `stake_amount` cannot both be unlimited.")
 
 
-def _validate_price_config(conf: Dict[str, Any]) -> None:
+def _validate_price_config(conf: dict[str, Any]) -> None:
     """
     When using market orders, price sides must be using the "other" side of the price
     """
@@ -126,7 +126,7 @@ def _validate_price_config(conf: Dict[str, Any]) -> None:
         raise ConfigurationError('Market exit orders require exit_pricing.price_side = "other".')
 
 
-def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
+def _validate_trailing_stoploss(conf: dict[str, Any]) -> None:
     if conf.get("stoploss") == 0.0:
         raise ConfigurationError(
             "The config stoploss needs to be different from 0 to avoid problems with sell orders."
@@ -159,7 +159,7 @@ def _validate_trailing_stoploss(conf: Dict[str, Any]) -> None:
         )
 
 
-def _validate_edge(conf: Dict[str, Any]) -> None:
+def _validate_edge(conf: dict[str, Any]) -> None:
     """
     Edge and Dynamic whitelist should not both be enabled, since edge overrides dynamic whitelists.
     """
@@ -173,7 +173,7 @@ def _validate_edge(conf: Dict[str, Any]) -> None:
         )
 
 
-def _validate_whitelist(conf: Dict[str, Any]) -> None:
+def _validate_whitelist(conf: dict[str, Any]) -> None:
     """
     Dynamic whitelist does not require pair_whitelist to be set - however StaticWhitelist does.
     """
@@ -194,7 +194,7 @@ def _validate_whitelist(conf: Dict[str, Any]) -> None:
             raise ConfigurationError("StaticPairList requires pair_whitelist to be set.")
 
 
-def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
+def _validate_ask_orderbook(conf: dict[str, Any]) -> None:
     ask_strategy = conf.get("exit_pricing", {})
     ob_min = ask_strategy.get("order_book_min")
     ob_max = ask_strategy.get("order_book_max")
@@ -214,7 +214,7 @@ def _validate_ask_orderbook(conf: Dict[str, Any]) -> None:
             )
 
 
-def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
+def validate_migrated_strategy_settings(conf: dict[str, Any]) -> None:
     _validate_time_in_force(conf)
     _validate_order_types(conf)
     _validate_unfilledtimeout(conf)
@@ -222,7 +222,7 @@ def validate_migrated_strategy_settings(conf: Dict[str, Any]) -> None:
     _strategy_settings(conf)
 
 
-def _validate_time_in_force(conf: Dict[str, Any]) -> None:
+def _validate_time_in_force(conf: dict[str, Any]) -> None:
     time_in_force = conf.get("order_time_in_force", {})
     if "buy" in time_in_force or "sell" in time_in_force:
         if conf.get("trading_mode", TradingMode.SPOT) != TradingMode.SPOT:
@@ -243,7 +243,7 @@ def _validate_time_in_force(conf: Dict[str, Any]) -> None:
             )
 
 
-def _validate_order_types(conf: Dict[str, Any]) -> None:
+def _validate_order_types(conf: dict[str, Any]) -> None:
     order_types = conf.get("order_types", {})
     old_order_types = [
         "buy",
@@ -278,7 +278,7 @@ def _validate_order_types(conf: Dict[str, Any]) -> None:
                 process_deprecated_setting(conf, "order_types", o, "order_types", n)
 
 
-def _validate_unfilledtimeout(conf: Dict[str, Any]) -> None:
+def _validate_unfilledtimeout(conf: dict[str, Any]) -> None:
     unfilledtimeout = conf.get("unfilledtimeout", {})
     if any(x in unfilledtimeout for x in ["buy", "sell"]):
         if conf.get("trading_mode", TradingMode.SPOT) != TradingMode.SPOT:
@@ -297,7 +297,7 @@ def _validate_unfilledtimeout(conf: Dict[str, Any]) -> None:
                 process_deprecated_setting(conf, "unfilledtimeout", o, "unfilledtimeout", n)
 
 
-def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
+def _validate_pricing_rules(conf: dict[str, Any]) -> None:
     if conf.get("ask_strategy") or conf.get("bid_strategy"):
         if conf.get("trading_mode", TradingMode.SPOT) != TradingMode.SPOT:
             raise ConfigurationError("Please migrate your pricing settings to use the new wording.")
@@ -327,7 +327,7 @@ def _validate_pricing_rules(conf: Dict[str, Any]) -> None:
             del conf["ask_strategy"]
 
 
-def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
+def _validate_freqai_hyperopt(conf: dict[str, Any]) -> None:
     freqai_enabled = conf.get("freqai", {}).get("enabled", False)
     analyze_per_epoch = conf.get("analyze_per_epoch", False)
     if analyze_per_epoch and freqai_enabled:
@@ -336,7 +336,7 @@ def _validate_freqai_hyperopt(conf: Dict[str, Any]) -> None:
         )
 
 
-def _validate_freqai_include_timeframes(conf: Dict[str, Any], preliminary: bool) -> None:
+def _validate_freqai_include_timeframes(conf: dict[str, Any], preliminary: bool) -> None:
     freqai_enabled = conf.get("freqai", {}).get("enabled", False)
     if freqai_enabled:
         main_tf = conf.get("timeframe", "5m")
@@ -367,7 +367,7 @@ def _validate_freqai_include_timeframes(conf: Dict[str, Any], preliminary: bool)
             )
 
 
-def _validate_freqai_backtest(conf: Dict[str, Any]) -> None:
+def _validate_freqai_backtest(conf: dict[str, Any]) -> None:
     if conf.get("runmode", RunMode.OTHER) == RunMode.BACKTEST:
         freqai_enabled = conf.get("freqai", {}).get("enabled", False)
         timerange = conf.get("timerange")
@@ -390,7 +390,7 @@ def _validate_freqai_backtest(conf: Dict[str, Any]) -> None:
             )
 
 
-def _validate_consumers(conf: Dict[str, Any]) -> None:
+def _validate_consumers(conf: dict[str, Any]) -> None:
     emc_conf = conf.get("external_message_consumer", {})
     if emc_conf.get("enabled", False):
         if len(emc_conf.get("producers", [])) < 1:
@@ -410,7 +410,7 @@ def _validate_consumers(conf: Dict[str, Any]) -> None:
             )
 
 
-def _validate_orderflow(conf: Dict[str, Any]) -> None:
+def _validate_orderflow(conf: dict[str, Any]) -> None:
     if conf.get("exchange", {}).get("use_public_trades"):
         if "orderflow" not in conf:
             raise ConfigurationError(
@@ -418,7 +418,7 @@ def _validate_orderflow(conf: Dict[str, Any]) -> None:
             )
 
 
-def _strategy_settings(conf: Dict[str, Any]) -> None:
+def _strategy_settings(conf: dict[str, Any]) -> None:
     process_deprecated_setting(conf, None, "use_sell_signal", None, "use_exit_signal")
     process_deprecated_setting(conf, None, "sell_profit_only", None, "exit_profit_only")
     process_deprecated_setting(conf, None, "sell_profit_offset", None, "exit_profit_offset")

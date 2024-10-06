@@ -3,7 +3,7 @@ import shutil
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from pandas import DataFrame
 
@@ -25,16 +25,16 @@ class Analysis:
         self.total_signals = 0
         self.false_entry_signals = 0
         self.false_exit_signals = 0
-        self.false_indicators: List[str] = []
+        self.false_indicators: list[str] = []
         self.has_bias = False
 
 
 class LookaheadAnalysis(BaseAnalysis):
-    def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
+    def __init__(self, config: dict[str, Any], strategy_obj: dict):
         super().__init__(config, strategy_obj)
 
-        self.entry_varHolders: List[VarHolder] = []
-        self.exit_varHolders: List[VarHolder] = []
+        self.entry_varHolders: list[VarHolder] = []
+        self.exit_varHolders: list[VarHolder] = []
 
         self.current_analysis = Analysis()
         self.minimum_trade_amount = config["minimum_trade_amount"]
@@ -99,7 +99,7 @@ class LookaheadAnalysis(BaseAnalysis):
                                 f"{str(self_value)} != {str(other_value)}"
                             )
 
-    def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame]):
+    def prepare_data(self, varholder: VarHolder, pairs_to_load: list[DataFrame]):
         if "freqai" in self.local_config and "identifier" in self.local_config["freqai"]:
             # purge previous data if the freqai model is defined
             # (to be sure nothing is carried over from older backtests)

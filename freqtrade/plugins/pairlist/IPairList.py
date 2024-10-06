@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict, Union
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
@@ -36,12 +36,12 @@ class __StringPairlistParameter(__PairlistParameterBase):
 class __OptionPairlistParameter(__PairlistParameterBase):
     type: Literal["option"]
     default: Union[str, None]
-    options: List[str]
+    options: list[str]
 
 
 class __ListPairListParamenter(__PairlistParameterBase):
     type: Literal["list"]
-    default: Union[List[str], None]
+    default: Union[list[str], None]
 
 
 class __BoolPairlistParameter(__PairlistParameterBase):
@@ -78,7 +78,7 @@ class IPairList(LoggingMixin, ABC):
         exchange: Exchange,
         pairlistmanager,
         config: Config,
-        pairlistconfig: Dict[str, Any],
+        pairlistconfig: dict[str, Any],
         pairlist_pos: int,
     ) -> None:
         """
@@ -126,7 +126,7 @@ class IPairList(LoggingMixin, ABC):
         return ""
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         """
         Return parameters used by this Pairlist Handler, and their type
         contains a dictionary with the parameter name as key, and a dictionary
@@ -136,7 +136,7 @@ class IPairList(LoggingMixin, ABC):
         return {}
 
     @staticmethod
-    def refresh_period_parameter() -> Dict[str, PairlistParameter]:
+    def refresh_period_parameter() -> dict[str, PairlistParameter]:
         return {
             "refresh_period": {
                 "type": "number",
@@ -166,7 +166,7 @@ class IPairList(LoggingMixin, ABC):
         """
         raise NotImplementedError()
 
-    def gen_pairlist(self, tickers: Tickers) -> List[str]:
+    def gen_pairlist(self, tickers: Tickers) -> list[str]:
         """
         Generate the pairlist.
 
@@ -185,7 +185,7 @@ class IPairList(LoggingMixin, ABC):
             "at the first position in the list of Pairlist Handlers."
         )
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
 
@@ -209,7 +209,7 @@ class IPairList(LoggingMixin, ABC):
 
         return pairlist
 
-    def verify_blacklist(self, pairlist: List[str], logmethod) -> List[str]:
+    def verify_blacklist(self, pairlist: list[str], logmethod) -> list[str]:
         """
         Proxy method to verify_blacklist for easy access for child classes.
         :param pairlist: Pairlist to validate
@@ -219,8 +219,8 @@ class IPairList(LoggingMixin, ABC):
         return self._pairlistmanager.verify_blacklist(pairlist, logmethod)
 
     def verify_whitelist(
-        self, pairlist: List[str], logmethod, keep_invalid: bool = False
-    ) -> List[str]:
+        self, pairlist: list[str], logmethod, keep_invalid: bool = False
+    ) -> list[str]:
         """
         Proxy method to verify_whitelist for easy access for child classes.
         :param pairlist: Pairlist to validate
@@ -230,7 +230,7 @@ class IPairList(LoggingMixin, ABC):
         """
         return self._pairlistmanager.verify_whitelist(pairlist, logmethod, keep_invalid)
 
-    def _whitelist_for_active_markets(self, pairlist: List[str]) -> List[str]:
+    def _whitelist_for_active_markets(self, pairlist: list[str]) -> list[str]:
         """
         Check available markets and remove pair from whitelist if necessary
         :param pairlist: the sorted list of pairs the user might want to trade
@@ -243,7 +243,7 @@ class IPairList(LoggingMixin, ABC):
                 "Markets not loaded. Make sure that exchange is initialized correctly."
             )
 
-        sanitized_whitelist: List[str] = []
+        sanitized_whitelist: list[str] = []
         for pair in pairlist:
             # pair is not in the generated dynamic market or has the wrong stake currency
             if pair not in markets:

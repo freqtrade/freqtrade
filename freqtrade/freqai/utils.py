@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -155,7 +155,7 @@ def plot_feature_importance(
         store_plot_file(fig, f"{dk.model_filename}-{label}.html", dk.data_path)
 
 
-def record_params(config: Dict[str, Any], full_path: Path) -> None:
+def record_params(config: dict[str, Any], full_path: Path) -> None:
     """
     Records run params in the full path for reproducibility
     """

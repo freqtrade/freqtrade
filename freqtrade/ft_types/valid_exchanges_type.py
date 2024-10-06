@@ -1,5 +1,5 @@
 # Used for list-exchanges
-from typing import List, Optional
+from typing import Optional
 
 from typing_extensions import TypedDict
 
@@ -18,4 +18,4 @@ class ValidExchangesType(TypedDict):
     dex: bool
     is_alias: bool
     alias_for: Optional[str]
-    trade_modes: List[TradeModeType]
+    trade_modes: list[TradeModeType]

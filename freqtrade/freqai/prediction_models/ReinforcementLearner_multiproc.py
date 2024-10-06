@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from pandas import DataFrame
 from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
@@ -22,7 +22,7 @@ class ReinforcementLearner_multiproc(ReinforcementLearner):
 
     def set_train_and_eval_environments(
         self,
-        data_dictionary: Dict[str, Any],
+        data_dictionary: dict[str, Any],
         prices_train: DataFrame,
         prices_test: DataFrame,
         dk: FreqaiDataKitchen,

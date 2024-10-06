@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import rapidjson
 
@@ -9,7 +9,7 @@ from freqtrade.enums import RunMode
 logger = logging.getLogger(__name__)
 
 
-def start_test_pairlist(args: Dict[str, Any]) -> None:
+def start_test_pairlist(args: dict[str, Any]) -> None:
     """
     Test Pairlist configuration
     """

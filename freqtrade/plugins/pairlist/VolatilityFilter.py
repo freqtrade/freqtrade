@@ -5,7 +5,7 @@ Volatility pairlist filter
 import logging
 import sys
 from datetime import timedelta
-from typing import Dict, List, Optional
+from typing import Optional
 
 import numpy as np
 from cachetools import TTLCache
@@ -79,7 +79,7 @@ class VolatilityFilter(IPairList):
         return "Filter pairs by their recent volatility."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "lookback_days": {
                 "type": "number",
@@ -109,7 +109,7 @@ class VolatilityFilter(IPairList):
             **IPairList.refresh_period_parameter(),
         }
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
         """
         Validate trading range
         :param pairlist: pairlist to filter or sort
@@ -123,8 +123,8 @@ class VolatilityFilter(IPairList):
         since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days))
         candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms=since_ms)
 
-        resulting_pairlist: List[str] = []
-        volatilitys: Dict[str, float] = {}
+        resulting_pairlist: list[str] = []
+        volatilitys: dict[str, float] = {}
         for p in pairlist:
             daily_candles = candles.get((p, "1d", self._def_candletype), None)
 

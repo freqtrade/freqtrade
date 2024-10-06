@@ -3,7 +3,7 @@ import shutil
 from copy import deepcopy
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from pandas import DataFrame
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class RecursiveAnalysis(BaseAnalysis):
-    def __init__(self, config: Dict[str, Any], strategy_obj: Dict):
+    def __init__(self, config: dict[str, Any], strategy_obj: dict):
         self._startup_candle = list(
             map(int, config.get("startup_candle", [199, 399, 499, 999, 1999]))
         )
@@ -35,10 +35,10 @@ class RecursiveAnalysis(BaseAnalysis):
             self._startup_candle.append(self._strat_scc)
         self._startup_candle.sort()
 
-        self.partial_varHolder_array: List[VarHolder] = []
-        self.partial_varHolder_lookahead_array: List[VarHolder] = []
+        self.partial_varHolder_array: list[VarHolder] = []
+        self.partial_varHolder_lookahead_array: list[VarHolder] = []
 
-        self.dict_recursive: Dict[str, Any] = dict()
+        self.dict_recursive: dict[str, Any] = dict()
 
     # For recursive bias check
     # analyzes two data frames with processed indicators and shows differences between them.
@@ -114,7 +114,7 @@ class RecursiveAnalysis(BaseAnalysis):
         else:
             logger.info("No lookahead bias on indicators found.")
 
-    def prepare_data(self, varholder: VarHolder, pairs_to_load: List[DataFrame]):
+    def prepare_data(self, varholder: VarHolder, pairs_to_load: list[DataFrame]):
         if "freqai" in self.local_config and "identifier" in self.local_config["freqai"]:
             # purge previous data if the freqai model is defined
             # (to be sure nothing is carried over from older backtests)

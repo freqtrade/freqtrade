@@ -1,10 +1,10 @@
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError
 
 
-def validate_plot_args(args: Dict[str, Any]) -> None:
+def validate_plot_args(args: dict[str, Any]) -> None:
     if not args.get("datadir") and not args.get("config"):
         raise ConfigurationError(
             "You need to specify either `--datadir` or `--config` "
@@ -12,7 +12,7 @@ def validate_plot_args(args: Dict[str, Any]) -> None:
         )
 
 
-def start_plot_dataframe(args: Dict[str, Any]) -> None:
+def start_plot_dataframe(args: dict[str, Any]) -> None:
     """
     Entrypoint for dataframe plotting
     """
@@ -26,7 +26,7 @@ def start_plot_dataframe(args: Dict[str, Any]) -> None:
     load_and_plot_trades(config)
 
 
-def start_plot_profit(args: Dict[str, Any]) -> None:
+def start_plot_profit(args: dict[str, Any]) -> None:
     """
     Entrypoint for plot_profit
     """

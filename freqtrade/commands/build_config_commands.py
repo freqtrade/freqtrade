@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
@@ -9,7 +9,7 @@ from freqtrade.exceptions import OperationalException
 logger = logging.getLogger(__name__)
 
 
-def start_new_config(args: Dict[str, Any]) -> None:
+def start_new_config(args: dict[str, Any]) -> None:
     """
     Create a new strategy from a template
     Asking the user questions to fill out the template accordingly.
@@ -37,7 +37,7 @@ def start_new_config(args: Dict[str, Any]) -> None:
     deploy_new_config(config_path, selections)
 
 
-def start_show_config(args: Dict[str, Any]) -> None:
+def start_show_config(args: dict[str, Any]) -> None:
     from freqtrade.configuration import sanitize_config
     from freqtrade.configuration.config_setup import setup_utils_configuration
 
