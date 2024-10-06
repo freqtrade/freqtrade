@@ -1,7 +1,7 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from freqtrade.constants import USERPATH_STRATEGIES
 from freqtrade.enums import RunMode

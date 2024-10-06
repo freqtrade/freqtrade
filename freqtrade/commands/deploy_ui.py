@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import requests
 
@@ -52,7 +52,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
         f.write(version)
 
 
-def get_ui_download_url(version: Optional[str] = None) -> Tuple[str, str]:
+def get_ui_download_url(version: Optional[str] = None) -> tuple[str, str]:
     base_url = "https://api.github.com/repos/freqtrade/frequi/"
     # Get base UI Repo path
 

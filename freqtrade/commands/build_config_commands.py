@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
