@@ -33,6 +33,9 @@ class strategy_test_v3_recursive_issue(IStrategy):
             # Has both bias1 and bias2
             dataframe["rsi_lookahead"] = ta.RSI(dataframe, timeperiod=50).shift(-1)
 
+        # String columns shouldn't cause issues
+        dataframe["test_string_column"] = f"a{len(dataframe)}"
+
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
