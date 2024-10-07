@@ -436,7 +436,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
 
     # Replace new order with diff. order at a lower price
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1.95)
-
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=None)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 4
