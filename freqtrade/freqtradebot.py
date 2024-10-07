@@ -717,7 +717,7 @@ class FreqtradeBot(LoggingMixin):
         for trade in Trade.get_open_trades():
             # If there is any open orders, wait for them to finish.
             # TODO Remove to allow mul open orders
-            if not trade.has_open_orders:
+            if trade.has_open_position:
                 # Do a wallets update (will be ratelimited to once per hour)
                 self.wallets.update(False)
                 try:
