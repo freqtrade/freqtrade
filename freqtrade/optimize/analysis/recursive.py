@@ -1,4 +1,5 @@
 import logging
+import numbers
 import shutil
 from copy import deepcopy
 from datetime import timedelta
@@ -18,6 +19,10 @@ from freqtrade.resolvers import StrategyResolver
 
 
 logger = logging.getLogger(__name__)
+
+
+def is_number(variable):
+    return isinstance(variable, numbers.Number) and not isinstance(variable, bool)
 
 
 class RecursiveAnalysis(BaseAnalysis):
@@ -69,7 +74,12 @@ class RecursiveAnalysis(BaseAnalysis):
                         values_diff_self = values_diff.loc["self"]
                         values_diff_other = values_diff.loc["other"]
 
-                        if values_diff_self and values_diff_other:
+                        if (
+                            values_diff_self
+                            and values_diff_other
+                            and is_number(values_diff_self)
+                            and is_number(values_diff_other)
+                        ):
                             diff = (values_diff_other - values_diff_self) / values_diff_self * 100
                             str_diff = f"{diff:.3f}%"
                         else:
