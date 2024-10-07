@@ -79,7 +79,7 @@ setup(
         "httpx>=0.24.1",
         "urllib3",
         "jsonschema",
-        "numpy<2.0",
+        "numpy<3.0",
         "pandas>=2.2.0,<3.0",
         "TA-Lib",
         "pandas-ta",
