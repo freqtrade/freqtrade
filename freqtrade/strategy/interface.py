@@ -1133,8 +1133,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         message = ""
         if dataframe is None:
             message = "No dataframe returned (return statement missing?)."
-        elif "enter_long" not in dataframe:
-            message = "enter_long/buy column not set."
         elif df_len != len(dataframe):
             message = message_template.format("length")
         elif df_close != dataframe["close"].iloc[-1]:
@@ -1206,7 +1204,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             exit_ = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
 
         else:
-            enter = latest[SignalType.ENTER_LONG.value] == 1
+            enter = latest.get(SignalType.ENTER_LONG.value, 0) == 1
             exit_ = latest.get(SignalType.EXIT_LONG.value, 0) == 1
         exit_tag = latest.get(SignalTagType.EXIT_TAG.value, None)
         # Tags can be None, which does not resolve to False.
@@ -1235,7 +1233,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         if latest is None or latest_date is None:
             return None, None
 
-        enter_long = latest[SignalType.ENTER_LONG.value] == 1
+        enter_long = latest.get(SignalType.ENTER_LONG.value, 0) == 1
         exit_long = latest.get(SignalType.EXIT_LONG.value, 0) == 1
         enter_short = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
         exit_short = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
