@@ -12,7 +12,7 @@ SQLAlchemy==2.0.35
 python-telegram-bot==21.6
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.24.1
-humanize==4.10.0
+humanize==4.11.0
 cachetools==5.5.0
 requests==2.32.3
 urllib3==2.2.3
