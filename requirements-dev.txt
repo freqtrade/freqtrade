@@ -29,4 +29,4 @@ types-cachetools==5.5.0.20240820
 types-filelock==3.2.7
 types-requests==2.32.0.20240914
 types-tabulate==0.9.0.20240106
-types-python-dateutil==2.9.0.20240906
+types-python-dateutil==2.9.0.20241003
