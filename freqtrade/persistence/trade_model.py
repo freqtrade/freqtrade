@@ -595,7 +595,7 @@ class LocalTrade:
         return self.amount > 0
 
     @property
-    def open_sl_orders(self) -> List[Order]:
+    def open_sl_orders(self) -> list[Order]:
         """
         All open stoploss orders for this trade
         """
