@@ -922,7 +922,7 @@ class FreqtradeBot(LoggingMixin):
         ):
             logger.info(f"User denied entry for {pair}.")
             return False
-        
+
         if trade and trade.has_open_orders:
             # cancel any open order of this trade
             self.cancel_open_orders_of_trade(
@@ -1714,7 +1714,9 @@ class FreqtradeBot(LoggingMixin):
                         logger.warning(f"Unable to replace order for {trade.pair}: {exception}")
                         self.replace_order_failed(trade, f"Could not replace order for {trade}.")
 
-    def cancel_open_orders_of_trade(self, trade: Trade, sides: list[str], reason: str, replacing: Optional[bool] = False) -> None:
+    def cancel_open_orders_of_trade(
+        self, trade: Trade, sides: list[str], reason: str, replacing: Optional[bool] = False
+    ) -> None:
         """
         Cancel trade orders of specified sides that are currently open
         :param trade: Trade object of the trade we're analyzing
