@@ -8,7 +8,7 @@ defined period or as coming from ticker
 
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from cachetools import TTLCache
 from pandas import DataFrame
@@ -115,7 +115,7 @@ class PercentChangePairList(IPairList):
         return "Provides dynamic pair list based on percentage change."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "number_assets": {
                 "type": "number",
@@ -163,7 +163,7 @@ class PercentChangePairList(IPairList):
             },
         }
 
-    def gen_pairlist(self, tickers: Tickers) -> List[str]:
+    def gen_pairlist(self, tickers: Tickers) -> list[str]:
         """
         Generate the pairlist
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
@@ -204,7 +204,7 @@ class PercentChangePairList(IPairList):
 
         return pairlist
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: dict) -> list[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary
@@ -212,7 +212,7 @@ class PercentChangePairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
-        filtered_tickers: List[Dict[str, Any]] = [{"symbol": k} for k in pairlist]
+        filtered_tickers: list[dict[str, Any]] = [{"symbol": k} for k in pairlist]
         if self._use_range:
             # calculating using lookback_period
             self.fetch_percent_change_from_lookback_period(filtered_tickers)
@@ -240,8 +240,8 @@ class PercentChangePairList(IPairList):
         return pairs
 
     def fetch_candles_for_lookback_period(
-        self, filtered_tickers: List[Dict[str, str]]
-    ) -> Dict[PairWithTimeframe, DataFrame]:
+        self, filtered_tickers: list[dict[str, str]]
+    ) -> dict[PairWithTimeframe, DataFrame]:
         since_ms = (
             int(
                 timeframe_to_prev_date(
@@ -277,7 +277,7 @@ class PercentChangePairList(IPairList):
         candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms)
         return candles
 
-    def fetch_percent_change_from_lookback_period(self, filtered_tickers: List[Dict[str, Any]]):
+    def fetch_percent_change_from_lookback_period(self, filtered_tickers: list[dict[str, Any]]):
         # get lookback period in ms, for exchange ohlcv fetch
         candles = self.fetch_candles_for_lookback_period(filtered_tickers)
 
@@ -301,7 +301,7 @@ class PercentChangePairList(IPairList):
             else:
                 filtered_tickers[i]["percentage"] = 0
 
-    def fetch_percent_change_from_tickers(self, filtered_tickers: List[Dict[str, Any]], tickers):
+    def fetch_percent_change_from_tickers(self, filtered_tickers: list[dict[str, Any]], tickers):
         for i, p in enumerate(filtered_tickers):
             # Filter out assets
             if not self._validate_pair(

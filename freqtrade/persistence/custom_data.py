@@ -1,7 +1,8 @@
 import json
 import logging
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, ClassVar, List, Optional, Sequence
+from typing import Any, ClassVar, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -85,7 +86,7 @@ class CustomDataWrapper:
     """
 
     use_db = True
-    custom_data: List[_CustomData] = []
+    custom_data: list[_CustomData] = []
     unserialized_types = ["bool", "float", "int", "str"]
 
     @staticmethod
@@ -116,7 +117,7 @@ class CustomDataWrapper:
         _CustomData.session.commit()
 
     @staticmethod
-    def get_custom_data(*, trade_id: int, key: Optional[str] = None) -> List[_CustomData]:
+    def get_custom_data(*, trade_id: int, key: Optional[str] = None) -> list[_CustomData]:
         if CustomDataWrapper.use_db:
             filters = [
                 _CustomData.ft_trade_id == trade_id,

@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import ccxt
 
@@ -46,14 +46,14 @@ class Binance(Exchange):
         "ws_enabled": False,
     }
 
-    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
+    _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.MARGIN, MarginMode.CROSS),
         # (TradingMode.FUTURES, MarginMode.CROSS),
         (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
 
-    def get_tickers(self, symbols: Optional[List[str]] = None, cached: bool = False) -> Tickers:
+    def get_tickers(self, symbols: Optional[list[str]] = None, cached: bool = False) -> Tickers:
         tickers = super().get_tickers(symbols=symbols, cached=cached)
         if self.trading_mode == TradingMode.FUTURES:
             # Binance's future result has no bid/ask values.
@@ -144,6 +144,29 @@ class Binance(Exchange):
         """
         return open_date.minute == 0 and open_date.second < 15
 
+    def fetch_funding_rates(
+        self, symbols: Optional[list[str]] = None
+    ) -> dict[str, dict[str, float]]:
+        """
+        Fetch funding rates for the given symbols.
+        :param symbols: List of symbols to fetch funding rates for
+        :return: Dict of funding rates for the given symbols
+        """
+        try:
+            if self.trading_mode == TradingMode.FUTURES:
+                rates = self._api.fetch_funding_rates(symbols)
+                return rates
+            return {}
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f"Error in additional_exchange_init due to {e.__class__.__name__}. Message: {e}"
+            ) from e
+
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
+
     def dry_run_liquidation_price(
         self,
         pair: str,
@@ -153,8 +176,7 @@ class Binance(Exchange):
         stake_amount: float,
         leverage: float,
         wallet_balance: float,  # Or margin balance
-        mm_ex_1: float = 0.0,  # (Binance) Cross only
-        upnl_ex_1: float = 0.0,  # (Binance) Cross only
+        open_trades: list,
     ) -> Optional[float]:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
@@ -172,6 +194,7 @@ class Binance(Exchange):
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
+        :param open_trades: List of open trades in the same wallet
 
         # * Only required for Cross
         :param mm_ex_1: (TMM)
@@ -180,14 +203,40 @@ class Binance(Exchange):
         :param upnl_ex_1: (UPNL)
             Cross-Margin Mode: Unrealized PNL of all other contracts, excluding Contract 1.
             Isolated-Margin Mode: 0
+        :param other
         """
-
-        side_1 = -1 if is_short else 1
-        cross_vars = upnl_ex_1 - mm_ex_1 if self.margin_mode == MarginMode.CROSS else 0.0
+        cross_vars: float = 0.0
 
         # mm_ratio: Binance's formula specifies maintenance margin rate which is mm_ratio * 100%
         # maintenance_amt: (CUM) Maintenance Amount of position
         mm_ratio, maintenance_amt = self.get_maintenance_ratio_and_amt(pair, stake_amount)
+
+        if self.margin_mode == MarginMode.CROSS:
+            mm_ex_1: float = 0.0
+            upnl_ex_1: float = 0.0
+            pairs = [trade.pair for trade in open_trades]
+            if self._config["runmode"] in ("live", "dry_run"):
+                funding_rates = self.fetch_funding_rates(pairs)
+            for trade in open_trades:
+                if trade.pair == pair:
+                    # Only "other" trades are considered
+                    continue
+                if self._config["runmode"] in ("live", "dry_run"):
+                    mark_price = funding_rates[trade.pair]["markPrice"]
+                else:
+                    # Fall back to open rate for backtesting
+                    mark_price = trade.open_rate
+                mm_ratio1, maint_amnt1 = self.get_maintenance_ratio_and_amt(
+                    trade.pair, trade.stake_amount
+                )
+                maint_margin = trade.amount * mark_price * mm_ratio1 - maint_amnt1
+                mm_ex_1 += maint_margin
+
+                upnl_ex_1 += trade.amount * mark_price - trade.amount * trade.open_rate
+
+            cross_vars = upnl_ex_1 - mm_ex_1
+
+        side_1 = -1 if is_short else 1
 
         if maintenance_amt is None:
             raise OperationalException(
@@ -204,7 +253,7 @@ class Binance(Exchange):
                 "Freqtrade only supports isolated futures for leverage trading"
             )
 
-    def load_leverage_tiers(self) -> Dict[str, List[Dict]]:
+    def load_leverage_tiers(self) -> dict[str, list[dict]]:
         if self.trading_mode == TradingMode.FUTURES:
             if self._config["dry_run"]:
                 leverage_tiers_path = Path(__file__).parent / "binance_leverage_tiers.json"

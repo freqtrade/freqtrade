@@ -457,6 +457,7 @@ class TestCCXTExchange:
                 stake_amount=100,
                 leverage=5,
                 wallet_balance=100,
+                open_trades=[],
             )
             assert isinstance(liquidation_price, float)
             assert liquidation_price >= 0.0
@@ -469,6 +470,7 @@ class TestCCXTExchange:
                 stake_amount=100,
                 leverage=5,
                 wallet_balance=100,
+                open_trades=[],
             )
             assert isinstance(liquidation_price, float)
             assert liquidation_price >= 0.0

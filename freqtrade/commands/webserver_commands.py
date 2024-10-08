@@ -1,9 +1,9 @@
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade.enums import RunMode
 
 
-def start_webserver(args: Dict[str, Any]) -> None:
+def start_webserver(args: dict[str, Any]) -> None:
     """
     Main entry point for webserver mode
     """

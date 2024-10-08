@@ -1,7 +1,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class RecursiveAnalysisSubFunctions:
     @staticmethod
-    def text_table_recursive_analysis_instances(recursive_instances: List[RecursiveAnalysis]):
+    def text_table_recursive_analysis_instances(recursive_instances: list[RecursiveAnalysis]):
         startups = recursive_instances[0]._startup_candle
         strat_scc = recursive_instances[0]._strat_scc
         headers = ["Indicators"]
@@ -63,7 +63,7 @@ class RecursiveAnalysisSubFunctions:
         return config
 
     @staticmethod
-    def initialize_single_recursive_analysis(config: Config, strategy_obj: Dict[str, Any]):
+    def initialize_single_recursive_analysis(config: Config, strategy_obj: dict[str, Any]):
         logger.info(f"Recursive test of {Path(strategy_obj['location']).name} started.")
         start = time.perf_counter()
         current_instance = RecursiveAnalysis(config, strategy_obj)

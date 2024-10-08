@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Type, Union
+from typing import Any, Union
 
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import HParam
@@ -13,10 +13,10 @@ class TensorboardCallback(BaseCallback):
     episodic summary reports.
     """
 
-    def __init__(self, verbose=1, actions: Type[Enum] = BaseActions):
+    def __init__(self, verbose=1, actions: type[Enum] = BaseActions):
         super().__init__(verbose)
         self.model: Any = None
-        self.actions: Type[Enum] = actions
+        self.actions: type[Enum] = actions
 
     def _on_training_start(self) -> None:
         hparam_dict = {
@@ -27,7 +27,7 @@ class TensorboardCallback(BaseCallback):
             # "batch_size": self.model.batch_size,
             # "n_steps": self.model.n_steps,
         }
-        metric_dict: Dict[str, Union[float, int]] = {
+        metric_dict: dict[str, Union[float, int]] = {
             "eval/mean_reward": 0,
             "rollout/ep_rew_mean": 0,
             "rollout/ep_len_mean": 0,

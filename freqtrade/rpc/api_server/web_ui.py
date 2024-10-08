@@ -21,7 +21,7 @@ async def fallback():
 
 @router_ui.get("/ui_version", include_in_schema=False)
 async def ui_version():
-    from freqtrade.commands.deploy_commands import read_ui_version
+    from freqtrade.commands.deploy_ui import read_ui_version
 
     uibase = Path(__file__).parent / "ui/installed/"
     version = read_ui_version(uibase)

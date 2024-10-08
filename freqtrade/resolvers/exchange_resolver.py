@@ -4,7 +4,7 @@ This module loads custom exchanges
 
 import logging
 from inspect import isclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import freqtrade.exchange as exchanges
 from freqtrade.constants import Config, ExchangeConfig
@@ -90,7 +90,7 @@ class ExchangeResolver(IResolver):
     @classmethod
     def search_all_objects(
         cls, config: Config, enum_failed: bool, recursive: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Searches for valid objects
         :param config: Config object

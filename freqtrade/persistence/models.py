@@ -5,7 +5,7 @@ This module contains the class to persist trades into SQLite
 import logging
 import threading
 from contextvars import ContextVar
-from typing import Any, Dict, Final, Optional
+from typing import Any, Final, Optional
 
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import NoSuchModuleError
@@ -51,7 +51,7 @@ def init_db(db_url: str) -> None:
     :param db_url: Database to use
     :return: None
     """
-    kwargs: Dict[str, Any] = {}
+    kwargs: dict[str, Any] = {}
 
     if db_url == "sqlite:///":
         raise OperationalException(

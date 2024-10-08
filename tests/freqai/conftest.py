@@ -2,7 +2,7 @@ import platform
 import sys
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -112,7 +112,7 @@ def make_rl_config(conf):
     return conf
 
 
-def mock_pytorch_mlp_model_training_parameters() -> Dict[str, Any]:
+def mock_pytorch_mlp_model_training_parameters() -> dict[str, Any]:
     return {
         "learning_rate": 3e-4,
         "trainer_kwargs": {

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Literal, Optional
 
 import datasieve.transforms as ds
 import numpy as np
@@ -59,11 +59,11 @@ class IFreqaiModel(ABC):
     def __init__(self, config: Config) -> None:
         self.config = config
         self.assert_config(self.config)
-        self.freqai_info: Dict[str, Any] = config["freqai"]
-        self.data_split_parameters: Dict[str, Any] = config.get("freqai", {}).get(
+        self.freqai_info: dict[str, Any] = config["freqai"]
+        self.data_split_parameters: dict[str, Any] = config.get("freqai", {}).get(
             "data_split_parameters", {}
         )
-        self.model_training_parameters: Dict[str, Any] = config.get("freqai", {}).get(
+        self.model_training_parameters: dict[str, Any] = config.get("freqai", {}).get(
             "model_training_parameters", {}
         )
         self.identifier: str = self.freqai_info.get("identifier", "no_id_provided")
@@ -80,14 +80,14 @@ class IFreqaiModel(ABC):
         self.dd.current_candle = self.current_candle
         self.scanning = False
         self.ft_params = self.freqai_info["feature_parameters"]
-        self.corr_pairlist: List[str] = self.ft_params.get("include_corr_pairlist", [])
+        self.corr_pairlist: list[str] = self.ft_params.get("include_corr_pairlist", [])
         self.keras: bool = self.freqai_info.get("keras", False)
         if self.keras and self.ft_params.get("DI_threshold", 0):
             self.ft_params["DI_threshold"] = 0
             logger.warning("DI threshold is not configured for Keras models yet. Deactivating.")
 
         self.CONV_WIDTH = self.freqai_info.get("conv_width", 1)
-        self.class_names: List[str] = []  # used in classification subclasses
+        self.class_names: list[str] = []  # used in classification subclasses
         self.pair_it = 0
         self.pair_it_train = 0
         self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
@@ -99,13 +99,13 @@ class IFreqaiModel(ABC):
         self.base_tf_seconds = timeframe_to_seconds(self.config["timeframe"])
         self.continual_learning = self.freqai_info.get("continual_learning", False)
         self.plot_features = self.ft_params.get("plot_feature_importances", 0)
-        self.corr_dataframes: Dict[str, DataFrame] = {}
+        self.corr_dataframes: dict[str, DataFrame] = {}
         # get_corr_dataframes is controlling the caching of corr_dataframes
         # for improved performance. Careful with this boolean.
         self.get_corr_dataframes: bool = True
-        self._threads: List[threading.Thread] = []
+        self._threads: list[threading.Thread] = []
         self._stop_event = threading.Event()
-        self.metadata: Dict[str, Any] = self.dd.load_global_metadata_from_disk()
+        self.metadata: dict[str, Any] = self.dd.load_global_metadata_from_disk()
         self.data_provider: Optional[DataProvider] = None
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
         self.can_short = True  # overridden in start() with strategy.can_short
@@ -901,7 +901,7 @@ class IFreqaiModel(ABC):
 
         return
 
-    def update_metadata(self, metadata: Dict[str, Any]):
+    def update_metadata(self, metadata: dict[str, Any]):
         """
         Update global metadata and save the updated json file
         :param metadata: new global metadata dict
@@ -954,7 +954,7 @@ class IFreqaiModel(ABC):
         """
 
     @abstractmethod
-    def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs) -> Any:
+    def fit(self, data_dictionary: dict[str, Any], dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         Most regressors use the same function names and arguments e.g. user
         can drop in LGBMRegressor in place of CatBoostRegressor and all data
@@ -968,7 +968,7 @@ class IFreqaiModel(ABC):
     @abstractmethod
     def predict(
         self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
-    ) -> Tuple[DataFrame, NDArray[np.int_]]:
+    ) -> tuple[DataFrame, NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
         :param unfiltered_df: Full dataframe for the current backtest period.

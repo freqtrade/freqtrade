@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Optional
 
 import torch as th
 from stable_baselines3.common.callbacks import ProgressBarCallback
@@ -44,7 +44,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
     take fine-tuned control over the data handling pipeline.
     """
 
-    def fit(self, data_dictionary: Dict[str, Any], dk: FreqaiDataKitchen, **kwargs):
+    def fit(self, data_dictionary: dict[str, Any], dk: FreqaiDataKitchen, **kwargs):
         """
         User customizable fit method
         :param data_dictionary: dict = common data dictionary containing all train/test
@@ -77,7 +77,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
             )
             model = self.dd.model_dictionary[dk.pair]
             model.set_env(self.train_env)
-        callbacks: List[Any] = [self.eval_callback, self.tensorboard_callback]
+        callbacks: list[Any] = [self.eval_callback, self.tensorboard_callback]
         progressbar_callback: Optional[ProgressBarCallback] = None
         if self.rl_config.get("progress_bar", False):
             progressbar_callback = ProgressBarCallback()
@@ -101,7 +101,7 @@ class ReinforcementLearner(BaseReinforcementLearningModel):
 
         return model
 
-    MyRLEnv: Type[BaseEnvironment]
+    MyRLEnv: type[BaseEnvironment]
 
     class MyRLEnv(Base5ActionRLEnv):  # type: ignore[no-redef]
         """

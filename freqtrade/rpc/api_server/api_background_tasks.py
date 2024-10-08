@@ -1,6 +1,5 @@
 import logging
 from copy import deepcopy
-from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends
 from fastapi.exceptions import HTTPException
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/background", response_model=List[BackgroundTaskStatus], tags=["webserver"])
+@router.get("/background", response_model=list[BackgroundTaskStatus], tags=["webserver"])
 def background_job_list():
     return [
         {

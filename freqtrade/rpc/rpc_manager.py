@@ -4,7 +4,6 @@ This module contains class to manage RPC communications (Telegram, API, ...)
 
 import logging
 from collections import deque
-from typing import List
 
 from freqtrade.constants import Config
 from freqtrade.enums import NO_ECHO_MESSAGES, RPCMessageType
@@ -22,7 +21,7 @@ class RPCManager:
 
     def __init__(self, freqtrade) -> None:
         """Initializes all enabled rpc modules"""
-        self.registered_modules: List[RPCHandler] = []
+        self.registered_modules: list[RPCHandler] = []
         self._rpc = RPC(freqtrade)
         config = freqtrade.config
         # Enable telegram

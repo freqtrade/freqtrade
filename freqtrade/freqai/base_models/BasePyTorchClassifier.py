@@ -1,6 +1,6 @@
 import logging
 from time import time
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -44,7 +44,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
 
     def predict(
         self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
-    ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
+    ) -> tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
         :param dk: dk: The datakitchen object
@@ -100,9 +100,9 @@ class BasePyTorchClassifier(BasePyTorchModel):
 
     def encode_class_names(
         self,
-        data_dictionary: Dict[str, pd.DataFrame],
+        data_dictionary: dict[str, pd.DataFrame],
         dk: FreqaiDataKitchen,
-        class_names: List[str],
+        class_names: list[str],
     ):
         """
         encode class name, str -> int
@@ -119,7 +119,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
             )
 
     @staticmethod
-    def assert_valid_class_names(target_column: pd.Series, class_names: List[str]):
+    def assert_valid_class_names(target_column: pd.Series, class_names: list[str]):
         non_defined_labels = set(target_column) - set(class_names)
         if len(non_defined_labels) != 0:
             raise OperationalException(
@@ -127,7 +127,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
                 f"expecting labels: {class_names}",
             )
 
-    def decode_class_names(self, class_ints: torch.Tensor) -> List[str]:
+    def decode_class_names(self, class_ints: torch.Tensor) -> list[str]:
         """
         decode class name, int -> str
         """
@@ -141,14 +141,14 @@ class BasePyTorchClassifier(BasePyTorchModel):
 
     def convert_label_column_to_int(
         self,
-        data_dictionary: Dict[str, pd.DataFrame],
+        data_dictionary: dict[str, pd.DataFrame],
         dk: FreqaiDataKitchen,
-        class_names: List[str],
+        class_names: list[str],
     ):
         self.init_class_names_to_index_mapping(class_names)
         self.encode_class_names(data_dictionary, dk, class_names)
 
-    def get_class_names(self) -> List[str]:
+    def get_class_names(self) -> list[str]:
         if not self.class_names:
             raise ValueError(
                 "self.class_names is empty, "

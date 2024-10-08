@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar, Optional
 
 from sqlalchemy import ScalarResult, String, or_, select
 from sqlalchemy.orm import Mapped, mapped_column
@@ -64,7 +64,7 @@ class PairLock(ModelBase):
     def get_all_locks() -> ScalarResult["PairLock"]:
         return PairLock.session.scalars(select(PairLock))
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "pair": self.pair,

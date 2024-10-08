@@ -2,18 +2,11 @@
 
 import re
 import shutil
-import sys
 from pathlib import Path
-
-import pytest
 
 from freqtrade.commands.strategy_utils_commands import start_strategy_update
 from freqtrade.strategy.strategyupdater import StrategyUpdater
 from tests.conftest import get_args
-
-
-if sys.version_info < (3, 9):
-    pytest.skip("StrategyUpdater is not compatible with Python 3.8", allow_module_level=True)
 
 
 def test_strategy_updater_start(user_dir, capsys) -> None:

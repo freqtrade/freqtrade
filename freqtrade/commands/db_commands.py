@@ -1,18 +1,17 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
-from sqlalchemy import func, select
-
-from freqtrade.configuration.config_setup import setup_utils_configuration
 from freqtrade.enums import RunMode
 
 
 logger = logging.getLogger(__name__)
 
 
-def start_convert_db(args: Dict[str, Any]) -> None:
+def start_convert_db(args: dict[str, Any]) -> None:
+    from sqlalchemy import func, select
     from sqlalchemy.orm import make_transient
 
+    from freqtrade.configuration.config_setup import setup_utils_configuration
     from freqtrade.persistence import Order, Trade, init_db
     from freqtrade.persistence.migrations import set_sequence_ids
     from freqtrade.persistence.pairlock import PairLock

@@ -5,7 +5,7 @@ This module defines the interface for the loss-function for hyperopt
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 from pandas import DataFrame
 
@@ -29,8 +29,8 @@ class IHyperOptLoss(ABC):
         min_date: datetime,
         max_date: datetime,
         config: Config,
-        processed: Dict[str, DataFrame],
-        backtest_stats: Dict[str, Any],
+        processed: dict[str, DataFrame],
+        backtest_stats: dict[str, Any],
         **kwargs,
     ) -> float:
         """

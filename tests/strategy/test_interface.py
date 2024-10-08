@@ -296,13 +296,6 @@ def test_assert_df(ohlcv_history, caplog):
             ohlcv_history.loc[df_len, "close"],
             ohlcv_history.loc[0, "date"],
         )
-    with pytest.raises(StrategyError, match="enter_long/buy column not set."):
-        _STRATEGY.assert_df(
-            ohlcv_history.drop("enter_long", axis=1),
-            len(ohlcv_history),
-            ohlcv_history.loc[df_len, "close"],
-            ohlcv_history.loc[0, "date"],
-        )
 
     _STRATEGY.disable_dataframe_checks = True
     caplog.clear()

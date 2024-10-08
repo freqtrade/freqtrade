@@ -1,6 +1,5 @@
 import logging
 from functools import reduce
-from typing import Dict
 
 import numpy as np
 import talib.abstract as ta
@@ -45,7 +44,7 @@ class freqai_test_multimodel_classifier_strat(IStrategy):
     max_roi_time_long = IntParameter(0, 800, default=400, space="sell", optimize=False, load=True)
 
     def feature_engineering_expand_all(
-        self, dataframe: DataFrame, period: int, metadata: Dict, **kwargs
+        self, dataframe: DataFrame, period: int, metadata: dict, **kwargs
     ):
         dataframe["%-rsi-period"] = ta.RSI(dataframe, timeperiod=period)
         dataframe["%-mfi-period"] = ta.MFI(dataframe, timeperiod=period)
@@ -53,20 +52,20 @@ class freqai_test_multimodel_classifier_strat(IStrategy):
 
         return dataframe
 
-    def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata: Dict, **kwargs):
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata: dict, **kwargs):
         dataframe["%-pct-change"] = dataframe["close"].pct_change()
         dataframe["%-raw_volume"] = dataframe["volume"]
         dataframe["%-raw_price"] = dataframe["close"]
 
         return dataframe
 
-    def feature_engineering_standard(self, dataframe: DataFrame, metadata: Dict, **kwargs):
+    def feature_engineering_standard(self, dataframe: DataFrame, metadata: dict, **kwargs):
         dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
 
         return dataframe
 
-    def set_freqai_targets(self, dataframe: DataFrame, metadata: Dict, **kwargs):
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: dict, **kwargs):
         dataframe["&s-up_or_down"] = np.where(
             dataframe["close"].shift(-50) > dataframe["close"], "up", "down"
         )

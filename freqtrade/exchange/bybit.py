@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import ccxt
 
@@ -53,14 +53,14 @@ class Bybit(Exchange):
         },
     }
 
-    _supported_trading_mode_margin_pairs: List[Tuple[TradingMode, MarginMode]] = [
+    _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
         # TradingMode.SPOT always supported and not required in this list
         # (TradingMode.FUTURES, MarginMode.CROSS),
         (TradingMode.FUTURES, MarginMode.ISOLATED)
     ]
 
     @property
-    def _ccxt_config(self) -> Dict:
+    def _ccxt_config(self) -> dict:
         # Parameters to add directly to ccxt sync/async initialization.
         # ccxt defaults to swap mode.
         config = {}
@@ -69,7 +69,7 @@ class Bybit(Exchange):
         config.update(super()._ccxt_config)
         return config
 
-    def market_is_future(self, market: Dict[str, Any]) -> bool:
+    def market_is_future(self, market: dict[str, Any]) -> bool:
         main = super().market_is_future(market)
         # For ByBit, we'll only support USDT markets for now.
         return main and market["settle"] == "USDT"
@@ -126,7 +126,7 @@ class Bybit(Exchange):
         leverage: float,
         reduceOnly: bool,
         time_in_force: str = "GTC",
-    ) -> Dict:
+    ) -> dict:
         params = super()._get_params(
             side=side,
             ordertype=ordertype,
@@ -147,8 +147,7 @@ class Bybit(Exchange):
         stake_amount: float,
         leverage: float,
         wallet_balance: float,  # Or margin balance
-        mm_ex_1: float = 0.0,  # (Binance) Cross only
-        upnl_ex_1: float = 0.0,  # (Binance) Cross only
+        open_trades: list,
     ) -> Optional[float]:
         """
         Important: Must be fetching data from cached values as this is used by backtesting!
@@ -178,6 +177,7 @@ class Bybit(Exchange):
         :param wallet_balance: Amount of margin_mode in the wallet being used to trade
             Cross-Margin Mode: crossWalletBalance
             Isolated-Margin Mode: isolatedWalletBalance
+        :param open_trades: List of other open trades in the same wallet
         """
 
         market = self.markets[pair]
@@ -220,7 +220,7 @@ class Bybit(Exchange):
                 logger.warning(f"Could not update funding fees for {pair}.")
         return 0.0
 
-    def fetch_orders(self, pair: str, since: datetime, params: Optional[Dict] = None) -> List[Dict]:
+    def fetch_orders(self, pair: str, since: datetime, params: Optional[dict] = None) -> list[dict]:
         """
         Fetch all orders for a pair "since"
         :param pair: Pair for the query
@@ -237,7 +237,7 @@ class Bybit(Exchange):
 
         return orders
 
-    def fetch_order(self, order_id: str, pair: str, params: Optional[Dict] = None) -> Dict:
+    def fetch_order(self, order_id: str, pair: str, params: Optional[dict] = None) -> dict:
         if self.exchange_has("fetchOrder"):
             # Set acknowledged to True to avoid ccxt exception
             params = {"acknowledged": True}
@@ -255,7 +255,7 @@ class Bybit(Exchange):
         return order
 
     @retrier
-    def get_leverage_tiers(self) -> Dict[str, List[Dict]]:
+    def get_leverage_tiers(self) -> dict[str, list[dict]]:
         """
         Cache leverage tiers for 1 day, since they are not expected to change often, and
         bybit requires pagination to fetch all tiers.

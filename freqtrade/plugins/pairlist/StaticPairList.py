@@ -6,7 +6,6 @@ Provides pair white list as it configured in config
 
 import logging
 from copy import deepcopy
-from typing import Dict, List
 
 from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
@@ -45,7 +44,7 @@ class StaticPairList(IPairList):
         return "Use pairlist as configured in config."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "allow_inactive": {
                 "type": "boolean",
@@ -55,7 +54,7 @@ class StaticPairList(IPairList):
             },
         }
 
-    def gen_pairlist(self, tickers: Tickers) -> List[str]:
+    def gen_pairlist(self, tickers: Tickers) -> list[str]:
         """
         Generate the pairlist
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
@@ -71,7 +70,7 @@ class StaticPairList(IPairList):
             # proper warnings in the log
             return self._whitelist_for_active_markets(wl)
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary

@@ -7,6 +7,7 @@ import pytest
 
 from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
+from freqtrade.persistence import Trade
 from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
@@ -171,59 +172,101 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
 
 
 @pytest.mark.parametrize(
-    "is_short, trading_mode, margin_mode, wallet_balance, "
-    "mm_ex_1, upnl_ex_1, maintenance_amt, amount, open_rate, "
+    "pair, is_short, trading_mode, margin_mode, wallet_balance, "
+    "maintenance_amt, amount, open_rate, open_trades,"
     "mm_ratio, expected",
     [
         (
+            "ETH/USDT:USDT",
             False,
             "futures",
             "isolated",
             1535443.01,
-            0.0,
-            0.0,
             135365.00,
             3683.979,
             1456.84,
+            [],
             0.10,
             1114.78,
         ),
         (
+            "ETH/USDT:USDT",
             False,
             "futures",
             "isolated",
             1535443.01,
-            0.0,
-            0.0,
             16300.000,
             109.488,
             32481.980,
+            [],
             0.025,
             18778.73,
         ),
         (
+            "ETH/USDT:USDT",
             False,
             "futures",
             "cross",
             1535443.01,
-            71200.81144,
-            -56354.57,
             135365.00,
-            3683.979,
-            1456.84,
+            3683.979,  # amount
+            1456.84,  # open_rate
+            [
+                {
+                    # From calc example
+                    "pair": "BTC/USDT:USDT",
+                    "open_rate": 32481.98,
+                    "amount": 109.488,
+                    "stake_amount": 3556387.02624,  # open_rate * amount
+                    "mark_price": 31967.27,
+                    "mm_ratio": 0.025,
+                    "maintenance_amt": 16300.0,
+                },
+                {
+                    # From calc example
+                    "pair": "ETH/USDT:USDT",
+                    "open_rate": 1456.84,
+                    "amount": 3683.979,
+                    "stake_amount": 5366967.96,
+                    "mark_price": 1335.18,
+                    "mm_ratio": 0.10,
+                    "maintenance_amt": 135365.00,
+                },
+            ],
             0.10,
             1153.26,
         ),
         (
+            "BTC/USDT:USDT",
             False,
             "futures",
             "cross",
             1535443.01,
-            356512.508,
-            -448192.89,
-            16300.000,
-            109.488,
-            32481.980,
+            16300.0,
+            109.488,  # amount
+            32481.980,  # open_rate
+            [
+                {
+                    # From calc example
+                    "pair": "BTC/USDT:USDT",
+                    "open_rate": 32481.98,
+                    "amount": 109.488,
+                    "stake_amount": 3556387.02624,  # open_rate * amount
+                    "mark_price": 31967.27,
+                    "mm_ratio": 0.025,
+                    "maintenance_amt": 16300.0,
+                },
+                {
+                    # From calc example
+                    "pair": "ETH/USDT:USDT",
+                    "open_rate": 1456.84,
+                    "amount": 3683.979,
+                    "stake_amount": 5366967.96,
+                    "mark_price": 1335.18,
+                    "mm_ratio": 0.10,
+                    "maintenance_amt": 135365.00,
+                },
+            ],
             0.025,
             26316.89,
         ),
@@ -232,15 +275,15 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
 def test_liquidation_price_binance(
     mocker,
     default_conf,
-    open_rate,
+    pair,
     is_short,
     trading_mode,
     margin_mode,
     wallet_balance,
-    mm_ex_1,
-    upnl_ex_1,
     maintenance_amt,
     amount,
+    open_rate,
+    open_trades,
     mm_ratio,
     expected,
 ):
@@ -248,20 +291,48 @@ def test_liquidation_price_binance(
     default_conf["margin_mode"] = margin_mode
     default_conf["liquidation_buffer"] = 0.0
     exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
-    exchange.get_maintenance_ratio_and_amt = MagicMock(return_value=(mm_ratio, maintenance_amt))
+
+    def get_maint_ratio(pair_, stake_amount):
+        if pair_ != pair:
+            oc = [c for c in open_trades if c["pair"] == pair_][0]
+            return oc["mm_ratio"], oc["maintenance_amt"]
+        return mm_ratio, maintenance_amt
+
+    def fetch_funding_rates(*args, **kwargs):
+        return {
+            t["pair"]: {
+                "symbol": t["pair"],
+                "markPrice": t["mark_price"],
+            }
+            for t in open_trades
+        }
+
+    exchange.get_maintenance_ratio_and_amt = get_maint_ratio
+    exchange.fetch_funding_rates = fetch_funding_rates
+
+    open_trade_objects = [
+        Trade(
+            pair=t["pair"],
+            open_rate=t["open_rate"],
+            amount=t["amount"],
+            stake_amount=t["stake_amount"],
+            fee_open=0,
+        )
+        for t in open_trades
+    ]
+
     assert (
         pytest.approx(
             round(
                 exchange.get_liquidation_price(
-                    pair="DOGE/USDT",
+                    pair=pair,
                     open_rate=open_rate,
                     is_short=is_short,
                     wallet_balance=wallet_balance,
-                    mm_ex_1=mm_ex_1,
-                    upnl_ex_1=upnl_ex_1,
                     amount=amount,
                     stake_amount=open_rate * amount,
                     leverage=5,
+                    open_trades=open_trade_objects,
                 ),
                 2,
             )

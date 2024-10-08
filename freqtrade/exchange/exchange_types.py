@@ -1,11 +1,11 @@
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Optional, TypedDict
 
 from freqtrade.enums import CandleType
 
 
 class FtHas(TypedDict, total=False):
-    order_time_in_force: List[str]
-    exchange_has_overrides: Dict[str, bool]
+    order_time_in_force: list[str]
+    exchange_has_overrides: dict[str, bool]
     marketOrderRequiresPrice: bool
 
     # Stoploss on exchange
@@ -13,16 +13,16 @@ class FtHas(TypedDict, total=False):
     stop_price_param: str
     stop_price_prop: str
     stop_price_type_field: str
-    stop_price_type_value_mapping: Dict
-    stoploss_order_types: Dict[str, str]
+    stop_price_type_value_mapping: dict
+    stoploss_order_types: dict[str, str]
     # ohlcv
-    ohlcv_params: Dict
+    ohlcv_params: dict
     ohlcv_candle_limit: int
     ohlcv_has_history: bool
     ohlcv_partial_candle: bool
     ohlcv_require_since: bool
     ohlcv_volume_currency: str
-    ohlcv_candle_limit_per_timeframe: Dict[str, int]
+    ohlcv_candle_limit_per_timeframe: dict[str, int]
     # Tickers
     tickers_have_quoteVolume: bool
     tickers_have_percentage: bool
@@ -35,7 +35,7 @@ class FtHas(TypedDict, total=False):
     trades_has_history: bool
     trades_pagination_overlap: bool
     # Orderbook
-    l2_limit_range: Optional[List[int]]
+    l2_limit_range: Optional[list[int]]
     l2_limit_range_required: bool
     # Futures
     ccxt_futures_name: str  # usually swap
@@ -44,7 +44,7 @@ class FtHas(TypedDict, total=False):
     funding_fee_timeframe: str
     floor_leverage: bool
     needs_trading_fees: bool
-    order_props_in_contracts: List[str]
+    order_props_in_contracts: list[str]
 
     # Websocket control
     ws_enabled: bool
@@ -63,13 +63,13 @@ class Ticker(TypedDict):
     # Several more - only listing required.
 
 
-Tickers = Dict[str, Ticker]
+Tickers = dict[str, Ticker]
 
 
 class OrderBook(TypedDict):
     symbol: str
-    bids: List[Tuple[float, float]]
-    asks: List[Tuple[float, float]]
+    bids: list[tuple[float, float]]
+    asks: list[tuple[float, float]]
     timestamp: Optional[int]
     datetime: Optional[str]
     nonce: Optional[int]
@@ -81,7 +81,7 @@ class CcxtBalance(TypedDict):
     total: float
 
 
-CcxtBalances = Dict[str, CcxtBalance]
+CcxtBalances = dict[str, CcxtBalance]
 
 
 class CcxtPosition(TypedDict):
@@ -95,4 +95,4 @@ class CcxtPosition(TypedDict):
 
 
 # pair, timeframe, candleType, OHLCV, drop last?,
-OHLCVResponse = Tuple[str, str, CandleType, List, bool]
+OHLCVResponse = tuple[str, str, CandleType, list, bool]

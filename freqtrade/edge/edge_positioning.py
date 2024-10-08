@@ -5,7 +5,7 @@ import logging
 from collections import defaultdict
 from copy import deepcopy
 from datetime import timedelta
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, NamedTuple
 
 import numpy as np
 import utils_find_1st as utf1st
@@ -44,7 +44,7 @@ class Edge:
     Author: https://github.com/mishaker
     """
 
-    _cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
+    _cached_pairs: dict[str, Any] = {}  # Keeps a list of pairs
 
     def __init__(self, config: Config, exchange, strategy) -> None:
         self.config = config
@@ -52,7 +52,7 @@ class Edge:
         self.strategy: IStrategy = strategy
 
         self.edge_config = self.config.get("edge", {})
-        self._cached_pairs: Dict[str, Any] = {}  # Keeps a list of pairs
+        self._cached_pairs: dict[str, Any] = {}  # Keeps a list of pairs
         self._final_pairs: list = []
 
         # checking max_open_trades. it should be -1 as with Edge
@@ -93,7 +93,7 @@ class Edge:
             except IndexError:
                 self.fee = None
 
-    def calculate(self, pairs: List[str]) -> bool:
+    def calculate(self, pairs: list[str]) -> bool:
         if self.fee is None and pairs:
             self.fee = self.exchange.get_fee(pairs[0])
 
@@ -104,7 +104,7 @@ class Edge:
         ):
             return False
 
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         logger.info("Using stake_currency: %s ...", self.config["stake_currency"])
         logger.info("Using local backtesting data (using whitelist in given config) ...")
 
@@ -231,7 +231,7 @@ class Edge:
             )
             return self.strategy.stoploss
 
-    def adjust(self, pairs: List[str]) -> list:
+    def adjust(self, pairs: list[str]) -> list:
         """
         Filters out and sorts "pairs" according to Edge calculated pairs
         """
@@ -260,7 +260,7 @@ class Edge:
 
         return self._final_pairs
 
-    def accepted_pairs(self) -> List[Dict[str, Any]]:
+    def accepted_pairs(self) -> list[dict[str, Any]]:
         """
         return a list of accepted pairs along with their winrate, expectancy and stoploss
         """
@@ -322,7 +322,7 @@ class Edge:
 
         return result
 
-    def _process_expectancy(self, results: DataFrame) -> Dict[str, Any]:
+    def _process_expectancy(self, results: DataFrame) -> dict[str, Any]:
         """
         This calculates WinRate, Required Risk Reward, Risk Reward and Expectancy of all pairs
         The calculation will be done per pair and per strategy.

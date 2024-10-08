@@ -47,7 +47,8 @@ develop = [
     "time-machine",
     "types-cachetools",
     "types-filelock",
-    "types-python-dateutil" "types-requests",
+    "types-python-dateutil",
+    "types-requests",
     "types-tabulate",
 ]
 

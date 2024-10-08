@@ -1,7 +1,7 @@
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, status
@@ -56,7 +56,7 @@ def get_user_from_token(token, secret_key: str, token_type: str = "access") -> s
 async def validate_ws_token(
     ws: WebSocket,
     ws_token: Union[str, None] = Query(default=None, alias="token"),
-    api_config: Dict[str, Any] = Depends(get_api_config),
+    api_config: dict[str, Any] = Depends(get_api_config),
 ):
     secret_ws_token = api_config.get("ws_token", None)
     secret_jwt_key = api_config.get("jwt_secret_key", "super-secret")

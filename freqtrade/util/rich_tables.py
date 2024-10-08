@@ -1,5 +1,6 @@
 import sys
-from typing import Any, Dict, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, Optional, Union
 
 from pandas import DataFrame
 from rich.console import Console
@@ -11,12 +12,12 @@ TextOrString = Union[str, Text]
 
 
 def print_rich_table(
-    tabular_data: Sequence[Union[Dict[str, Any], Sequence[TextOrString]]],
+    tabular_data: Sequence[Union[dict[str, Any], Sequence[TextOrString]]],
     headers: Sequence[str],
     summary: Optional[str] = None,
     *,
     justify="right",
-    table_kwargs: Optional[Dict[str, Any]] = None,
+    table_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
     table = Table(
         *[c if isinstance(c, Column) else Column(c, justify=justify) for c in headers],
@@ -34,7 +35,7 @@ def print_rich_table(
             )
 
         else:
-            row_to_add: List[Union[str, Text]] = [r if isinstance(r, Text) else str(r) for r in row]
+            row_to_add: list[Union[str, Text]] = [r if isinstance(r, Text) else str(r) for r in row]
             table.add_row(*row_to_add)
 
     width = None
@@ -58,7 +59,7 @@ def print_df_rich_table(
     *,
     show_index=False,
     index_name: Optional[str] = None,
-    table_kwargs: Optional[Dict[str, Any]] = None,
+    table_kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
     table = Table(title=summary, **(table_kwargs or {}))
 

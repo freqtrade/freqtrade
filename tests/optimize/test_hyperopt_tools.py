@@ -1,7 +1,6 @@
 import logging
 import re
 from pathlib import Path
-from typing import Dict, List
 
 import numpy as np
 import pytest
@@ -14,7 +13,7 @@ from tests.conftest import CURRENT_TEST_STRATEGY, log_has, log_has_re
 
 
 # Functions for recurrent object patching
-def create_results() -> List[Dict]:
+def create_results() -> list[dict]:
     return [{"loss": 1, "result": "foo", "params": {}, "is_best": True}]
 
 

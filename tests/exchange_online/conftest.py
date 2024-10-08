@@ -1,6 +1,5 @@
 from copy import deepcopy
 from pathlib import Path
-from typing import Tuple
 
 import pytest
 
@@ -10,8 +9,8 @@ from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import EXMS, get_default_conf_usdt
 
 
-EXCHANGE_FIXTURE_TYPE = Tuple[Exchange, str]
-EXCHANGE_WS_FIXTURE_TYPE = Tuple[Exchange, str, str]
+EXCHANGE_FIXTURE_TYPE = tuple[Exchange, str]
+EXCHANGE_WS_FIXTURE_TYPE = tuple[Exchange, str, str]
 
 
 # Exchanges that should be tested online

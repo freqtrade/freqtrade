@@ -3,7 +3,6 @@ Offset pair list filter
 """
 
 import logging
-from typing import Dict, List
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange_types import Tickers
@@ -47,7 +46,7 @@ class OffsetFilter(IPairList):
         return "Offset pair list filter."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "offset": {
                 "type": "number",
@@ -63,7 +62,7 @@ class OffsetFilter(IPairList):
             },
         }
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary

@@ -2,7 +2,7 @@ import logging
 import random
 from abc import abstractmethod
 from enum import Enum
-from typing import List, Optional, Type, Union
+from typing import Optional, Union
 
 import gymnasium as gym
 import numpy as np
@@ -89,7 +89,7 @@ class BaseEnvironment(gym.Env):
             self.fee = fee
 
         # set here to default 5Ac, but all children envs can override this
-        self.actions: Type[Enum] = BaseActions
+        self.actions: type[Enum] = BaseActions
         self.tensorboard_metrics: dict = {}
         self.can_short: bool = can_short
         self.live: bool = live
@@ -163,7 +163,7 @@ class BaseEnvironment(gym.Env):
         Unique to the environment action count. Must be inherited.
         """
 
-    def action_masks(self) -> List[bool]:
+    def action_masks(self) -> list[bool]:
         return [self._is_valid(action.value) for action in self.actions]
 
     def seed(self, seed: int = 1):
@@ -375,7 +375,7 @@ class BaseEnvironment(gym.Env):
     def current_price(self) -> float:
         return self.prices.iloc[self._current_tick].open
 
-    def get_actions(self) -> Type[Enum]:
+    def get_actions(self) -> type[Enum]:
         """
         Used by SubprocVecEnv to get actions from
         initialized env for tensorboard callback

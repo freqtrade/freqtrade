@@ -4,7 +4,6 @@ Functions to convert data from one format to another
 
 import logging
 from pathlib import Path
-from typing import Dict, List
 
 import pandas as pd
 from pandas import DataFrame, to_datetime
@@ -34,7 +33,7 @@ def trades_df_remove_duplicates(trades: pd.DataFrame) -> pd.DataFrame:
     return trades.drop_duplicates(subset=["timestamp", "id"])
 
 
-def trades_dict_to_list(trades: List[Dict]) -> TradeList:
+def trades_dict_to_list(trades: list[dict]) -> TradeList:
     """
     Convert fetch_trades result into a List (to be more memory efficient).
     :param trades: List of trades, as returned by ccxt.fetch_trades.
@@ -91,8 +90,8 @@ def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:
 
 
 def convert_trades_to_ohlcv(
-    pairs: List[str],
-    timeframes: List[str],
+    pairs: list[str],
+    timeframes: list[str],
     datadir: Path,
     timerange: TimeRange,
     erase: bool,

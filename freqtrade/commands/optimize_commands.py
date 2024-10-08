@@ -1,23 +1,24 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from freqtrade import constants
-from freqtrade.configuration import setup_utils_configuration
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
-from freqtrade.util import fmt_coin
 
 
 logger = logging.getLogger(__name__)
 
 
-def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[str, Any]:
+def setup_optimize_configuration(args: dict[str, Any], method: RunMode) -> dict[str, Any]:
     """
     Prepare the configuration for the Hyperopt module
     :param args: Cli args from Arguments()
     :param method: Bot running mode
     :return: Configuration
     """
+    from freqtrade.configuration import setup_utils_configuration
+    from freqtrade.util import fmt_coin
+
     config = setup_utils_configuration(args, method)
 
     no_unlimited_runmodes = {
@@ -41,7 +42,7 @@ def setup_optimize_configuration(args: Dict[str, Any], method: RunMode) -> Dict[
     return config
 
 
-def start_backtesting(args: Dict[str, Any]) -> None:
+def start_backtesting(args: dict[str, Any]) -> None:
     """
     Start Backtesting script
     :param args: Cli args from Arguments()
@@ -60,10 +61,11 @@ def start_backtesting(args: Dict[str, Any]) -> None:
     backtesting.start()
 
 
-def start_backtesting_show(args: Dict[str, Any]) -> None:
+def start_backtesting_show(args: dict[str, Any]) -> None:
     """
     Show previous backtest result
     """
+    from freqtrade.configuration import setup_utils_configuration
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
@@ -76,7 +78,7 @@ def start_backtesting_show(args: Dict[str, Any]) -> None:
     show_sorted_pairlist(config, results)
 
 
-def start_hyperopt(args: Dict[str, Any]) -> None:
+def start_hyperopt(args: dict[str, Any]) -> None:
     """
     Start hyperopt script
     :param args: Cli args from Arguments()
@@ -121,7 +123,7 @@ def start_hyperopt(args: Dict[str, Any]) -> None:
         # Same in Edge and Backtesting start() functions.
 
 
-def start_edge(args: Dict[str, Any]) -> None:
+def start_edge(args: dict[str, Any]) -> None:
     """
     Start Edge script
     :param args: Cli args from Arguments()
@@ -138,24 +140,26 @@ def start_edge(args: Dict[str, Any]) -> None:
     edge_cli.start()
 
 
-def start_lookahead_analysis(args: Dict[str, Any]) -> None:
+def start_lookahead_analysis(args: dict[str, Any]) -> None:
     """
     Start the backtest bias tester script
     :param args: Cli args from Arguments()
     :return: None
     """
+    from freqtrade.configuration import setup_utils_configuration
     from freqtrade.optimize.analysis.lookahead_helpers import LookaheadAnalysisSubFunctions
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
     LookaheadAnalysisSubFunctions.start(config)
 
 
-def start_recursive_analysis(args: Dict[str, Any]) -> None:
+def start_recursive_analysis(args: dict[str, Any]) -> None:
     """
     Start the backtest recursive tester script
     :param args: Cli args from Arguments()
     :return: None
     """
+    from freqtrade.configuration import setup_utils_configuration
     from freqtrade.optimize.analysis.recursive_helpers import RecursiveAnalysisSubFunctions
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)

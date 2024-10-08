@@ -5,7 +5,7 @@ Provides pair list from Leader data
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import Optional
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange_types import Tickers
@@ -64,7 +64,7 @@ class ProducerPairList(IPairList):
         return "Get a pairlist from an upstream bot."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "number_assets": {
                 "type": "number",
@@ -83,7 +83,7 @@ class ProducerPairList(IPairList):
             },
         }
 
-    def _filter_pairlist(self, pairlist: Optional[List[str]]):
+    def _filter_pairlist(self, pairlist: Optional[list[str]]):
         upstream_pairlist = self._pairlistmanager._dataprovider.get_producer_pairs(
             self._producer_name
         )
@@ -97,7 +97,7 @@ class ProducerPairList(IPairList):
 
         return pairs
 
-    def gen_pairlist(self, tickers: Tickers) -> List[str]:
+    def gen_pairlist(self, tickers: Tickers) -> list[str]:
         """
         Generate the pairlist
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
@@ -108,7 +108,7 @@ class ProducerPairList(IPairList):
         pairs = self._whitelist_for_active_markets(self.verify_whitelist(pairs, logger.info))
         return pairs
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Tickers) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary

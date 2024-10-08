@@ -8,8 +8,9 @@ import importlib.util
 import inspect
 import logging
 import sys
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
+from typing import Any, Optional, Union
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
@@ -40,7 +41,7 @@ class IResolver:
     """
 
     # Childclasses need to override this
-    object_type: Type[Any]
+    object_type: type[Any]
     object_type_str: str
     user_subdir: Optional[str] = None
     initial_search_path: Optional[Path] = None
@@ -52,9 +53,9 @@ class IResolver:
         cls,
         config: Config,
         user_subdir: Optional[str] = None,
-        extra_dirs: Optional[List[str]] = None,
-    ) -> List[Path]:
-        abs_paths: List[Path] = []
+        extra_dirs: Optional[list[str]] = None,
+    ) -> list[Path]:
+        abs_paths: list[Path] = []
         if cls.initial_search_path:
             abs_paths.append(cls.initial_search_path)
 
@@ -108,15 +109,21 @@ class IResolver:
                 if enum_failed:
                     return iter([None])
 
+            def is_valid_class(obj):
+                try:
+                    return (
+                        inspect.isclass(obj)
+                        and issubclass(obj, cls.object_type)
+                        and obj is not cls.object_type
+                        and obj.__module__ == module_name
+                    )
+                except TypeError:
+                    return False
+
             valid_objects_gen = (
                 (obj, inspect.getsource(module))
-                for name, obj in inspect.getmembers(module, inspect.isclass)
-                if (
-                    (object_name is None or object_name == name)
-                    and issubclass(obj, cls.object_type)
-                    and obj is not cls.object_type
-                    and obj.__module__ == module_name
-                )
+                for name, obj in inspect.getmembers(module, is_valid_class)
+                if (object_name is None or object_name == name)
             )
             # The __module__ check ensures we only use strategies that are defined in this folder.
             return valid_objects_gen
@@ -124,7 +131,7 @@ class IResolver:
     @classmethod
     def _search_object(
         cls, directory: Path, *, object_name: str, add_source: bool = False
-    ) -> Union[Tuple[Any, Path], Tuple[None, None]]:
+    ) -> Union[tuple[Any, Path], tuple[None, None]]:
         """
         Search for the objectname in the given directory
         :param directory: relative or absolute directory path
@@ -153,7 +160,7 @@ class IResolver:
 
     @classmethod
     def _load_object(
-        cls, paths: List[Path], *, object_name: str, add_source: bool = False, kwargs: Dict
+        cls, paths: list[Path], *, object_name: str, add_source: bool = False, kwargs: dict
     ) -> Optional[Any]:
         """
         Try to load object from path list.
@@ -188,7 +195,7 @@ class IResolver:
         :return: Object instance or None
         """
 
-        extra_dirs: List[str] = []
+        extra_dirs: list[str] = []
         if extra_dir:
             extra_dirs.append(extra_dir)
 
@@ -207,7 +214,7 @@ class IResolver:
     @classmethod
     def search_all_objects(
         cls, config: Config, enum_failed: bool, recursive: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Searches for valid objects
         :param config: Config object
@@ -239,7 +246,7 @@ class IResolver:
         enum_failed: bool,
         recursive: bool = False,
         basedir: Optional[Path] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Searches a directory for valid objects
         :param directory: Path to search
@@ -249,7 +256,7 @@ class IResolver:
         :return: List of dicts containing 'name', 'class' and 'location' entries
         """
         logger.debug(f"Searching for {cls.object_type.__name__} '{directory}'")
-        objects: List[Dict[str, Any]] = []
+        objects: list[dict[str, Any]] = []
         if not directory.is_dir():
             logger.info(f"'{directory}' is not a directory, skipping.")
             return objects

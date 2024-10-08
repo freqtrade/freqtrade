@@ -5,7 +5,6 @@ Provides dynamic pair list based on Market Cap
 """
 
 import logging
-from typing import Dict, List
 
 from cachetools import TTLCache
 
@@ -83,7 +82,7 @@ class MarketCapPairList(IPairList):
         return "Provides pair list based on CoinGecko's market cap rank."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "number_assets": {
                 "type": "number",
@@ -114,7 +113,7 @@ class MarketCapPairList(IPairList):
             },
         }
 
-    def gen_pairlist(self, tickers: Tickers) -> List[str]:
+    def gen_pairlist(self, tickers: Tickers) -> list[str]:
         """
         Generate the pairlist
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
@@ -143,7 +142,7 @@ class MarketCapPairList(IPairList):
 
         return pairlist
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: dict) -> list[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary

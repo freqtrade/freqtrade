@@ -8,7 +8,7 @@ Common Interface for bot and strategy to access data.
 import logging
 from collections import deque
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from pandas import DataFrame, Timedelta, Timestamp, to_timedelta
 
@@ -48,15 +48,15 @@ class DataProvider:
         self._exchange = exchange
         self._pairlists = pairlists
         self.__rpc = rpc
-        self.__cached_pairs: Dict[PairWithTimeframe, Tuple[DataFrame, datetime]] = {}
+        self.__cached_pairs: dict[PairWithTimeframe, tuple[DataFrame, datetime]] = {}
         self.__slice_index: Optional[int] = None
         self.__slice_date: Optional[datetime] = None
 
-        self.__cached_pairs_backtesting: Dict[PairWithTimeframe, DataFrame] = {}
-        self.__producer_pairs_df: Dict[
-            str, Dict[PairWithTimeframe, Tuple[DataFrame, datetime]]
+        self.__cached_pairs_backtesting: dict[PairWithTimeframe, DataFrame] = {}
+        self.__producer_pairs_df: dict[
+            str, dict[PairWithTimeframe, tuple[DataFrame, datetime]]
         ] = {}
-        self.__producer_pairs: Dict[str, List[str]] = {}
+        self.__producer_pairs: dict[str, list[str]] = {}
         self._msg_queue: deque = deque()
 
         self._default_candle_type = self._config.get("candle_type_def", CandleType.SPOT)
@@ -101,7 +101,7 @@ class DataProvider:
         self.__cached_pairs[pair_key] = (dataframe, datetime.now(timezone.utc))
 
     # For multiple producers we will want to merge the pairlists instead of overwriting
-    def _set_producer_pairs(self, pairlist: List[str], producer_name: str = "default"):
+    def _set_producer_pairs(self, pairlist: list[str], producer_name: str = "default"):
         """
         Set the pairs received to later be used.
 
@@ -109,7 +109,7 @@ class DataProvider:
         """
         self.__producer_pairs[producer_name] = pairlist
 
-    def get_producer_pairs(self, producer_name: str = "default") -> List[str]:
+    def get_producer_pairs(self, producer_name: str = "default") -> list[str]:
         """
         Get the pairs cached from the producer
 
@@ -177,7 +177,7 @@ class DataProvider:
         timeframe: str,
         candle_type: CandleType,
         producer_name: str = "default",
-    ) -> Tuple[bool, int]:
+    ) -> tuple[bool, int]:
         """
         Append a candle to the existing external dataframe. The incoming dataframe
         must have at least 1 candle.
@@ -258,7 +258,7 @@ class DataProvider:
         timeframe: Optional[str] = None,
         candle_type: Optional[CandleType] = None,
         producer_name: str = "default",
-    ) -> Tuple[DataFrame, datetime]:
+    ) -> tuple[DataFrame, datetime]:
         """
         Get the pair data from producers.
 
@@ -377,7 +377,7 @@ class DataProvider:
             logger.warning(f"No data found for ({pair}, {timeframe}, {candle_type}).")
         return data
 
-    def get_analyzed_dataframe(self, pair: str, timeframe: str) -> Tuple[DataFrame, datetime]:
+    def get_analyzed_dataframe(self, pair: str, timeframe: str) -> tuple[DataFrame, datetime]:
         """
         Retrieve the analyzed dataframe. Returns the full dataframe in trade mode (live / dry),
         and the last 1000 candles (up to the time evaluated at this moment) in all other modes.
@@ -408,7 +408,7 @@ class DataProvider:
         """
         return RunMode(self._config.get("runmode", RunMode.OTHER))
 
-    def current_whitelist(self) -> List[str]:
+    def current_whitelist(self) -> list[str]:
         """
         fetch latest available whitelist.
 
@@ -529,7 +529,7 @@ class DataProvider:
             )
             return trades_df
 
-    def market(self, pair: str) -> Optional[Dict[str, Any]]:
+    def market(self, pair: str) -> Optional[dict[str, Any]]:
         """
         Return market data for the pair
         :param pair: Pair to get the data for

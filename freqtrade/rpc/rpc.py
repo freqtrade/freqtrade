@@ -4,9 +4,10 @@ This module contains class to define a RPC communications
 
 import logging
 from abc import abstractmethod
+from collections.abc import Generator, Sequence
 from datetime import date, datetime, timedelta, timezone
 from math import isnan
-from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
+from typing import Any, Optional, Union
 
 import psutil
 from dateutil.relativedelta import relativedelta
@@ -112,7 +113,7 @@ class RPC:
     @staticmethod
     def _rpc_show_config(
         config, botstate: Union[State, str], strategy_version: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Return a dict of config options.
         Explicitly does NOT return the full config to avoid leakage of sensitive
@@ -167,7 +168,7 @@ class RPC:
         }
         return val
 
-    def _rpc_trade_status(self, trade_ids: Optional[List[int]] = None) -> List[Dict[str, Any]]:
+    def _rpc_trade_status(self, trade_ids: Optional[list[int]] = None) -> list[dict[str, Any]]:
         """
         Below follows the RPC backend it is prefixed with rpc_ to raise awareness that it is
         a remotely exposed function
@@ -270,8 +271,8 @@ class RPC:
 
     def _rpc_status_table(
         self, stake_currency: str, fiat_display_currency: str
-    ) -> Tuple[List, List, float]:
-        trades: List[Trade] = Trade.get_open_trades()
+    ) -> tuple[list, list, float]:
+        trades: list[Trade] = Trade.get_open_trades()
         nonspot = self._config.get("trading_mode", TradingMode.SPOT) != TradingMode.SPOT
         if not trades:
             raise RPCException("no active trade")
@@ -354,7 +355,7 @@ class RPC:
         stake_currency: str,
         fiat_display_currency: str,
         timeunit: str = "days",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         :param timeunit: Valid entries are 'days', 'weeks', 'months'
         """
@@ -373,7 +374,7 @@ class RPC:
         if not (isinstance(timescale, int) and timescale > 0):
             raise RPCException("timescale must be an integer greater than 0")
 
-        profit_units: Dict[date, Dict] = {}
+        profit_units: dict[date, dict] = {}
         daily_stake = self._freqtrade.wallets.get_total_stake_amount()
 
         for day in range(0, timescale):
@@ -424,7 +425,7 @@ class RPC:
             "data": data,
         }
 
-    def _rpc_trade_history(self, limit: int, offset: int = 0, order_by_id: bool = False) -> Dict:
+    def _rpc_trade_history(self, limit: int, offset: int = 0, order_by_id: bool = False) -> dict:
         """Returns the X last trades"""
         order_by: Any = Trade.id if order_by_id else Trade.close_date.desc()
         if limit:
@@ -451,7 +452,7 @@ class RPC:
             "total_trades": total_trades,
         }
 
-    def _rpc_stats(self) -> Dict[str, Any]:
+    def _rpc_stats(self) -> dict[str, Any]:
         """
         Generate generic stats for trades in database
         """
@@ -466,7 +467,7 @@ class RPC:
 
         trades = Trade.get_trades([Trade.is_open.is_(False)], include_orders=False)
         # Duration
-        dur: Dict[str, List[float]] = {"wins": [], "draws": [], "losses": []}
+        dur: dict[str, list[float]] = {"wins": [], "draws": [], "losses": []}
         # Exit reason
         exit_reasons = {}
         for trade in trades:
@@ -487,7 +488,7 @@ class RPC:
 
     def _rpc_trade_statistics(
         self, stake_currency: str, fiat_display_currency: str, start_date: Optional[datetime] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Returns cumulative profit statistics"""
 
         start_date = datetime.fromtimestamp(0) if start_date is None else start_date
@@ -670,7 +671,7 @@ class RPC:
 
     def __balance_get_est_stake(
         self, coin: str, stake_currency: str, amount: float, balance: Wallet, tickers
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         est_stake = 0.0
         est_bot_stake = 0.0
         if coin == stake_currency:
@@ -690,9 +691,9 @@ class RPC:
 
         return est_stake, est_bot_stake
 
-    def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> Dict:
+    def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> dict:
         """Returns current account balance per crypto"""
-        currencies: List[Dict] = []
+        currencies: list[dict] = []
         total = 0.0
         total_bot = 0.0
         try:
@@ -700,8 +701,8 @@ class RPC:
         except ExchangeError:
             raise RPCException("Error getting current tickers.")
 
-        open_trades: List[Trade] = Trade.get_open_trades()
-        open_assets: Dict[str, Trade] = {t.safe_base_currency: t for t in open_trades}
+        open_trades: list[Trade] = Trade.get_open_trades()
+        open_assets: dict[str, Trade] = {t.safe_base_currency: t for t in open_trades}
         self._freqtrade.wallets.update(require_update=False)
         starting_capital = self._freqtrade.wallets.get_starting_balance()
         starting_cap_fiat = (
@@ -805,7 +806,7 @@ class RPC:
             "note": "Simulated balances" if self._freqtrade.config["dry_run"] else "",
         }
 
-    def _rpc_start(self) -> Dict[str, str]:
+    def _rpc_start(self) -> dict[str, str]:
         """Handler for start"""
         if self._freqtrade.state == State.RUNNING:
             return {"status": "already running"}
@@ -813,7 +814,7 @@ class RPC:
         self._freqtrade.state = State.RUNNING
         return {"status": "starting trader ..."}
 
-    def _rpc_stop(self) -> Dict[str, str]:
+    def _rpc_stop(self) -> dict[str, str]:
         """Handler for stop"""
         if self._freqtrade.state == State.RUNNING:
             self._freqtrade.state = State.STOPPED
@@ -821,12 +822,12 @@ class RPC:
 
         return {"status": "already stopped"}
 
-    def _rpc_reload_config(self) -> Dict[str, str]:
+    def _rpc_reload_config(self) -> dict[str, str]:
         """Handler for reload_config."""
         self._freqtrade.state = State.RELOAD_CONFIG
         return {"status": "Reloading config ..."}
 
-    def _rpc_stopentry(self) -> Dict[str, str]:
+    def _rpc_stopentry(self) -> dict[str, str]:
         """
         Handler to stop buying, but handle open trades gracefully.
         """
@@ -837,7 +838,7 @@ class RPC:
 
         return {"status": "No more entries will occur from now. Run /reload_config to reset."}
 
-    def _rpc_reload_trade_from_exchange(self, trade_id: int) -> Dict[str, str]:
+    def _rpc_reload_trade_from_exchange(self, trade_id: int) -> dict[str, str]:
         """
         Handler for reload_trade_from_exchange.
         Reloads a trade from it's orders, should manual interaction have happened.
@@ -901,7 +902,7 @@ class RPC:
 
     def _rpc_force_exit(
         self, trade_id: str, ordertype: Optional[str] = None, *, amount: Optional[float] = None
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Handler for forceexit <id>.
         Sells the given trade at current price
@@ -1051,7 +1052,7 @@ class RPC:
                 )
             Trade.commit()
 
-    def _rpc_delete(self, trade_id: int) -> Dict[str, Union[str, int]]:
+    def _rpc_delete(self, trade_id: int) -> dict[str, Union[str, int]]:
         """
         Handler for delete <id>.
         Delete the given trade and close eventually existing open orders.
@@ -1092,7 +1093,7 @@ class RPC:
                 "cancel_order_count": c_count,
             }
 
-    def _rpc_list_custom_data(self, trade_id: int, key: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_list_custom_data(self, trade_id: int, key: Optional[str]) -> list[dict[str, Any]]:
         # Query for trade
         trade = Trade.get_trades(trade_filter=[Trade.id == trade_id]).first()
         if trade is None:
@@ -1118,7 +1119,7 @@ class RPC:
             for data_entry in custom_data
         ]
 
-    def _rpc_performance(self) -> List[Dict[str, Any]]:
+    def _rpc_performance(self) -> list[dict[str, Any]]:
         """
         Handler for performance.
         Shows a performance statistic from finished trades
@@ -1127,21 +1128,21 @@ class RPC:
 
         return pair_rates
 
-    def _rpc_enter_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_enter_tag_performance(self, pair: Optional[str]) -> list[dict[str, Any]]:
         """
         Handler for buy tag performance.
         Shows a performance statistic from finished trades
         """
         return Trade.get_enter_tag_performance(pair)
 
-    def _rpc_exit_reason_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_exit_reason_performance(self, pair: Optional[str]) -> list[dict[str, Any]]:
         """
         Handler for exit reason performance.
         Shows a performance statistic from finished trades
         """
         return Trade.get_exit_reason_performance(pair)
 
-    def _rpc_mix_tag_performance(self, pair: Optional[str]) -> List[Dict[str, Any]]:
+    def _rpc_mix_tag_performance(self, pair: Optional[str]) -> list[dict[str, Any]]:
         """
         Handler for mix tag (enter_tag + exit_reason) performance.
         Shows a performance statistic from finished trades
@@ -1150,7 +1151,7 @@ class RPC:
 
         return mix_tags
 
-    def _rpc_count(self) -> Dict[str, float]:
+    def _rpc_count(self) -> dict[str, float]:
         """Returns the number of trades running"""
         if self._freqtrade.state != State.RUNNING:
             raise RPCException("trader is not running")
@@ -1166,7 +1167,7 @@ class RPC:
             "total_stake": sum((trade.open_rate * trade.amount) for trade in trades),
         }
 
-    def _rpc_locks(self) -> Dict[str, Any]:
+    def _rpc_locks(self) -> dict[str, Any]:
         """Returns the  current locks"""
 
         locks = PairLocks.get_pair_locks(None)
@@ -1174,7 +1175,7 @@ class RPC:
 
     def _rpc_delete_lock(
         self, lockid: Optional[int] = None, pair: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Delete specific lock(s)"""
         locks: Sequence[PairLock] = []
 
@@ -1202,7 +1203,7 @@ class RPC:
         )
         return lock
 
-    def _rpc_whitelist(self) -> Dict:
+    def _rpc_whitelist(self) -> dict:
         """Returns the currently active whitelist"""
         res = {
             "method": self._freqtrade.pairlists.name_list,
@@ -1211,7 +1212,7 @@ class RPC:
         }
         return res
 
-    def _rpc_blacklist_delete(self, delete: List[str]) -> Dict:
+    def _rpc_blacklist_delete(self, delete: list[str]) -> dict:
         """Removes pairs from currently active blacklist"""
         errors = {}
         for pair in delete:
@@ -1223,7 +1224,7 @@ class RPC:
         resp["errors"] = errors
         return resp
 
-    def _rpc_blacklist(self, add: Optional[List[str]] = None) -> Dict:
+    def _rpc_blacklist(self, add: Optional[list[str]] = None) -> dict:
         """Returns the currently active blacklist"""
         errors = {}
         if add:
@@ -1248,7 +1249,7 @@ class RPC:
         return res
 
     @staticmethod
-    def _rpc_get_logs(limit: Optional[int]) -> Dict[str, Any]:
+    def _rpc_get_logs(limit: Optional[int]) -> dict[str, Any]:
         """Returns the last X logs"""
         if limit:
             buffer = bufferHandler.buffer[-limit:]
@@ -1272,7 +1273,7 @@ class RPC:
 
         return {"log_count": len(records), "logs": records}
 
-    def _rpc_edge(self) -> List[Dict[str, Any]]:
+    def _rpc_edge(self) -> list[dict[str, Any]]:
         """Returns information related to Edge"""
         if not self._freqtrade.edge:
             raise RPCException("Edge is not enabled.")
@@ -1285,8 +1286,8 @@ class RPC:
         timeframe: str,
         dataframe: DataFrame,
         last_analyzed: datetime,
-        selected_cols: Optional[List[str]],
-    ) -> Dict[str, Any]:
+        selected_cols: Optional[list[str]],
+    ) -> dict[str, Any]:
         has_content = len(dataframe) != 0
         dataframe_columns = list(dataframe.columns)
         signals = {
@@ -1354,8 +1355,8 @@ class RPC:
         return res
 
     def _rpc_analysed_dataframe(
-        self, pair: str, timeframe: str, limit: Optional[int], selected_cols: Optional[List[str]]
-    ) -> Dict[str, Any]:
+        self, pair: str, timeframe: str, limit: Optional[int], selected_cols: Optional[list[str]]
+    ) -> dict[str, Any]:
         """Analyzed dataframe in Dict form"""
 
         _data, last_analyzed = self.__rpc_analysed_dataframe_raw(pair, timeframe, limit)
@@ -1365,7 +1366,7 @@ class RPC:
 
     def __rpc_analysed_dataframe_raw(
         self, pair: str, timeframe: str, limit: Optional[int]
-    ) -> Tuple[DataFrame, datetime]:
+    ) -> tuple[DataFrame, datetime]:
         """
         Get the dataframe and last analyze from the dataprovider
 
@@ -1382,8 +1383,8 @@ class RPC:
         return _data, last_analyzed
 
     def _ws_all_analysed_dataframes(
-        self, pairlist: List[str], limit: Optional[int]
-    ) -> Generator[Dict[str, Any], None, None]:
+        self, pairlist: list[str], limit: Optional[int]
+    ) -> Generator[dict[str, Any], None, None]:
         """
         Get the analysed dataframes of each pair in the pairlist.
         If specified, only return the most recent `limit` candles for
@@ -1414,8 +1415,8 @@ class RPC:
 
     @staticmethod
     def _rpc_analysed_history_full(
-        config: Config, pair: str, timeframe: str, exchange, selected_cols: Optional[List[str]]
-    ) -> Dict[str, Any]:
+        config: Config, pair: str, timeframe: str, exchange, selected_cols: Optional[list[str]]
+    ) -> dict[str, Any]:
         timerange_parsed = TimeRange.parse_timerange(config.get("timerange"))
 
         from freqtrade.data.converter import trim_dataframe
@@ -1454,7 +1455,7 @@ class RPC:
             selected_cols,
         )
 
-    def _rpc_plot_config(self) -> Dict[str, Any]:
+    def _rpc_plot_config(self) -> dict[str, Any]:
         if (
             self._freqtrade.strategy.plot_config
             and "subplots" not in self._freqtrade.strategy.plot_config
@@ -1463,7 +1464,7 @@ class RPC:
         return self._freqtrade.strategy.plot_config
 
     @staticmethod
-    def _rpc_plot_config_with_strategy(config: Config) -> Dict[str, Any]:
+    def _rpc_plot_config_with_strategy(config: Config) -> dict[str, Any]:
         from freqtrade.resolvers.strategy_resolver import StrategyResolver
 
         strategy = StrategyResolver.load_strategy(config)
@@ -1475,15 +1476,15 @@ class RPC:
         return strategy.plot_config
 
     @staticmethod
-    def _rpc_sysinfo() -> Dict[str, Any]:
+    def _rpc_sysinfo() -> dict[str, Any]:
         return {
             "cpu_pct": psutil.cpu_percent(interval=1, percpu=True),
             "ram_pct": psutil.virtual_memory().percent,
         }
 
-    def health(self) -> Dict[str, Optional[Union[str, int]]]:
+    def health(self) -> dict[str, Optional[Union[str, int]]]:
         last_p = self._freqtrade.last_process
-        res: Dict[str, Union[None, str, int]] = {
+        res: dict[str, Union[None, str, int]] = {
             "last_process": None,
             "last_process_loc": None,
             "last_process_ts": None,

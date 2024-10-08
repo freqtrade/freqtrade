@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -24,7 +24,7 @@ class SKLearnRandomForestClassifier(BaseClassifierModel):
     top level config.json file.
     """
 
-    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
+    def fit(self, data_dictionary: dict, dk: FreqaiDataKitchen, **kwargs) -> Any:
         """
         User sets up the training and test data to fit their desired model here
         :param data_dictionary: the dictionary holding all data for train, test,
@@ -61,7 +61,7 @@ class SKLearnRandomForestClassifier(BaseClassifierModel):
 
     def predict(
         self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
-    ) -> Tuple[DataFrame, npt.NDArray[np.int_]]:
+    ) -> tuple[DataFrame, npt.NDArray[np.int_]]:
         """
         Filter the prediction features data and predict with it.
         :param  unfiltered_df: Full dataframe for the current backtest period.

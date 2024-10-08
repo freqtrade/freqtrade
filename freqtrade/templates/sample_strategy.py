@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from pandas import DataFrame
-from typing import Dict, Optional, Union, Tuple
+from typing import Optional, Union
 
 from freqtrade.strategy import (
     IStrategy,

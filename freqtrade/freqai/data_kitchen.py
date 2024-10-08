@@ -5,7 +5,7 @@ import random
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -64,15 +64,15 @@ class FreqaiDataKitchen:
         live: bool = False,
         pair: str = "",
     ):
-        self.data: Dict[str, Any] = {}
-        self.data_dictionary: Dict[str, DataFrame] = {}
+        self.data: dict[str, Any] = {}
+        self.data_dictionary: dict[str, DataFrame] = {}
         self.config = config
-        self.freqai_config: Dict[str, Any] = config["freqai"]
+        self.freqai_config: dict[str, Any] = config["freqai"]
         self.full_df: DataFrame = DataFrame()
         self.append_df: DataFrame = DataFrame()
         self.data_path = Path()
-        self.label_list: List = []
-        self.training_features_list: List = []
+        self.label_list: list = []
+        self.training_features_list: list = []
         self.model_filename: str = ""
         self.backtesting_results_path = Path()
         self.backtest_predictions_folder: str = "backtesting_predictions"
@@ -104,9 +104,9 @@ class FreqaiDataKitchen:
         else:
             self.thread_count = self.freqai_config["data_kitchen_thread_count"]
         self.train_dates: DataFrame = pd.DataFrame()
-        self.unique_classes: Dict[str, list] = {}
+        self.unique_classes: dict[str, list] = {}
         self.unique_class_list: list = []
-        self.backtest_live_models_data: Dict[str, Any] = {}
+        self.backtest_live_models_data: dict[str, Any] = {}
 
     def set_paths(
         self,
@@ -127,7 +127,7 @@ class FreqaiDataKitchen:
 
     def make_train_test_datasets(
         self, filtered_dataframe: DataFrame, labels: DataFrame
-    ) -> Dict[Any, Any]:
+    ) -> dict[Any, Any]:
         """
         Given the dataframe for the full history for training, split the data into
         training and test data according to user specified parameters in configuration
@@ -213,10 +213,10 @@ class FreqaiDataKitchen:
     def filter_features(
         self,
         unfiltered_df: DataFrame,
-        training_feature_list: List,
-        label_list: List = list(),
+        training_feature_list: list,
+        label_list: list = list(),
         training_filter: bool = True,
-    ) -> Tuple[DataFrame, DataFrame]:
+    ) -> tuple[DataFrame, DataFrame]:
         """
         Filter the unfiltered dataframe to extract the user requested features/labels and properly
         remove all NaNs. Any row with a NaN is removed from training dataset or replaced with
@@ -306,7 +306,7 @@ class FreqaiDataKitchen:
         test_labels: DataFrame,
         train_weights: Any,
         test_weights: Any,
-    ) -> Dict:
+    ) -> dict:
         self.data_dictionary = {
             "train_features": train_df,
             "test_features": test_df,
@@ -321,7 +321,7 @@ class FreqaiDataKitchen:
 
     def split_timerange(
         self, tr: str, train_split: int = 28, bt_split: float = 7
-    ) -> Tuple[list, list]:
+    ) -> tuple[list, list]:
         """
         Function which takes a single time range (tr) and splits it
         into sub timeranges to train and backtest on based on user input
@@ -535,7 +535,7 @@ class FreqaiDataKitchen:
 
     def check_if_new_training_required(
         self, trained_timestamp: int
-    ) -> Tuple[bool, TimeRange, TimeRange]:
+    ) -> tuple[bool, TimeRange, TimeRange]:
         time = datetime.now(tz=timezone.utc).timestamp()
         trained_timerange = TimeRange()
         data_load_timerange = TimeRange()
@@ -603,7 +603,7 @@ class FreqaiDataKitchen:
 
     def extract_corr_pair_columns_from_populated_indicators(
         self, dataframe: DataFrame
-    ) -> Dict[str, DataFrame]:
+    ) -> dict[str, DataFrame]:
         """
         Find the columns of the dataframe corresponding to the corr_pairlist, save them
         in a dictionary to be reused and attached to other pairs.
@@ -612,7 +612,7 @@ class FreqaiDataKitchen:
         :return: corr_dataframes, dictionary of dataframes to be attached
                  to other pairs in same candle.
         """
-        corr_dataframes: Dict[str, DataFrame] = {}
+        corr_dataframes: dict[str, DataFrame] = {}
         pairs = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
 
         for pair in pairs:
@@ -628,7 +628,7 @@ class FreqaiDataKitchen:
         return corr_dataframes
 
     def attach_corr_pair_columns(
-        self, dataframe: DataFrame, corr_dataframes: Dict[str, DataFrame], current_pair: str
+        self, dataframe: DataFrame, corr_dataframes: dict[str, DataFrame], current_pair: str
     ) -> DataFrame:
         """
         Attach the existing corr_pair dataframes to the current pair dataframe before training
@@ -731,7 +731,7 @@ class FreqaiDataKitchen:
         :param is_corr_pairs: bool = whether the pair is a corr pair or not
         :return: dataframe = populated dataframe
         """
-        tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
+        tfs: list[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
 
         for tf in tfs:
             metadata = {"pair": pair, "tf": tf}
@@ -810,8 +810,8 @@ class FreqaiDataKitchen:
                 f"{DOCS_LINK}/freqai-feature-engineering/"
             )
 
-        tfs: List[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
-        pairs: List[str] = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
+        tfs: list[str] = self.freqai_config["feature_parameters"].get("include_timeframes")
+        pairs: list[str] = self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
 
         for tf in tfs:
             if tf not in base_dataframes:
@@ -828,7 +828,7 @@ class FreqaiDataKitchen:
         else:
             dataframe = base_dataframes[self.config["timeframe"]].copy()
 
-        corr_pairs: List[str] = self.freqai_config["feature_parameters"].get(
+        corr_pairs: list[str] = self.freqai_config["feature_parameters"].get(
             "include_corr_pairlist", []
         )
         dataframe = self.populate_features(
@@ -953,7 +953,7 @@ class FreqaiDataKitchen:
         Returns default FreqAI model path
         :param config: Configuration dictionary
         """
-        freqai_config: Dict[str, Any] = config["freqai"]
+        freqai_config: dict[str, Any] = config["freqai"]
         return Path(config["user_data_dir"] / "models" / str(freqai_config.get("identifier")))
 
     def remove_special_chars_from_feature_names(self, dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -992,7 +992,7 @@ class FreqaiDataKitchen:
         return timerange
 
     # deprecated functions
-    def normalize_data(self, data_dictionary: Dict) -> Dict[Any, Any]:
+    def normalize_data(self, data_dictionary: dict) -> dict[Any, Any]:
         """
         Deprecation warning, migration assistance
         """

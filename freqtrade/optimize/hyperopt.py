@@ -11,7 +11,7 @@ import warnings
 from datetime import datetime, timezone
 from math import ceil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import rapidjson
 from joblib import Parallel, cpu_count, delayed, dump, load, wrap_non_picklable_objects
@@ -70,14 +70,14 @@ class Hyperopt:
     """
 
     def __init__(self, config: Config) -> None:
-        self.buy_space: List[Dimension] = []
-        self.sell_space: List[Dimension] = []
-        self.protection_space: List[Dimension] = []
-        self.roi_space: List[Dimension] = []
-        self.stoploss_space: List[Dimension] = []
-        self.trailing_space: List[Dimension] = []
-        self.max_open_trades_space: List[Dimension] = []
-        self.dimensions: List[Dimension] = []
+        self.buy_space: list[Dimension] = []
+        self.sell_space: list[Dimension] = []
+        self.protection_space: list[Dimension] = []
+        self.roi_space: list[Dimension] = []
+        self.stoploss_space: list[Dimension] = []
+        self.trailing_space: list[Dimension] = []
+        self.max_open_trades_space: list[Dimension] = []
+        self.dimensions: list[Dimension] = []
 
         self._hyper_out: HyperoptOutput = HyperoptOutput(streaming=True)
 
@@ -125,7 +125,7 @@ class Hyperopt:
 
         self.market_change = 0.0
         self.num_epochs_saved = 0
-        self.current_best_epoch: Optional[Dict[str, Any]] = None
+        self.current_best_epoch: Optional[dict[str, Any]] = None
 
         # Use max_open_trades for hyperopt as well, except --disable-max-market-positions is set
         if not self.config.get("use_max_market_positions", True):
@@ -168,8 +168,8 @@ class Hyperopt:
                 self.hyperopt_pickle_magic(modules.__bases__)
 
     def _get_params_dict(
-        self, dimensions: List[Dimension], raw_params: List[Any]
-    ) -> Dict[str, Any]:
+        self, dimensions: list[Dimension], raw_params: list[Any]
+    ) -> dict[str, Any]:
         # Ensure the number of dimensions match
         # the number of parameters in the list.
         if len(raw_params) != len(dimensions):
@@ -179,7 +179,7 @@ class Hyperopt:
         # and the values are taken from the list of parameters.
         return {d.name: v for d, v in zip(dimensions, raw_params)}
 
-    def _save_result(self, epoch: Dict) -> None:
+    def _save_result(self, epoch: dict) -> None:
         """
         Save hyperopt results to file
         Store one line per epoch.
@@ -205,11 +205,11 @@ class Hyperopt:
         latest_filename = Path.joinpath(self.results_file.parent, LAST_BT_RESULT_FN)
         file_dump_json(latest_filename, {"latest_hyperopt": str(self.results_file.name)}, log=False)
 
-    def _get_params_details(self, params: Dict) -> Dict:
+    def _get_params_details(self, params: dict) -> dict:
         """
         Return the params for each space
         """
-        result: Dict = {}
+        result: dict = {}
 
         if HyperoptTools.has_space(self.config, "buy"):
             result["buy"] = {p.name: params.get(p.name) for p in self.buy_space}
@@ -236,11 +236,11 @@ class Hyperopt:
 
         return result
 
-    def _get_no_optimize_details(self) -> Dict[str, Any]:
+    def _get_no_optimize_details(self) -> dict[str, Any]:
         """
         Get non-optimized parameters
         """
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         strategy = self.backtesting.strategy
         if not HyperoptTools.has_space(self.config, "roi"):
             result["roi"] = {str(k): v for k, v in strategy.minimal_roi.items()}
@@ -257,7 +257,7 @@ class Hyperopt:
             result["max_open_trades"] = {"max_open_trades": strategy.max_open_trades}
         return result
 
-    def print_results(self, results: Dict[str, Any]) -> None:
+    def print_results(self, results: dict[str, Any]) -> None:
         """
         Log results if it is better than any previous evaluation
         TODO: this should be moved to HyperoptTools too
@@ -318,7 +318,7 @@ class Hyperopt:
             + self.max_open_trades_space
         )
 
-    def assign_params(self, params_dict: Dict[str, Any], category: str) -> None:
+    def assign_params(self, params_dict: dict[str, Any], category: str) -> None:
         """
         Assign hyperoptable parameters
         """
@@ -327,7 +327,7 @@ class Hyperopt:
                 # noinspection PyProtectedMember
                 attr.value = params_dict[attr_name]
 
-    def generate_optimizer(self, raw_params: List[Any]) -> Dict[str, Any]:
+    def generate_optimizer(self, raw_params: list[Any]) -> dict[str, Any]:
         """
         Used Optimize function.
         Called once per epoch to optimize whatever is configured.
@@ -406,12 +406,12 @@ class Hyperopt:
 
     def _get_results_dict(
         self,
-        backtesting_results: Dict[str, Any],
+        backtesting_results: dict[str, Any],
         min_date: datetime,
         max_date: datetime,
-        params_dict: Dict[str, Any],
-        processed: Dict[str, DataFrame],
-    ) -> Dict[str, Any]:
+        params_dict: dict[str, Any],
+        processed: dict[str, DataFrame],
+    ) -> dict[str, Any]:
         params_details = self._get_params_details(params_dict)
 
         strat_stats = generate_strategy_stats(
@@ -458,7 +458,7 @@ class Hyperopt:
             "total_profit": total_profit,
         }
 
-    def get_optimizer(self, dimensions: List[Dimension], cpu_count) -> Optimizer:
+    def get_optimizer(self, dimensions: list[Dimension], cpu_count) -> Optimizer:
         estimator = self.custom_hyperopt.generate_estimator(dimensions=dimensions)
 
         acq_optimizer = "sampling"
@@ -479,7 +479,7 @@ class Hyperopt:
             model_queue_size=SKOPT_MODEL_QUEUE_SIZE,
         )
 
-    def run_optimizer_parallel(self, parallel: Parallel, asked: List[List]) -> List[Dict[str, Any]]:
+    def run_optimizer_parallel(self, parallel: Parallel, asked: list[list]) -> list[dict[str, Any]]:
         """Start optimizer in a parallel way"""
         return parallel(
             delayed(wrap_non_picklable_objects(self.generate_optimizer))(v) for v in asked
@@ -488,7 +488,7 @@ class Hyperopt:
     def _set_random_state(self, random_state: Optional[int]) -> int:
         return random_state or random.randint(1, 2**16 - 1)  # noqa: S311
 
-    def advise_and_trim(self, data: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+    def advise_and_trim(self, data: dict[str, DataFrame]) -> dict[str, DataFrame]:
         preprocessed = self.backtesting.strategy.advise_all_indicators(data)
 
         # Trim startup period from analyzed dataframe to get correct dates for output.
@@ -524,7 +524,7 @@ class Hyperopt:
         else:
             dump(data, self.data_pickle_file)
 
-    def get_asked_points(self, n_points: int) -> Tuple[List[List[Any]], List[bool]]:
+    def get_asked_points(self, n_points: int) -> tuple[list[list[Any]], list[bool]]:
         """
         Enforce points returned from `self.opt.ask` have not been already evaluated
 
@@ -545,8 +545,8 @@ class Hyperopt:
             return new_list
 
         i = 0
-        asked_non_tried: List[List[Any]] = []
-        is_random_non_tried: List[bool] = []
+        asked_non_tried: list[list[Any]] = []
+        is_random_non_tried: list[bool] = []
         while i < 5 and len(asked_non_tried) < n_points:
             if i < 3:
                 self.opt.cache_ = {}
@@ -573,7 +573,7 @@ class Hyperopt:
         else:
             return self.opt.ask(n_points=n_points), [False for _ in range(n_points)]
 
-    def evaluate_result(self, val: Dict[str, Any], current: int, is_random: bool):
+    def evaluate_result(self, val: dict[str, Any], current: int, is_random: bool):
         """
         Evaluate results returned from generate_optimizer
         """

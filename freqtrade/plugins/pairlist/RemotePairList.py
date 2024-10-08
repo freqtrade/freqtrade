@@ -6,7 +6,7 @@ Provides pair list fetched from a remote source
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import rapidjson
 import requests
@@ -54,7 +54,7 @@ class RemotePairList(IPairList):
         self._bearer_token = self._pairlistconfig.get("bearer_token", "")
         self._init_done = False
         self._save_to_file = self._pairlistconfig.get("save_to_file", None)
-        self._last_pairlist: List[Any] = list()
+        self._last_pairlist: list[Any] = list()
 
         if self._mode not in ["whitelist", "blacklist"]:
             raise OperationalException(
@@ -93,7 +93,7 @@ class RemotePairList(IPairList):
         return "Retrieve pairs from a remote API or local file."
 
     @staticmethod
-    def available_parameters() -> Dict[str, PairlistParameter]:
+    def available_parameters() -> dict[str, PairlistParameter]:
         return {
             "pairlist_url": {
                 "type": "string",
@@ -148,7 +148,7 @@ class RemotePairList(IPairList):
             },
         }
 
-    def process_json(self, jsonparse) -> List[str]:
+    def process_json(self, jsonparse) -> list[str]:
         pairlist = jsonparse.get("pairs", [])
         remote_refresh_period = int(jsonparse.get("refresh_period", self._refresh_period))
 
@@ -166,7 +166,7 @@ class RemotePairList(IPairList):
 
         return pairlist
 
-    def return_last_pairlist(self) -> List[str]:
+    def return_last_pairlist(self) -> list[str]:
         if self._keep_pairlist_on_failure:
             pairlist = self._last_pairlist
             self.log_once("Keeping last fetched pairlist", logger.info)
@@ -175,7 +175,7 @@ class RemotePairList(IPairList):
 
         return pairlist
 
-    def fetch_pairlist(self) -> Tuple[List[str], float]:
+    def fetch_pairlist(self) -> tuple[list[str], float]:
         headers = {"User-Agent": "Freqtrade/" + __version__ + " Remotepairlist"}
 
         if self._bearer_token:
@@ -207,14 +207,14 @@ class RemotePairList(IPairList):
 
         return pairlist, time_elapsed
 
-    def _handle_error(self, error: str) -> List[str]:
+    def _handle_error(self, error: str) -> list[str]:
         if self._init_done:
             self.log_once("Error: " + error, logger.info)
             return self.return_last_pairlist()
         else:
             raise OperationalException(error)
 
-    def gen_pairlist(self, tickers: Tickers) -> List[str]:
+    def gen_pairlist(self, tickers: Tickers) -> list[str]:
         """
         Generate the pairlist
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
@@ -278,7 +278,7 @@ class RemotePairList(IPairList):
 
         return pairlist
 
-    def save_pairlist(self, pairlist: List[str], filename: str) -> None:
+    def save_pairlist(self, pairlist: list[str], filename: str) -> None:
         pairlist_data = {"pairs": pairlist}
         try:
             file_path = Path(filename)
@@ -288,7 +288,7 @@ class RemotePairList(IPairList):
         except Exception as e:
             logger.error(f"Error saving processed pairlist to {filename}: {e}")
 
-    def filter_pairlist(self, pairlist: List[str], tickers: Dict) -> List[str]:
+    def filter_pairlist(self, pairlist: list[str], tickers: dict) -> list[str]:
         """
         Filters and sorts pairlist and returns the whitelist again.
         Called on each bot iteration - please use internal caching if necessary

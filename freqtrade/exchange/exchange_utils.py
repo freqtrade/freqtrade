@@ -5,7 +5,7 @@ Exchange support utils
 import inspect
 from datetime import datetime, timedelta, timezone
 from math import ceil, floor
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import ccxt
 from ccxt import (
@@ -39,14 +39,14 @@ def is_exchange_known_ccxt(
     return exchange_name in ccxt_exchanges(ccxt_module)
 
 
-def ccxt_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[str]:
+def ccxt_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> list[str]:
     """
     Return the list of all exchanges known to ccxt
     """
     return ccxt_module.exchanges if ccxt_module is not None else ccxt.exchanges
 
 
-def available_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[str]:
+def available_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> list[str]:
     """
     Return exchanges available to the bot, i.e. non-bad exchanges in the ccxt list
     """
@@ -54,7 +54,7 @@ def available_exchanges(ccxt_module: Optional[CcxtModuleType] = None) -> List[st
     return [x for x in exchanges if validate_exchange(x)[0]]
 
 
-def validate_exchange(exchange: str) -> Tuple[bool, str, Optional[ccxt.Exchange]]:
+def validate_exchange(exchange: str) -> tuple[bool, str, Optional[ccxt.Exchange]]:
     """
     returns: can_use, reason, exchange_object
         with Reason including both missing and missing_opt
@@ -91,7 +91,7 @@ def validate_exchange(exchange: str) -> Tuple[bool, str, Optional[ccxt.Exchange]
 
 
 def _build_exchange_list_entry(
-    exchange_name: str, exchangeClasses: Dict[str, Any]
+    exchange_name: str, exchangeClasses: dict[str, Any]
 ) -> ValidExchangesType:
     valid, comment, ex_mod = validate_exchange(exchange_name)
     result: ValidExchangesType = {
@@ -121,7 +121,7 @@ def _build_exchange_list_entry(
     return result
 
 
-def list_available_exchanges(all_exchanges: bool) -> List[ValidExchangesType]:
+def list_available_exchanges(all_exchanges: bool) -> list[ValidExchangesType]:
     """
     :return: List of tuples with exchangename, valid, reason.
     """
@@ -130,7 +130,7 @@ def list_available_exchanges(all_exchanges: bool) -> List[ValidExchangesType]:
 
     subclassed = {e["name"].lower(): e for e in ExchangeResolver.search_all_objects({}, False)}
 
-    exchanges_valid: List[ValidExchangesType] = [
+    exchanges_valid: list[ValidExchangesType] = [
         _build_exchange_list_entry(e, subclassed) for e in exchanges
     ]
 
@@ -155,7 +155,7 @@ def date_minus_candles(
     return new_date
 
 
-def market_is_active(market: Dict) -> bool:
+def market_is_active(market: dict) -> bool:
     """
     Return True if the market is active.
     """

@@ -5,7 +5,7 @@ e.g BTC to USD
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 from cachetools import TTLCache
 from requests.exceptions import RequestException
@@ -41,7 +41,7 @@ class CryptoToFiatConverter(LoggingMixin):
 
     __instance = None
 
-    _coinlistings: List[Dict] = []
+    _coinlistings: list[dict] = []
     _backoff: float = 0.0
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Any:
