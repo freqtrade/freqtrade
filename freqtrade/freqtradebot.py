@@ -922,6 +922,14 @@ class FreqtradeBot(LoggingMixin):
         ):
             logger.info(f"User denied entry for {pair}.")
             return False
+        
+        if trade and trade.has_open_orders:
+            # cancel any open order of this trade
+            self.cancel_open_orders_of_trade(
+                trade, [trade.entry_side], constants.CANCEL_REASON["REPLACE"], True
+            )
+            Trade.commit()
+
         order = self.exchange.create_order(
             pair=pair,
             ordertype=order_type,
@@ -1706,7 +1714,7 @@ class FreqtradeBot(LoggingMixin):
                         logger.warning(f"Unable to replace order for {trade.pair}: {exception}")
                         self.replace_order_failed(trade, f"Could not replace order for {trade}.")
 
-    def cancel_open_orders_of_trade(self, trade: Trade, reason: str, sides: list[str]) -> None:
+    def cancel_open_orders_of_trade(self, trade: Trade, sides: list[str], reason: str, replacing: Optional[bool] = False) -> None:
         """
         Cancel trade orders of specified sides that are currently open
         :param trade: Trade object of the trade we're analyzing
@@ -1725,7 +1733,7 @@ class FreqtradeBot(LoggingMixin):
             for side in sides:
                 if order["side"] == side:
                     if order["side"] == trade.entry_side:
-                        self.handle_cancel_enter(trade, order, open_order, reason)
+                        self.handle_cancel_enter(trade, order, open_order, reason, replacing)
 
                     elif order["side"] == trade.exit_side:
                         self.handle_cancel_exit(trade, order, open_order, reason)
@@ -1738,7 +1746,7 @@ class FreqtradeBot(LoggingMixin):
 
         for trade in Trade.get_open_trades():
             self.cancel_open_orders_of_trade(
-                trade, constants.CANCEL_REASON["ALL_CANCELLED"], [trade.entry_side, trade.exit_side]
+                trade, [trade.entry_side, trade.exit_side], constants.CANCEL_REASON["ALL_CANCELLED"]
             )
 
         Trade.commit()
@@ -1989,7 +1997,7 @@ class FreqtradeBot(LoggingMixin):
         if trade.has_open_orders:
             # cancel any open order of this trade
             self.cancel_open_orders_of_trade(
-                trade, constants.CANCEL_REASON["REPLACE"], [trade.exit_side]
+                trade, [trade.exit_side], constants.CANCEL_REASON["REPLACE"], True
             )
             Trade.commit()
 
