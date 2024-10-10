@@ -36,6 +36,12 @@ class Bybit(Exchange):
         "order_time_in_force": ["GTC", "FOK", "IOC", "PO"],
         "ws_enabled": True,
         "trades_has_history": False,  # Endpoint doesn't support pagination
+        "exchange_has_overrides": {
+            # Bybit spot does not support fetch_order
+            # Unless the account is unified.
+            # TODO: Can be removed once bybit fully forces all accounts to unified mode.
+            "fetchOrder": False,
+        },
     }
     _ft_has_futures: FtHas = {
         "ohlcv_has_history": True,
@@ -50,6 +56,9 @@ class Bybit(Exchange):
             PriceType.LAST: "LastPrice",
             PriceType.MARK: "MarkPrice",
             PriceType.INDEX: "IndexPrice",
+        },
+        "exchange_has_overrides": {
+            "fetchOrder": True,
         },
     }
 
