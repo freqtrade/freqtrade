@@ -173,7 +173,7 @@ During backtesting, `current_rate` (and `current_profit`) are provided against t
 
 The absolute value of the return value is used (the sign is ignored), so returning `0.05` or `-0.05` have the same result, a stoploss 5% below the current price.
 Returning `None` will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
-`NaN` and `inf` values are considered invalid and will be ignored (identical to `None`).
+`NaN`, `inf` and `1` values are considered invalid and will be ignored (identical to `None`).
 
 Stoploss on exchange works similar to `trailing_stop`, and the stoploss on exchange is updated as configured in `stoploss_on_exchange_interval` ([More details about stoploss on exchange](stoploss.md#stop-loss-on-exchangefreqtrade)).
 
