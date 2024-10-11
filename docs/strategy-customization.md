@@ -2,7 +2,10 @@
 
 This page explains how to customize your strategies, add new indicators and set up trading rules.
 
-Please familiarize yourself with [Freqtrade basics](bot-basics.md) first, which provides overall info on how the bot operates.
+If you haven't already, please familiarize yourself with:
+
+- the [Freqtrade strategy 101](freqtrade-101.md), which provides a quick start to a strategy
+- the [Freqtrade bot basics](bot-basics.md), which provides overall info on how the bot operates
 
 ## Develop your own strategy
 
@@ -10,44 +13,81 @@ The bot includes a default strategy file.
 Also, several other strategies are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
 
 You will however most likely have your own idea for a strategy.
-This document intends to help you convert your strategy idea into your own strategy.
 
-To get started, use `freqtrade new-strategy --strategy AwesomeStrategy` (you can obviously use your own naming for your strategy).
-This will create a new strategy file from a template, which will be located under `user_data/strategies/AwesomeStrategy.py`.
+This document intends to help you convert your ideas into a working strategy.
+
+### Generating a strategy template
+
+To get started, you can use the command:
+
+```bash
+freqtrade new-strategy --strategy AwesomeStrategy
+```
+
+This will create a new strategy called `AwesomeStrategy` from a template, which will be located using the filename `user_data/strategies/AwesomeStrategy.py`.
 
 !!! Note
-    This is just a template file, which will most likely not be profitable out of the box.
+    There is a difference between the *name* of the strategy and the filename. In most commands, Freqtrade uses the *name* of the strategy, *not the filename*.
+
+!!! Note
+    The `new-strategy` command generates starting examples which will not be profitable out of the box.
 
 ??? Hint "Different template levels"
-    `freqtrade new-strategy` has an additional parameter, `--template`, which controls the amount of pre-build information you get in the created strategy. Use `--template minimal` to get an empty strategy without any indicator examples, or `--template advanced` to get a template with most callbacks defined.
+    `freqtrade new-strategy` has an additional parameter, `--template`, which controls the amount of pre-build information you get in the created strategy. Use `--template minimal` to get an empty strategy without any indicator examples, or `--template advanced` to get a template with more complicated features defined.
 
 ### Anatomy of a strategy
 
-A strategy file contains all the information needed to build a good strategy:
+A strategy file contains all the information needed to build the strategy logic:
 
+- Candle data in OHLCV format
 - Indicators
-- Entry strategy rules
-- Exit strategy rules
-- Minimal ROI recommended
-- Stoploss strongly recommended
+- Entry logic
+  - Signals
+- Exit logic
+  - Signals
+  - Minimal ROI
+  - Callbacks ("custom functions")
+- Stoploss
+  - Fixed/absolute
+  - Trailing
+  - Callbacks ("custom functions")
+- Pricing [optional]
+- Position adjustment [optional]
 
-The bot also include a sample strategy called `SampleStrategy` you can update: `user_data/strategies/sample_strategy.py`.
-You can test it with the parameter: `--strategy SampleStrategy`
+The bot includes a sample strategy called `SampleStrategy` that you can use as a basis: `user_data/strategies/sample_strategy.py`.
+You can test it with the parameter: `--strategy SampleStrategy`. Remember that you use the strategy class name, not the filename.
 
 Additionally, there is an attribute called `INTERFACE_VERSION`, which defines the version of the strategy interface the bot should use.
 The current version is 3 - which is also the default when it's not set explicitly in the strategy.
 
-Future versions will require this to be set.
+You may see older strategies set to interface version 2, and these will need to be updated to v3 terminology as future versions will require this to be set.
+
+Starting the bot in dry or live mode is accomplished using the `trade` command:
 
 ```bash
 freqtrade trade --strategy AwesomeStrategy
 ```
 
+### Bot modes
+
+Freqtrade strategies can be processed by the Freqtrade bot in 5 main modes:
+
+- backtesting
+- hyperopting
+- dry ("forward testing")
+- live
+- FreqAI (not covered here)
+
+Check the [configuration documentation](configuration.md) about how to set the bot to dry or live mode.
+
+**Always use dry mode when testing as this gives you an idea of how your strategy will work in reality without risking capital.**
+
+## Diving in deeper
 **For the following section we will use the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py)
 file as reference.**
 
 !!! Note "Strategies and Backtesting"
-    To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
+    To avoid problems and unexpected differences between backtesting and dry/live modes, please be aware
     that during backtesting the full time range is passed to the `populate_*()` methods at once.
     It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
     avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
@@ -57,14 +97,22 @@ file as reference.**
     needs to take care to avoid having the strategy utilize data from the future.
     Some common patterns for this are listed in the [Common Mistakes](#common-mistakes-when-developing-strategies) section of this document.
 
+??? Hint "Lookahead and recursive analysis"
+    Freqtrade includes two helpful commands to help assess common lookahead (using future data) and 
+    recursive bias (variance in indicator values) issues. Before running a strategy in dry or live more, 
+    you should always use these commands first. Please check the relevant documentation for 
+    [lookahead](lookahead-analysis.md) and [recursive](recursive-analysis.md) analysis.
+
 ### Dataframe
 
 Freqtrade uses [pandas](https://pandas.pydata.org/) to store/provide the candlestick (OHLCV) data.
-Pandas is a great library developed for processing large amounts of data.
+Pandas is a great library developed for processing large amounts of data in tabular format.
 
-Each row in a dataframe corresponds to one candle on a chart, with the latest candle always being the last in the dataframe (sorted by date).
+Each row in a dataframe corresponds to one candle on a chart, with the latest complete candle always being the last in the dataframe (sorted by date).
 
-``` output
+If we were to look at the first few rows of the main dataframe using the pandas `head()` function, we would see:
+
+```output
 > dataframe.head()
                        date      open      high       low     close     volume
 0 2021-11-09 23:25:00+00:00  67279.67  67321.84  67255.01  67300.97   44.62253
@@ -74,20 +122,16 @@ Each row in a dataframe corresponds to one candle on a chart, with the latest ca
 4 2021-11-09 23:45:00+00:00  67160.48  67160.48  66901.26  66943.37  111.39292
 ```
 
-Pandas provides fast ways to calculate metrics. To benefit from this speed, it's advised to not use loops, but use vectorized methods instead.
-
-Vectorized operations perform calculations across the whole range of data and are therefore, compared to looping through each row, a lot faster when calculating indicators.
-
-As a dataframe is a table, simple python comparisons like the following will not work
+A dataframe is a table where columns are not single values, but a series of data values. As such, simple python comparisons like the following will not work:
 
 ``` python
     if dataframe['rsi'] > 30:
         dataframe['enter_long'] = 1
 ```
 
-The above section will fail with `The truth value of a Series is ambiguous. [...]`.
+The above section will fail with `The truth value of a Series is ambiguous [...]`.
 
-This must instead be written in a pandas-compatible way, so the operation is performed across the whole dataframe.
+This must instead be written in a pandas-compatible way, so the operation is performed across the whole dataframe, i.e. `vectorisation`.
 
 ``` python
     dataframe.loc[
@@ -96,6 +140,31 @@ This must instead be written in a pandas-compatible way, so the operation is per
 ```
 
 With this section, you have a new column in your dataframe, which has `1` assigned whenever RSI is above 30.
+
+Freqtrade uses this new column as an entry signal, where it is assumed that a trade will subsequently open on the next open candle.
+
+Pandas provides fast ways to calculate metrics, i.e. "vectorisation". To benefit from this speed, it is advised to not use loops, but use vectorized methods instead.
+
+Vectorized operations perform calculations across the whole range of data and are therefore, compared to looping through each row, a lot faster when calculating indicators.
+
+??? Hint "Signals vs Trades"
+    - Signals are generated from indicators at candle close, and are intentions to enter a trade.
+    - Trades are orders that are executed (on the exchange in live mode) where a trade will then open as close to next candle open as possible.
+
+!!! Warning "Trade order assumptions"
+    In backtesting, signals are generated on candle close. Trades are then opened immeditely on next candle open.
+    
+    In dry and live, this may be delayed due to all pair dataframes needing to be analysed first, then trade processing 
+    for each of those pairs happens. This means that in dry/live you need to be mindful of having as low a computation 
+    delay as possible, usually by running a low number of pairs and having a CPU with a good clock speed.
+
+#### Why can't I see "real time" candle data?
+
+Freqtrade does not store incomplete/unfinished candles in the dataframe.
+
+The use of incomplete data for making strategy decisions is called "repainting" and you might see other platforms allow this.
+
+Freqtrade does not. Only complete/finished candle data is available in the dataframe.
 
 ### Customize Indicators
 
