@@ -3483,16 +3483,17 @@ def test_locked_pairs(
         exit_check=ExitCheckTuple(exit_type=ExitType.STOP_LOSS),
     )
     trade.close(ticker_usdt_sell_down()["bid"])
-    assert freqtrade.strategy.is_pair_locked(trade.pair, side="*")
+    assert not freqtrade.strategy.is_pair_locked(trade.pair, side="*")
     # Both sides are locked
-    assert freqtrade.strategy.is_pair_locked(trade.pair, side="long")
-    assert freqtrade.strategy.is_pair_locked(trade.pair, side="short")
+    assert freqtrade.strategy.is_pair_locked(trade.pair, side="long") != is_short
+    assert freqtrade.strategy.is_pair_locked(trade.pair, side="short") == is_short
 
     # reinit - should buy other pair.
     caplog.clear()
     freqtrade.enter_positions()
+    direction = "short" if is_short else "long"
 
-    assert log_has_re(rf"Pair {trade.pair} \* is locked.*", caplog)
+    assert log_has_re(rf"Pair {trade.pair} {direction} is locked.*", caplog)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
