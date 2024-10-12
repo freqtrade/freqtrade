@@ -103,4 +103,4 @@ When a signal is found (a `1` in an entry or exit column), Freqtrade will attemp
 ## Conclusion
 Developing a strategy in Freqtrade involves defining entry and exit signals based on technical indicators. By following the structure and methods outlined above, you can create and test your own trading strategies.
 
-To continue, refer to the more in-depth [Freqtrade Strategy Documentation](https://www.freqtrade.io/en/latest/strategy-customization/).
+To continue, refer to the more in-depth [Freqtrade Strategy Documentation](strategy-customization.md).
