@@ -1429,10 +1429,10 @@ class Backtesting:
         indexes: dict = defaultdict(int)
 
         # Loop timerange and get candle for each pair at that point in time
-        for current_time, pair, is_first in self.time_pair_generator(
+        for current_time, pair, is_first_call in self.time_pair_generator(
             start_date, end_date, self.timeframe_td, list(data.keys())
         ):
-            if is_first:
+            if is_first_call:
                 self.check_abort()
                 strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)(
                     current_time=current_time
