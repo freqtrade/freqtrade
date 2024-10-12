@@ -1163,6 +1163,27 @@ tc55 = BTContainer(
     ],
 )
 
+# Test 56: Switch position from long to short
+tc56 = BTContainer(
+    data=[
+        # D   O     H     L     C    V    EL XL ES Xs  BT
+        [0, 5000, 5050, 4950, 5000, 6172, 1, 0, 0, 0],
+        [1, 5000, 5000, 4951, 5000, 6172, 0, 0, 0, 0],
+        [2, 4910, 5150, 4910, 5100, 6172, 0, 0, 1, 0],  # exit on stoploss - re-enter short
+        [3, 5100, 5100, 4888, 4950, 6172, 0, 0, 0, 0],
+        [4, 5000, 5100, 4950, 4950, 6172, 0, 0, 0, 1],
+        [5, 5000, 5100, 4950, 4950, 6172, 0, 0, 0, 0],
+    ],
+    stop_loss=-0.02,
+    roi={"0": 0.10},
+    profit_perc=-0.0,
+    use_exit_signal=True,
+    trades=[
+        BTrade(exit_reason=ExitType.STOP_LOSS, open_tick=1, close_tick=3, is_short=False),
+        BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=3, close_tick=5, is_short=True),
+    ],
+)
+
 
 TESTS = [
     tc0,
@@ -1221,6 +1242,7 @@ TESTS = [
     tc53,
     tc54,
     tc55,
+    tc56,
 ]
 
 
