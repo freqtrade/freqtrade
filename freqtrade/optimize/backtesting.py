@@ -1353,9 +1353,9 @@ class Backtesting:
         # don't open on the last row
         # We only open trades on the main candle, not on detail candles
         if (
-            (self._position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
-            and can_enter
+            can_enter
             and trade_dir is not None
+            and (self._position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
             and not PairLocks.is_pair_locked(pair, row[DATE_IDX], trade_dir)
         ):
             if self.trade_slot_available(LocalTrade.bt_open_open_trade_count):
