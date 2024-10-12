@@ -1466,6 +1466,7 @@ class Backtesting:
                 ].copy()
                 if len(detail_data) == 0:
                     # Fall back to "regular" data if no detail data was found for this candle
+                    self.dataprovider._set_dataframe_max_date(current_time)
                     self.backtest_loop(row, pair, current_time, end_date, trade_dir)
                     continue
                 detail_data.loc[:, "enter_long"] = row[LONG_IDX]
