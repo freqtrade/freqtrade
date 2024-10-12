@@ -1343,7 +1343,7 @@ class Backtesting:
         for t in list(LocalTrade.bt_trades_open_pp[pair]):
             # 1. Manage currently open orders of active trades
             if self.manage_open_orders(t, current_time, row):
-                # Close trade
+                # Remove trade (initial open order never filled)
                 LocalTrade.remove_bt_trade(t)
                 self.wallets.update()
 
