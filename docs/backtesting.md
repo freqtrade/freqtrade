@@ -558,6 +558,7 @@ Since backtesting lacks some detailed information about what happens within a ca
   - Stoploss
   - ROI
   - Trailing stoploss
+- Position reversals (futures only) happen if an entry signal in the other direction than the closing trade triggers at the candle the existing trade closes.
 
 Taking these assumptions, backtesting tries to mirror real trading as closely as possible. However, backtesting will **never** replace running a strategy in dry-run mode.
 Also, keep in mind that past results don't guarantee future success.
