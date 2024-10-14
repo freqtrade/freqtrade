@@ -1755,16 +1755,17 @@ class FreqtradeBot(LoggingMixin):
         """
         if trade.has_open_orders:
             oo = trade.select_order(side, True)
-            open_order_side = oo.side
-            open_order_amount = oo.amount
+            if oo is not None:
+                open_order_side = oo.side
+                open_order_amount = oo.amount
 
-            if (side != open_order_side) & (amount != open_order_amount):
-                # cancel open order of this trade if order is diferent
-                self.cancel_open_orders_of_trade(
-                    trade, [trade.entry_side], constants.CANCEL_REASON["REPLACE"], True
-                )
-                Trade.commit()
-                return True
+                if (side != open_order_side) & (amount != open_order_amount):
+                    # cancel open order of this trade if order is diferent
+                    self.cancel_open_orders_of_trade(
+                        trade, [trade.entry_side], constants.CANCEL_REASON["REPLACE"], True
+                    )
+                    Trade.commit()
+                    return True
 
         return False
 
