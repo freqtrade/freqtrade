@@ -126,6 +126,12 @@ jupyter = [
   "ipykernel",
   "nbconvert",
 ]
+all = [
+  "freqtrade[plot,hyperopt,freqai,freqai_rl,hdf5,jupyter]",
+]
+dev = [
+  "freqtrade[all,develop]",
+]
 
 [project.urls]
 Homepage = "https://github.com/freqtrade/freqtrade"
