@@ -1760,7 +1760,7 @@ class FreqtradeBot(LoggingMixin):
                 open_order_amount = oo.amount
 
                 if (side != open_order_side) & (amount != open_order_amount):
-                    # cancel open order of this trade if order is diferent
+                    # cancel open order of this trade if order is different
                     self.cancel_open_orders_of_trade(
                         trade, [trade.entry_side], constants.CANCEL_REASON["REPLACE"], True
                     )
