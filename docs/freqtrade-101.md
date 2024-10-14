@@ -116,7 +116,7 @@ However, there can be a range of scenarios where generating a signal does not al
 - if an entry and exit signal is present on the same candle, they cancel each other out and no order will be raised
 - the strategy actively rejects the trade order due to logic you specify by using one of the relevant [entry](strategy-callbacks.md#trade-entry-buy-order-confirmation) or [exit](strategy-callbacks.md#trade-exit-sell-order-confirmation) callbacks
 
-Read through the [strategy customisation](strategy-customization.md) documentation for more details.
+Read through the [strategy customization](strategy-customization.md) documentation for more details.
 
 ## Backtesting and forward testing
 
@@ -159,4 +159,4 @@ Developing a strategy in Freqtrade involves defining entry and exit signals base
 
 Common questions and answers are available on our [FAQ](faq.md).
 
-To continue, refer to the more in-depth [Freqtrade strategy customisation documentation](strategy-customization.md).
+To continue, refer to the more in-depth [Freqtrade strategy customization documentation](strategy-customization.md).
