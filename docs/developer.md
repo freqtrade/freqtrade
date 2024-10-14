@@ -116,7 +116,7 @@ A similar setup can also be taken for Pycharm - using `freqtrade` as module name
     ![Pycharm debug configuration](assets/pycharm_debug.png)
 
 !!! Note "Startup directory"
-    This assumes that you have the repository checked out, and the editor is started at the repository root level (so setup.py is at the top level of your repository).
+    This assumes that you have the repository checked out, and the editor is started at the repository root level (so pyproject.toml is at the top level of your repository).
 
 ## ErrorHandling
 
