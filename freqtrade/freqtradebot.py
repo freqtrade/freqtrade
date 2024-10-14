@@ -923,12 +923,8 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"User denied entry for {pair}.")
             return False
 
-        if trade and trade.has_open_orders:
-            # cancel any open order of this trade
-            self.cancel_open_orders_of_trade(
-                trade, [trade.entry_side], constants.CANCEL_REASON["REPLACE"], True
-            )
-            Trade.commit()
+        if trade:
+            self.handle_similar_open_order(trade, side, amount)
 
         order = self.exchange.create_order(
             pair=pair,
@@ -1752,6 +1748,26 @@ class FreqtradeBot(LoggingMixin):
             )
 
         Trade.commit()
+
+    def handle_similar_open_order(self, trade: Trade, side: str, amount: float) -> bool:
+        """
+        Keep existing open order if same amount and side, otherwise cancel
+        :return: True if an existing similar order was cancelled
+        """
+        if trade.has_open_orders:
+            oo = trade.select_order(side, True)
+            open_order_side = oo.side
+            open_order_amount = oo.amount
+
+            if (side != open_order_side) & (amount != open_order_amount):
+                # cancel open order of this trade if order is diferent
+                self.cancel_open_orders_of_trade(
+                    trade, [trade.entry_side], constants.CANCEL_REASON["REPLACE"], True
+                )
+                Trade.commit()
+                return True
+
+        return False
 
     def handle_cancel_enter(
         self,
