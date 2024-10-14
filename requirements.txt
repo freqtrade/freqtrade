@@ -1,6 +1,6 @@
 numpy==1.26.4
 pandas==2.2.3
-bottleneck==1.4.0
+bottleneck==1.4.1
 numexpr==2.10.1
 pandas-ta==0.3.14b
 
