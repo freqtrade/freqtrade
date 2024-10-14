@@ -1728,13 +1728,12 @@ class FreqtradeBot(LoggingMixin):
                 logger.info("Can't query order for %s due to %s", trade, traceback.format_exc())
                 continue
 
-            for side in sides:
-                if order["side"] == side:
-                    if order["side"] == trade.entry_side:
-                        self.handle_cancel_enter(trade, order, open_order, reason, replacing)
+            if order["side"] in sides:
+                if order["side"] == trade.entry_side:
+                    self.handle_cancel_enter(trade, order, open_order, reason, replacing)
 
-                    elif order["side"] == trade.exit_side:
-                        self.handle_cancel_exit(trade, order, open_order, reason)
+                elif order["side"] == trade.exit_side:
+                    self.handle_cancel_exit(trade, order, open_order, reason)
 
     def cancel_all_open_orders(self) -> None:
         """
