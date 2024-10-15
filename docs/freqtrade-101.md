@@ -20,7 +20,7 @@ Signals are turned into `orders` on a cryptocurrency `exchange`, i.e. `trades`.
 We use the terms `entry` and `exit` instead of `buying` and `selling` because Freqtrade supports both `long` and `short` trades.
 
 - **long**: You buy the coin based on a stake, e.g. buying the coin BTC using USDT as your stake, and you make a profit by selling the coin at a higher rate than you paid for. Profits are made in long trades by the coin value going up versus the stake.
-- **short**: You borrow capital from from the exchange in the form of the coin, and you pay back the stake value of the coin later. Profits are made in short trades by the coin value going down versus the stake (you pay the loan off at a lower rate).
+- **short**: You borrow capital from the exchange in the form of the coin, and you pay back the stake value of the coin later. Profits are made in short trades by the coin value going down versus the stake (you pay the loan off at a lower rate).
 
 Whilst Freqtrade supports spot and futures markets for certain exchanges, for simplicity we will focus on spot (long) trades only.
 
