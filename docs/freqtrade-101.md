@@ -134,24 +134,50 @@ Dry runs are enabled by setting `dry_run` to true in your [configuration](config
 
 !!! Warning "Backtests can be very inaccurate"
     There are many reasons why backtest results will not match reality. Please check the [backtesting assumptions](backtesting.md#assumptions-made-by-backtesting) and [common strategy mistakes](strategy-customization.md#common-mistakes-when-developing-strategies) documentation.
-
-!!! Warning "Public strategies can have significant issues"
-    There are many websites listing strategies with impressive backtest results. Do not assume these results are achieveable or realistic.
+    Some websites that list and rank Freqtrade strategies show impressive backtest results. Do not assume these results are achieveable or realistic.
 
 ??? Hint "Useful commands"
     Freqtrade includes two useful commands to check for basic flaws in strategies: [lookahead-analysis](lookahead-analysis.md) and [recursive-analysis](recursive-analysis.md).
 
-!!! Note "Always dry run first!"
-    Always dry run your strategy after backtesting it to see if backtesting and dry run results match, giving you confidence that things are operating correctly.
+### Assessing backtesting and dry run results
+
+Always dry run your strategy after backtesting it to see if backtesting and dry run results are sufficiently similar.
+
+If there is any significant difference, verify that your entry and exit signals are consistent and appear on the same candles between the two modes. However, there will always be differences between dry runs and backtests:
+
+- Backtesting assumes all orders fill. In dry runs this might not be the case if using limit orders or there is no volume on the exchange.
+- Following an entry signal on candle close, backtesting assumes trades enter at the next candle's open price (unless you have custom pricing callbacks in your strategy). In dry runs, there is often a delay between signals and trades opening.
+  This is because when new candles come in on your main timeframe, e.g. every 5 minutes, it takes time for Freqtrade to analyse all pair dataframes. Therefore, Freqtrade will attempt to open trades a few seconds (ideally a small a delay as possible)
+  after candle open.
+- As entry rates in dry runs might not match backtesting, this means profit calculations will also differ. Therefore, it is normal if ROI, stoploss, trailing stoploss and callback exits are not identical.
+- The more computational "lag" you have between new candles coming in and your signals being raised and trades being opened will result in greater price unpredictability. Make sure your computer is powerful enough to process the data for the number 
+  of pairs you have in your pairlist within a reasonable time. Freqtrade will warn you in the logs if there are significant data processing delays.
 
 ## Controlling or monitoring a running bot
 
-Once your bot is running in dry or live mode, Freqtrade has four mechanisms to control or monitor a running bot:
+Once your bot is running in dry or live mode, Freqtrade has five mechanisms to control or monitor a running bot:
 
 - **[FreqUI](freq-ui.md)**: The easiest to get started with, FreqUI is a web interface to see and control current activity of your bot.
 - **[Telegram](telegram-usage.md)**: On mobile devices, Telegram integration is available to get alerts about your bot activity and to control certain aspects.
 - **[FTUI](https://github.com/freqtrade/ftui)**: FTUI is a terminal (command line) interface to Freqtrade, and allows monitoring of a running bot only.
 - **[REST API](rest-api.md)**: The REST API allows programmers to develop their own tools to interact with a Freqtrade bot.
+- **[Webhooks](webhook-config.md)**: Freqtrade can send information to other services, e.g. discord, by webhooks.
+
+### Logs
+
+Freqtrade generates extensive debugging logs to help you understand what's happening. Please familiarise yourself with the information and error messages you might see in your bot logs.
+
+## Final Thoughts
+
+Algo trading is difficult, and most public strategies are not good performers due to the time and effort to make a strategy work profitably in multiple scenarios.
+
+Therefore, taking public strategies and using backtests as a way to assess performance is often problematic. However, Freqtrade provides useful ways to help you make decisions and do your due diligence.
+
+There are many different ways to achieve profitability, and there is no one single tip, trick or config option that will fix a poorly performing strategy.
+
+Freqtrade is an open source platform with a large and helpful community - make sure to visit our [discord channel](https://discord.gg/p7nuUNVfP7) to discuss your strategy with others!
+
+As always, only invest what you are willing to lose.
 
 ## Conclusion
 
