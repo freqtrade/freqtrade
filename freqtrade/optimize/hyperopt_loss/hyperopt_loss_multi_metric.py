@@ -1,5 +1,5 @@
 """
-ComplexHyperOptLoss
+MultiMetricHyperOptLoss
 
 This module defines the alternative HyperOptLoss class based on:
   - Profit
@@ -41,7 +41,7 @@ PF_CONST = 1
 WINRATE_CONST = 1.2
 
 
-class ComplexHyperOptLoss(IHyperOptLoss):
+class MultiMetricHyperOptLoss(IHyperOptLoss):
     @staticmethod
     def hyperopt_loss_function(
         *,
