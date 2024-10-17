@@ -36,7 +36,7 @@ TARGET_TRADE_AMOUNT = 50
 # Coefficient to adjust impact of expectancy
 EXPECTANCY_CONST = 2
 # Coefficient to adjust profit factor impact
-PF_CONST = 1
+PF_CONST = 1.0
 # Coefficient to adjust winrate impact
 WINRATE_CONST = 1.2
 
