@@ -95,6 +95,7 @@ def test_loss_calculation_has_limited_profit(hyperopt_conf, hyperopt_results) ->
         "MaxDrawDownRelativeHyperOptLoss",
         "CalmarHyperOptLoss",
         "ProfitDrawDownHyperOptLoss",
+        "MultiMetricHyperOptLoss",
     ],
 )
 def test_loss_functions_better_profits(default_conf, hyperopt_results, lossfunction) -> None:
