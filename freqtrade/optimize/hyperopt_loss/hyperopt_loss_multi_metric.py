@@ -34,7 +34,7 @@ LARGE_NUMBER = 1e6
 # Target trade amount, if higher that TARGET_TRADE_AMOUNT - no penalty
 TARGET_TRADE_AMOUNT = 50
 # Coefficient to adjust impact of expectancy
-EXPECTANCY_CONST = 2
+EXPECTANCY_CONST = 2.0
 # Coefficient to adjust profit factor impact
 PF_CONST = 1.0
 # Coefficient to adjust winrate impact
