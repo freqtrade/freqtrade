@@ -73,7 +73,7 @@ The dataframe column `exit_long` is added to the dataframe, and when a value of 
 Here is a minimal example of a Freqtrade strategy:
 
 ```python
-from freqtrade.strategy.interface import IStrategy
+from freqtrade.strategy import IStrategy
 from pandas import DataFrame
 import talib.abstract as ta
 
@@ -127,13 +127,13 @@ Therefore a strategy should be tested to verify that it is going to work as inte
 
 Freqtrade has two testing modes:
 
-- **backtesting**: using historical data that you [download from an exchange](data-download.md), backtesting is a quick way to assess performance of a strategy. However, it can be very easy to distort results so a strategy will look a lot more profitable than it really is. Check the [backtesting documentation](backtesting.md) for more information. 
-- **dry run**: often referred to as `forward testing`, dry runs use real time data from the exchange. However, any signals that would result in trades are tracked as normal by Freqtrade, but do not have any trades opened on the exchange itself. Forward testing runs in real time, so whilst it takes longer to get results it is a much more reliable indicator of **potential** performance than backtesting. 
+- **backtesting**: using historical data that you [download from an exchange](data-download.md), backtesting is a quick way to assess performance of a strategy. However, it can be very easy to distort results so a strategy will look a lot more profitable than it really is. Check the [backtesting documentation](backtesting.md) for more information.
+- **dry run**: often referred to as _forward testing_, dry runs use real time data from the exchange. However, any signals that would result in trades are tracked as normal by Freqtrade, but do not have any trades opened on the exchange itself. Forward testing runs in real time, so whilst it takes longer to get results it is a much more reliable indicator of **potential** performance than backtesting.
 
 Dry runs are enabled by setting `dry_run` to true in your [configuration](configuration.md#using-dry-run-mode).
 
 !!! Warning "Backtests can be very inaccurate"
-    There are many reasons why backtest results will not match reality. Please check the [backtesting assumptions](backtesting.md#assumptions-made-by-backtesting) and [common strategy mistakes](strategy-customization.md#common-mistakes-when-developing-strategies) documentation.
+    There are many reasons why backtest results may not match reality. Please check the [backtesting assumptions](backtesting.md#assumptions-made-by-backtesting) and [common strategy mistakes](strategy-customization.md#common-mistakes-when-developing-strategies) documentation.
     Some websites that list and rank Freqtrade strategies show impressive backtest results. Do not assume these results are achieveable or realistic.
 
 ??? Hint "Useful commands"
