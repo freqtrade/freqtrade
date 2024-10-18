@@ -1372,7 +1372,7 @@ class Backtesting:
                 self.wallets.update()
 
             # 4. Create exit orders (if any)
-            if not trade.has_open_orders:
+            if trade.has_open_position:
                 self._check_trade_exit(trade, row, current_time)  # Place exit order if necessary
 
             # 5. Process exit orders.
