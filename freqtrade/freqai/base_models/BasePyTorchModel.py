@@ -20,7 +20,11 @@ class BasePyTorchModel(IFreqaiModel, ABC):
     def __init__(self, **kwargs):
         super().__init__(config=kwargs["config"])
         self.dd.model_type = "pytorch"
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = (
+            "mps"
+            if torch.backends.mps.is_available() and torch.backends.mps.is_built()
+            else ("cuda" if torch.cuda.is_available() else "cpu")
+        )
         test_size = self.freqai_info.get("data_split_parameters", {}).get("test_size")
         self.splits = ["train", "test"] if test_size != 0 else ["train"]
         self.window_size = self.freqai_info.get("conv_width", 1)
