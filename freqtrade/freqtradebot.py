@@ -2284,7 +2284,7 @@ class FreqtradeBot(LoggingMixin):
 
     def handle_protections(self, pair: str, side: LongShort) -> None:
         # Lock pair for one candle to prevent immediate re-entries
-        self.strategy.lock_pair(pair, datetime.now(timezone.utc), reason="Auto lock")
+        self.strategy.lock_pair(pair, datetime.now(timezone.utc), reason="Auto lock", side=side)
         prot_trig = self.protections.stop_per_pair(pair, side=side)
         if prot_trig:
             msg: RPCProtectionMsg = {
