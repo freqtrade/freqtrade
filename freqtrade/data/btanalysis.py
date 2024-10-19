@@ -244,9 +244,10 @@ def delete_backtest_result(file_abs: Path):
     """
     # *.meta.json
     logger.info(f"Deleting backtest result file: {file_abs.name}")
-    file_abs_meta = file_abs.with_suffix(".meta.json")
-    file_abs.unlink()
-    file_abs_meta.unlink()
+
+    for file in file_abs.parent.glob(f"{file_abs.stem}*"):
+        logger.info(f"Deleting file: {file}")
+        file.unlink()
 
 
 def update_backtest_metadata(filename: Path, strategy: str, content: dict[str, Any]):
