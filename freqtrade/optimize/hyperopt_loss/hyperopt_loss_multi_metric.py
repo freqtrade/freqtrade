@@ -18,7 +18,7 @@ Possible to change:
 """
 
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 from pandas import DataFrame
@@ -50,8 +50,8 @@ class MultiMetricHyperOptLoss(IHyperOptLoss):
         min_date: datetime,
         max_date: datetime,
         config: Config,
-        processed: Dict[str, DataFrame],
-        backtest_stats: Dict[str, Any],
+        processed: dict[str, DataFrame],
+        backtest_stats: dict[str, Any],
         **kwargs,
     ) -> float:
         total_profit = results["profit_abs"].sum()
