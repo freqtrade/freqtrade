@@ -15,6 +15,19 @@ Possible to change:
   - `EXPECTANCY_CONST` to adjust expectancy ratio impact.
   - `PF_CONST` to adjust profit factor impact.
   - `WINRATE_CONST` to adjust winrate impact.
+
+
+DRAWDOWN_MULT variable within the hyperoptloss file can be adjusted to be stricter or more
+              flexible on drawdown purposes. Smaller numbers penalize drawdowns more severely.
+PF_CONST variable adjusts the impact of the Profit Factor on the optimization.
+EXPECTANCY_CONST variable controls the influence of the Expectancy Ratio.
+WINRATE_CONST variable can be adjusted to increase or decrease impact of winrate.
+
+PF_CONST, EXPECTANCY_CONST, WINRATE_CONST all operate in a similar manner:
+        a higher value means that the metric has a lesser impact on the objective,
+        while a lower value means that it has a greater impact.
+TARGET_TRADE_AMOUNT variable sets the minimum number of trades required to avoid penalties.
+            If the trade amount falls below this threshold, the penalty is applied.
 """
 
 from datetime import datetime
