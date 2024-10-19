@@ -19,13 +19,14 @@ Possible to change:
 
 from datetime import datetime
 from typing import Any, Dict
-import numpy as np
 
+import numpy as np
 from pandas import DataFrame
 
 from freqtrade.constants import Config
-from freqtrade.data.metrics import calculate_max_drawdown, calculate_expectancy
+from freqtrade.data.metrics import calculate_expectancy, calculate_max_drawdown
 from freqtrade.optimize.hyperopt import IHyperOptLoss
+
 
 # smaller numbers penalize drawdowns more severely
 DRAWDOWN_MULT = 0.055
@@ -44,7 +45,6 @@ WINRATE_CONST = 1.2
 class MultiMetricHyperOptLoss(IHyperOptLoss):
     @staticmethod
     def hyperopt_loss_function(
-        *,
         results: DataFrame,
         trade_count: int,
         min_date: datetime,
