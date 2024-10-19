@@ -2887,14 +2887,15 @@ This class should be in its own file within the <code>user_data/hyperopts/</code
 <ul>
 <li><code>ShortTradeDurHyperOptLoss</code> - (default legacy Freqtrade hyperoptimization loss function) - Mostly for short trade duration and avoiding losses.</li>
 <li><code>OnlyProfitHyperOptLoss</code> - takes only amount of profit into consideration.</li>
-<li><code>SharpeHyperOptLoss</code> - optimizes Sharpe Ratio calculated on trade returns relative to standard deviation.</li>
-<li><code>SharpeHyperOptLossDaily</code> - optimizes Sharpe Ratio calculated on <strong>daily</strong> trade returns relative to standard deviation.</li>
-<li><code>SortinoHyperOptLoss</code> - optimizes Sortino Ratio calculated on trade returns relative to <strong>downside</strong> standard deviation.</li>
+<li><code>SharpeHyperOptLoss</code> - Optimizes Sharpe Ratio calculated on trade returns relative to standard deviation.</li>
+<li><code>SharpeHyperOptLossDaily</code> - Optimizes Sharpe Ratio calculated on <strong>daily</strong> trade returns relative to standard deviation.</li>
+<li><code>SortinoHyperOptLoss</code> - Optimizes Sortino Ratio calculated on trade returns relative to <strong>downside</strong> standard deviation.</li>
 <li><code>SortinoHyperOptLossDaily</code> - optimizes Sortino Ratio calculated on <strong>daily</strong> trade returns relative to <strong>downside</strong> standard deviation.</li>
 <li><code>MaxDrawDownHyperOptLoss</code> - Optimizes Maximum absolute drawdown.</li>
 <li><code>MaxDrawDownRelativeHyperOptLoss</code> -  Optimizes both maximum absolute drawdown while also adjusting for maximum relative drawdown.</li>
 <li><code>CalmarHyperOptLoss</code> - Optimizes Calmar Ratio calculated on trade returns relative to max drawdown.</li>
 <li><code>ProfitDrawDownHyperOptLoss</code> - Optimizes by max Profit &amp; min Drawdown objective. <code>DRAWDOWN_MULT</code> variable within the hyperoptloss file can be adjusted to be stricter or more flexible on drawdown purposes.</li>
+<li><code>MultiMetricHyperOptLoss</code> -  Optimizes by several key metrics to achieve balanced performance. The primary focus is on maximizing Profit and minimizing Drawdown, while also considering additional metrics such as Profit Factor, Expectancy Ratio and Winrate. Moreover, it applies a penalty for epochs with a low number of trades, encouraging strategies with adequate trade frequency.</li>
 </ul>
 <p>Creation of a custom loss function is covered in the <a href="../advanced-hyperopt/">Advanced Hyperopt</a> part of the documentation.</p>
 <h2 id="execute-hyperopt">Execute Hyperopt<a class="headerlink" href="#execute-hyperopt" title="Permanent link">&para;</a></h2>
