@@ -16,6 +16,6 @@ class Lbank(Exchange):
     """
 
     _ft_has: FtHas = {
-        "ohlcv_candle_limit": 1998,  # Intentionally set lower than 2000 to avoid current_candle issue
+        "ohlcv_candle_limit": 1998,  # lower than the allowed 2000 to avoid current_candle issue
         "trades_has_history": False,
     }
