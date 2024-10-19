@@ -30,9 +30,6 @@ TARGET_TRADE_AMOUNT variable sets the minimum number of trades required to avoid
             If the trade amount falls below this threshold, the penalty is applied.
 """
 
-from datetime import datetime
-from typing import Any
-
 import numpy as np
 from pandas import DataFrame
 
@@ -60,11 +57,7 @@ class MultiMetricHyperOptLoss(IHyperOptLoss):
     def hyperopt_loss_function(
         results: DataFrame,
         trade_count: int,
-        min_date: datetime,
-        max_date: datetime,
         config: Config,
-        processed: dict[str, DataFrame],
-        backtest_stats: dict[str, Any],
         **kwargs,
     ) -> float:
         total_profit = results["profit_abs"].sum()
