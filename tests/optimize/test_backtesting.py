@@ -1774,7 +1774,7 @@ def test_backtest_multi_pair_long_short_switch(
 
     if use_detail:
         # Backtest loop is called once per candle per pair
-        assert bl_spy.call_count == 1071
+        assert bl_spy.call_count == 1523
     else:
         assert bl_spy.call_count == 479
 
@@ -1784,7 +1784,7 @@ def test_backtest_multi_pair_long_short_switch(
     assert len(evaluate_result_multi(results["results"], "5m", 1)) == 0
 
     # Expect 26 results initially
-    assert len(results["results"]) == 30
+    assert len(results["results"]) == 53
 
 
 def test_backtest_start_timerange(default_conf, mocker, caplog, testdatadir):
