@@ -11,6 +11,7 @@ from typing import Any, Optional, Union
 from urllib.parse import urlencode, urlparse, urlunparse
 
 import requests
+from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectionError
 
 
@@ -28,12 +29,11 @@ class FtRestClient:
         self._session = requests.Session()
 
         # allow configuration of pool
-        adapter = requests.adapters.HTTPAdapter(
-            pool_connections=pool_connections, pool_maxsize=pool_maxsize
-        )
+        adapter = HTTPAdapter(pool_connections=pool_connections, pool_maxsize=pool_maxsize)
         self._session.mount("http://", adapter)
 
-        self._session.auth = (username, password)
+        if username and password:
+            self._session.auth = (username, password)
 
     def _call(self, method, apipath, params: Optional[dict] = None, data=None, files=None):
         if str(method).upper() not in ("GET", "POST", "PUT", "DELETE"):
@@ -243,7 +243,7 @@ class FtRestClient:
         :param limit: Limits log messages to the last <limit> logs. No limit to get the entire log.
         :return: json object
         """
-        return self._get("logs", params={"limit": limit} if limit else 0)
+        return self._get("logs", params={"limit": limit} if limit else {})
 
     def trades(self, limit=None, offset=None):
         """Return trades history, sorted by id
