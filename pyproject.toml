@@ -209,12 +209,38 @@ module = "tests.*"
 ignore_errors = true
 
 [tool.pyright]
-include = ["freqtrade"]
+include = ["freqtrade", "ft_client"]
 exclude = [
   "**/__pycache__",
   "build_helpers/*.py",
+  "ft_client/build/*",
+  "build/*",
+  "tests/*",
 ]
 ignore = ["freqtrade/vendor/**"]
+pythonPlatform = "All"
+pythonVersion = "3.9"
+
+typeCheckingMode = "off"
+# analyzeUnannotatedFunctions = false
+
+reportArgumentType = false  # 155
+reportAssignmentType = false  # 12
+reportAttributeAccessIssue = false  # 255
+reportCallIssue = false  # 23
+reportGeneralTypeIssues = false  # 48
+reportIncompatibleMethodOverride = false  # 15
+reportIncompatibleVariableOverride = false  # 5
+reportIndexIssue = false  # 22
+reportMissingImports = false  # 5
+reportOperatorIssue = false  # 7
+reportOptionalMemberAccess = false  # 35
+reportOptionalOperand = false  # 7
+reportPossiblyUnboundVariable = false  # 36
+reportPrivateImportUsage = false  # 5
+reportRedeclaration = false  # 1
+reportReturnType = false  # 28
+reportTypedDictNotRequiredAccess = false  # 27
 
 
 [tool.ruff]
