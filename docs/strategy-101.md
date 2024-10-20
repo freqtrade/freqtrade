@@ -19,8 +19,8 @@ Signals are turned into `orders` on a cryptocurrency `exchange`, i.e. `trades`.
 
 We use the terms `entry` and `exit` instead of `buying` and `selling` because Freqtrade supports both `long` and `short` trades.
 
-- **long**: You buy the coin based on a stake, e.g. buying the coin BTC using USDT as your stake, and you make a profit by selling the coin at a higher rate than you paid for. Profits are made in long trades by the coin value going up versus the stake.
-- **short**: You borrow capital from the exchange in the form of the coin, and you pay back the stake value of the coin later. Profits are made in short trades by the coin value going down versus the stake (you pay the loan off at a lower rate).
+- **long**: You buy the coin based on a stake, e.g. buying the coin BTC using USDT as your stake, and you make a profit by selling the coin at a higher rate than you paid for. In long trades, profits are made by the coin value going up versus the stake.
+- **short**: You borrow capital from the exchange in the form of the coin, and you pay back the stake value of the coin later. In short trades profits are made by the coin value going down versus the stake (you pay the loan off at a lower rate).
 
 Whilst Freqtrade supports spot and futures markets for certain exchanges, for simplicity we will focus on spot (long) trades only.
 
@@ -79,6 +79,12 @@ import talib.abstract as ta
 
 class MyStrategy(IStrategy):
 
+    # set the initial stoploss to -10%
+    stoploss = -0.10
+
+    # exit profitable positions at any time when the profit is greater than 1%
+    minimal_roi = {"0": 0.01}
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # generate values for technical analysis indicators
         dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
@@ -106,14 +112,16 @@ class MyStrategy(IStrategy):
 
 When a signal is found (a `1` in an entry or exit column), Freqtrade will attempt to make an order, i.e. a `trade` or `position`.
 
-The number of concurrent trades that can be opened is defined by the `max_open_trades` [configuration](configuration.md) option.
+Each new trade position takes up a `slot`. Slots represent the maximum number of concurrent new trades that can be opened.
+
+The number of slots is defined by the `max_open_trades` [configuration](configuration.md) option.
 
 However, there can be a range of scenarios where generating a signal does not always create a trade order. These include:
 
 - not enough remaining stake to buy an asset, or funds in your wallet to sell an asset (including any fees)
-- not enough open slots for a new trade to be opened
+- not enough remaining free slots for a new trade to be opened (the number of positions you have open equals the `max_open_trades` option)
 - there is already an open trade for a pair (Freqtrade cannot stack positions - however it can [adjust existing positions](strategy-callbacks.md#adjust-trade-position))
-- if an entry and exit signal is present on the same candle, they cancel each other out and no order will be raised
+- if an entry and exit signal is present on the same candle, they are considered as [colliding](strategy-customization.md#colliding-signals), and no order will be raised
 - the strategy actively rejects the trade order due to logic you specify by using one of the relevant [entry](strategy-callbacks.md#trade-entry-buy-order-confirmation) or [exit](strategy-callbacks.md#trade-exit-sell-order-confirmation) callbacks
 
 Read through the [strategy customization](strategy-customization.md) documentation for more details.
