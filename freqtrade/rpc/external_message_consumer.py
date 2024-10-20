@@ -9,7 +9,7 @@ import asyncio
 import logging
 import socket
 from threading import Thread
-from typing import TYPE_CHECKING, Any, Callable, TypedDict, Union
+from typing import Any, Callable, TypedDict, Union
 
 import websockets
 from pydantic import ValidationError
@@ -29,10 +29,6 @@ from freqtrade.rpc.api_server.ws_schemas import (
     WSWhitelistMessage,
     WSWhitelistRequest,
 )
-
-
-if TYPE_CHECKING:
-    import websockets.connect
 
 
 class Producer(TypedDict):
