@@ -3189,7 +3189,7 @@ class Exchange:
                     if updated_dt < datetime.now(timezone.utc) - cache_time:
                         logger.info("Cached leverage tiers are outdated. Will update.")
                         return None
-                return tiers["data"]
+                return tiers.get("data")
             except Exception:
                 logger.exception("Error loading cached leverage tiers. Refreshing.")
         return None
