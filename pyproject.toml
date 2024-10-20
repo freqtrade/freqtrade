@@ -208,11 +208,6 @@ plugins = [
 module = "tests.*"
 ignore_errors = true
 
-[[tool.mypy.overrides]]
-# Telegram does not use implicit_optional = false in the current version.
-module = "telegram.*"
-implicit_optional = true
-
 [tool.pyright]
 include = ["freqtrade"]
 exclude = [
