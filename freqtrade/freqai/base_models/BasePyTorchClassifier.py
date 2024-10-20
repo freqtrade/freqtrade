@@ -39,8 +39,8 @@ class BasePyTorchClassifier(BasePyTorchModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.class_name_to_index = None
-        self.index_to_class_name = None
+        self.class_name_to_index = {}
+        self.index_to_class_name = {}
 
     def predict(
         self, unfiltered_df: DataFrame, dk: FreqaiDataKitchen, **kwargs
