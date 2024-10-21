@@ -27,6 +27,7 @@ from freqtrade.commands.hyperopt_commands import start_hyperopt_list, start_hype
 from freqtrade.commands.list_commands import (
     start_list_exchanges,
     start_list_freqAI_models,
+    start_list_hyperopt_loss_functions,
     start_list_markets,
     start_list_strategies,
     start_list_timeframes,

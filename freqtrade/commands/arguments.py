@@ -258,6 +258,7 @@ NO_CONF_REQURIED = [
     "list-pairs",
     "list-strategies",
     "list-freqaimodels",
+    "list-hyperoptloss",
     "list-data",
     "hyperopt-list",
     "hyperopt-show",
@@ -365,6 +366,7 @@ class Arguments:
             start_list_data,
             start_list_exchanges,
             start_list_freqAI_models,
+            start_list_hyperopt_loss_functions,
             start_list_markets,
             start_list_strategies,
             start_list_timeframes,
@@ -565,6 +567,15 @@ class Arguments:
         )
         list_strategies_cmd.set_defaults(func=start_list_strategies)
         self._build_args(optionlist=ARGS_LIST_STRATEGIES, parser=list_strategies_cmd)
+
+        # Add list-Hyperopt loss subcommand
+        list_hyperopt_loss_cmd = subparsers.add_parser(
+            "list-hyperoptloss",
+            help="Print available hyperopt loss functions.",
+            parents=[_common_parser],
+        )
+        list_hyperopt_loss_cmd.set_defaults(func=start_list_hyperopt_loss_functions)
+        self._build_args(optionlist=ARGS_LIST_HYPEROPTS, parser=list_hyperopt_loss_cmd)
 
         # Add list-freqAI Models subcommand
         list_freqaimodels_cmd = subparsers.add_parser(
