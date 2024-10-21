@@ -185,6 +185,7 @@ class IFreqaiModel(ABC):
         Callback for Subclasses to override to include logic for shutting down resources
         when SIGINT is sent.
         """
+        self.dd.save_historic_predictions_to_disk()
         return
 
     def shutdown(self):
