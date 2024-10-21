@@ -216,6 +216,45 @@ Example: Search dedicated strategy path.
 freqtrade list-strategies --strategy-path ~/.freqtrade/strategies/
 ```
 
+## List Hyperopt-Loss functions
+
+Use the `list-hyperoptloss` subcommand to see all hyperopt loss functions available.
+
+It provides a quick list of all available loss functions in your environment.
+
+This subcommand can be useful for finding problems in your environment with loading loss functions: modules with Hyperopt-Loss functions that contain errors and failed to load are printed in red (LOAD FAILED), while hyperopt-Loss functions with duplicate names are printed in yellow (DUPLICATE NAME).
+
+```
+usage: freqtrade list-hyperoptloss [-h] [-v] [--logfile FILE] [-V] [-c PATH]
+                                   [-d PATH] [--userdir PATH]
+                                   [--hyperopt-path PATH] [-1] [--no-color]
+
+options:
+  -h, --help            show this help message and exit
+  --hyperopt-path PATH  Specify additional lookup path for Hyperopt Loss
+                        functions.
+  -1, --one-column      Print output in one column.
+  --no-color            Disable colorization of hyperopt results. May be
+                        useful if you are redirecting output to a file.
+
+Common arguments:
+  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
+  --logfile FILE, --log-file FILE
+                        Log to the file specified. Special values are:
+                        'syslog', 'journald'. See the documentation for more
+                        details.
+  -V, --version         show program's version number and exit
+  -c PATH, --config PATH
+                        Specify configuration file (default:
+                        `userdir/config.json` or `config.json` whichever
+                        exists). Multiple --config options may be used. Can be
+                        set to `-` to read config from stdin.
+  -d PATH, --datadir PATH, --data-dir PATH
+                        Path to directory with historical backtesting data.
+  --userdir PATH, --user-data-dir PATH
+                        Path to userdata directory.
+```
+
 ## List freqAI models
 
 Use the `list-freqaimodels` subcommand to see all freqAI models available.
