@@ -179,6 +179,7 @@ class Order(ModelBase):
         return (
             f"Order(id={self.id}, trade={self.ft_trade_id}, order_id={self.order_id}, "
             f"side={self.side}, filled={self.safe_filled}, price={self.safe_price}, "
+            f"amount={self.amount}, "
             f"status={self.status}, date={self.order_date_utc:{DATETIME_PRINT_FORMAT}})"
         )
 
@@ -585,6 +586,13 @@ class LocalTrade:
             o for o in self.orders if o.ft_order_side not in ["stoploss"] and o.ft_is_open
         ]
         return len(open_orders_wo_sl) > 0
+
+    @property
+    def has_open_position(self) -> bool:
+        """
+        True if there is an open position for this trade
+        """
+        return self.amount > 0
 
     @property
     def open_sl_orders(self) -> list[Order]:
