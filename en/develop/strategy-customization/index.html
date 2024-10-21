@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://www.freqtrade.io/en/stable/strategy-customization/">
       
       
-        <link rel="prev" href="../configuration/">
+        <link rel="prev" href="../strategy-101/">
       
       
         <link rel="next" href="../strategy-callbacks/">
@@ -437,6 +437,26 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-101/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Strategy Quickstart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -496,6 +516,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#generating-a-strategy-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generating a strategy template
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anatomy-of-a-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       Anatomy of a strategy
@@ -505,11 +534,50 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#bot-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bot modes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diving-in-deeper" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diving in deeper
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Diving in deeper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#dataframe" class="md-nav__link">
     <span class="md-ellipsis">
       Dataframe
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Dataframe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-cant-i-see-real-time-candle-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why can't I see "real time" candle data?
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -585,6 +653,30 @@
       Minimal ROI
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Minimal ROI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#disabling-minimal-roi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disabling minimal ROI
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-calculations-in-minimal-roi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using calculations in minimal ROI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -781,9 +873,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#complete-data-provider-sample" class="md-nav__link">
+  <a href="#complete-dataprovider-sample" class="md-nav__link">
     <span class="md-ellipsis">
-      Complete Data-provider sample
+      Complete DataProvider sample
     </span>
   </a>
   
@@ -867,9 +959,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#print-created-dataframe" class="md-nav__link">
+  <a href="#print-the-main-dataframe" class="md-nav__link">
     <span class="md-ellipsis">
-      Print created dataframe
+      Print the main dataframe
     </span>
   </a>
   
@@ -886,9 +978,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#peeking-into-the-future-while-backtesting" class="md-nav__link">
+  <a href="#looking-into-the-future-while-backtesting" class="md-nav__link">
     <span class="md-ellipsis">
-      Peeking into the future while backtesting
+      Looking into the future while backtesting
     </span>
   </a>
   
@@ -918,9 +1010,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-step" class="md-nav__link">
+  <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
-      Next step
+      Next steps
     </span>
   </a>
   
@@ -1028,10 +1120,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
         
           
-          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -1042,8 +1134,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_11">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
             <span class="md-nav__icon md-icon"></span>
             Control the bot
           </label>
@@ -1214,10 +1306,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_15" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_16" >
         
           
-          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -1228,8 +1320,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_15">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
             <span class="md-nav__icon md-icon"></span>
             FreqAI
           </label>
@@ -1483,10 +1575,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_20" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
         
           
-          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -1497,8 +1589,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_20">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
             <span class="md-nav__icon md-icon"></span>
             Data Analysis
           </label>
@@ -1588,10 +1680,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_22" >
         
           
-          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_22" id="__nav_22_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -1602,8 +1694,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_21">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_22_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_22">
             <span class="md-nav__icon md-icon"></span>
             Advanced Topics
           </label>
@@ -1965,6 +2057,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#generating-a-strategy-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generating a strategy template
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#anatomy-of-a-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       Anatomy of a strategy
@@ -1974,11 +2075,50 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#bot-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bot modes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diving-in-deeper" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diving in deeper
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Diving in deeper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#dataframe" class="md-nav__link">
     <span class="md-ellipsis">
       Dataframe
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Dataframe">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-cant-i-see-real-time-candle-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why can't I see "real time" candle data?
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -2054,6 +2194,30 @@
       Minimal ROI
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Minimal ROI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#disabling-minimal-roi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disabling minimal ROI
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-calculations-in-minimal-roi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using calculations in minimal ROI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -2250,9 +2414,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#complete-data-provider-sample" class="md-nav__link">
+  <a href="#complete-dataprovider-sample" class="md-nav__link">
     <span class="md-ellipsis">
-      Complete Data-provider sample
+      Complete DataProvider sample
     </span>
   </a>
   
@@ -2336,9 +2500,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#print-created-dataframe" class="md-nav__link">
+  <a href="#print-the-main-dataframe" class="md-nav__link">
     <span class="md-ellipsis">
-      Print created dataframe
+      Print the main dataframe
     </span>
   </a>
   
@@ -2355,9 +2519,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#peeking-into-the-future-while-backtesting" class="md-nav__link">
+  <a href="#looking-into-the-future-while-backtesting" class="md-nav__link">
     <span class="md-ellipsis">
-      Peeking into the future while backtesting
+      Looking into the future while backtesting
     </span>
   </a>
   
@@ -2387,9 +2551,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-step" class="md-nav__link">
+  <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
-      Next step
+      Next steps
     </span>
   </a>
   
@@ -2415,43 +2579,82 @@
 
 <h1 id="strategy-customization">Strategy Customization<a class="headerlink" href="#strategy-customization" title="Permanent link">&para;</a></h1>
 <p>This page explains how to customize your strategies, add new indicators and set up trading rules.</p>
-<p>Please familiarize yourself with <a href="../bot-basics/">Freqtrade basics</a> first, which provides overall info on how the bot operates.</p>
+<p>If you haven't already, please familiarize yourself with:</p>
+<ul>
+<li>the <a href="freqtrade-101.md">Freqtrade strategy 101</a>, which provides a quick start to strategy development</li>
+<li>the <a href="../bot-basics/">Freqtrade bot basics</a>, which provides overall info on how the bot operates</li>
+</ul>
 <h2 id="develop-your-own-strategy">Develop your own strategy<a class="headerlink" href="#develop-your-own-strategy" title="Permanent link">&para;</a></h2>
-<p>The bot includes a default strategy file.
-Also, several other strategies are available in the <a href="https://github.com/freqtrade/freqtrade-strategies">strategy repository</a>.</p>
-<p>You will however most likely have your own idea for a strategy.
-This document intends to help you convert your strategy idea into your own strategy.</p>
-<p>To get started, use <code>freqtrade new-strategy --strategy AwesomeStrategy</code> (you can obviously use your own naming for your strategy).
-This will create a new strategy file from a template, which will be located under <code>user_data/strategies/AwesomeStrategy.py</code>.</p>
+<p>The bot includes a default strategy file.</p>
+<p>Also, several other strategies are available in the <a href="https://github.com/freqtrade/freqtrade-strategies">strategy repository</a>.</p>
+<p>You will however most likely have your own idea for a strategy.</p>
+<p>This document intends to help you convert your ideas into a working strategy.</p>
+<h3 id="generating-a-strategy-template">Generating a strategy template<a class="headerlink" href="#generating-a-strategy-template" title="Permanent link">&para;</a></h3>
+<p>To get started, you can use the command:</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>new-strategy<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy
+</code></pre></div>
+<p>This will create a new strategy called <code>AwesomeStrategy</code> from a template, which will be located using the filename <code>user_data/strategies/AwesomeStrategy.py</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This is just a template file, which will most likely not be profitable out of the box.</p>
+<p>There is a difference between the <em>name</em> of the strategy and the filename. In most commands, Freqtrade uses the <em>name</em> of the strategy, <em>not the filename</em>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>new-strategy</code> command generates starting examples which will not be profitable out of the box.</p>
 </div>
 <details class="hint">
 <summary>Different template levels</summary>
-<p><code>freqtrade new-strategy</code> has an additional parameter, <code>--template</code>, which controls the amount of pre-build information you get in the created strategy. Use <code>--template minimal</code> to get an empty strategy without any indicator examples, or <code>--template advanced</code> to get a template with most callbacks defined.</p>
+<p><code>freqtrade new-strategy</code> has an additional parameter, <code>--template</code>, which controls the amount of pre-build information you get in the created strategy. Use <code>--template minimal</code> to get an empty strategy without any indicator examples, or <code>--template advanced</code> to get a template with more complicated features defined.</p>
 </details>
 <h3 id="anatomy-of-a-strategy">Anatomy of a strategy<a class="headerlink" href="#anatomy-of-a-strategy" title="Permanent link">&para;</a></h3>
-<p>A strategy file contains all the information needed to build a good strategy:</p>
+<p>A strategy file contains all the information needed to build the strategy logic:</p>
 <ul>
+<li>Candle data in OHLCV format</li>
 <li>Indicators</li>
-<li>Entry strategy rules</li>
-<li>Exit strategy rules</li>
-<li>Minimal ROI recommended</li>
-<li>Stoploss strongly recommended</li>
+<li>Entry logic<ul>
+<li>Signals</li>
 </ul>
-<p>The bot also include a sample strategy called <code>SampleStrategy</code> you can update: <code>user_data/strategies/sample_strategy.py</code>.
-You can test it with the parameter: <code>--strategy SampleStrategy</code></p>
+</li>
+<li>Exit logic<ul>
+<li>Signals</li>
+<li>Minimal ROI</li>
+<li>Callbacks ("custom functions")</li>
+</ul>
+</li>
+<li>Stoploss<ul>
+<li>Fixed/absolute</li>
+<li>Trailing</li>
+<li>Callbacks ("custom functions")</li>
+</ul>
+</li>
+<li>Pricing [optional]</li>
+<li>Position adjustment [optional]</li>
+</ul>
+<p>The bot includes a sample strategy called <code>SampleStrategy</code> that you can use as a basis: <code>user_data/strategies/sample_strategy.py</code>.
+You can test it with the parameter: <code>--strategy SampleStrategy</code>. Remember that you use the strategy class name, not the filename.</p>
 <p>Additionally, there is an attribute called <code>INTERFACE_VERSION</code>, which defines the version of the strategy interface the bot should use.
 The current version is 3 - which is also the default when it's not set explicitly in the strategy.</p>
-<p>Future versions will require this to be set.</p>
+<p>You may see older strategies set to interface version 2, and these will need to be updated to v3 terminology as future versions will require this to be set.</p>
+<p>Starting the bot in dry or live mode is accomplished using the <code>trade</code> command:</p>
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy
 </code></pre></div>
+<h3 id="bot-modes">Bot modes<a class="headerlink" href="#bot-modes" title="Permanent link">&para;</a></h3>
+<p>Freqtrade strategies can be processed by the Freqtrade bot in 5 main modes:</p>
+<ul>
+<li>backtesting</li>
+<li>hyperopting</li>
+<li>dry ("forward testing")</li>
+<li>live</li>
+<li>FreqAI (not covered here)</li>
+</ul>
+<p>Check the <a href="../configuration/">configuration documentation</a> about how to set the bot to dry or live mode.</p>
+<p><strong>Always use dry mode when testing as this gives you an idea of how your strategy will work in reality without risking capital.</strong></p>
+<h2 id="diving-in-deeper">Diving in deeper<a class="headerlink" href="#diving-in-deeper" title="Permanent link">&para;</a></h2>
 <p><strong>For the following section we will use the <a href="https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py">user_data/strategies/sample_strategy.py</a>
 file as reference.</strong></p>
 <div class="admonition note">
 <p class="admonition-title">Strategies and Backtesting</p>
-<p>To avoid problems and unexpected differences between Backtesting and dry/live modes, please be aware
+<p>To avoid problems and unexpected differences between backtesting and dry/live modes, please be aware
 that during backtesting the full time range is passed to the <code>populate_*()</code> methods at once.
 It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
 avoid index referencing (<code>df.iloc[-1]</code>), but instead use <code>df.shift()</code> to get to the previous candle.</p>
@@ -2462,10 +2665,18 @@ avoid index referencing (<code>df.iloc[-1]</code>), but instead use <code>df.shi
 needs to take care to avoid having the strategy utilize data from the future.
 Some common patterns for this are listed in the <a href="#common-mistakes-when-developing-strategies">Common Mistakes</a> section of this document.</p>
 </div>
+<details class="hint">
+<summary>Lookahead and recursive analysis</summary>
+<p>Freqtrade includes two helpful commands to help assess common lookahead (using future data) and 
+recursive bias (variance in indicator values) issues. Before running a strategy in dry or live more, 
+you should always use these commands first. Please check the relevant documentation for 
+<a href="../lookahead-analysis/">lookahead</a> and <a href="../recursive-analysis/">recursive</a> analysis.</p>
+</details>
 <h3 id="dataframe">Dataframe<a class="headerlink" href="#dataframe" title="Permanent link">&para;</a></h3>
 <p>Freqtrade uses <a href="https://pandas.pydata.org/">pandas</a> to store/provide the candlestick (OHLCV) data.
-Pandas is a great library developed for processing large amounts of data.</p>
-<p>Each row in a dataframe corresponds to one candle on a chart, with the latest candle always being the last in the dataframe (sorted by date).</p>
+Pandas is a great library developed for processing large amounts of data in tabular format.</p>
+<p>Each row in a dataframe corresponds to one candle on a chart, with the latest complete candle always being the last in the dataframe (sorted by date).</p>
+<p>If we were to look at the first few rows of the main dataframe using the pandas <code>head()</code> function, we would see:</p>
 <div class="highlight"><pre><span></span><code><span class="go">&gt; dataframe.head()</span>
 <span class="go">                       date      open      high       low     close     volume</span>
 <span class="go">0 2021-11-09 23:25:00+00:00  67279.67  67321.84  67255.01  67300.97   44.62253</span>
@@ -2474,23 +2685,42 @@ Pandas is a great library developed for processing large amounts of data.</p>
 <span class="go">3 2021-11-09 23:40:00+00:00  67123.80  67222.40  67080.33  67160.48   78.96008</span>
 <span class="go">4 2021-11-09 23:45:00+00:00  67160.48  67160.48  66901.26  66943.37  111.39292</span>
 </code></pre></div>
-<p>Pandas provides fast ways to calculate metrics. To benefit from this speed, it's advised to not use loops, but use vectorized methods instead.</p>
-<p>Vectorized operations perform calculations across the whole range of data and are therefore, compared to looping through each row, a lot faster when calculating indicators.</p>
-<p>As a dataframe is a table, simple python comparisons like the following will not work</p>
+<p>A dataframe is a table where columns are not single values, but a series of data values. As such, simple python comparisons like the following will not work:</p>
 <div class="highlight"><pre><span></span><code>    <span class="k">if</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">:</span>
         <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;enter_long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 </code></pre></div>
-<p>The above section will fail with <code>The truth value of a Series is ambiguous. [...]</code>.</p>
-<p>This must instead be written in a pandas-compatible way, so the operation is performed across the whole dataframe.</p>
+<p>The above section will fail with <code>The truth value of a Series is ambiguous [...]</code>.</p>
+<p>This must instead be written in a pandas-compatible way, so the operation is performed across the whole dataframe, i.e. <code>vectorisation</code>.</p>
 <div class="highlight"><pre><span></span><code>    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">)</span>
     <span class="p">,</span> <span class="s1">&#39;enter_long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 </code></pre></div>
 <p>With this section, you have a new column in your dataframe, which has <code>1</code> assigned whenever RSI is above 30.</p>
+<p>Freqtrade uses this new column as an entry signal, where it is assumed that a trade will subsequently open on the next open candle.</p>
+<p>Pandas provides fast ways to calculate metrics, i.e. "vectorisation". To benefit from this speed, it is advised to not use loops, but use vectorized methods instead.</p>
+<p>Vectorized operations perform calculations across the whole range of data and are therefore, compared to looping through each row, a lot faster when calculating indicators.</p>
+<details class="hint">
+<summary>Signals vs Trades</summary>
+<ul>
+<li>Signals are generated from indicators at candle close, and are intentions to enter a trade.</li>
+<li>Trades are orders that are executed (on the exchange in live mode) where a trade will then open as close to next candle open as possible.</li>
+</ul>
+</details>
+<div class="admonition warning">
+<p class="admonition-title">Trade order assumptions</p>
+<p>In backtesting, signals are generated on candle close. Trades are then initiated immeditely on next candle open.</p>
+<p>In dry and live, this may be delayed due to all pair dataframes needing to be analysed first, then trade processing 
+for each of those pairs happens. This means that in dry/live you need to be mindful of having as low a computation 
+delay as possible, usually by running a low number of pairs and having a CPU with a good clock speed.</p>
+</div>
+<h4 id="why-cant-i-see-real-time-candle-data">Why can't I see "real time" candle data?<a class="headerlink" href="#why-cant-i-see-real-time-candle-data" title="Permanent link">&para;</a></h4>
+<p>Freqtrade does not store incomplete/unfinished candles in the dataframe.</p>
+<p>The use of incomplete data for making strategy decisions is called "repainting" and you might see other platforms allow this.</p>
+<p>Freqtrade does not. Only complete/finished candle data is available in the dataframe.</p>
 <h3 id="customize-indicators">Customize Indicators<a class="headerlink" href="#customize-indicators" title="Permanent link">&para;</a></h3>
-<p>Buy and sell signals need indicators. You can add more indicators by extending the list contained in the method <code>populate_indicators()</code> from your strategy file.</p>
+<p>Entry and exit signals need indicators. You can add more indicators by extending the list contained in the method <code>populate_indicators()</code> from your strategy file.</p>
 <p>You should only add the indicators used in either <code>populate_entry_trend()</code>, <code>populate_exit_trend()</code>, or to populate another indicator, otherwise performance may suffer.</p>
-<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
+<p>It's important to always return the dataframe from these three functions without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
 <p>Sample:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2508,7 +2738,7 @@ Pandas is a great library developed for processing large amounts of data.</p>
     <span class="n">stoch</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">STOCHF</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;fastd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stoch</span><span class="p">[</span><span class="s1">&#39;fastd&#39;</span><span class="p">]</span>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;fastk&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stoch</span><span class="p">[</span><span class="s1">&#39;fastk&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;blower&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">BBANDS</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">nbdevup</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nbdevdn</span><span class="o">=</span><span class="mi">2</span><span class="p">)[</span><span class="s1">&#39;lowerband&#39;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_lower&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">BBANDS</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">nbdevup</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nbdevdn</span><span class="o">=</span><span class="mi">2</span><span class="p">)[</span><span class="s1">&#39;lowerband&#39;</span><span class="p">]</span>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;sma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">TEMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;mfi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
@@ -2529,6 +2759,8 @@ Pandas is a great library developed for processing large amounts of data.</p>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;plus_di&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">PLUS_DI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;minus_dm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MINUS_DM</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;minus_di&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MINUS_DI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+
+    <span class="c1"># remember to always return the dataframe</span>
     <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
 <div class="admonition note">
@@ -2545,10 +2777,10 @@ Then uncomment indicators you need.</p>
 </ul>
 <p>Additional technical libraries can be installed as necessary, or custom indicators may be written / invented by the strategy author.</p>
 <h3 id="strategy-startup-period">Strategy startup period<a class="headerlink" href="#strategy-startup-period" title="Permanent link">&para;</a></h3>
-<p>Most indicators have an instable startup period, in which they are either not available (NaN), or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this instable period should be.
-To account for this, the strategy can be assigned the <code>startup_candle_count</code> attribute.
-This should be set to the maximum number of candles that the strategy requires to calculate stable indicators. In the case where a user includes higher timeframes with informative pairs, the <code>startup_candle_count</code> does not necessarily change. The value is the maximum period (in candles) that any of the informatives timeframes need to compute stable indicators.</p>
-<p>You can use <a href="../recursive-analysis/">recursive-analysis</a> to check and find the correct <code>startup_candle_count</code> to be used.</p>
+<p>Some indicators have an unstable startup period in which there isn't enough candle data to calculate any values (NaN), or the calculation is incorrect. This can lead to inconsistencies, since Freqtrade does not know how long this unstable period is and uses whatever indicator values are in the dataframe.</p>
+<p>To account for this, the strategy can be assigned the <code>startup_candle_count</code> attribute.</p>
+<p>This should be set to the maximum number of candles that the strategy requires to calculate stable indicators. In the case where a user includes higher timeframes with informative pairs, the <code>startup_candle_count</code> does not necessarily change. The value is the maximum period (in candles) that any of the informatives timeframes need to compute stable indicators.</p>
+<p>You can use <a href="../recursive-analysis/">recursive-analysis</a> to check and find the correct <code>startup_candle_count</code> to be used. When recursive analysis shows a variance of 0%, then you can be sure that you have enough startup candle data.</p>
 <p>In this example strategy, this should be set to 400 (<code>startup_candle_count = 400</code>), since the minimum needed history for ema100 calculation to make sure the value is correct is 400 candles.</p>
 <div class="highlight"><pre><span></span><code>    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema100&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 </code></pre></div>
@@ -2568,16 +2800,17 @@ This is capped to 5 total calls to avoid overloading the exchange, or make freqt
 <p>Let's try to backtest 1 month (January 2019) of 5m candles using an example strategy with EMA100, as above.</p>
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20190101</span>-20190201<span class="w"> </span>--timeframe<span class="w"> </span>5m
 </code></pre></div>
-<p>Assuming <code>startup_candle_count</code> is set to 400, backtesting knows it needs 400 candles to generate valid buy signals. It will load data from <code>20190101 - (400 * 5m)</code> - which is ~2018-12-30 11:40:00.
-If this data is available, indicators will be calculated with this extended timerange. The instable startup period (up to 2019-01-01 00:00:00) will then be removed before starting backtesting.</p>
+<p>Assuming <code>startup_candle_count</code> is set to 400, backtesting knows it needs 400 candles to generate valid entry signals. It will load data from <code>20190101 - (400 * 5m)</code> - which is ~2018-12-30 11:40:00.</p>
+<p>If this data is available, indicators will be calculated with this extended timerange. The unstable startup period (up to 2019-01-01 00:00:00) will then be removed before backtesting is carried out.</p>
 <div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If data for the startup period is not available, then the timerange will be adjusted to account for this startup period - so Backtesting would start at 2019-01-02 09:20:00.</p>
+<p class="admonition-title">Unavailable startup candle data</p>
+<p>If data for the startup period is not available, then the timerange will be adjusted to account for this startup period. In our example, backtesting would then start from 2019-01-02 09:20:00.</p>
 </div>
 <h3 id="entry-signal-rules">Entry signal rules<a class="headerlink" href="#entry-signal-rules" title="Permanent link">&para;</a></h3>
 <p>Edit the method <code>populate_entry_trend()</code> in your strategy file to update your entry strategy.</p>
-<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
-<p>This method will also define a new column, <code>"enter_long"</code> (<code>"enter_short"</code> for shorts), which needs to contain 1 for entries, and 0 for "no action". <code>enter_long</code> is a mandatory column that must be set even if the strategy is shorting only.</p>
+<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected. The strategy may then produce invalid values, or cease to work entirely.</p>
+<p>This method will also define a new column, <code>"enter_long"</code> (<code>"enter_short"</code> for shorts), which needs to contain <code>1</code> for entries, and <code>0</code> for "no action". <code>enter_long</code> is a mandatory column that must be set even if the strategy is shorting only.</p>
+<p>You can name your entry signals by using the <code>"enter_tag"</code> column, which can help debug and assess your strategy later. </p>
 <p>Sample from <code>user_data/strategies/sample_strategy.py</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2599,11 +2832,14 @@ If this data is available, indicators will be calculated with this extended time
 </code></pre></div>
 <details class="note">
 <summary>Enter short trades</summary>
-<p>Short-entries can be created by setting <code>enter_short</code> (corresponds to <code>enter_long</code> for long trades).
+<p>Short entries can be created by setting <code>enter_short</code> (corresponds to <code>enter_long</code> for long trades).
 The <code>enter_tag</code> column remains identical.
-Short-trades need to be supported by your exchange and market configuration!
-Please make sure to set <a href=""><code>can_short</code></a> appropriately on your strategy if you intend to short.</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+Shorting needs to be supported by your exchange and market configuration!
+Also, make sure you set <a href="#can-short"><code>can_short</code></a> appropriately on your strategy if you intend to short.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># allow both long and short trades</span>
+<span class="n">can_short</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="k">def</span> <span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
             <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
@@ -2627,14 +2863,15 @@ Please make sure to set <a href=""><code>can_short</code></a> appropriately on y
 </details>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Buying requires sellers to buy from - therefore volume needs to be &gt; 0 (<code>dataframe['volume'] &gt; 0</code>) to make sure that the bot does not buy/sell in no-activity periods.</p>
+<p>Buying requires sellers to buy from. Therefore volume needs to be &gt; 0 (<code>dataframe['volume'] &gt; 0</code>) to make sure that the bot does not buy/sell in no-activity periods.</p>
 </div>
 <h3 id="exit-signal-rules">Exit signal rules<a class="headerlink" href="#exit-signal-rules" title="Permanent link">&para;</a></h3>
-<p>Edit the method <code>populate_exit_trend()</code> into your strategy file to update your exit strategy.
-The exit-signal can be suppressed by setting <code>use_exit_signal</code> to false in the configuration or strategy.
-<code>use_exit_signal</code> will not influence <a href="#colliding-signals">signal collision rules</a> - which will still apply and can prevent entries.</p>
-<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
-<p>This method will also define a new column, <code>"exit_long"</code> (<code>"exit_short"</code> for shorts), which needs to contain 1 for exits, and 0 for "no action".</p>
+<p>Edit the method <code>populate_exit_trend()</code> into your strategy file to update your exit strategy.</p>
+<p>The exit-signal can be suppressed by setting <code>use_exit_signal</code> to false in the configuration or strategy.</p>
+<p><code>use_exit_signal</code> will not influence <a href="#colliding-signals">signal collision rules</a> - which will still apply and can prevent entries.</p>
+<p>It's important to always return the dataframe without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected. The strategy may then produce invalid values, or cease to work entirely.</p>
+<p>This method will also define a new column, <code>"exit_long"</code> (<code>"exit_short"</code> for shorts), which needs to contain <code>1</code> for exits, and <code>0</code> for "no action".</p>
+<p>You can name your exit signals by using the <code>"exit_tag"</code> column, which can help debug and assess your strategy later.</p>
 <p>Sample from <code>user_data/strategies/sample_strategy.py</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_exit_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2655,10 +2892,14 @@ The exit-signal can be suppressed by setting <code>use_exit_signal</code> to fal
 </code></pre></div>
 <details class="note">
 <summary>Exit short trades</summary>
-<p>Short-exits can be created by setting <code>exit_short</code> (corresponds to <code>exit_long</code>).
+<p>Short exits can be created by setting <code>exit_short</code> (corresponds to <code>exit_long</code>).
 The <code>exit_tag</code> column remains identical.
-Short-trades need to be supported by your exchange and market configuration!</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_exit_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+Shorting needs to be supported by your exchange and market configuration!
+Also, make sure you set <a href="#can-short"><code>can_short</code></a> appropriately on your strategy if you intend to short.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># allow both long and short trades</span>
+<span class="n">can_short</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="k">def</span> <span class="nf">populate_exit_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
             <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 70</span>
@@ -2679,8 +2920,8 @@ Short-trades need to be supported by your exchange and market configuration!</p>
 </code></pre></div>
 </details>
 <h3 id="minimal-roi">Minimal ROI<a class="headerlink" href="#minimal-roi" title="Permanent link">&para;</a></h3>
-<p>This dict defines the minimal Return On Investment (ROI) a trade should reach before exiting, independent from the exit signal.</p>
-<p>It is of the following format, with the dict key (left side of the colon) being the minutes passed since the trade opened, and the value (right side of the colon) being the percentage.</p>
+<p>The <code>minimal_roi</code> strategy variable defines the minimal Return On Investment (ROI) a trade should reach before exiting, independent from the exit signal.</p>
+<p>It is of the following format, i.e. a python <code>dict</code>, with the dict key (left side of the colon) being the minutes passed since the trade opened, and the value (right side of the colon) being the percentage.</p>
 <div class="highlight"><pre><span></span><code><span class="n">minimal_roi</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;40&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
     <span class="s2">&quot;30&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
@@ -2696,11 +2937,13 @@ Short-trades need to be supported by your exchange and market configuration!</p>
 <li>Exit when trade is non-loosing (in effect after 40 minutes)</li>
 </ul>
 <p>The calculation does include fees.</p>
+<h4 id="disabling-minimal-roi">Disabling minimal ROI<a class="headerlink" href="#disabling-minimal-roi" title="Permanent link">&para;</a></h4>
 <p>To disable ROI completely, set it to an empty dictionary:</p>
 <div class="highlight"><pre><span></span><code><span class="n">minimal_roi</span> <span class="o">=</span> <span class="p">{}</span>
 </code></pre></div>
-<p>To use times based on candle duration (timeframe), the following snippet can be handy.
-This will allow you to change the timeframe for the strategy, and ROI times will still be set as candles (e.g. after 3 candles ...)</p>
+<h4 id="using-calculations-in-minimal-roi">Using calculations in minimal ROI<a class="headerlink" href="#using-calculations-in-minimal-roi" title="Permanent link">&para;</a></h4>
+<p>To use times based on candle duration (timeframe), the following snippet can be handy.</p>
+<p>This will allow you to change the timeframe for the strategy, but the minimal ROI times will still be set as candles, e.g. after 3 candles.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.exchange</span> <span class="kn">import</span> <span class="n">timeframe_to_minutes</span>
 
 <span class="k">class</span> <span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
@@ -2715,9 +2958,9 @@ This will allow you to change the timeframe for the strategy, and ROI times will
 </code></pre></div>
 <details class="info">
 <summary>Orders that don't fill immediately</summary>
-<p><code>minimal_roi</code> will take the <code>trade.open_date</code> as reference, which is the time the trade was initialized / the first order for this trade was placed.<br />
-This will also hold true for limit orders that don't fill immediately  (usually in combination with "off-spot" prices through <code>custom_entry_price()</code>), as well as for cases where the initial order is replaced through <code>adjust_entry_price()</code>.
-The time used will still be from the initial <code>trade.open_date</code> (when the initial order was first placed), not from the newly placed order date.</p>
+<p><code>minimal_roi</code> will take the <code>trade.open_date</code> as reference, which is the time the trade was initialized, i.e. when the first order for this trade was placed.
+This will also hold true for limit orders that don't fill immediately (usually in combination with "off-spot" prices through <code>custom_entry_price()</code>), as well as for cases where the initial order price is replaced through <code>adjust_entry_price()</code>.
+The time used will still be from the initial <code>trade.open_date</code> (when the initial order was first placed), not from the newly placed or adjusted order date.</p>
 </details>
 <h3 id="stoploss">Stoploss<a class="headerlink" href="#stoploss" title="Permanent link">&para;</a></h3>
 <p>Setting a stoploss is highly recommended to protect your capital from strong moves against you.</p>
@@ -2726,19 +2969,19 @@ The time used will still be from the initial <code>trade.open_date</code> (when 
 </code></pre></div>
 <p>For the full documentation on stoploss features, look at the dedicated <a href="../stoploss/">stoploss page</a>.</p>
 <h3 id="timeframe">Timeframe<a class="headerlink" href="#timeframe" title="Permanent link">&para;</a></h3>
-<p>This is the set of candles the bot should download and use for the analysis.
-Common values are <code>"1m"</code>, <code>"5m"</code>, <code>"15m"</code>, <code>"1h"</code>, however all values supported by your exchange should work.</p>
-<p>Please note that the same entry/exit signals may work well with one timeframe, but not with the others.</p>
+<p>This is the periodicity of candles the bot should use in the strategy.</p>
+<p>Common values are <code>"1m"</code>, <code>"5m"</code>, <code>"15m"</code>, <code>"1h"</code>, however all values supported by your exchange should work.</p>
+<p>Please note that the same entry/exit signals may work well with one timeframe, but not with others.</p>
 <p>This setting is accessible within the strategy methods as the <code>self.timeframe</code> attribute.</p>
 <h3 id="can-short">Can short<a class="headerlink" href="#can-short" title="Permanent link">&para;</a></h3>
-<p>To use short signals in futures markets, you will have to let us know to do so by setting <code>can_short=True</code>.
-Strategies which enable this will fail to load on spot markets.
-Disabling of this will have short signals ignored (also in futures markets).</p>
+<p>To use short signals in futures markets, you will have to set <code>can_short = True</code>.</p>
+<p>Strategies which enable this will fail to load on spot markets.</p>
+<p>If you have <code>1</code> values in the <code>enter_short</code> column to raise short signals, setting <code>can_short = False</code> (which is the default) will mean that these short signals are ignored, even if you have specified futures markets in your configuration.</p>
 <h3 id="metadata-dict">Metadata dict<a class="headerlink" href="#metadata-dict" title="Permanent link">&para;</a></h3>
-<p>The metadata-dict (available for <code>populate_entry_trend</code>, <code>populate_exit_trend</code>, <code>populate_indicators</code>) contains additional information.
-Currently this is <code>pair</code>, which can be accessed using <code>metadata['pair']</code> - and will return a pair in the format <code>XRP/BTC</code>.</p>
-<p>The Metadata-dict should not be modified and does not persist information across multiple calls.
-Instead, have a look at the <a href="../strategy-advanced/#storing-information-persistent">Storing information</a> section.</p>
+<p>The <code>metadata</code> dict (available for <code>populate_entry_trend</code>, <code>populate_exit_trend</code>, <code>populate_indicators</code>) contains additional information.
+Currently this is <code>pair</code>, which can be accessed using <code>metadata['pair']</code>, and will return a pair in the format <code>XRP/BTC</code> (or <code>XRP/BTC:BTC</code> for futures markets).</p>
+<p>The metadata dict should not be modified and does not persist information across multiple functions in your strategy.</p>
+<p>Instead, please check the <a href="../strategy-advanced/#storing-information-persistent">Storing information</a> section.</p>
 <h2 id="imports-necessary-for-a-strategy">Imports necessary for a strategy<a class="headerlink" href="#imports-necessary-for-a-strategy" title="Permanent link">&para;</a></h2>
 <p>When creating a strategy, you will need to import the necessary modules and classes. The following imports are required for a strategy:</p>
 <p>By default, we recommend the following imports as a base line for your strategy:
@@ -2781,9 +3024,11 @@ Obviously you can add more imports as needed for your strategy.</p>
 <span class="kn">from</span> <span class="nn">technical</span> <span class="kn">import</span> <span class="n">qtpylib</span>
 </code></pre></div>
 <h2 id="strategy-file-loading">Strategy file loading<a class="headerlink" href="#strategy-file-loading" title="Permanent link">&para;</a></h2>
-<p>By default, freqtrade will attempt to load strategies from all <code>.py</code> files within <code>user_data/strategies</code>.</p>
-<p>Assuming your strategy is called <code>AwesomeStrategy</code>, stored in the file <code>user_data/strategies/AwesomeStrategy.py</code>, then you can start freqtrade with <code>freqtrade trade --strategy AwesomeStrategy</code>.
-Note that we're using the class-name, not the file name.</p>
+<p>By default, freqtrade will attempt to load strategies from all <code>.py</code> files within the <code>userdir</code> (default <code>user_data/strategies</code>).</p>
+<p>Assuming your strategy is called <code>AwesomeStrategy</code>, stored in the file <code>user_data/strategies/AwesomeStrategy.py</code>, then you can start freqtrade in dry (or live, depending on your configuration) mode with:</p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span>freqtrade<span class="w"> </span>trade<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="sb">`</span>
+</code></pre></div>
+<p>Note that we're using the class name, not the file name.</p>
 <p>You can use <code>freqtrade list-strategies</code> to see a list of all strategies Freqtrade is able to load (all strategies in the correct folder).
 It will also include a "status" field, highlighting potential problems.</p>
 <details class="hint">
@@ -2792,9 +3037,9 @@ It will also include a "status" field, highlighting potential problems.</p>
 </details>
 <h2 id="informative-pairs">Informative Pairs<a class="headerlink" href="#informative-pairs" title="Permanent link">&para;</a></h2>
 <h3 id="get-data-for-non-tradeable-pairs">Get data for non-tradeable pairs<a class="headerlink" href="#get-data-for-non-tradeable-pairs" title="Permanent link">&para;</a></h3>
-<p>Data for additional, informative pairs (reference pairs) can be beneficial for some strategies.
-OHLCV data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via <code>DataProvider</code> just as other pairs (see below).
-These parts will <strong>not</strong> be traded unless they are also specified in the pair whitelist, or have been selected by Dynamic Whitelisting.</p>
+<p>Data for additional, informative pairs (reference pairs) can be beneficial for some strategies to see data on a wider timeframe.</p>
+<p>OHLCV data for these pairs will be downloaded as part of the regular whitelist refresh process and is available via <code>DataProvider</code> just as other pairs (see below).</p>
+<p>These pairs will <strong>not</strong> be traded unless they are also specified in the pair whitelist, or have been selected by Dynamic Whitelisting, e.g. <code>VolumePairlist</code>.</p>
 <p>The pairs need to be specified as tuples in the format <code>("pair", "timeframe")</code>, with pair as the first and timeframe as the second argument.</p>
 <p>Sample:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">informative_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -2827,10 +3072,13 @@ Details about this may vary, if they do, this can be found in the exchange docum
 </details>
 <hr />
 <h3 id="informative-pairs-decorator-informative">Informative pairs decorator (<code>@informative()</code>)<a class="headerlink" href="#informative-pairs-decorator-informative" title="Permanent link">&para;</a></h3>
-<p>In most common case it is possible to easily define informative pairs by using a decorator. All decorated <code>populate_indicators_*</code> methods run in isolation,
-not having access to data from other informative pairs, in the end all informative dataframes are merged and passed to main <code>populate_indicators()</code> method.
-When hyperopting, use of hyperoptable parameter <code>.value</code> attribute is not supported. Please use <code>.range</code> attribute. See <a href="../hyperopt/#optimizing-an-indicator-parameter">optimizing an indicator parameter</a>
-for more information.</p>
+<p>To easily define informative pairs, use the <code>@informative</code> decorator. All decorated <code>populate_indicators_*</code> methods run in isolation,
+and do not have access to data from other informative pairs. However, all informative dataframes for each pair are merged and passed to main <code>populate_indicators()</code> method.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Do not use the <code>@informative</code> decorator if you need to use data from one informative pair when generating another informative pair. Instead, define informative pairs manually as described <a href="#complete-data-provider-sample">in the DataProvider section</a>.</p>
+</div>
+<p>When hyperopting, use of the hyperoptable parameter <code>.value</code> attribute is not supported. Please use the <code>.range</code> attribute. See <a href="../hyperopt/#optimizing-an-indicator-parameter">optimizing an indicator parameter</a> for more information.</p>
 <details class="info">
 <summary>Full documentation</summary>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">informative</span><span class="p">(</span><span class="n">timeframe</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">asset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
@@ -2924,11 +3172,6 @@ for more information.</p>
 </details>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Do not use <code>@informative</code> decorator if you need to use data of one informative pair when generating another informative pair. Instead, define informative pairs
-manually as described <a href="#complete-data-provider-sample">in the DataProvider section</a>.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
 <p>Use string formatting when accessing informative dataframes of other pairs. This will allow easily changing stake currency in config without having to adjust strategy code.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
     <span class="n">stake</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;stake_currency&#39;</span><span class="p">]</span>
@@ -2946,16 +3189,13 @@ manually as described <a href="#complete-data-provider-sample">in the DataProvid
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Duplicate method names</p>
-<p>Methods tagged with <code>@informative()</code> decorator must always have unique names! Re-using same name (for example when copy-pasting already defined informative method)
-will overwrite previously defined method and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators
-created in earlier-defined methods are not available in the dataframe. Carefully review method names and make sure they are unique!</p>
+<p>Methods tagged with the <code>@informative()</code> decorator must always have unique names! Reusing the same name (for example when copy-pasting already defined informative methods) will overwrite previously defined methods and not produce any errors due to limitations of Python programming language. In such cases you will find that indicators created in methods higher up in the strategy file are not available in the dataframe. Carefully review method names and make sure they are unique!</p>
 </div>
 <h3 id="merge_informative_pair"><em>merge_informative_pair()</em><a class="headerlink" href="#merge_informative_pair" title="Permanent link">&para;</a></h3>
-<p>This method helps you merge an informative pair to a regular dataframe without lookahead bias.
-It's there to help you merge the dataframe in a safe and consistent way.</p>
+<p>This method helps you merge an informative pair to the regular main dataframe safely and consistently, without lookahead bias.</p>
 <p>Options:</p>
 <ul>
-<li>Rename the columns for you to create unique columns</li>
+<li>Rename the columns to create unique columns</li>
 <li>Merge the dataframe without lookahead bias</li>
 <li>Forward-fill (optional)</li>
 </ul>
@@ -3000,17 +3240,17 @@ It's there to help you merge the dataframe in a safe and consistent way.</p>
 </details>
 <div class="admonition warning">
 <p class="admonition-title">Informative timeframe &lt; timeframe</p>
-<p>Using informative timeframes smaller than the dataframe timeframe is not recommended with this method, as it will not use any of the additional information this would provide.
-To use the more detailed information properly, more advanced methods should be applied (which are out of scope for freqtrade documentation, as it'll depend on the respective need).</p>
+<p>Using informative timeframes smaller than the main dataframe timeframe is not recommended with this method, as it will not use any of the additional information this would provide.
+To use the more detailed information properly, more advanced methods should be applied (which are out of scope for this documentation).</p>
 </div>
 <h2 id="additional-data-dataprovider">Additional data (DataProvider)<a class="headerlink" href="#additional-data-dataprovider" title="Permanent link">&para;</a></h2>
 <p>The strategy provides access to the <code>DataProvider</code>. This allows you to get additional data to use in your strategy.</p>
-<p>All methods return <code>None</code> in case of failure (do not raise an exception).</p>
-<p>Please always check the mode of operation to select the correct method to get data (samples see below).</p>
+<p>All methods return <code>None</code> in case of failure, i.e. failures do not raise an exception.</p>
+<p>Please always check the mode of operation to select the correct method to get data (see below for examples).</p>
 <div class="admonition warning">
-<p class="admonition-title">Hyperopt</p>
-<p>Dataprovider is available during hyperopt, however it can only be used in <code>populate_indicators()</code> within a strategy.
-It is not available in <code>populate_buy()</code> and <code>populate_sell()</code> methods, nor in <code>populate_indicators()</code>, if this method located in the hyperopt file.</p>
+<p class="admonition-title">Hyperopt Limitations</p>
+<p>The DataProvider is available during hyperopt, however it can only be used in <code>populate_indicators()</code> <strong>within a strategy</strong>, not within a hyperopt class file.
+It is also not available in <code>populate_entry_trend()</code> and <code>populate_exit_trend()</code> methods.</p>
 </div>
 <h3 id="possible-options-for-dataprovider">Possible options for DataProvider<a class="headerlink" href="#possible-options-for-dataprovider" title="Permanent link">&para;</a></h3>
 <ul>
@@ -3031,24 +3271,24 @@ It is not available in <code>populate_buy()</code> and <code>populate_sell()</co
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;available </span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">timeframe</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="current_whitelist"><em>current_whitelist()</em><a class="headerlink" href="#current_whitelist" title="Permanent link">&para;</a></h3>
-<p>Imagine you've developed a strategy that trades the <code>5m</code> timeframe using signals generated from a <code>1d</code> timeframe on the top 10 volume pairs by volume.</p>
-<p>The strategy might look something like this:</p>
-<p><em>Scan through the top 10 pairs by volume using the <code>VolumePairList</code> every 5 minutes and use a 14 day RSI to buy and sell.</em></p>
-<p>Due to the limited available data, it's very difficult to resample <code>5m</code> candles into daily candles for use in a 14 day RSI. Most exchanges limit us to just 500-1000 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!</p>
-<p>Since we can't resample the data we will have to use an informative pair; and since the whitelist will be dynamic we don't know which pair(s) to use.</p>
-<p>This is where calling <code>self.dp.current_whitelist()</code> comes in handy.</p>
+<p>Imagine you've developed a strategy that trades the <code>5m</code> timeframe using signals generated from a <code>1d</code> timeframe on the top 10 exchange pairs by volume.</p>
+<p>The strategy logic might look something like this:</p>
+<p><em>Scan through the top 10 pairs by volume using the <code>VolumePairList</code> every 5 minutes and use a 14 day RSI to enter and exit.</em></p>
+<p>Due to the limited available data, it's very difficult to resample <code>5m</code> candles into daily candles for use in a 14 day RSI. Most exchanges limit users to just 500-1000 candles which effectively gives us around 1.74 daily candles. We need 14 days at least!</p>
+<p>Since we can't resample the data we will have to use an informative pair, and since the whitelist will be dynamic we don't know which pair(s) to use! We have a problem!</p>
+<p>This is where calling <code>self.dp.current_whitelist()</code> comes in handy to retrieve only those pairs in the whitelist.</p>
 <div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">informative_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="c1"># get access to all pairs available in whitelist.</span>
         <span class="n">pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">current_whitelist</span><span class="p">()</span>
-        <span class="c1"># Assign tf to each pair so they can be downloaded and cached for strategy.</span>
+        <span class="c1"># Assign timeframe to each pair so they can be downloaded and cached for strategy.</span>
         <span class="n">informative_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pair</span><span class="p">,</span> <span class="s1">&#39;1d&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">informative_pairs</span>
 </code></pre></div>
 <details class="note">
 <summary>Plotting with current_whitelist</summary>
-<p>Current whitelist is not supported for <code>plot-dataframe</code>, as this command is usually used by providing an explicit pairlist - and would therefore make the return values of this method misleading.
-It's also not supported for freqUI visualization in <a href="../utils/#webserver-mode">webserver mode</a> - as the configuration for webserver mode doesn't require a pairlist to be set.</p>
+<p>Current whitelist is not supported for <code>plot-dataframe</code>, as this command is usually used by providing an explicit pairlist and would therefore make the return values of this method misleading.
+It's also not supported for FreqUI visualization in <a href="../utils/#webserver-mode">webserver mode</a>, as the configuration for webserver mode doesn't require a pairlist to be set.</p>
 </details>
 <h3 id="get_pair_dataframepair-timeframe"><em>get_pair_dataframe(pair, timeframe)</em><a class="headerlink" href="#get_pair_dataframepair-timeframe" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># fetch live / historical candle (OHLCV) data for the first informative pair</span>
@@ -3081,7 +3321,7 @@ This should not happen when using whitelisted pairs.</p>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;best_bid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;bids&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;best_ask&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;asks&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 </code></pre></div>
-<p>The orderbook structure is aligned with the order structure from <a href="https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure">ccxt</a>, so the result will look as follows:</p>
+<p>The orderbook structure is aligned with the order structure from <a href="https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure">ccxt</a>, so the result will be formatted as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="s1">&#39;bids&#39;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">[</span><span class="w"> </span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="c1">// [ float, float ]</span>
@@ -3096,7 +3336,7 @@ This should not happen when using whitelisted pairs.</p>
 <span class="w">    </span><span class="c1">//...</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>Therefore, using <code>ob['bids'][0][0]</code> as demonstrated above will result in using the best bid price. <code>ob['bids'][0][1]</code> would look at the amount at this orderbook position.</p>
+<p>Therefore, using <code>ob['bids'][0][0]</code> as demonstrated above will use the best bid price. <code>ob['bids'][0][1]</code> would look at the amount at this orderbook position.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning about backtesting</p>
 <p>The order book is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return up-to-date values.</p>
@@ -3111,13 +3351,13 @@ This should not happen when using whitelisted pairs.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Although the ticker data structure is a part of the ccxt Unified Interface, the values returned by this method can
-vary for different exchanges. For instance, many exchanges do not return <code>vwap</code> values, some exchanges
-does not always fills in the <code>last</code> field (so it can be None), etc. So you need to carefully verify the ticker
+vary for different exchanges. For instance, many exchanges do not return <code>vwap</code> values, and some exchanges
+do not always fill in the <code>last</code> field (so it can be None), etc. So you need to carefully verify the ticker
 data returned from the exchange and add appropriate error handling / defaults.</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning about backtesting</p>
-<p>This method will always return up-to-date values - so usage during backtesting / hyperopt without runmode checks will lead to wrong results.</p>
+<p>This method will always return up-to-date / real-time values. As such, usage during backtesting / hyperopt without runmode checks will lead to wrong results, e.g. your whole dataframe will contain the same single value in all rows.</p>
 </div>
 <h3 id="send-notification">Send Notification<a class="headerlink" href="#send-notification" title="Permanent link">&para;</a></h3>
 <p>The dataprovider <code>.send_msg()</code> function allows you to send custom notifications from your strategy.
@@ -3132,7 +3372,7 @@ Identical notifications will only be sent once per candle, unless the 2<sup>nd</
 <p class="admonition-title">Spamming</p>
 <p>You can spam yourself pretty good by setting <code>always_send=True</code> in this method. Use this with great care and only in conditions you know will not happen throughout a candle to avoid a message every 5 seconds.</p>
 </div>
-<h3 id="complete-data-provider-sample">Complete Data-provider sample<a class="headerlink" href="#complete-data-provider-sample" title="Permanent link">&para;</a></h3>
+<h3 id="complete-dataprovider-sample">Complete DataProvider sample<a class="headerlink" href="#complete-dataprovider-sample" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.strategy</span> <span class="kn">import</span> <span class="n">IStrategy</span><span class="p">,</span> <span class="n">merge_informative_pair</span>
 <span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
 
@@ -3193,14 +3433,14 @@ Identical notifications will only be sent once per candle, unless the 2<sup>nd</
 </code></pre></div>
 <hr />
 <h2 id="additional-data-wallets">Additional data (Wallets)<a class="headerlink" href="#additional-data-wallets" title="Permanent link">&para;</a></h2>
-<p>The strategy provides access to the <code>wallets</code> object. This contains the current balances on the exchange.</p>
+<p>The strategy provides access to the <code>wallets</code> object. This contains the current balances of your wallets/accounts on the exchange.</p>
 <div class="admonition note">
 <p class="admonition-title">Backtesting / Hyperopt</p>
-<p>Wallets behaves differently depending on the function it's called.
+<p>Wallets behaves differently depending on the function from which it is called.
 Within <code>populate_*()</code> methods, it'll return the full wallet as configured.
 Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the wallet state corresponding to the actual simulated wallet at that point in the simulation process.</p>
 </div>
-<p>Please always check if <code>wallets</code> is available to avoid failures during backtesting.</p>
+<p>Always check if <code>wallets</code> is available to avoid failures during backtesting.</p>
 <div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="p">:</span>
     <span class="n">free_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_free</span><span class="p">(</span><span class="s1">&#39;ETH&#39;</span><span class="p">)</span>
     <span class="n">used_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_used</span><span class="p">(</span><span class="s1">&#39;ETH&#39;</span><span class="p">)</span>
@@ -3214,11 +3454,11 @@ Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the wallet sta
 </ul>
 <hr />
 <h2 id="additional-data-trades">Additional data (Trades)<a class="headerlink" href="#additional-data-trades" title="Permanent link">&para;</a></h2>
-<p>A history of Trades can be retrieved in the strategy by querying the database.</p>
-<p>At the top of the file, import Trade.</p>
+<p>A history of trades can be retrieved in the strategy by querying the database.</p>
+<p>At the top of the file, import the required object:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
 </code></pre></div>
-<p>The following example queries for the current pair and trades from today, however other filters can easily be added.</p>
+<p>The following example queries trades from today for the current pair (<code>metadata['pair']</code>). Other filters can easily be added.</p>
 <div class="highlight"><pre><span></span><code><span class="n">trades</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_trades_proxy</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span>
                                 <span class="n">open_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                                 <span class="n">is_open</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -3232,13 +3472,14 @@ Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the wallet sta
 <p>Trade history is not available in <code>populate_*</code> methods during backtesting or hyperopt, and will result in empty results.</p>
 </div>
 <h2 id="prevent-trades-from-happening-for-a-specific-pair">Prevent trades from happening for a specific pair<a class="headerlink" href="#prevent-trades-from-happening-for-a-specific-pair" title="Permanent link">&para;</a></h2>
-<p>Freqtrade locks pairs automatically for the current candle (until that candle is over) when a pair is sold, preventing an immediate re-buy of that pair.</p>
+<p>Freqtrade locks pairs automatically for the current candle (until that candle is over) when a pair exits, preventing an immediate re-entry of that pair.</p>
+<p>This is to prevent "waterfalls" of many and frequent trades within a single candle.</p>
 <p>Locked pairs will show the message <code>Pair &lt;pair&gt; is currently locked.</code>.</p>
 <h3 id="locking-pairs-from-within-the-strategy">Locking pairs from within the strategy<a class="headerlink" href="#locking-pairs-from-within-the-strategy" title="Permanent link">&para;</a></h3>
 <p>Sometimes it may be desired to lock a pair after certain events happen (e.g. multiple losing trades in a row).</p>
 <p>Freqtrade has an easy method to do this from within the strategy, by calling <code>self.lock_pair(pair, until, [reason])</code>.
 <code>until</code> must be a datetime object in the future, after which trading will be re-enabled for that pair, while <code>reason</code> is an optional string detailing why the pair was locked.</p>
-<p>Locks can also be lifted manually, by calling <code>self.unlock_pair(pair)</code> or <code>self.unlock_reason(&lt;reason&gt;)</code> - providing reason the pair was locked with.
+<p>Locks can also be lifted manually, by calling <code>self.unlock_pair(pair)</code> or <code>self.unlock_reason(&lt;reason&gt;)</code>, providing the reason the pair was unlocked.
 <code>self.unlock_reason(&lt;reason&gt;)</code> will unlock all pairs currently locked with the provided reason.</p>
 <p>To verify if a pair is currently locked, use <code>self.is_pair_locked(pair)</code>.</p>
 <div class="admonition note">
@@ -3247,7 +3488,7 @@ Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the wallet sta
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Manually locking pairs is not available during backtesting, only locks via Protections are allowed.</p>
+<p>Manually locking pairs is not available during backtesting. Only locks via Protections are allowed.</p>
 </div>
 <h4 id="pair-locking-example">Pair locking example<a class="headerlink" href="#pair-locking-example" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">freqtrade.persistence</span> <span class="kn">import</span> <span class="n">Trade</span>
@@ -3255,7 +3496,7 @@ Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the wallet sta
 <span class="c1"># Put the above lines a the top of the strategy file, next to all the other imports</span>
 <span class="c1"># --------</span>
 
-<span class="c1"># Within populate indicators (or populate_buy):</span>
+<span class="c1"># Within populate indicators (or populate_entry_trend):</span>
 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;runmode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
     <span class="c1"># fetch closed trades for the last 2 days</span>
     <span class="n">trades</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_trades_proxy</span><span class="p">(</span>
@@ -3267,8 +3508,8 @@ Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the wallet sta
         <span class="c1"># Lock pair for 12 hours</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lock_pair</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="n">until</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">12</span><span class="p">))</span>
 </code></pre></div>
-<h2 id="print-created-dataframe">Print created dataframe<a class="headerlink" href="#print-created-dataframe" title="Permanent link">&para;</a></h2>
-<p>To inspect the created dataframe, you can issue a print-statement in either <code>populate_entry_trend()</code> or <code>populate_exit_trend()</code>.
+<h2 id="print-the-main-dataframe">Print the main dataframe<a class="headerlink" href="#print-the-main-dataframe" title="Permanent link">&para;</a></h2>
+<p>To inspect the current main dataframe, you can issue a print-statement in either <code>populate_entry_trend()</code> or <code>populate_exit_trend()</code>.
 You may also want to print the pair so it's clear what data is currently shown.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
@@ -3285,37 +3526,36 @@ You may also want to print the pair so it's clear what data is currently shown.<
 
     <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
-<p>Printing more than a few rows is also possible (simply use  <code>print(dataframe)</code> instead of <code>print(dataframe.tail())</code>), however not recommended, as that will be very verbose (~500 lines per pair every 5 seconds).</p>
+<p>Printing more than a few rows is also possible by using <code>print(dataframe)</code> instead of <code>print(dataframe.tail())</code>. However this is not recommended, as can results in a lot of output (~500 lines per pair every 5 seconds).</p>
 <h2 id="common-mistakes-when-developing-strategies">Common mistakes when developing strategies<a class="headerlink" href="#common-mistakes-when-developing-strategies" title="Permanent link">&para;</a></h2>
-<h3 id="peeking-into-the-future-while-backtesting">Peeking into the future while backtesting<a class="headerlink" href="#peeking-into-the-future-while-backtesting" title="Permanent link">&para;</a></h3>
-<p>Backtesting analyzes the whole time-range at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not look-ahead into the future.
-This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods, since they all use data which is not available during dry/live runs, so these strategies will perform well during backtesting, but will fail / perform badly in real conditions.</p>
-<p>The following lists some common patterns which should be avoided to prevent frustration:</p>
+<h3 id="looking-into-the-future-while-backtesting">Looking into the future while backtesting<a class="headerlink" href="#looking-into-the-future-while-backtesting" title="Permanent link">&para;</a></h3>
+<p>Backtesting analyzes the whole dataframe timerange at once for performance reasons. Because of this, strategy authors need to make sure that strategies do not lookahead into the future, i.e. using data that would not be available in dry or live mode.</p>
+<p>This is a common pain-point, which can cause huge differences between backtesting and dry/live run methods. Strategies that look into the future will perform well during backtesting, often with incredible profits or winrates, but will fail or perform badly in real conditions.</p>
+<p>The following list contains some common patterns which should be avoided to prevent frustration:</p>
 <ul>
 <li>don't use <code>shift(-1)</code> or other negative values. This uses data from the future in backtesting, which is not available in dry or live modes.</li>
 <li>don't use <code>.iloc[-1]</code> or any other absolute position in the dataframe within <code>populate_</code> functions, as this will be different between dry-run and backtesting. Absolute <code>iloc</code> indexing is safe to use in callbacks however - see <a href="../strategy-callbacks/">Strategy Callbacks</a>.</li>
-<li>don't use <code>dataframe['volume'].mean()</code>. This uses the full DataFrame for backtesting, including data from the future. Use <code>dataframe['volume'].rolling(&lt;window&gt;).mean()</code> instead</li>
-<li>don't use <code>.resample('1h')</code>. This uses the left border of the interval, so moves data from an hour to the start of the hour. Use <code>.resample('1h', label='right')</code> instead.</li>
+<li>don't use functions that use all dataframe or column values, e.g. <code>dataframe['mean_volume'] = dataframe['volume'].mean()</code>. As backtesting uses the full dataframe, at any point in the dataframe, the <code>'mean_volume'</code> series would include data from the future. Use rolling() calculations instead, e.g. <code>dataframe['volume'].rolling(&lt;window&gt;).mean()</code>.</li>
+<li>don't use <code>.resample('1h')</code>. This uses the left border of the period interval, so moves data from an hour boundary to the start of the hour. Use <code>.resample('1h', label='right')</code> instead.</li>
 </ul>
 <div class="admonition tip">
 <p class="admonition-title">Identifying problems</p>
-<p>You may also want to check the 2 helper commands <a href="../lookahead-analysis/">lookahead-analysis</a> and <a href="../recursive-analysis/">recursive-analysis</a>, which can each help you figure out problems with your strategy in different ways.
-Please treat them as what they are - helpers to identify most common problems. A negative result of each does not guarantee that there's none of the above errors included.</p>
+<p>You should always use the two helper commands <a href="../lookahead-analysis/">lookahead-analysis</a> and <a href="../recursive-analysis/">recursive-analysis</a>, which can each help you figure out problems with your strategy in different ways.
+Please treat them as what they are - helpers to identify most common problems. A negative result of each does not guarantee that there are none of the above errors included.</p>
 </div>
 <h3 id="colliding-signals">Colliding signals<a class="headerlink" href="#colliding-signals" title="Permanent link">&para;</a></h3>
-<p>When conflicting signals collide (e.g. both <code>'enter_long'</code> and <code>'exit_long'</code> are 1), freqtrade will do nothing and ignore the entry signal. This will avoid trades that enter, and exit immediately. Obviously, this can potentially lead to missed entries.</p>
+<p>When conflicting signals collide (e.g. both <code>'enter_long'</code> and <code>'exit_long'</code> are set to <code>1</code>), freqtrade will do nothing and ignore the entry signal. This will avoid trades that enter, and exit immediately. Obviously, this can potentially lead to missed entries.</p>
 <p>The following rules apply, and entry signals will be ignored if more than one of the 3 signals is set:</p>
 <ul>
 <li><code>enter_long</code> -&gt; <code>exit_long</code>, <code>enter_short</code></li>
 <li><code>enter_short</code> -&gt; <code>exit_short</code>, <code>enter_long</code></li>
 </ul>
 <h2 id="further-strategy-ideas">Further strategy ideas<a class="headerlink" href="#further-strategy-ideas" title="Permanent link">&para;</a></h2>
-<p>To get additional Ideas for strategies, head over to the <a href="https://github.com/freqtrade/freqtrade-strategies">strategy repository</a>. Feel free to use them as they are - but results will depend on the current market situation, pairs used etc. - therefore please backtest the strategy for your exchange/desired pairs first, evaluate carefully, use at your own risk.
-Feel free to use any of them as inspiration for your own strategies.
-We're happy to accept Pull Requests containing new Strategies to that repo.</p>
-<h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
+<p>To get additional ideas for strategies, head over to the <a href="https://github.com/freqtrade/freqtrade-strategies">strategy repository</a>. Feel free to use them as examples, but results will depend on the current market situation, pairs used, etc. Therefore, these strategies should be considered only for learning purposes, not real world trading. Please backtest the strategy for your exchange/desired pairs first, then dry run to evaluate carefully, and use at your own risk.</p>
+<p>Feel free to use any of them as inspiration for your own strategies. We're happy to accept Pull Requests containing new strategies to the repository.</p>
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <p>Now you have a perfect strategy you probably want to backtest it.
-Your next step is to learn <a href="../backtesting/">How to use the Backtesting</a>.</p>
+Your next step is to learn <a href="../backtesting/">how to use backtesting</a>.</p>
 
 
 
@@ -3354,7 +3594,7 @@ Your next step is to learn <a href="../backtesting/">How to use the Backtesting<
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../configuration/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Configuration">
+          <a href="../strategy-101/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Strategy Quickstart">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3364,7 +3604,7 @@ Your next step is to learn <a href="../backtesting/">How to use the Backtesting<
                 Previous
               </span>
               <div class="md-ellipsis">
-                Configuration
+                Strategy Quickstart
               </div>
             </div>
           </a>
