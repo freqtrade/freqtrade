@@ -7,7 +7,6 @@
 -r docs/requirements-docs.txt
 
 coveralls==4.0.1
-
 ruff==0.7.0
 mypy==1.12.1
 pre-commit==4.0.1
