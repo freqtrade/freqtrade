@@ -261,8 +261,8 @@ def calculate_expectancy(trades: pd.DataFrame) -> tuple[float, float]:
     :return: expectancy, expectancy_ratio
     """
 
-    expectancy = 0
-    expectancy_ratio = 100
+    expectancy = 0.0
+    expectancy_ratio = 100.0
 
     if len(trades) > 0:
         winning_trades = trades.loc[trades["profit_abs"] > 0]
