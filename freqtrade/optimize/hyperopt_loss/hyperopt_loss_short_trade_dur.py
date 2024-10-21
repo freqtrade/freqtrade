@@ -53,4 +53,5 @@ class ShortTradeDurHyperOptLoss(IHyperOptLoss):
 
 
 # Create an alias for This to allow the legacy Method to work as well.
-DefaultHyperOptLoss = ShortTradeDurHyperOptLoss
+class DefaultHyperOptLoss(ShortTradeDurHyperOptLoss):
+    pass
