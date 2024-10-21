@@ -185,6 +185,7 @@ class IFreqaiModel(ABC):
         Callback for Subclasses to override to include logic for shutting down resources
         when SIGINT is sent.
         """
+        self.dd.save_historic_predictions_to_disk()
         return
 
     def shutdown(self):
@@ -198,9 +199,16 @@ class IFreqaiModel(ABC):
         self.data_provider = None
         self._on_stop()
 
-        logger.info("Waiting on Training iteration")
-        for _thread in self._threads:
-            _thread.join()
+        if self.freqai_info.get("wait_for_training_iteration_on_reload", True):
+            logger.info("Waiting on Training iteration")
+            for _thread in self._threads:
+                _thread.join()
+        else:
+            logger.warning(
+                "Breaking current training iteration because "
+                "you set wait_for_training_iteration_on_reload to "
+                " False."
+            )
 
     def start_scanning(self, *args, **kwargs) -> None:
         """
