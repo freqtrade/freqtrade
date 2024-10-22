@@ -2193,7 +2193,7 @@ def test_list_hyperoptloss(botclient, tmp_path):
     ftbot, client = botclient
     ftbot.config["user_data_dir"] = tmp_path
 
-    rc = client_get(client, f"{BASE_URI}/hyperopt-loss")
+    rc = client_get(client, f"{BASE_URI}/hyperoptloss")
     assert_response(rc)
     response = rc.json()
     assert isinstance(response["loss_functions"], list)
