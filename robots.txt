@@ -1,0 +1,5 @@
+User-agent: *
+
+Disallow: # Allow everything
+
+Sitemap: https://www.freqtrade.io/en/sitemap.xml
