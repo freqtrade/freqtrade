@@ -456,6 +456,15 @@ class ExchangeListResponse(BaseModel):
     exchanges: list[ValidExchangesType]
 
 
+class HyperoptLoss(BaseModel):
+    name: str
+    description: str
+
+
+class HyperoptLossListResponse(BaseModel):
+    loss_functions: list[HyperoptLoss]
+
+
 class PairListResponse(BaseModel):
     name: str
     description: str

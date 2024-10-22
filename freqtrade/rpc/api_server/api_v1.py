@@ -27,6 +27,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     ForceExitPayload,
     FreqAIModelListResponse,
     Health,
+    HyperoptLossListResponse,
     Locks,
     LocksPayload,
     Logs,
@@ -82,7 +83,8 @@ logger = logging.getLogger(__name__)
 # 2.33: Additional weekly/monthly metrics
 # 2.34: new entries/exits/mix_tags endpoints
 # 2.35: pair_candles and pair_history endpoints as Post variant
-API_VERSION = 2.35
+# 2.40: Add hyperopt-loss endpoint
+API_VERSION = 2.40
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -453,6 +455,28 @@ def list_exchanges(config=Depends(get_config)):
     exchanges = list_available_exchanges(config)
     return {
         "exchanges": exchanges,
+    }
+
+
+@router.get("/hyperopt-loss", response_model=HyperoptLossListResponse, tags=["strategy"])
+def list_hyperoptloss(
+    config=Depends(get_config),
+):
+    import textwrap
+
+    from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
+
+    loss_functions = HyperOptLossResolver.search_all_objects(config, False)
+    loss_functions = sorted(loss_functions, key=lambda x: x["name"])
+
+    return {
+        "loss_functions": [
+            {
+                "name": x["name"],
+                "description": textwrap.dedent((x["class"].__doc__ or "").strip()),
+            }
+            for x in loss_functions
+        ]
     }
 
 
