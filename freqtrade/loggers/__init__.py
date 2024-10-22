@@ -1,6 +1,7 @@
 import logging
 from logging import Formatter
 from logging.handlers import RotatingFileHandler, SysLogHandler
+from pathlib import Path
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
@@ -83,6 +84,7 @@ def setup_logging(config: Config) -> None:
             handler_jd.setFormatter(Formatter("%(name)s - %(levelname)s - %(message)s"))
             logging.root.addHandler(handler_jd)
         else:
+            Path(logfile).parent.mkdir(parents=True, exist_ok=True)
             handler_rf = get_existing_handlers(RotatingFileHandler)
             if handler_rf:
                 logging.root.removeHandler(handler_rf)

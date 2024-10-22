@@ -86,7 +86,7 @@ def test_set_loggers_Filehandler(tmp_path):
     logger = logging.getLogger()
     orig_handlers = logger.handlers
     logger.handlers = []
-    logfile = tmp_path / "ft_logfile.log"
+    logfile = tmp_path / "logs/ft_logfile.log"
     config = {
         "verbosity": 2,
         "logfile": str(logfile),
