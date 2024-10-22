@@ -21,6 +21,7 @@ from freqtrade.commands import (
     start_list_data,
     start_list_exchanges,
     start_list_freqAI_models,
+    start_list_hyperopt_loss_functions,
     start_list_markets,
     start_list_strategies,
     start_list_timeframes,
@@ -1053,6 +1054,28 @@ def test_start_list_strategies(capsys):
     assert "StrategyTestV2" in captured.out
     assert "TestStrategyNoImplements" in captured.out
     assert str(Path("broken_strats/broken_futures_strategies.py")) in captured.out
+
+
+def test_start_list_hyperopt_loss_functions(capsys):
+    args = ["list-hyperoptloss", "-1"]
+    pargs = get_args(args)
+    pargs["config"] = None
+    start_list_hyperopt_loss_functions(pargs)
+    captured = capsys.readouterr()
+    assert "CalmarHyperOptLoss" in captured.out
+    assert "MaxDrawDownHyperOptLoss" in captured.out
+    assert "SortinoHyperOptLossDaily" in captured.out
+    assert "<builtin>/hyperopt_loss_sortino_daily.py" not in captured.out
+
+    args = ["list-hyperoptloss"]
+    pargs = get_args(args)
+    pargs["config"] = None
+    start_list_hyperopt_loss_functions(pargs)
+    captured = capsys.readouterr()
+    assert "CalmarHyperOptLoss" in captured.out
+    assert "MaxDrawDownHyperOptLoss" in captured.out
+    assert "SortinoHyperOptLossDaily" in captured.out
+    assert "<builtin>/hyperopt_loss_sortino_daily.py" in captured.out
 
 
 def test_start_list_freqAI_models(capsys):
