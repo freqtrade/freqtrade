@@ -1248,7 +1248,7 @@ def test_enter_positions(
 def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog) -> None:
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
-    mocker.patch("freqtrade.freqtradebot.FreqtradeBot.handle_trade", MagicMock(return_value=True))
+    mocker.patch("freqtrade.freqtradebot.FreqtradeBot.handle_trade", MagicMock(return_value=False))
     mocker.patch(f"{EXMS}.fetch_order", return_value=limit_order[entry_side(is_short)])
     mocker.patch(f"{EXMS}.get_trades_for_order", return_value=[])
 
@@ -1320,6 +1320,7 @@ def test_exit_positions_exception(mocker, default_conf_usdt, limit_order, caplog
             ft_price=trade.open_rate,
             order_id=order_id,
             ft_is_open=False,
+            filled=11,
         )
     )
     Trade.session.add(trade)
@@ -5940,13 +5941,13 @@ def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, ca
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(10, "aaaa"))
     freqtrade.process_open_trade_positions()
     assert log_has_re(r"Max adjustment entries for .* has been reached\.", caplog)
-    assert freqtrade.strategy.adjust_trade_position.call_count == 1
+    assert freqtrade.strategy.adjust_trade_position.call_count == 3
 
     caplog.clear()
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=(-0.0005, "partial_exit_c"))
     freqtrade.process_open_trade_positions()
     assert log_has_re(r"LIMIT_SELL has been fulfilled.*", caplog)
-    assert freqtrade.strategy.adjust_trade_position.call_count == 1
+    assert freqtrade.strategy.adjust_trade_position.call_count == 3
     trade = Trade.get_trades(trade_filter=[Trade.id == 5]).first()
     assert trade.orders[-1].ft_order_tag == "partial_exit_c"
     assert trade.is_open

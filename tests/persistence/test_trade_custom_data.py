@@ -60,6 +60,7 @@ def test_trade_custom_data(fee, use_db):
 def test_trade_custom_data_strategy_compat(mocker, default_conf_usdt, fee):
     mocker.patch(f"{EXMS}.get_rate", return_value=0.50)
     mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", return_value=None)
+    mocker.patch("freqtrade.freqtradebot.FreqtradeBot.handle_cancel_exit", return_value=True)
     default_conf_usdt["minimal_roi"] = {"0": 100}
 
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
@@ -85,8 +86,9 @@ def test_trade_custom_data_strategy_compat(mocker, default_conf_usdt, fee):
     trade_after = Trade.get_trades_proxy(pair="ADA/USDT")[0]
     assert trade_after.get_custom_data("test_str") == "test_value"
     assert trade_after.get_custom_data("test_int") == 1
-    # 2 open pairs eligible for exit
-    assert ff_spy.call_count == 2
+    # 2 trades filled entry, with open exit order
+    # 1 trade with filled entry order
+    assert ff_spy.call_count == 3
 
     assert trade_after.exit_reason == "test_value_1"
 

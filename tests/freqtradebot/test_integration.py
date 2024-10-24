@@ -436,7 +436,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
 
     # Replace new order with diff. order at a lower price
     freqtrade.strategy.adjust_entry_price = MagicMock(return_value=1.95)
-
+    freqtrade.strategy.adjust_trade_position = MagicMock(return_value=None)
     freqtrade.process()
     trade = Trade.get_trades().first()
     assert len(trade.orders) == 4
@@ -478,10 +478,14 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     assert pytest.approx(trade.amount) == 91.689215 * leverage
     assert pytest.approx(trade.orders[-1].amount) == 91.689215 * leverage
     assert freqtrade.strategy.adjust_entry_price.call_count == 0
+
     # Process again, should not adjust entry price
     freqtrade.process()
     trade = Trade.get_trades().first()
-    assert len(trade.orders) == 5
+
+    assert trade.orders[-2].status == "canceled"
+    assert len(trade.orders) == 6
+    assert trade.orders[-1].side == trade.exit_side
     assert trade.orders[-1].status == "open"
     assert trade.orders[-1].price == 2.02
     # Adjust entry price cannot be called - this is an exit order
