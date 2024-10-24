@@ -22,12 +22,18 @@ class Base5ActionRLEnv(BaseEnvironment):
     Base class for a 5 action environment
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, action_space_type: str = "Discrete", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.action_space_type = action_space_type
         self.actions = Actions
 
     def set_action_space(self):
-        self.action_space = spaces.Discrete(len(Actions))
+            if self.action_space_type == "Discrete":
+                self.action_space = spaces.Discrete(len(Actions))
+            elif self.action_space_type == "Box":
+                self.action_space = spaces.Box(low=-1, high=1, shape=(1,))
+            else:
+                raise ValueError(f"Unknown action space type: {self.action_space_type}")
 
     def step(self, action: int):
         """
