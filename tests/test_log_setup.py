@@ -107,6 +107,27 @@ def test_set_loggers_Filehandler(tmp_path):
     logger.handlers = orig_handlers
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
+def test_set_loggers_Filehandler_without_permission(tmp_path):
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers
+    logger.handlers = []
+
+    tmp_path.chmod(0o400)
+    logfile = tmp_path / "logs/ft_logfile.log"
+    config = {
+        "verbosity": 2,
+        "logfile": str(logfile),
+    }
+
+    setup_logging_pre()
+    with pytest.raises(SystemExit) as excinfo:
+        setup_logging(config)
+    assert excinfo.value.code == 1
+
+    logger.handlers = orig_handlers
+
+
 @pytest.mark.skip(reason="systemd is not installed on every system, so we're not testing this.")
 def test_set_loggers_journald(mocker):
     logger = logging.getLogger()
