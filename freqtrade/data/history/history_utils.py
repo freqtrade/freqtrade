@@ -583,7 +583,7 @@ def download_data_main(config: Config) -> None:
         timerange = TimeRange.parse_timerange(f"{time_since}-")
 
     if "timerange" in config:
-        timerange = timerange.parse_timerange(config["timerange"])
+        timerange = TimeRange.parse_timerange(config["timerange"])
 
     # Remove stake-currency to skip checks which are not relevant for datadownload
     config["stake_currency"] = ""
