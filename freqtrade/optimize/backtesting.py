@@ -1336,10 +1336,37 @@ class Backtesting:
         can_enter: bool,
     ) -> None:
         """
+        Conditionally call backtest_loop_inner a 2nd time if shorting is enabled,
+         a position closed and a new signal in the other direction is available.
+        """
+        if not self._can_short or trade_dir is None:
+            # No need to reverse position if shorting is disabled or there's no new signal
+            self.backtest_loop_inner(row, pair, current_time, trade_dir, can_enter)
+        else:
+            for _ in (0, 1):
+                a = self.backtest_loop_inner(row, pair, current_time, trade_dir, can_enter)
+                if not a or a == trade_dir:
+                    # the trade didn't close or position change is in the same direction
+                    break
+
+    def backtest_loop_inner(
+        self,
+        row: tuple,
+        pair: str,
+        current_time: datetime,
+        trade_dir: Optional[LongShort],
+        can_enter: bool,
+    ) -> Optional[LongShort]:
+        """
         NOTE: This method is used by Hyperopt at each iteration. Please keep it optimized.
 
         Backtesting processing for one candle/pair.
         """
+        exiting_dir: Optional[LongShort] = None
+        if not self._position_stacking and len(LocalTrade.bt_trades_open_pp[pair]) > 0:
+            # position_stacking not supported for now.
+            exiting_dir = "short" if LocalTrade.bt_trades_open_pp[pair][0].is_short else "long"
+
         for t in list(LocalTrade.bt_trades_open_pp[pair]):
             # 1. Manage currently open orders of active trades
             if self.manage_open_orders(t, current_time, row):
@@ -1379,6 +1406,10 @@ class Backtesting:
             order = trade.select_order(trade.exit_side, is_open=True)
             if order:
                 self._process_exit_order(order, trade, current_time, row, pair)
+
+        if exiting_dir and len(LocalTrade.bt_trades_open_pp[pair]) == 0:
+            return exiting_dir
+        return None
 
     def time_pair_generator(
         self, start_date: datetime, end_date: datetime, increment: timedelta, pairs: list[str]
