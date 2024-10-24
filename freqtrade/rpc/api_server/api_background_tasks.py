@@ -3,9 +3,7 @@ import logging
 from fastapi import APIRouter
 from fastapi.exceptions import HTTPException
 
-from freqtrade.rpc.api_server.api_schemas import (
-    BackgroundTaskStatus,
-)
+from freqtrade.rpc.api_server.api_schemas import BackgroundTaskStatus
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 
 
