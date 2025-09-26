@@ -1,0 +1,8 @@
+aiohttp>=3.9.0
+orjson>=3.10.0
+pyarrow>=15.0.0
+pandas>=2.2.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+httpx>=0.27.0
+catboost>=1.2.5
