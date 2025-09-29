@@ -5,13 +5,31 @@ config*.json
 *.sqlite-wal
 logfile.txt
 user_data/*
-!user_data/strategy/sample_strategy.py
+!user_data/strategies/sample_strategy.py
 !user_data/notebooks
 !user_data/models
 !user_data/freqaimodels
 user_data/freqaimodels/*
 user_data/models/*
 user_data/notebooks/*
+
+# Whitelist selected user_data source files
+!user_data/strategies/
+user_data/strategies/**
+!user_data/strategies/**/*.py
+!user_data/strategies/**/*.json
+user_data/strategies/**/__pycache__/
+user_data/strategies/**/*.pyc
+
+!user_data/hyperopts/
+user_data/hyperopts/**
+!user_data/hyperopts/**/*.py
+user_data/hyperopts/**/__pycache__/
+user_data/hyperopts/**/*.pyc
+
+# Whitelist top-level configs and notes
+!user_data/*.json
+!user_data/todo.md
 freqtrade-plot.html
 freqtrade-profit-plot.html
 freqtrade/rpc/api_server/ui/*

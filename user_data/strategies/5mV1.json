@@ -1,0 +1,45 @@
+{
+  "strategy_name": "TanakaAlpha5mV1",
+  "params": {
+    "roi": {},
+    "stoploss": {
+      "stoploss": -0.2
+    },
+    "trailing": {
+      "trailing_stop": false,
+      "trailing_stop_positive": null,
+      "trailing_stop_positive_offset": 0.0,
+      "trailing_only_offset_is_reached": false
+    },
+    "max_open_trades": {
+      "max_open_trades": 4
+    },
+    "buy": {
+      "bbp_max": 0.22,
+      "buy_adx_min": 20,
+      "buy_mfi_max": 40,
+      "buy_rsi_max": 38,
+      "ob_bias": -0.06,
+      "ob_long_thresh": 0.63,
+      "ob_spread_q": 0.95,
+      "ob_use_dir": false,
+      "ob_use_prem": false,
+      "ob_w_depth": -0.57,
+      "ob_w_imb": 0.05,
+      "ob_w_micro": -1.32,
+      "ob_w_ofi": -0.82,
+      "ob_w_slope": 1.43,
+      "ob_w_spread": -1.21,
+      "ob_zwin": 162
+    },
+    "sell": {
+      "bbp_min_short": 0.78,
+      "sell_adx_min": 20,
+      "sell_rsi_min": 64,
+      "ob_short_thresh": 0.54
+    },
+    "protection": {}
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2025-09-09 00:23:17.739229+00:00"
+}

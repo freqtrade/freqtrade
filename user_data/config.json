@@ -1,0 +1,113 @@
+{
+    "$schema": "https://schema.freqtrade.io/schema.json",
+    "max_open_trades": 3,
+    "stake_currency": "USDT",
+    "stake_amount": 100,
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "USD",
+    "dry_run": true,
+  "dry_run_wallet": 1000,
+  "timeframe": "1m",
+  "cancel_open_orders_on_exit": false,
+  "minimal_roi": {},
+  "stoploss": -0.2,
+  "trading_mode": "futures",
+  "margin_mode": "isolated",
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exchange": {
+        "name": "bybit",
+        "key": "",
+        "secret": "",
+        "ccxt_config": {},
+        "ccxt_async_config": {},
+        "pair_whitelist": [
+            "BTC/USDT:USDT"
+        ],
+        "pair_blacklist": [
+            "BNB/.*"
+        ]
+    },
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        }
+    ],
+    "telegram": {
+        "enabled": false,
+        "token": "",
+        "chat_id": ""
+    },
+  "api_server": {
+        "enabled": true,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "92858281c4e10f79442da2c20ebdc048036a089c8d032c00b8feadafbf9cfc2f",
+        "ws_token": "hjkJcxQy4_BDMZ52hNEWQNQzUbrJWpIa2g",
+        "CORS_origins": [],
+        "username": "tanaka",
+        "password": "Zensin4646"
+    },
+    "bot_name": "freqtrade",
+    "initial_state": "running",
+    "force_entry_enable": false,
+  "internals": {
+      "process_throttle_secs": 5
+    },
+  "freqaimodel": "CatboostRegressor",
+    "freqai": {
+      "enabled": true,
+      "identifier": "ob_minimal",
+      "train_period_days": 2,
+      "backtest_period_days": 1,
+      "live_retrain_hours": 0,
+      "debug_skip_do_predict_gate": false,
+      "feature_parameters": {
+        "include_timeframes": ["1m"],
+        "include_corr_pairlist": ["ETH/USDT:USDT"],
+        "label_period_candles": 20,
+        "indicator_max_period_candles": 20,
+        "indicator_periods_candles": [10],
+        "include_shifted_candles": 0,
+        "principal_component_analysis": false,
+        "use_SVM_to_remove_outliers": false,
+        "use_DBSCAN_to_remove_outliers": false
+      },
+      "data_split_parameters": {
+        "test_size": 0.2,
+        "shuffle": false
+      },
+      "model_training_parameters": {
+        "n_estimators": 700,
+        "learning_rate": 0.05,
+        "depth": 6,
+        "l2_leaf_reg": 3,
+        "bootstrap_type": "Bayesian",
+        "bagging_temperature": 1,
+        "od_type": "Iter",
+        "od_wait": 50
+      },
+      "freqaimodel": "CatboostRegressor"
+    }
+}
