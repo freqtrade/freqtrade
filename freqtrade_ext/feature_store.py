@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pathlib
 
@@ -30,7 +30,6 @@ def load_orderbook_features(
 
     Returns a DataFrame indexed by DatetimeIndex(name='date').
     """
-    # Normalize pair like "BTC/USDT:USDT" -> "BTCUSDT"
     base_token = pair.split(":")[0]
     base = base_token.replace("/", "")
     if root_dir is None:
@@ -44,11 +43,38 @@ def load_orderbook_features(
         end = pd.Timestamp.utcnow().tz_localize("UTC")
         start = end - pd.Timedelta(days=7)
 
+    start = pd.Timestamp(start)
+    end = pd.Timestamp(end)
+    if start.tzinfo is None:
+        start = start.tz_localize("UTC")
+    else:
+        start = start.tz_convert("UTC")
+    if end.tzinfo is None:
+        end = end.tz_localize("UTC")
+    else:
+        end = end.tz_convert("UTC")
+
+    pad_before = pd.Timedelta(minutes=1)
+    pad_after = pd.Timedelta(minutes=1)
+    padded_start = start - pad_before
+    padded_end = end + pad_after
+
     dataset, part_filter = _scanner_for_timerange(root, start, end)
+    filter_expr = part_filter
+
     try:
-        tbl = (
-            dataset.to_table(filter=part_filter) if part_filter is not None else dataset.to_table()
-        )
+        import pyarrow as pa
+
+        ts_type = pa.timestamp("us", tz="UTC")
+        start_scalar = pa.scalar(padded_start.to_pydatetime(), type=ts_type)
+        end_scalar = pa.scalar(padded_end.to_pydatetime(), type=ts_type)
+        row_filter = (ds.field("ts") >= start_scalar) & (ds.field("ts") <= end_scalar)
+        filter_expr = row_filter if filter_expr is None else filter_expr & row_filter
+    except Exception:
+        pass
+
+    try:
+        tbl = dataset.to_table(filter=filter_expr) if filter_expr is not None else dataset.to_table()
     except Exception:
         return _empty_index()
 
@@ -56,7 +82,7 @@ def load_orderbook_features(
         return _empty_index()
 
     df = tbl.to_pandas(types_mapper=None)
-    # ts が列ではなく index として復元されたケースへ対応
+    # Handle cases where ts was restored as the index rather than a column
     if "ts" not in df.columns:
         if df.index.name in ("ts", "date"):
             df = df.reset_index().rename(columns={df.index.name: "ts"})
@@ -65,18 +91,19 @@ def load_orderbook_features(
 
     df = df.drop_duplicates(subset=["ts"]).sort_values("ts")
     df = df.set_index(pd.to_datetime(df["ts"], utc=True)).drop(columns=["ts"])
+    df = df[(df.index >= padded_start) & (df.index <= padded_end)]
+    if df.empty:
+        return _empty_index()
 
-    # Aggregate to minute using right-open window and embargo
     agg = _minute_last_right_open(df, embargo_secs=embargo_secs)
-
-    # Derive additional features
     agg = _derive_features(agg, depth=depth)
-
-    # Shift to prevent leakage
     agg = _safe_shift(agg, list(agg.columns), n=1)
 
-    return agg
+    start_floor = start.floor("min")
+    end_floor = end.floor("min")
+    agg = agg[(agg.index >= start_floor) & (agg.index <= end_floor)]
 
+    return agg
 
 # Internal helpers ---------------------------------------------------------
 
@@ -184,3 +211,4 @@ def _derive_features(df: pd.DataFrame, depth: int) -> pd.DataFrame:
     out = out.replace([float("inf"), float("-inf")], pd.NA)
 
     return out
+

@@ -1,0 +1,7 @@
+﻿# Minimal dependencies for tools/ob_collector_ws.py
+pandas>=2.2.0
+pyarrow>=15.0.0
+numpy>=1.26.0
+aiohttp>=3.9.0
+httpx>=0.27.0
+orjson>=3.10.0

@@ -1,0 +1,20 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements-ext.txt ./
+RUN pip install --no-cache-dir -r requirements-ext.txt
+
+COPY tools/ob_collector_ws.py tools/ob_collector_ws.py
+
+ENV EXCHANGE=bybit \
+    SYMBOL=BTCUSDT \
+    DEPTH=200 \
+    CATEGORY=linear \
+    ROOT_DIR=/data/featurestore/bybit/BTCUSDT/1s \
+    RUN_SECONDS=0 \
+    HEARTBEAT_TIMEOUT=15 \
+    BACKOFF_BASE=3.0 \
+    PING_INTERVAL=10
+
+ENTRYPOINT ["python", "tools/ob_collector_ws.py"]
