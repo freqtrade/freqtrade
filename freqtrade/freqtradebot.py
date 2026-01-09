@@ -1445,6 +1445,14 @@ class FreqtradeBot(LoggingMixin):
         # TODO: liquidation price always on exchange, even without stoploss_on_exchange
         # Therefore fetching account liquidations for open pairs may make sense.
         """
+        if self.trading_mode == TradingMode.FUTURES:
+            update_liquidation_prices(
+                trade,
+                exchange=self.exchange,
+                wallets=self.wallets,
+                stake_currency=self.config["stake_currency"],
+                dry_run=self.config["dry_run"],
+            )
 
         logger.debug("Handling stoploss on exchange %s ...", trade)
 
@@ -1481,7 +1489,10 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # If enter order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if len(stoploss_orders) == 0:
+        if (
+            self.strategy.order_types.get("stoploss_on_exchange")
+            and len(stoploss_orders) == 0
+        ):
             stop_price = trade.stoploss_or_liquidation
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
@@ -1489,7 +1500,8 @@ class FreqtradeBot(LoggingMixin):
                 # in which case the trade will be closed - which we must check below.
                 return False
 
-        self.manage_trade_stoploss_orders(trade, stoploss_orders)
+        if self.strategy.order_types.get("stoploss_on_exchange"):
+            self.manage_trade_stoploss_orders(trade, stoploss_orders)
 
         return False
 
