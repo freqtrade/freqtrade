@@ -23,6 +23,14 @@ from freqtrade.strategy.interface import IStrategy
 logger = logging.getLogger(__name__)
 
 
+def check_override(obj, parentclass, attribute: str):
+    """
+    Checks if a object overrides the parent class attribute.
+    :returns: True if the object is overridden.
+    """
+    return getattr(type(obj), attribute) != getattr(parentclass, attribute)
+
+
 class StrategyResolver(IResolver):
     """
     This class contains the logic to load custom strategy class
@@ -204,8 +212,25 @@ class StrategyResolver(IResolver):
                 )
 
         else:
-            # TODO: Implementing one of the following methods should show a deprecation warning
-            #  buy_trend and sell_trend, custom_sell
+            if check_override(strategy, IStrategy, "populate_buy_trend"):
+                logger.warning(
+                    "DEPRECATED: Class overrides 'populate_buy_trend'. "
+                    "This method is deprecated and will be removed in a future version. "
+                    "Please use 'populate_entry_trend' instead."
+                )
+            if check_override(strategy, IStrategy, "populate_sell_trend"):
+                logger.warning(
+                    "DEPRECATED: Class overrides 'populate_sell_trend'. "
+                    "This method is deprecated and will be removed in a future version. "
+                    "Please use 'populate_exit_trend' instead."
+                )
+            if check_override(strategy, IStrategy, "custom_sell"):
+                logger.warning(
+                    "DEPRECATED: Class overrides 'custom_sell'. "
+                    "This method is deprecated and will be removed in a future version. "
+                    "Please use 'custom_exit' instead."
+                )
+
             warn_deprecated_setting(strategy, "sell_profit_only", "exit_profit_only")
             warn_deprecated_setting(strategy, "sell_profit_offset", "exit_profit_offset")
             warn_deprecated_setting(strategy, "use_sell_signal", "use_exit_signal")
@@ -319,9 +344,3 @@ def warn_deprecated_setting(strategy: IStrategy, old: str, new: str, error=False
         setattr(strategy, new, getattr(strategy, f"{old}"))
 
 
-def check_override(obj, parentclass, attribute: str):
-    """
-    Checks if a object overrides the parent class attribute.
-    :returns: True if the object is overridden.
-    """
-    return getattr(type(obj), attribute) != getattr(parentclass, attribute)
