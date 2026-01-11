@@ -1,0 +1,2 @@
+import{_ as n}from"./DraggableContainer.vue_vue_type_script_setup_true_lang-CjD_EOpm.js";import{t as a,c as r,a as c,b as o,h as s,b$ as _}from"./index-CUXw-u_C.js";const i={},m={class:"border max-w-xl mx-auto p-4"};function f(l,d){const e=_,t=n;return c(),r("div",m,[o(t,{header:"Freqtrade bot Login"},{default:s(()=>[o(e,{ref:"loginForm"},null,512)]),_:1})])}const g=a(i,[["render",f]]);export{g as default};
+//# sourceMappingURL=LoginView-DEX4-tds.js.map
