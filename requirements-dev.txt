@@ -24,7 +24,7 @@ time-machine==3.2.0
 nbconvert==7.16.6
 
 # mypy types
-scipy-stubs==1.16.3.3  # keep in sync with `scipy` in `requirements-hyperopt.txt`
+scipy-stubs==1.17.0.0  # keep in sync with `scipy` in `requirements-hyperopt.txt`
 types-cachetools==6.2.0.20251022
 types-filelock==3.2.7
 types-requests==2.32.4.20250913
