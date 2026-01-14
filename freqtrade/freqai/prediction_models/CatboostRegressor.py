@@ -46,8 +46,9 @@ class CatboostRegressor(BaseRegressionModel):
         init_model = self.get_init_model(dk.pair)
 
         model = CatBoostRegressor(
-            allow_writing_files=True,
-            train_dir=Path(dk.data_path),
+            # Disable on-disk logging/snapshots to avoid filesystem issues
+            # on some host/volume setups (tmp files are not required for training).
+            allow_writing_files=False,
             **self.model_training_parameters,
         )
 

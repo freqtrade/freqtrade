@@ -111,6 +111,7 @@ new candles automatically for future retrains. This means that if new pairs arri
 
 Here we compile some external materials that provide deeper looks into various components of FreqAI:
 
+- [FreqAI Feature Usage Guide](freqai-feature-guide.md) - step-by-step instructions for enabling each feature and observing outcomes in the UI or terminal.
 - [Real-time head-to-head: Adaptive modeling of financial market data using XGBoost and CatBoost](https://emergentmethods.medium.com/real-time-head-to-head-adaptive-modeling-of-financial-market-data-using-xgboost-and-catboost-995a115a7495)
 - [FreqAI - from price to prediction](https://emergentmethods.medium.com/freqai-from-price-to-prediction-6fadac18b665)
 

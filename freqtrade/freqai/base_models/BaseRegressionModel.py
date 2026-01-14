@@ -106,10 +106,36 @@ class BaseRegressionModel(IFreqaiModel):
         data (NaNs) or felt uncertain about data (PCA and DI index)
         """
 
+        # If training failed (no model or pipeline), skip predictions gracefully.
+        if getattr(self, "model", None) is None or not getattr(
+            dk, "feature_pipeline", None
+        ):
+            logger.warning(
+                "%s: No trained model or feature pipeline available - "
+                "skipping predictions for this window.",
+                dk.pair,
+            )
+            empty_pred = DataFrame(index=unfiltered_df.index, columns=dk.label_list)
+            dk.DI_values = np.zeros(unfiltered_df.shape[0])
+            dk.do_predict = np.zeros(unfiltered_df.shape[0], dtype=int)
+            return empty_pred, dk.do_predict
+
         dk.find_features(unfiltered_df)
         dk.data_dictionary["prediction_features"], _ = dk.filter_features(
             unfiltered_df, dk.training_features_list, training_filter=False
         )
+
+        # If all prediction rows were dropped due to NaNs, avoid calling the pipeline.
+        if dk.data_dictionary["prediction_features"].shape[0] == 0:
+            logger.warning(
+                "%s: No prediction features remaining after filtering - "
+                "skipping predictions for this window.",
+                dk.pair,
+            )
+            empty_pred = DataFrame(index=unfiltered_df.index, columns=dk.label_list)
+            dk.DI_values = np.zeros(unfiltered_df.shape[0])
+            dk.do_predict = np.zeros(unfiltered_df.shape[0], dtype=int)
+            return empty_pred, dk.do_predict
 
         dk.data_dictionary["prediction_features"], outliers, _ = dk.feature_pipeline.transform(
             dk.data_dictionary["prediction_features"], outlier_check=True

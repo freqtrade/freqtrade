@@ -41,6 +41,43 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _auto_plot_after_backtest(btconfig: Config, export_fn: Path | None = None) -> None:
+    """
+    Generate dataframe plots after a backtest so the user can inspect
+    predictions vs. ground-truth without running an extra command.
+    Plots are stored under user_data/plot.
+    """
+    try:
+        from freqtrade.plot.plotting import load_and_plot_trades
+        from freqtrade.enums import RunMode
+        from freqtrade.data.btanalysis import get_latest_backtest_filename
+
+        plot_config = deepcopy(btconfig)
+        plot_config["runmode"] = RunMode.PLOT
+        plot_config.setdefault("trade_source", "file")
+
+        # Determine which backtest result file to use.
+        user_data_dir = Path(plot_config.get("user_data_dir", "user_data"))
+        bt_dir = user_data_dir / "backtest_results"
+
+        if export_fn is None:
+            try:
+                latest_name = get_latest_backtest_filename(bt_dir)
+                export_fn = bt_dir / latest_name
+            except Exception:
+                export_fn = None
+
+        if export_fn:
+            plot_config["exportfilename"] = export_fn
+        else:
+            # No trades file available - still plot OHLCV/indicators
+            plot_config["no_trades"] = True
+
+        load_and_plot_trades(plot_config)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Automatic plotting after backtest failed: %s", e)
+
+
 def __run_backtest_bg(btconfig: Config):
     from freqtrade.data.metrics import combined_dataframes_with_rel_mean
     from freqtrade.optimize.optimize_reports import generate_backtest_stats, store_backtest_results
@@ -86,6 +123,7 @@ def __run_backtest_bg(btconfig: Config):
 
         ApiBG.bt["bt"].abort = False
         strategy_name = strat.get_strategy_name()
+        export_fn: Path | None = None
         if ApiBG.bt["bt"].results and strategy_name in ApiBG.bt["bt"].results["strategy"]:
             # When previous result hash matches - reuse that result and skip backtesting.
             logger.info(f"Reusing result of previous backtest for {strategy_name}")
@@ -116,6 +154,13 @@ def __run_backtest_bg(btconfig: Config):
                 )
                 ApiBG.bt["bt"].results["metadata"][strategy_name]["filename"] = str(fn.stem)
                 ApiBG.bt["bt"].results["metadata"][strategy_name]["strategy"] = strategy_name
+                export_fn = fn
+
+        # Automatically generate dataframe plots after backtest so the user
+        # can inspect predictions vs. ground-truth without running an extra
+        # command. Plots are stored under user_data/plot.
+        _auto_plot_after_backtest(btconfig, export_fn=export_fn)
+
         ApiBG.bt["bt"].reset_backtest()
         logger.info("Backtest finished.")
 

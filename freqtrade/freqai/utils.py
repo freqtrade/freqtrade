@@ -134,6 +134,17 @@ def plot_feature_importance(
         fi_df_top = fi_df.nlargest(count_max, "feature_importance")[::-1]
         fi_df_worst = fi_df.nsmallest(count_max, "feature_importance")[::-1]
 
+        # Log top features to the standard logger so they are visible
+        # alongside training metrics in the logs.
+        logger.info(
+            "Top %s features by importance for %s (%s):",
+            len(fi_df_top),
+            pair,
+            label,
+        )
+        for _, row in fi_df_top.iterrows():
+            logger.info("  %s: %.6f", row["feature_names"], row["feature_importance"])
+
         # Plotting
         def add_feature_trace(fig, fi_df, col):
             return fig.add_trace(

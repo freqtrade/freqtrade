@@ -1,118 +1,55 @@
-# Freqtrade rules
-config*.json
-*.sqlite
-*.sqlite-shm
-*.sqlite-wal
-logfile.txt
-user_data/*
-!user_data/strategy/sample_strategy.py
-!user_data/notebooks
-!user_data/models
-!user_data/freqaimodels
-user_data/freqaimodels/*
-user_data/models/*
-user_data/notebooks/*
-freqtrade-plot.html
-freqtrade-profit-plot.html
-freqtrade/rpc/api_server/ui/*
-build_helpers/ta-lib/*
-
-# Macos related
-.DS_Store
-
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+freqtrade.egg-info/
 
-# C extensions
-*.so
+# Virtual environments
+.venv/
+venv/
+.env/
 
-# Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+Desktop.ini
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+# Freqtrade user data (usually local / sensitive / large)
+user_data/data/
+user_data/backtest_results/
+user_data/models/
+user_data/plots/
+user_data/plot/
+user_data/logs/
+user_data/tradesv3.sqlite*
+user_data/*.private.*
+user_data/config.private.json
+user_data/**/*.md
+user_data/**/*.json
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
+# Large / generated artifacts
+catboost_info/
 *.log
-local_settings.py
+*.zip
+*.parquet
+*.joblib
+*.sqlite*
+*.html
 
-# Flask stuff:
-instance/
-.webassets-cache
+# Backtest / research outputs in repo root
+backtest_output*.txt
+backtest_result*.txt
+hybrid_backtest_result*.txt
+results_*.log
+tmp.*
 
-# Scrapy stuff:
-.scrapy
+# Root-level markdown reports/notes (keep core docs)
+/*.md
+!README.md
+!CONTRIBUTING.md
+!README_NFI.md
 
-# memray
-memray-*
-
-# Sphinx documentation
-docs/_build/
-# Mkdocs documentation
-site/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-*.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-.env
-.venv
-.idea
-.vscode
-
-.pytest_cache/
-.mypy_cache/
-
-#exceptions
-!*.gitkeep
-!config_examples/config_binance.example.json
-!config_examples/config_full.example.json
-!config_examples/config_kraken.example.json
-!config_examples/config_freqai.example.json
-
-docker-compose-*.yml
+# External / downloaded projects
+CryptoMarket_Regime_Classifier-main/
