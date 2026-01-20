@@ -8,7 +8,7 @@ import gc
 import logging
 import random
 from datetime import datetime
-from math import ceil
+from math import ceil, isinf
 from pathlib import Path
 from typing import Any
 
@@ -228,6 +228,77 @@ class Hyperopt:
         logger.info(f"Number of parallel jobs set as: {config_jobs}")
 
         self.opt = self.hyperopter.get_optimizer(self.random_state)
+
+        if self.config.get("hyperopt_params_as_seed", False):
+            try:
+                current_params = {}
+                strat = self.hyperopter.backtesting.strategy
+
+                # 1. Strategy Parameters (buy/sell/protection/etc)
+                for attr_name, attr in strat.enumerate_parameters():
+                    if attr.optimize and attr.in_space:
+                        current_params[attr_name] = attr.value
+
+                # 2. Stoploss
+                if "stoploss" in self.hyperopter.o_dimensions:
+                    current_params["stoploss"] = strat.stoploss
+
+                # 3. Max Open Trades
+                if "max_open_trades" in self.hyperopter.o_dimensions:
+                    if isinf(strat.max_open_trades):
+                        current_params["max_open_trades"] = -1
+                    else:
+                        current_params["max_open_trades"] = strat.max_open_trades
+
+                # 4. Trailing
+                if "trailing_stop_positive" in self.hyperopter.o_dimensions:
+                    if strat.trailing_stop_positive is not None:
+                        current_params["trailing_stop_positive"] = strat.trailing_stop_positive
+
+                    if (
+                        strat.trailing_stop_positive is not None
+                        and strat.trailing_stop_positive_offset is not None
+                    ):
+                        # trailing_stop_positive_offset = trailing_stop_positive + trailing_stop_positive_offset_p1
+                        # So p1 = offset - positive
+                        current_params["trailing_stop_positive_offset_p1"] = (
+                            strat.trailing_stop_positive_offset - strat.trailing_stop_positive
+                        )
+
+                    if hasattr(strat, "trailing_only_offset_is_reached"):
+                        current_params["trailing_only_offset_is_reached"] = (
+                            strat.trailing_only_offset_is_reached
+                        )
+
+                    current_params["trailing_stop"] = (
+                        True  # If space is active, it's forced True in space definition usually
+                    )
+
+                # Filter params that are actually in the search space to avoid errors
+                params_to_enqueue = {
+                    k: v for k, v in current_params.items() if k in self.hyperopter.o_dimensions
+                }
+
+                if params_to_enqueue:
+                    # If we have missing dimensions (e.g. ROI which cannot be seeded),
+                    # we repeat the trial multiple times to allow the optimizer to sample
+                    # different random values for the missing dimensions against our fixed known params.
+                    is_partial_seed = len(params_to_enqueue) < len(self.hyperopter.o_dimensions)
+                    count = 5 if is_partial_seed else 1
+
+                    logger.info(
+                        f"Enqueuing current strategy parameters as initial trial ({count} times): {params_to_enqueue}"
+                    )
+                    for _ in range(count):
+                        self.opt.enqueue_trial(params_to_enqueue)
+                else:
+                    logger.info(
+                        "No current strategy parameters found matching the search space to enqueue."
+                    )
+
+            except Exception as e:
+                logger.warning(f"Failed to enqueue current parameters: {e}")
+
         try:
             with Parallel(n_jobs=config_jobs) as parallel:
                 jobs = parallel._effective_n_jobs()

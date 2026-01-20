@@ -343,6 +343,11 @@ class Configuration:
             ("spaces", "Parameter -s/--spaces detected: {}"),
             ("analyze_per_epoch", "Parameter --analyze-per-epoch detected."),
             ("print_all", "Parameter --print-all detected ..."),
+            (
+                "hyperopt_params_as_seed",
+                "Parameter --params-as-seed detected. "
+                "Using current strategy parameters as first hyperopt trial.",
+            ),
         ]
         self._args_to_config_loop(config, configurations)
         es_epochs = self.args.get("early_stop", 0)

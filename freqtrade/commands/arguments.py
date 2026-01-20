@@ -82,6 +82,7 @@ ARGS_HYPEROPT = [
     "hyperopt_ignore_missing_space",
     "analyze_per_epoch",
     "early_stop",
+    "hyperopt_params_as_seed",
 ]
 
 ARGS_EDGE = [*ARGS_COMMON_OPTIMIZE]
