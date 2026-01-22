@@ -43,7 +43,11 @@ class IcicibreezeShim(ccxt.Exchange):
         pass
 
     def __init__(self, config={}):
-        print("DEBUG: IcicibreezeShim initialized")
+        # Check both top-level and ccxt_config used by Freqtrade
+        mode = config.get("icici_mode") or config.get("ccxt_config", {}).get("icici_mode") or "stub"
+        print(f"DEBUG: IcicibreezeShim initialized. Mode: {mode}")
+        if mode == "real":
+            raise ccxt.ConfigurationError("Real ICICI mode is not yet implemented. Use 'stub'.")
         super().__init__(config)
 
     def describe(self):
@@ -254,6 +258,14 @@ class IcicibreezeAsyncShim(ccxt_async.Exchange):
     """
     CCXT Shim for Icicibreeze (Async).
     """
+
+    def __init__(self, config={}):
+        mode = config.get("icici_mode") or config.get("ccxt_config", {}).get("icici_mode") or "stub"
+        if mode == "real":
+            raise ccxt_async.ConfigurationError(
+                "Real ICICI mode is not yet implemented. Use 'stub'."
+            )
+        super().__init__(config)
 
     @property
     def features(self):

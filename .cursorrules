@@ -1,0 +1,21 @@
+# AI Implementation & Communication Rules
+
+## Feature Support Claims
+To prevent ambiguity between "stubbed/simulated" functionality and "production-ready" code, you must adhere to the following labeling standards when describing exchange features:
+
+1.  **Labeling Requirement**: You must explicitly label the completion status of any exchange feature/milestone with one of the following terms:
+    *   `stub-support`: Interface exists (e.g., method `def` is present) but returns hardcoded/static values. Code compiles but performs no convenient logic.
+    *   `simulated-data`: Logic exists to generate realistic-looking data (e.g., OHLCV generation based on time/limit), but it is NOT coming from a live external API.
+    *   `real-api-wired`: The code makes actual network requests to the external API and handles real responses. Validated via live (non-dry-run) connectivity or explicit network recording.
+
+2.  **Forbidden Phrases**:
+    *   Do NOT use the phrase "**Support complete**" or "Feature complete" unless the feature is `real-api-wired` AND has passed a documented API smoke test.
+    *   Do NOT imply a feature is "working" without qualifying the support level if it is only a stub or simulation.
+
+3.  **Response Format**:
+    *   When reporting progress or completion of a feature, include a metadata line:
+        `support_level: [stub|simulated|real]`
+
+## Example
+*   **Correct**: "OHLCV support implemented. `support_level: simulated` (Deterministic data generation added)."
+*   **Incorrect**: "OHLCV support complete." (If it's just generating fake data).
