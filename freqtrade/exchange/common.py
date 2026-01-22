@@ -5,6 +5,42 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any, TypeVar, cast, overload
 
+# --- ccxt shim registration for icicibreeze (must run early) ---
+try:
+    import ccxt  # type: ignore
+
+    if "icicibreeze" not in getattr(ccxt, "exchanges", []):
+        ccxt.exchanges.append("icicibreeze")
+
+    if not hasattr(ccxt, "icicibreeze"):
+
+        class icicibreeze(ccxt.Exchange):  # noqa: N801
+            def describe(self):
+                base = super().describe()
+                base.update(
+                    {
+                        "id": "icicibreeze",
+                        "name": "ICICI Breeze (Shim)",
+                        "countries": ["IN"],
+                        "rateLimit": 1000,
+                        "has": {
+                            "fetchMarkets": True,
+                            "loadMarkets": True,
+                            "fetchTicker": True,
+                            "fetchOHLCV": True,
+                            "createOrder": False,
+                            "cancelOrder": False,
+                        },
+                    }
+                )
+                return base
+
+        setattr(ccxt, "icicibreeze", icicibreeze)
+
+except Exception:
+    pass
+# --- end shim ---
+
 from freqtrade.exceptions import DDosProtection, RetryableOrderError, TemporaryError
 from freqtrade.mixins import LoggingMixin
 
