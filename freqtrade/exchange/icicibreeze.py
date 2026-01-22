@@ -337,3 +337,4 @@ class Icicibreeze(Exchange):
             return breeze_ccxt
 
         return _BreezeCCXTAsync(breeze_ccxt)
+IciciBreeze = Icicibreeze

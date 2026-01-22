@@ -41,7 +41,7 @@ from freqtrade.exchange.gate import Gate
 from freqtrade.exchange.hitbtc import Hitbtc
 from freqtrade.exchange.htx import Htx
 from freqtrade.exchange.hyperliquid import Hyperliquid
-from freqtrade.exchange.icicibreeze import Icicibreeze, Icicibreeze as icicibreeze
+from freqtrade.exchange.icicibreeze import Icicibreeze, IciciBreeze
 from freqtrade.exchange.idex import Idex
 from freqtrade.exchange.kraken import Kraken
 from freqtrade.exchange.kucoin import Kucoin
@@ -51,3 +51,4 @@ from freqtrade.exchange.modetrade import Modetrade
 from freqtrade.exchange.okx import Myokx, Okx, Okxus
 
 MAP_EXCHANGE_CHILDCLASS["icicibreeze"] = "Icicibreeze"
+MAP_EXCHANGE_CHILDCLASS["IciciBreeze"] = "IciciBreeze"
