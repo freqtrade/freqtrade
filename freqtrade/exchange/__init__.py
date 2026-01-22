@@ -2,6 +2,7 @@
 # isort: off
 from freqtrade.exchange.common import MAP_EXCHANGE_CHILDCLASS
 from freqtrade.exchange.exchange import Exchange
+from freqtrade.exchange._ccxt_shim_icicibreeze import *  # noqa: F401,F403
 
 # isort: on
 from freqtrade.exchange.binance import Binance, Binanceus, Binanceusdm
