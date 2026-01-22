@@ -6,7 +6,6 @@
   "fiat_display_currency": "INR",
   "dry_run": true,
   "process_only_new_candles": false,
-  "initial_state": "running",
   "cancel_open_orders_on_exit": false,
   "exchange": {
     "name": "icicibreeze",

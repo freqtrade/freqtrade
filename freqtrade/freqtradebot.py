@@ -146,7 +146,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Set initial bot state from config
         initial_state = self.config.get("initial_state")
-        self.state = State[initial_state.upper()] if initial_state else State.STOPPED
+        self.state = State[initial_state.upper()] if initial_state else State.RUNNING
 
         # Protect exit-logic from forcesell and vice versa
         self._exit_lock = Lock()

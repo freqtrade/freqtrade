@@ -84,7 +84,7 @@ def test_freqtradebot_state(mocker, default_conf_usdt, markets) -> None:
 
     default_conf_usdt.pop("initial_state")
     freqtrade = FreqtradeBot(default_conf_usdt)
-    assert freqtrade.state is State.STOPPED
+    assert freqtrade.state is State.RUNNING
 
 
 def test_process_stopped(mocker, default_conf_usdt) -> None:
