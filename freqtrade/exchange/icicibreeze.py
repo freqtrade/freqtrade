@@ -4,12 +4,224 @@ ICICI Breeze exchange integration.
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, Dict, List, Optional
 
+import ccxt
+import ccxt.async_support as ccxt_async
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange.common import MAP_EXCHANGE_CHILDCLASS
 from freqtrade.exchange.exchange import Exchange
 
+try:
+    import ccxt.pro as ccxt_pro
+except ImportError:
+    ccxt_pro = None
+
 logger = logging.getLogger(__name__)
+
+# --- Configuration Patching ---
+# Ensure resolver finds our class
+MAP_EXCHANGE_CHILDCLASS["icicibreeze"] = "Icicibreeze"
+
+# --- CCXT Patching start ---
+if "icicibreeze" not in ccxt.exchanges:
+    ccxt.exchanges.append("icicibreeze")
+
+
+# 1. Sync Stub for Validation
+class ccxt_icicibreeze(ccxt.Exchange):
+    """
+    Minimal CCXT stub for ICICI Breeze checks by Freqtrade.
+    Real logic is injected via Icicibreeze._init_ccxt using trade_bot shim or stub.
+    """
+
+    def describe(self):
+        return self.deep_extend(
+            super().describe(),
+            {
+                "id": "icicibreeze",
+                "name": "IciciBreeze",
+                "has": {
+                    "fetchOHLCV": True,
+                    "fetchTicker": True,
+                    "createOrder": True,
+                    "cancelOrder": True,
+                    "fetchOrder": True,
+                },
+                "timeframes": {"1m": "1minute", "5m": "5minute", "30m": "30minute", "1d": "1day"},
+            },
+        )
+
+    def load_markets(self, reload=False, params=None):
+        return self.markets
+
+
+setattr(ccxt, "icicibreeze", ccxt_icicibreeze)
+
+
+# 2. Async Stub (inherits from async_support.Exchange)
+class ccxt_icicibreeze_async(ccxt_async.Exchange):
+    def describe(self):
+        return self.deep_extend(
+            super().describe(),
+            {
+                "id": "icicibreeze",
+                "name": "IciciBreeze",
+                "has": {
+                    "fetchOHLCV": True,
+                    "fetchTicker": True,
+                    "createOrder": True,
+                    "cancelOrder": True,
+                    "fetchOrder": True,
+                },
+                "timeframes": {"1m": "1minute", "5m": "5minute", "30m": "30minute", "1d": "1day"},
+            },
+        )
+
+    def load_markets(self, reload=False, params=None):
+        return self.markets
+
+
+setattr(ccxt_async, "icicibreeze", ccxt_icicibreeze_async)
+
+if ccxt_pro:
+    setattr(ccxt_pro, "icicibreeze", ccxt_icicibreeze_async)
+# --- CCXT Patching end ---
+
+
+class BreezeCCXTStub:
+    """
+    Stub for BreezeCCXT in dry-run mode.
+    """
+
+    def __init__(self, config=None):
+        self.id = "icicibreeze"
+        self.name = "IciciBreeze"
+        self.timeframes = {"1m": "1minute", "5m": "5minute", "1d": "1day"}
+        self.markets = {}
+        self.has = {
+            "fetchOHLCV": True,
+            "fetchTicker": True,
+            "createOrder": True,
+            "cancelOrder": True,
+            "fetchOrder": True,
+            "fetchOpenOrders": True,
+            "fetchClosedOrders": True,
+            "fetchMyTrades": True,
+            "fetchBalance": True,
+            "fetchPositions": False,
+        }
+
+    def close(self):
+        pass
+
+    def load_markets(self, reload=False, params=None):
+        self.markets = {
+            "BTC/USDT": {
+                "symbol": "BTC/USDT",
+                "id": "BTC-USDT",
+                "base": "BTC",
+                "quote": "USDT",
+                "spot": True,
+                "margin": False,
+                "future": False,
+                "precision": {"amount": 6, "price": 2},
+                "limits": {"amount": {"min": 0.0001}, "cost": {"min": 1}},
+                "info": {},
+            },
+            "ETH/USDT": {
+                "symbol": "ETH/USDT",
+                "id": "ETH-USDT",
+                "base": "ETH",
+                "quote": "USDT",
+                "spot": True,
+                "margin": False,
+                "future": False,
+                "precision": {"amount": 6, "price": 2},
+                "limits": {"amount": {"min": 0.0001}, "cost": {"min": 1}},
+                "info": {},
+            },
+        }
+        return self.markets
+
+    def fetch_ticker(self, symbol, params=None):
+        return {
+            "symbol": symbol,
+            "timestamp": 1672531200000,
+            "datetime": "2023-01-01T00:00:00Z",
+            "high": 50000.0,
+            "low": 49000.0,
+            "bid": 49500.0,
+            "bidVolume": 1.0,
+            "ask": 49501.0,
+            "askVolume": 1.0,
+            "vwap": 49500.0,
+            "open": 49000.0,
+            "close": 49500.0,
+            "last": 49500.0,
+            "previousClose": 49000.0,
+            "change": 500.0,
+            "percentage": 1.0,
+            "average": 49250.0,
+            "baseVolume": 100.0,
+            "quoteVolume": 4950000.0,
+            "info": {},
+        }
+
+    def fetch_tickers(self, symbols=None, params=None):
+        symbols = symbols or ["BTC/USDT"]
+        return {s: self.fetch_ticker(s, params) for s in symbols}
+
+    def fetch_ohlcv(self, symbol, timeframe="1d", since=None, limit=None, params=None):
+        # Return 2 candles
+        return [
+            [1672531200000, 49000.0, 50000.0, 48000.0, 49500.0, 100.0],
+            [1672617600000, 49500.0, 51000.0, 49000.0, 50500.0, 100.0],
+        ]
+
+    def create_order(self, symbol, type, side, amount, price=None, params=None):
+        return {
+            "id": "123456_dry",
+            "info": {},
+            "symbol": symbol,
+            "type": type,
+            "side": side,
+            "status": "open",
+            "amount": amount,
+            "price": price,
+        }
+
+    def cancel_order(self, id, symbol=None, params=None):
+        return {"id": id, "status": "canceled"}
+
+    def fetch_order(self, id, symbol=None, params=None):
+        return {
+            "id": id,
+            "info": {},
+            "symbol": symbol or "BTC/USDT",
+            "type": "limit",
+            "side": "buy",
+            "status": "closed",
+        }
+
+    def fetch_open_orders(self, symbol=None, since=None, limit=None, params=None):
+        return []
+
+    def fetch_closed_orders(self, symbol=None, since=None, limit=None, params=None):
+        return []
+
+    def fetch_my_trades(self, symbol=None, since=None, limit=None, params=None):
+        return []
+
+    def fetch_balance(self, params=None):
+        return {
+            "free": {"USDT": 10000.0, "BTC": 1.0},
+            "used": {"USDT": 0.0, "BTC": 0.0},
+            "total": {"USDT": 10000.0, "BTC": 1.0},
+        }
+
+    def fetch_positions(self, symbols=None, params=None):
+        return []
 
 
 class _BreezeCCXTAsync:
@@ -83,66 +295,46 @@ class Icicibreeze(Exchange):
     }
 
     def _init_ccxt(
-        self, exchange_config: dict[str, Any], sync: bool, ccxt_kwargs: dict[str, Any]
+        self, exchange_config: Dict[str, Any], sync: bool, ccxt_kwargs: Dict[str, Any]
     ) -> Any:
         """
         Initialize BreezeCCXT shim instead of standard CCXT.
         """
-        # We only support sync implementation wrapped in async, or strict async shim.
-        # Since BreezeCCXT is likely sync, we'll implement the async wrapper below.
 
-        # 1. Attempt imports
+        # 1. Check Dry Run
+        if self._config.get("dry_run", False):
+            logger.info("Initializing Icicibreeze in Dry Run mode (using stub).")
+            stub = BreezeCCXTStub(config=exchange_config)
+            if sync:
+                return stub
+            return _BreezeCCXTAsync(stub)
+
+        # 2. Live Mode - Attempt imports
         try:
-            from trade_bot.adapters.breeze_rest_adapter import BreezeRestAdapter
-
-            try:
-                # Try new location first (if scaffolded)
-                from trade_bot.adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
-            except ImportError:
-                # Fallback to direct import if shim is not yet moved
-                from trade_bot.adapters.ccxt_shim import BreezeCCXT
-
-            from trade_bot.services.ohlcv_service import OhlcvService
-            from trade_bot.services.security_master_service import SecurityMasterService
+            from trade_bot.adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
         except ImportError as e:
             raise OperationalException(
-                f"Failed to import trade_bot dependencies for Icicibreeze: {e}. "
-                "Ensure trade_bot is installed/available in the environment."
+                "trade_bot is not installed in this venv. Run: cd ~/work/trade-bot && python -m pip install -e ."
             ) from e
 
-        # 2. Validate Config
+        # 3. Validate Config (Live)
         api_key = exchange_config.get("key")
         secret_key = exchange_config.get("secret")
-        session_token = exchange_config.get("password")  # Mapping password to session_token
+        # Ensure password is mapped if shim expects session_token or just pass the whole dict
 
-        if not api_key or not secret_key or not session_token:
+        if not api_key or not secret_key:
             raise OperationalException(
-                "Icicibreeze require 'key', 'secret', and 'password' (session_token) in config."
+                "Icicibreeze logic require 'key' and 'secret' in config for live trading."
             )
 
-        # 3. Instantiate Services (Manual DI)
+        # 4. Instantiate Shim (Live)
         try:
-            # TODO: Ideally use trade_bot's composition root/container if available
-            rest_adapter = BreezeRestAdapter(
-                api_key=api_key, secret_key=secret_key, session_token=session_token
-            )
-
-            # Assuming these services might take the adapter or need other config
-            # Adjusting instantiation based on likely signature
-            sec_master = SecurityMasterService(rest_adapter)
-            ohlcv_service = OhlcvService(rest_adapter, sec_master)
-
-            # Instantiate Shim
-            breeze_ccxt = BreezeCCXT(
-                rest_adapter=rest_adapter, security_master=sec_master, ohlcv_service=ohlcv_service
-            )
-
+            breeze_ccxt = BreezeCCXT(config=exchange_config)
         except Exception as e:
-            raise OperationalException(f"Failed to initialize BreezeCCXT components: {e}") from e
+            raise OperationalException(f"Failed to initialize BreezeCCXT: {e}") from e
 
-        # 4. Return correct instance based on sync/async request
+        # 5. Return correct instance based on sync/async request
         if sync:
             return breeze_ccxt
 
-        # 5. Create Async Wrapper
         return _BreezeCCXTAsync(breeze_ccxt)
