@@ -1,9 +1,9 @@
 {
   "max_open_trades": 3,
-  "stake_currency": "USDT",
+  "stake_currency": "INR",
   "stake_amount": "unlimited",
   "tradable_balance_ratio": 0.99,
-  "fiat_display_currency": "USD",
+  "fiat_display_currency": "INR",
   "dry_run": true,
   "cancel_open_orders_on_exit": false,
   "exchange": {
@@ -46,7 +46,11 @@
     "chat_id": ""
   },
   "api_server": {
-    "enabled": false
+    "enabled": false,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8080,
+    "username": "disabled",
+    "password": "disabled"
   },
   "ai_comments": {
     "enabled": false
