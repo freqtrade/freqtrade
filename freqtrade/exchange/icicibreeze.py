@@ -49,6 +49,7 @@ class IcicibreezeShim(ccxt.Exchange):
         if mode == "real":
             raise ccxt.ConfigurationError("Real ICICI mode is not yet implemented. Use 'stub'.")
         super().__init__(config)
+        self.name = "IciciBreeze"
 
     def describe(self):
         return self.deep_extend(
@@ -266,6 +267,7 @@ class IcicibreezeAsyncShim(ccxt_async.Exchange):
                 "Real ICICI mode is not yet implemented. Use 'stub'."
             )
         super().__init__(config)
+        self.name = "IciciBreeze"
 
     @property
     def features(self):

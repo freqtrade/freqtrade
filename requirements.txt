@@ -9,7 +9,7 @@ technical==1.5.3
 
 ccxt==4.5.29
 cryptography==46.0.3
-aiohttp==3.13.2
+aiohttp==3.13.3
 SQLAlchemy==2.0.45
 python-telegram-bot==22.5
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
@@ -17,7 +17,7 @@ httpx>=0.24.1
 humanize==4.14.0
 cachetools==6.2.4
 requests==2.32.5
-urllib3==2.6.2
+urllib3==2.6.3
 certifi==2025.11.12
 jsonschema==4.25.1
 tabulate==0.9.0
@@ -60,3 +60,4 @@ janus==2.0.0
 
 ast-comments==1.2.3
 packaging==25.0
+breeze-connect==1.0.64

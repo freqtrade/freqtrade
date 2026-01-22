@@ -19,7 +19,7 @@ def test_worker_state(mocker, default_conf, markets) -> None:
 
     default_conf.pop("initial_state")
     worker = Worker(args=None, config=default_conf)
-    assert worker.freqtrade.state is State.STOPPED
+    assert worker.freqtrade.state is State.RUNNING
 
 
 def test_worker_running(mocker, default_conf, caplog) -> None:
