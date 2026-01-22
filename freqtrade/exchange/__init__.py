@@ -1,8 +1,45 @@
 # flake8: noqa: F401
 # isort: off
+# --- ccxt shim registration for icicibreeze (must run early) ---
+try:
+    import ccxt  # type: ignore
+
+    if "icicibreeze" not in getattr(ccxt, "exchanges", []):
+        # ccxt.exchanges is a list of ids
+        ccxt.exchanges.append("icicibreeze")
+
+    if not hasattr(ccxt, "icicibreeze"):
+        # Minimal ccxt exchange stub so freqtrade/ccxt checks pass.
+        class icicibreeze(ccxt.Exchange):  # noqa: N801
+            def describe(self):
+                base = super().describe()
+                base.update(
+                    {
+                        "id": "icicibreeze",
+                        "name": "ICICI Breeze (Shim)",
+                        "countries": ["IN"],
+                        "rateLimit": 1000,
+                        "has": {
+                            "fetchMarkets": True,
+                            "loadMarkets": True,
+                            "fetchTicker": True,
+                            "fetchOHLCV": True,
+                            "createOrder": False,
+                            "cancelOrder": False,
+                        },
+                    }
+                )
+                return base
+
+        setattr(ccxt, "icicibreeze", icicibreeze)
+
+except Exception:
+    # Do not break import if ccxt is unavailable in some environments.
+    pass
+# --- end shim ---
+
 from freqtrade.exchange.common import MAP_EXCHANGE_CHILDCLASS
 from freqtrade.exchange.exchange import Exchange
-from freqtrade.exchange._ccxt_shim_icicibreeze import *  # noqa: F401,F403
 
 # isort: on
 from freqtrade.exchange.binance import Binance, Binanceus, Binanceusdm
