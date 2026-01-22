@@ -13,7 +13,11 @@ try:
         if not hasattr(module, "icicibreeze"):
             is_async = "async_support" in module.__name__
 
-            class icicibreeze(module.Exchange):  # noqa: N801
+            class IcicibreezeInitShim(module.Exchange):  # noqa: N801
+                def __init__(self, config={}):
+                    super().__init__(config)
+                    self.features = {"spot": {"fetchOHLCV": {"limit": 1000, "days": 100}}}
+
                 def describe(self):
                     base = super().describe()
                     base.update(
@@ -40,6 +44,7 @@ try:
                             "loadMarkets": True,
                             "fetchTicker": True,
                             "fetchOHLCV": True,
+                            "fetchOrder": True,
                             "createOrder": False,
                             "cancelOrder": False,
                         }
@@ -85,7 +90,7 @@ try:
                     return mock_markets
 
             icicibreeze.fetch_markets = fetch_markets
-            setattr(module, "icicibreeze", icicibreeze)
+            setattr(module, "icicibreeze", IcicibreezeInitShim)
 
     _register(ccxt)
     _register(ccxt_async)

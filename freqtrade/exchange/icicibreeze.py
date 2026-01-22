@@ -29,10 +29,22 @@ if "icicibreeze" not in ccxt.exchanges:
     ccxt.exchanges.append("icicibreeze")
 
 
-class icicibreeze(ccxt.Exchange):
+class IcicibreezeShim(ccxt.Exchange):
     """
     CCXT Shim for Icicibreeze (Sync).
     """
+
+    @property
+    def features(self):
+        return {"spot": {"fetchOHLCV": {"limit": 1000, "days": 100}}}
+
+    @features.setter
+    def features(self, value):
+        pass
+
+    def __init__(self, config={}):
+        print("DEBUG: IcicibreezeShim initialized")
+        super().__init__(config)
 
     def describe(self):
         return self.deep_extend(
@@ -40,24 +52,34 @@ class icicibreeze(ccxt.Exchange):
             {
                 "id": "icicibreeze",
                 "name": "IciciBreeze",
+                "countries": ["IN"],
+                "rateLimit": 1000,
                 "has": {
-                    "fetchOHLCV": True,
                     "fetchTicker": True,
-                    "createOrder": True,
-                    "cancelOrder": True,
+                    "fetchOHLCV": False,
                     "fetchOrder": True,
                     "fetchOpenOrders": True,
                     "fetchClosedOrders": True,
                     "fetchMyTrades": True,
                     "fetchBalance": True,
                 },
-                "timeframes": {"1m": "1minute", "5m": "5minute", "1d": "1day"},
+                "timeframes": {"5m": "5m"},
             },
         )
 
     def load_markets(self, reload=False, params={}):
-        self.markets = {
-            "BTC/USDT": {
+        print("DEBUG: IcicibreezeShim.load_markets override ENTERED")
+        markets = super().load_markets(reload, params)
+        for _, market in markets.items():
+            market["active"] = True
+        self.markets = markets
+        print(f"DEBUG: Manually set active=True on {len(markets)} markets")
+        return markets
+
+    def fetch_markets(self, params={}):
+        print("DEBUG: fetch_markets called")
+        return [
+            {
                 "symbol": "BTC/USDT",
                 "id": "BTC-USDT",
                 "base": "BTC",
@@ -67,9 +89,10 @@ class icicibreeze(ccxt.Exchange):
                 "future": False,
                 "precision": {"amount": 6, "price": 2},
                 "limits": {"amount": {"min": 0.0001}, "cost": {"min": 1}},
+                "active": True,
                 "info": {},
             },
-            "ETH/USDT": {
+            {
                 "symbol": "ETH/USDT",
                 "id": "ETH-USDT",
                 "base": "ETH",
@@ -79,14 +102,15 @@ class icicibreeze(ccxt.Exchange):
                 "future": False,
                 "precision": {"amount": 6, "price": 2},
                 "limits": {"amount": {"min": 0.0001}, "cost": {"min": 1}},
+                "active": True,
                 "info": {},
             },
-        }
-        return self.markets
+        ]
 
     def fetch_ticker(self, symbol, params={}):
+        market = self.market(symbol)
         return {
-            "symbol": symbol,
+            "symbol": market["symbol"],
             "timestamp": 1672531200000,
             "datetime": "2023-01-01T00:00:00Z",
             "high": 50000.0,
@@ -105,7 +129,7 @@ class icicibreeze(ccxt.Exchange):
             "average": 49250.0,
             "baseVolume": 100.0,
             "quoteVolume": 4950000.0,
-            "info": {},
+            "info": {"stub": True},
         }
 
     def fetch_ohlcv(self, symbol, timeframe="1d", since=None, limit=None, params={}):
@@ -157,14 +181,22 @@ class icicibreeze(ccxt.Exchange):
         return []
 
 
-if not hasattr(ccxt, "icicibreeze"):
-    setattr(ccxt, "icicibreeze", icicibreeze)
+# Force overwrite to ensure correct class is used
+setattr(ccxt, "icicibreeze", IcicibreezeShim)
 
 
-class icicibreeze_async(ccxt_async.Exchange):
+class IcicibreezeAsyncShim(ccxt_async.Exchange):
     """
     CCXT Shim for Icicibreeze (Async).
     """
+
+    @property
+    def features(self):
+        return {"spot": {"fetchOHLCV": {"limit": 1000, "days": 100}}}
+
+    @features.setter
+    def features(self, value):
+        pass
 
     def describe(self):
         return self.deep_extend(
@@ -293,10 +325,10 @@ class icicibreeze_async(ccxt_async.Exchange):
 
 
 if not hasattr(ccxt_async, "icicibreeze"):
-    setattr(ccxt_async, "icicibreeze", icicibreeze_async)
+    setattr(ccxt_async, "icicibreeze", IcicibreezeAsyncShim)
 
 if ccxt_pro and not hasattr(ccxt_pro, "icicibreeze"):
-    setattr(ccxt_pro, "icicibreeze", icicibreeze_async)
+    setattr(ccxt_pro, "icicibreeze", IcicibreezeAsyncShim)
 
 
 class _BreezeCCXTAsync:
@@ -374,8 +406,8 @@ class Icicibreeze(Exchange):
         if self._config.get("dry_run", False):
             if sync:
                 logger.info("Initializing Icicibreeze in Dry Run mode (using stub).")
-                return icicibreeze(exchange_config)
-            return icicibreeze_async(exchange_config)
+                return IcicibreezeShim(exchange_config)
+            return IcicibreezeAsyncShim(exchange_config)
 
         # 2. Live Mode - Attempt imports
         try:
@@ -405,6 +437,9 @@ class Icicibreeze(Exchange):
             return breeze_ccxt
 
         return _BreezeCCXTAsync(breeze_ccxt)
+
+    def fetch_ticker(self, pair: str):
+        return super().fetch_ticker(pair)
 
 
 IciciBreeze = Icicibreeze
