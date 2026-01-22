@@ -22,17 +22,16 @@ logger = logging.getLogger(__name__)
 # --- Configuration Patching ---
 # Ensure resolver finds our class
 MAP_EXCHANGE_CHILDCLASS["icicibreeze"] = "Icicibreeze"
+MAP_EXCHANGE_CHILDCLASS["IciciBreeze"] = "IciciBreeze"
 
 # --- CCXT Patching start ---
 if "icicibreeze" not in ccxt.exchanges:
     ccxt.exchanges.append("icicibreeze")
 
 
-# 1. Sync Stub for Validation
-class ccxt_icicibreeze(ccxt.Exchange):
+class icicibreeze(ccxt.Exchange):
     """
-    Minimal CCXT stub for ICICI Breeze checks by Freqtrade.
-    Real logic is injected via Icicibreeze._init_ccxt using trade_bot shim or stub.
+    CCXT Shim for Icicibreeze (Sync).
     """
 
     def describe(self):
@@ -47,75 +46,16 @@ class ccxt_icicibreeze(ccxt.Exchange):
                     "createOrder": True,
                     "cancelOrder": True,
                     "fetchOrder": True,
+                    "fetchOpenOrders": True,
+                    "fetchClosedOrders": True,
+                    "fetchMyTrades": True,
+                    "fetchBalance": True,
                 },
-                "timeframes": {"1m": "1minute", "5m": "5minute", "30m": "30minute", "1d": "1day"},
+                "timeframes": {"1m": "1minute", "5m": "5minute", "1d": "1day"},
             },
         )
 
-    def load_markets(self, reload=False, params=None):
-        return self.markets
-
-
-setattr(ccxt, "icicibreeze", ccxt_icicibreeze)
-
-
-# 2. Async Stub (inherits from async_support.Exchange)
-class ccxt_icicibreeze_async(ccxt_async.Exchange):
-    def describe(self):
-        return self.deep_extend(
-            super().describe(),
-            {
-                "id": "icicibreeze",
-                "name": "IciciBreeze",
-                "has": {
-                    "fetchOHLCV": True,
-                    "fetchTicker": True,
-                    "createOrder": True,
-                    "cancelOrder": True,
-                    "fetchOrder": True,
-                },
-                "timeframes": {"1m": "1minute", "5m": "5minute", "30m": "30minute", "1d": "1day"},
-            },
-        )
-
-    def load_markets(self, reload=False, params=None):
-        return self.markets
-
-
-setattr(ccxt_async, "icicibreeze", ccxt_icicibreeze_async)
-
-if ccxt_pro:
-    setattr(ccxt_pro, "icicibreeze", ccxt_icicibreeze_async)
-# --- CCXT Patching end ---
-
-
-class BreezeCCXTStub:
-    """
-    Stub for BreezeCCXT in dry-run mode.
-    """
-
-    def __init__(self, config=None):
-        self.id = "icicibreeze"
-        self.name = "IciciBreeze"
-        self.timeframes = {"1m": "1minute", "5m": "5minute", "1d": "1day"}
-        self.markets = {}
-        self.has = {
-            "fetchOHLCV": True,
-            "fetchTicker": True,
-            "createOrder": True,
-            "cancelOrder": True,
-            "fetchOrder": True,
-            "fetchOpenOrders": True,
-            "fetchClosedOrders": True,
-            "fetchMyTrades": True,
-            "fetchBalance": True,
-            "fetchPositions": False,
-        }
-
-    def close(self):
-        pass
-
-    def load_markets(self, reload=False, params=None):
+    def load_markets(self, reload=False, params={}):
         self.markets = {
             "BTC/USDT": {
                 "symbol": "BTC/USDT",
@@ -144,7 +84,7 @@ class BreezeCCXTStub:
         }
         return self.markets
 
-    def fetch_ticker(self, symbol, params=None):
+    def fetch_ticker(self, symbol, params={}):
         return {
             "symbol": symbol,
             "timestamp": 1672531200000,
@@ -168,18 +108,21 @@ class BreezeCCXTStub:
             "info": {},
         }
 
-    def fetch_tickers(self, symbols=None, params=None):
-        symbols = symbols or ["BTC/USDT"]
-        return {s: self.fetch_ticker(s, params) for s in symbols}
-
-    def fetch_ohlcv(self, symbol, timeframe="1d", since=None, limit=None, params=None):
-        # Return 2 candles
+    def fetch_ohlcv(self, symbol, timeframe="1d", since=None, limit=None, params={}):
         return [
             [1672531200000, 49000.0, 50000.0, 48000.0, 49500.0, 100.0],
             [1672617600000, 49500.0, 51000.0, 49000.0, 50500.0, 100.0],
         ]
 
-    def create_order(self, symbol, type, side, amount, price=None, params=None):
+    def fetch_balance(self, params={}):
+        return {
+            "free": {"USDT": 10000.0, "BTC": 1.0},
+            "used": {"USDT": 0.0, "BTC": 0.0},
+            "total": {"USDT": 10000.0, "BTC": 1.0},
+            "info": {},
+        }
+
+    def create_order(self, symbol, type, side, amount, price=None, params={}):
         return {
             "id": "123456_dry",
             "info": {},
@@ -191,10 +134,10 @@ class BreezeCCXTStub:
             "price": price,
         }
 
-    def cancel_order(self, id, symbol=None, params=None):
+    def cancel_order(self, id, symbol=None, params={}):
         return {"id": id, "status": "canceled"}
 
-    def fetch_order(self, id, symbol=None, params=None):
+    def fetch_order(self, id, symbol=None, params={}):
         return {
             "id": id,
             "info": {},
@@ -204,29 +147,161 @@ class BreezeCCXTStub:
             "status": "closed",
         }
 
-    def fetch_open_orders(self, symbol=None, since=None, limit=None, params=None):
+    def fetch_open_orders(self, symbol=None, since=None, limit=None, params={}):
         return []
 
-    def fetch_closed_orders(self, symbol=None, since=None, limit=None, params=None):
+    def fetch_closed_orders(self, symbol=None, since=None, limit=None, params={}):
         return []
 
-    def fetch_my_trades(self, symbol=None, since=None, limit=None, params=None):
+    def fetch_my_trades(self, symbol=None, since=None, limit=None, params={}):
         return []
 
-    def fetch_balance(self, params=None):
+
+if not hasattr(ccxt, "icicibreeze"):
+    setattr(ccxt, "icicibreeze", icicibreeze)
+
+
+class icicibreeze_async(ccxt_async.Exchange):
+    """
+    CCXT Shim for Icicibreeze (Async).
+    """
+
+    def describe(self):
+        return self.deep_extend(
+            super().describe(),
+            {
+                "id": "icicibreeze",
+                "name": "IciciBreeze",
+                "has": {
+                    "fetchOHLCV": True,
+                    "fetchTicker": True,
+                    "createOrder": True,
+                    "cancelOrder": True,
+                    "fetchOrder": True,
+                    "fetchOpenOrders": True,
+                    "fetchClosedOrders": True,
+                    "fetchMyTrades": True,
+                    "fetchBalance": True,
+                },
+                "timeframes": {"1m": "1minute", "5m": "5minute", "1d": "1day"},
+            },
+        )
+
+    async def load_markets(self, reload=False, params={}):
+        self.markets = {
+            "BTC/USDT": {
+                "symbol": "BTC/USDT",
+                "id": "BTC-USDT",
+                "base": "BTC",
+                "quote": "USDT",
+                "spot": True,
+                "margin": False,
+                "future": False,
+                "precision": {"amount": 6, "price": 2},
+                "limits": {"amount": {"min": 0.0001}, "cost": {"min": 1}},
+                "info": {},
+            },
+            "ETH/USDT": {
+                "symbol": "ETH/USDT",
+                "id": "ETH-USDT",
+                "base": "ETH",
+                "quote": "USDT",
+                "spot": True,
+                "margin": False,
+                "future": False,
+                "precision": {"amount": 6, "price": 2},
+                "limits": {"amount": {"min": 0.0001}, "cost": {"min": 1}},
+                "info": {},
+            },
+        }
+        return self.markets
+
+    async def fetch_ticker(self, symbol, params={}):
+        return {
+            "symbol": symbol,
+            "timestamp": 1672531200000,
+            "datetime": "2023-01-01T00:00:00Z",
+            "high": 50000.0,
+            "low": 49000.0,
+            "bid": 49500.0,
+            "bidVolume": 1.0,
+            "ask": 49501.0,
+            "askVolume": 1.0,
+            "vwap": 49500.0,
+            "open": 49000.0,
+            "close": 49500.0,
+            "last": 49500.0,
+            "previousClose": 49000.0,
+            "change": 500.0,
+            "percentage": 1.0,
+            "average": 49250.0,
+            "baseVolume": 100.0,
+            "quoteVolume": 4950000.0,
+            "info": {},
+        }
+
+    async def fetch_ohlcv(self, symbol, timeframe="1d", since=None, limit=None, params={}):
+        return [
+            [1672531200000, 49000.0, 50000.0, 48000.0, 49500.0, 100.0],
+            [1672617600000, 49500.0, 51000.0, 49000.0, 50500.0, 100.0],
+        ]
+
+    async def fetch_balance(self, params={}):
         return {
             "free": {"USDT": 10000.0, "BTC": 1.0},
             "used": {"USDT": 0.0, "BTC": 0.0},
             "total": {"USDT": 10000.0, "BTC": 1.0},
+            "info": {},
         }
 
-    def fetch_positions(self, symbols=None, params=None):
+    async def create_order(self, symbol, type, side, amount, price=None, params={}):
+        return {
+            "id": "123456_dry",
+            "info": {},
+            "symbol": symbol,
+            "type": type,
+            "side": side,
+            "status": "open",
+            "amount": amount,
+            "price": price,
+        }
+
+    async def cancel_order(self, id, symbol=None, params={}):
+        return {"id": id, "status": "canceled"}
+
+    async def fetch_order(self, id, symbol=None, params={}):
+        return {
+            "id": id,
+            "info": {},
+            "symbol": symbol or "BTC/USDT",
+            "type": "limit",
+            "side": "buy",
+            "status": "closed",
+        }
+
+    async def fetch_open_orders(self, symbol=None, since=None, limit=None, params={}):
         return []
+
+    async def fetch_closed_orders(self, symbol=None, since=None, limit=None, params={}):
+        return []
+
+    async def fetch_my_trades(self, symbol=None, since=None, limit=None, params={}):
+        return []
+
+    async def close(self):
+        pass
+
+
+if not hasattr(ccxt_async, "icicibreeze"):
+    setattr(ccxt_async, "icicibreeze", icicibreeze_async)
+
+if ccxt_pro and not hasattr(ccxt_pro, "icicibreeze"):
+    setattr(ccxt_pro, "icicibreeze", icicibreeze_async)
 
 
 class _BreezeCCXTAsync:
     """
-    Async wrapper for BreezeCCXT sync implementation.
+    Async wrapper for BreezeCCXT sync implementation (Live Mode).
     """
 
     def __init__(self, sync_api):
@@ -235,8 +310,7 @@ class _BreezeCCXTAsync:
         self.id = sync_api.id if hasattr(sync_api, "id") else "icicibreeze"
         self.name = sync_api.name if hasattr(sync_api, "name") else "ICICI Breeze"
         self.timeframes = sync_api.timeframes if hasattr(sync_api, "timeframes") else {}
-        # Mimic common ccxt async properties
-        self.session = None  # No persistent session to close in this simplified wrapper
+        self.session = None
 
     async def close(self):
         pass
@@ -278,7 +352,6 @@ class _BreezeCCXTAsync:
         return await asyncio.to_thread(self._sync_api.fetch_positions, *args, **kwargs)
 
     def __getattr__(self, name):
-        # Fallback for other methods not explicitly wrapped (careful with async/sync mismatch)
         return getattr(self._sync_api, name)
 
 
@@ -297,16 +370,12 @@ class Icicibreeze(Exchange):
     def _init_ccxt(
         self, exchange_config: Dict[str, Any], sync: bool, ccxt_kwargs: Dict[str, Any]
     ) -> Any:
-        """
-        Initialize BreezeCCXT shim instead of standard CCXT.
-        """
-
         # 1. Check Dry Run
         if self._config.get("dry_run", False):
             if sync:
                 logger.info("Initializing Icicibreeze in Dry Run mode (using stub).")
-                return BreezeCCXTStub(config=exchange_config)
-            return _BreezeCCXTAsync(BreezeCCXTStub(config=exchange_config))
+                return icicibreeze(exchange_config)
+            return icicibreeze_async(exchange_config)
 
         # 2. Live Mode - Attempt imports
         try:
@@ -319,7 +388,6 @@ class Icicibreeze(Exchange):
         # 3. Validate Config (Live)
         api_key = exchange_config.get("key")
         secret_key = exchange_config.get("secret")
-        # Ensure password is mapped if shim expects session_token or just pass the whole dict
 
         if not api_key or not secret_key:
             raise OperationalException(
@@ -337,4 +405,6 @@ class Icicibreeze(Exchange):
             return breeze_ccxt
 
         return _BreezeCCXTAsync(breeze_ccxt)
+
+
 IciciBreeze = Icicibreeze
