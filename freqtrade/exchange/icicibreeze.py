@@ -56,14 +56,14 @@ class IcicibreezeShim(ccxt.Exchange):
                 "rateLimit": 1000,
                 "has": {
                     "fetchTicker": True,
-                    "fetchOHLCV": False,
+                    "fetchOHLCV": True,
                     "fetchOrder": True,
                     "fetchOpenOrders": True,
                     "fetchClosedOrders": True,
                     "fetchMyTrades": True,
                     "fetchBalance": True,
                 },
-                "timeframes": {"5m": "5m"},
+                "timeframes": {"1m": "1minute", "5m": "5minute"},
             },
         )
 
@@ -73,6 +73,16 @@ class IcicibreezeShim(ccxt.Exchange):
         for _, market in markets.items():
             market["active"] = True
         self.markets = markets
+        # Ensure currencies are set (CCXT usually does this, but we force it for completeness)
+        if hasattr(self, "currencies") and self.currencies:
+            self.currencies["INR"] = {"id": "INR", "code": "INR"}
+        else:
+            self.currencies = {
+                "INR": {"id": "INR", "code": "INR"},
+                "USDT": {"id": "USDT", "code": "USDT"},
+                "BTC": {"id": "BTC", "code": "BTC"},
+            }
+
         print(f"DEBUG: Manually set active=True on {len(markets)} markets")
         return markets
 
@@ -105,6 +115,32 @@ class IcicibreezeShim(ccxt.Exchange):
                 "active": True,
                 "info": {},
             },
+            {
+                "symbol": "RELIANCE/INR",
+                "id": "RELIANCE-INR",
+                "base": "RELIANCE",
+                "quote": "INR",
+                "spot": True,
+                "margin": False,
+                "future": False,
+                "precision": {"amount": 0, "price": 2},
+                "limits": {"amount": {"min": 1}, "cost": {"min": 1}},
+                "active": True,
+                "info": {},
+            },
+            {
+                "symbol": "TCS/INR",
+                "id": "TCS-INR",
+                "base": "TCS",
+                "quote": "INR",
+                "spot": True,
+                "margin": False,
+                "future": False,
+                "precision": {"amount": 0, "price": 2},
+                "limits": {"amount": {"min": 1}, "cost": {"min": 1}},
+                "active": True,
+                "info": {},
+            },
         ]
 
     def fetch_ticker(self, symbol, params={}):
@@ -133,10 +169,39 @@ class IcicibreezeShim(ccxt.Exchange):
         }
 
     def fetch_ohlcv(self, symbol, timeframe="1d", since=None, limit=None, params={}):
-        return [
-            [1672531200000, 49000.0, 50000.0, 48000.0, 49500.0, 100.0],
-            [1672617600000, 49500.0, 51000.0, 49000.0, 50500.0, 100.0],
-        ]
+        # Default limits
+        if limit is None:
+            limit = 100
+
+        # Duration in milliseconds
+        duration = self.parse_timeframe(timeframe) * 1000
+
+        current_time = self.milliseconds()
+
+        if since is None:
+            # If since is not provided, generate 'limit' candles ending now
+            since = current_time - (limit * duration)
+
+        data = []
+
+        for i in range(limit):
+            timestamp = since + (i * duration)
+            if timestamp > current_time:
+                break
+
+            # Deterministic stub data
+            # Just some oscillation around 50000
+            price_base = 50000.0 + (i % 100) * 10
+
+            open_p = price_base
+            high_p = price_base + 100
+            low_p = price_base - 100
+            close_p = price_base + 50
+            volume = 100.0 + (i % 10)
+
+            data.append([timestamp, open_p, high_p, low_p, close_p, volume])
+
+        return data
 
     def fetch_balance(self, params={}):
         return {
@@ -203,19 +268,18 @@ class IcicibreezeAsyncShim(ccxt_async.Exchange):
             super().describe(),
             {
                 "id": "icicibreeze",
-                "name": "IciciBreeze",
+                "countries": ["IN"],
+                "rateLimit": 1000,
                 "has": {
-                    "fetchOHLCV": True,
                     "fetchTicker": True,
-                    "createOrder": True,
-                    "cancelOrder": True,
+                    "fetchOHLCV": True,
                     "fetchOrder": True,
                     "fetchOpenOrders": True,
                     "fetchClosedOrders": True,
                     "fetchMyTrades": True,
                     "fetchBalance": True,
                 },
-                "timeframes": {"1m": "1minute", "5m": "5minute", "1d": "1day"},
+                "timeframes": {"1m": "1minute", "5m": "5minute"},
             },
         )
 
@@ -231,6 +295,7 @@ class IcicibreezeAsyncShim(ccxt_async.Exchange):
                 "future": False,
                 "precision": {"amount": 6, "price": 2},
                 "limits": {"amount": {"min": 0.0001}, "cost": {"min": 1}},
+                "active": True,
                 "info": {},
             },
             "ETH/USDT": {
@@ -243,14 +308,53 @@ class IcicibreezeAsyncShim(ccxt_async.Exchange):
                 "future": False,
                 "precision": {"amount": 6, "price": 2},
                 "limits": {"amount": {"min": 0.0001}, "cost": {"min": 1}},
+                "active": True,
+                "info": {},
+            },
+            "RELIANCE/INR": {
+                "symbol": "RELIANCE/INR",
+                "id": "RELIANCE-INR",
+                "base": "RELIANCE",
+                "quote": "INR",
+                "spot": True,
+                "margin": False,
+                "future": False,
+                "precision": {"amount": 0, "price": 2},
+                "limits": {"amount": {"min": 1}, "cost": {"min": 1}},
+                "active": True,
+                "info": {},
+            },
+            "TCS/INR": {
+                "symbol": "TCS/INR",
+                "id": "TCS-INR",
+                "base": "TCS",
+                "quote": "INR",
+                "spot": True,
+                "margin": False,
+                "future": False,
+                "precision": {"amount": 0, "price": 2},
+                "limits": {"amount": {"min": 1}, "cost": {"min": 1}},
+                "active": True,
                 "info": {},
             },
         }
+
+        # Ensure currencies are set (CCXT usually does this, but we force it for completeness)
+        if hasattr(self, "currencies") and self.currencies:
+            self.currencies["INR"] = {"id": "INR", "code": "INR"}
+        else:
+            self.currencies = {
+                "INR": {"id": "INR", "code": "INR"},
+                "USDT": {"id": "USDT", "code": "USDT"},
+                "BTC": {"id": "BTC", "code": "BTC"},
+            }
+
         return self.markets
 
     async def fetch_ticker(self, symbol, params={}):
+        market = self.market(symbol)
         return {
-            "symbol": symbol,
+            "symbol": market["symbol"],
             "timestamp": 1672531200000,
             "datetime": "2023-01-01T00:00:00Z",
             "high": 50000.0,
@@ -269,14 +373,43 @@ class IcicibreezeAsyncShim(ccxt_async.Exchange):
             "average": 49250.0,
             "baseVolume": 100.0,
             "quoteVolume": 4950000.0,
-            "info": {},
+            "info": {"stub": True},
         }
 
     async def fetch_ohlcv(self, symbol, timeframe="1d", since=None, limit=None, params={}):
-        return [
-            [1672531200000, 49000.0, 50000.0, 48000.0, 49500.0, 100.0],
-            [1672617600000, 49500.0, 51000.0, 49000.0, 50500.0, 100.0],
-        ]
+        # Default limits
+        if limit is None:
+            limit = 100
+
+        # Duration in milliseconds
+        duration = self.parse_timeframe(timeframe) * 1000
+
+        current_time = self.milliseconds()
+
+        if since is None:
+            # If since is not provided, generate 'limit' candles ending now
+            since = current_time - (limit * duration)
+
+        data = []
+
+        for i in range(limit):
+            timestamp = since + (i * duration)
+            if timestamp > current_time:
+                break
+
+            # Deterministic stub data
+            # Just some oscillation around 50000
+            price_base = 50000.0 + (i % 100) * 10
+
+            open_p = price_base
+            high_p = price_base + 100
+            low_p = price_base - 100
+            close_p = price_base + 50
+            volume = 100.0 + (i % 10)
+
+            data.append([timestamp, open_p, high_p, low_p, close_p, volume])
+
+        return data
 
     async def fetch_balance(self, params={}):
         return {
