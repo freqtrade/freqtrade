@@ -303,11 +303,10 @@ class Icicibreeze(Exchange):
 
         # 1. Check Dry Run
         if self._config.get("dry_run", False):
-            logger.info("Initializing Icicibreeze in Dry Run mode (using stub).")
-            stub = BreezeCCXTStub(config=exchange_config)
             if sync:
-                return stub
-            return _BreezeCCXTAsync(stub)
+                logger.info("Initializing Icicibreeze in Dry Run mode (using stub).")
+                return BreezeCCXTStub(config=exchange_config)
+            return _BreezeCCXTAsync(BreezeCCXTStub(config=exchange_config))
 
         # 2. Live Mode - Attempt imports
         try:

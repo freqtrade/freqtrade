@@ -49,3 +49,5 @@ from freqtrade.exchange.lbank import Lbank
 from freqtrade.exchange.luno import Luno
 from freqtrade.exchange.modetrade import Modetrade
 from freqtrade.exchange.okx import Myokx, Okx, Okxus
+
+MAP_EXCHANGE_CHILDCLASS["icicibreeze"] = "Icicibreeze"
