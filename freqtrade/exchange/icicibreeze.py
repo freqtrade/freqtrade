@@ -209,9 +209,9 @@ class IcicibreezeShim(ccxt.Exchange):
 
     def fetch_balance(self, params={}):
         return {
-            "free": {"USDT": 10000.0, "BTC": 1.0},
-            "used": {"USDT": 0.0, "BTC": 0.0},
-            "total": {"USDT": 10000.0, "BTC": 1.0},
+            "free": {"USDT": 10000.0, "BTC": 1.0, "INR": 100000.0},
+            "used": {"USDT": 0.0, "BTC": 0.0, "INR": 0.0},
+            "total": {"USDT": 10000.0, "BTC": 1.0, "INR": 100000.0},
             "info": {},
         }
 
@@ -425,9 +425,9 @@ class IcicibreezeAsyncShim(ccxt_async.Exchange):
 
     async def fetch_balance(self, params={}):
         return {
-            "free": {"USDT": 10000.0, "BTC": 1.0},
-            "used": {"USDT": 0.0, "BTC": 0.0},
-            "total": {"USDT": 10000.0, "BTC": 1.0},
+            "free": {"USDT": 10000.0, "BTC": 1.0, "INR": 100000.0},
+            "used": {"USDT": 0.0, "BTC": 0.0, "INR": 0.0},
+            "total": {"USDT": 10000.0, "BTC": 1.0, "INR": 100000.0},
             "info": {},
         }
 
