@@ -51,6 +51,11 @@ MAP_EXCHANGE_CHILDCLASS = {
     "huboi": "htx",
 }
 
+# Custom exchanges not in ccxt (blockchain-native)
+CUSTOM_EXCHANGES = [
+    "stacks",
+]
+
 SUPPORTED_EXCHANGES = [
     "binance",
     "binanceus",
@@ -65,6 +70,7 @@ SUPPORTED_EXCHANGES = [
     "kraken",
     "okx",
     "myokx",
+    "stacks",  # Custom Stacks blockchain exchange
 ]
 
 # either the main, or replacement methods (array) is required

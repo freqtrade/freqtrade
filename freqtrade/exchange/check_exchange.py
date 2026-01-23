@@ -4,7 +4,7 @@ from freqtrade.constants import Config
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import available_exchanges, is_exchange_known_ccxt, validate_exchange
-from freqtrade.exchange.common import MAP_EXCHANGE_CHILDCLASS, SUPPORTED_EXCHANGES
+from freqtrade.exchange.common import CUSTOM_EXCHANGES, MAP_EXCHANGE_CHILDCLASS, SUPPORTED_EXCHANGES
 
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,11 @@ def check_exchange(config: Config, check_for_bad: bool = True) -> bool:
             f"The following exchanges are available for Freqtrade: "
             f"{', '.join(available_exchanges())}"
         )
+
+    # Allow custom exchanges that are not in ccxt
+    if exchange in CUSTOM_EXCHANGES:
+        logger.info(f'Exchange "{exchange}" is a custom blockchain-native exchange.')
+        return True
 
     if not is_exchange_known_ccxt(exchange):
         raise OperationalException(
