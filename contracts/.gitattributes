@@ -1,0 +1,3 @@
+tests/** linguist-vendored
+vitest.config.ts linguist-vendored
+* text=lf
