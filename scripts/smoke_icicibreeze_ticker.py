@@ -1,55 +1,43 @@
+import logging
+import os
 import sys
-import asyncio
-from pathlib import Path
+import time
 
-sys.path.append(str(Path(".").resolve()))
+# Add current directory to path so we can import adapters
+sys.path.append(os.getcwd())
 
-from freqtrade.configuration import Configuration
-from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from freqtrade.exchange.icicibreeze import IcicibreezeShim
+from adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
+from freqtrade.exceptions import OperationalException
 
-
-def test_shim_direct():
-    print("--- Testing Direct Shim Instantiation ---")
-    ex = IcicibreezeShim({"dry_run": True})
-    # Force load_markets to populate has if needed (though describe should do it)
-    ex.load_markets()
-    print("Features property:", getattr(ex, "features", "MISSING"))
-    print("Has fetchOrder:", ex.has.get("fetchOrder"))
-    print("Has fetchTicker:", ex.has.get("fetchTicker"))
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("smoke_ticker")
 
 
-def test_via_resolver():
-    print("\n--- Testing via ExchangeResolver ---")
-    import freqtrade.exchange.icicibreeze
+def run_smoke_ticker():
+    symbol = sys.argv[1] if len(sys.argv) > 1 else "RELIANCE/INR"
+    logger.info(f"Starting Ticker Smoke Test for {symbol}")
 
-    print("Module file:", freqtrade.exchange.icicibreeze.__file__)
-    config = Configuration.from_files(["user_data/config_icicibreeze.json"])
-    # Force dry run
-    config["dry_run"] = True
+    # Credentials from ENV
+    api_key = os.environ.get("BREEZE_API_KEY", "mock_key")
+    api_secret = os.environ.get("BREEZE_API_SECRET", "mock_secret")
+    session_token = os.environ.get("BREEZE_SESSION_TOKEN", "mock_token")
 
-    exchange = ExchangeResolver.load_exchange(config, validate=False)
-    print("Loaded exchange class:", exchange.__class__.__name__)
-    print("Loaded api class:", exchange._api.__class__.__name__)
+    config = {"key": api_key, "secret": api_secret, "password": session_token}
 
-    print("Exchange has fetchOrder:", exchange._api.has.get("fetchOrder"))
+    exchange = BreezeCCXT(config)
 
-    print("Reloading markets...")
-    exchange.reload_markets(force=True)
-    # Check markets
-    print("Market Keys:", list(exchange.markets.keys()))
-
-    print("Fetching ticker for BTC/USDT...")
-    ticker = exchange.fetch_ticker("BTC/USDT")
-    print("Ticker:", ticker)
+    try:
+        ticker = exchange.fetch_ticker(symbol)
+        # Requirement: must print last + timestamp
+        print(f"SYMBOL: {ticker['symbol']}")
+        print(f"LAST: {ticker['last']}")
+        print(f"TIMESTAMP: {ticker['timestamp']}")
+        print(f"DATETIME: {ticker['datetime']}")
+    except OperationalException as e:
+        logger.error(f"FAILED: {e}")
+    except Exception as e:
+        logger.error(f"FAILED: Unexpected error: {e}")
 
 
 if __name__ == "__main__":
-    try:
-        test_shim_direct()
-        test_via_resolver()
-    except Exception as e:
-        print("Test failed:", e)
-        import traceback
-
-        traceback.print_exc()
+    run_smoke_ticker()

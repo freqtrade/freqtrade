@@ -9,8 +9,9 @@
   "cancel_open_orders_on_exit": false,
   "exchange": {
     "name": "icicibreeze",
-    "key": "",
-    "secret": "",
+    "icici_mode": "real",
+    "key": "mock_key",
+    "secret": "mock_secret",
     "ccxt_config": {},
     "ccxt_async_config": {},
     "pair_whitelist": [
