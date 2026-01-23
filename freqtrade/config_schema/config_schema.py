@@ -514,6 +514,43 @@ CONF_SCHEMA = {
             "description": "FreqAI configuration.",
             "$ref": "#/definitions/freqai",
         },
+        "stacks": {
+            "description": "Stacks blockchain configuration for ApexTrader-Stacks.",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "description": "Enable Stacks blockchain integration.",
+                    "type": "boolean",
+                    "default": False,
+                },
+                "network": {
+                    "description": "Stacks network (mainnet or testnet).",
+                    "type": "string",
+                    "enum": ["mainnet", "testnet"],
+                    "default": "testnet",
+                },
+                "escrow_contract": {
+                    "description": "Escrow contract address (deployer.contract-name).",
+                    "type": "string",
+                },
+                "hiro_api_key": {
+                    "description": "Hiro API key for enhanced rate limits.",
+                    "type": "string",
+                },
+                "auto_approve_trades": {
+                    "description": "Automatically approve trades via escrow.",
+                    "type": "boolean",
+                    "default": True,
+                },
+                "max_escrow_percentage": {
+                    "description": "Maximum percentage of escrow to use per trade.",
+                    "type": "number",
+                    "minimum": 0.01,
+                    "maximum": 1.0,
+                    "default": 0.1,
+                },
+            },
+        },
         "external_message_consumer": {
             "description": "Configuration for external message consumer.",
             "$ref": "#/definitions/external_message_consumer",
