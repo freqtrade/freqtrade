@@ -549,41 +549,37 @@ class Icicibreeze(Exchange):
     def _init_ccxt(
         self, exchange_config: Dict[str, Any], sync: bool, ccxt_kwargs: Dict[str, Any]
     ) -> Any:
-        # 1. Check Dry Run
-        if self._config.get("dry_run", False):
-            if sync:
+        # 1. Determine Mode (authoritative)
+        # Check top-level config (self._config) and exchange-specific config
+        mode = self._config.get("icici_mode") or exchange_config.get("icici_mode") or "stub"
+
+        # 2. Stub Mode
+        if mode == "stub":
+            if self._config.get("dry_run", False):
                 logger.info("Initializing Icicibreeze in Dry Run mode (using stub).")
+            else:
+                logger.warning(
+                    "Initializing Icicibreeze in Live mode but forced to STUB by icici_mode='stub'."
+                )
+
+            if sync:
                 return IcicibreezeShim(exchange_config)
             return IcicibreezeAsyncShim(exchange_config)
 
-        # 2. Live Mode - Attempt imports
+        # 3. Real Mode (BreezeCCXT)
         try:
-            from trade_bot.adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
+            from adapters.ccxt_shim.breeze_ccxt import BreezeAsyncCCXT, BreezeCCXT
         except ImportError as e:
-            raise OperationalException(
-                "trade_bot is not installed in this venv. Run: cd ~/work/trade-bot && python -m pip install -e ."
-            ) from e
+            raise OperationalException(f"Failed to import local BreezeCCXT shim: {e}") from e
 
-        # 3. Validate Config (Live)
-        api_key = exchange_config.get("key")
-        secret_key = exchange_config.get("secret")
+        # We do NOT enforce keys here to allow 'real' mode testing with empty keys (returning empty markets)
+        # if the shim handles it safely.
 
-        if not api_key or not secret_key:
-            raise OperationalException(
-                "Icicibreeze logic require 'key' and 'secret' in config for live trading."
-            )
+        logger.info(f"Initializing Icicibreeze in Real mode (using local shim). Sync={sync}")
 
-        # 4. Instantiate Shim (Live)
-        try:
-            breeze_ccxt = BreezeCCXT(config=exchange_config)
-        except Exception as e:
-            raise OperationalException(f"Failed to initialize BreezeCCXT: {e}") from e
-
-        # 5. Return correct instance based on sync/async request
         if sync:
-            return breeze_ccxt
-
-        return _BreezeCCXTAsync(breeze_ccxt)
+            return BreezeCCXT(exchange_config)
+        return BreezeAsyncCCXT(exchange_config)
 
     def fetch_ticker(self, pair: str):
         return super().fetch_ticker(pair)
