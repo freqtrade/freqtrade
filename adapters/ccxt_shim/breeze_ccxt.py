@@ -92,8 +92,8 @@ class BreezeCCXT(ccxt.Exchange):
             try:
                 logger.info("Initializing Breeze session with provided credentials.")
                 self.breeze.generate_session(api_secret=api_secret, session_token=session_token)
-            except Exception as e:
-                logger.error(f"Failed to initialize Breeze session: {e}")
+            except Exception:
+                logger.error("Failed to initialize Breeze session. Please check your credentials.")
 
     def _setup_mock_breeze(self):
         logger.info("Setting up Mock Breeze SDK mode for validation.")
@@ -318,7 +318,8 @@ class BreezeCCXT(ccxt.Exchange):
                 "info": data,
             }
         except Exception as e:
-            raise OperationalException(f"Error in fetch_ticker: {e}")
+            logger.debug("fetch_ticker error: %s", e)
+            raise OperationalException("Error in fetch_ticker. See debug logs for details.") from e
 
     def fetch_ohlcv(
         self,
@@ -427,7 +428,7 @@ class BreezeCCXT(ccxt.Exchange):
             ohlcv.sort(key=lambda x: x[0])
             return ohlcv[:limit]
         except Exception as e:
-            logger.error(f"Error in fetch_ohlcv: {e}")
+            logger.debug("fetch_ohlcv error: %s", e)
             return []
 
     def fetch_balance(self, params: dict | None = None):
