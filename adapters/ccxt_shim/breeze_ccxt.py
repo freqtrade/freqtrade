@@ -4,12 +4,11 @@ import os
 import time
 from collections import deque
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import ccxt
 import ccxt.async_support as ccxt_async
 from breeze_connect import BreezeConnect
-from freqtrade.exceptions import OperationalException
 
 from adapters.ccxt_shim.security_master import (
     find_latest_master_file,
@@ -18,6 +17,8 @@ from adapters.ccxt_shim.security_master import (
     parse_pair_whitelist_for_options,
     resolve_underlying,
 )
+from freqtrade.exceptions import OperationalException
+
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class InternalRateLimiter:
 
 
 class BreezeCCXT(ccxt.Exchange):
-    def __init__(self, config: Optional[dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         if config is None:
             config = {}
         super().__init__(config)
@@ -169,7 +170,7 @@ class BreezeCCXT(ccxt.Exchange):
         base = parts[0]
         return {"stock_code": base, "exchange_code": "NSE", "product_type": "cash"}
 
-    def fetch_markets(self, params: Optional[dict] = None):
+    def fetch_markets(self, params: dict | None = None):
         if self.rate_limiter:
             self.rate_limiter.check_and_record()
         nfo_file = find_latest_master_file("FONSEScripMaster.txt")
@@ -198,7 +199,10 @@ class BreezeCCXT(ccxt.Exchange):
                 key = (spec["underlying"], spec["expiry"], spec["strike"], spec["right"])
                 if key in nfo_contracts:
                     info = nfo_contracts[key]
-                    symbol = f"{info['underlying']}/INR:{info['expiry']}:{info['strike']}:{info['right']}"
+                    symbol = (
+                        f"{info['underlying']}/INR:{info['expiry']}:"
+                        f"{info['strike']}:{info['right']}"
+                    )
                     markets.append(
                         {
                             "id": info["token"],
@@ -236,7 +240,7 @@ class BreezeCCXT(ccxt.Exchange):
                     )
         return markets
 
-    def fetch_ticker(self, symbol: str, params: Optional[dict] = None):
+    def fetch_ticker(self, symbol: str, params: dict | None = None):
         if not self.breeze:
             raise OperationalException("Breeze session not initialized.")
         self.rate_limiter.check_and_record()
@@ -245,15 +249,16 @@ class BreezeCCXT(ccxt.Exchange):
             res = self.breeze.get_quotes(**s_params)
             if not res or res.get("status") != 200 or not res.get("Success"):
                 raise OperationalException(
-                    f"Breeze fetch_ticker failed: {res.get('Error') if res else 'Empty response from SDK'}"
+                    f"Breeze fetch_ticker failed: "
+                    f"{res.get('Error') if res else 'Empty response from SDK'}"
                 )
             data = res["Success"][0]
             ts = int(time.time() * 1000)
             if data.get("ltt"):
                 try:
                     ts = int(datetime.strptime(data["ltt"], "%d-%b-%Y %H:%M:%S").timestamp() * 1000)
-                except:
-                    pass
+                except Exception:
+                    logger.warning("Could not parse LTT timestamp: %s", data.get("ltt"))
             return {
                 "symbol": symbol,
                 "timestamp": ts,
@@ -273,9 +278,9 @@ class BreezeCCXT(ccxt.Exchange):
         self,
         symbol: str,
         timeframe: str = "5m",
-        since: Optional[int] = None,
-        limit: Optional[int] = None,
-        params: Optional[dict] = None,
+        since: int | None = None,
+        limit: int | None = None,
+        params: dict | None = None,
     ):
         if not self.breeze:
             raise OperationalException("Breeze session not initialized.")
@@ -323,7 +328,7 @@ class BreezeCCXT(ccxt.Exchange):
             logger.error(f"Error in fetch_ohlcv: {e}")
             return []
 
-    def fetch_balance(self, params: Optional[dict] = None):
+    def fetch_balance(self, params: dict | None = None):
         raise OperationalException("fetch_balance not implemented in p06")
 
     def create_order(
@@ -339,7 +344,7 @@ class BreezeCCXT(ccxt.Exchange):
 
 
 class BreezeAsyncCCXT(ccxt_async.Exchange):
-    def __init__(self, config: Optional[dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         if config is None:
             config = {}
         self.sync_exchange = BreezeCCXT(config)
@@ -368,25 +373,25 @@ class BreezeAsyncCCXT(ccxt_async.Exchange):
             return self.deep_extend(res, self.sync_exchange.describe())
         return res
 
-    async def load_markets(self, reload: bool = False, params: Optional[dict] = None):
+    async def load_markets(self, reload: bool = False, params: dict | None = None):
         markets = await asyncio.to_thread(self.sync_exchange.load_markets, reload, params)
         self.markets = markets
         self.symbols = list(markets.keys())
         return markets
 
-    async def fetch_markets(self, params: Optional[dict] = None):
+    async def fetch_markets(self, params: dict | None = None):
         return await asyncio.to_thread(self.sync_exchange.fetch_markets, params)
 
-    async def fetch_ticker(self, symbol: str, params: Optional[dict] = None):
+    async def fetch_ticker(self, symbol: str, params: dict | None = None):
         return await asyncio.to_thread(self.sync_exchange.fetch_ticker, symbol, params)
 
     async def fetch_ohlcv(
         self,
         symbol: str,
         timeframe: str = "5m",
-        since: Optional[int] = None,
-        limit: Optional[int] = None,
-        params: Optional[dict] = None,
+        since: int | None = None,
+        limit: int | None = None,
+        params: dict | None = None,
     ):
         return await asyncio.to_thread(
             self.sync_exchange.fetch_ohlcv, symbol, timeframe, since, limit, params
