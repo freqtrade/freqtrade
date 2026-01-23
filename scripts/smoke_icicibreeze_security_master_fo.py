@@ -33,9 +33,9 @@ def run_smoke_test():
     # 3. Resolution & Market Building
     config = {
         "pair_whitelist": [
-            "RELIANCE-2026-02-26-2800-CE",
-            "CN:RELIANCE INDUSTRIES LTD-2026-02-26-2800-PE",
-            "NIFTY-2026-02-26-22000-CE",
+            "RELIANCE-20260226-2800-CE/INR",
+            "RELIANCE-20260226-2800-PE/INR",
+            "NIFTY-20260226-22000-CE/INR",
             "INVALID-FORMAT",
             "MISSING-2026-02-26-1000-CE",
         ]
@@ -49,9 +49,9 @@ def run_smoke_test():
         logger.info(f"Market: {m['symbol']} (Token: {m['id']}, Lot: {m['lot']})")
 
     expected_symbols = [
-        "RELIANCE/INR:2026-02-26:2800.0:CE",
-        "RELIANCE/INR:2026-02-26:2800.0:PE",
-        "NIFTY/INR:2026-02-26:22000.0:CE",
+        "RELIANCE-20260226-2800-CE/INR",
+        "RELIANCE-20260226-2800-PE/INR",
+        "NIFTY-20260226-22000-CE/INR",
     ]
 
     built_symbols = [m["symbol"] for m in markets]
