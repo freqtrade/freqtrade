@@ -10,12 +10,11 @@ import ccxt
 import ccxt.async_support as ccxt_async
 from breeze_connect import BreezeConnect
 
+from adapters.ccxt_shim.instrument import InstrumentSpec, InstrumentType, format_pair, parse_pair
 from adapters.ccxt_shim.security_master import (
     find_latest_master_file,
     load_nfo_options_master,
     load_nse_cash_master,
-    parse_pair_whitelist_for_options,
-    resolve_underlying,
 )
 from freqtrade.exceptions import OperationalException
 
@@ -63,6 +62,7 @@ class BreezeCCXT(ccxt.Exchange):
         # Rate Limiting
         rl_config = self.options.get("rateLimit", 100)
         self.rate_limiter = InternalRateLimiter(rpm=rl_config)
+        self._security_master_cache: dict[str, Any] | None = None
 
         # Credentials lookup (Options > ENV)
         self.api_key = self.options.get("key") or os.environ.get("BREEZE_API_KEY")
@@ -189,81 +189,162 @@ class BreezeCCXT(ccxt.Exchange):
             },
         )
 
-    def _parse_symbol(self, symbol: str) -> dict:
-        parts = symbol.split("/")
-        if len(parts) < 2:
-            raise OperationalException(f"Invalid symbol format: {symbol}")
-        base = parts[0]
-        return {"stock_code": base, "exchange_code": "NSE", "product_type": "cash"}
-
-    def fetch_markets(self, params: dict | None = None):
-        if self.rate_limiter:
-            self.rate_limiter.check_and_record()
+    def _load_security_master(self) -> dict[str, Any]:
+        if self._security_master_cache is not None:
+            return self._security_master_cache
         nfo_file = find_latest_master_file("FONSEScripMaster.txt")
         nse_file = find_latest_master_file("NSEScripMaster.txt")
         nfo_master = (
             load_nfo_options_master(nfo_file)
             if nfo_file
-            else {"by_contract": {}, "company_search": {}}
+            else {"by_contract": {}, "by_future": {}, "company_search": {}}
         )
         nse_master = (
             load_nse_cash_master(nse_file) if nse_file else {"by_symbol": {}, "company_search": {}}
         )
-        if not nfo_master["by_contract"] and not nse_master["by_symbol"]:
+        self._security_master_cache = {"nfo": nfo_master, "nse": nse_master}
+        return self._security_master_cache
+
+    def _build_breeze_params(self, spec: InstrumentSpec, info: dict[str, Any]) -> dict[str, Any]:
+        params: dict[str, Any] = {
+            "stock_code": spec.underlying,
+            "exchange_code": "NSE" if spec.type == InstrumentType.CASH else "NFO",
+            "product_type": "cash",
+        }
+        if spec.type == InstrumentType.OPT:
+            params.update(
+                {
+                    "product_type": "options",
+                    "expiry_date": info["expiry_iso"],
+                    "strike_price": spec.strike,
+                    "right": spec.right,
+                }
+            )
+        elif spec.type == InstrumentType.FUT:
+            params.update(
+                {
+                    "product_type": "futures",
+                    "expiry_date": info["expiry_iso"],
+                }
+            )
+        return params
+
+    def _parse_symbol(self, symbol: str) -> dict[str, Any]:
+        try:
+            spec = parse_pair(symbol)
+        except ValueError as exc:
+            raise OperationalException(f"Invalid symbol format: {symbol}") from exc
+        master = self._load_security_master()
+        nfo_master = master["nfo"]
+        nse_master = master["nse"]
+        if spec.type == InstrumentType.CASH:
+            info = nse_master.get("by_symbol", {}).get(spec.underlying)
+            if not info:
+                raise OperationalException(f"Cash symbol not found in SecurityMaster: {symbol}")
+            return self._build_breeze_params(spec, info)
+        if spec.type == InstrumentType.OPT:
+            key = (spec.underlying, spec.expiry_yyyymmdd, float(spec.strike), spec.right)
+            info = nfo_master.get("by_contract", {}).get(key)
+            if not info:
+                raise OperationalException(f"Option contract not found in SecurityMaster: {symbol}")
+            return self._build_breeze_params(spec, info)
+        if spec.type == InstrumentType.FUT:
+            key = (spec.underlying, spec.expiry_yyyymmdd)
+            info = nfo_master.get("by_future", {}).get(key)
+            if not info:
+                raise OperationalException(f"Future contract not found in SecurityMaster: {symbol}")
+            return self._build_breeze_params(spec, info)
+        raise OperationalException(f"Unsupported symbol type: {symbol}")
+
+    def fetch_markets(self, params: dict | None = None):
+        if self.rate_limiter:
+            self.rate_limiter.check_and_record()
+        master = self._load_security_master()
+        nfo_master = master["nfo"]
+        nse_master = master["nse"]
+        if (
+            not nfo_master["by_contract"]
+            and not nfo_master.get("by_future")
+            and not nse_master["by_symbol"]
+        ):
             logger.warning("No security master data loaded.")
             return []
         whitelist = self.config.get("pair_whitelist", [])
         if not whitelist:
             return []
-        specs = parse_pair_whitelist_for_options(whitelist)
-        resolved, _ = resolve_underlying(specs, nfo_master, nse_master)
         markets = []
         nfo_contracts = nfo_master["by_contract"]
+        nfo_futures = nfo_master.get("by_future", {})
         nse_symbols = nse_master["by_symbol"]
-        for spec in resolved:
-            if spec["type"] == "option":
-                key = (spec["underlying"], spec["expiry"], spec["strike"], spec["right"])
-                if key in nfo_contracts:
-                    info = nfo_contracts[key]
-                    symbol = (
-                        f"{info['underlying']}/INR:{info['expiry']}:"
-                        f"{info['strike']}:{info['right']}"
-                    )
-                    markets.append(
-                        {
-                            "id": info["token"],
-                            "symbol": symbol,
-                            "base": info["underlying"],
-                            "quote": "INR",
-                            "active": True,
-                            "type": "option",
-                            "option": True,
-                            "expiry": info["expiry"],
-                            "strike": info["strike"],
-                            "right": info["right"],
-                            "lot": info["lot_size"],
-                            "precision": {"amount": 1, "price": info["tick_size"]},
-                            "info": info,
-                        }
-                    )
-            elif spec["type"] == "cash":
-                und = spec["underlying"]
-                if und in nse_symbols:
-                    info = nse_symbols[und]
-                    markets.append(
-                        {
-                            "id": info["token"],
-                            "symbol": spec["original"],
-                            "base": und,
-                            "quote": "INR",
-                            "active": True,
-                            "type": "spot",
-                            "spot": True,
-                            "lot": info["lot_size"],
-                            "precision": {"amount": 1, "price": info["tick_size"]},
-                            "info": info,
-                        }
-                    )
+        for pair in whitelist:
+            try:
+                spec = parse_pair(pair)
+            except ValueError:
+                logger.warning("Skipping non-canonical pair in whitelist: %s", pair)
+                continue
+            if spec.type == InstrumentType.OPT:
+                key = (spec.underlying, spec.expiry_yyyymmdd, float(spec.strike), spec.right)
+                info = nfo_contracts.get(key)
+                if not info:
+                    logger.warning("Option contract not found for whitelist entry: %s", pair)
+                    continue
+                markets.append(
+                    {
+                        "id": info["token"],
+                        "symbol": format_pair(spec),
+                        "base": info["underlying"],
+                        "quote": "INR",
+                        "active": True,
+                        "type": "option",
+                        "option": True,
+                        "expiry": info["expiry_yyyymmdd"],
+                        "strike": info["strike"],
+                        "right": info["right"],
+                        "lot": info["lot_size"],
+                        "precision": {"amount": 1, "price": info["tick_size"]},
+                        "info": info,
+                    }
+                )
+            elif spec.type == InstrumentType.FUT:
+                key = (spec.underlying, spec.expiry_yyyymmdd)
+                info = nfo_futures.get(key)
+                if not info:
+                    logger.warning("Future contract not found for whitelist entry: %s", pair)
+                    continue
+                markets.append(
+                    {
+                        "id": info["token"],
+                        "symbol": format_pair(spec),
+                        "base": info["underlying"],
+                        "quote": "INR",
+                        "active": True,
+                        "type": "future",
+                        "future": True,
+                        "expiry": info["expiry_yyyymmdd"],
+                        "lot": info["lot_size"],
+                        "precision": {"amount": 1, "price": info["tick_size"]},
+                        "info": info,
+                    }
+                )
+            elif spec.type == InstrumentType.CASH:
+                info = nse_symbols.get(spec.underlying)
+                if not info:
+                    logger.warning("Cash symbol not found for whitelist entry: %s", pair)
+                    continue
+                markets.append(
+                    {
+                        "id": info["token"],
+                        "symbol": format_pair(spec),
+                        "base": spec.underlying,
+                        "quote": "INR",
+                        "active": True,
+                        "type": "spot",
+                        "spot": True,
+                        "lot": info["lot_size"],
+                        "precision": {"amount": 1, "price": info["tick_size"]},
+                        "info": info,
+                    }
+                )
         return markets
 
     def fetch_ticker(self, symbol: str, params: dict | None = None):
@@ -402,14 +483,21 @@ class BreezeCCXT(ccxt.Exchange):
             else datetime.fromtimestamp(time.time() - 86400 * 2)
         )
         try:
-            res = self.breeze.get_historical_data_v2(
-                stock_code=s_params["stock_code"],
-                exchange_code=s_params["exchange_code"],
-                product_type=s_params["product_type"],
-                from_date=start_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-                to_date=end_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-                interval=interval,
-            )
+            request_params = {
+                "stock_code": s_params["stock_code"],
+                "exchange_code": s_params["exchange_code"],
+                "product_type": s_params["product_type"],
+                "from_date": start_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                "to_date": end_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                "interval": interval,
+            }
+            if s_params.get("expiry_date"):
+                request_params["expiry_date"] = s_params["expiry_date"]
+            if s_params.get("strike_price") is not None:
+                request_params["strike_price"] = s_params["strike_price"]
+            if s_params.get("right"):
+                request_params["right"] = s_params["right"]
+            res = self.breeze.get_historical_data_v2(**request_params)
             if not res or res.get("status") != 200 or not res.get("Success"):
                 return []
             ohlcv = []
