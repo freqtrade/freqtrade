@@ -76,6 +76,11 @@ class Icicibreeze(Exchange):
         logger.info(f"Initializing Icicibreeze in Real mode. Sync={sync}")
         from adapters.ccxt_shim.breeze_ccxt import BreezeAsyncCCXT, BreezeCCXT
 
+        # Inject necessary config for the shim to see key/secret/dry_run in self.options
+        exchange_config["key"] = exchange_config.get("key")
+        exchange_config["secret"] = exchange_config.get("secret")
+        exchange_config["dry_run"] = self._config.get("dry_run")
+
         if sync:
             return BreezeCCXT(exchange_config)
         return BreezeAsyncCCXT(exchange_config)

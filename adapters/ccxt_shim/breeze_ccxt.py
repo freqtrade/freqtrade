@@ -51,6 +51,8 @@ class InternalRateLimiter:
 
 
 class BreezeCCXT(ccxt.Exchange):
+    _mock_mode_logged = False
+
     def __init__(self, config: dict[str, Any] | None = None):
         if config is None:
             config = {}
@@ -59,22 +61,30 @@ class BreezeCCXT(ccxt.Exchange):
         self.name = "IciciBreeze"
 
         # Rate Limiting
-        rl_config = config.get("rateLimit", 100)
+        rl_config = self.options.get("rateLimit", 100)
         self.rate_limiter = InternalRateLimiter(rpm=rl_config)
 
-        # Credentials lookup (ENV > Config)
-        api_key = os.environ.get("BREEZE_API_KEY") or config.get("apiKey") or config.get("key")
-        api_secret = os.environ.get("BREEZE_API_SECRET") or config.get("secret")
-        session_token = os.environ.get("BREEZE_SESSION_TOKEN") or config.get("password")
+        # Credentials lookup (Options > ENV)
+        self.api_key = self.options.get("key") or os.environ.get("BREEZE_API_KEY")
+        api_secret = self.options.get("secret") or os.environ.get("BREEZE_API_SECRET")
+        session_token = self.options.get("session_token") or os.environ.get("BREEZE_SESSION_TOKEN")
 
-        if not api_key:
+        if self._is_mock_mode():
+            if not BreezeCCXT._mock_mode_logged:
+                logger.info("Mock mode enabled: bypassing Breeze session.")
+                BreezeCCXT._mock_mode_logged = True
+            self.breeze = BreezeConnect(api_key=self.api_key or "mock_key")
+            self._setup_mock_breeze()
+            return
+
+        if not self.api_key:
             logger.warning("Breeze API Key not found in Config or ENV.")
             self.breeze = None
             return
 
-        self.breeze = BreezeConnect(api_key=api_key)
+        self.breeze = BreezeConnect(api_key=self.api_key)
 
-        if api_key == "mock_key":
+        if self.api_key == "mock_key":
             self._setup_mock_breeze()
             return
 
@@ -127,6 +137,22 @@ class BreezeCCXT(ccxt.Exchange):
 
         self.breeze.get_quotes = mock_get_quotes
         self.breeze.get_historical_data_v2 = mock_get_historical_v2
+
+    def _is_mock_mode(self) -> bool:
+        """
+        Deterministic mock mode check.
+        """
+        if self.options.get("dry_run") is True:
+            return True
+        if self.options.get("mode") in {"mock", "dry_run"}:
+            return True
+        if self.options.get("icici_mode") == "mock":
+            return True
+        if self.options.get("key") == "mock_key" or getattr(self, "api_key", None) == "mock_key":
+            return True
+        if os.getenv("BREEZE_MOCK") == "1":
+            return True
+        return False
 
     def describe(self):
         return self.deep_extend(
@@ -241,6 +267,26 @@ class BreezeCCXT(ccxt.Exchange):
         return markets
 
     def fetch_ticker(self, symbol: str, params: dict | None = None):
+        if self._is_mock_mode():
+            # Deterministic ticker
+            import hashlib
+
+            h = hashlib.md5(symbol.encode()).hexdigest()
+            last = 2500.0 + (int(h[:3], 16) % 100)
+            ts = int(time.time() * 1000)
+            return {
+                "symbol": symbol,
+                "timestamp": ts,
+                "datetime": self.iso8601(ts),
+                "high": last + 10,
+                "low": last - 10,
+                "bid": last - 0.05,
+                "ask": last + 0.05,
+                "last": last,
+                "close": last,
+                "info": {"mock": True},
+            }
+
         if not self.breeze:
             raise OperationalException("Breeze session not initialized.")
         self.rate_limiter.check_and_record()
@@ -282,6 +328,59 @@ class BreezeCCXT(ccxt.Exchange):
         limit: int | None = None,
         params: dict | None = None,
     ):
+        if self._is_mock_mode():
+            import hashlib
+
+            h = hashlib.md5((symbol + timeframe).encode()).hexdigest()
+            base_price = 2500.0 + (int(h[:3], 16) % 100)
+
+            # Determine step in ms
+            # timeframe_to_minutes logic: 1m=1, 5m=5, 1h=60, 1d=1440
+            # We'll just parse the suffix
+            multiplier = 1
+            if timeframe.endswith("m"):
+                multiplier = 60
+            elif timeframe.endswith("h"):
+                multiplier = 3600
+            elif timeframe.endswith("d"):
+                multiplier = 86400
+
+            try:
+                num = int(timeframe[:-1])
+            except ValueError:
+                num = 1
+
+            step_ms = num * multiplier * 1000
+
+            if limit is None:
+                limit = 500
+            limit = min(limit, 1000)
+
+            now = int(time.time() * 1000)
+            end_ts = now - (now % step_ms)
+
+            ohlcv = []
+            # We generate from end backwards to satisfy limit and since
+            for i in range(limit):
+                ts = end_ts - (limit - 1 - i) * step_ms
+                if since and ts < since:
+                    continue
+
+                # Deterministic "price" offset
+                offset = (ts // step_ms) % 50
+                price = base_price + offset
+                ohlcv.append(
+                    [
+                        ts,
+                        price,  # open
+                        price + 2,  # high
+                        price - 2,  # low
+                        price + 1,  # close
+                        1000.0,  # volume
+                    ]
+                )
+            return ohlcv
+
         if not self.breeze:
             raise OperationalException("Breeze session not initialized.")
         self.rate_limiter.check_and_record()
@@ -344,6 +443,8 @@ class BreezeCCXT(ccxt.Exchange):
 
 
 class BreezeAsyncCCXT(ccxt_async.Exchange):
+    _mock_mode_logged = False
+
     def __init__(self, config: dict[str, Any] | None = None):
         if config is None:
             config = {}
@@ -351,6 +452,13 @@ class BreezeAsyncCCXT(ccxt_async.Exchange):
         super().__init__(config)
         self.config = config
         self.name = "IciciBreeze"
+
+        if self._is_mock_mode() and not BreezeAsyncCCXT._mock_mode_logged:
+            logger.info("Mock mode enabled: bypassing Breeze session.")
+            BreezeAsyncCCXT._mock_mode_logged = True
+
+    def _is_mock_mode(self) -> bool:
+        return self.sync_exchange._is_mock_mode()
 
     def describe(self):
         res = {
