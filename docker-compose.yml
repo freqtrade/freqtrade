@@ -22,6 +22,8 @@ services:
     container_name: freqtrade
     volumes:
       - "./user_data:/freqtrade/user_data"
+      - "./freqtrade:/freqtrade/freqtrade"
+      - "./config_examples:/freqtrade/config_examples"
     # Expose api on port 8080 (localhost only)
     # Please read the https://www.freqtrade.io/en/stable/rest-api/ documentation
     # for more information.
@@ -31,6 +33,6 @@ services:
     command: >
       trade
       --logfile /freqtrade/user_data/logs/freqtrade.log
-      --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite
-      --config /freqtrade/user_data/config.json
-      --strategy SampleStrategy
+      --db-url sqlite:////freqtrade/user_data/tradesv3_stacks.sqlite
+      --config /freqtrade/user_data/config_stacks.json
+      --strategy StacksEscrowStrategy
