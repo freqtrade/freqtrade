@@ -331,12 +331,7 @@ class BreezeCCXT(ccxt.Exchange):
         if self._is_mock_mode():
             import hashlib
 
-            h = hashlib.md5((symbol + timeframe).encode()).hexdigest()
-            base_price = 2500.0 + (int(h[:3], 16) % 100)
-
-            # Determine step in ms
-            # timeframe_to_minutes logic: 1m=1, 5m=5, 1h=60, 1d=1440
-            # We'll just parse the suffix
+            # 1) compute step_ms from timeframe (5m=300000)
             multiplier = 1
             if timeframe.endswith("m"):
                 multiplier = 60
@@ -348,30 +343,36 @@ class BreezeCCXT(ccxt.Exchange):
             try:
                 num = int(timeframe[:-1])
             except ValueError:
-                num = 1
+                num = 5  # Default to 5m if parsing fails
 
             step_ms = num * multiplier * 1000
 
-            if limit is None:
-                limit = 500
-            limit = min(limit, 1000)
+            # 2) choose limit_eff = limit or 500
+            limit_eff = limit if limit is not None else 500
+            limit_eff = min(limit_eff, 1000)
 
-            now = int(time.time() * 1000)
-            end_ts = now - (now % step_ms)
+            now_ms = int(time.time() * 1000)
+
+            # 3) choose since_eff = since or (now_ms - limit_eff*step_ms)
+            since_eff = since if since is not None else (now_ms - limit_eff * step_ms)
+            # Align since_eff to step_ms
+            since_eff = since_eff - (since_eff % step_ms)
+
+            h = hashlib.md5((symbol + timeframe).encode()).hexdigest()
+            base_price = 2500.0 + (int(h[:3], 16) % 100)
 
             ohlcv = []
-            # We generate from end backwards to satisfy limit and since
-            for i in range(limit):
-                ts = end_ts - (limit - 1 - i) * step_ms
-                if since and ts < since:
-                    continue
-
+            # 4) generate candles starting at since_eff stepping by step_ms until either:
+            # - limit_eff candles produced, OR
+            # - time reaches now_ms
+            curr_ts = since_eff
+            while len(ohlcv) < limit_eff and curr_ts < now_ms:
                 # Deterministic "price" offset
-                offset = (ts // step_ms) % 50
+                offset = (curr_ts // step_ms) % 50
                 price = base_price + offset
                 ohlcv.append(
                     [
-                        ts,
+                        curr_ts,
                         price,  # open
                         price + 2,  # high
                         price - 2,  # low
@@ -379,6 +380,8 @@ class BreezeCCXT(ccxt.Exchange):
                         1000.0,  # volume
                     ]
                 )
+                curr_ts += step_ms
+
             return ohlcv
 
         if not self.breeze:
