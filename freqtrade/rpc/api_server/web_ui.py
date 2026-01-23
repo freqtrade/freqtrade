@@ -18,6 +18,13 @@ async def fallback():
     return FileResponse(str(Path(__file__).parent / "ui/fallback_file.html"))
 
 
+@router_ui.get("/stacks", include_in_schema=False)
+@router_ui.get("/bridge", include_in_schema=False)
+async def stacks_bridge():
+    """Serve the Stacks bridge page with Hermes link."""
+    return FileResponse(str(Path(__file__).parent / "ui/stacks_bridge.html"))
+
+
 @router_ui.get("/ui_version", include_in_schema=False)
 async def ui_version():
     from freqtrade.commands.deploy_ui import read_ui_version
