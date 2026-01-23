@@ -17,7 +17,7 @@ from freqtrade.util.progress_tracker import get_progress_tracker
 logger = logging.getLogger(__name__)
 
 # Private API, protected by authentication and webserver_mode dependency
-router = APIRouter(tags=["download-data", "webserver"])
+router = APIRouter()
 
 
 def __run_download(job_id: str, config_loc: Config):

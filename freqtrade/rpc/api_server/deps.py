@@ -5,7 +5,7 @@ from uuid import uuid4
 from fastapi import Depends, HTTPException
 
 from freqtrade.constants import Config
-from freqtrade.enums import RunMode
+from freqtrade.enums import TRADE_MODES, RunMode
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import _request_id_ctx_var
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
@@ -67,5 +67,11 @@ def get_message_stream():
 
 def is_webserver_mode(config=Depends(get_config)):
     if config["runmode"] != RunMode.WEBSERVER:
+        raise HTTPException(status_code=503, detail="Bot is not in the correct state.")
+    return None
+
+
+def is_trading_mode(config=Depends(get_config)):
+    if config["runmode"] not in TRADE_MODES:
         raise HTTPException(status_code=503, detail="Bot is not in the correct state.")
     return None
