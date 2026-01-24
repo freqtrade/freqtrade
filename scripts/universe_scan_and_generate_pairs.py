@@ -35,6 +35,17 @@ class UniverseConfig:
     total_pairs_cap: int | None
 
 
+@dataclass(frozen=True)
+class OptionPolicy:
+    """Option selection policy configuration derived from the strategy YAML."""
+
+    expiry_policy: str
+    atm_breadth: int
+    total_pairs_cap: int | None
+    require_two_sided: bool
+    include_cash_pair: bool | None
+
+
 def _load_yaml(path: Path) -> dict[str, Any]:
     try:
         with path.open("r", encoding="utf-8") as handle:
@@ -78,6 +89,45 @@ def _parse_universe_config(payload: dict[str, Any]) -> UniverseConfig:
     )
 
 
+def _parse_option_policy(payload: dict[str, Any]) -> OptionPolicy:
+    option_policy = payload.get("option_policy", {})
+    if option_policy is None:
+        option_policy = {}
+    if not isinstance(option_policy, dict):
+        raise ValueError("Strategy config 'option_policy' must be a mapping.")
+
+    expiry_policy = option_policy.get("expiry_policy", "nearest")
+    if not isinstance(expiry_policy, str):
+        raise ValueError("option_policy.expiry_policy must be a string.")
+
+    atm_breadth = option_policy.get("atm_breadth", 2)
+    if not isinstance(atm_breadth, int):
+        raise ValueError("option_policy.atm_breadth must be an integer.")
+    if atm_breadth < 0:
+        raise ValueError("option_policy.atm_breadth must be non-negative.")
+
+    total_pairs_cap = option_policy.get("total_pairs_cap")
+    if total_pairs_cap is not None and not isinstance(total_pairs_cap, int):
+        raise ValueError("option_policy.total_pairs_cap must be an integer.")
+    total_pairs_cap_value = int(total_pairs_cap) if total_pairs_cap is not None else None
+
+    require_two_sided = option_policy.get("require_two_sided", True)
+    if not isinstance(require_two_sided, bool):
+        raise ValueError("option_policy.require_two_sided must be a boolean.")
+
+    include_cash_pair = option_policy.get("include_cash_pair")
+    if include_cash_pair is not None and not isinstance(include_cash_pair, bool):
+        raise ValueError("option_policy.include_cash_pair must be a boolean.")
+
+    return OptionPolicy(
+        expiry_policy=expiry_policy,
+        atm_breadth=atm_breadth,
+        total_pairs_cap=total_pairs_cap_value,
+        require_two_sided=require_two_sided,
+        include_cash_pair=include_cash_pair,
+    )
+
+
 def _load_contracts() -> SecurityMaster:
     master_file = find_latest_master_file("FONSEScripMaster.txt")
     if not master_file:
@@ -108,12 +158,13 @@ def _scan_underlying(
     security_master: SecurityMaster,
     underlying: str,
     today: date,
+    option_policy: OptionPolicy,
 ) -> OptionSelection:
     return select_option_pairs(
         security_master=security_master,
         underlying=underlying,
-        expiry_policy="nearest",
-        atm_breadth=2,
+        expiry_policy=option_policy.expiry_policy,
+        atm_breadth=option_policy.atm_breadth,
         n_expiries=1,
         today=today,
         spot_fetcher=None,
@@ -142,18 +193,44 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
-    args = _parse_args()
-    config_path = Path(args.strategy_config)
-    out_path = Path(args.out)
-    report_path = Path(args.report) if args.report else _default_report_path(out_path)
+def _include_cash_pair(option_policy: OptionPolicy, is_index: bool) -> bool:
+    if option_policy.include_cash_pair is None:
+        return is_index
+    return option_policy.include_cash_pair
 
-    payload = _load_yaml(config_path)
-    universe = _parse_universe_config(payload)
 
-    security_master = _load_contracts()
-    today = _kolkata_today()
+def _resolve_total_pairs_cap(universe: UniverseConfig, option_policy: OptionPolicy) -> int | None:
+    if option_policy.total_pairs_cap is not None:
+        return option_policy.total_pairs_cap
+    return universe.total_pairs_cap
 
+
+def _record_selection(
+    underlying: str,
+    selection: OptionSelection,
+    chosen_expiry: dict[str, str | None],
+    chosen_atm_strike: dict[str, float | None],
+) -> None:
+    expiries = selection.selected_expiries
+    chosen_expiry[underlying] = expiries[0] if expiries else None
+    chosen_atm_strike[underlying] = (
+        selection.atm_strike_by_expiry.get(expiries[0]) if expiries else None
+    )
+
+
+def _append_cash_pair(pairs: list[str], underlying: str) -> None:
+    cash_pair = format_pair(
+        InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
+    )
+    pairs.append(cash_pair)
+
+
+def _build_pairs_report(
+    universe: UniverseConfig,
+    option_policy: OptionPolicy,
+    security_master: SecurityMaster,
+    today: date,
+) -> tuple[list[str], dict[str, Any]]:
     pairs: list[str] = []
     selected_indices: list[str] = []
     selected_stocks: list[str] = []
@@ -162,50 +239,42 @@ def main() -> None:
     chosen_atm_strike: dict[str, float | None] = {}
 
     for underlying in universe.indices:
-        selection = _scan_underlying(security_master, underlying, today)
-        option_pairs = selection.option_pairs
-        expiries = selection.selected_expiries
-        atm_by_expiry = selection.atm_strike_by_expiry
-        cash_pair = format_pair(
-            InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
-        )
-        pairs.extend([cash_pair, *option_pairs])
-        selected_indices.append(underlying)
-        chosen_expiry[underlying] = expiries[0] if expiries else None
-        chosen_atm_strike[underlying] = atm_by_expiry.get(expiries[0]) if expiries else None
+        selection = _scan_underlying(security_master, underlying, today, option_policy)
+        _record_selection(underlying, selection, chosen_expiry, chosen_atm_strike)
+
         if selection.option_count == 0:
             skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
-        elif selection.ce_pe_pairs_count == 0:
+            continue
+        if option_policy.require_two_sided and selection.ce_pe_pairs_count == 0:
             skipped_underlyings.append({"underlying": underlying, "reason": "no CE+PE available"})
+            continue
+
+        if _include_cash_pair(option_policy, is_index=True):
+            _append_cash_pair(pairs, underlying)
+        pairs.extend(selection.option_pairs)
+        selected_indices.append(underlying)
 
     stock_entries: list[tuple[str, list[str]]] = []
     for underlying in universe.stocks:
-        selection = _scan_underlying(security_master, underlying, today)
-        option_pairs = selection.option_pairs
-        expiries = selection.selected_expiries
-        atm_by_expiry = selection.atm_strike_by_expiry
-        chosen_expiry[underlying] = expiries[0] if expiries else None
-        chosen_atm_strike[underlying] = atm_by_expiry.get(expiries[0]) if expiries else None
+        selection = _scan_underlying(security_master, underlying, today, option_policy)
+        _record_selection(underlying, selection, chosen_expiry, chosen_atm_strike)
 
         if selection.option_count == 0:
             skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
             continue
-        if selection.ce_pe_pairs_count == 0:
+        if option_policy.require_two_sided and selection.ce_pe_pairs_count == 0:
             skipped_underlyings.append({"underlying": underlying, "reason": "no CE+PE available"})
             continue
 
-        # Eligible for stock options strategy
-        selected_pairs_for_stock = []
-        # Cash pair (optional, but requested for some strategies)
-        # Requirement says: Add cash pair only when underlying is eligible.
-        cash_pair = format_pair(
-            InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
-        )
-        # Note: We skip adding it by default as per P09x.2 "options-only" requirement
-        # unless it's an index (which we handled above) or explicitly requested.
-        # But let's follow the user's specific "skip cash-only TCS" rule.
-        # stock_entries.append((underlying, [cash_pair, *option_pairs])) # <-- previous behavior
-        stock_entries.append((underlying, option_pairs))
+        stock_pairs = list(selection.option_pairs)
+        if _include_cash_pair(option_policy, is_index=False):
+            stock_pairs = [
+                format_pair(
+                    InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
+                ),
+                *stock_pairs,
+            ]
+        stock_entries.append((underlying, stock_pairs))
 
     if universe.top_n_stocks:
         stock_entries = stock_entries[: universe.top_n_stocks]
@@ -214,13 +283,14 @@ def main() -> None:
         selected_stocks.append(underlying)
         pairs.extend(stock_pairs)
 
-    if universe.total_pairs_cap and len(pairs) > universe.total_pairs_cap:
+    total_pairs_cap = _resolve_total_pairs_cap(universe, option_policy)
+    if total_pairs_cap and len(pairs) > total_pairs_cap:
         logger.warning(
             "Total pairs cap hit: trimming %s pairs to %s",
             len(pairs),
-            universe.total_pairs_cap,
+            total_pairs_cap,
         )
-        pairs = pairs[: universe.total_pairs_cap]
+        pairs = pairs[: total_pairs_cap]
 
     report = {
         "selected_indices": selected_indices,
@@ -229,6 +299,23 @@ def main() -> None:
         "chosen_expiry": chosen_expiry,
         "chosen_atm_strike": chosen_atm_strike,
     }
+    return pairs, report
+
+
+def main() -> None:
+    args = _parse_args()
+    config_path = Path(args.strategy_config)
+    out_path = Path(args.out)
+    report_path = Path(args.report) if args.report else _default_report_path(out_path)
+
+    payload = _load_yaml(config_path)
+    universe = _parse_universe_config(payload)
+    option_policy = _parse_option_policy(payload)
+
+    security_master = _load_contracts()
+    today = _kolkata_today()
+
+    pairs, report = _build_pairs_report(universe, option_policy, security_master, today)
 
     _write_json(out_path, pairs)
     _write_json(report_path, report)

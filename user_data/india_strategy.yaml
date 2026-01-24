@@ -1,0 +1,12 @@
+universe:
+  indices:
+    - NIFTY
+    - BANKNIFTY
+  stocks: []
+
+option_policy:
+  expiry_policy: nearest
+  atm_breadth: 2
+  total_pairs_cap: 80
+  require_two_sided: true
+  include_cash_pair: true
