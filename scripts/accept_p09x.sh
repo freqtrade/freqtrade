@@ -4,6 +4,14 @@ set -e
 # P09 Acceptance Gate Script
 # Objective: Verify determinism of Universe Scan and Whitelist Generation
 
+# REQUIRE an active venv
+if ! command -v python >/dev/null 2>&1; then
+    echo "ERROR: python not found in PATH. Activate a venv first."
+    exit 1
+fi
+
+PYTHON="python"
+
 STRATEGY_YAML="user_data/india_strategy.yaml"
 BASE_CONFIG="user_data/config_icicibreeze.json"
 OUT_DIR="user_data/generated"
@@ -21,7 +29,8 @@ V2_PAIRS="$OUT_DIR/p09x_pairs_v2.json"
 V2_REPORT="$OUT_DIR/p09x_report_v2.json"
 V2_CONFIG="$OUT_DIR/config_p09x_v2.json"
 
-PYTHON=".venv/bin/python3"
+echo "Using Python: $(which python)"
+python -V
 
 echo "=== STEP 1: Run Universe Scan (Pass 1) ==="
 $PYTHON "$UNIVERSE_SCAN_PY" \
@@ -54,7 +63,6 @@ sha256sum "$V1_PAIRS" "$V2_PAIRS"
 sha256sum "$V1_REPORT" "$V2_REPORT"
 sha256sum "$V1_CONFIG" "$V2_CONFIG"
 
-# Compare hashes and fail if they differ
 DIFF=$(sha256sum "$V1_PAIRS" "$V2_PAIRS" | awk '{print $1}' | sort | uniq | wc -l)
 if [ "$DIFF" -ne 1 ]; then
     echo "ERROR: Determinism check failed for pairs!"
@@ -62,9 +70,8 @@ if [ "$DIFF" -ne 1 ]; then
 fi
 
 echo "=== STEP 6: Verify Content Integrity ==="
-# Check if RELIANCE (from stocks) and NIFTY (from indices) are present if they were in yaml
-grep -q "RELIANCE" "$V1_PAIRS" || echo "Note: RELIANCE not in pairs (expected if filter excluded it)"
-grep -q "NIFTY" "$V1_PAIRS" || echo "Note: NIFTY not in pairs (expected if filter excluded it)"
+grep -q "RELIANCE" "$V1_PAIRS" || echo "Note: RELIANCE not in pairs (expected if filtered)"
+grep -q "NIFTY" "$V1_PAIRS" || echo "Note: NIFTY not in pairs (expected if filtered)"
 
 echo "=== STEP 7: Check Empty Cases ==="
 if [ ! -s "$V1_PAIRS" ]; then
