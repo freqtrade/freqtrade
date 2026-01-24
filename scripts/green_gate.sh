@@ -28,14 +28,16 @@ PID=$!
 echo "Freqtrade started with PID $PID. Waiting 15s for startup/running state..."
 sleep 15
 kill -INT $PID || true
+sleep 2
+kill -9 $PID 2>/dev/null || true
 wait $PID || true
 
 echo "--- Verification ---"
 
 # 1. Mode Detection
-if grep -q "Mode: stub" /tmp/trade.txt; then
+if grep -q "Stub mode" /tmp/trade.txt; then
     echo "[OK] Mode detected: stub"
-elif grep -q "Mode: real" /tmp/trade.txt; then
+elif grep -q "Real mode" /tmp/trade.txt; then
     echo "[OK] Mode detected: real"
 else
     echo "[FAIL] Mode detection missing in logs"
