@@ -32,9 +32,9 @@ def _write_json(path: Path, payload: dict) -> None:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create config with generated pairs whitelist.")
-    parser.add_argument("--base", required=True, help="Base config JSON path")
+    parser.add_argument("--base", "--base-config", required=True, help="Base config JSON path")
     parser.add_argument("--pairs", required=True, help="Pairs JSON path")
-    parser.add_argument("--out", required=True, help="Output config path")
+    parser.add_argument("--out", "--out-config", required=True, help="Output config path")
     return parser.parse_args()
 
 

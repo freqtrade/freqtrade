@@ -128,11 +128,15 @@ def _parse_option_policy(payload: dict[str, Any]) -> OptionPolicy:
     )
 
 
-def _load_contracts() -> SecurityMaster:
-    master_file = find_latest_master_file("FONSEScripMaster.txt")
-    if not master_file:
-        logger.error("SecurityMaster file not found.")
-        raise FileNotFoundError("FONSEScripMaster.txt not found")
+def _load_contracts(master_path: Path | None = None) -> SecurityMaster:
+    if master_path:
+        master_file = master_path
+    else:
+        master_file = find_latest_master_file("FONSEScripMaster.txt")
+
+    if not master_file or not master_file.exists():
+        logger.error("SecurityMaster file not found: %s", master_file)
+        raise FileNotFoundError(f"Security master file not found: {master_file}")
     master = load_nfo_options_master(master_file)
     return SecurityMaster(master.get("by_contract", {}))
 
@@ -175,14 +179,26 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Scan universe and generate pairs.")
     parser.add_argument(
         "--strategy-config",
+        "--config",
         required=True,
         help="Strategy YAML config path",
     )
-    parser.add_argument("--out", required=True, help="Output pairs JSON path")
+    parser.add_argument(
+        "--out",
+        "--out-pairs",
+        required=True,
+        help="Output pairs JSON path",
+    )
     parser.add_argument(
         "--report",
+        "--out-report",
         default=None,
         help="Output report JSON path (default: derived from --out)",
+    )
+    parser.add_argument(
+        "--security-master",
+        default=None,
+        help="Path to FONSEScripMaster.txt",
     )
     parser.add_argument(
         "--mode",
@@ -331,7 +347,7 @@ def main() -> None:
     universe = _parse_universe_config(payload)
     option_policy = _parse_option_policy(payload)
 
-    security_master = _load_contracts()
+    security_master = _load_contracts(Path(args.security_master) if args.security_master else None)
     today = _kolkata_today()
 
     pairs, report = _build_pairs_report(universe, option_policy, security_master, today)
