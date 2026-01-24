@@ -80,7 +80,9 @@ class IndiaOptionsAutoStrategy(IStrategy):
         """Merge underlying cash indicators into option dataframe."""
         underlying_pair = self._underlying_pair(metadata.get("pair", ""))
         if not underlying_pair or not self.dp:
-            self._ensure_columns(dataframe, ["ema_5_underlying", "ema_20_underlying", "rsi_14_underlying"])
+            self._ensure_columns(
+                dataframe, ["ema_5_underlying", "ema_20_underlying", "rsi_14_underlying"]
+            )
             return dataframe
 
         informative = self.dp.get_pair_dataframe(pair=underlying_pair, timeframe=self.timeframe)
@@ -93,6 +95,7 @@ class IndiaOptionsAutoStrategy(IStrategy):
             informative,
             self.timeframe,
             self.timeframe,
+            append_timeframe=False,
             suffix="underlying",
         )
         self._ensure_columns(merged, ["ema_5_underlying", "ema_20_underlying", "rsi_14_underlying"])
@@ -107,13 +110,11 @@ class IndiaOptionsAutoStrategy(IStrategy):
         local_times = self._ist_time_mask(dataframe)
         within_window = (local_times >= time(9, 45)) & (local_times <= time(14, 30))
 
-        bull = (
-            (dataframe["ema_5_underlying"] > dataframe["ema_20_underlying"])
-            & (dataframe["rsi_14_underlying"] > 55)
+        bull = (dataframe["ema_5_underlying"] > dataframe["ema_20_underlying"]) & (
+            dataframe["rsi_14_underlying"] > 55
         )
-        bear = (
-            (dataframe["ema_5_underlying"] < dataframe["ema_20_underlying"])
-            & (dataframe["rsi_14_underlying"] < 45)
+        bear = (dataframe["ema_5_underlying"] < dataframe["ema_20_underlying"]) & (
+            dataframe["rsi_14_underlying"] < 45
         )
 
         if right == "CE":
