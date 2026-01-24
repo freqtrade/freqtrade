@@ -14,7 +14,7 @@ from adapters.ccxt_shim.security_master import (
     find_latest_master_file,
     load_nfo_options_master,
 )
-from scripts.gen_option_whitelist import _kolkata_today, select_option_pairs
+from scripts.gen_option_whitelist import OptionSelection, _kolkata_today, select_option_pairs
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("universe_scan")
@@ -103,8 +103,8 @@ def _scan_underlying(
     security_master: SecurityMaster,
     underlying: str,
     today: date,
-) -> tuple[list[str], list[str], dict[str, float], int, int]:
-    selection = select_option_pairs(
+) -> OptionSelection:
+    return select_option_pairs(
         security_master=security_master,
         underlying=underlying,
         expiry_policy="nearest",
@@ -112,13 +112,6 @@ def _scan_underlying(
         n_expiries=1,
         today=today,
         spot_fetcher=None,
-    )
-    return (
-        selection.option_pairs,
-        selection.selected_expiries,
-        selection.atm_strike_by_expiry,
-        selection.option_count,
-        selection.ce_pe_pairs_count,
     )
 
 
@@ -164,9 +157,10 @@ def main() -> None:
     chosen_atm_strike: dict[str, float | None] = {}
 
     for underlying in universe.indices:
-        option_pairs, expiries, atm_by_expiry, _, _ = _scan_underlying(
-            security_master, underlying, today
-        )
+        selection = _scan_underlying(security_master, underlying, today)
+        option_pairs = selection.option_pairs
+        expiries = selection.selected_expiries
+        atm_by_expiry = selection.atm_strike_by_expiry
         cash_pair = format_pair(
             InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
         )
@@ -176,21 +170,28 @@ def main() -> None:
         chosen_atm_strike[underlying] = (
             atm_by_expiry.get(expiries[0]) if expiries else None
         )
+        if selection.option_count == 0:
+            skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
+        elif selection.ce_pe_pairs_count == 0:
+            skipped_underlyings.append(
+                {"underlying": underlying, "reason": "no CE+PE available"}
+            )
 
     stock_entries: list[tuple[str, list[str]]] = []
     for underlying in universe.stocks:
-        option_pairs, expiries, atm_by_expiry, option_count, ce_pe_pairs = _scan_underlying(
-            security_master, underlying, today
-        )
+        selection = _scan_underlying(security_master, underlying, today)
+        option_pairs = selection.option_pairs
+        expiries = selection.selected_expiries
+        atm_by_expiry = selection.atm_strike_by_expiry
         chosen_expiry[underlying] = expiries[0] if expiries else None
         chosen_atm_strike[underlying] = (
             atm_by_expiry.get(expiries[0]) if expiries else None
         )
 
-        if option_count == 0:
+        if selection.option_count == 0:
             skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
             continue
-        if ce_pe_pairs == 0:
+        if selection.ce_pe_pairs_count == 0:
             skipped_underlyings.append(
                 {"underlying": underlying, "reason": "no CE+PE available"}
             )

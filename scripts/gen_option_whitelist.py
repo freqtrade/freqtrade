@@ -184,7 +184,16 @@ def select_option_pairs(
     if expiry_policy != "nearest":
         raise ValueError(f"Unsupported expiry policy: {expiry_policy}")
     normalized_underlying = underlying.upper()
-    relevant = [key for key in security_master.by_contract if key[0] == normalized_underlying]
+    relevant = [
+        (
+            normalized_underlying,
+            key[1],
+            float(key[2]),
+            str(key[3]).upper(),
+        )
+        for key in security_master.by_contract
+        if key[0] == normalized_underlying
+    ]
     if not relevant:
         logger.warning("No option contracts found for %s", normalized_underlying)
         return OptionSelection([], [], {}, 0, 0)
