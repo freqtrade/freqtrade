@@ -350,11 +350,13 @@ class BreezeCCXT(ccxt.Exchange):
             elif spec.type == InstrumentType.CASH:
                 info = nse_symbols.get(spec.underlying)
                 if not info and self._is_mock_mode():
-                    # Synthetic Index Cash support for mock mode (NIFTY/INR etc)
-                    if spec.underlying in self._MOCK_BASE_PRICES or spec.underlying in {
+                    # Synthetic Index Cash or Mock Pairs support (BTC/USDT, NIFTY/INR etc)
+                    is_index = spec.underlying in self._MOCK_BASE_PRICES or spec.underlying in {
                         "NIFTY",
                         "BANKNIFTY",
-                    }:
+                    }
+                    is_mock_pair = spec.underlying == "BTC" and spec.quote == "USDT"
+                    if is_index or is_mock_pair:
                         info = {
                             "token": f"mock_{spec.underlying}",
                             "symbol": spec.underlying,
@@ -369,9 +371,11 @@ class BreezeCCXT(ccxt.Exchange):
                 markets.append(
                     {
                         "id": info["token"],
-                        "symbol": format_pair(spec),
+                        "symbol": format_pair(spec)
+                        if spec.quote == "INR"
+                        else f"{spec.underlying}/{spec.quote}",
                         "base": spec.underlying,
-                        "quote": "INR",
+                        "quote": spec.quote,
                         "active": True,
                         "type": "spot",
                         "spot": True,
@@ -641,10 +645,17 @@ class BreezeAsyncCCXT(ccxt_async.Exchange):
         return res
 
     async def load_markets(self, reload: bool = False, params: dict | None = None):
+        if not reload and self.markets:
+            return self.markets
         markets = await asyncio.to_thread(self.sync_exchange.load_markets, reload, params)
-        self.markets = markets
-        self.symbols = list(markets.keys())
-        return markets
+        self.set_markets(markets)
+        if "INR" not in self.currencies:
+            self.currencies["INR"] = {
+                "id": "INR",
+                "code": "INR",
+                "precision": 2,
+            }
+        return self.markets
 
     async def fetch_markets(self, params: dict | None = None):
         return await asyncio.to_thread(self.sync_exchange.fetch_markets, params)

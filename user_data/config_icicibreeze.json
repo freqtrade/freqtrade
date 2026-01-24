@@ -18,7 +18,8 @@
     "pair_whitelist": [
       "RELIANCE/INR",
       "NIFTY-20260226-22000-CE/INR",
-      "NIFTY-20260226-FUT/INR"
+      "NIFTY-20260226-FUT/INR",
+      "BTC/USDT"
     ],
     "pair_blacklist": [
       "BNB/.*"

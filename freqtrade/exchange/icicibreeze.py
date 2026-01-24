@@ -1,15 +1,8 @@
-"""
-ICICI Breeze exchange integration.
-"""
-
-import asyncio
 import logging
-import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 import ccxt
 import ccxt.async_support as ccxt_async
-from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.common import MAP_EXCHANGE_CHILDCLASS
 from freqtrade.exchange.exchange import Exchange
 
@@ -59,7 +52,7 @@ class Icicibreeze(Exchange):
     }
 
     def _init_ccxt(
-        self, exchange_config: Dict[str, Any], sync: bool, ccxt_kwargs: Dict[str, Any]
+        self, exchange_config: dict[str, Any], sync: bool, ccxt_kwargs: dict[str, Any]
     ) -> Any:
         # Determine Mode
         mode = self._config.get("icici_mode") or exchange_config.get("icici_mode") or "stub"
@@ -80,6 +73,9 @@ class Icicibreeze(Exchange):
         exchange_config["key"] = exchange_config.get("key")
         exchange_config["secret"] = exchange_config.get("secret")
         exchange_config["dry_run"] = self._config.get("dry_run")
+        exchange_config["pair_whitelist"] = self._config.get("exchange", {}).get(
+            "pair_whitelist", []
+        )
 
         if sync:
             return BreezeCCXT(exchange_config)

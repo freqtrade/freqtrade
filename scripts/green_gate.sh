@@ -18,8 +18,8 @@ echo "--- 4. Ticker Smoke Test ---"
 $PYTHON scripts/smoke_icicibreeze_ticker.py >/tmp/ticker.txt
 
 echo "--- 5. Download Data Test (BTC & INR) ---"
-$FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs BTC/USDT --days 2 -v >/tmp/dl_btc.txt
-$FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs RELIANCE/INR --days 2 -v >/tmp/dl_inr.txt
+$FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs BTC/USDT --days 2 -v >/tmp/dl_btc.txt 2>&1
+$FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs RELIANCE/INR --days 2 -v >/tmp/dl_inr.txt 2>&1
 
 echo "--- 6. Dry Run Trade Test ---"
 # Start trade in background, redirecting both stdout and stderr to capture logs

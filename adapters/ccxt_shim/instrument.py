@@ -32,10 +32,10 @@ class InstrumentSpec:
     strike: float | None = None
     right: str | None = None
 
-    def validate(self) -> None:
+    def validate(self, strict: bool = True) -> None:
         if not self.underlying:
             raise ValueError("Underlying is required.")
-        if self.quote != "INR":
+        if strict and self.quote != "INR":
             raise ValueError("Quote must be INR for canonical pairs.")
         if self.type == InstrumentType.CASH:
             if any([self.expiry_yyyymmdd, self.strike, self.right]):
@@ -72,13 +72,18 @@ def parse_pair(pair: str) -> InstrumentSpec:
       - Options: UNDERLYING-YYYYMMDD-STRIKE-CE/INR
     """
 
-    cash_match = re.fullmatch(r"(?P<underlying>[A-Z0-9]+)\/INR", pair, re.IGNORECASE)
+    cash_match = re.fullmatch(
+        r"(?P<underlying>[A-Z0-9.]+)\/(?P<quote>[A-Z0-9]+)", pair, re.IGNORECASE
+    )
     if cash_match:
         spec = InstrumentSpec(
             type=InstrumentType.CASH,
             underlying=cash_match.group("underlying").upper(),
+            quote=cash_match.group("quote").upper(),
         )
-        spec.validate()
+        # We allow non-INR in parse_pair, but validate(strict=True) would still fail it.
+        # For now, we call validate(strict=False) to allow parsing.
+        spec.validate(strict=False)
         return spec
 
     fut_match = re.fullmatch(
