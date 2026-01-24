@@ -38,6 +38,17 @@ class WhitelistInputs:
     mode: str
 
 
+@dataclass(frozen=True)
+class OptionSelection:
+    """Selected option contracts and related metadata for an underlying."""
+
+    option_pairs: list[str]
+    selected_expiries: list[str]
+    atm_strike_by_expiry: dict[str, float]
+    option_count: int
+    ce_pe_pairs_count: int
+
+
 def _kolkata_today() -> date:
     return datetime.now(tz=ZoneInfo("Asia/Kolkata")).date()
 
@@ -136,58 +147,97 @@ def generate_option_whitelist(
     spot_fetcher: Callable[[], float | None] | None,
 ) -> list[str]:
     """Generate option whitelist pairs for the requested underlying."""
-    underlying = inputs.underlying.upper()
-    relevant = [key for key in security_master.by_contract if key[0] == underlying]
-    if not relevant:
-        logger.error("No option contracts found for %s", underlying)
+    selection = select_option_pairs(
+        security_master=security_master,
+        underlying=inputs.underlying,
+        expiry_policy=inputs.expiry_policy,
+        atm_breadth=inputs.atm_breadth,
+        n_expiries=inputs.n_expiries,
+        today=today,
+        spot_fetcher=spot_fetcher,
+    )
+    if selection.ce_pe_pairs_count == 0:
+        logger.error(
+            "No CE/PE option pairs available for %s in selected expiries.", inputs.underlying
+        )
         return []
+    if selection.option_count == 0:
+        logger.error("No option contracts found for %s", inputs.underlying)
+        return []
+    cash_pair = format_pair(
+        InstrumentSpec(type=InstrumentType.CASH, underlying=inputs.underlying.upper(), quote="INR")
+    )
+    pairs = [cash_pair, *selection.option_pairs]
+    return pairs
+
+
+def select_option_pairs(
+    security_master: SecurityMaster,
+    underlying: str,
+    expiry_policy: str,
+    atm_breadth: int,
+    n_expiries: int,
+    today: date,
+    spot_fetcher: Callable[[], float | None] | None,
+) -> OptionSelection:
+    """Select option pairs for an underlying using the P09 selection rules."""
+    if expiry_policy != "nearest":
+        raise ValueError(f"Unsupported expiry policy: {expiry_policy}")
+    normalized_underlying = underlying.upper()
+    relevant = [key for key in security_master.by_contract if key[0] == normalized_underlying]
+    if not relevant:
+        logger.warning("No option contracts found for %s", normalized_underlying)
+        return OptionSelection([], [], {}, 0, 0)
 
     expiries = sorted({key[1] for key in relevant})
-    selected_expiries = _select_expiries(expiries, today, inputs.n_expiries)
+    selected_expiries = _select_expiries(expiries, today, n_expiries)
     if not selected_expiries:
-        logger.error("No expiries available for %s", underlying)
-        return []
+        logger.warning("No expiries available for %s", normalized_underlying)
+        return OptionSelection([], [], {}, 0, 0)
 
-    pairs: list[str] = []
-    cash_pair = format_pair(
-        InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
-    )
-    pairs.append(cash_pair)
+    option_pairs: list[str] = []
+    atm_strike_by_expiry: dict[str, float] = {}
     ce_pe_pairs = 0
 
     for expiry in selected_expiries:
-        strikes = sorted({key[2] for key in relevant if key[1] == expiry})
+        strikes = sorted({float(key[2]) for key in relevant if key[1] == expiry})
         if not strikes:
-            logger.warning("No strikes found for %s expiry %s", underlying, expiry)
+            logger.warning("No strikes found for %s expiry %s", normalized_underlying, expiry)
             continue
         step = _compute_step(strikes)
         spot = _resolve_spot(strikes, spot_fetcher)
         atm_target = round(spot / step) * step
         atm_strike = _snap_to_strike(atm_target, strikes)
-        window = _select_strike_window(strikes, atm_strike, inputs.atm_breadth)
+        atm_strike_by_expiry[expiry] = float(atm_strike)
+        window = _select_strike_window(strikes, atm_strike, atm_breadth)
         for strike in window:
             added_rights = 0
             for right in ("CE", "PE"):
-                if not security_master.has_option(underlying, expiry, float(strike), right):
+                key = (normalized_underlying, expiry, float(strike), right)
+                if key not in security_master.by_contract:
                     continue
                 pair = format_pair(
                     InstrumentSpec(
                         type=InstrumentType.OPT,
-                        underlying=underlying,
+                        underlying=normalized_underlying,
                         quote="INR",
                         expiry_yyyymmdd=expiry,
                         strike=float(strike),
                         right=right,
                     )
                 )
-                pairs.append(pair)
+                option_pairs.append(pair)
                 added_rights += 1
             if added_rights == 2:
                 ce_pe_pairs += 1
-    if ce_pe_pairs == 0:
-        logger.error("No CE/PE option pairs available for %s in selected expiries.", underlying)
-        return []
-    return pairs
+
+    return OptionSelection(
+        option_pairs=option_pairs,
+        selected_expiries=selected_expiries,
+        atm_strike_by_expiry=atm_strike_by_expiry,
+        option_count=len(option_pairs),
+        ce_pe_pairs_count=ce_pe_pairs,
+    )
 
 
 def _load_contracts() -> SecurityMaster | None:
