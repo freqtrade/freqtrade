@@ -19,6 +19,9 @@ def test_pip_audit_no_vulnerabilities():
 
     Note: CVE-2025-53000 (nbconvert Windows vulnerability) is ignored as it only affects
     Windows platforms and is a known acceptable risk for this project.
+
+    CVE-2026-0994 (protobuf) is ignored as there is no patched version available yet.
+    TODO: Remove this exception once a patched version of protobuf is released.
     """
     # Get the project root directory
     project_root = Path(__file__).parent.parent
@@ -30,6 +33,8 @@ def test_pip_audit_no_vulnerabilities():
         "--progress-spinner=off",
         "--ignore-vuln",
         "CVE-2025-53000",
+        "--ignore-vuln",
+        "CVE-2026-0994",
         "--skip-editable",
     ]
 
