@@ -2,7 +2,8 @@ universe:
   indices:
     - NIFTY
     - BANKNIFTY
-  stocks: []
+  stocks:
+    - RELIANCE
 
 option_policy:
   expiry_policy: nearest

@@ -238,51 +238,66 @@ def _build_pairs_report(
     chosen_expiry: dict[str, str | None] = {}
     chosen_atm_strike: dict[str, float | None] = {}
 
-    for underlying in universe.indices:
-        selection = _scan_underlying(security_master, underlying, today, option_policy)
-        _record_selection(underlying, selection, chosen_expiry, chosen_atm_strike)
-
-        if selection.option_count == 0:
-            skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
-            continue
-        if option_policy.require_two_sided and selection.ce_pe_pairs_count == 0:
-            skipped_underlyings.append({"underlying": underlying, "reason": "no CE+PE available"})
-            continue
-
-        if _include_cash_pair(option_policy, is_index=True):
-            _append_cash_pair(pairs, underlying)
-        pairs.extend(selection.option_pairs)
-        selected_indices.append(underlying)
-
+    # 1. Process Stocks first (Priority)
     stock_entries: list[tuple[str, list[str]]] = []
     for underlying in universe.stocks:
-        selection = _scan_underlying(security_master, underlying, today, option_policy)
-        _record_selection(underlying, selection, chosen_expiry, chosen_atm_strike)
+        try:
+            selection = _scan_underlying(security_master, underlying, today, option_policy)
+            _record_selection(underlying, selection, chosen_expiry, chosen_atm_strike)
 
-        if selection.option_count == 0:
-            skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
-            continue
-        if option_policy.require_two_sided and selection.ce_pe_pairs_count == 0:
-            skipped_underlyings.append({"underlying": underlying, "reason": "no CE+PE available"})
-            continue
+            if selection.option_count == 0:
+                skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
+                continue
+            if option_policy.require_two_sided and selection.ce_pe_pairs_count == 0:
+                skipped_underlyings.append(
+                    {"underlying": underlying, "reason": "no CE+PE available"}
+                )
+                continue
 
-        stock_pairs = list(selection.option_pairs)
-        if _include_cash_pair(option_policy, is_index=False):
-            stock_pairs = [
-                format_pair(
-                    InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
-                ),
-                *stock_pairs,
-            ]
-        stock_entries.append((underlying, stock_pairs))
+            stock_pairs = list(selection.option_pairs)
+            if _include_cash_pair(option_policy, is_index=False):
+                stock_pairs = [
+                    format_pair(
+                        InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
+                    ),
+                    *stock_pairs,
+                ]
+            stock_entries.append((underlying, stock_pairs))
+        except Exception as exc:
+            logger.error("Failed to scan stock %s: %s", underlying, exc)
+            skipped_underlyings.append({"underlying": underlying, "reason": f"error: {exc}"})
 
     if universe.top_n_stocks:
         stock_entries = stock_entries[: universe.top_n_stocks]
 
-    for underlying, stock_pairs in stock_entries:
+    for underlying, s_pairs in stock_entries:
         selected_stocks.append(underlying)
-        pairs.extend(stock_pairs)
+        pairs.extend(s_pairs)
 
+    # 2. Process Indices
+    for underlying in universe.indices:
+        try:
+            selection = _scan_underlying(security_master, underlying, today, option_policy)
+            _record_selection(underlying, selection, chosen_expiry, chosen_atm_strike)
+
+            if selection.option_count == 0:
+                skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
+                continue
+            if option_policy.require_two_sided and selection.ce_pe_pairs_count == 0:
+                skipped_underlyings.append(
+                    {"underlying": underlying, "reason": "no CE+PE available"}
+                )
+                continue
+
+            if _include_cash_pair(option_policy, is_index=True):
+                _append_cash_pair(pairs, underlying)
+            pairs.extend(selection.option_pairs)
+            selected_indices.append(underlying)
+        except Exception as exc:
+            logger.error("Failed to scan index %s: %s", underlying, exc)
+            skipped_underlyings.append({"underlying": underlying, "reason": f"error: {exc}"})
+
+    # 3. Apply Cap and Deterministic Sort
     total_pairs_cap = _resolve_total_pairs_cap(universe, option_policy)
     if total_pairs_cap and len(pairs) > total_pairs_cap:
         logger.warning(
@@ -290,7 +305,10 @@ def _build_pairs_report(
             len(pairs),
             total_pairs_cap,
         )
-        pairs = pairs[: total_pairs_cap]
+        pairs = pairs[:total_pairs_cap]
+
+    # Ensure deterministic output ordering
+    pairs.sort()
 
     report = {
         "selected_indices": selected_indices,
@@ -298,6 +316,7 @@ def _build_pairs_report(
         "skipped_underlyings": skipped_underlyings,
         "chosen_expiry": chosen_expiry,
         "chosen_atm_strike": chosen_atm_strike,
+        "status": "success" if pairs else "empty",
     }
     return pairs, report
 
