@@ -1,0 +1,251 @@
+import argparse
+import json
+import logging
+import os
+import sys
+from collections import Counter
+from dataclasses import dataclass
+from datetime import date, datetime
+from pathlib import Path
+from statistics import median
+from typing import Callable
+from zoneinfo import ZoneInfo
+
+sys.path.append(os.getcwd())
+
+from adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
+from adapters.ccxt_shim.instrument import InstrumentSpec, InstrumentType, format_pair
+from adapters.ccxt_shim.security_master import find_latest_master_file, load_nfo_options_master
+from freqtrade.exceptions import OperationalException
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("gen_option_whitelist")
+
+
+@dataclass(frozen=True)
+class WhitelistInputs:
+    """Inputs for option whitelist generation."""
+
+    underlying: str
+    expiry_policy: str
+    atm_breadth: int
+    n_expiries: int
+    out_path: Path
+    mode: str
+
+
+def _kolkata_today() -> date:
+    return datetime.now(tz=ZoneInfo("Asia/Kolkata")).date()
+
+
+def _parse_expiry(expiry: str) -> date | None:
+    try:
+        return datetime.strptime(expiry, "%Y%m%d").date()
+    except ValueError:
+        logger.warning("Skipping invalid expiry: %s", expiry)
+        return None
+
+
+def _select_expiries(expiries: list[str], today: date, n_expiries: int) -> list[str]:
+    sorted_expiries = sorted(expiries)
+    future_expiries = [e for e in sorted_expiries if _parse_expiry(e) and _parse_expiry(e) >= today]
+    if not future_expiries:
+        logger.warning("No future expiries found; falling back to earliest available expiry.")
+        future_expiries = sorted_expiries
+    return future_expiries[: max(n_expiries, 1)]
+
+
+def _most_common_step(differences: list[float]) -> float:
+    counts = Counter(differences)
+    if not counts:
+        return 1.0
+    max_count = max(counts.values())
+    candidates = [diff for diff, count in counts.items() if count == max_count]
+    return min(candidates)
+
+
+def _compute_step(strikes: list[float]) -> float:
+    unique_strikes = sorted(set(strikes))
+    diffs = [b - a for a, b in zip(unique_strikes, unique_strikes[1:]) if b - a > 0]
+    if diffs:
+        return _most_common_step(diffs)
+    return 1.0
+
+
+def _resolve_spot(
+    strikes: list[float],
+    spot_fetcher: Callable[[], float | None] | None,
+) -> float:
+    spot = None
+    if spot_fetcher is not None:
+        try:
+            spot = spot_fetcher()
+        except OperationalException as exc:
+            logger.warning("Ticker fetch failed, falling back to strike median: %s", exc)
+        except Exception as exc:
+            logger.exception("Unexpected error fetching ticker: %s", exc)
+    if spot is None:
+        spot = float(median(strikes))
+        logger.info("Using median strike as spot: %s", spot)
+    return spot
+
+
+def _snap_to_strike(target: float, strikes: list[float]) -> float:
+    return min(strikes, key=lambda strike: (abs(strike - target), strike))
+
+
+def _select_strike_window(strikes: list[float], atm_strike: float, breadth: int) -> list[float]:
+    sorted_strikes = sorted(strikes)
+    if atm_strike not in sorted_strikes:
+        sorted_strikes.append(atm_strike)
+        sorted_strikes.sort()
+    atm_index = sorted_strikes.index(atm_strike)
+    start = max(atm_index - breadth, 0)
+    end = min(atm_index + breadth + 1, len(sorted_strikes))
+    return sorted_strikes[start:end]
+
+
+def _build_spot_fetcher(underlying: str, mode: str) -> Callable[[], float | None]:
+    api_key = os.environ.get("BREEZE_API_KEY", "mock_key")
+    api_secret = os.environ.get("BREEZE_API_SECRET", "mock_secret")
+    session_token = os.environ.get("BREEZE_SESSION_TOKEN", "mock_token")
+    config = {"key": api_key, "secret": api_secret, "password": session_token}
+    exchange = BreezeCCXT(config)
+
+    def _fetch() -> float | None:
+        ticker = exchange.fetch_ticker(f"{underlying}/INR")
+        last = ticker.get("last")
+        if last is None:
+            logger.warning("Ticker did not include last price for %s", underlying)
+            return None
+        return float(last)
+
+    if mode not in {"mock", "real"}:
+        raise ValueError(f"Unsupported mode: {mode}")
+    return _fetch
+
+
+def generate_option_whitelist(
+    contracts: dict[tuple[str, str, float, str], dict[str, object]],
+    inputs: WhitelistInputs,
+    today: date,
+    spot_fetcher: Callable[[], float | None] | None,
+) -> list[str]:
+    """Generate option whitelist pairs for the requested underlying."""
+    underlying = inputs.underlying.upper()
+    relevant = [key for key in contracts if key[0] == underlying]
+    if not relevant:
+        logger.error("No option contracts found for %s", underlying)
+        return []
+
+    expiries = sorted({key[1] for key in relevant})
+    selected_expiries = _select_expiries(expiries, today, inputs.n_expiries)
+    if not selected_expiries:
+        logger.error("No expiries available for %s", underlying)
+        return []
+
+    pairs: list[str] = []
+    cash_pair = format_pair(
+        InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
+    )
+    pairs.append(cash_pair)
+
+    for expiry in selected_expiries:
+        strikes = sorted({key[2] for key in relevant if key[1] == expiry})
+        if not strikes:
+            logger.warning("No strikes found for %s expiry %s", underlying, expiry)
+            continue
+        step = _compute_step(strikes)
+        spot = _resolve_spot(strikes, spot_fetcher)
+        atm_target = round(spot / step) * step
+        atm_strike = _snap_to_strike(atm_target, strikes)
+        window = _select_strike_window(strikes, atm_strike, inputs.atm_breadth)
+        for strike in window:
+            for right in ("CE", "PE"):
+                pair = format_pair(
+                    InstrumentSpec(
+                        type=InstrumentType.OPT,
+                        underlying=underlying,
+                        quote="INR",
+                        expiry_yyyymmdd=expiry,
+                        strike=float(strike),
+                        right=right,
+                    )
+                )
+                pairs.append(pair)
+    return pairs
+
+
+def _load_contracts() -> dict[tuple[str, str, float, str], dict[str, object]]:
+    master_file = find_latest_master_file("FONSEScripMaster.txt")
+    if not master_file:
+        logger.error("SecurityMaster file not found.")
+        return {}
+    master = load_nfo_options_master(master_file)
+    return master.get("by_contract", {})
+
+
+def _write_pairs(path: Path, pairs: list[str]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as handle:
+            json.dump(pairs, handle, indent=2)
+        logger.info("Wrote %s pairs to %s", len(pairs), path)
+    except OSError as exc:
+        logger.error("Failed to write pairs to %s: %s", path, exc)
+        raise
+
+
+def parse_args() -> WhitelistInputs:
+    parser = argparse.ArgumentParser(
+        description="Generate option whitelist pairs from SecurityMaster."
+    )
+    parser.add_argument("--underlying", required=True, help="Underlying symbol, e.g. RELIANCE")
+    parser.add_argument(
+        "--expiry-policy",
+        default="nearest",
+        choices=["nearest"],
+        help="Expiry selection policy (default: nearest)",
+    )
+    parser.add_argument("--atm-breadth", type=int, default=2, help="Strikes per side")
+    parser.add_argument("--n-expiries", type=int, default=1, help="Number of expiries")
+    parser.add_argument("--out", required=True, help="Output JSON path")
+    parser.add_argument(
+        "--mode",
+        choices=["mock", "real"],
+        default="mock",
+        help="Ticker mode (default: mock)",
+    )
+    args = parser.parse_args()
+    return WhitelistInputs(
+        underlying=args.underlying,
+        expiry_policy=args.expiry_policy,
+        atm_breadth=max(args.atm_breadth, 0),
+        n_expiries=max(args.n_expiries, 1),
+        out_path=Path(args.out),
+        mode=args.mode,
+    )
+
+
+def main() -> None:
+    inputs = parse_args()
+    if inputs.expiry_policy != "nearest":
+        logger.error("Unsupported expiry policy: %s", inputs.expiry_policy)
+        raise SystemExit(1)
+
+    contracts = _load_contracts()
+    if not contracts:
+        raise SystemExit(1)
+
+    today = _kolkata_today()
+    spot_fetcher = _build_spot_fetcher(inputs.underlying.upper(), inputs.mode)
+    pairs = generate_option_whitelist(contracts, inputs, today, spot_fetcher)
+    if not pairs:
+        logger.error("No pairs generated for %s", inputs.underlying)
+        raise SystemExit(1)
+
+    _write_pairs(inputs.out_path, pairs)
+
+
+if __name__ == "__main__":
+    main()
