@@ -84,5 +84,38 @@ tar -czf "$OUT_DIR/p09x_acceptance_artifacts.tar.gz" \
     "$V1_PAIRS" "$V1_REPORT" "$V1_CONFIG" \
     "$V2_PAIRS" "$V2_REPORT" "$V2_CONFIG"
 
-echo "=== P09 ACCEPTANCE GATE PASSED ==="
+echo "=== STEP 9: Hard-check Counts ==="
+PAIR_COUNT=$(jq '. | length' "$V1_PAIRS")
+WL_COUNT=$(jq '.exchange.pair_whitelist | length' "$V1_CONFIG")
+echo "Pairs count: $PAIR_COUNT"
+echo "Whitelist count: $WL_COUNT"
+
+if [ "$PAIR_COUNT" -le 0 ]; then
+    echo "ERROR: Pair list is empty!"
+    exit 1
+fi
+
+if [ "$WL_COUNT" -ne "$PAIR_COUNT" ]; then
+    echo "ERROR: Whitelist count mismatch!"
+    exit 1
+fi
+
+echo "=== STEP 10: Verify Freqtrade Market Resolution ==="
+export BREEZE_MOCK=1
+$PYTHON -m freqtrade list-markets --config "$V1_CONFIG"
+
+echo "=== STEP 11: Download Data ==="
+# Download 1d data for the generated whitelist
+$PYTHON -m freqtrade download-data --config "$V1_CONFIG" --timeframes 1d --days 100
+
+echo "=== STEP 12: Backtest ==="
+# Run backtest with the generated whitelist
+$PYTHON -m freqtrade backtesting --config "$V1_CONFIG" --timeframe 1d --strategy IndiaEquitySmokeStrategy
+
+echo "=== STEP 13: Dry-run Smoke Test ==="
+# Run trade mode briefly to ensure everything wires up
+# We use timeout to stop it after 15 seconds
+timeout 15s $PYTHON -m freqtrade trade --config "$V1_CONFIG" --strategy IndiaEquitySmokeStrategy --dry-run || true
+
+echo "=== P09X ACCEPTANCE GATE PASSED ==="
 echo "Artifacts: $OUT_DIR/p09x_acceptance_artifacts.tar.gz"

@@ -183,6 +183,8 @@ class BreezeCCXT(ccxt.Exchange):
                     "fetchClosedOrders": True,
                     "fetchMyTrades": True,
                     "fetchBalance": True,
+                    "fetchOrderBook": True,
+                    "fetchL2OrderBook": True,
                 },
                 "timeframes": {
                     "1m": "1minute",
@@ -428,6 +430,21 @@ class BreezeCCXT(ccxt.Exchange):
             logger.debug("fetch_ticker error: %s", e)
             raise OperationalException("Error in fetch_ticker. See debug logs for details.") from e
 
+    def fetch_order_book(self, symbol: str, limit: int | None = None, params: dict | None = None):
+        """Fetch order book. In mock mode, returns a synthetic one."""
+        if self._is_mock_mode():
+            ticker = self.fetch_ticker(symbol)
+            price = ticker["last"]
+            return {
+                "symbol": symbol,
+                "bids": [[price - 0.05, 1000.0], [price - 0.10, 2000.0]],
+                "asks": [[price + 0.05, 1000.0], [price + 0.10, 2000.0]],
+                "timestamp": ticker["timestamp"],
+                "datetime": ticker["datetime"],
+                "nonce": None,
+            }
+        raise OperationalException("fetchOrderBook not supported yet in real mode.")
+
     def fetch_ohlcv(
         self,
         symbol: str,
@@ -447,7 +464,7 @@ class BreezeCCXT(ccxt.Exchange):
         if not interval:
             raise OperationalException(f"Unsupported timeframe: {timeframe}")
         if limit is None:
-            limit = 100
+            limit = 1000
         limit = min(limit, 1000)
         end_dt = datetime.now()
         start_dt = (
@@ -637,6 +654,8 @@ class BreezeAsyncCCXT(ccxt_async.Exchange):
                 "fetchClosedOrders": True,
                 "fetchMyTrades": True,
                 "fetchBalance": True,
+                "fetchOrderBook": True,
+                "fetchL2OrderBook": True,
             },
             "timeframes": {"1m": "1minute", "5m": "5minute", "30m": "30minute", "1d": "1day"},
         }
@@ -662,6 +681,11 @@ class BreezeAsyncCCXT(ccxt_async.Exchange):
 
     async def fetch_ticker(self, symbol: str, params: dict | None = None):
         return await asyncio.to_thread(self.sync_exchange.fetch_ticker, symbol, params)
+
+    async def fetch_order_book(
+        self, symbol: str, limit: int | None = None, params: dict | None = None
+    ):
+        return await asyncio.to_thread(self.sync_exchange.fetch_order_book, symbol, limit, params)
 
     async def fetch_ohlcv(
         self,
