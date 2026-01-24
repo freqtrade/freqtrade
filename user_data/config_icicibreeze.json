@@ -1,6 +1,7 @@
 {
   "max_open_trades": 3,
   "stake_currency": "INR",
+  "fee": 0.001,
   "stake_amount": "unlimited",
   "tradable_balance_ratio": 0.99,
   "fiat_display_currency": "INR",
