@@ -1,5 +1,6 @@
 import logging
 import re
+from dataclasses import dataclass
 from typing import Any
 
 import pandas as pd
@@ -8,6 +9,18 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 _LEGACY_EXPIRY_WARNING_EMITTED = False
+
+
+@dataclass(frozen=True)
+class SecurityMaster:
+    """Lightweight SecurityMaster helper for contract lookups."""
+
+    by_contract: dict[tuple[str, str, float, str], dict[str, object]]
+
+    def has_option(self, underlying: str, expiry: str, strike: float, right: str) -> bool:
+        """Return True when the option contract exists in SecurityMaster."""
+        key = (underlying.upper(), expiry, float(strike), right.upper())
+        return key in self.by_contract
 
 
 def _strip_dataframe_strings(df: pd.DataFrame) -> pd.DataFrame:
