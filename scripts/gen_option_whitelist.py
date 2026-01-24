@@ -15,7 +15,11 @@ sys.path.append(os.getcwd())
 
 from adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
 from adapters.ccxt_shim.instrument import InstrumentSpec, InstrumentType, format_pair
-from adapters.ccxt_shim.security_master import find_latest_master_file, load_nfo_options_master
+from adapters.ccxt_shim.security_master import (
+    SecurityMaster,
+    find_latest_master_file,
+    load_nfo_options_master,
+)
 from freqtrade.exceptions import OperationalException
 
 logging.basicConfig(level=logging.INFO)
@@ -126,14 +130,14 @@ def _build_spot_fetcher(underlying: str, mode: str) -> Callable[[], float | None
 
 
 def generate_option_whitelist(
-    contracts: dict[tuple[str, str, float, str], dict[str, object]],
+    security_master: SecurityMaster,
     inputs: WhitelistInputs,
     today: date,
     spot_fetcher: Callable[[], float | None] | None,
 ) -> list[str]:
     """Generate option whitelist pairs for the requested underlying."""
     underlying = inputs.underlying.upper()
-    relevant = [key for key in contracts if key[0] == underlying]
+    relevant = [key for key in security_master.by_contract if key[0] == underlying]
     if not relevant:
         logger.error("No option contracts found for %s", underlying)
         return []
@@ -149,6 +153,7 @@ def generate_option_whitelist(
         InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
     )
     pairs.append(cash_pair)
+    ce_pe_pairs = 0
 
     for expiry in selected_expiries:
         strikes = sorted({key[2] for key in relevant if key[1] == expiry})
@@ -161,7 +166,10 @@ def generate_option_whitelist(
         atm_strike = _snap_to_strike(atm_target, strikes)
         window = _select_strike_window(strikes, atm_strike, inputs.atm_breadth)
         for strike in window:
+            added_rights = 0
             for right in ("CE", "PE"):
+                if not security_master.has_option(underlying, expiry, float(strike), right):
+                    continue
                 pair = format_pair(
                     InstrumentSpec(
                         type=InstrumentType.OPT,
@@ -173,16 +181,22 @@ def generate_option_whitelist(
                     )
                 )
                 pairs.append(pair)
+                added_rights += 1
+            if added_rights == 2:
+                ce_pe_pairs += 1
+    if ce_pe_pairs == 0:
+        logger.error("No CE/PE option pairs available for %s in selected expiries.", underlying)
+        return []
     return pairs
 
 
-def _load_contracts() -> dict[tuple[str, str, float, str], dict[str, object]]:
+def _load_contracts() -> SecurityMaster | None:
     master_file = find_latest_master_file("FONSEScripMaster.txt")
     if not master_file:
         logger.error("SecurityMaster file not found.")
-        return {}
+        return None
     master = load_nfo_options_master(master_file)
-    return master.get("by_contract", {})
+    return SecurityMaster(master.get("by_contract", {}))
 
 
 def _write_pairs(path: Path, pairs: list[str]) -> None:
@@ -233,13 +247,13 @@ def main() -> None:
         logger.error("Unsupported expiry policy: %s", inputs.expiry_policy)
         raise SystemExit(1)
 
-    contracts = _load_contracts()
-    if not contracts:
+    security_master = _load_contracts()
+    if not security_master or not security_master.by_contract:
         raise SystemExit(1)
 
     today = _kolkata_today()
     spot_fetcher = _build_spot_fetcher(inputs.underlying.upper(), inputs.mode)
-    pairs = generate_option_whitelist(contracts, inputs, today, spot_fetcher)
+    pairs = generate_option_whitelist(security_master, inputs, today, spot_fetcher)
     if not pairs:
         logger.error("No pairs generated for %s", inputs.underlying)
         raise SystemExit(1)

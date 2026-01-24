@@ -51,6 +51,12 @@ class InternalRateLimiter:
 
 class BreezeCCXT(ccxt.Exchange):
     _mock_mode_logged = False
+    _MOCK_BASE_PRICES = {
+        "RELIANCE/INR": 2500.0,
+        "NIFTY/INR": 20000.0,
+        "BANKNIFTY/INR": 45000.0,
+    }
+    _MOCK_MAX_PCT_MOVE = 0.003
 
     def __init__(self, config: dict[str, Any] | None = None):
         if config is None:
@@ -511,17 +517,52 @@ class BreezeCCXT(ccxt.Exchange):
         since_eff = since if since is not None else (now_ms - limit_eff * step_ms)
         since_eff -= since_eff % step_ms
 
-        h = hashlib.sha256((symbol + timeframe).encode()).hexdigest()
-        base_price = 2500.0 + (int(h[:3], 16) % 100)
+        base_price = self._mock_base_price(symbol)
+        max_move = self._MOCK_MAX_PCT_MOVE
 
         ohlcv = []
         curr_ts = since_eff
+        last_close = base_price
         while len(ohlcv) < limit_eff and curr_ts < now_ms:
-            offset = (curr_ts // step_ms) % 50
-            price = base_price + offset
-            ohlcv.append([curr_ts, price, price + 2, price - 2, price + 1, 1000.0])
+            seed = f"{symbol}-{timeframe}-{curr_ts}"
+            h = hashlib.sha256(seed.encode()).hexdigest()
+            raw = int(h[:6], 16) / float(0xFFFFFF)
+            delta = (raw * 2 - 1) * max_move
+
+            open_price = last_close
+            close_price = max(open_price * (1 + delta), 0.01)
+            high_price = max(open_price, close_price) * (1 + max_move / 2)
+            low_price = min(open_price, close_price) * (1 - max_move / 2)
+            ohlcv.append(
+                [
+                    curr_ts,
+                    open_price,
+                    high_price,
+                    low_price,
+                    close_price,
+                    1000.0,
+                ]
+            )
+            last_close = close_price
             curr_ts += step_ms
         return ohlcv
+
+    def _mock_base_price(self, symbol: str) -> float:
+        """Return a deterministic base price per symbol for mock data."""
+        if symbol in self._MOCK_BASE_PRICES:
+            return self._MOCK_BASE_PRICES[symbol]
+        try:
+            spec = parse_pair(symbol)
+        except ValueError:
+            spec = None
+        if spec is not None and spec.type == InstrumentType.OPT:
+            base_symbol = f"{spec.underlying}/INR"
+            if base_symbol in self._MOCK_BASE_PRICES:
+                return self._MOCK_BASE_PRICES[base_symbol]
+        import hashlib
+
+        h = hashlib.sha256(symbol.encode()).hexdigest()
+        return 1000.0 + (int(h[:6], 16) % 4000)
 
 
 class BreezeAsyncCCXT(ccxt_async.Exchange):
