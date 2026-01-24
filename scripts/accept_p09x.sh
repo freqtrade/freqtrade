@@ -10,7 +10,7 @@ if ! command -v python >/dev/null 2>&1; then
     exit 1
 fi
 
-PYTHON="python"
+PYTHON=".venv/bin/python"
 
 STRATEGY_YAML="user_data/india_strategy.yaml"
 BASE_CONFIG="user_data/config_icicibreeze.json"
