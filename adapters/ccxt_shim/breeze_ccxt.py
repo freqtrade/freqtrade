@@ -105,40 +105,47 @@ class BreezeCCXT(ccxt.Exchange):
         logger.info("Setting up Mock Breeze SDK mode for validation.")
 
         def mock_get_quotes(**kwargs):
+            stock_code = kwargs.get("stock_code", "UNKNOWN")
+            base_price = self._mock_base_price(f"{stock_code}/INR")
             return {
                 "status": 200,
                 "Success": [
                     {
-                        "stock_code": kwargs.get("stock_code"),
-                        "ltp": "2500.00",
-                        "high": "2550.00",
-                        "low": "2480.00",
-                        "best_bid_price": "2499.00",
-                        "best_ask_price": "2501.00",
+                        "stock_code": stock_code,
+                        "ltp": f"{base_price:.2f}",
+                        "high": f"{base_price * 1.01:.2f}",
+                        "low": f"{base_price * 0.99:.2f}",
+                        "best_bid_price": f"{base_price - 0.05:.2f}",
+                        "best_ask_price": f"{base_price + 0.05:.2f}",
                         "ltt": datetime.now().strftime("%d-%b-%Y %H:%M:%S"),
                     }
                 ],
             }
 
         def mock_get_historical_v2(**kwargs):
-            interval = kwargs.get("interval", "5minute")
-            count = 100
-            now_ms = int(time.time() * 1000)
-            step_ms = 5 * 60 * 1000 if "5" in interval else 60 * 60 * 1000
-            success = []
-            for i in range(count):
-                ts = now_ms - (count - i) * step_ms
-                dt_str = datetime.fromtimestamp(ts / 1000).strftime("%Y-%m-%d %H:%M:%S")
-                success.append(
-                    {
-                        "datetime": dt_str,
-                        "open": "2500",
-                        "high": "2510",
-                        "low": "2490",
-                        "close": f"{2500 + i % 10}",
-                        "volume": "1000",
-                    }
-                )
+            symbol = f"{kwargs.get('stock_code')}/INR"
+            # If it's an option, we should ideally parse it back, but for mock quotes
+            # we just use the raw symbol which _generate_mock_ohlcv handles.
+            timeframe = "5m"
+            if kwargs.get("interval") == "1minute":
+                timeframe = "1m"
+            elif kwargs.get("interval") == "30minute":
+                timeframe = "30m"
+            elif kwargs.get("interval") == "1day":
+                timeframe = "1d"
+
+            ohlcv_list = self._generate_mock_ohlcv(symbol, timeframe, None, 100)
+            success = [
+                {
+                    "datetime": datetime.fromtimestamp(o[0] / 1000).strftime("%Y-%m-%d %H:%M:%S"),
+                    "open": str(o[1]),
+                    "high": str(o[2]),
+                    "low": str(o[3]),
+                    "close": str(o[4]),
+                    "volume": str(o[5]),
+                }
+                for o in ohlcv_list
+            ]
             return {"status": 200, "Success": success}
 
         self.breeze.get_quotes = mock_get_quotes
@@ -342,6 +349,20 @@ class BreezeCCXT(ccxt.Exchange):
                 )
             elif spec.type == InstrumentType.CASH:
                 info = nse_symbols.get(spec.underlying)
+                if not info and self._is_mock_mode():
+                    # Synthetic Index Cash support for mock mode (NIFTY/INR etc)
+                    if spec.underlying in self._MOCK_BASE_PRICES or spec.underlying in {
+                        "NIFTY",
+                        "BANKNIFTY",
+                    }:
+                        info = {
+                            "token": f"mock_{spec.underlying}",
+                            "symbol": spec.underlying,
+                            "lot_size": 1,
+                            "tick_size": 0.05,
+                            "company_name": spec.underlying,
+                        }
+
                 if not info:
                     logger.warning("Cash symbol not found for whitelist entry: %s", pair)
                     continue
@@ -504,6 +525,7 @@ class BreezeCCXT(ccxt.Exchange):
         self, symbol: str, timeframe: str, since: int | None, limit: int | None
     ) -> list[list[float]]:
         import hashlib
+        import math
 
         multiplier = {"m": 60, "h": 3600, "d": 86400}.get(timeframe[-1], 60)
         try:
@@ -518,32 +540,46 @@ class BreezeCCXT(ccxt.Exchange):
         since_eff -= since_eff % step_ms
 
         base_price = self._mock_base_price(symbol)
-        max_move = self._MOCK_MAX_PCT_MOVE
 
         ohlcv = []
         curr_ts = since_eff
-        last_close = base_price
-        while len(ohlcv) < limit_eff and curr_ts < now_ms:
-            seed = f"{symbol}-{timeframe}-{curr_ts}"
-            h = hashlib.sha256(seed.encode()).hexdigest()
-            raw = int(h[:6], 16) / float(0xFFFFFF)
-            delta = (raw * 2 - 1) * max_move
 
-            open_price = last_close
-            close_price = max(open_price * (1 + delta), 0.01)
-            high_price = max(open_price, close_price) * (1 + max_move / 2)
-            low_price = min(open_price, close_price) * (1 - max_move / 2)
+        while len(ohlcv) < limit_eff and curr_ts < now_ms:
+            # Deterministic price function: price(t) = base * (1 + sum of cycles + jitter)
+            # Cycles: 1h, 1d, 1w to produce some "market feel"
+            t_sec = curr_ts / 1000.0
+
+            # Use symbol hash to phase-shift cycles so different symbols aren't perfectly correlated
+            h_sym = int(hashlib.sha256(symbol.encode()).hexdigest()[:8], 16)
+            phase = h_sym % 10000
+
+            # Cycles (deterministic amplitudes)
+            c1 = 0.02 * math.sin(t_sec / 3600.0 + phase)  # Hourly
+            c2 = 0.05 * math.sin(t_sec / 86400.0 + phase * 2)  # Daily
+            c3 = 0.10 * math.sin(t_sec / 604800.0 + phase * 3)  # Weekly
+
+            # High frequency jitter (deterministic from timestamp)
+            seed = f"{symbol}-{curr_ts}"
+            h_ts = int(hashlib.sha256(seed.encode()).hexdigest()[:8], 16)
+            jitter = 0.002 * (h_ts / 0xFFFFFFFF - 0.5)
+
+            close_price = base_price * (1 + c1 + c2 + c3 + jitter)
+            open_price = base_price * (1 + c1 + c2 + c3)  # simple open
+
+            # ensure high/low bracket open/close
+            high_price = max(open_price, close_price) * 1.001
+            low_price = min(open_price, close_price) * 0.999
+
             ohlcv.append(
                 [
-                    curr_ts,
-                    open_price,
-                    high_price,
-                    low_price,
-                    close_price,
+                    float(curr_ts),
+                    float(open_price),
+                    float(high_price),
+                    float(low_price),
+                    float(close_price),
                     1000.0,
                 ]
             )
-            last_close = close_price
             curr_ts += step_ms
         return ohlcv
 

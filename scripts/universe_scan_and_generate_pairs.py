@@ -1,12 +1,17 @@
 import argparse
 import json
 import logging
+import os
+import sys
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+# Add project root to sys.path for direct script execution
+sys.path.insert(0, os.getcwd())
 
 from adapters.ccxt_shim.instrument import InstrumentSpec, InstrumentType, format_pair
 from adapters.ccxt_shim.security_master import (
@@ -167,15 +172,11 @@ def main() -> None:
         pairs.extend([cash_pair, *option_pairs])
         selected_indices.append(underlying)
         chosen_expiry[underlying] = expiries[0] if expiries else None
-        chosen_atm_strike[underlying] = (
-            atm_by_expiry.get(expiries[0]) if expiries else None
-        )
+        chosen_atm_strike[underlying] = atm_by_expiry.get(expiries[0]) if expiries else None
         if selection.option_count == 0:
             skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
         elif selection.ce_pe_pairs_count == 0:
-            skipped_underlyings.append(
-                {"underlying": underlying, "reason": "no CE+PE available"}
-            )
+            skipped_underlyings.append({"underlying": underlying, "reason": "no CE+PE available"})
 
     stock_entries: list[tuple[str, list[str]]] = []
     for underlying in universe.stocks:
@@ -184,22 +185,27 @@ def main() -> None:
         expiries = selection.selected_expiries
         atm_by_expiry = selection.atm_strike_by_expiry
         chosen_expiry[underlying] = expiries[0] if expiries else None
-        chosen_atm_strike[underlying] = (
-            atm_by_expiry.get(expiries[0]) if expiries else None
-        )
+        chosen_atm_strike[underlying] = atm_by_expiry.get(expiries[0]) if expiries else None
 
         if selection.option_count == 0:
             skipped_underlyings.append({"underlying": underlying, "reason": "no options"})
             continue
         if selection.ce_pe_pairs_count == 0:
-            skipped_underlyings.append(
-                {"underlying": underlying, "reason": "no CE+PE available"}
-            )
+            skipped_underlyings.append({"underlying": underlying, "reason": "no CE+PE available"})
             continue
+
+        # Eligible for stock options strategy
+        selected_pairs_for_stock = []
+        # Cash pair (optional, but requested for some strategies)
+        # Requirement says: Add cash pair only when underlying is eligible.
         cash_pair = format_pair(
             InstrumentSpec(type=InstrumentType.CASH, underlying=underlying, quote="INR")
         )
-        stock_entries.append((underlying, [cash_pair, *option_pairs]))
+        # Note: We skip adding it by default as per P09x.2 "options-only" requirement
+        # unless it's an index (which we handled above) or explicitly requested.
+        # But let's follow the user's specific "skip cash-only TCS" rule.
+        # stock_entries.append((underlying, [cash_pair, *option_pairs])) # <-- previous behavior
+        stock_entries.append((underlying, option_pairs))
 
     if universe.top_n_stocks:
         stock_entries = stock_entries[: universe.top_n_stocks]

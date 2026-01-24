@@ -220,10 +220,11 @@ def select_option_pairs(
         atm_strike_by_expiry[expiry] = float(atm_strike)
         window = _select_strike_window(strikes, atm_strike, atm_breadth)
         for strike in window:
-            added_rights = 0
+            current_strike = float(strike)
             for right in ("CE", "PE"):
-                key = (normalized_underlying, expiry, float(strike), right)
+                key = (normalized_underlying, expiry, current_strike, right)
                 if key not in security_master.by_contract:
+                    logger.debug("Contract not found in SecurityMaster: %s", key)
                     continue
                 pair = format_pair(
                     InstrumentSpec(
@@ -231,13 +232,28 @@ def select_option_pairs(
                         underlying=normalized_underlying,
                         quote="INR",
                         expiry_yyyymmdd=expiry,
-                        strike=float(strike),
+                        strike=current_strike,
                         right=right,
                     )
                 )
                 option_pairs.append(pair)
-                added_rights += 1
-            if added_rights == 2:
+                if right == "CE":
+                    has_ce = True
+                if right == "PE":
+                    has_pe = True
+
+            # Check if we have both sides for stats, but pairs are added individually above
+            if (
+                normalized_underlying,
+                expiry,
+                current_strike,
+                "CE",
+            ) in security_master.by_contract and (
+                normalized_underlying,
+                expiry,
+                current_strike,
+                "PE",
+            ) in security_master.by_contract:
                 ce_pe_pairs += 1
 
     return OptionSelection(
