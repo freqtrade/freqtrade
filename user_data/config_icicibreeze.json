@@ -16,8 +16,8 @@
     "ccxt_async_config": {},
     "pair_whitelist": [
       "RELIANCE/INR",
-      "NIFTY-YYYYMMDD-FUT/INR",
-      "NIFTY-YYYYMMDD-STRIKE-CE/INR"
+      "NIFTY-20260226-22000-CE/INR",
+      "NIFTY-20260226-FUT/INR"
     ],
     "pair_blacklist": [
       "BNB/.*"

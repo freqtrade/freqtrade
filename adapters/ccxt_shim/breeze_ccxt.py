@@ -296,7 +296,11 @@ class BreezeCCXT(ccxt.Exchange):
                         "quote": "INR",
                         "active": True,
                         "type": "option",
+                        "spot": True,  # Force True for download-data tool compatibility
                         "option": True,
+                        "future": False,
+                        "margin": False,
+                        "swap": False,
                         "expiry": info["expiry_yyyymmdd"],
                         "strike": info["strike"],
                         "right": info["right"],
@@ -319,7 +323,11 @@ class BreezeCCXT(ccxt.Exchange):
                         "quote": "INR",
                         "active": True,
                         "type": "future",
+                        "spot": True,  # Force True for download-data tool compatibility
+                        "option": False,
                         "future": True,
+                        "margin": False,
+                        "swap": False,
                         "expiry": info["expiry_yyyymmdd"],
                         "lot": info["lot_size"],
                         "precision": {"amount": 1, "price": info["tick_size"]},
@@ -340,6 +348,10 @@ class BreezeCCXT(ccxt.Exchange):
                         "active": True,
                         "type": "spot",
                         "spot": True,
+                        "option": False,
+                        "future": False,
+                        "margin": False,
+                        "swap": False,
                         "lot": info["lot_size"],
                         "precision": {"amount": 1, "price": info["tick_size"]},
                         "info": info,
@@ -349,24 +361,7 @@ class BreezeCCXT(ccxt.Exchange):
 
     def fetch_ticker(self, symbol: str, params: dict | None = None):
         if self._is_mock_mode():
-            # Deterministic ticker
-            import hashlib
-
-            h = hashlib.md5(symbol.encode()).hexdigest()
-            last = 2500.0 + (int(h[:3], 16) % 100)
-            ts = int(time.time() * 1000)
-            return {
-                "symbol": symbol,
-                "timestamp": ts,
-                "datetime": self.iso8601(ts),
-                "high": last + 10,
-                "low": last - 10,
-                "bid": last - 0.05,
-                "ask": last + 0.05,
-                "last": last,
-                "close": last,
-                "info": {"mock": True},
-            }
+            return self._generate_mock_ticker(symbol)
 
         if not self.breeze:
             raise OperationalException("Breeze session not initialized.")
@@ -411,60 +406,7 @@ class BreezeCCXT(ccxt.Exchange):
         params: dict | None = None,
     ):
         if self._is_mock_mode():
-            import hashlib
-
-            # 1) compute step_ms from timeframe (5m=300000)
-            multiplier = 1
-            if timeframe.endswith("m"):
-                multiplier = 60
-            elif timeframe.endswith("h"):
-                multiplier = 3600
-            elif timeframe.endswith("d"):
-                multiplier = 86400
-
-            try:
-                num = int(timeframe[:-1])
-            except ValueError:
-                num = 5  # Default to 5m if parsing fails
-
-            step_ms = num * multiplier * 1000
-
-            # 2) choose limit_eff = limit or 500
-            limit_eff = limit if limit is not None else 500
-            limit_eff = min(limit_eff, 1000)
-
-            now_ms = int(time.time() * 1000)
-
-            # 3) choose since_eff = since or (now_ms - limit_eff*step_ms)
-            since_eff = since if since is not None else (now_ms - limit_eff * step_ms)
-            # Align since_eff to step_ms
-            since_eff = since_eff - (since_eff % step_ms)
-
-            h = hashlib.md5((symbol + timeframe).encode()).hexdigest()
-            base_price = 2500.0 + (int(h[:3], 16) % 100)
-
-            ohlcv = []
-            # 4) generate candles starting at since_eff stepping by step_ms until either:
-            # - limit_eff candles produced, OR
-            # - time reaches now_ms
-            curr_ts = since_eff
-            while len(ohlcv) < limit_eff and curr_ts < now_ms:
-                # Deterministic "price" offset
-                offset = (curr_ts // step_ms) % 50
-                price = base_price + offset
-                ohlcv.append(
-                    [
-                        curr_ts,
-                        price,  # open
-                        price + 2,  # high
-                        price - 2,  # low
-                        price + 1,  # close
-                        1000.0,  # volume
-                    ]
-                )
-                curr_ts += step_ms
-
-            return ohlcv
+            return self._generate_mock_ohlcv(symbol, timeframe, since, limit)
 
         if not self.breeze:
             raise OperationalException("Breeze session not initialized.")
@@ -532,6 +474,54 @@ class BreezeCCXT(ccxt.Exchange):
 
     def fetch_order(self, order_id, symbol=None, params: dict | None = None):
         raise OperationalException("Orders not implemented in p06")
+
+    def _generate_mock_ticker(self, symbol: str) -> dict[str, Any]:
+        import hashlib
+
+        h = hashlib.sha256(symbol.encode()).hexdigest()
+        last = 2500.0 + (int(h[:3], 16) % 100)
+        ts = int(time.time() * 1000)
+        return {
+            "symbol": symbol,
+            "timestamp": ts,
+            "datetime": self.iso8601(ts),
+            "high": last + 10,
+            "low": last - 10,
+            "bid": last - 0.05,
+            "ask": last + 0.05,
+            "last": last,
+            "close": last,
+            "info": {"mock": True},
+        }
+
+    def _generate_mock_ohlcv(
+        self, symbol: str, timeframe: str, since: int | None, limit: int | None
+    ) -> list[list[float]]:
+        import hashlib
+
+        multiplier = {"m": 60, "h": 3600, "d": 86400}.get(timeframe[-1], 60)
+        try:
+            num = int(timeframe[:-1])
+        except ValueError:
+            num = 5
+        step_ms = num * multiplier * 1000
+
+        limit_eff = min(limit if limit is not None else 500, 1000)
+        now_ms = int(time.time() * 1000)
+        since_eff = since if since is not None else (now_ms - limit_eff * step_ms)
+        since_eff -= since_eff % step_ms
+
+        h = hashlib.sha256((symbol + timeframe).encode()).hexdigest()
+        base_price = 2500.0 + (int(h[:3], 16) % 100)
+
+        ohlcv = []
+        curr_ts = since_eff
+        while len(ohlcv) < limit_eff and curr_ts < now_ms:
+            offset = (curr_ts // step_ms) % 50
+            price = base_price + offset
+            ohlcv.append([curr_ts, price, price + 2, price - 2, price + 1, 1000.0])
+            curr_ts += step_ms
+        return ohlcv
 
 
 class BreezeAsyncCCXT(ccxt_async.Exchange):

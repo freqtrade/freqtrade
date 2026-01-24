@@ -1,9 +1,9 @@
 import logging
-import os
 import re
-from typing import Any, Tuple
+from typing import Any
 
 import pandas as pd
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,9 @@ def _strip_dataframe_strings(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = [c.strip() for c in df.columns]
     object_columns = df.select_dtypes(include=["object"]).columns
     for column in object_columns:
-        df[column] = df[column].map(lambda value: value.strip() if isinstance(value, str) else value)
+        df[column] = df[column].map(
+            lambda value: value.strip() if isinstance(value, str) else value
+        )
     return df
 
 
@@ -51,11 +53,13 @@ def find_latest_master_file(
             "src/data/",
         ]
 
+    from pathlib import Path
+
     found_files = []
     for path in search_paths:
-        full_path = os.path.join(os.getcwd(), path, filename)
-        if os.path.exists(full_path):
-            found_files.append((full_path, os.path.getmtime(full_path)))
+        full_path = Path.cwd() / path / filename
+        if full_path.exists():
+            found_files.append((str(full_path), full_path.stat().st_mtime))
 
     if not found_files:
         return None
@@ -196,7 +200,9 @@ def load_nse_cash_master(file_path: str) -> dict[str, Any]:
     missing = [c for c in required if c not in df.columns]
     if missing:
         logger.error(
-            f"NSE Cash SecurityMaster missing required columns: {missing}. Found: {list(df.columns)}"
+            "NSE Cash SecurityMaster missing required columns: %s. Found: %s",
+            missing,
+            list(df.columns),
         )
         return {"by_symbol": {}, "company_search": {}}
 
@@ -318,11 +324,10 @@ def parse_pair_whitelist_for_options(pairs: list[str]) -> list[dict[str, Any]]:
 
 def resolve_underlying(
     specs: list[dict[str, Any]], nfo_master: dict[str, Any], nse_master: dict[str, Any]
-) -> Tuple[list[dict[str, Any]], list[str]]:
+) -> tuple[list[dict[str, Any]], list[str]]:
     resolved = []
     unresolved = []
     nfo_company_search = nfo_master.get("company_search", {})
-    nse_company_search = nse_master.get("company_search", {})
     for spec in specs:
         if spec["type"] in {"option", "future"}:
             if spec["is_company"]:
