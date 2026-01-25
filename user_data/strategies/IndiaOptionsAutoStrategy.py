@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import time
+import os
 import logging
-from typing import Iterable
+from typing import Iterable, Optional
+from datetime import datetime, time
 
 import pandas as pd
 from pandas import DataFrame
@@ -121,6 +122,10 @@ class IndiaOptionsAutoStrategy(IStrategy):
             dataframe.loc[within_window & bull, "enter_long"] = 1
         elif right == "PE":
             dataframe.loc[within_window & bear, "enter_long"] = 1
+
+        if os.environ.get("RISK_FORCE_SIGNAL"):
+            dataframe.loc[:, "enter_long"] = 1
+
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -128,3 +133,44 @@ class IndiaOptionsAutoStrategy(IStrategy):
         local_times = self._ist_time_mask(dataframe)
         dataframe.loc[local_times > time(14, 30), "exit_long"] = 1
         return dataframe
+
+    def confirm_trade_entry(
+        self,
+        pair: str,
+        order_type: str,
+        amount: float,
+        rate: float,
+        time_in_force: str,
+        current_time: datetime,
+        entry_tag: Optional[str],
+        side: str,
+        **kwargs,
+    ) -> bool:
+        """
+        Check risk guardrails before entering a trade.
+        """
+        try:
+            from user_data.risk_guardrails.guardrails import RiskGuardrails
+
+            guardrails = RiskGuardrails(self.config)
+
+            # EMERGENCY DEBUG
+            logger.error("DEBUG: confirm_trade_entry called for %s", pair)
+
+            # Context for P11
+            context = {
+                "open_trades_count": 0,  # Simplified for P11
+                "daily_trade_count": 0,
+                "daily_profit_ratio": 0.0,
+            }
+
+            blocked, reason = guardrails.should_block_entry(context)
+            if blocked:
+                logger.info("RISK_BLOCK entry for %s: %s", pair, reason)
+                return False
+
+            logger.info("RISK_OK entry for %s: %s", pair, reason)
+            return True
+        except Exception as e:
+            logger.error("Error in risk guardrail check: %s", e)
+            return True

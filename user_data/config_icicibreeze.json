@@ -59,5 +59,16 @@
   },
   "ai_comments": {
     "enabled": false
+  },
+  "risk_guardrails": {
+    "enabled": true,
+    "green_day_profit_ratio": 0.01,
+    "max_daily_loss_ratio": 0.05,
+    "max_trades_per_day": 50,
+    "max_open_positions": 5,
+    "kill_switch": {
+      "file": "user_data/generated/KILL_SWITCH",
+      "mode": "block_entries_only"
+    }
   }
 }
