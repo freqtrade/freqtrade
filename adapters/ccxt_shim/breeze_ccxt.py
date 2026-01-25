@@ -70,6 +70,9 @@ class BreezeCCXT(ccxt.Exchange):
         self.rate_limiter = InternalRateLimiter(rpm=rl_config)
         self._security_master_cache: dict[str, Any] | None = None
 
+        # Mock Order Storage
+        self._mock_orders: dict[str, dict] = {}
+
         # Credentials lookup (Options > ENV)
         self.api_key = self.options.get("key") or os.environ.get("BREEZE_API_KEY")
         api_secret = self.options.get("secret") or os.environ.get("BREEZE_API_SECRET")
@@ -179,12 +182,16 @@ class BreezeCCXT(ccxt.Exchange):
                     "fetchTicker": True,
                     "fetchOHLCV": True,
                     "fetchOrder": True,
+                    "createOrder": True,
+                    "cancelOrder": True,
                     "fetchOpenOrders": True,
                     "fetchClosedOrders": True,
+                    "fetchOrders": True,
                     "fetchMyTrades": True,
                     "fetchBalance": True,
                     "fetchOrderBook": True,
                     "fetchL2OrderBook": True,
+                    "fetchPositions": True,
                 },
                 "timeframes": {
                     "1m": "1minute",
@@ -510,18 +517,93 @@ class BreezeCCXT(ccxt.Exchange):
             return []
 
     def fetch_balance(self, params: dict | None = None):
-        raise OperationalException("fetch_balance not implemented in p06")
+        if self._is_mock_mode():
+            return {
+                "free": {"INR": 100000.0},
+                "used": {"INR": 0.0},
+                "total": {"INR": 100000.0},
+                "info": {"mock": True},
+            }
+        raise OperationalException("fetch_balance not supported in real mode yet.")
 
     def create_order(
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
-        raise OperationalException("Orders not implemented in p06")
+        if self._is_mock_mode():
+            import hashlib
+
+            ts = int(time.time() * 1000)
+            seed = f"{symbol}-{side}-{amount}-{ts}"
+            order_id = f"ord_{hashlib.md5(seed.encode()).hexdigest()[:12]}"
+            order = {
+                "id": order_id,
+                "clientOrderId": order_id,
+                "timestamp": ts,
+                "datetime": self.iso8601(ts),
+                "lastTradeTimestamp": None,
+                "status": "open",
+                "symbol": symbol,
+                "type": order_type,
+                "side": side,
+                "amount": amount,
+                "price": price,
+                "filled": 0.0,
+                "remaining": amount,
+                "cost": 0.0,
+                "trades": [],
+                "info": {"mock": True},
+            }
+            self._mock_orders[order_id] = order
+            return order
+        raise OperationalException("create_order not supported in real mode yet.")
 
     def cancel_order(self, order_id, symbol=None, params: dict | None = None):
-        raise OperationalException("Orders not implemented in p06")
+        if self._is_mock_mode():
+            if order_id in self._mock_orders:
+                self._mock_orders[order_id]["status"] = "canceled"
+                return self._mock_orders[order_id]
+            raise OperationalException(f"Mock order {order_id} not found.")
+        raise OperationalException("cancel_order not supported in real mode yet.")
 
     def fetch_order(self, order_id, symbol=None, params: dict | None = None):
-        raise OperationalException("Orders not implemented in p06")
+        if self._is_mock_mode():
+            if order_id in self._mock_orders:
+                return self._mock_orders[order_id]
+            raise OperationalException(f"Mock order {order_id} not found.")
+        raise OperationalException("fetch_order not supported in real mode yet.")
+
+    def fetch_open_orders(
+        self,
+        symbol: str | None = None,
+        since: int | None = None,
+        limit: int | None = None,
+        params: dict | None = None,
+    ):
+        if self._is_mock_mode():
+            orders = [o for o in self._mock_orders.values() if o["status"] == "open"]
+            if symbol:
+                orders = [o for o in orders if o["symbol"] == symbol]
+            return orders
+        raise OperationalException("fetch_open_orders not supported in real mode yet.")
+
+    def fetch_orders(
+        self,
+        symbol: str | None = None,
+        since: int | None = None,
+        limit: int | None = None,
+        params: dict | None = None,
+    ):
+        if self._is_mock_mode():
+            orders = list(self._mock_orders.values())
+            if symbol:
+                orders = [o for o in orders if o["symbol"] == symbol]
+            return orders
+        raise OperationalException("fetch_orders not supported in real mode yet.")
+
+    def fetch_positions(self, symbols: list[str] | None = None, params: dict | None = None):
+        if self._is_mock_mode():
+            return []
+        raise OperationalException("fetch_positions not supported in real mode yet.")
 
     def _generate_mock_ticker(self, symbol: str) -> dict[str, Any]:
         import hashlib
@@ -698,3 +780,44 @@ class BreezeAsyncCCXT(ccxt_async.Exchange):
         return await asyncio.to_thread(
             self.sync_exchange.fetch_ohlcv, symbol, timeframe, since, limit, params
         )
+
+    async def fetch_balance(self, params: dict | None = None):
+        return await asyncio.to_thread(self.sync_exchange.fetch_balance, params)
+
+    async def create_order(
+        self, symbol, order_type, side, amount, price=None, params: dict | None = None
+    ):
+        return await asyncio.to_thread(
+            self.sync_exchange.create_order, symbol, order_type, side, amount, price, params
+        )
+
+    async def cancel_order(self, order_id, symbol=None, params: dict | None = None):
+        return await asyncio.to_thread(self.sync_exchange.cancel_order, order_id, symbol, params)
+
+    async def fetch_order(self, order_id, symbol=None, params: dict | None = None):
+        return await asyncio.to_thread(self.sync_exchange.fetch_order, order_id, symbol, params)
+
+    async def fetch_open_orders(
+        self,
+        symbol: str | None = None,
+        since: int | None = None,
+        limit: int | None = None,
+        params: dict | None = None,
+    ):
+        return await asyncio.to_thread(
+            self.sync_exchange.fetch_open_orders, symbol, since, limit, params
+        )
+
+    async def fetch_orders(
+        self,
+        symbol: str | None = None,
+        since: int | None = None,
+        limit: int | None = None,
+        params: dict | None = None,
+    ):
+        return await asyncio.to_thread(
+            self.sync_exchange.fetch_orders, symbol, since, limit, params
+        )
+
+    async def fetch_positions(self, symbols: list[str] | None = None, params: dict | None = None):
+        return await asyncio.to_thread(self.sync_exchange.fetch_positions, symbols, params)

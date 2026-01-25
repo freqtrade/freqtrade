@@ -25,6 +25,7 @@ GATES=(
     "p08_equity_strategy_smoke"
     "p09_options_strategy_accept"
     "p09x_universe_scanner_accept"
+    "p10_execution_surface"
 )
 
 echo "=== STARTING FULL ACCEPTANCE SUITE (RUN_ID: $RUN_ID) ==="
