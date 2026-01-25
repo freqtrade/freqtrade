@@ -1,3 +1,4 @@
+#cd scripts && bash ./accept_all.sh
 #!/bin/bash
 # Master Acceptance Script
 # Runs all phase gates in order with run isolation and bundling
