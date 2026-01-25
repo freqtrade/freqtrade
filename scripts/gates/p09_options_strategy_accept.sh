@@ -1,14 +1,21 @@
 #!/bin/bash
 # P09 Options Strategy Accept Gate
 # Verifies options whitelist generation and strategy execution
+set -euo pipefail
 
 GATE_ID="p09"
 source scripts/gates/common.sh "$GATE_ID"
 
+require_timeout
+
+TIMEFRAME=${TIMEFRAME:-5m}
+DAYS=${DAYS:-2}
+TIMERANGE=${TIMERANGE:-""}
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+
 echo "Step 1: Generate Options Whitelist for RELIANCE"
-PAIRS_FILE="$OUT_DIR/p09_pairs.json"
+PAIRS_FILE="$ARTIFACT_DIR/p09_pairs.json"
 export BREEZE_MOCK=1
-export PYTHONPATH=.
 $PYTHON scripts/gen_option_whitelist.py --underlying RELIANCE --out "$PAIRS_FILE" || finish_gate $?
 
 echo "Step 2: Verify pairs quantity"
@@ -20,7 +27,7 @@ if [ "$PAIR_COUNT" -eq 0 ]; then
 fi
 
 echo "Step 3: Generate Config with Pairs"
-CONFIG_FILE="$OUT_DIR/config_p09.json"
+CONFIG_FILE="$ARTIFACT_DIR/config_p09.json"
 $PYTHON scripts/make_config_with_pairs.py --base-config user_data/config_icicibreeze.json --pairs "$PAIRS_FILE" --out-config "$CONFIG_FILE" || finish_gate $?
 
 echo "Step 4: Verify derived config"
@@ -31,16 +38,19 @@ if [ "$WL_COUNT" -eq 0 ]; then
     finish_gate 1
 fi
 
-echo "Step 5: Download Data (5m, 2 days)"
-# Including underlying RELIANCE/INR explicitly just in case download-data doesn't pick it up from informative_pairs
-$PYTHON -m freqtrade download-data --config "$CONFIG_FILE" --timeframes 5m --days 2 || finish_gate $?
+echo "Step 5: Download Data ($TIMEFRAME, $DAYS days)"
+freqtrade download-data -c "$CONFIG_FILE" --userdir user_data --timeframes "$TIMEFRAME" --days "$DAYS" || finish_gate $?
 
-echo "Step 6: Backtesting with IndiaIndexOptionsStrategy"
-$PYTHON -m freqtrade backtesting --config "$CONFIG_FILE" --strategy IndiaIndexOptionsStrategy --timeframe 5m --timerange 20260119-20260124 || finish_gate $?
+echo "Step 6: Backtesting with IndiaOptionsAutoStrategy"
+RANGE_ARG=""
+if [ -n "$TIMERANGE" ]; then
+    RANGE_ARG="--timerange $TIMERANGE"
+fi
+freqtrade backtesting -c "$CONFIG_FILE" --userdir user_data --strategy IndiaOptionsAutoStrategy --timeframe "$TIMEFRAME" $RANGE_ARG || finish_gate $?
 
 echo "Step 7: Dry-run Smoke Test"
-LOG_FILE="$OUT_DIR/dry_run.log"
-timeout 15s $PYTHON -m freqtrade trade --config "$CONFIG_FILE" --strategy IndiaIndexOptionsStrategy --dry-run > "$LOG_FILE" 2>&1 || true
+LOG_FILE="$ARTIFACT_DIR/dry_run.log"
+timeout 15s freqtrade trade -c "$CONFIG_FILE" --userdir user_data --strategy IndiaOptionsAutoStrategy --dry-run > "$LOG_FILE" 2>&1 || true
 
 if grep -q "Changing state to: RUNNING" "$LOG_FILE"; then
     echo "[OK] Bot reached RUNNING state with options strategy"

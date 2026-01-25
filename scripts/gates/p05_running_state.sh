@@ -1,16 +1,20 @@
 #!/bin/bash
 # P05 Running State Gate
 # Verifies that the bot can reach the RUNNING state in dry-run
+set -euo pipefail
 
 GATE_ID="p05"
 source scripts/gates/common.sh "$GATE_ID"
 
+require_timeout
+
 echo "Step 1: Start Dry-run Smoke Test"
-LOG_FILE="$OUT_DIR/dry_run.log"
+LOG_FILE="$ARTIFACT_DIR/dry_run.log"
 export BREEZE_MOCK=1
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
 # Run for 15 seconds to ensure it has time to initialize
-timeout 15s $PYTHON -m freqtrade trade --config user_data/config_icicibreeze.json --strategy IndiaEquitySmokeStrategy --dry-run > "$LOG_FILE" 2>&1 || true
+timeout 15s freqtrade trade -c user_data/config_icicibreeze.json --userdir user_data --strategy IndiaEquitySmokeStrategy --dry-run > "$LOG_FILE" 2>&1 || true
 
 echo "Step 2: Assert 'Changing state to: RUNNING' exists in logs"
 if grep -q "Changing state to: RUNNING" "$LOG_FILE"; then

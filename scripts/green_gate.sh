@@ -9,6 +9,11 @@ mkdir -p "$OUT_DIR"
 FREQTRADE=".venv/bin/freqtrade"
 PYTHON=".venv/bin/python"
 
+# Standard Environment
+TIMEFRAME=${TIMEFRAME:-5m}
+DAYS=${DAYS:-2}
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+
 # --- Preflight Check ---
 if [ ! -f "$PYTHON" ]; then
     echo "ERROR: $PYTHON not found. Activate a venv first."
@@ -26,10 +31,10 @@ echo "--- 1. Compile Check ---"
 $PYTHON -m compileall -q freqtrade adapters scripts user_data tests
 
 echo "--- 2. Show Config ---"
-$FREQTRADE show-config -c user_data/config_icicibreeze.json --userdir user_data >"$OUT_DIR/show-config.json"
+freqtrade show-config -c user_data/config_icicibreeze.json --userdir user_data >"$OUT_DIR/show-config.json"
 
 echo "--- 3. List Markets ---"
-$FREQTRADE list-markets -c user_data/config_icicibreeze.json --userdir user_data >"$OUT_DIR/markets.txt"
+freqtrade list-markets -c user_data/config_icicibreeze.json --userdir user_data >"$OUT_DIR/markets.txt"
 
 echo "--- 4. Ticker Smoke Test ---"
 $PYTHON scripts/smoke_icicibreeze_ticker.py >"$OUT_DIR/ticker.txt"
@@ -37,15 +42,15 @@ $PYTHON scripts/smoke_icicibreeze_ticker.py >"$OUT_DIR/ticker.txt"
 echo "--- 5. Download Data Test (BTC & INR) ---"
 if [ "${ENABLE_BTC_TEST:-0}" -eq 1 ]; then
     echo "Downloading BTC/USDT..."
-    $FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs BTC/USDT --days 2 -v >"$OUT_DIR/dl_btc.txt" 2>&1
+    freqtrade download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes "$TIMEFRAME" --pairs BTC/USDT --days "$DAYS" -v >"$OUT_DIR/dl_btc.txt" 2>&1
 else
     echo "Skipping BTC/USDT download (ENABLE_BTC_TEST=0)"
 fi
-$FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs RELIANCE/INR --days 2 -v >"$OUT_DIR/dl_inr.txt" 2>&1
+freqtrade download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes "$TIMEFRAME" --pairs RELIANCE/INR --days "$DAYS" -v >"$OUT_DIR/dl_inr.txt" 2>&1
 
 echo "--- 6. Dry Run Trade Test ---"
 # Start trade in background, redirecting both stdout and stderr to capture logs
-$FREQTRADE trade --dry-run -c user_data/config_icicibreeze.json --userdir user_data -s IndiaEquitySmokeStrategy -vv >"$OUT_DIR/trade.txt" 2>&1 &
+freqtrade trade --dry-run -c user_data/config_icicibreeze.json --userdir user_data -s IndiaEquitySmokeStrategy -vv >"$OUT_DIR/trade.txt" 2>&1 &
 PID=$!
 echo "Freqtrade started with PID $PID. Waiting 15s for startup/running state..."
 sleep 15

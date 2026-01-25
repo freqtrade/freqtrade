@@ -1,12 +1,13 @@
 #!/bin/bash
 # Master Acceptance Script
-# Runs all phase gates in order with centralized logging and bundling
-
+# Runs all phase gates in order with run isolation and bundling
 set -euo pipefail
 
 RUN_ID=$(date +%Y%m%d_%H%M%S)
+export RUN_ID
+
 RUN_DIR="user_data/generated/accept_runs/$RUN_ID"
-mkdir -p "$RUN_DIR/logs" "$RUN_DIR/status"
+mkdir -p "$RUN_DIR"
 
 GATES=(
     "p00_governance"
@@ -23,7 +24,7 @@ GATES=(
 )
 
 echo "=== STARTING FULL ACCEPTANCE SUITE (RUN_ID: $RUN_ID) ==="
-echo "Run Directory: $RUN_DIR"
+echo "Run Folder: $RUN_DIR"
 
 FAILED=0
 
@@ -31,44 +32,38 @@ for gate in "${GATES[@]}"; do
     GATE_SCRIPT="scripts/gates/${gate}.sh"
     if [ ! -f "$GATE_SCRIPT" ]; then
         echo "ERROR: Gate script missing: $GATE_SCRIPT"
-        echo "FAIL" > "$RUN_DIR/status/${gate}.status"
-        FAILED=1
         continue
     fi
 
     echo ""
-    echo ">>> Running Gate: $gate"
+    echo ">>> Executing Gate: $gate"
     
-    # Run gate and capture output to run dir log
-    # We use a subshell to capture exit code while set -e is active
-    if bash "$GATE_SCRIPT" 2>&1 | tee "$RUN_DIR/logs/${gate}.log"; then
-        echo "PASS" > "$RUN_DIR/status/${gate}.status"
-        echo ">>> Gate $gate PASSED"
+    # Run gate. Note: common.sh handles internal artifact routing via RUN_ID
+    if bash "$GATE_SCRIPT"; then
+        echo ">>> Gate $gate: PASS"
     else
-        echo "FAIL" > "$RUN_DIR/status/${gate}.status"
-        echo ">>> Gate $gate FAILED (Check $RUN_DIR/logs/${gate}.log)"
+        echo ">>> Gate $gate: FAIL"
+        # Print log path to help debugging
+        LOG_PATH="$RUN_DIR/gates/${gate//_*/}/gate.log"
+        echo "Check log: $LOG_PATH"
         FAILED=1
+        break # Fail fast
     fi
 done
 
 echo ""
 echo "=== ACCEPTANCE SUITE SUMMARY ==="
-for gate in "${GATES[@]}"; do
-    STATUS=$(cat "$RUN_DIR/status/${gate}.status" 2>/dev/null || echo "MISSING")
-    printf "%-35s : %s\n" "$gate" "$STATUS"
-done
+if [ "$FAILED" -eq 0 ]; then
+    echo "OVERALL STATUS: PASSED"
+else
+    echo "OVERALL STATUS: FAILED"
+fi
 
 # Create final bundle
 BUNDLE="user_data/generated/accept_runs/${RUN_ID}.tar.gz"
 tar -czf "$BUNDLE" -C "user_data/generated/accept_runs" "$RUN_ID"
 
 echo ""
-echo "Final Bundle: $BUNDLE"
+echo "Final Artifact: $BUNDLE"
 
-if [ "$FAILED" -ne 0 ]; then
-    echo "OVERALL STATUS: FAILED"
-    exit 1
-else
-    echo "OVERALL STATUS: PASSED"
-    exit 0
-fi
+exit "$FAILED"

@@ -1,9 +1,12 @@
 #!/bin/bash
 # P00 Governance Gate
 # Verifies compilation and stable tests
+set -euo pipefail
 
 GATE_ID="p00"
 source scripts/gates/common.sh "$GATE_ID"
+
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "Step 1: Python Compilation"
 $PYTHON -m compileall -q freqtrade adapters scripts user_data tests || finish_gate $?

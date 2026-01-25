@@ -1,14 +1,16 @@
 #!/bin/bash
 # P03 INR Pairs Presence Gate
 # Verifies that canonical INR pairs are present in market listing
+set -euo pipefail
 
 GATE_ID="p03"
 source scripts/gates/common.sh "$GATE_ID"
 
 echo "Step 1: Freqtrade list-markets and check for RELIANCE/INR"
 export BREEZE_MOCK=1
-MARKETS_FILE="$OUT_DIR/markets.txt"
-$PYTHON -m freqtrade list-markets --config user_data/config_icicibreeze.json > "$MARKETS_FILE" || finish_gate $?
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+MARKETS_FILE="$ARTIFACT_DIR/markets.txt"
+freqtrade list-markets -c user_data/config_icicibreeze.json --userdir user_data > "$MARKETS_FILE" || finish_gate $?
 
 if grep -q "RELIANCE/INR" "$MARKETS_FILE"; then
     echo "[OK] RELIANCE/INR found in market list"

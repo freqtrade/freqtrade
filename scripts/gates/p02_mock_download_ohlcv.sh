@@ -1,19 +1,24 @@
 #!/bin/bash
 # P02 Mock Download OHLCV Gate
 # Verifies data download functionality in mock mode
+set -euo pipefail
 
 GATE_ID="p02"
 source scripts/gates/common.sh "$GATE_ID"
 
-echo "Step 1: Download Data (RELIANCE/INR, 5m, 2 days)"
+TIMEFRAME=${TIMEFRAME:-5m}
+DAYS=${DAYS:-2}
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+
+echo "Step 1: Download Data (RELIANCE/INR, $TIMEFRAME, $DAYS days)"
 export BREEZE_MOCK=1
-$PYTHON -m freqtrade download-data --config user_data/config_icicibreeze.json --pairs RELIANCE/INR --timeframes 5m --days 2 || finish_gate $?
+freqtrade download-data -c user_data/config_icicibreeze.json --userdir user_data --pairs RELIANCE/INR --timeframes "$TIMEFRAME" --days "$DAYS" || finish_gate $?
 
 echo "Step 2: Verify Data File"
-DATA_FILE="user_data/data/icicibreeze/RELIANCE_INR-5m.feather"
+DATA_FILE="user_data/data/icicibreeze/RELIANCE_INR-${TIMEFRAME}.feather"
 # Fallback to json if feather is not used, although freqtrade 2025.12 defaults to feather
 if [ ! -f "$DATA_FILE" ]; then
-    DATA_FILE="user_data/data/icicibreeze/RELIANCE_INR-5m.json"
+    DATA_FILE="user_data/data/icicibreeze/RELIANCE_INR-${TIMEFRAME}.json"
 fi
 
 if [ ! -f "$DATA_FILE" ]; then

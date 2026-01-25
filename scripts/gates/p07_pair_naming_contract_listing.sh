@@ -1,9 +1,12 @@
 #!/bin/bash
 # P07 Pair Naming & Contract Listing Gate
 # Verifies that symbol normalization and contract parsing are deterministic
+set -euo pipefail
 
 GATE_ID="p07"
 source scripts/gates/common.sh "$GATE_ID"
+
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "Step 1: Normalize Pair Names"
 # Legacy format
@@ -25,8 +28,7 @@ if [ "$NORMALIZED_CANONICAL" != "RELIANCE/INR" ]; then
 fi
 
 echo "Step 2: List ICICI Contracts"
-CONTRACTS_FILE="$OUT_DIR/contracts.txt"
-export PYTHONPATH=.
+CONTRACTS_FILE="$ARTIFACT_DIR/contracts.txt"
 $PYTHON scripts/list_icici_contracts.py --underlying RELIANCE,NIFTY > "$CONTRACTS_FILE" || finish_gate $?
 
 echo "Step 3: Assert deterministic counts"

@@ -1,17 +1,24 @@
 #!/bin/bash
 # P08 Equity Strategy Smoke Gate
 # Verifies strategy execution for equities
+set -euo pipefail
 
 GATE_ID="p08"
 source scripts/gates/common.sh "$GATE_ID"
 
+require_timeout
+
+TIMEFRAME=${TIMEFRAME:-5m}
+DAYS=${DAYS:-2}
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+
 echo "Step 1: Backtesting with IndiaEquitySmokeStrategy"
 export BREEZE_MOCK=1
-$PYTHON -m freqtrade backtesting --config user_data/config_icicibreeze.json --strategy IndiaEquitySmokeStrategy --timeframe 5m --timerange 20260119-20260124 || finish_gate $?
+freqtrade backtesting -c user_data/config_icicibreeze.json --userdir user_data --strategy IndiaEquitySmokeStrategy --timeframe "$TIMEFRAME" --days "$DAYS" || finish_gate $?
 
 echo "Step 2: Dry-run Smoke Test"
-LOG_FILE="$OUT_DIR/dry_run.log"
-timeout 15s $PYTHON -m freqtrade trade --config user_data/config_icicibreeze.json --strategy IndiaEquitySmokeStrategy --dry-run > "$LOG_FILE" 2>&1 || true
+LOG_FILE="$ARTIFACT_DIR/dry_run.log"
+timeout 15s freqtrade trade -c user_data/config_icicibreeze.json --userdir user_data --strategy IndiaEquitySmokeStrategy --dry-run > "$LOG_FILE" 2>&1 || true
 
 if grep -q "Changing state to: RUNNING" "$LOG_FILE"; then
     echo "[OK] Bot reached RUNNING state with strategy"
