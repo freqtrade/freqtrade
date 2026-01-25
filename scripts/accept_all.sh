@@ -1,4 +1,3 @@
-#cd scripts && bash ./accept_all.sh
 #!/bin/bash
 # Master Acceptance Script
 # Runs all phase gates in order with run isolation and bundling
@@ -27,6 +26,7 @@ ALL_GATES=(
     "p09_options_strategy_accept"
     "p09x_universe_scanner_accept"
     "p10_execution_surface"
+    "p11_risk_guardrails"
 )
 
 TARGET=${1:-""}

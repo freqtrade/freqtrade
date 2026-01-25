@@ -22,9 +22,25 @@ jq '.max_open_trades = 100 | .position_stacking = true' "$CFG" > "$GATE_CFG"
 LOG_BLOCK="$ARTIFACT_DIR/dry_run_block.log"
 LOG_ALLOW="$ARTIFACT_DIR/dry_run_allow.log"
 
+# Clean up background process function
+terminate_bot() {
+    local pid=$1
+    local name=$2
+    echo "Terminating $name (SIGINT)..."
+    kill -INT "$pid" || true
+    for i in {1..20}; do
+        if ! kill -0 "$pid" 2>/dev/null; then return 0; fi
+        sleep 0.5
+    done
+    echo "$name still alive after 10s, sending SIGKILL..."
+    kill -9 "$pid" || true
+    wait "$pid" || true
+}
+
 # Case 1: Should block entries (Green Day Lock)
 echo "Step 1: Case 1 - Should block entries (Green Day Lock)"
 export RISK_FORCE_DAILY_PROFIT_RATIO=0.015
+export RISK_FORCE_SIGNAL=1
 "$FREQTRADE" trade --dry-run \
   --db-url "sqlite:///$ARTIFACT_DIR/trades.sqlite" \
   -c "$GATE_CFG" \
@@ -35,35 +51,28 @@ FT_PID=$!
 
 echo "Waiting for bot to evaluate risk (block)..."
 BLOCK_CONFIRMED=0
-# We wait longer for a potential signal match or at least running state
-for i in {1..40}; do
+for i in {1..60}; do
     if grep -q "RISK_BLOCK entry" "$LOG_BLOCK"; then
         BLOCK_CONFIRMED=1
         break
     fi
-    if grep -q "TA Analysis Launched" "$LOG_BLOCK"; then
-        # If TA is running, we wait a bit more for a signal
-        sleep 1
-    fi
     sleep 0.5
 done
 
-echo "Terminating Case 1..."
-kill -INT "$FT_PID" || true
-wait "$FT_PID" || true
+terminate_bot "$FT_PID" "Case 1 Bot"
 
 if [ "$BLOCK_CONFIRMED" -eq 0 ]; then
-    echo "ERROR: RISK_BLOCK not found in logs for Case 1"
-    # Note: If no signal matched, confirm_trade_entry wasn't called.
-    # We might need to ensure a signal exists for this assertion to work.
+    echo "ERROR: RISK_BLOCK not found in logs for Case 1 within 30s"
     echo "Last 20 lines of log:"
     tail -n 20 "$LOG_BLOCK"
-    # For P11 validation, we'll try a fallback if needed, but let's see if it triggers.
+    finish_gate 1
 fi
+echo "[OK] Risk block confirmed: $(grep "RISK_BLOCK entry" "$LOG_BLOCK" | head -n 1)"
 
 # Case 2: Should allow entries
 echo "Step 2: Case 2 - Should allow entries"
 export RISK_FORCE_DAILY_PROFIT_RATIO=0.0
+export RISK_FORCE_SIGNAL=1
 "$FREQTRADE" trade --dry-run \
   --db-url "sqlite:///$ARTIFACT_DIR/trades_case2.sqlite" \
   -c "$GATE_CFG" \
@@ -74,26 +83,22 @@ FT_PID=$!
 
 echo "Waiting for bot to reach TA Analysis (allow)..."
 ALLOW_CONFIRMED=0
-for i in {1..40}; do
+for i in {1..60}; do
     if grep -q "RISK_BLOCK entry" "$LOG_ALLOW"; then
          echo "ERROR: Unexpected RISK_BLOCK found in logs for Case 2"
          finish_gate 1
     fi
-    if grep -q "TA Analysis Launched" "$LOG_ALLOW"; then
+    if grep -q "RISK_OK entry" "$LOG_ALLOW"; then
         ALLOW_CONFIRMED=1
-        # In Case 2, we just want to ensure it DOESN'T block if it reaches running/TA.
-        # It's extra points if we see RISK_OK.
         break
     fi
     sleep 0.5
 done
 
-echo "Terminating Case 2..."
-kill -INT "$FT_PID" || true
-wait "$FT_PID" || true
+terminate_bot "$FT_PID" "Case 2 Bot"
 
 if [ "$ALLOW_CONFIRMED" -eq 0 ]; then
-    echo "ERROR: Bot failed to reach TA analysis in Case 2"
+    echo "ERROR: Bot failed to reach TA analysis or log RISK_OK in Case 2"
     tail -n 20 "$LOG_ALLOW"
     finish_gate 1
 fi

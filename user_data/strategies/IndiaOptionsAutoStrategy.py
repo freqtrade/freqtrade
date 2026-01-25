@@ -154,9 +154,6 @@ class IndiaOptionsAutoStrategy(IStrategy):
 
             guardrails = RiskGuardrails(self.config)
 
-            # EMERGENCY DEBUG
-            logger.error("DEBUG: confirm_trade_entry called for %s", pair)
-
             # Context for P11
             context = {
                 "open_trades_count": 0,  # Simplified for P11
