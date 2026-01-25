@@ -23,7 +23,12 @@ class IndiaOptionsAutoStrategy(IStrategy):
     INTERFACE_VERSION = 3
 
     timeframe = "5m"
-    startup_candle_count = 50
+
+    @property
+    def startup_candle_count(self) -> int:
+        if os.environ.get("RISK_FORCE_SIGNAL"):
+            return 0
+        return 50
 
     minimal_roi = {"0": 0.12}
     stoploss = -0.15
@@ -124,6 +129,11 @@ class IndiaOptionsAutoStrategy(IStrategy):
             dataframe.loc[within_window & bear, "enter_long"] = 1
 
         if os.environ.get("RISK_FORCE_SIGNAL"):
+            logger.error(
+                "DEBUG: RISK_FORCE_SIGNAL active for %s. Rows: %d",
+                metadata.get("pair"),
+                len(dataframe),
+            )
             dataframe.loc[:, "enter_long"] = 1
 
         return dataframe
