@@ -32,10 +32,19 @@ require_timeout() {
     require_cmd timeout
 }
 
-# Setup Python
+# Setup Python and Path
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+PATH="$PWD/.venv/bin:$PATH"
+export PATH
+
 export PYTHON=".venv/bin/python"
 if [ ! -f "$PYTHON" ]; then
     echo "ERROR: $PYTHON not found. Activate a venv first."
+    exit 1
+fi
+export FREQTRADE=".venv/bin/freqtrade"
+if [ ! -f "$FREQTRADE" ]; then
+    echo "ERROR: $FREQTRADE not found. Ensure freqtrade is installed in the venv."
     exit 1
 fi
 

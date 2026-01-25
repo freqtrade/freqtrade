@@ -14,7 +14,7 @@ export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "Step 1: Backtesting with IndiaEquitySmokeStrategy"
 export BREEZE_MOCK=1
-freqtrade backtesting -c user_data/config_icicibreeze.json --userdir user_data --strategy IndiaEquitySmokeStrategy --timeframe "$TIMEFRAME" --days "$DAYS" || finish_gate $?
+freqtrade backtesting -c user_data/config_icicibreeze.json --userdir user_data --strategy IndiaEquitySmokeStrategy --timeframe "$TIMEFRAME" || finish_gate $?
 
 echo "Step 2: Dry-run Smoke Test"
 LOG_FILE="$ARTIFACT_DIR/dry_run.log"
