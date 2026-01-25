@@ -314,6 +314,24 @@ def _build_pairs_report(
             skipped_underlyings.append({"underlying": underlying, "reason": f"error: {exc}"})
 
     # 3. Apply Cap and Deterministic Sort
+    # Separate cash and option pairs to ensure ordering: CASH first, then OPTIONS
+    cash_pairs: list[str] = []
+    option_pairs: list[str] = []
+
+    for p in pairs:
+        # Simple heuristic: if it contains '/' but NO '-' it's likely a cash pair
+        # format_pair generates "SYMBOL/INR" for cash and "SYMBOL-EXP-STRIKE-RIGHT/INR" for options
+        if "/" in p and "-" not in p.split("/")[0]:
+            cash_pairs.append(p)
+        else:
+            option_pairs.append(p)
+
+    # Sort each group separately to maintain determinism
+    cash_pairs.sort()
+    option_pairs.sort()
+
+    pairs = cash_pairs + option_pairs
+
     total_pairs_cap = _resolve_total_pairs_cap(universe, option_policy)
     if total_pairs_cap and len(pairs) > total_pairs_cap:
         logger.warning(
@@ -322,9 +340,6 @@ def _build_pairs_report(
             total_pairs_cap,
         )
         pairs = pairs[:total_pairs_cap]
-
-    # Ensure deterministic output ordering
-    pairs.sort()
 
     report = {
         "selected_indices": selected_indices,
