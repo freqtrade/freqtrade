@@ -6,7 +6,7 @@ GATE_ID="p09"
 source scripts/gates/common.sh "$GATE_ID"
 
 echo "Step 1: Generate Options Whitelist for RELIANCE"
-PAIRS_FILE="$ARTIFACT_DIR/p09_pairs.json"
+PAIRS_FILE="$OUT_DIR/p09_pairs.json"
 export BREEZE_MOCK=1
 export PYTHONPATH=.
 $PYTHON scripts/gen_option_whitelist.py --underlying RELIANCE --out "$PAIRS_FILE" || finish_gate $?
@@ -20,7 +20,7 @@ if [ "$PAIR_COUNT" -eq 0 ]; then
 fi
 
 echo "Step 3: Generate Config with Pairs"
-CONFIG_FILE="$ARTIFACT_DIR/config_p09.json"
+CONFIG_FILE="$OUT_DIR/config_p09.json"
 $PYTHON scripts/make_config_with_pairs.py --base-config user_data/config_icicibreeze.json --pairs "$PAIRS_FILE" --out-config "$CONFIG_FILE" || finish_gate $?
 
 echo "Step 4: Verify derived config"
@@ -39,7 +39,7 @@ echo "Step 6: Backtesting with IndiaIndexOptionsStrategy"
 $PYTHON -m freqtrade backtesting --config "$CONFIG_FILE" --strategy IndiaIndexOptionsStrategy --timeframe 5m --timerange 20260119-20260124 || finish_gate $?
 
 echo "Step 7: Dry-run Smoke Test"
-LOG_FILE="$ARTIFACT_DIR/dry_run.log"
+LOG_FILE="$OUT_DIR/dry_run.log"
 timeout 15s $PYTHON -m freqtrade trade --config "$CONFIG_FILE" --strategy IndiaIndexOptionsStrategy --dry-run > "$LOG_FILE" 2>&1 || true
 
 if grep -q "Changing state to: RUNNING" "$LOG_FILE"; then

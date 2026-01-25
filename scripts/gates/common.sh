@@ -7,27 +7,29 @@ if [ -z "$GATE_ID" ]; then
     exit 1
 fi
 
-ARTIFACT_DIR="user_data/generated/gates/$GATE_ID"
-mkdir -p "$ARTIFACT_DIR"
-GATE_LOG="$ARTIFACT_DIR/gate.log"
+# Support OUT_DIR passed from orchestrator or default
+OUT_DIR="${OUT_DIR:-user_data/generated/gates/$GATE_ID}"
+mkdir -p "$OUT_DIR"
+GATE_LOG="$OUT_DIR/gate.log"
 
 # Setup Python
 export PYTHON=".venv/bin/python"
 if [ ! -f "$PYTHON" ]; then
-    PYTHON="python"
+    echo "ERROR: $PYTHON not found. Activate a venv first."
+    exit 1
 fi
 
 # Function to write status.json and exit
 finish_gate() {
     EXIT_CODE=$1
-    STATUS="passed"
+    STATUS="PASS"
     if [ "$EXIT_CODE" -ne 0 ]; then
-        STATUS="failed"
+        STATUS="FAIL"
     fi
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     
     # Write status.json
-    cat <<EOF > "$ARTIFACT_DIR/status.json"
+    cat <<EOF > "$OUT_DIR/status.json"
 {
     "gate_id": "$GATE_ID",
     "status": "$STATUS",
@@ -36,7 +38,8 @@ finish_gate() {
 }
 EOF
     
-    echo "Gate $GATE_ID $STATUS with exit code $EXIT_CODE"
+    echo "=== Gate $GATE_ID Result: $STATUS ==="
+    echo "GATE_RESULT=$STATUS ARTIFACTS=$OUT_DIR"
     exit "$EXIT_CODE"
 }
 
@@ -44,5 +47,5 @@ EOF
 exec > >(tee -a "$GATE_LOG") 2>&1
 
 echo "=== Starting Gate: $GATE_ID ==="
-echo "Artifact Directory: $ARTIFACT_DIR"
+echo "Artifact Directory: $OUT_DIR"
 echo "Timestamp: $(date)"

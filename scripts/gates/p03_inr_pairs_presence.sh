@@ -7,7 +7,7 @@ source scripts/gates/common.sh "$GATE_ID"
 
 echo "Step 1: Freqtrade list-markets and check for RELIANCE/INR"
 export BREEZE_MOCK=1
-MARKETS_FILE="$ARTIFACT_DIR/markets.txt"
+MARKETS_FILE="$OUT_DIR/markets.txt"
 $PYTHON -m freqtrade list-markets --config user_data/config_icicibreeze.json > "$MARKETS_FILE" || finish_gate $?
 
 if grep -q "RELIANCE/INR" "$MARKETS_FILE"; then

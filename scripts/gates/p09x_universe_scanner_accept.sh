@@ -12,13 +12,13 @@ SECURITY_MASTER_TXT="user_data/data/icicibreeze/FONSEScripMaster.txt"
 UNIVERSE_SCAN_PY="scripts/universe_scan_and_generate_pairs.py"
 GEN_WHITELIST_PY="scripts/make_config_with_pairs.py"
 
-V1_PAIRS="$ARTIFACT_DIR/p09x_pairs_v1.json"
-V1_REPORT="$ARTIFACT_DIR/p09x_report_v1.json"
-V1_CONFIG="$ARTIFACT_DIR/config_p09x_v1.json"
+V1_PAIRS="$OUT_DIR/p09x_pairs_v1.json"
+V1_REPORT="$OUT_DIR/p09x_report_v1.json"
+V1_CONFIG="$OUT_DIR/config_p09x_v1.json"
 
-V2_PAIRS="$ARTIFACT_DIR/p09x_pairs_v2.json"
-V2_REPORT="$ARTIFACT_DIR/p09x_report_v2.json"
-V2_CONFIG="$ARTIFACT_DIR/config_p09x_v2.json"
+V2_PAIRS="$OUT_DIR/p09x_pairs_v2.json"
+V2_REPORT="$OUT_DIR/p09x_report_v2.json"
+V2_CONFIG="$OUT_DIR/config_p09x_v2.json"
 
 export PYTHONPATH=.
 

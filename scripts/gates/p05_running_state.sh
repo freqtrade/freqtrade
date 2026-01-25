@@ -6,7 +6,7 @@ GATE_ID="p05"
 source scripts/gates/common.sh "$GATE_ID"
 
 echo "Step 1: Start Dry-run Smoke Test"
-LOG_FILE="$ARTIFACT_DIR/dry_run.log"
+LOG_FILE="$OUT_DIR/dry_run.log"
 export BREEZE_MOCK=1
 
 # Run for 15 seconds to ensure it has time to initialize

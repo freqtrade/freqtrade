@@ -25,7 +25,7 @@ if [ "$NORMALIZED_CANONICAL" != "RELIANCE/INR" ]; then
 fi
 
 echo "Step 2: List ICICI Contracts"
-CONTRACTS_FILE="$ARTIFACT_DIR/contracts.txt"
+CONTRACTS_FILE="$OUT_DIR/contracts.txt"
 export PYTHONPATH=.
 $PYTHON scripts/list_icici_contracts.py --underlying RELIANCE,NIFTY > "$CONTRACTS_FILE" || finish_gate $?
 

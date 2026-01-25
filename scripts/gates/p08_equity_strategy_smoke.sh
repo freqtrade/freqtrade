@@ -10,7 +10,7 @@ export BREEZE_MOCK=1
 $PYTHON -m freqtrade backtesting --config user_data/config_icicibreeze.json --strategy IndiaEquitySmokeStrategy --timeframe 5m --timerange 20260119-20260124 || finish_gate $?
 
 echo "Step 2: Dry-run Smoke Test"
-LOG_FILE="$ARTIFACT_DIR/dry_run.log"
+LOG_FILE="$OUT_DIR/dry_run.log"
 timeout 15s $PYTHON -m freqtrade trade --config user_data/config_icicibreeze.json --strategy IndiaEquitySmokeStrategy --dry-run > "$LOG_FILE" 2>&1 || true
 
 if grep -q "Changing state to: RUNNING" "$LOG_FILE"; then

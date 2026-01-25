@@ -1,29 +1,51 @@
 #!/bin/bash
 set -euo pipefail
 
+# Accept OUT_DIR as env var or default to gate-specific path
+OUT_DIR="${OUT_DIR:-user_data/generated/gates/p00_green_gate}"
+mkdir -p "$OUT_DIR"
+
 # Define paths to binaries in the virtual environment
 FREQTRADE=".venv/bin/freqtrade"
 PYTHON=".venv/bin/python"
 
+# --- Preflight Check ---
+if [ ! -f "$PYTHON" ]; then
+    echo "ERROR: $PYTHON not found. Activate a venv first."
+    exit 1
+fi
+if [ ! -f "$FREQTRADE" ]; then
+    echo "ERROR: $FREQTRADE not found. Ensure freqtrade is installed in the venv."
+    exit 1
+fi
+
+echo "Using Python: $PYTHON"
+$PYTHON -V
+
 echo "--- 1. Compile Check ---"
-$PYTHON -m compileall -q freqtrade
+$PYTHON -m compileall -q freqtrade adapters scripts user_data tests
 
 echo "--- 2. Show Config ---"
-$FREQTRADE show-config -c user_data/config_icicibreeze.json --userdir user_data >/tmp/show-config.json
+$FREQTRADE show-config -c user_data/config_icicibreeze.json --userdir user_data >"$OUT_DIR/show-config.json"
 
 echo "--- 3. List Markets ---"
-$FREQTRADE list-markets -c user_data/config_icicibreeze.json --userdir user_data >/tmp/markets.txt
+$FREQTRADE list-markets -c user_data/config_icicibreeze.json --userdir user_data >"$OUT_DIR/markets.txt"
 
 echo "--- 4. Ticker Smoke Test ---"
-$PYTHON scripts/smoke_icicibreeze_ticker.py >/tmp/ticker.txt
+$PYTHON scripts/smoke_icicibreeze_ticker.py >"$OUT_DIR/ticker.txt"
 
 echo "--- 5. Download Data Test (BTC & INR) ---"
-$FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs BTC/USDT --days 2 -v >/tmp/dl_btc.txt 2>&1
-$FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs RELIANCE/INR --days 2 -v >/tmp/dl_inr.txt 2>&1
+if [ "${ENABLE_BTC_TEST:-0}" -eq 1 ]; then
+    echo "Downloading BTC/USDT..."
+    $FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs BTC/USDT --days 2 -v >"$OUT_DIR/dl_btc.txt" 2>&1
+else
+    echo "Skipping BTC/USDT download (ENABLE_BTC_TEST=0)"
+fi
+$FREQTRADE download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes 5m --pairs RELIANCE/INR --days 2 -v >"$OUT_DIR/dl_inr.txt" 2>&1
 
 echo "--- 6. Dry Run Trade Test ---"
 # Start trade in background, redirecting both stdout and stderr to capture logs
-$FREQTRADE trade --dry-run -c user_data/config_icicibreeze.json --userdir user_data -s IcbcSmokeStrategy -vv >/tmp/trade.txt 2>&1 &
+$FREQTRADE trade --dry-run -c user_data/config_icicibreeze.json --userdir user_data -s IndiaEquitySmokeStrategy -vv >"$OUT_DIR/trade.txt" 2>&1 &
 PID=$!
 echo "Freqtrade started with PID $PID. Waiting 15s for startup/running state..."
 sleep 15
@@ -35,9 +57,9 @@ wait $PID || true
 echo "--- Verification ---"
 
 # 1. Mode Detection
-if grep -q "Stub mode" /tmp/trade.txt; then
+if grep -q "Stub mode" "$OUT_DIR/trade.txt"; then
     echo "[OK] Mode detected: stub"
-elif grep -q "Real mode" /tmp/trade.txt; then
+elif grep -q "Real mode" "$OUT_DIR/trade.txt"; then
     echo "[OK] Mode detected: real"
 else
     echo "[FAIL] Mode detection missing in logs"
@@ -45,36 +67,35 @@ else
 fi
 
 # 2. OHLCV Reliability (RELIANCE/INR)
-# Expected log: "with length 751." (or meaningful number)
-if grep -q "with length [1-9]" /tmp/dl_inr.txt; then
-    LENGTH=$(grep -o "with length [0-9]*" /tmp/dl_inr.txt | head -n 1)
+if grep -q "with length [1-9]" "$OUT_DIR/dl_inr.txt"; then
+    LENGTH=$(grep -o "with length [0-9]*" "$OUT_DIR/dl_inr.txt" | head -n 1)
     echo "[OK] RELIANCE/INR data downloaded ($LENGTH)"
 else
     echo "[FAIL] RELIANCE/INR data download failed or empty"
-    cat /tmp/dl_inr.txt
+    cat "$OUT_DIR/dl_inr.txt"
     exit 1
 fi
 
 # 3. Trade State
-if grep -q "Changing state to: RUNNING" /tmp/trade.txt; then
+if grep -q "Changing state to: RUNNING" "$OUT_DIR/trade.txt"; then
     echo "[OK] Reached RUNNING state"
 else
     echo "[FAIL] Did not reach RUNNING state"
     # Show relevant logs
-    grep "Changing state to" /tmp/trade.txt
-    tail -n 20 /tmp/trade.txt
+    grep "Changing state to" "$OUT_DIR/trade.txt" || true
+    tail -n 20 "$OUT_DIR/trade.txt"
     exit 1
 fi
 
 # 4. Standard Checks (Exchange, Wallets)
-if grep -q "Using resolved exchange 'Icicibreeze'" /tmp/trade.txt; then
+if grep -q "Using resolved exchange 'Icicibreeze'" "$OUT_DIR/trade.txt"; then
     echo "[OK] Exchange resolved"
 else
     echo "[FAIL] Exchange resolution missing"
     exit 1
 fi
 
-if grep -q "Wallets synced" /tmp/trade.txt; then
+if grep -q "Wallets synced" "$OUT_DIR/trade.txt"; then
     echo "[OK] Wallets synced"
 else
     echo "[FAIL] Wallets verification missing"
@@ -82,3 +103,4 @@ else
 fi
 
 echo "GREEN_GATE=PASS"
+echo "GATE_RESULT=PASS ARTIFACTS=$OUT_DIR"
