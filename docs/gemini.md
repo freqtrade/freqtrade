@@ -1,3 +1,5 @@
+# AG Global Configuration
+
 AG_GLOBAL:
   meta:{v:"1.4",mode:GOVERNOR,block:true,scope:ALL,override:WORKSPACE_ALLOWED}
 
@@ -76,7 +78,7 @@ AG_GLOBAL:
 
   net:{bind:"127.0.0.1",ports:{st:8501,h:8000,nv:6080,v:5900},open:false,approval:true,docs:[deploy,compose,security]}
 
-# --- GLOBAL OWNERSHIP GUARD (ADD) ---
+## --- GLOBAL OWNERSHIP GUARD (ADD) ---
 
   ownership:
     def:BLOCK
@@ -90,7 +92,7 @@ AG_GLOBAL:
     allowed:[TYPE_CHECKING,owner_factory,explicit_DI]
     evidence_on_block:[entity,owner_candidate,dups,reexports,instantiations]
 
-# --- SEQUENCING / LIFECYCLE GUARD (ADD) ---
+## --- SEQUENCING / LIFECYCLE GUARD (ADD) ---
 
   sequencing:
     def:BLOCK

@@ -1,6 +1,8 @@
+# AG Workspace Rules
+
 AG_WORKSPACE:
 
-# === REUSE FROM trade-bot REPO (HARD GUARDRAILS) ===
+## === REUSE FROM trade-bot REPO (HARD GUARDRAILS) ===
 
   reuse_policy_trade_bot:
     trust_level: "LOW"
@@ -30,7 +32,7 @@ AG_WORKSPACE:
       - no_leaked_secrets
       - no_layer_violation
 
-# === PORTS & ADAPTERS RULE (CLEAN ARCHITECTURE) ===
+## === PORTS & ADAPTERS RULE (CLEAN ARCHITECTURE) ===
 
   ports_and_adapters:
     principle: "DEPENDENCY_INWARD_ONLY"
@@ -52,7 +54,7 @@ AG_WORKSPACE:
       - domain_importing_streamlit_or_any_ui
       - application_importing_infrastructure_details
 
-# === DEPENDENCY DIRECTION ENFORCEMENT ===
+## === DEPENDENCY DIRECTION ENFORCEMENT ===
 
   dependency_guard:
     checks_required:
@@ -63,7 +65,7 @@ AG_WORKSPACE:
       - STOP_ON_FIRST_VIOLATION
       - require_fix_before_any_new_work
 
-# === FUNCTIONALITY VALIDATION WHEN REUSING CODE ===
+## === FUNCTIONALITY VALIDATION WHEN REUSING CODE ===
 
   functional_validation:
     required_for_any_trade_bot_reuse:
@@ -74,7 +76,7 @@ AG_WORKSPACE:
       - rate_limit_behavior_verified
       - logging_verified
 
-# === DOCUMENTATION DUTY ===
+## === DOCUMENTATION DUTY ===
 
   docs_update_required:
     on_any_trade_bot_reuse:
@@ -83,7 +85,7 @@ AG_WORKSPACE:
       - record_changes_made
       - record_tests_run
 
-# --- OWNERSHIP GUARD (ADD) ---
+## --- OWNERSHIP GUARD (ADD) ---
 
   ownership_guard:
     owner_registry:
@@ -96,7 +98,7 @@ AG_WORKSPACE:
       - verify_imports_target_owner_module
     handling: STOP_ON_FIRST_VIOLATION
 
-# --- SEQUENCING GUARD (ADD) ---
+## --- SEQUENCING GUARD (ADD) ---
 
   sequencing_guard:
     objective: "Ensure runtime lifecycle order is explicit, deterministic, and testable."
