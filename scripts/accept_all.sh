@@ -3,6 +3,9 @@
 # Runs all phase gates in order with run isolation and bundling
 set -euo pipefail
 
+# Ensure we are running from the project root
+cd "$(dirname "$0")/.."
+
 RUN_ID=$(date +%Y%m%d_%H%M%S)
 export RUN_ID
 
@@ -32,6 +35,7 @@ for gate in "${GATES[@]}"; do
     GATE_SCRIPT="scripts/gates/${gate}.sh"
     if [ ! -f "$GATE_SCRIPT" ]; then
         echo "ERROR: Gate script missing: $GATE_SCRIPT"
+        FAILED=1
         continue
     fi
 
