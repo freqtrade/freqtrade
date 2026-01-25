@@ -13,6 +13,7 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
+from freqtrade.util import FtTTLCache
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
 from freqtrade.rpc.rpc import RPC, RPCException, RPCHandler
 from freqtrade.rpc.rpc_types import RPCSendMsg
@@ -157,7 +158,7 @@ class ApiServer(RPCHandler):
         ApiServer._has_rpc = False
         del ApiServer._rpc
         ApiBG.exchanges = {}
-        ApiBG.jobs = {}
+        ApiBG.jobs = FtTTLCache(maxsize=500, ttl=3600)
         if self._server and not self._standalone:
             logger.info("Stopping API Server")
             # self._server.force_exit, self._server.should_exit = True, True
