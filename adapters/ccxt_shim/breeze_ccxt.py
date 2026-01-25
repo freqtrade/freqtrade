@@ -531,9 +531,11 @@ class BreezeCCXT(ccxt.Exchange):
     ):
         if self._is_mock_mode():
             import hashlib
+            import random
 
             ts = int(time.time() * 1000)
-            seed = f"{symbol}-{side}-{amount}-{ts}"
+            rand = random.randint(0, 1000000)
+            seed = f"{symbol}-{side}-{amount}-{ts}-{rand}"
             order_id = f"ord_{hashlib.md5(seed.encode()).hexdigest()[:12]}"
             order = {
                 "id": order_id,

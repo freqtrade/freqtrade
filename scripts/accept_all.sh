@@ -13,7 +13,8 @@ export RUN_ID
 RUN_DIR="user_data/generated/accept_runs/$RUN_ID"
 mkdir -p "$RUN_DIR"
 
-GATES=(
+# Full list of gates in sequence
+ALL_GATES=(
     "p00_governance"
     "p01_ccxt_presence"
     "p02_mock_download_ohlcv"
@@ -28,7 +29,34 @@ GATES=(
     "p10_execution_surface"
 )
 
-echo "=== STARTING FULL ACCEPTANCE SUITE (RUN_ID: $RUN_ID) ==="
+TARGET=${1:-""}
+if [ -n "$TARGET" ]; then
+    # Support shorthand (p10) or full name (p10_execution_surface)
+    MATCH=""
+    for g in "${ALL_GATES[@]}"; do
+        if [[ "$g" == "$TARGET"* ]]; then
+            MATCH="$g"
+            break
+        fi
+    done
+
+    if [ -n "$MATCH" ]; then
+        GATES=("$MATCH")
+    else
+        # Direct script path support
+        if [ -f "scripts/gates/${TARGET}.sh" ]; then
+            GATES=("${TARGET}")
+        else
+            echo "ERROR: Unknown gate or missing script: $TARGET"
+            echo "Available gates: ${ALL_GATES[*]}"
+            exit 1
+        fi
+    fi
+    echo "=== EXECUTING TARGET GATE: ${GATES[0]} (RUN_ID: $RUN_ID) ==="
+else
+    GATES=("${ALL_GATES[@]}")
+    echo "=== STARTING FULL ACCEPTANCE SUITE (RUN_ID: $RUN_ID) ==="
+fi
 echo "Run Folder: $RUN_DIR"
 
 FAILED=0
