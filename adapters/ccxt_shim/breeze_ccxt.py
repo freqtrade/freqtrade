@@ -26,6 +26,7 @@ from adapters.ccxt_shim.security_master import (
     load_nfo_options_master,
     load_nse_cash_master,
 )
+from adapters.ccxt_shim.market_hours import MarketHoursGuard
 from freqtrade.exceptions import OperationalException
 
 
@@ -80,6 +81,7 @@ class BreezeCCXT(ccxt.Exchange):
         rl_config = self.options.get("rateLimit", 100)
         self.rate_limiter = InternalRateLimiter(rpm=rl_config)
         self._security_master_cache: dict[str, Any] | None = None
+        self.market_hours = MarketHoursGuard()
 
         # Mock Order Storage
         self._mock_orders: dict[str, dict] = {}
@@ -537,6 +539,8 @@ class BreezeCCXT(ccxt.Exchange):
     def create_order(
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
+        self.market_hours.assert_can_create_order(side, symbol)
+
         if self._is_mock_mode():
             import hashlib  # nosec
             import random  # nosec
@@ -568,6 +572,8 @@ class BreezeCCXT(ccxt.Exchange):
         raise OperationalException("create_order not supported in real mode yet.")
 
     def cancel_order(self, order_id, symbol=None, params: dict | None = None):
+        self.market_hours.assert_can_cancel_order(order_id, str(symbol))
+
         if self._is_mock_mode():
             if order_id in self._mock_orders:
                 self._mock_orders[order_id]["status"] = "canceled"

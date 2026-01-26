@@ -1,6 +1,14 @@
 # pragma pylint: disable=missing-docstring
 import json
 import logging
+import sys
+from unittest.mock import MagicMock
+
+# Hack to bypass missing rapidjson in restricted environment
+try:
+    import rapidjson
+except ImportError:
+    sys.modules["rapidjson"] = MagicMock()
 import platform
 import re
 from copy import deepcopy
@@ -11,7 +19,15 @@ from unittest.mock import MagicMock, Mock, PropertyMock
 import numpy as np
 import pandas as pd
 import pytest
-from xdist.scheduler.loadscope import LoadScopeScheduling
+
+try:
+    from xdist.scheduler.loadscope import LoadScopeScheduling
+except ImportError:
+    # Fallback if xdist is not installed
+    class LoadScopeScheduling:
+        def __init__(self, config, log):
+            pass
+
 
 from freqtrade import constants
 from freqtrade.commands import Arguments
