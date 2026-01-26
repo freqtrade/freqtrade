@@ -4,25 +4,53 @@
 set -euo pipefail
 
 GATE_ID="p05"
-source scripts/gates/common.sh "$GATE_ID"
+source scripts/gates/common.sh "$GATE_ID" "$@"
 
 require_timeout
-
-echo "Step 1: Start Dry-run Smoke Test"
-LOG_FILE="$ARTIFACT_DIR/dry_run.log"
-export BREEZE_MOCK=1
 export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+LOG_FILE="$ARTIFACT_DIR/dry_run.log"
 
-# Run for 15 seconds to ensure it has time to initialize
-timeout 15s freqtrade trade -c user_data/config_icicibreeze.json --userdir user_data --strategy IndiaEquitySmokeStrategy --dry-run > "$LOG_FILE" 2>&1 || true
+if [ "$GATE_MODE" == "pos" ]; then
+    echo "Step 1: Start Dry-run Smoke Test (Positive)"
+    export BREEZE_MOCK=1
 
-echo "Step 2: Assert 'Changing state to: RUNNING' exists in logs"
-if grep -q "Changing state to: RUNNING" "$LOG_FILE"; then
-    echo "[OK] Bot reached RUNNING state"
-else
-    echo "[FAIL] Bot did NOT reach RUNNING state. Check $LOG_FILE"
-    finish_gate 1
+    # Run for 15 seconds to ensure it has time to initialize
+    timeout 15s freqtrade trade -c user_data/config_icicibreeze.json --userdir user_data --strategy IndiaEquitySmokeStrategy --dry-run > "$LOG_FILE" 2>&1 || true
+
+    echo "Step 2: Assert 'Changing state to: RUNNING' exists in logs"
+    if grep -q "Changing state to: RUNNING" "$LOG_FILE"; then
+        echo "[OK] Bot reached RUNNING state"
+    else
+        echo "[FAIL] Bot did NOT reach RUNNING state. Check $LOG_FILE"
+        finish_gate 1
+    fi
+
+elif [ "$GATE_MODE" == "neg" ]; then
+    echo "Step 1: Start Dry-run with Bad Config (Negative)"
+    export BREEZE_MOCK=1
+    
+    echo "{ invalid_json: " > "$ARTIFACT_DIR/bad_config.json"
+    
+    timeout 5s freqtrade trade -c "$ARTIFACT_DIR/bad_config.json" --userdir user_data --strategy IndiaEquitySmokeStrategy --dry-run > "$LOG_FILE" 2>&1 || true
+    
+    if grep -q "Returning 0/OK" "$LOG_FILE"; then
+         echo "[FAIL] Bot exited successfully despite bad config"
+         finish_gate 1
+    fi
+    
+    # Check for config validation error (likely JSONDecodeError or similar)
+    if grep -qi "Json schema validation failed" "$LOG_FILE" || grep -qi "Error loading config" "$LOG_FILE" || grep -qi "RapidJSONParseError" "$LOG_FILE"; then
+         echo "[OK] Config validation failed as expected"
+    else
+         # Fallback check: ensure it didn't run
+         if grep -q "Changing state to: RUNNING" "$LOG_FILE"; then
+             echo "[FAIL] Bot reached RUNNING state with bad config"
+             finish_gate 1
+         else
+             echo "[OK] Bot did not start (generic error)"
+         fi
+    fi
 fi
 
-echo "P05 Running State passed"
+echo "P05 Running State passed ($GATE_MODE)"
 finish_gate 0

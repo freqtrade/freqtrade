@@ -2,9 +2,28 @@
 # Common utility for acceptance gates
 set -euo pipefail
 
-GATE_ID=$1
+GATE_ID="$1"
 if [ -z "$GATE_ID" ]; then
     echo "ERROR: GATE_ID not provided to common.sh"
+    exit 1
+fi
+shift
+
+# Default Mode
+GATE_MODE="pos"
+
+# Parse arguments passed to common.sh (which should be forwarded from the gate script)
+for arg in "$@"; do
+    case $arg in
+        --mode=*)
+        GATE_MODE="${arg#*=}"
+        shift
+        ;;
+    esac
+done
+
+if [[ "$GATE_MODE" != "pos" && "$GATE_MODE" != "neg" ]]; then
+    echo "ERROR: Invalid mode '$GATE_MODE'. Use 'pos' or 'neg'."
     exit 1
 fi
 
@@ -12,13 +31,16 @@ fi
 RUN_ID="${RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
 export RUN_ID
 
-# Define artifact directory under the run ID
-ARTIFACT_DIR="user_data/generated/accept_runs/$RUN_ID/gates/$GATE_ID"
+# Define artifact directory under the run ID, separated by mode
+# e.g. .../gates/p14_pos or .../gates/p14_neg
+ARTIFACT_DIR="user_data/generated/accept_runs/$RUN_ID/gates/${GATE_ID}_${GATE_MODE}"
 mkdir -p "$ARTIFACT_DIR"
 GATE_LOG="$ARTIFACT_DIR/gate.log"
 
 # Define OUT_DIR for legacy compatibility/internal use
 OUT_DIR="$ARTIFACT_DIR"
+
+echo "=== Starting Gate: $GATE_ID (Mode: $GATE_MODE) ==="
 
 # Preflight checks
 require_cmd() {

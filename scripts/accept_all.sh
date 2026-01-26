@@ -33,9 +33,26 @@ ALL_GATES=(
     "p14_market_hours"
 )
 
-if [ "$#" -gt 0 ]; then
+# Parse flags
+MODE="pos"
+GATES_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --neg)
+            MODE="neg"
+            shift
+            ;;
+        *)
+            GATES_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if [ ${#GATES_ARGS[@]} -gt 0 ]; then
     GATES=()
-    for TARGET in "$@"; do
+    for TARGET in "${GATES_ARGS[@]}"; do
         MATCH=""
         for g in "${ALL_GATES[@]}"; do
             if [[ "$g" == "$TARGET" ]]; then
@@ -52,10 +69,10 @@ if [ "$#" -gt 0 ]; then
             exit 1
         fi
     done
-    echo "=== EXECUTING TARGET GATES: ${GATES[*]} (RUN_ID: $RUN_ID) ==="
+    echo "=== EXECUTING TARGET GATES: ${GATES[*]} (RUN_ID: $RUN_ID, MODE: $MODE) ==="
 else
     GATES=("${ALL_GATES[@]}")
-    echo "=== STARTING FULL ACCEPTANCE SUITE (RUN_ID: $RUN_ID) ==="
+    echo "=== STARTING FULL ACCEPTANCE SUITE (RUN_ID: $RUN_ID, MODE: $MODE) ==="
 fi
 echo "Run Folder: $RUN_DIR"
 
@@ -70,15 +87,15 @@ for gate in "${GATES[@]}"; do
     fi
 
     echo ""
-    echo ">>> Executing Gate: $gate"
+    echo ">>> Executing Gate: $gate (Mode: $MODE)"
     
-    # Run gate. Note: common.sh handles internal artifact routing via RUN_ID
-    if bash "$GATE_SCRIPT"; then
+    # Run gate with mode argument
+    if bash "$GATE_SCRIPT" --mode="$MODE"; then
         echo ">>> Gate $gate: PASS"
     else
         echo ">>> Gate $gate: FAIL"
-        # Print log path to help debugging
-        LOG_PATH="$RUN_DIR/gates/${gate//_*/}/gate.log"
+        # Print log path to help debugging (path now includes mode suffix)
+        LOG_PATH="$RUN_DIR/gates/${gate//_*/}_${MODE}/gate.log"
         echo "Check log: $LOG_PATH"
         FAILED=1
         break # Fail fast
