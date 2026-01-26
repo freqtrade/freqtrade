@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # Identify run context
-source scripts/gates/common.sh "p11"
+source scripts/gates/common.sh "p11" "$@"
 
 export BREEZE_MOCK=1
 export RISK_FORCE_SIGNAL=1
@@ -37,70 +37,74 @@ terminate_bot() {
     wait "$pid" || true
 }
 
-# Case 1: Should block entries (Green Day Lock)
-echo "Step 1: Case 1 - Should block entries (Green Day Lock)"
-export RISK_FORCE_DAILY_PROFIT_RATIO=0.015
-export RISK_FORCE_SIGNAL=1
-"$FREQTRADE" trade --dry-run \
-  --db-url "sqlite:///$ARTIFACT_DIR/trades.sqlite" \
-  -c "$GATE_CFG" \
-  --userdir user_data \
-  -s IndiaEquitySmokeStrategy \
-  -vv > "$LOG_BLOCK" 2>&1 &
-FT_PID=$!
-
-echo "Waiting for bot to evaluate risk (block)..."
-BLOCK_CONFIRMED=0
-for i in {1..60}; do
-    if grep -q "RISK_BLOCK entry" "$LOG_BLOCK"; then
-        BLOCK_CONFIRMED=1
-        break
+if [ "$GATE_MODE" == "neg" ]; then
+    # Case 1: Should block entries (Green Day Lock / High Risk)
+    echo "Step 1: Case 1 - Should block entries (Green Day Lock) (Negative Mode)"
+    export RISK_FORCE_DAILY_PROFIT_RATIO=0.015
+    export RISK_FORCE_SIGNAL=1
+    "$FREQTRADE" trade --dry-run \
+      --db-url "sqlite:///$ARTIFACT_DIR/trades_case1.sqlite" \
+      -c "$GATE_CFG" \
+      --userdir user_data \
+      -s IndiaEquitySmokeStrategy \
+      -vv > "$LOG_BLOCK" 2>&1 &
+    FT_PID=$!
+    
+    echo "Waiting for bot to evaluate risk (block)..."
+    BLOCK_CONFIRMED=0
+    for i in {1..60}; do
+        if grep -q "RISK_BLOCK entry" "$LOG_BLOCK"; then
+            BLOCK_CONFIRMED=1
+            break
+        fi
+        sleep 0.5
+    done
+    
+    terminate_bot "$FT_PID" "Case 1 Bot"
+    
+    if [ "$BLOCK_CONFIRMED" -eq 0 ]; then
+        echo "ERROR: RISK_BLOCK not found in logs for Case 1 within 30s"
+        echo "Last 20 lines of log:"
+        tail -n 20 "$LOG_BLOCK"
+        finish_gate 1
     fi
-    sleep 0.5
-done
+    echo "[OK] Risk block confirmed: $(grep "RISK_BLOCK entry" "$LOG_BLOCK" | head -n 1)"
 
-terminate_bot "$FT_PID" "Case 1 Bot"
-
-if [ "$BLOCK_CONFIRMED" -eq 0 ]; then
-    echo "ERROR: RISK_BLOCK not found in logs for Case 1 within 30s"
-    echo "Last 20 lines of log:"
-    tail -n 20 "$LOG_BLOCK"
-    finish_gate 1
-fi
-echo "[OK] Risk block confirmed: $(grep "RISK_BLOCK entry" "$LOG_BLOCK" | head -n 1)"
-
-# Case 2: Should allow entries
-echo "Step 2: Case 2 - Should allow entries"
-export RISK_FORCE_DAILY_PROFIT_RATIO=0.0
-export RISK_FORCE_SIGNAL=1
-"$FREQTRADE" trade --dry-run \
-  --db-url "sqlite:///$ARTIFACT_DIR/trades_case2.sqlite" \
-  -c "$GATE_CFG" \
-  --userdir user_data \
-  -s IndiaEquitySmokeStrategy \
-  -vv > "$LOG_ALLOW" 2>&1 &
-FT_PID=$!
-
-echo "Waiting for bot to reach TA Analysis (allow)..."
-ALLOW_CONFIRMED=0
-for i in {1..120}; do
-    if grep -q "RISK_BLOCK entry" "$LOG_ALLOW"; then
-         echo "ERROR: Unexpected RISK_BLOCK found in logs for Case 2"
-         finish_gate 1
+elif [ "$GATE_MODE" == "pos" ]; then
+    # Case 2: Should allow entries
+    echo "Step 1: Case 2 - Should allow entries (Positive Mode)"
+    export RISK_FORCE_DAILY_PROFIT_RATIO=0.0
+    export RISK_FORCE_SIGNAL=1
+    "$FREQTRADE" trade --dry-run \
+      --db-url "sqlite:///$ARTIFACT_DIR/trades_case2.sqlite" \
+      -c "$GATE_CFG" \
+      --userdir user_data \
+      -s IndiaEquitySmokeStrategy \
+      -vv > "$LOG_ALLOW" 2>&1 &
+    FT_PID=$!
+    
+    echo "Waiting for bot to reach TA Analysis (allow)..."
+    ALLOW_CONFIRMED=0
+    for i in {1..120}; do
+        if grep -q "RISK_BLOCK entry" "$LOG_ALLOW"; then
+             echo "ERROR: Unexpected RISK_BLOCK found in logs for Case 2"
+             finish_gate 1
+        fi
+        if grep -q "RISK_OK entry" "$LOG_ALLOW"; then
+            ALLOW_CONFIRMED=1
+            break
+        fi
+        sleep 0.5
+    done
+    
+    terminate_bot "$FT_PID" "Case 2 Bot"
+    
+    if [ "$ALLOW_CONFIRMED" -eq 0 ]; then
+        echo "ERROR: Bot failed to reach TA analysis or log RISK_OK in Case 2"
+        tail -n 20 "$LOG_ALLOW"
+        finish_gate 1
     fi
-    if grep -q "RISK_OK entry" "$LOG_ALLOW"; then
-        ALLOW_CONFIRMED=1
-        break
-    fi
-    sleep 0.5
-done
-
-terminate_bot "$FT_PID" "Case 2 Bot"
-
-if [ "$ALLOW_CONFIRMED" -eq 0 ]; then
-    echo "ERROR: Bot failed to reach TA analysis or log RISK_OK in Case 2"
-    tail -n 20 "$LOG_ALLOW"
-    finish_gate 1
+    echo "[OK] Risk allow confirmed"
 fi
 
 echo "P11 Risk Guardrails passed"

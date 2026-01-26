@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # Identify run context
-source scripts/gates/common.sh "p12c"
+source scripts/gates/common.sh "p12c" "$@"
 
 export BREEZE_MOCK=1
 export MOCK_OHLCV_SEED=42

@@ -4,7 +4,7 @@
 set -euo pipefail
 
 GATE_ID="p06"
-source scripts/gates/common.sh "$GATE_ID"
+source scripts/gates/common.sh "$GATE_ID" "$@"
 
 echo "Executing scripts/green_gate.sh..."
 export BREEZE_MOCK=1

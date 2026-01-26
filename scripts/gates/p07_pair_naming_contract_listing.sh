@@ -4,7 +4,7 @@
 set -euo pipefail
 
 GATE_ID="p07"
-source scripts/gates/common.sh "$GATE_ID"
+source scripts/gates/common.sh "$GATE_ID" "$@"
 
 export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 

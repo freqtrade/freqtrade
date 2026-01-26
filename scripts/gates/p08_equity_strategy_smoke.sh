@@ -4,7 +4,7 @@
 set -euo pipefail
 
 GATE_ID="p08"
-source scripts/gates/common.sh "$GATE_ID"
+source scripts/gates/common.sh "$GATE_ID" "$@"
 
 require_timeout
 

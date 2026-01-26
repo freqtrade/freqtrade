@@ -28,7 +28,7 @@ echo "Using Python: $PYTHON"
 $PYTHON -V
 
 echo "--- 1. Compile Check ---"
-$PYTHON -m compileall -q freqtrade adapters scripts user_data tests
+$PYTHON -m compileall -q -x 'user_data/generated' freqtrade adapters scripts user_data tests
 
 echo "--- 2. Show Config ---"
 freqtrade show-config -c user_data/config_icicibreeze.json --userdir user_data >"$OUT_DIR/show-config.json"

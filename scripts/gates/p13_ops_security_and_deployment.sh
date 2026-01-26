@@ -52,18 +52,28 @@ if [ "$GATE_MODE" == "pos" ]; then
 elif [ "$GATE_MODE" == "neg" ]; then
     echo "Step 1: Triggering Secret Scan Failure (Negative)"
     
-    # Create a temporary file with a secret pattern
-    TEST_SECRET_FILE="user_data/FAIL_SECRET.txt"
-    echo "password=super_secret_123" > "$TEST_SECRET_FILE"
+    # Create a temporary file with a secret pattern IN A SCANNABLE LOCATION
+    # scripts/ is not ignored. git grep requires tracked files.
+    # We use git add -N to simulate a staged file without actually committing content to object store yet.
+    TEST_SECRET_FILE="scripts/FAIL_SECRET.py"
+    # Obfuscate the secret creation so this script itself doesn't trigger the scanner
+    PART1="password='super_"
+    PART2="secret_123'"
+    echo "${PART1}${PART2}" > "$TEST_SECRET_FILE"
+    git add -N "$TEST_SECRET_FILE"
     
     # Run scan, expect failure
     if bash scripts/security/secret_scan_strict.sh > "$ARTIFACT_DIR/scan_neg.log" 2>&1; then
         echo "[FAIL] Secret scan passed despite presence of secrets"
+        git reset HEAD "$TEST_SECRET_FILE" 2>/dev/null || true
         rm "$TEST_SECRET_FILE"
         finish_gate 1
     else
         echo "[OK] Secret scan detected secrets as expected"
     fi
+    
+    # Cleanup
+    git reset HEAD "$TEST_SECRET_FILE" 2>/dev/null || true
     rm "$TEST_SECRET_FILE"
 fi
 

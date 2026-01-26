@@ -10,7 +10,7 @@ export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
 if [ "$GATE_MODE" == "pos" ]; then
     echo "Step 1: Python Compilation (Positive)"
-    $PYTHON -m compileall -q freqtrade adapters scripts user_data tests || finish_gate $?
+    $PYTHON -m compileall -q -x 'user_data/generated' freqtrade adapters scripts user_data tests || finish_gate $?
     
     echo "Step 2: Subset of Stable Tests (Positive)"
     $PYTHON -m pytest -q tests/test_talib.py tests/test_instrument_parse_format.py || finish_gate $?

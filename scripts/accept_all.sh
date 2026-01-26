@@ -26,7 +26,7 @@ ALL_GATES=(
     "p09_options_strategy_accept"
     "p09x_universe_scanner_accept"
     "p10_execution_surface"
-    # "p11_risk_guardrails"
+    "p11_risk_guardrails"
     "p12_backtest_paper_validation_and_metrics"
     "p12c_mock_30d_backtesting"
     "p13_ops_security_and_deployment"
