@@ -101,9 +101,6 @@ class MarketHoursGuard:
         Raises:
             Exception: If blocked (CCXT-style message pattern).
         """
-        print(
-            f"DEBUG: MarketHoursGuard side={side} open={self.is_market_open()} force_closed={self._force_closed}"
-        )
         if side.lower() == "buy":
             # Entry logic - requires market open
             if not self.is_market_open():
