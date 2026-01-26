@@ -1,16 +1,26 @@
 import asyncio
+import json
 import logging
 import os
+import tempfile
+import threading
 import time
 from collections import deque
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import ccxt
 import ccxt.async_support as ccxt_async
 from breeze_connect import BreezeConnect
 
-from adapters.ccxt_shim.instrument import InstrumentSpec, InstrumentType, format_pair, parse_pair
+from adapters.ccxt_shim.icicibreeze.mock_ohlcv import synth_ohlcv, timeframe_to_ms
+from adapters.ccxt_shim.instrument import (
+    InstrumentSpec,
+    InstrumentType,
+    format_pair,
+    parse_pair,
+)
 from adapters.ccxt_shim.security_master import (
     find_latest_master_file,
     load_nfo_options_master,
@@ -51,6 +61,7 @@ class InternalRateLimiter:
 
 class BreezeCCXT(ccxt.Exchange):
     _mock_mode_logged = False
+    _mock_ohlcv_lock = threading.Lock()
     _MOCK_BASE_PRICES = {
         "RELIANCE/INR": 2500.0,
         "NIFTY/INR": 20000.0,
@@ -137,7 +148,7 @@ class BreezeCCXT(ccxt.Exchange):
             elif kwargs.get("interval") == "1day":
                 timeframe = "1d"
 
-            ohlcv_list = self._generate_mock_ohlcv(symbol, timeframe, None, 100)
+            ohlcv_list = self._generate_mock_ohlcv(symbol, timeframe, None, 5)
             success = [
                 {
                     "datetime": datetime.fromtimestamp(o[0] / 1000).strftime("%Y-%m-%d %H:%M:%S"),
@@ -282,122 +293,119 @@ class BreezeCCXT(ccxt.Exchange):
         if self.rate_limiter:
             self.rate_limiter.check_and_record()
         master = self._load_security_master()
-        nfo_master = master["nfo"]
-        nse_master = master["nse"]
-        if (
-            not nfo_master["by_contract"]
-            and not nfo_master.get("by_future")
-            and not nse_master["by_symbol"]
-        ):
-            logger.warning("No security master data loaded.")
-            return []
         whitelist = self.config.get("pair_whitelist", [])
         if not whitelist:
             return []
         markets = []
-        nfo_contracts = nfo_master["by_contract"]
-        nfo_futures = nfo_master.get("by_future", {})
-        nse_symbols = nse_master["by_symbol"]
         for pair in whitelist:
             try:
                 spec = parse_pair(pair)
             except ValueError:
                 logger.warning("Skipping non-canonical pair in whitelist: %s", pair)
                 continue
-            if spec.type == InstrumentType.OPT:
-                key = (spec.underlying, spec.expiry_yyyymmdd, float(spec.strike), spec.right)
-                info = nfo_contracts.get(key)
-                if not info:
-                    logger.warning("Option contract not found for whitelist entry: %s", pair)
-                    continue
-                markets.append(
-                    {
-                        "id": info["token"],
-                        "symbol": format_pair(spec),
-                        "base": info["underlying"],
-                        "quote": "INR",
-                        "active": True,
-                        "type": "option",
-                        "spot": True,  # Force True for download-data tool compatibility
-                        "option": True,
-                        "future": False,
-                        "margin": False,
-                        "swap": False,
-                        "expiry": info["expiry_yyyymmdd"],
-                        "strike": info["strike"],
-                        "right": info["right"],
-                        "lot": info["lot_size"],
-                        "precision": {"amount": 1, "price": info["tick_size"]},
-                        "info": info,
-                    }
-                )
-            elif spec.type == InstrumentType.FUT:
-                key = (spec.underlying, spec.expiry_yyyymmdd)
-                info = nfo_futures.get(key)
-                if not info:
-                    logger.warning("Future contract not found for whitelist entry: %s", pair)
-                    continue
-                markets.append(
-                    {
-                        "id": info["token"],
-                        "symbol": format_pair(spec),
-                        "base": info["underlying"],
-                        "quote": "INR",
-                        "active": True,
-                        "type": "future",
-                        "spot": True,  # Force True for download-data tool compatibility
-                        "option": False,
-                        "future": True,
-                        "margin": False,
-                        "swap": False,
-                        "expiry": info["expiry_yyyymmdd"],
-                        "lot": info["lot_size"],
-                        "precision": {"amount": 1, "price": info["tick_size"]},
-                        "info": info,
-                    }
-                )
-            elif spec.type == InstrumentType.CASH:
-                info = nse_symbols.get(spec.underlying)
-                if not info and self._is_mock_mode():
-                    # Synthetic Index Cash or Mock Pairs support (BTC/USDT, NIFTY/INR etc)
-                    is_index = spec.underlying in self._MOCK_BASE_PRICES or spec.underlying in {
-                        "NIFTY",
-                        "BANKNIFTY",
-                    }
-                    is_mock_pair = spec.underlying == "BTC" and spec.quote == "USDT"
-                    if is_index or is_mock_pair:
-                        info = {
-                            "token": f"mock_{spec.underlying}",
-                            "symbol": spec.underlying,
-                            "lot_size": 1,
-                            "tick_size": 0.05,
-                            "company_name": spec.underlying,
-                        }
-
-                if not info:
-                    logger.warning("Cash symbol not found for whitelist entry: %s", pair)
-                    continue
-                markets.append(
-                    {
-                        "id": info["token"],
-                        "symbol": format_pair(spec)
-                        if spec.quote == "INR"
-                        else f"{spec.underlying}/{spec.quote}",
-                        "base": spec.underlying,
-                        "quote": spec.quote,
-                        "active": True,
-                        "type": "spot",
-                        "spot": True,
-                        "option": False,
-                        "future": False,
-                        "margin": False,
-                        "swap": False,
-                        "lot": info["lot_size"],
-                        "precision": {"amount": 1, "price": info["tick_size"]},
-                        "info": info,
-                    }
-                )
+            market_info = self._fetch_specific_market(spec, master)
+            if market_info:
+                markets.append(market_info)
         return markets
+
+    def _fetch_specific_market(self, spec: InstrumentSpec, master: dict[str, Any]) -> dict | None:
+        if spec.type == InstrumentType.OPT:
+            return self._fetch_option_market(spec, master["nfo"]["by_contract"])
+        if spec.type == InstrumentType.FUT:
+            return self._fetch_future_market(spec, master["nfo"].get("by_future", {}))
+        if spec.type == InstrumentType.CASH:
+            return self._fetch_cash_market(spec, master["nse"]["by_symbol"])
+        return None
+
+    def _fetch_option_market(self, spec: InstrumentSpec, contracts: dict) -> dict | None:
+        key = (spec.underlying, spec.expiry_yyyymmdd, float(spec.strike), spec.right)
+        info = contracts.get(key)
+        if not info:
+            logger.warning("Option contract not found for whitelist entry: %s", format_pair(spec))
+            return None
+        return {
+            "id": info["token"],
+            "symbol": format_pair(spec),
+            "base": info["underlying"],
+            "quote": "INR",
+            "active": True,
+            "type": "option",
+            "spot": True,
+            "option": True,
+            "future": False,
+            "margin": False,
+            "swap": False,
+            "expiry": info["expiry_yyyymmdd"],
+            "strike": info["strike"],
+            "right": info["right"],
+            "lot": info["lot_size"],
+            "precision": {"amount": 1, "price": info["tick_size"]},
+            "info": info,
+        }
+
+    def _fetch_future_market(self, spec: InstrumentSpec, futures: dict) -> dict | None:
+        key = (spec.underlying, spec.expiry_yyyymmdd)
+        info = futures.get(key)
+        if not info:
+            logger.warning("Future contract not found for whitelist entry: %s", format_pair(spec))
+            return None
+        return {
+            "id": info["token"],
+            "symbol": format_pair(spec),
+            "base": info["underlying"],
+            "quote": "INR",
+            "active": True,
+            "type": "future",
+            "spot": True,
+            "option": False,
+            "future": True,
+            "margin": False,
+            "swap": False,
+            "expiry": info["expiry_yyyymmdd"],
+            "lot": info["lot_size"],
+            "precision": {"amount": 1, "price": info["tick_size"]},
+            "info": info,
+        }
+
+    def _fetch_cash_market(self, spec: InstrumentSpec, cash_symbols: dict) -> dict | None:
+        info = cash_symbols.get(spec.underlying)
+        if not info and self._is_mock_mode():
+            # Synthetic Index Cash or Mock Pairs support (BTC/USDT, NIFTY/INR etc)
+            is_index = spec.underlying in self._MOCK_BASE_PRICES or spec.underlying in {
+                "NIFTY",
+                "BANKNIFTY",
+            }
+            is_mock_pair = spec.underlying == "BTC" and spec.quote == "USDT"
+            if is_index or is_mock_pair:
+                info = {
+                    "token": f"mock_{spec.underlying}",
+                    "symbol": spec.underlying,
+                    "lot_size": 1,
+                    "tick_size": 0.05,
+                    "company_name": spec.underlying,
+                }
+
+        if not info:
+            logger.warning("Cash symbol not found for whitelist entry: %s", format_pair(spec))
+            return None
+
+        symbol = format_pair(spec) if spec.quote == "INR" else f"{spec.underlying}/{spec.quote}"
+        return {
+            "id": info["token"],
+            "symbol": symbol,
+            "base": spec.underlying,
+            "quote": spec.quote,
+            "active": True,
+            "type": "spot",
+            "spot": True,
+            "option": False,
+            "future": False,
+            "margin": False,
+            "swap": False,
+            "lot": info.get("lot_size", 1),
+            "precision": {"amount": 1, "price": info.get("tick_size", 0.05)},
+            "info": info,
+        }
 
     def fetch_ticker(self, symbol: str, params: dict | None = None):
         if self._is_mock_mode():
@@ -530,13 +538,13 @@ class BreezeCCXT(ccxt.Exchange):
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
         if self._is_mock_mode():
-            import hashlib
-            import random
+            import hashlib  # nosec
+            import random  # nosec
 
             ts = int(time.time() * 1000)
             rand = random.randint(0, 1000000)
             seed = f"{symbol}-{side}-{amount}-{ts}-{rand}"
-            order_id = f"ord_{hashlib.md5(seed.encode()).hexdigest()[:12]}"
+            order_id = f"ord_{hashlib.md5(seed.encode()).hexdigest()[:12]}"  # nosec
             order = {
                 "id": order_id,
                 "clientOrderId": order_id,
@@ -626,67 +634,84 @@ class BreezeCCXT(ccxt.Exchange):
             "info": {"mock": True},
         }
 
+    def _get_mock_data_path(self, symbol: str, timeframe: str) -> Path:
+        """Get path for mock data persistence."""
+        safe_symbol = symbol.replace("/", "_").replace(":", "_")
+        target_dir = Path("user_data") / "data" / "icicibreeze" / "mock_cache"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        return target_dir / f"{safe_symbol}-{timeframe}.json"
+
     def _generate_mock_ohlcv(
         self, symbol: str, timeframe: str, since: int | None, limit: int | None
-    ) -> list[list[float]]:
-        import hashlib
-        import math
+    ) -> list[list[Any]]:
+        path = self._get_mock_data_path(symbol, timeframe)
 
-        multiplier = {"m": 60, "h": 3600, "d": 86400}.get(timeframe[-1], 60)
-        try:
-            num = int(timeframe[:-1])
-        except ValueError:
-            num = 5
-        step_ms = num * multiplier * 1000
+        with self._mock_ohlcv_lock:
+            stored_ohlcv = []
+            if path.exists():
+                try:
+                    with path.open("r") as f:
+                        stored_ohlcv = json.load(f)
+                except Exception as e:
+                    logger.warning("Failed to load mock data from %s: %s", path, e)
 
-        limit_eff = min(limit if limit is not None else 500, 1000)
-        now_ms = int(time.time() * 1000)
-        since_eff = since if since is not None else (now_ms - limit_eff * step_ms)
-        since_eff -= since_eff % step_ms
+            # Check if stored data covers the requested range
+            if stored_ohlcv and since is not None:
+                first_ts = int(stored_ohlcv[0][0])
+                last_ts = int(stored_ohlcv[-1][0])
+                now_ms = int(time.time() * 1000)
+                tf_ms = timeframe_to_ms(timeframe)
+                # If since is within stored range and last_ts is close to now
+                # Or if we have enough candles to satisfy limit
+                if first_ts <= since <= last_ts:
+                    requested_slice = [cand for cand in stored_ohlcv if int(cand[0]) >= since]
+                    # If we have at least 2 more candles or we are very close to now
+                    if (limit is not None and len(requested_slice) >= limit) or (
+                        last_ts > now_ms - (tf_ms * 2)
+                    ):
+                        logger.debug(
+                            "Returning %d cached candles from since=%d", len(requested_slice), since
+                        )
+                        return requested_slice[:limit] if limit else requested_slice
 
-        base_price = self._mock_base_price(symbol)
+            # Use seed from environment if provided
+            seed = int(os.environ.get("MOCK_OHLCV_SEED", 42))
 
-        ohlcv = []
-        curr_ts = since_eff
+            # Synthesize data
+            # Ensure we use a large enough limit if not provided
+            synth_limit = limit if limit is not None else 15000
+            new_ohlcv = synth_ohlcv(symbol, timeframe, since, synth_limit, seed)
+            logger.debug("Synthesized %d candles for %s", len(new_ohlcv), symbol)
 
-        while len(ohlcv) < limit_eff and curr_ts < now_ms:
-            # Deterministic price function: price(t) = base * (1 + sum of cycles + jitter)
-            # Cycles: 1h, 1d, 1w to produce some "market feel"
-            t_sec = curr_ts / 1000.0
+            # Merge and dedupe
+            full_map = {int(c[0]): c for c in stored_ohlcv}
+            for cand in new_ohlcv:
+                cand[0] = int(cand[0])
+                full_map[cand[0]] = cand
 
-            # Use symbol hash to phase-shift cycles so different symbols aren't perfectly correlated
-            h_sym = int(hashlib.sha256(symbol.encode()).hexdigest()[:8], 16)
-            phase = h_sym % 10000
+            merged = [full_map[ts] for ts in sorted(full_map.keys())]
+            logger.debug("Merged total of %d candles for %s", len(merged), symbol)
 
-            # Cycles (deterministic amplitudes)
-            c1 = 0.02 * math.sin(t_sec / 3600.0 + phase)  # Hourly
-            c2 = 0.05 * math.sin(t_sec / 86400.0 + phase * 2)  # Daily
-            c3 = 0.10 * math.sin(t_sec / 604800.0 + phase * 3)  # Weekly
+            # Persist atomically
+            temp_fd, temp_path_str = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+            temp_path = Path(temp_path_str)
+            try:
+                with os.fdopen(temp_fd, "w") as f:
+                    json.dump(merged, f)
+                temp_path.replace(path)
+            except Exception as e:
+                if temp_path.exists():
+                    temp_path.unlink()
+                logger.error("Failed to persist mock data to %s: %s", path, e)
 
-            # High frequency jitter (deterministic from timestamp)
-            seed = f"{symbol}-{curr_ts}"
-            h_ts = int(hashlib.sha256(seed.encode()).hexdigest()[:8], 16)
-            jitter = 0.002 * (h_ts / 0xFFFFFFFF - 0.5)
-
-            close_price = base_price * (1 + c1 + c2 + c3 + jitter)
-            open_price = base_price * (1 + c1 + c2 + c3)  # simple open
-
-            # ensure high/low bracket open/close
-            high_price = max(open_price, close_price) * 1.001
-            low_price = min(open_price, close_price) * 0.999
-
-            ohlcv.append(
-                [
-                    float(curr_ts),
-                    float(open_price),
-                    float(high_price),
-                    float(low_price),
-                    float(close_price),
-                    1000.0,
-                ]
-            )
-            curr_ts += step_ms
-        return ohlcv
+        # Return requested slice (outside lock if we want, but inside is safer for consistent view)
+        if since is not None:
+            res = [cand for cand in merged if cand[0] >= since][:limit]
+            logger.debug("Returning %d candles from since=%d", len(res), since)
+            return res
+        res = merged[-limit:] if limit is not None else merged
+        logger.debug("Returning %d candles (no since)", len(res))
+        return res
 
     def _mock_base_price(self, symbol: str) -> float:
         """Return a deterministic base price per symbol for mock data."""

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import os
 import logging
-from typing import Iterable, Optional
+import os
+from collections.abc import Iterable
 from datetime import datetime, time
 
 import pandas as pd
-from pandas import DataFrame
 import talib.abstract as ta
+from pandas import DataFrame
 
 from adapters.ccxt_shim.instrument import InstrumentType, parse_pair
 from freqtrade.strategy import IStrategy, merge_informative_pair
@@ -143,7 +143,7 @@ class IndiaOptionsAutoStrategy(IStrategy):
         rate: float,
         time_in_force: str,
         current_time: datetime,
-        entry_tag: Optional[str],
+        entry_tag: str | None,
         side: str,
         **kwargs,
     ) -> bool:

@@ -28,6 +28,7 @@ ALL_GATES=(
     "p10_execution_surface"
     "p11_risk_guardrails"
     "p12_backtest_paper_validation_and_metrics"
+    "p12c_mock_30d_backtesting"
 )
 
 TARGET=${1:-""}

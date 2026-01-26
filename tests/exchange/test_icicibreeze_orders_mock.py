@@ -1,5 +1,6 @@
 import pytest
-from adapters.ccxt_shim.breeze_ccxt import BreezeCCXT, BreezeAsyncCCXT
+
+from adapters.ccxt_shim.breeze_ccxt import BreezeAsyncCCXT, BreezeCCXT
 from freqtrade.exceptions import OperationalException
 
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
 from datetime import datetime
-from pandas import DataFrame
+
 import talib.abstract as ta
+from pandas import DataFrame
 
 from freqtrade.strategy import IStrategy
 
@@ -67,7 +67,7 @@ class IndiaEquitySmokeStrategy(IStrategy):
         rate: float,
         time_in_force: str,
         current_time: datetime,
-        entry_tag: Optional[str],
+        entry_tag: str | None,
         side: str,
         **kwargs,
     ) -> bool:

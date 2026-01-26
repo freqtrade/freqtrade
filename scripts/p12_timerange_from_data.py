@@ -1,24 +1,15 @@
 import argparse
 import logging
 import sys
-from pathlib import Path
 from datetime import timezone
-
-# Add current directory to path to allow importing from workspace freqtrade
-import os
-
-sys.path.append(os.getcwd())
-
-# Avoid rapidjson dependency if possible by mocking it before other imports if they use it
-try:
-    import rapidjson
-except ImportError:
-    import json
-
-    sys.modules["rapidjson"] = json
+from pathlib import Path
 
 from freqtrade.data.history import load_pair_history
 from freqtrade.enums import CandleType
+
+# Add current directory to path to allow importing from workspace freqtrade
+sys.path.append(str(Path.cwd()))
+
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("p12_timerange_from_data")

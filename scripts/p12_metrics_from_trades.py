@@ -1,16 +1,17 @@
-import json
 import argparse
+import json
 import sys
 from pathlib import Path
 
 
 def generate_metrics(trades_file: str, out_file: str, pair: str, timeframe: str, timerange: str):
     try:
-        if not Path(trades_file).exists():
+        trades_path = Path(trades_file)
+        if not trades_path.exists():
             print(f"ERROR: Trades file not found: {trades_file}", file=sys.stderr)
             sys.exit(1)
 
-        with open(trades_file, "r") as f:
+        with trades_path.open("r") as f:
             data = json.load(f)
 
         if isinstance(data, list):
@@ -18,7 +19,7 @@ def generate_metrics(trades_file: str, out_file: str, pair: str, timeframe: str,
         elif isinstance(data, dict) and "strategy" in data:
             # Extract from nested Freqtrade results structure
             # {"strategy": {"StrategyName": {"trades": [...]}}}
-            strat_name = list(data["strategy"].keys())[0]
+            strat_name = next(iter(data["strategy"].keys()))
             trades = data["strategy"][strat_name].get("trades", [])
         else:
             trades = []
@@ -34,7 +35,7 @@ def generate_metrics(trades_file: str, out_file: str, pair: str, timeframe: str,
             "total_profit_abs": total_profit,
         }
 
-        with open(out_file, "w") as f:
+        with Path(out_file).open("w") as f:
             json.dump(metrics, f, indent=4)
 
         print(f"Metrics written to {out_file}")

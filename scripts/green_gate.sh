@@ -40,6 +40,10 @@ echo "--- 4. Ticker Smoke Test ---"
 $PYTHON scripts/smoke_icicibreeze_ticker.py >"$OUT_DIR/ticker.txt"
 
 echo "--- 5. Download Data Test (BTC & INR) ---"
+# Clear existing data to ensure non-zero download for verification
+rm -f user_data/data/icicibreeze/RELIANCE_INR-*.feather
+rm -f user_data/data/icicibreeze/RELIANCE_INR-*.json
+
 if [ "${ENABLE_BTC_TEST:-0}" -eq 1 ]; then
     echo "Downloading BTC/USDT..."
     freqtrade download-data -c user_data/config_icicibreeze.json --userdir user_data --timeframes "$TIMEFRAME" --pairs BTC/USDT --days "$DAYS" -v >"$OUT_DIR/dl_btc.txt" 2>&1
