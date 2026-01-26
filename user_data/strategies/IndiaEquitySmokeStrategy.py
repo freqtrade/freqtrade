@@ -43,8 +43,12 @@ class IndiaEquitySmokeStrategy(IStrategy):
         ] = 1
 
         if os.environ.get("RISK_FORCE_SIGNAL"):
+            logger.info("RISK_FORCE_SIGNAL active! Forcing entry on all candles.")
             dataframe.loc[:, "enter_long"] = 1
 
+        logger.info(
+            f"Entry trend populated. Long signals: {dataframe['enter_long'].sum() if 'enter_long' in dataframe.columns else 0}"
+        )
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -83,7 +87,7 @@ class IndiaEquitySmokeStrategy(IStrategy):
             context = {
                 "open_trades_count": 0,
                 "daily_trade_count": 0,
-                "daily_profit_ratio": 0.0,
+                "daily_profit_ratio": float(os.environ.get("RISK_FORCE_DAILY_PROFIT_RATIO", 0.0)),
             }
 
             blocked, reason = guardrails.should_block_entry(context)
