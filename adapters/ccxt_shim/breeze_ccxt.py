@@ -215,7 +215,7 @@ class BreezeCCXT(ccxt.Exchange):
                 "features": {
                     "spot": {
                         "fetchOHLCV": {
-                            "limit": 1000,
+                            "limit": 10000,
                             "days": 30,
                             "timeframes": ["1m", "5m", "30m", "1d"],
                         }

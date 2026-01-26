@@ -1,7 +1,16 @@
+import os
+from unittest import mock
 import pytest
 
 from adapters.ccxt_shim.breeze_ccxt import BreezeAsyncCCXT, BreezeCCXT
 from freqtrade.exceptions import OperationalException
+
+
+@pytest.fixture(autouse=True)
+def force_market_open():
+    """Ensure market is open for all mock order tests."""
+    with mock.patch.dict(os.environ, {"FT_FORCE_MARKET_OPEN": "1"}):
+        yield
 
 
 def test_sync_mock_execution():
