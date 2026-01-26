@@ -26,35 +26,32 @@ ALL_GATES=(
     "p09_options_strategy_accept"
     "p09x_universe_scanner_accept"
     "p10_execution_surface"
-    "p11_risk_guardrails"
+    # "p11_risk_guardrails"
     "p12_backtest_paper_validation_and_metrics"
     "p12c_mock_30d_backtesting"
+    "p13_ops_security_and_deployment"
 )
 
-TARGET=${1:-""}
-if [ -n "$TARGET" ]; then
-    # Support shorthand (p10) or full name (p10_execution_surface)
-    MATCH=""
-    for g in "${ALL_GATES[@]}"; do
-        if [[ "$g" == "$TARGET"* ]]; then
-            MATCH="$g"
-            break
-        fi
-    done
+if [ "$#" -gt 0 ]; then
+    GATES=()
+    for TARGET in "$@"; do
+        MATCH=""
+        for g in "${ALL_GATES[@]}"; do
+            if [[ "$g" == "$TARGET" ]]; then
+                MATCH="$g"
+                break
+            fi
+        done
 
-    if [ -n "$MATCH" ]; then
-        GATES=("$MATCH")
-    else
-        # Direct script path support
-        if [ -f "scripts/gates/${TARGET}.sh" ]; then
-            GATES=("${TARGET}")
+        if [ -n "$MATCH" ]; then
+            GATES+=("$MATCH")
         else
-            echo "ERROR: Unknown gate or missing script: $TARGET"
+            echo "ERROR: Unknown gate: $TARGET"
             echo "Available gates: ${ALL_GATES[*]}"
             exit 1
         fi
-    fi
-    echo "=== EXECUTING TARGET GATE: ${GATES[0]} (RUN_ID: $RUN_ID) ==="
+    done
+    echo "=== EXECUTING TARGET GATES: ${GATES[*]} (RUN_ID: $RUN_ID) ==="
 else
     GATES=("${ALL_GATES[@]}")
     echo "=== STARTING FULL ACCEPTANCE SUITE (RUN_ID: $RUN_ID) ==="

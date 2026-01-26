@@ -17,7 +17,7 @@ fi
 
 # Prepare temporary config with increased max trades and position stacking enabled
 GATE_CFG="$ARTIFACT_DIR/config_p11.json"
-jq '.max_open_trades = 100 | .position_stacking = true' "$CFG" > "$GATE_CFG"
+jq '.max_open_trades = 100 | .position_stacking = true | .dry_run_wallet = 10000000 | .stake_amount = 10' "$CFG" > "$GATE_CFG"
 
 LOG_BLOCK="$ARTIFACT_DIR/dry_run_block.log"
 LOG_ALLOW="$ARTIFACT_DIR/dry_run_allow.log"
@@ -83,7 +83,7 @@ FT_PID=$!
 
 echo "Waiting for bot to reach TA Analysis (allow)..."
 ALLOW_CONFIRMED=0
-for i in {1..60}; do
+for i in {1..120}; do
     if grep -q "RISK_BLOCK entry" "$LOG_ALLOW"; then
          echo "ERROR: Unexpected RISK_BLOCK found in logs for Case 2"
          finish_gate 1

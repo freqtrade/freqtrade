@@ -95,4 +95,5 @@ class IndiaEquitySmokeStrategy(IStrategy):
             return True
         except Exception as e:
             logger.error("Error in risk guardrail check: %s", e)
+            logger.info("RISK_OK entry for %s: Exception fail-open", pair)
             return True

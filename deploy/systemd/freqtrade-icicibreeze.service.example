@@ -1,0 +1,17 @@
+[Unit]
+Description=Freqtrade ICICI Breeze Bot
+After=network.target
+
+[Service]
+Type=simple
+User=trader
+WorkingDirectory=/home/trader/work/freqtrade-icicibreeze
+ExecStart=/home/trader/work/freqtrade-icicibreeze/.venv/bin/freqtrade trade -c user_data/config_icicibreeze.json --strategy IndiaOptionsAutoStrategy
+Restart=on-failure
+RestartSec=10
+
+# Environment variables
+# EnvironmentFile=/home/trader/work/freqtrade-icicibreeze/deploy/env/.env
+
+[Install]
+WantedBy=multi-user.target
