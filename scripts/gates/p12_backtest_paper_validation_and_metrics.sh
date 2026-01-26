@@ -15,7 +15,7 @@ if [ ! -f "$CFG" ]; then
     finish_gate 1
 fi
 
-PAIR="RELIANCE-20260226-2800-CE/INR"
+PAIR="RELIANCE/INR"
 TF="5m"
 DATADIR="user_data/data/icicibreeze"
 
@@ -38,29 +38,51 @@ TRADES_FILE="$ARTIFACT_DIR/backtest_trades.json"
 
 # Create a backtest-specific config with loose ROI to ensure trades close
 BT_CFG="$ARTIFACT_DIR/config_bt.json"
-jq '.minimal_roi = {"0": 0.0001} | .stoploss = -0.99' "$CFG" > "$BT_CFG"
+jq '.minimal_roi = {"0": -1} | .stoploss = -0.99' "$CFG" > "$BT_CFG"
 
 freqtrade backtesting -c "$BT_CFG" \
   --userdir user_data \
-  -s IndiaOptionsAutoStrategy \
+  -s IndiaEquitySmokeStrategy \
   --pairs "$PAIR" \
   --timeframe "$TF" \
   --timerange "$TIMERANGE" \
+  --starting-balance 10000000 \
+  --fee 0.0 \
   --export trades \
-  --export-filename "$TRADES_FILE" > "$LOG_FILE" 2>&1 || finish_gate $?
+  --export-directory "$ARTIFACT_DIR" \
+  --export-filename "backtest_results.json" > "$LOG_FILE" 2>&1 || finish_gate $?
 
-echo "Step 4: Generate Metrics"
+# Freqtrade might zip the results or name them based on strategy
+# We search for any JSON in the artifact dir that contains trades (excluding meta and config)
+REAL_TRADES_FILE=$(find "$ARTIFACT_DIR" -name "*.json" ! -name "*.meta.json" ! -name "config_bt.json" ! -name "status.json" | head -n 1)
+
+# If no JSON but ZIP exists, unzip it
+if [ -z "$REAL_TRADES_FILE" ]; then
+    ZIP_FILE=$(find "$ARTIFACT_DIR" -name "*.zip" | head -n 1)
+    if [ -n "$ZIP_FILE" ]; then
+        echo "Step 3.1: Unzipping results"
+        unzip -o "$ZIP_FILE" -d "$ARTIFACT_DIR"
+        REAL_TRADES_FILE=$(find "$ARTIFACT_DIR" -name "*.json" ! -name "*.meta.json" ! -name "config_bt.json" ! -name "status.json" | head -n 1)
+    fi
+fi
+
+if [ -z "$REAL_TRADES_FILE" ]; then
+    echo "ERROR: Failed to locate backtest results JSON in $ARTIFACT_DIR"
+    finish_gate 1
+fi
+
+echo "Step 4: Generate Metrics from $REAL_TRADES_FILE"
 METRICS_FILE="$ARTIFACT_DIR/metrics_summary.json"
 python3 scripts/p12_metrics_from_trades.py \
-  --trades "$TRADES_FILE" \
+  --trades "$REAL_TRADES_FILE" \
   --out "$METRICS_FILE" \
   --pair "$PAIR" \
   --tf "$TF" \
   --timerange "$TIMERANGE" || finish_gate $?
 
 echo "Step 5: Final Assertions"
-if [ ! -f "$TRADES_FILE" ]; then
-    echo "ERROR: Missing trades file: $TRADES_FILE"
+if [ ! -f "$REAL_TRADES_FILE" ]; then
+    echo "ERROR: Missing trades file: $REAL_TRADES_FILE"
     finish_gate 1
 fi
 

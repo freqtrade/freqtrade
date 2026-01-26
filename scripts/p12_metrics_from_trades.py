@@ -11,7 +11,17 @@ def generate_metrics(trades_file: str, out_file: str, pair: str, timeframe: str,
             sys.exit(1)
 
         with open(trades_file, "r") as f:
-            trades = json.load(f)
+            data = json.load(f)
+
+        if isinstance(data, list):
+            trades = data
+        elif isinstance(data, dict) and "strategy" in data:
+            # Extract from nested Freqtrade results structure
+            # {"strategy": {"StrategyName": {"trades": [...]}}}
+            strat_name = list(data["strategy"].keys())[0]
+            trades = data["strategy"][strat_name].get("trades", [])
+        else:
+            trades = []
 
         trades_count = len(trades)
         total_profit = sum(t.get("profit_abs", 0) for t in trades)
