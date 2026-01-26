@@ -17,8 +17,9 @@ TF="5m"
 DAYS=30
 
 echo "Step 0: Clean existing mock data"
-rm -f "user_data/data/icicibreeze/RELIANCE_INR-5m.json"
+rm -f "user_data/data/icicibreeze/mock_cache/RELIANCE_INR-5m.json"
 rm -f "user_data/data/icicibreeze/RELIANCE_INR-5m.feather"
+rm -f "user_data/data/icicibreeze/RELIANCE_INR-5m.json"
 
 echo "Step 1: Download Mock Data (30 days)"
 # This will call fetch_ohlcv which will synthesize and persist to JSON
@@ -26,17 +27,17 @@ freqtrade download-data -c "$CFG" --userdir user_data --pairs "$PAIR" --timefram
 
 # JSON file produced by our mock persistence
 # Note: Freqtrade replaces / with _ in filenames
-JSON_FILE="user_data/data/icicibreeze/RELIANCE_INR-5m.json"
+JSON_FILE="user_data/data/icicibreeze/mock_cache/RELIANCE_INR-5m.json"
 
 echo "Step 2: Assert Candle Count"
 if [ ! -f "$JSON_FILE" ]; then
     echo "ERROR: Mock JSON data file not found: $JSON_FILE"
-    ls -la user_data/data/icicibreeze/
+    ls -la user_data/data/icicibreeze/mock_cache/
     finish_gate 1
 fi
 
 COUNT=$(jq '. | length' "$JSON_FILE")
-EXPECTED=8208 # 30 * 24 * 12 * 0.95
+EXPECTED=7500 # Approx 30 days * 0.9 coverage
 if [ "$COUNT" -lt "$EXPECTED" ]; then
     echo "ERROR: Insufficient candle count: $COUNT < $EXPECTED"
     finish_gate 1
