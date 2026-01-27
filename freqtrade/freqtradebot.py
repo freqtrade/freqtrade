@@ -45,7 +45,7 @@ from freqtrade.exchange.exchange_types import CcxtOrder
 from freqtrade.leverage.liquidation_price import update_liquidation_prices
 from freqtrade.misc import safe_value_fallback, safe_value_fallback2
 from freqtrade.mixins import LoggingMixin
-from freqtrade.persistence import Order, PairLocks, Trade, init_db
+from freqtrade.persistence import Balance, BalanceEventType, Order, PairLocks, Trade, init_db
 from freqtrade.persistence.key_value_store import set_startup_time
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.plugins.protectionmanager import ProtectionManager
@@ -231,6 +231,7 @@ class FreqtradeBot(LoggingMixin):
         """
         migrate_live_content(self.config, self.exchange)
         set_startup_time()
+        self._capture_balance(BalanceEventType.BOT_START)
 
         self.rpc.startup_messages(self.config, self.pairlists, self.protections)
         # Update older trades with precision and precision mode
@@ -1042,6 +1043,11 @@ class FreqtradeBot(LoggingMixin):
 
         # Updating wallets
         self.wallets.update()
+        self._capture_balance(
+            BalanceEventType.TRADE_OPEN,
+            trade_id=trade.id,
+            order_id=order_obj.id,
+        )
 
         self._notify_enter(trade, order_obj, order_type, sub_trade=pos_adjust)
 
@@ -1930,6 +1936,11 @@ class FreqtradeBot(LoggingMixin):
             order_obj.ft_cancel_reason += f", {constants.CANCEL_REASON['PARTIALLY_FILLED']}"
 
         self.wallets.update()
+        self._capture_balance(
+            BalanceEventType.ORDER_CANCEL,
+            trade_id=trade.id,
+            order_id=order_obj.id,
+        )
         self._notify_enter_cancel(
             trade, order_type=self.strategy.order_types["entry"], reason=order_obj.ft_cancel_reason
         )
@@ -2398,6 +2409,11 @@ class FreqtradeBot(LoggingMixin):
                 self.cancel_stoploss_on_exchange(trade)
             # Updating wallets when order is closed
             self.wallets.update()
+            # Capture balance after order fill
+            event_type = (
+                BalanceEventType.TRADE_CLOSE if not trade.is_open else BalanceEventType.ORDER_FILL
+            )
+            self._capture_balance(event_type, trade_id=trade.id, order_id=order.id)
         return trade
 
     def order_close_notify(self, trade: Trade, order: Order, stoploss_order: bool, send_msg: bool):
@@ -2632,3 +2648,49 @@ class FreqtradeBot(LoggingMixin):
             )
 
         return final_price
+
+    def _capture_balance(
+        self,
+        event_type: BalanceEventType,
+        trade_id: int | None = None,
+        order_id: int | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> None:
+        """
+        Capture a balance snapshot at a significant event.
+        Skipped during backtesting (when Trade.use_db is False).
+
+        :param event_type: Type of event triggering the snapshot
+        :param trade_id: Optional trade ID to associate with the snapshot
+        :param order_id: Optional order ID to associate with the snapshot
+        :param context: Optional JSON-serializable context data
+        """
+        import json
+
+        # Skip during backtesting
+        if not Trade.use_db:
+            return
+
+        stake_currency = self.config["stake_currency"]
+
+        try:
+            balance = Balance(
+                timestamp=dt_now(),
+                event_type=event_type.value,
+                total_balance=self.wallets.get_total(stake_currency),
+                free_balance=self.wallets.get_free(stake_currency),
+                used_balance=self.wallets.get_used(stake_currency),
+                stake_currency=stake_currency,
+                ft_trade_id=trade_id,
+                ft_order_id=order_id,
+                total_profit=Trade.get_total_closed_profit(),
+                open_trade_value=Trade.total_open_trades_stakes(),
+                is_dry_run=self.config["dry_run"],
+                context=json.dumps(context) if context else None,
+            )
+            balance.external_change = Balance.calculate_external_change(balance)
+
+            Balance.session.add(balance)
+            Trade.commit()
+        except Exception as e:
+            logger.warning(f"Failed to capture balance snapshot: {e}")
