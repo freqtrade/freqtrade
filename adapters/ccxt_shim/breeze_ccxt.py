@@ -28,6 +28,7 @@ from adapters.ccxt_shim.security_master import (
 )
 from adapters.ccxt_shim.market_hours import MarketHoursGuard
 from adapters.ccxt_shim.risk_guard import RiskGuard
+from adapters.ccxt_shim.order_router import OrderRouter
 from freqtrade.exceptions import OperationalException
 
 
@@ -97,6 +98,7 @@ class BreezeCCXT(ccxt.Exchange):
         self.rate_limiter = InternalRateLimiter(rpm=rl_config)
         self._security_master_cache: dict[str, Any] | None = None
         self.market_hours = MarketHoursGuard()
+        self.order_router = OrderRouter(lambda: self.markets)
 
         # Mock Order Storage
         self._mock_orders: dict[str, dict] = {}
@@ -577,6 +579,23 @@ class BreezeCCXT(ccxt.Exchange):
 
         self.risk_guard.record_trade_attempt(symbol, side)
 
+        # P16 Order Router Check
+        def position_check(sym: str) -> bool:
+            try:
+                positions = self.fetch_positions([sym])
+                # Check for any open position (long or short) with non-zero contracts
+                for p in positions:
+                    if p["symbol"] == sym and p["contracts"] > 0:
+                        return True
+                return False
+            except Exception:
+                logger.warning(
+                    f"OrderRouter: fetch_positions failed during buyer_only check for {sym}"
+                )
+                return False
+
+        self.order_router.validate_entry(symbol, side, amount, position_check)
+
         if self._is_mock_mode():
             import hashlib  # nosec
             import random  # nosec
@@ -616,6 +635,41 @@ class BreezeCCXT(ccxt.Exchange):
                 return self._mock_orders[order_id]
             raise OperationalException(f"Mock order {order_id} not found.")
         raise OperationalException("cancel_order not supported in real mode yet.")
+
+        return self.fetch_order(order_id, symbol)
+
+    def edit_order(
+        self,
+        id: str,
+        symbol: str,
+        type: str,
+        side: str,
+        amount: float | None = None,
+        price: float | None = None,
+        params: dict | None = None,
+    ):
+        """
+        P16: Edit Order Implementation.
+        Since native modify is not fully supported/trusted yet, we use Cancel/Replace.
+        Enforces OrderRouter modification policies.
+        """
+        if params is None:
+            params = {}
+
+        logger.info(f"BreezeCCXT.edit_order called for {id} {symbol}")
+
+        # 1. Enforce Router Checks (Quota & Ladder)
+        self.order_router.track_and_assert_modify(id, time.time())
+
+        # 2. Execute Cancel/Replace
+        # Note: In a real implementation with native modify, we would call it here.
+        # Fallback to Cancel + Create
+        logger.info(f"edit_order: Cancelling {id} to replace...")
+        self.cancel_order(id, symbol)
+
+        # Wait a bit? Or assume atomic enough?
+        # Create new order behaves as a new entry/exit.
+        return self.create_order(symbol, type, side, amount, price, params)
 
     def fetch_order(self, order_id, symbol=None, params: dict | None = None):
         if self._is_mock_mode():

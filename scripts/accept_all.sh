@@ -31,6 +31,7 @@ ALL_GATES=(
     "p13_ops_security_and_deployment"
     "p14_market_hours"
     "p15_risk_guardrails"
+    "p16_order_router"
 )
 
 # Parse flags
