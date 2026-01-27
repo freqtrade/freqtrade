@@ -20,7 +20,10 @@ if [ "$GATE_MODE" == "pos" ]; then
     echo "   [+] Logic Verified"
 
 elif [ "$GATE_MODE" == "neg" ]; then
-    echo "Negative acceptance criteria not defined for P17-Degraded yet. Skipping."
+    echo "1. Verify Warn-Only Mode (Neg)"
+    # Should allow entry despite degraded status
+    pytest -v tests/test_degraded_mode_warn_only.py || finish_gate $?
+    echo "   [+] Warn-Only Mode Verified"
 fi
 
 echo "----------------------------------------------------------"

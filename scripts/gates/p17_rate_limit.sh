@@ -21,7 +21,10 @@ if [ "$GATE_MODE" == "pos" ]; then
     echo "   [+] Sleep Mode Verified"
 
 elif [ "$GATE_MODE" == "neg" ]; then
-    echo "Negative acceptance criteria not defined for P17-RateLimit yet. Skipping."
+    echo "1. Verify Disabled Mode (Neg)"
+    # Should run very fast and NOT block
+    pytest -v tests/test_rate_limiter_disabled.py || finish_gate $?
+    echo "   [+] Disabled Mode Verified"
 fi
 
 echo "----------------------------------------------------------"
