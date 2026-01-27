@@ -534,76 +534,73 @@ class BreezeCCXT(ccxt.Exchange):
             self.degraded_guard.assert_can_order(side, symbol)
 
             # P15 Risk Guard Check
-        # We need ticker data for spread check. Since this is sync, we can fetch it.
-        # However, for efficiency, validation might ideally use cached ticker if available.
-        # Just calling fetch_ticker here safely.
-        try:
-            ticker = self.fetch_ticker(symbol)
-            price_surface = {"bid": ticker.get("bid", 0), "ask": ticker.get("ask", 0)}
-        except Exception:
-            # If ticker fails (e.g. rate limit), we pass empty surface and risk guard skips spread check
-            # Fail open on price data for risk checks? Or fail closed?
-            # For P15 we fail open on price surface availability to avoid blocking trading on data hiccups.
-            price_surface = {}
-
-        blocked, reason = self.risk_guard.should_block_entry(symbol, side, price_surface)
-        if blocked:
-            logger.warning(f"RiskGuard BLOCKED {side} order for {symbol}: {reason}")
-            raise OperationalException(f"risk_block:{reason}")
-
-        self.risk_guard.record_trade_attempt(symbol, side)
-
-        # P16 Order Router Check
-        def position_check(sym: str) -> bool:
+            # We need ticker data for spread check. Since this is sync, we can fetch it.
             try:
-                positions = self.fetch_positions([sym])
-                # Check for any open position (long or short) with non-zero contracts
-                for p in positions:
-                    if p["symbol"] == sym and p["contracts"] > 0:
-                        return True
-                return False
+                ticker = self.fetch_ticker(symbol)
+                price_surface = {"bid": ticker.get("bid", 0), "ask": ticker.get("ask", 0)}
             except Exception:
-                logger.warning(
-                    f"OrderRouter: fetch_positions failed during buyer_only check for {sym}"
-                )
-                return False
+                # If ticker fails (e.g. rate limit), we pass empty surface and risk guard skips spread check
+                price_surface = {}
 
-        self.order_router.validate_entry(symbol, side, amount, position_check)
+            blocked, reason = self.risk_guard.should_block_entry(symbol, side, price_surface)
+            if blocked:
+                logger.warning(f"RiskGuard BLOCKED {side} order for {symbol}: {reason}")
+                raise OperationalException(f"risk_block:{reason}")
 
-        if self._is_mock_mode():
-            import hashlib  # nosec
-            import random  # nosec
+            self.risk_guard.record_trade_attempt(symbol, side)
 
-            ts = int(time.time() * 1000)
-            rand = random.randint(0, 1000000)
-            seed = f"{symbol}-{side}-{amount}-{ts}-{rand}"
-            order_id = f"ord_{hashlib.md5(seed.encode()).hexdigest()[:12]}"  # nosec
-            order = {
-                "id": order_id,
-                "clientOrderId": order_id,
-                "timestamp": ts,
-                "datetime": self.iso8601(ts),
-                "lastTradeTimestamp": None,
-                "status": "open",
-                "symbol": symbol,
-                "type": order_type,
-                "side": side,
-                "amount": amount,
-                "price": price,
-                "filled": 0.0,
-                "remaining": amount,
-                "cost": 0.0,
-                "trades": [],
-                "info": {"mock": True},
-            }
-            self._mock_orders[order_id] = order
-            self.degraded_guard.record_success()
-            return order
+            # P16 Order Router Check
+            def position_check(sym: str) -> bool:
+                try:
+                    positions = self.fetch_positions([sym])
+                    # Check for any open position (long or short) with non-zero contracts
+                    for p in positions:
+                        if p["symbol"] == sym and p["contracts"] > 0:
+                            return True
+                    return False
+                except Exception:
+                    logger.warning(
+                        f"OrderRouter: fetch_positions failed during buyer_only check for {sym}"
+                    )
+                    return False
+
+            self.order_router.validate_entry(symbol, side, amount, position_check)
+
+            if self._is_mock_mode():
+                import hashlib  # nosec
+                import random  # nosec
+
+                ts = int(time.time() * 1000)
+                rand = random.randint(0, 1000000)
+                seed = f"{symbol}-{side}-{amount}-{ts}-{rand}"
+                order_id = f"ord_{hashlib.md5(seed.encode()).hexdigest()[:12]}"  # nosec
+                order = {
+                    "id": order_id,
+                    "clientOrderId": order_id,
+                    "timestamp": ts,
+                    "datetime": self.iso8601(ts),
+                    "lastTradeTimestamp": None,
+                    "status": "open",
+                    "symbol": symbol,
+                    "type": order_type,
+                    "side": side,
+                    "amount": amount,
+                    "price": price,
+                    "filled": 0.0,
+                    "remaining": amount,
+                    "cost": 0.0,
+                    "trades": [],
+                    "info": {"mock": True},
+                }
+                self._mock_orders[order_id] = order
+                self.degraded_guard.record_success()
+                return order
+
+            raise OperationalException("create_order not supported in real mode yet.")
 
         except Exception as e:
             self.degraded_guard.record_failure(e)
             raise e
-        raise OperationalException("create_order not supported in real mode yet.")
 
     def cancel_order(self, order_id, symbol=None, params: dict | None = None):
         self.rate_limiter.allow("cancel_order")
