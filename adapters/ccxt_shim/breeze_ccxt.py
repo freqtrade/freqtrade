@@ -76,16 +76,16 @@ class BreezeCCXT(ccxt.Exchange):
             config = {}
         logger.info(f"BreezeCCXT Config Keys: {list(config.keys())}")
         if "risk_guard" in config:
-            logger.info(f"RiskGuard Config Found: {config['risk_guard']}")
+            # logger.info(f"RiskGuard Config Found: {config['risk_guard']}")
             self.risk_guard = RiskGuard(config)
         elif "ccxt_config" in config and "risk_guard" in config["ccxt_config"]:
-            logger.info(
-                f"RiskGuard Config Found in ccxt_config: {config['ccxt_config']['risk_guard']}"
-            )
+            # logger.info(
+            #     f"RiskGuard Config Found in ccxt_config: {config['ccxt_config']['risk_guard']}"
+            # )
             # Pass a wrapper dict so RiskGuard sees {"risk_guard": ...} structure
             self.risk_guard = RiskGuard({"risk_guard": config["ccxt_config"]["risk_guard"]})
         else:
-            logger.warning("RiskGuard Config NOT found in BreezeCCXT init dict. Using defaults.")
+            # logger.warning("RiskGuard Config NOT found in BreezeCCXT init dict. Using defaults.")
             self.risk_guard = RiskGuard({})  # Defaults to enabled=True, max=10
 
         super().__init__(config)
@@ -856,7 +856,6 @@ class BreezeAsyncCCXT(ccxt_async.Exchange):
     async def create_order(
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
-        print(f"!!! DEBUG: BreezeAsyncCCXT.create_order called for {symbol} {side}")
         logger.info(f"BreezeAsyncCCXT.create_order called for {symbol} {side}")
         return await asyncio.to_thread(
             self.sync_exchange.create_order, symbol, order_type, side, amount, price, params

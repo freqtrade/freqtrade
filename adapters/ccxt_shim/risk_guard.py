@@ -69,10 +69,6 @@ class RiskGuard:
         now_ist = self.get_now_ist()
         self._reset_daily_counters_if_needed(now_ist)
 
-        logger.info(
-            f"RiskGuard Check: Symbol={symbol} Side={side} Count={self.daily_trades_count} Max={self.max_trades_per_day} Allowed={self.daily_trades_count < self.max_trades_per_day}"
-        )
-
         # 2. Max Trades Per Day
         if self.daily_trades_count >= self.max_trades_per_day:
             return True, "max_trades_per_day"
