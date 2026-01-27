@@ -1,17 +1,13 @@
 #!/bin/bash
-# P15 Risk Guardrails Acceptance Gate
+# P11 Risk Guardrails Acceptance Gate
 set -euo pipefail
 
 # Identify run context
-source scripts/gates/common.sh "p15" "$@"
+source scripts/gates/common.sh "p11" "$@"
 
 export BREEZE_MOCK=1
 export RISK_FORCE_SIGNAL=1
-# Force Market Open to isolate Risk Guard logic (otherwise MarketHours blocks first)
-export FT_FORCE_MARKET_OPEN=1
-
-# Ensure we are in a clean state regarding time
-unset FT_IST_NOW
+unset BREEZE_API_KEY BREEZE_API_SECRET BREEZE_SESSION_TOKEN
 
 CFG="user_data/generated/config_p09x_v1.json"
 if [ ! -f "$CFG" ]; then
@@ -19,7 +15,12 @@ if [ ! -f "$CFG" ]; then
     finish_gate 1
 fi
 
-LOG_FILE="$ARTIFACT_DIR/gate.log"
+# Prepare temporary config with increased max trades and position stacking enabled
+GATE_CFG="$ARTIFACT_DIR/config_p11.json"
+jq '.max_open_trades = 100 | .position_stacking = true | .dry_run_wallet = 10000000 | .stake_amount = 10' "$CFG" > "$GATE_CFG"
+
+LOG_BLOCK="$ARTIFACT_DIR/dry_run_block.log"
+LOG_ALLOW="$ARTIFACT_DIR/dry_run_allow.log"
 
 # Clean up background process function
 terminate_bot() {
@@ -37,104 +38,75 @@ terminate_bot() {
 }
 
 if [ "$GATE_MODE" == "neg" ]; then
-    # Case 1: Should block entries (Max Trades = 0)
-    echo "Step 1: Negative Mode - Verify Risk Block"
-    
-    GATE_CFG="$ARTIFACT_DIR/config_p15_neg.json"
-    OVERLAY="user_data/examples/config_p15_neg_overlay.json"
-    
-    # Merge configs
-    # We use jq to merge overlay into base config
-    jq -s '.[0] * .[1]' "$CFG" "$OVERLAY" > "$GATE_CFG"
-    
-    # Force time to trading hours to avoid intraday cutoff (overlay sets cutoff 09:15)
-    # Actually overlay sets max_trades_per_day=0, so even if time is good, it blocks.
-    # But let's set time to 10:00 to be safe
-    export FT_IST_NOW="2026-01-26T10:00:00+05:30"
-    
-    # Remove --dry-run to enforce Shim-level Risk Guard execution
-    # BREEZE_MOCK=1 ensures we do not hit real API
-    "$FREQTRADE" trade \
-      --db-url "sqlite:///$ARTIFACT_DIR/trades_neg.sqlite" \
+    # Case 1: Should block entries (Green Day Lock / High Risk)
+    echo "Step 1: Case 1 - Should block entries (Green Day Lock) (Negative Mode)"
+    export RISK_FORCE_DAILY_PROFIT_RATIO=0.015
+    export RISK_FORCE_SIGNAL=1
+    "$FREQTRADE" trade --dry-run \
+      --db-url "sqlite:///$ARTIFACT_DIR/trades_case1.sqlite" \
       -c "$GATE_CFG" \
       --userdir user_data \
       -s IndiaEquitySmokeStrategy \
-      -vv > "$LOG_FILE" 2>&1 &
+      -vv > "$LOG_BLOCK" 2>&1 &
     FT_PID=$!
     
-    echo "Waiting for risk block..."
+    echo "Waiting for bot to evaluate risk (block)..."
     BLOCK_CONFIRMED=0
     for i in {1..60}; do
-        if grep -q "risk_block:" "$LOG_FILE"; then
+        if grep -q "RISK_BLOCK entry" "$LOG_BLOCK"; then
             BLOCK_CONFIRMED=1
             break
         fi
         sleep 0.5
     done
     
-    terminate_bot "$FT_PID" "Neg Bot"
+    terminate_bot "$FT_PID" "Case 1 Bot"
     
     if [ "$BLOCK_CONFIRMED" -eq 0 ]; then
-        echo "ERROR: risk_block not found in logs for Negative Mode"
-        tail -n 20 "$LOG_FILE"
+        echo "ERROR: RISK_BLOCK not found in logs for Case 1 within 30s"
+        echo "Last 20 lines of log:"
+        tail -n 20 "$LOG_BLOCK"
         finish_gate 1
     fi
-    echo "[OK] Risk block confirmed: $(grep "risk_block:" "$LOG_FILE" | head -n 1)"
+    echo "[OK] Risk block confirmed: $(grep "RISK_BLOCK entry" "$LOG_BLOCK" | head -n 1)"
 
 elif [ "$GATE_MODE" == "pos" ]; then
     # Case 2: Should allow entries
-    echo "Step 1: Positive Mode - Verify Trading Allowed"
-    
-    GATE_CFG="$ARTIFACT_DIR/config_p15_pos.json"
-    OVERLAY="user_data/examples/config_p15_pos_overlay.json"
-    
-    # Merge configs
-    jq -s '.[0] * .[1]' "$CFG" "$OVERLAY" > "$GATE_CFG"
-    
-    # Force time to 10:00 (trading hours)
-    export FT_IST_NOW="2026-01-26T10:00:00+05:30"
-
-    # Remove --dry-run
-    "$FREQTRADE" trade \
-      --db-url "sqlite:///$ARTIFACT_DIR/trades_pos.sqlite" \
+    # Case 2: Should allow entries
+    echo "Step 1: Case 2 - Should allow entries (Positive Mode)"
+    export RISK_FORCE_DAILY_PROFIT_RATIO=0.0
+    export RISK_FORCE_SIGNAL=1
+    "$FREQTRADE" trade --dry-run \
+      --db-url "sqlite:///$ARTIFACT_DIR/trades_case2.sqlite" \
       -c "$GATE_CFG" \
       --userdir user_data \
       -s IndiaEquitySmokeStrategy \
-      -vv > "$LOG_FILE" 2>&1 &
+      -vv > "$LOG_ALLOW" 2>&1 &
     FT_PID=$!
     
-    echo "Waiting for successful entry..."
+    echo "Waiting for bot to reach TA Analysis (allow)..."
     ALLOW_CONFIRMED=0
     for i in {1..120}; do
-        if grep -q "risk_block:" "$LOG_FILE"; then
-            echo "ERROR: Unexpected risk_block found in Positive Mode"
-            finish_gate 1
+        if grep -q "RISK_BLOCK entry" "$LOG_ALLOW"; then
+             echo "ERROR: Unexpected RISK_BLOCK found in logs for Case 2"
+             finish_gate 1
         fi
-        # Search for RISK_OK or just standard entry log if RISK_OK isn't logged by guard (guard logs warning on block)
-        # But strategy logs "RISK_OK entry" if using the old strategy hook?
-        # NO, we implemented this in SHIM. Shim only logs warning on block.
-        # So we look for "Put Order" or standard freqtrade entry message.
-        # "Buy RELIANCE/INR" or similar.
-        if grep -q "Found open order" "$LOG_FILE"; then
-             ALLOW_CONFIRMED=1
-             break
-        fi
-        if grep -q "Put Order" "$LOG_FILE"; then
-             ALLOW_CONFIRMED=1
-             break
+        if grep -q "RISK_OK entry" "$LOG_ALLOW"; then
+            ALLOW_CONFIRMED=1
+            break
         fi
         sleep 0.5
     done
     
-    terminate_bot "$FT_PID" "Pos Bot"
+    terminate_bot "$FT_PID" "Case 2 Bot"
     
     if [ "$ALLOW_CONFIRMED" -eq 0 ]; then
-        echo "ERROR: Entry not confirmed in Positive Mode"
-        tail -n 20 "$LOG_FILE"
+        echo "ERROR: Bot failed to reach TA analysis or log RISK_OK in Case 2"
+        tail -n 20 "$LOG_ALLOW"
         finish_gate 1
     fi
-    echo "[OK] Entry confirmed"
+    echo "[OK] Risk allow confirmed"
 fi
 
-echo "P15 Risk Guardrails passed"
+echo "P11 Risk Guardrails passed"
 finish_gate 0
