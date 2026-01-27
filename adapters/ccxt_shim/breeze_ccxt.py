@@ -29,6 +29,7 @@ from adapters.ccxt_shim.market_hours import MarketHoursGuard
 from adapters.ccxt_shim.risk_guard import RiskGuard
 from adapters.ccxt_shim.order_router import OrderRouter
 from adapters.ccxt_shim.rate_limiter import RateLimiter
+from adapters.ccxt_shim.degraded_mode import DegradedModeGuard
 from freqtrade.exceptions import OperationalException
 
 
@@ -65,8 +66,8 @@ class BreezeCCXT(ccxt.Exchange):
         # Rate Limiting
         # P17: Switched to centralized RateLimiter with Env support
         self.rate_limiter = RateLimiter()
-        self._security_master_cache: dict[str, Any] | None = None
         self.market_hours = MarketHoursGuard()
+        self.degraded_guard = DegradedModeGuard()
         self.order_router = OrderRouter(lambda: self.markets)
 
         # Mock Order Storage
@@ -527,10 +528,12 @@ class BreezeCCXT(ccxt.Exchange):
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
         logger.info(f"BreezeCCXT.create_order (Sync) called for {symbol} {side}")
-        self.rate_limiter.allow("create_order")
-        self.market_hours.assert_can_create_order(side, symbol)
+        try:
+            self.rate_limiter.allow("create_order")
+            self.market_hours.assert_can_create_order(side, symbol)
+            self.degraded_guard.assert_can_order(side, symbol)
 
-        # P15 Risk Guard Check
+            # P15 Risk Guard Check
         # We need ticker data for spread check. Since this is sync, we can fetch it.
         # However, for efficiency, validation might ideally use cached ticker if available.
         # Just calling fetch_ticker here safely.
@@ -594,7 +597,12 @@ class BreezeCCXT(ccxt.Exchange):
                 "info": {"mock": True},
             }
             self._mock_orders[order_id] = order
+            self.degraded_guard.record_success()
             return order
+
+        except Exception as e:
+            self.degraded_guard.record_failure(e)
+            raise e
         raise OperationalException("create_order not supported in real mode yet.")
 
     def cancel_order(self, order_id, symbol=None, params: dict | None = None):
