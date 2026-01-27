@@ -1,9 +1,9 @@
 #!/bin/bash
-# P11 Risk Guardrails Acceptance Gate
+# P15 Risk Guardrails Acceptance Gate
 set -euo pipefail
 
 # Identify run context
-source scripts/gates/common.sh "p11" "$@"
+source scripts/gates/common.sh "p15" "$@"
 
 export BREEZE_MOCK=1
 export RISK_FORCE_SIGNAL=1
@@ -108,5 +108,5 @@ elif [ "$GATE_MODE" == "pos" ]; then
     echo "[OK] Risk allow confirmed"
 fi
 
-echo "P11 Risk Guardrails passed"
+echo "P15 Risk Guardrails passed"
 finish_gate 0

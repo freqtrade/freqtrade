@@ -61,7 +61,21 @@ class RiskGuard:
         if os.environ.get("FT_FORCE_RISK_BLOCK"):
             return True, "force_block_env"
 
-        # 1. Check Side (Exits may be exempt)
+        # 1. Green Day Profit Lock (Simulated via Env for P15)
+        # In real impl, this would query Ledger or Cache
+        force_daily_profit = os.environ.get("RISK_FORCE_DAILY_PROFIT_RATIO")
+        if force_daily_profit:
+            try:
+                current_profit_pct = float(force_daily_profit) * 100
+                if current_profit_pct >= self.green_day_lock_pct:
+                    return (
+                        True,
+                        f"green_day_lock({current_profit_pct:.2f}% >= {self.green_day_lock_pct:.2f}%)",
+                    )
+            except ValueError:
+                pass
+
+        # 2. Check Side (Exits may be exempt)
         is_entry = side.lower() == "buy"
         if not is_entry and self.allow_exits_when_blocked:
             return False, ""
