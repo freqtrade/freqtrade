@@ -5,7 +5,6 @@ import os
 import tempfile
 import threading
 import time
-from collections import deque
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -29,37 +28,11 @@ from adapters.ccxt_shim.security_master import (
 from adapters.ccxt_shim.market_hours import MarketHoursGuard
 from adapters.ccxt_shim.risk_guard import RiskGuard
 from adapters.ccxt_shim.order_router import OrderRouter
+from adapters.ccxt_shim.rate_limiter import RateLimiter
 from freqtrade.exceptions import OperationalException
 
 
 logger = logging.getLogger(__name__)
-
-
-class InternalRateLimiter:
-    def __init__(self, rpm: int = 100, rpd: int = 5000):
-        self.rpm = rpm
-        self.rpd = rpd
-        self.history = deque()
-        self.daily_count = 0
-        self.last_reset = time.time()
-
-    def check_and_record(self):
-        now = time.time()
-        if now - self.last_reset > 86400:
-            self.daily_count = 0
-            self.last_reset = now
-        if self.daily_count >= self.rpd:
-            raise OperationalException("Daily rate limit exceeded (5000)")
-        while self.history and now - self.history[0] > 60:
-            self.history.popleft()
-        if len(self.history) >= self.rpm:
-            sleep_time = 60 - (now - self.history[0])
-            if sleep_time > 0:
-                logger.warning(f"Rate limit hit. Sleeping for {sleep_time:.2f}s")
-                time.sleep(sleep_time)
-                now = time.time()
-        self.history.append(now)
-        self.daily_count += 1
 
 
 class BreezeCCXT(ccxt.Exchange):
@@ -90,8 +63,8 @@ class BreezeCCXT(ccxt.Exchange):
             self.risk_guard = RiskGuard({})  # Defaults to enabled=True, max=10
 
         # Rate Limiting
-        rl_config = self.options.get("rateLimit", 100)
-        self.rate_limiter = InternalRateLimiter(rpm=rl_config)
+        # P17: Switched to centralized RateLimiter with Env support
+        self.rate_limiter = RateLimiter()
         self._security_master_cache: dict[str, Any] | None = None
         self.market_hours = MarketHoursGuard()
         self.order_router = OrderRouter(lambda: self.markets)
@@ -306,7 +279,7 @@ class BreezeCCXT(ccxt.Exchange):
 
     def fetch_markets(self, params: dict | None = None):
         if self.rate_limiter:
-            self.rate_limiter.check_and_record()
+            self.rate_limiter.allow("fetch_markets")
         master = self._load_security_master()
         whitelist = self.config.get("pair_whitelist", [])
         if not whitelist:
@@ -423,12 +396,13 @@ class BreezeCCXT(ccxt.Exchange):
         }
 
     def fetch_ticker(self, symbol: str, params: dict | None = None):
+        self.rate_limiter.allow("fetch_ticker")
+
         if self._is_mock_mode():
             return self._generate_mock_ticker(symbol)
 
         if not self.breeze:
             raise OperationalException("Breeze session not initialized.")
-        self.rate_limiter.check_and_record()
         s_params = self._parse_symbol(symbol)
         try:
             res = self.breeze.get_quotes(**s_params)
@@ -483,12 +457,12 @@ class BreezeCCXT(ccxt.Exchange):
         limit: int | None = None,
         params: dict | None = None,
     ):
+        self.rate_limiter.allow("fetch_ohlcv")
         if self._is_mock_mode():
             return self._generate_mock_ohlcv(symbol, timeframe, since, limit)
 
         if not self.breeze:
             raise OperationalException("Breeze session not initialized.")
-        self.rate_limiter.check_and_record()
         s_params = self._parse_symbol(symbol)
         interval = self.timeframes.get(timeframe)
         if not interval:
@@ -553,6 +527,7 @@ class BreezeCCXT(ccxt.Exchange):
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
         logger.info(f"BreezeCCXT.create_order (Sync) called for {symbol} {side}")
+        self.rate_limiter.allow("create_order")
         self.market_hours.assert_can_create_order(side, symbol)
 
         # P15 Risk Guard Check
@@ -623,6 +598,7 @@ class BreezeCCXT(ccxt.Exchange):
         raise OperationalException("create_order not supported in real mode yet.")
 
     def cancel_order(self, order_id, symbol=None, params: dict | None = None):
+        self.rate_limiter.allow("cancel_order")
         self.market_hours.assert_can_cancel_order(order_id, str(symbol))
 
         if self._is_mock_mode():
