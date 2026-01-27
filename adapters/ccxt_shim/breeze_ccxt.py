@@ -544,16 +544,17 @@ class BreezeCCXT(ccxt.Exchange):
     def fetch_balance(self, params: dict | None = None):
         if self._is_mock_mode():
             return {
-                "free": {"INR": 100000.0},
+                "INR": {"free": 10000000.0, "used": 0.0, "total": 10000000.0},
+                "free": {"INR": 10000000.0},
                 "used": {"INR": 0.0},
-                "total": {"INR": 100000.0},
-                "info": {"mock": True},
+                "total": {"INR": 10000000.0},
             }
         raise OperationalException("fetch_balance not supported in real mode yet.")
 
     def create_order(
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
+        logger.info(f"BreezeCCXT.create_order (Sync) called for {symbol} {side}")
         self.market_hours.assert_can_create_order(side, symbol)
 
         # P15 Risk Guard Check
@@ -855,6 +856,8 @@ class BreezeAsyncCCXT(ccxt_async.Exchange):
     async def create_order(
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
+        print(f"!!! DEBUG: BreezeAsyncCCXT.create_order called for {symbol} {side}")
+        logger.info(f"BreezeAsyncCCXT.create_order called for {symbol} {side}")
         return await asyncio.to_thread(
             self.sync_exchange.create_order, symbol, order_type, side, amount, price, params
         )
