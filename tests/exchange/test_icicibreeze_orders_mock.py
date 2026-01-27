@@ -19,7 +19,7 @@ def test_sync_mock_execution():
 
     # Balance
     balance = exchange.fetch_balance()
-    assert balance["free"]["INR"] == 100000.0
+    assert balance["free"]["INR"] == 10000000.0
 
     # Positions
     positions = exchange.fetch_positions()
@@ -51,7 +51,7 @@ async def test_async_mock_execution():
 
     # Balance
     balance = await exchange.fetch_balance()
-    assert balance["free"]["INR"] == 100000.0
+    assert balance["free"]["INR"] == 10000000.0
 
     # Order Lifecycle
     symbol = "NIFTY/INR"
@@ -109,8 +109,8 @@ def test_fetch_balance_has_inr_free_total():
     balance = exchange.fetch_balance()
     assert "INR" in balance["free"]
     assert "INR" in balance["total"]
-    assert balance["free"]["INR"] == 100000.0
-    assert balance["total"]["INR"] == 100000.0
+    assert balance["free"]["INR"] == 10000000.0
+    assert balance["total"]["INR"] == 10000000.0
 
 
 def test_cancel_unknown_order_raises_clear_error():
