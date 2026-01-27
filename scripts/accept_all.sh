@@ -32,6 +32,9 @@ ALL_GATES=(
     "p14_market_hours"
     "p15_risk_guardrails"
     "p16_order_router"
+    "p17_rate_limit"
+    "p17_degraded_mode"
+    "p17_invalid_symbol"
 )
 
 # Parse flags

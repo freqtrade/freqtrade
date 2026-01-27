@@ -66,6 +66,7 @@ class BreezeCCXT(ccxt.Exchange):
         # Rate Limiting
         # P17: Switched to centralized RateLimiter with Env support
         self.rate_limiter = RateLimiter()
+        self._security_master_cache: dict[str, Any] | None = None
         self.market_hours = MarketHoursGuard()
         self.degraded_guard = DegradedModeGuard()
         self.order_router = OrderRouter(lambda: self.markets)
