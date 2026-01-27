@@ -9,13 +9,15 @@ from freqtrade.exceptions import OperationalException
 @pytest.fixture(autouse=True)
 def force_market_open():
     """Ensure market is open for all mock order tests."""
-    with mock.patch.dict(os.environ, {"FT_FORCE_MARKET_OPEN": "1"}):
+    with mock.patch.dict(os.environ, {"FT_FORCE_MARKET_OPEN": "1", "RISK_GUARD_ENABLED": "false"}):
         yield
 
 
+MOCK_CONFIG = {"options": {"mode": "mock"}, "risk_guard": {"enabled": False}}
+
+
 def test_sync_mock_execution():
-    config = {"options": {"mode": "mock"}}
-    exchange = BreezeCCXT(config)
+    exchange = BreezeCCXT(MOCK_CONFIG)
 
     # Balance
     balance = exchange.fetch_balance()
@@ -46,8 +48,7 @@ def test_sync_mock_execution():
 
 @pytest.mark.asyncio
 async def test_async_mock_execution():
-    config = {"options": {"mode": "mock"}}
-    exchange = BreezeAsyncCCXT(config)
+    exchange = BreezeAsyncCCXT(MOCK_CONFIG)
 
     # Balance
     balance = await exchange.fetch_balance()
@@ -55,7 +56,7 @@ async def test_async_mock_execution():
 
     # Order Lifecycle
     symbol = "NIFTY/INR"
-    order = await exchange.create_order(symbol, "limit", "sell", 50.0, 20000.0)
+    order = await exchange.create_order(symbol, "limit", "buy", 50.0, 20000.0)
     assert order["id"].startswith("ord_")
     assert order["status"] == "open"
 
@@ -66,8 +67,7 @@ async def test_async_mock_execution():
 
 
 def test_fetch_open_orders_only_open():
-    config = {"options": {"mode": "mock"}}
-    exchange = BreezeCCXT(config)
+    exchange = BreezeCCXT(MOCK_CONFIG)
     symbol = "RELIANCE/INR"
 
     order1 = exchange.create_order(symbol, "limit", "buy", 1.0, 2500.0)
@@ -83,8 +83,7 @@ def test_fetch_open_orders_only_open():
 
 
 def test_fetch_orders_includes_closed():
-    config = {"options": {"mode": "mock"}}
-    exchange = BreezeCCXT(config)
+    exchange = BreezeCCXT(MOCK_CONFIG)
     symbol = "RELIANCE/INR"
 
     order1 = exchange.create_order(symbol, "limit", "buy", 1.0, 2500.0)
@@ -97,15 +96,13 @@ def test_fetch_orders_includes_closed():
 
 
 def test_fetch_positions_returns_list():
-    config = {"options": {"mode": "mock"}}
-    exchange = BreezeCCXT(config)
+    exchange = BreezeCCXT(MOCK_CONFIG)
     positions = exchange.fetch_positions()
     assert isinstance(positions, list)
 
 
 def test_fetch_balance_has_inr_free_total():
-    config = {"options": {"mode": "mock"}}
-    exchange = BreezeCCXT(config)
+    exchange = BreezeCCXT(MOCK_CONFIG)
     balance = exchange.fetch_balance()
     assert "INR" in balance["free"]
     assert "INR" in balance["total"]
@@ -114,14 +111,12 @@ def test_fetch_balance_has_inr_free_total():
 
 
 def test_cancel_unknown_order_raises_clear_error():
-    config = {"options": {"mode": "mock"}}
-    exchange = BreezeCCXT(config)
+    exchange = BreezeCCXT(MOCK_CONFIG)
     with pytest.raises(OperationalException, match="Mock order unknown_id not found"):
         exchange.cancel_order("unknown_id")
 
 
 def test_fetch_unknown_order_raises_clear_error():
-    config = {"options": {"mode": "mock"}}
-    exchange = BreezeCCXT(config)
+    exchange = BreezeCCXT(MOCK_CONFIG)
     with pytest.raises(OperationalException, match="Mock order unknown_id not found"):
         exchange.fetch_order("unknown_id")
