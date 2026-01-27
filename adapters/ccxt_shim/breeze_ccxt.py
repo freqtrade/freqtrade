@@ -75,8 +75,7 @@ class BreezeCCXT(ccxt.Exchange):
     def __init__(self, config: dict[str, Any] | None = None):
         if config is None:
             config = {}
-        logger.info(f"BreezeCCXT Config Keys: {list(config.keys())}")
-        if "risk_guard" in config:
+
         super().__init__(config)
         self.config = config
         self.name = "IciciBreeze"
