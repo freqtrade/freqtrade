@@ -34,7 +34,14 @@ from freqtrade.exchange import Exchange, timeframe_to_minutes, timeframe_to_msec
 from freqtrade.exchange.exchange_utils import price_to_precision
 from freqtrade.ft_types import AnnotationType
 from freqtrade.loggers import bufferHandler
-from freqtrade.persistence import CustomDataWrapper, KeyValueStore, Order, PairLocks, Trade
+from freqtrade.persistence import (
+    Balance,
+    CustomDataWrapper,
+    KeyValueStore,
+    Order,
+    PairLocks,
+    Trade,
+)
 from freqtrade.persistence.models import PairLock, custom_data_rpc_wrapper
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
@@ -1726,3 +1733,50 @@ class RPC:
 
     def _get_market_direction(self) -> MarketDirection:
         return self._freqtrade.strategy.market_direction
+
+    def _rpc_balance_history(
+        self,
+        event_type: str | None = None,
+        trade_id: int | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Return balance history records.
+
+        :param event_type: Filter by event type (e.g., 'bot_start', 'trade_close')
+        :param trade_id: Filter by trade ID
+        :param since: Filter records after this timestamp
+        :param until: Filter records before this timestamp
+        :param limit: Maximum number of records to return
+        :return: List of balance records as dictionaries
+        """
+        balances = Balance.get_balances(
+            event_type=event_type,
+            trade_id=trade_id,
+            since=since,
+            until=until,
+            limit=limit,
+        )
+        return [b.to_json() for b in balances]
+
+    def _rpc_detect_deposits_withdrawals(
+        self,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        threshold: float = 0.0,
+    ) -> list[dict[str, Any]]:
+        """
+        Detect deposits and withdrawals based on balance history.
+
+        :param since: Start of time range
+        :param until: End of time range
+        :param threshold: Minimum absolute change to report (default 0.0)
+        :return: List of detected deposits/withdrawals
+        """
+        return Balance.detect_deposits_withdrawals(
+            since=since,
+            until=until,
+            threshold=threshold,
+        )
