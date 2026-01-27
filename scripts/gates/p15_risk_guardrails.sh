@@ -16,7 +16,7 @@ if [ ! -f "$CFG" ]; then
 fi
 
 # Prepare temporary config with increased max trades and position stacking enabled
-GATE_CFG="$ARTIFACT_DIR/config_p11.json"
+GATE_CFG="$ARTIFACT_DIR/config_p15.json"
 jq '.max_open_trades = 100 | .position_stacking = true | .dry_run_wallet = 10000000 | .stake_amount = 10' "$CFG" > "$GATE_CFG"
 
 LOG_BLOCK="$ARTIFACT_DIR/dry_run_block.log"
@@ -106,6 +106,9 @@ elif [ "$GATE_MODE" == "pos" ]; then
         finish_gate 1
     fi
     echo "[OK] Risk allow confirmed"
+else
+    echo "ERROR: Invalid --mode=$GATE_MODE (expected pos|neg)"
+    finish_gate 1
 fi
 
 echo "P15 Risk Guardrails passed"

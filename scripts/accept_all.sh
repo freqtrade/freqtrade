@@ -95,7 +95,7 @@ for gate in "${GATES[@]}"; do
     else
         echo ">>> Gate $gate: FAIL"
         # Print log path to help debugging (path now includes mode suffix)
-        LOG_PATH="$RUN_DIR/gates/${gate//_*/}_${MODE}/gate.log"
+        LOG_PATH="$RUN_DIR/gates/${gate}_${MODE}/gate.log"
         echo "Check log: $LOG_PATH"
         FAILED=1
         break # Fail fast
