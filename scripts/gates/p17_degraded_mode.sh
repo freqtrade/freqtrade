@@ -1,24 +1,30 @@
 #!/bin/bash
-set -e
-source scripts/gates/common.sh
+set -euo pipefail
+
+GATE_ID="p17_degraded_mode"
+source scripts/gates/common.sh "$GATE_ID" "$@"
 
 # P17 Degraded Mode Gate
-# Verifies degraded mode blocking.
-
 echo "=========================================================="
-echo "GATE: P17 Degraded Mode"
+echo "GATE: P17 Degraded Mode ($GATE_MODE)"
 echo "=========================================================="
 
-echo "1. Verify Forced Degraded Mode (Integration)"
-# Uses tests/exchange/test_icicibreeze_integration_degraded.py
-# Matches "degraded_block"
-pytest -v tests/exchange/test_icicibreeze_integration_degraded.py
-echo "   [+] Integration Verified"
+if [ "$GATE_MODE" == "pos" ]; then
 
-echo "2. Verify Logic (Unit Tests)"
-pytest -v tests/test_degraded_mode_force_block.py tests/test_degraded_mode_auto_trigger.py
-echo "   [+] Logic Verified"
+    echo "1. Verify Forced Degraded Mode (Integration)"
+    pytest -v tests/exchange/test_icicibreeze_integration_degraded.py || finish_gate $?
+    echo "   [+] Integration Verified"
+
+    echo "2. Verify Logic (Unit Tests)"
+    pytest -v tests/test_degraded_mode_force_block.py tests/test_degraded_mode_auto_trigger.py || finish_gate $?
+    echo "   [+] Logic Verified"
+
+elif [ "$GATE_MODE" == "neg" ]; then
+    echo "Negative acceptance criteria not defined for P17-Degraded yet. Skipping."
+fi
 
 echo "----------------------------------------------------------"
 echo "GATE P17-DegradedMode PASSED"
 echo "----------------------------------------------------------"
+
+finish_gate 0
