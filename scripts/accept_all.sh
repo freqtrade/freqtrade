@@ -31,6 +31,7 @@ ALL_GATES=(
     "p12c_mock_30d_backtesting"
     "p13_ops_security_and_deployment"
     "p14_market_hours"
+    "p15_risk_guardrails"
 )
 
 # Parse flags

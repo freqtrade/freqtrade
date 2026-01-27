@@ -27,6 +27,7 @@ from adapters.ccxt_shim.security_master import (
     load_nse_cash_master,
 )
 from adapters.ccxt_shim.market_hours import MarketHoursGuard
+from adapters.ccxt_shim.risk_guard import RiskGuard
 from freqtrade.exceptions import OperationalException
 
 
@@ -73,6 +74,20 @@ class BreezeCCXT(ccxt.Exchange):
     def __init__(self, config: dict[str, Any] | None = None):
         if config is None:
             config = {}
+        logger.info(f"BreezeCCXT Config Keys: {list(config.keys())}")
+        if "risk_guard" in config:
+            logger.info(f"RiskGuard Config Found: {config['risk_guard']}")
+            self.risk_guard = RiskGuard(config)
+        elif "ccxt_config" in config and "risk_guard" in config["ccxt_config"]:
+            logger.info(
+                f"RiskGuard Config Found in ccxt_config: {config['ccxt_config']['risk_guard']}"
+            )
+            # Pass a wrapper dict so RiskGuard sees {"risk_guard": ...} structure
+            self.risk_guard = RiskGuard({"risk_guard": config["ccxt_config"]["risk_guard"]})
+        else:
+            logger.warning("RiskGuard Config NOT found in BreezeCCXT init dict. Using defaults.")
+            self.risk_guard = RiskGuard({})  # Defaults to enabled=True, max=10
+
         super().__init__(config)
         self.config = config
         self.name = "IciciBreeze"
@@ -540,6 +555,26 @@ class BreezeCCXT(ccxt.Exchange):
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
         self.market_hours.assert_can_create_order(side, symbol)
+
+        # P15 Risk Guard Check
+        # We need ticker data for spread check. Since this is sync, we can fetch it.
+        # However, for efficiency, validation might ideally use cached ticker if available.
+        # Just calling fetch_ticker here safely.
+        try:
+            ticker = self.fetch_ticker(symbol)
+            price_surface = {"bid": ticker.get("bid", 0), "ask": ticker.get("ask", 0)}
+        except Exception:
+            # If ticker fails (e.g. rate limit), we pass empty surface and risk guard skips spread check
+            # Fail open on price data for risk checks? Or fail closed?
+            # For P15 we fail open on price surface availability to avoid blocking trading on data hiccups.
+            price_surface = {}
+
+        blocked, reason = self.risk_guard.should_block_entry(symbol, side, price_surface)
+        if blocked:
+            logger.warning(f"RiskGuard BLOCKED {side} order for {symbol}: {reason}")
+            raise OperationalException(f"risk_block:{reason}")
+
+        self.risk_guard.record_trade_attempt(symbol, side)
 
         if self._is_mock_mode():
             import hashlib  # nosec

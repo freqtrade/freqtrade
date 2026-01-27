@@ -72,6 +72,7 @@ if [ "$GATE_MODE" == "neg" ]; then
 
 elif [ "$GATE_MODE" == "pos" ]; then
     # Case 2: Should allow entries
+    # Case 2: Should allow entries
     echo "Step 1: Case 2 - Should allow entries (Positive Mode)"
     export RISK_FORCE_DAILY_PROFIT_RATIO=0.0
     export RISK_FORCE_SIGNAL=1
