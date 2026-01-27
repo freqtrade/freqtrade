@@ -3,6 +3,7 @@ name: Freqtrade CI
 on:
   push:
     branches:
+      - master
       - stable
       - develop
       - ci/*
