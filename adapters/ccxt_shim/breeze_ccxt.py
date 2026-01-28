@@ -304,12 +304,36 @@ class BreezeCCXT(ccxt.Exchange):
             key = (spec.underlying, spec.expiry_yyyymmdd, float(spec.strike), spec.right)
             info = nfo_master.get("by_contract", {}).get(key)
             if not info:
+                # Recovery for Mock Mode
+                if self._is_mock_mode() and (
+                    spec.underlying in {"NIFTY", "BANKNIFTY", "BTC"}
+                    or spec.underlying in self._MOCK_BASE_PRICES
+                ):
+                    return {
+                        "stock_code": spec.underlying,
+                        "exchange_code": "NFO",
+                        "product_type": "options",
+                        "expiry_date": f"{spec.expiry_yyyymmdd}T06:00:00.000Z",
+                        "strike_price": spec.strike,
+                        "right": spec.right,
+                    }
                 raise OperationalException(f"Option contract not found in SecurityMaster: {symbol}")
             return self._build_breeze_params(spec, info)
         if spec.type == InstrumentType.FUT:
             key = (spec.underlying, spec.expiry_yyyymmdd)
             info = nfo_master.get("by_future", {}).get(key)
             if not info:
+                # Recovery for Mock Mode
+                if self._is_mock_mode() and (
+                    spec.underlying in {"NIFTY", "BANKNIFTY", "BTC"}
+                    or spec.underlying in self._MOCK_BASE_PRICES
+                ):
+                    return {
+                        "stock_code": spec.underlying,
+                        "exchange_code": "NFO",
+                        "product_type": "futures",
+                        "expiry_date": f"{spec.expiry_yyyymmdd}T06:00:00.000Z",
+                    }
                 raise OperationalException(f"Future contract not found in SecurityMaster: {symbol}")
             return self._build_breeze_params(spec, info)
         raise OperationalException(f"Unsupported symbol type: {symbol}")
