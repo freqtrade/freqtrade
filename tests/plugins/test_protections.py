@@ -668,6 +668,8 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
             "max_allowed_drawdown": 0.15,
         }
     ]
+    # Set a small wallet size so that losses are significant relative to account balance
+    default_conf["dry_run_wallet"] = 0.01
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
     message = r"Trading stopped due to Max.*"
 
@@ -764,7 +766,7 @@ def test_MaxDrawdown(mocker, default_conf, fee, caplog):
         exit_reason=ExitType.ROI.value,
         min_ago_open=20,
         min_ago_close=10,
-        profit_rate=0.8,
+        profit_rate=0.5,
     )
     Trade.commit()
     assert not freqtrade.protections.stop_per_pair("XRP/BTC")

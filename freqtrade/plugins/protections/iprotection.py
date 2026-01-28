@@ -2,13 +2,16 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from freqtrade.constants import Config, LongShort
 from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.misc import plural
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import LocalTrade
+
+if TYPE_CHECKING:
+    from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
@@ -28,9 +31,12 @@ class IProtection(LoggingMixin, ABC):
     # Can stop trading for one pair
     has_local_stop: bool = False
 
-    def __init__(self, config: Config, protection_config: dict[str, Any]) -> None:
+    def __init__(
+        self, config: Config, protection_config: dict[str, Any], wallets: "Wallets | None" = None
+    ) -> None:
         self._config = config
         self._protection_config = protection_config
+        self._wallets = wallets
         self._stop_duration_candles: int | None = None
         self._stop_duration: int = 0
         self._lookback_period_candles: int | None = None
