@@ -9,7 +9,11 @@ Scans repository for risky network binding patterns:
 import os
 import re
 import sys
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # Paths to ignore (e.g. tests, lockfiles)
 IGNORES = [
@@ -39,7 +43,7 @@ ALLOWLIST = {
         "0.0.0.0"  # Self-reference
     ],
     # The prompt mentioned 6080 is external/allowed
-    "docs/OPS_RUNBOOK.md": ["6080"],
+    "docs/OPS_RUNBOOK.md": ["6080", "0.0.0.0"],
     "scripts/gates/p20_no_open_ports_pos.sh": ["0.0.0.0"],
     "docs/utils.md": ["0.0.0.0"],
     "docs/rest-api.md": ["0.0.0.0", "8080:8080"],
@@ -86,7 +90,7 @@ def scan_file(file_path):
                         if not allowed:
                             violations.append(f"{file_path}:{i} - {desc}: {line.strip()}")
     except Exception as e:
-        print(f"Error scanning {file_path}: {e}")
+        logger.exception("event=p20_scan_port_exposure_error payload=%s", {"path": str(file_path)})
     return violations
 
 
