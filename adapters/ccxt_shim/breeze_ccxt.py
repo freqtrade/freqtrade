@@ -67,7 +67,8 @@ class BreezeCCXT(ccxt.Exchange):
         if self.paper_mode:
             self.paper_ledger = PaperLedger()
             logger.info(
-                f"Initialized Paper Mode: Slippage={self.paper_slippage}bps, Fee={self.paper_fee}bps"
+                f"Initialized Paper Mode: Slippage={self.paper_slippage}bps, "
+                f"Fee={self.paper_fee}bps"
             )
 
         # Initialize RiskGuard AFTER super to prevent CCXT from overwriting it if 'risk_guard' is in config
@@ -576,7 +577,8 @@ class BreezeCCXT(ccxt.Exchange):
             return ohlcv[:limit]
         except Exception as e:
             logger.warning(
-                f"event=icicibreeze_fetch_ohlcv_sdk_error symbol={symbol} timeframe={timeframe} error={str(e)}"
+                f"event=icicibreeze_fetch_ohlcv_sdk_error symbol={symbol} "
+                f"timeframe={timeframe} error={str(e)}"
             )
             return []
 
@@ -605,7 +607,8 @@ class BreezeCCXT(ccxt.Exchange):
                 ticker = self.fetch_ticker(symbol)
                 price_surface = {"bid": ticker.get("bid", 0), "ask": ticker.get("ask", 0)}
             except Exception:
-                # If ticker fails (e.g. rate limit), we pass empty surface and risk guard skips spread check
+                # If ticker fails (e.g. rate limit), we pass empty surface and risk guard
+                # skips spread check
                 price_surface = {}
 
             blocked, reason = self.risk_guard.should_block_entry(symbol, side, price_surface)
@@ -742,7 +745,8 @@ class BreezeCCXT(ccxt.Exchange):
     def cancel_order(self, order_id, symbol=None, params: dict | None = None):
         if self.paper_mode:
             logger.warning(
-                f"Paper mode cancel_order called for {order_id}. Order is already considered closed/filled."
+                f"Paper mode cancel_order called for {order_id}. "
+                "Order is already considered closed/filled."
             )
             # Return a dummy closed order structure or just the ID?
             # CCXT expects dictionary or just handling it strictly?

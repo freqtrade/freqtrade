@@ -1,15 +1,14 @@
-import pytest
-import shutil
-from pathlib import Path
 from unittest import mock
+
+import pytest
+
 from adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
-from freqtrade.exceptions import OperationalException
 
 
 @pytest.fixture
 def paper_config(tmp_path):
     # Use a tmp dir for ledger
-    ledger_dir = tmp_path / "paper_ledger"
+    # ledger_dir = tmp_path / "paper_ledger"
     return {
         "icicibreeze_paper_forward_test": True,
         "paper_slippage_bps": 10,
@@ -51,7 +50,10 @@ def test_paper_create_order_simulates_fill(paper_exchange):
     with mock.patch.object(paper_exchange, "fetch_ticker", return_value={"last": 1000.0}):
         # Mock MarketHours to allow order
         with mock.patch.object(paper_exchange.market_hours, "assert_can_create_order"):
-            order = paper_exchange.create_order(symbol, "limit", side, amount)
+            with mock.patch.object(
+                paper_exchange.risk_guard, "should_block_entry", return_value=(False, "OK")
+            ):
+                order = paper_exchange.create_order(symbol, "limit", side, amount)
 
             # Checks
             assert order["status"] == "closed"
@@ -84,11 +86,15 @@ def test_real_order_blocked_in_paper_mode(paper_exchange):
 
     # We are in paper execution mode.
     # If we call create_order, it goes to paper logic.
-    # To verifying "blocking", we can check that it didn't call ANY Breeze/SDK method or modify _mock_orders
+    # To verifying "blocking", we can check that it didn't call ANY Breeze/SDK
+    # method or modify _mock_orders
 
     with mock.patch.object(paper_exchange, "fetch_ticker", return_value={"last": 100.0}):
         with mock.patch.object(paper_exchange.market_hours, "assert_can_create_order"):
-            paper_exchange.create_order("SBIN/INR", "limit", "buy", 1)
+            with mock.patch.object(
+                paper_exchange.risk_guard, "should_block_entry", return_value=(False, "OK")
+            ):
+                paper_exchange.create_order("SBIN/INR", "limit", "buy", 1)
 
     assert len(paper_exchange._mock_orders) == 0
 
@@ -116,7 +122,7 @@ def test_ledger_persistence_integration(tmp_path):
     assert (ledger_dir / "paper_trades.csv").exists()
     assert (ledger_dir / "paper_daily_summary.csv").exists()
 
-    with open(ledger_dir / "paper_daily_summary.csv", "r") as f:
+    with (ledger_dir / "paper_daily_summary.csv").open("r") as f:
         content = f.read()
         # Header + 1 row
         assert "trades_count,gross_notional,total_fees" in content
