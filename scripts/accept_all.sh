@@ -35,6 +35,7 @@ ALL_GATES=(
     "p17_rate_limit"
     "p17_degraded_mode"
     "p17_invalid_symbol"
+    "p18_paper_forward_test"
 )
 
 # Parse flags

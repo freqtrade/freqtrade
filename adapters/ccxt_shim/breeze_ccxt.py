@@ -33,6 +33,8 @@ from adapters.ccxt_shim.degraded_mode import DegradedModeGuard
 from freqtrade.exceptions import OperationalException
 
 
+from adapters.ccxt_shim.paper_ledger import PaperLedger
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,6 +55,18 @@ class BreezeCCXT(ccxt.Exchange):
         super().__init__(config)
         self.config = config
         self.name = "IciciBreeze"
+
+        # P18: Paper Forward Test Mode checks
+        self.paper_mode = config.get("icicibreeze_paper_forward_test", False)
+        self.paper_slippage = config.get("paper_slippage_bps", 5)
+        self.paper_fee = config.get("paper_fee_bps", 10)
+
+        self.paper_ledger = None
+        if self.paper_mode:
+            self.paper_ledger = PaperLedger()
+            logger.info(
+                f"Initialized Paper Mode: Slippage={self.paper_slippage}bps, Fee={self.paper_fee}bps"
+            )
 
         # Initialize RiskGuard AFTER super to prevent CCXT from overwriting it if 'risk_guard' is in config
         if "risk_guard" in config:
@@ -100,6 +114,8 @@ class BreezeCCXT(ccxt.Exchange):
 
         if api_secret and session_token:
             try:
+                # Even in paper mode, we might want real data, so we let session init proceed.
+                # But create_order will block if paper_mode is on.
                 logger.info("Initializing Breeze session with provided credentials.")
                 self.breeze.generate_session(api_secret=api_secret, session_token=session_token)
             except Exception:
@@ -257,9 +273,28 @@ class BreezeCCXT(ccxt.Exchange):
             spec = parse_pair(symbol)
         except ValueError as exc:
             raise OperationalException(f"Invalid symbol format: {symbol}") from exc
+
+        # P17: Strict validation against Security Master
         master = self._load_security_master()
         nfo_master = master["nfo"]
         nse_master = master["nse"]
+
+        # Mock Mode Bypass for Synthetic/Test Symbols not in Master
+        if self._is_mock_mode():
+            is_mock_pair = (
+                (spec.underlying == "BTC" and spec.quote == "USDT")
+                or (spec.underlying in self._MOCK_BASE_PRICES)
+                or (spec.underlying in {"NIFTY", "BANKNIFTY"})
+            )
+
+            # If it's a known mock symbol and NOT in master, return synthetic params
+            if is_mock_pair and spec.underlying not in nse_master.get("by_symbol", {}):
+                return {
+                    "stock_code": spec.underlying,
+                    "exchange_code": "NSE",
+                    "product_type": "cash",
+                }
+
         if spec.type == InstrumentType.CASH:
             info = nse_master.get("by_symbol", {}).get(spec.underlying)
             if not info:
@@ -459,13 +494,15 @@ class BreezeCCXT(ccxt.Exchange):
         limit: int | None = None,
         params: dict | None = None,
     ):
-        self.rate_limiter.allow("fetch_ohlcv")
+        # Validate symbol first - raises OperationalException if invalid
+        s_params = self._parse_symbol(symbol)
+
         if self._is_mock_mode():
             return self._generate_mock_ohlcv(symbol, timeframe, since, limit)
 
         if not self.breeze:
             raise OperationalException("Breeze session not initialized.")
-        s_params = self._parse_symbol(symbol)
+
         interval = self.timeframes.get(timeframe)
         if not interval:
             raise OperationalException(f"Unsupported timeframe: {timeframe}")
@@ -512,7 +549,9 @@ class BreezeCCXT(ccxt.Exchange):
             ohlcv.sort(key=lambda x: x[0])
             return ohlcv[:limit]
         except Exception as e:
-            logger.debug("fetch_ohlcv error: %s", e)
+            logger.warning(
+                f"event=icicibreeze_fetch_ohlcv_sdk_error symbol={symbol} timeframe={timeframe} error={str(e)}"
+            )
             return []
 
     def fetch_balance(self, params: dict | None = None):
@@ -567,6 +606,11 @@ class BreezeCCXT(ccxt.Exchange):
 
             self.order_router.validate_entry(symbol, side, amount, position_check)
 
+            # P18: Paper Forward Mode
+            if self.paper_mode:
+                logger.info("Intercepting create_order for Paper Execution Mode")
+                return self._create_paper_order(symbol, order_type, side, amount)
+
             if self._is_mock_mode():
                 import hashlib  # nosec
                 import random  # nosec
@@ -603,7 +647,91 @@ class BreezeCCXT(ccxt.Exchange):
             self.degraded_guard.record_failure(e)
             raise e
 
+    def _create_paper_order(self, symbol, order_type, side, amount):
+        import hashlib
+
+        try:
+            # 1. Get Execution Price (Real Market Data)
+            ticker = self.fetch_ticker(symbol)
+            base_price = ticker["last"]
+
+            # 2. Apply Slippage (bps)
+            slippage_factor = (
+                1 + (self.paper_slippage / 10000)
+                if side == "buy"
+                else 1 - (self.paper_slippage / 10000)
+            )
+            exec_price = base_price * slippage_factor
+
+            # 3. Apply Fees (bps)
+            notional = exec_price * amount
+            fee_cost = notional * (self.paper_fee / 10000)
+
+            # 4. Generate Deterministic ID
+            ts = int(time.time() * 1000)
+            # Use limited digits for readability
+            seed = f"{ts}-{symbol}-{side}"
+            # Paper ID prefix
+            order_id = f"paper-{hashlib.md5(seed.encode()).hexdigest()[:8]}"
+
+            # 5. Construct Order
+            order = {
+                "id": order_id,
+                "clientOrderId": order_id,
+                "timestamp": ts,
+                "datetime": self.iso8601(ts),
+                "lastTradeTimestamp": ts,
+                "status": "closed",
+                "symbol": symbol,
+                "type": order_type,
+                "side": side,
+                "amount": amount,
+                "price": exec_price,
+                "average": exec_price,
+                "cost": notional,
+                "filled": amount,
+                "remaining": 0.0,
+                "fee": {"cost": fee_cost, "currency": "INR", "rate": self.paper_fee / 10000},
+                "trades": [],
+                "info": {
+                    "paper": True,
+                    "base_price": base_price,
+                    "slippage_bps": self.paper_slippage,
+                    "fee_bps": self.paper_fee,
+                },
+            }
+
+            # 6. Log to Ledger
+            if self.paper_ledger:
+                trade_record = order.copy()
+                trade_record["base_price"] = base_price
+                trade_record["slippage_bps"] = self.paper_slippage
+                self.paper_ledger.record_trade(trade_record)
+
+            logger.info(
+                f"PAPER ORDER FILLED: {symbol} {side} @ {exec_price:.2f} (Base: {base_price}) ID: {order_id}"
+            )
+            return order
+
+        except Exception as e:
+            logger.error(f"Paper Order Generation Failed: {e}")
+            raise OperationalException(f"Paper Execution Error: {e}")
+
     def cancel_order(self, order_id, symbol=None, params: dict | None = None):
+        if self.paper_mode:
+            logger.warning(
+                f"Paper mode cancel_order called for {order_id}. Order is already considered closed/filled."
+            )
+            # Return a dummy closed order structure or just the ID?
+            # CCXT expects dictionary or just handling it strictly?
+            # Freqtrade expects the order dictionary usually.
+            return {
+                "id": order_id,
+                "status": "closed",
+                "symbol": symbol,
+                "info": {"paper_cancel": True},
+            }
+
         self.rate_limiter.allow("cancel_order")
         self.market_hours.assert_can_cancel_order(order_id, str(symbol))
 

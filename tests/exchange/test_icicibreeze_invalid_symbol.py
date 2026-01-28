@@ -45,6 +45,8 @@ def test_fetch_ohlcv_api_error_returns_empty(exchange_for_resilience):
                 "API Error"
             )
 
-            # Should NOT raise, but return empty list (resilience)
-            res = exchange_for_resilience.fetch_ohlcv(symbol, "5m")
-            assert res == []
+            # Force real mode so we hit the breeze SDK call
+            with mock.patch.object(exchange_for_resilience, "_is_mock_mode", return_value=False):
+                # Should NOT raise, but return empty list (resilience)
+                res = exchange_for_resilience.fetch_ohlcv(symbol, "5m")
+                assert res == []
