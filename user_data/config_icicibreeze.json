@@ -54,8 +54,9 @@
     "enabled": false,
     "listen_ip_address": "127.0.0.1",
     "listen_port": 8080,
-    "username": "disabled",
-    "password": "disabled"
+    "username": "admin",
+    "password": "CHANGE_THIS_PASSWORD_TO_SOMETHING_STRONG",
+    "jwt_secret_key": "CHANGE_THIS_SECRET_TO_SOMETHING_STRONG_AND_RANDOM"
   },
   "ai_comments": {
     "enabled": false

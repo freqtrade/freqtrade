@@ -41,6 +41,15 @@ Run the acceptance suite before any major deployment:
 bash scripts/accept_all.sh
 ```
 
+## Host Ports (Safety Note)
+
+During P20 inventory, the following ports were observed listening on the host:
+
+- `0.0.0.0:6080` (Websockify / NoVNC)
+- `0.0.0.0:22` (SSH)
+
+**NOTE**: These services are part of the host infrastructure and are **OUTSIDE** the scope of this repository. This repository only manages the Freqtrade application and its direct dependencies. The presence of these ports is acknowledged but not managed by Freqtrade or its acceptance gates (except to ensure we don't accidentally conflict with or expose them further).
+
 ## 6. Troubleshooting
 
 - **Logs**: Check `user_data/logs/freqtrade.log`.

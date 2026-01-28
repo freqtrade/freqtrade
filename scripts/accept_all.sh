@@ -37,6 +37,7 @@ ALL_GATES=(
     "p17_invalid_symbol"
     "p18_paper_forward_test"
     "p19_observability_audit"
+    "p20_no_open_ports_pos"
 )
 
 # Parse flags
