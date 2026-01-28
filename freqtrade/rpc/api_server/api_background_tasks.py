@@ -15,18 +15,33 @@ router = APIRouter()
 
 @router.get("/background", response_model=list[BackgroundTaskStatus])
 def background_job_list():
-    return [
-        {
-            "job_id": jobid,
-            "job_category": job["category"],
-            "status": job["status"],
-            "running": job["is_running"],
-            "progress": job.get("progress"),
-            "progress_tasks": job.get("progress_tasks"),
-            "error": job.get("error", None),
-        }
-        for jobid, job in ApiBG.jobs.items()
-    ]
+    try:
+        return [
+            {
+                "job_id": jobid,
+                "job_category": job["category"],
+                "status": job["status"],
+                "running": job["is_running"],
+                "progress": job.get("progress"),
+                "progress_tasks": job.get("progress_tasks"),
+                "error": job.get("error", None),
+            }
+            for jobid, job in ApiBG.jobs.items()
+        ]
+    except RuntimeError:
+        # Dictionary changed size during iteration
+        return [
+            {
+                "job_id": jobid,
+                "job_category": job["category"],
+                "status": job["status"],
+                "running": job["is_running"],
+                "progress": job.get("progress"),
+                "progress_tasks": job.get("progress_tasks"),
+                "error": job.get("error", None),
+            }
+            for jobid, job in ApiBG.jobs.items()
+        ]
 
 
 @router.get("/background/{jobid}", response_model=BackgroundTaskStatus)

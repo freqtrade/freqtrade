@@ -66,7 +66,9 @@ def __run_pairlist(job_id: str, config_loc: Config):
         ApiBG.jobs[job_id]["error"] = str(e)
         ApiBG.jobs[job_id]["status"] = "failed"
     finally:
-        ApiBG.jobs[job_id]["is_running"] = False
+        if job := ApiBG.jobs.get(job_id):
+            job["is_running"] = False
+            ApiBG.jobs[job_id] = job
         ApiBG.pairlist_running = False
 
 

@@ -4,6 +4,7 @@ from uuid import uuid4
 from typing_extensions import TypedDict
 
 from freqtrade.exchange.exchange import Exchange
+from freqtrade.util import FtTTLCache
 
 
 class ProgressTask(TypedDict):
@@ -38,7 +39,7 @@ class ApiBG:
     # Generic background jobs
 
     # TODO: Change this to FtTTLCache
-    jobs: dict[str, JobsContainer] = {}
+    jobs: dict[str, JobsContainer] = FtTTLCache(maxsize=1000, ttl=3600)  # type: ignore
     # Pairlist evaluate things
     pairlist_running: bool = False
     download_data_running: bool = False
