@@ -1,7 +1,9 @@
 import asyncio
+import hashlib
 import json
 import logging
 import os
+import random
 import tempfile
 import threading
 import time
@@ -636,11 +638,8 @@ class BreezeCCXT(ccxt.Exchange):
                 return self._create_paper_order(symbol, order_type, side, amount)
 
             if self._is_mock_mode():
-                import hashlib  # nosec
-                import random  # nosec
-
                 ts = int(time.time() * 1000)
-                rand = random.randint(0, 1000000)
+                rand = random.randint(0, 1000000)  # nosec
                 seed = f"{symbol}-{side}-{amount}-{ts}-{rand}"
                 order_id = f"ord_{hashlib.md5(seed.encode()).hexdigest()[:12]}"  # nosec
                 order = {
@@ -672,8 +671,6 @@ class BreezeCCXT(ccxt.Exchange):
             raise e
 
     def _create_paper_order(self, symbol, order_type, side, amount):
-        import hashlib
-
         try:
             # 1. Get Execution Price (Real Market Data)
             ticker = self.fetch_ticker(symbol)
@@ -696,7 +693,7 @@ class BreezeCCXT(ccxt.Exchange):
             # Use limited digits for readability
             seed = f"{ts}-{symbol}-{side}"
             # Paper ID prefix
-            order_id = f"paper-{hashlib.md5(seed.encode()).hexdigest()[:8]}"
+            order_id = f"paper-{hashlib.md5(seed.encode()).hexdigest()[:8]}"  # nosec
 
             # 5. Construct Order
             order = {
@@ -733,7 +730,8 @@ class BreezeCCXT(ccxt.Exchange):
                 self.paper_ledger.record_trade(trade_record)
 
             logger.info(
-                f"PAPER ORDER FILLED: {symbol} {side} @ {exec_price:.2f} (Base: {base_price}) ID: {order_id}"
+                f"PAPER ORDER FILLED: {symbol} {side} @ {exec_price:.2f} (Base: {base_price})"
+                f" ID: {order_id}"
             )
             return order
 
@@ -770,9 +768,9 @@ class BreezeCCXT(ccxt.Exchange):
 
     def edit_order(
         self,
-        id: str,
+        order_id: str,
         symbol: str,
-        type: str,
+        order_type: str,
         side: str,
         amount: float | None = None,
         price: float | None = None,
@@ -786,16 +784,16 @@ class BreezeCCXT(ccxt.Exchange):
         if params is None:
             params = {}
 
-        logger.info(f"BreezeCCXT.edit_order called for {id} {symbol}")
+        logger.info(f"BreezeCCXT.edit_order called for {order_id} {symbol}")
 
         # 1. Enforce Router Checks (Quota & Ladder)
-        self.order_router.track_and_assert_modify(id, time.time())
+        self.order_router.track_and_assert_modify(order_id, time.time())
 
         # 2. Execute Cancel/Replace
         # Note: In a real implementation with native modify, we would call it here.
         # Fallback to Cancel + Create
-        logger.info(f"edit_order: Cancelling {id} to replace...")
-        self.cancel_order(id, symbol)
+        logger.info(f"edit_order: Cancelling {order_id} to replace...")
+        self.cancel_order(order_id, symbol)
 
         # Wait a bit? Or assume atomic enough?
         # Create new order behaves as a new entry/exit.
@@ -842,8 +840,6 @@ class BreezeCCXT(ccxt.Exchange):
         raise OperationalException("fetch_positions not supported in real mode yet.")
 
     def _generate_mock_ticker(self, symbol: str) -> dict[str, Any]:
-        import hashlib
-
         h = hashlib.sha256(symbol.encode()).hexdigest()
         last = 2500.0 + (int(h[:3], 16) % 100)
         ts = int(time.time() * 1000)
@@ -951,7 +947,6 @@ class BreezeCCXT(ccxt.Exchange):
             base_symbol = f"{spec.underlying}/INR"
             if base_symbol in self._MOCK_BASE_PRICES:
                 return self._MOCK_BASE_PRICES[base_symbol]
-        import hashlib
 
         h = hashlib.sha256(symbol.encode()).hexdigest()
         return 1000.0 + (int(h[:6], 16) % 4000)
