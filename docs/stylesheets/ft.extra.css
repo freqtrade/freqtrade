@@ -52,3 +52,10 @@
     /* default is max-width: 61rem; */
     max-width: 75rem;
 }
+
+.md-typeset .md-button--sm:focus-visible {
+    outline: 2px solid #4051b5;
+    outline-offset: 2px;
+    background-color: #e5eaee;
+    border-color: #d1d9e0;
+}

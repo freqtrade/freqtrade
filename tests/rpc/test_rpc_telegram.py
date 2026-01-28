@@ -2235,13 +2235,14 @@ def test_send_msg_enter_notification(
     telegram.send_msg(msg)
     leverage_text = f" ({leverage:.3g}x)" if leverage and leverage != 1.0 else ""
 
+    direction_emoji = "🔴" if enter == "Short" else "🟢"
     assert msg_mock.call_args[0][0] == (
         f"\N{LARGE BLUE CIRCLE} *Binance (dry):* New Trade (#1)\n"
         f"*Pair:* `ETH/BTC`\n"
         "*Candle OHLC*: `1.1, 2.2, 1.0, 1.5`\n"
         f"*Enter Tag:* `{enter_signal}`\n"
         "*Amount:* `1333.33333333`\n"
-        f"*Direction:* `{enter}"
+        f"*Direction:* {direction_emoji} `{enter}"
         f"{leverage_text}`\n"
         "*Open Rate:* `0.00001099 BTC`\n"
         "*Current Rate:* `0.00001099 BTC`\n"
@@ -2359,12 +2360,13 @@ def test_send_msg_entry_fill_notification(
         }
     )
     leverage_text = f" ({leverage:.3g}x)" if leverage != 1.0 else ""
+    direction_emoji = "🔴" if entered == "Short" else "🟢"
     assert msg_mock.call_args[0][0] == (
         f"\N{CHECK MARK} *Binance (dry):* New Trade filled (#1)\n"
         f"*Pair:* `ETH/BTC`\n"
         f"*Enter Tag:* `{enter_signal}`\n"
         "*Amount:* `1333.33333333`\n"
-        f"*Direction:* `{entered}"
+        f"*Direction:* {direction_emoji} `{entered}"
         f"{leverage_text}`\n"
         "*Open Rate:* `0.00001099 BTC`\n"
         "*Total:* `0.01465333 BTC / 180.895 USD`"
@@ -2397,7 +2399,7 @@ def test_send_msg_entry_fill_notification(
         f"*Pair:* `ETH/BTC`\n"
         f"*Enter Tag:* `{enter_signal}`\n"
         "*Amount:* `1333.33333333`\n"
-        f"*Direction:* `{entered}"
+        f"*Direction:* {direction_emoji} `{entered}"
         f"{leverage_text}`\n"
         "*Open Rate:* `0.00001099 BTC`\n"
         "*New Total:* `0.01465333 BTC / 180.895 USD`"
@@ -2441,7 +2443,7 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             "*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH / -24.812 USD)`\n"
             "*Enter Tag:* `buy_signal1`\n"
             "*Exit Reason:* `stop_loss`\n"
-            "*Direction:* `Long`\n"
+            "*Direction:* 🟢 `Long`\n"
             "*Amount:* `1333.33333333`\n"
             "*Open Rate:* `0.00075 ETH`\n"
             "*Current Rate:* `0.0003201 ETH`\n"
@@ -2484,7 +2486,7 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             "*Cumulative Profit:* `-0.15746 ETH / -24.812 USD`\n"
             "*Enter Tag:* `buy_signal1`\n"
             "*Exit Reason:* `stop_loss`\n"
-            "*Direction:* `Long`\n"
+            "*Direction:* 🟢 `Long`\n"
             "*Amount:* `1333.33333333`\n"
             "*Open Rate:* `0.00075 ETH`\n"
             "*Current Rate:* `0.0003201 ETH`\n"
@@ -2523,7 +2525,7 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             "*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH)`\n"
             "*Enter Tag:* `buy_signal1`\n"
             "*Exit Reason:* `stop_loss`\n"
-            "*Direction:* `Long`\n"
+            "*Direction:* 🟢 `Long`\n"
             "*Amount:* `1333.33333333`\n"
             "*Open Rate:* `0.00075 ETH`\n"
             "*Current Rate:* `0.0003201 ETH`\n"
@@ -2616,12 +2618,13 @@ def test_send_msg_exit_fill_notification(
         )
 
         leverage_text = f" ({leverage:.3g}x)`\n" if leverage and leverage != 1.0 else "`\n"
+        direction_emoji = "🔴" if direction == "Short" else "🟢"
         assert msg_mock.call_args[0][0] == (
             "\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n"
             "*Profit:* `-57.41% (loss: -0.05746 ETH)`\n"
             f"*Enter Tag:* `{enter_signal}`\n"
             "*Exit Reason:* `stop_loss`\n"
-            f"*Direction:* `{direction}"
+            f"*Direction:* {direction_emoji} `{direction}"
             f"{leverage_text}"
             "*Amount:* `1333.33333333`\n"
             "*Open Rate:* `0.00075 ETH`\n"
@@ -2704,12 +2707,13 @@ def test_send_msg_buy_notification_no_fiat(
     )
 
     leverage_text = f" ({leverage:.3g}x)" if leverage and leverage != 1.0 else ""
+    direction_emoji = "🔴" if enter == "Short" else "🟢"
     assert msg_mock.call_args[0][0] == (
         f"\N{LARGE BLUE CIRCLE} *Binance:* New Trade (#1)\n"
         "*Pair:* `ETH/BTC`\n"
         f"*Enter Tag:* `{enter_signal}`\n"
         "*Amount:* `1333.33333333`\n"
-        f"*Direction:* `{enter}"
+        f"*Direction:* {direction_emoji} `{enter}"
         f"{leverage_text}`\n"
         "*Open Rate:* `0.00001099 BTC`\n"
         "*Current Rate:* `0.00001099 BTC`\n"
@@ -2766,12 +2770,13 @@ def test_send_msg_exit_notification_no_fiat(
     )
 
     leverage_text = f" ({leverage:.3g}x)" if leverage and leverage != 1.0 else ""
+    direction_emoji = "🔴" if direction == "Short" else "🟢"
     assert msg_mock.call_args[0][0] == (
         "\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n"
         "*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH)`\n"
         f"*Enter Tag:* `{enter_signal}`\n"
         "*Exit Reason:* `stop_loss`\n"
-        f"*Direction:* `{direction}"
+        f"*Direction:* {direction_emoji} `{direction}"
         f"{leverage_text}`\n"
         "*Amount:* `1333.33333333`\n"
         "*Open Rate:* `0.00075 ETH`\n"

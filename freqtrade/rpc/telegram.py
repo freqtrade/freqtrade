@@ -433,7 +433,8 @@ class Telegram(RPCHandler):
         message += self._add_analyzed_candle(msg["pair"])
         message += f"*Enter Tag:* `{msg['enter_tag']}`\n" if msg.get("enter_tag") else ""
         message += f"*Amount:* `{round_value(msg['amount'], 8)}`\n"
-        message += f"*Direction:* `{msg['direction']}"
+        direction_emoji = "🔴" if msg.get("direction", "").lower() == "short" else "🟢"
+        message += f"*Direction:* {direction_emoji} `{msg['direction']}"
         if msg.get("leverage") and msg.get("leverage", 1.0) != 1.0:
             message += f" ({msg['leverage']:.3g}x)"
         message += "`\n"
@@ -502,7 +503,8 @@ class Telegram(RPCHandler):
             f"{cp_extra}"
             f"{enter_tag}"
             f"*Exit Reason:* `{msg['exit_reason']}`\n"
-            f"*Direction:* `{msg['direction']}"
+            f"*Direction:* {'🔴' if msg.get('direction', '').lower() == 'short' else '🟢'}"
+            f" `{msg['direction']}"
             f"{leverage_text}`\n"
             f"*Amount:* `{round_value(msg['amount'], 8)}`\n"
             f"*Open Rate:* `{fmt_coin2(msg['open_rate'], msg['quote_currency'])}`\n"
@@ -771,7 +773,7 @@ class Telegram(RPCHandler):
                 + (f" `(since {r['open_date_hum']})`" if r["is_open"] else ""),
                 f"*Current Pair:* {r['pair']}",
                 (
-                    f"*Direction:* {'`Short`' if r.get('is_short') else '`Long`'}"
+                    f"*Direction:* {'🔴 `Short`' if r.get('is_short') else '🟢 `Long`'}"
                     + (f" ` ({r['leverage']}x)`" if r.get("leverage") else "")
                 ),
                 f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`",
@@ -1922,7 +1924,7 @@ class Telegram(RPCHandler):
                 "(only applies to limit orders).` \n"
             )
         message = (
-            "_Bot Control_\n"
+            "🎮 *Bot Control*\n"
             "------------\n"
             "*/start:* `Starts the trader`\n"
             "*/pause:* `Pause the new entries for trader, but handles open trades gracefully`\n"
@@ -1937,6 +1939,9 @@ class Telegram(RPCHandler):
             "*/cancel_open_order <trade_id>:* `Cancels open orders for trade. "
             "Only valid when the trade has open orders.`\n"
             "*/coo <trade_id>|all:* `Alias to /cancel_open_order`\n"
+            "\n"
+            "⚙️ *Configuration*\n"
+            "------------\n"
             "*/whitelist [sorted] [baseonly]:* `Show current whitelist. Optionally in "
             "order and/or only displaying the base currency of each pairing.`\n"
             "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
@@ -1945,21 +1950,25 @@ class Telegram(RPCHandler):
             "`Delete pair / pattern from blacklist. Will reset on reload_conf.` \n"
             "*/reload_config:* `Reload configuration file` \n"
             "*/unlock <pair|id>:* `Unlock this Pair (or this lock id if it's numeric)`\n"
-            "_Current state_\n"
-            "------------\n"
             "*/show_config:* `Show running configuration` \n"
+            "*/marketdir [long | short | even | none]:* `Updates the user managed variable "
+            "that represents the current market direction. If no direction is provided `"
+            "`the currently set market direction will be output.` \n"
+            "\n"
+            "ℹ️ *Information*\n"  # noqa: RUF001
+            "------------\n"
             "*/locks:* `Show currently locked pairs`\n"
             "*/balance:* `Show bot managed balance per currency`\n"
             "*/balance total:* `Show account balance per currency`\n"
             "*/logs [limit]:* `Show latest logs - defaults to 10` \n"
             "*/count:* `Show number of active trades compared to allowed number of trades`\n"
             "*/health* `Show latest process timestamp - defaults to 1970-01-01 00:00:00` \n"
-            "*/marketdir [long | short | even | none]:* `Updates the user managed variable "
-            "that represents the current market direction. If no direction is provided `"
-            "`the currently set market direction will be output.` \n"
             "*/list_custom_data <trade_id> <key>:* `List custom_data for Trade ID & Key combo.`\n"
             "`If no Key is supplied it will list all key-value pairs found for that Trade ID.`\n"
-            "_Statistics_\n"
+            "*/help:* `This help message`\n"
+            "*/version:* `Show version`\n"
+            "\n"
+            "📊 *Statistics*\n"
             "------------\n"
             "*/status <trade_id>|[table]:* `Lists all open trades`\n"
             "         *<trade_id> :* `Lists one or more specific trades.`\n"
@@ -1983,8 +1992,6 @@ class Telegram(RPCHandler):
             "*/monthly <n>:* `Shows statistics per month, over the last n months`\n"
             "*/stats:* `Shows Wins / losses by Sell reason as well as "
             "Avg. holding durations for buys and sells.`\n"
-            "*/help:* `This help message`\n"
-            "*/version:* `Show version`\n"
         )
 
         await self._send_msg(message, parse_mode=ParseMode.MARKDOWN)

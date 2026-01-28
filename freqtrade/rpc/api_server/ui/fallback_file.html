@@ -5,27 +5,59 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Freqtrade UI</title>
   <style>
+    :root {
+      --bg-color: #1a1a1a;
+      --text-color: #e0e0e0;
+      --accent-color: #00b0ff;
+      --code-bg: #2d2d2d;
+    }
     body {
-      background-color: #3c3c3c;
-      color: #dedede;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       text-align: center;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
     }
     .main-container {
       display: flex;
       align-items: center;
       justify-content: center;
       flex-direction: column;
+      max-width: 600px;
+      padding: 2rem;
     }
     h1 {
-      margin-top: 10rem;
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      color: var(--accent-color);
+    }
+    p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    code {
+      background-color: var(--code-bg);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.1rem;
+      display: block;
+      margin: 1.5rem 0;
+      border: 1px solid #444;
     }
   </style>
 </head>
 <body>
   <div class="main-container">
-    <h1>Freqtrade UI not installed.</h1>
-    <p>Please run `freqtrade install-ui` in your terminal to install the UI files and restart your bot.</p>
-    <p>You can then refresh this page and you should see the UI.</p>
+    <h1>Freqtrade UI Not Installed</h1>
+    <p>The web interface files are currently missing.</p>
+    <p>To install the UI, please run the following command in your terminal and restart your bot:</p>
+    <code>freqtrade install-ui</code>
+    <p>Once installed, refresh this page to access the Freqtrade UI.</p>
   </div>
 </body>
 </html>
