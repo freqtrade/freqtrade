@@ -1,4 +1,5 @@
 import logging
+import time
 from copy import deepcopy
 
 from fastapi import APIRouter, BackgroundTasks, Depends
@@ -27,6 +28,7 @@ def __run_download(job_id: str, config_loc: Config):
 
         with FtNoDBContext():
             exchange = get_exchange(config_loc)
+            last_refresh = [0.0]
 
             def ft_callback(task) -> None:
                 ApiBG.jobs[job_id]["progress_tasks"][str(task.id)] = {
@@ -34,6 +36,10 @@ def __run_download(job_id: str, config_loc: Config):
                     "total": task.total,
                     "description": task.description,
                 }
+                if time.time() - last_refresh[0] > 60:
+                    if job := ApiBG.jobs.get(job_id):
+                        ApiBG.jobs[job_id] = job
+                        last_refresh[0] = time.time()
 
             pt = get_progress_tracker(ft_callback=ft_callback)
 
@@ -44,7 +50,9 @@ def __run_download(job_id: str, config_loc: Config):
         ApiBG.jobs[job_id]["error"] = str(e)
         ApiBG.jobs[job_id]["status"] = "failed"
     finally:
-        ApiBG.jobs[job_id]["is_running"] = False
+        if job := ApiBG.jobs.get(job_id):
+            job["is_running"] = False
+            ApiBG.jobs[job_id] = job
         ApiBG.download_data_running = False
 
 
