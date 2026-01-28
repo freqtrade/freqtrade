@@ -38,6 +38,7 @@ ALL_GATES=(
     "p18_paper_forward_test"
     "p19_observability_audit"
     "p20_no_open_ports_pos"
+    "p21_secrets_hygiene"
 )
 
 # Parse flags
