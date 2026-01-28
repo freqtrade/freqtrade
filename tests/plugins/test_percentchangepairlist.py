@@ -43,9 +43,9 @@ def test_volume_change_pair_list_init_exchange_support(mocker, rpl_config):
 
     with pytest.raises(
         OperationalException,
-        match=r"Exchange does not support dynamic whitelist in this configuration. "
+        match=r"Exchange .* does not support dynamic whitelist in this configuration. "
         r"Please edit your config and either remove PercentChangePairList, "
-        r"or switch to using candles. and restart the bot.",
+        r"or switch to using candles and restart the bot.",
     ):
         get_patched_freqtradebot(mocker, rpl_config)
 

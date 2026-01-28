@@ -1155,7 +1155,7 @@ async def test_telegram_balance_handle_futures(
             "percentage": None,
         },
         {
-            "symbol": "XRP/USDT:USDT",
+            "symbol": "ADA/USDT:USDT",
             "timestamp": None,
             "datetime": None,
             "initialMargin": 0.0,
@@ -1181,9 +1181,17 @@ async def test_telegram_balance_handle_futures(
     mocker.patch(f"{EXMS}.fetch_positions", return_value=mock_pos)
     mocker.patch(f"{EXMS}.get_tickers", tickers)
     mocker.patch(f"{EXMS}.get_valid_pair_combination", side_effect=lambda a, b: [f"{a}/{b}"])
+    mocker.patch(f"{EXMS}.get_conversion_rate", return_value=3200)
 
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
     patch_get_signal(freqtradebot)
+    mocker.patch(
+        "freqtrade.persistence.trade_model.Trade.get_open_trades",
+        return_value=[
+            MagicMock(pair="ETH/USDT:USDT", safe_base_currency="ETH"),
+            MagicMock(pair="ADA/USDT:USDT", safe_base_currency="ADA"),
+        ],
+    )
 
     await telegram._balance(update=update, context=MagicMock())
     result = msg_mock.call_args_list[0][0][0]
@@ -1191,7 +1199,7 @@ async def test_telegram_balance_handle_futures(
 
     assert "ETH/USDT:USDT" in result
     assert "`short: 10" in result
-    assert "XRP/USDT:USDT" in result
+    assert "ADA/USDT:USDT" in result
 
 
 async def test_balance_handle_empty_response(default_conf, update, mocker) -> None:

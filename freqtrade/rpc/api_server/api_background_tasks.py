@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/background", response_model=list[BackgroundTaskStatus], tags=["webserver"])
+@router.get("/background", response_model=list[BackgroundTaskStatus])
 def background_job_list():
     return [
         {
@@ -29,7 +29,7 @@ def background_job_list():
     ]
 
 
-@router.get("/background/{jobid}", response_model=BackgroundTaskStatus, tags=["webserver"])
+@router.get("/background/{jobid}", response_model=BackgroundTaskStatus)
 def background_job(jobid: str):
     if not (job := ApiBG.jobs.get(jobid)):
         raise HTTPException(status_code=404, detail="Job not found.")

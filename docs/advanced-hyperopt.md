@@ -142,7 +142,7 @@ class MyAwesomeStrategy(IStrategy):
 !!! Note
     All overrides are optional and can be mixed/matched as necessary.
 
-### Dynamic parameters
+## Dynamic parameters
 
 Parameters can also be defined dynamically, but must be available to the instance once the [`bot_start()` callback](strategy-callbacks.md#bot-start) has been called.
 
@@ -159,7 +159,7 @@ class MyAwesomeStrategy(IStrategy):
 !!! Warning
     Parameters created this way will not show up in the `list-strategies` parameter count.
 
-### Overriding Base estimator
+## Overriding Base estimator
 
 You can define your own optuna sampler for Hyperopt by implementing `generate_estimator()` in the Hyperopt subclass.
 

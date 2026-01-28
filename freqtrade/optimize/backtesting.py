@@ -439,6 +439,8 @@ class Backtesting:
         PairLocks.reset_locks()
         Trade.reset_trades()
         CustomDataWrapper.reset_custom_data()
+        # Ensure logging is disabled in other processes during hyperopt
+        LoggingMixin.show_output = False
         self.rejected_trades = 0
         self.timedout_entry_orders = 0
         self.timedout_exit_orders = 0

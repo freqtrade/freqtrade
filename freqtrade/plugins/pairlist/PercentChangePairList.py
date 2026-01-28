@@ -84,9 +84,9 @@ class PercentChangePairList(IPairList):
             and self._exchange.get_option("tickers_have_percentage")
         ):
             raise OperationalException(
-                "Exchange does not support dynamic whitelist in this configuration. "
-                "Please edit your config and either remove PercentChangePairList, "
-                "or switch to using candles. and restart the bot."
+                f"Exchange {self._exchange.name} does not support dynamic whitelist in this "
+                "configuration. Please edit your config and either remove PercentChangePairList, "
+                "or switch to using candles and restart the bot."
             )
 
         candle_limit = self._exchange.ohlcv_candle_limit(

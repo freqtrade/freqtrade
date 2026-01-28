@@ -21,6 +21,74 @@ from freqtrade.rpc.rpc_types import RPCSendMsg
 logger = logging.getLogger(__name__)
 
 
+_TRADE_MODE_ONLY = "*only available in trading mode*"
+_WEBSERVER_MODE_ONLY = "*only available in webserver mode*"
+
+_OPENAPI_TAGS = [
+    {"name": "Auth", "description": "Authentication endpoints."},
+    {
+        "name": "Info",
+        "description": ("Information endpoints providing general information about the bot."),
+    },
+    {
+        "name": "Bot-control",
+        "description": (f"Bot control endpoints to start/stop trading - {_TRADE_MODE_ONLY}."),
+    },
+    {
+        "name": "Pairlist",
+        "description": f"Pairlist management - {_TRADE_MODE_ONLY}.",
+    },
+    {
+        "name": "Locks",
+        "description": f"Pair lock management - {_TRADE_MODE_ONLY}.",
+    },
+    {
+        "name": "Candle data",
+        "description": "Candle / OHLCV data.",
+    },
+    {
+        "name": "Trading-info",
+        "description": f"Trading related information - {_TRADE_MODE_ONLY}.",
+    },
+    {
+        "name": "Trades",
+        "description": f"Trade management - {_TRADE_MODE_ONLY}.",
+    },
+    {
+        "name": "Strategy",
+        "description": f"List and retrieve strategies - {_WEBSERVER_MODE_ONLY}.",
+    },
+    {
+        "name": "Hyperopt",
+        "description": f"Retrieve hyperopt loss functions - {_WEBSERVER_MODE_ONLY}.",
+    },
+    {
+        "name": "FreqAI",
+        "description": f"FreqAI related endpoints - {_WEBSERVER_MODE_ONLY}.",
+    },
+    {
+        "name": "Download-data",
+        "description": f"Download data endpoints - {_WEBSERVER_MODE_ONLY}.",
+    },
+    {
+        "name": "Backtest",
+        "description": f"Backtest endpoints - {_WEBSERVER_MODE_ONLY}.",
+    },
+    {
+        "name": "Pairlists",
+        "description": f"Pairlist endpoints - {_WEBSERVER_MODE_ONLY}.",
+    },
+    {
+        "name": "Trading",
+        "description": f"Trading related endpoints - {_TRADE_MODE_ONLY}.",
+    },
+    {
+        "name": "Webserver",
+        "description": (f"Webserver related endpoints - {_WEBSERVER_MODE_ONLY}."),
+    },
+]
+
+
 class FTJSONResponse(JSONResponse):
     media_type = "application/json"
 
@@ -68,6 +136,7 @@ class ApiServer(RPCHandler):
             docs_url="/docs" if api_config.get("enable_openapi", False) else None,
             redoc_url=None,
             default_response_class=FTJSONResponse,
+            openapi_tags=_OPENAPI_TAGS,
         )
         self.configure_app(self.app, self._config)
         self.start_api()
@@ -122,28 +191,44 @@ class ApiServer(RPCHandler):
         from freqtrade.rpc.api_server.api_download_data import router as api_download_data
         from freqtrade.rpc.api_server.api_pair_history import router as api_pair_history
         from freqtrade.rpc.api_server.api_pairlists import router as api_pairlists
+        from freqtrade.rpc.api_server.api_trading import router as api_trading
         from freqtrade.rpc.api_server.api_v1 import router as api_v1
         from freqtrade.rpc.api_server.api_v1 import router_public as api_v1_public
+        from freqtrade.rpc.api_server.api_webserver import router as api_webserver
         from freqtrade.rpc.api_server.api_ws import router as ws_router
-        from freqtrade.rpc.api_server.deps import is_webserver_mode
+        from freqtrade.rpc.api_server.deps import is_trading_mode, is_webserver_mode
         from freqtrade.rpc.api_server.web_ui import router_ui
 
         app.include_router(api_v1_public, prefix="/api/v1")
 
-        app.include_router(router_login, prefix="/api/v1", tags=["auth"])
+        app.include_router(router_login, prefix="/api/v1", tags=["Auth"])
         app.include_router(
             api_v1,
             prefix="/api/v1",
             dependencies=[Depends(http_basic_or_jwt_token)],
         )
         app.include_router(
+            api_trading,
+            prefix="/api/v1",
+            tags=["Trading"],
+            dependencies=[Depends(http_basic_or_jwt_token), Depends(is_trading_mode)],
+        )
+        app.include_router(
+            api_webserver,
+            prefix="/api/v1",
+            tags=["Webserver"],
+            dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
+        )
+        app.include_router(
             api_backtest,
             prefix="/api/v1",
+            tags=["Backtest"],
             dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
         )
         app.include_router(
             api_bg_tasks,
             prefix="/api/v1",
+            tags=["Webserver"],
             dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
         )
         app.include_router(
@@ -154,11 +239,13 @@ class ApiServer(RPCHandler):
         app.include_router(
             api_pairlists,
             prefix="/api/v1",
+            tags=["Webserver", "Pairlists"],
             dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
         )
         app.include_router(
             api_download_data,
             prefix="/api/v1",
+            tags=["Download-data", "Webserver"],
             dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
         )
         app.include_router(ws_router, prefix="/api/v1")

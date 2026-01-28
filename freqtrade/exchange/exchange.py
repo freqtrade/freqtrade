@@ -73,6 +73,7 @@ from freqtrade.exchange.exchange_types import (
     CcxtPosition,
     FtHas,
     FundingRate,
+    LeverageTier,
     OHLCVResponse,
     OrderBook,
     Ticker,
@@ -194,7 +195,7 @@ class Exchange:
         self._exchange_ws: ExchangeWS | None = None
         self._markets: dict = {}
         self._trading_fees: dict[str, Any] = {}
-        self._leverage_tiers: dict[str, list[dict]] = {}
+        self._leverage_tiers: dict[str, list[LeverageTier]] = {}
         # Lock event loop. This is necessary to avoid race-conditions when using force* commands
         # Due to funding fee fetching.
         self._loop_lock = Lock()
@@ -2563,7 +2564,13 @@ class Exchange:
                 )
             )
         logger.debug(f"Downloaded data for {pair} from ccxt with length {len(data)}.")
-        return ohlcv_to_dataframe(data, timeframe, pair, fill_missing=False, drop_incomplete=True)
+        # funding_rates are always complete, so never need to be dropped.
+        drop_incomplete = (
+            self._ohlcv_partial_candle if candle_type != CandleType.FUNDING_RATE else False
+        )
+        return ohlcv_to_dataframe(
+            data, timeframe, pair, fill_missing=False, drop_incomplete=drop_incomplete
+        )
 
     async def _async_get_historic_ohlcv(
         self,
@@ -3615,7 +3622,7 @@ class Exchange:
                 pair_tiers.append(self.parse_leverage_tier(tier))
             self._leverage_tiers[pair] = pair_tiers
 
-    def parse_leverage_tier(self, tier) -> dict:
+    def parse_leverage_tier(self, tier) -> LeverageTier:
         info = tier.get("info", {})
         return {
             "minNotional": tier["minNotional"],
@@ -3656,7 +3663,11 @@ class Exchange:
             for tier in pair_tiers:
                 # Adjust notional by leverage to do a proper comparison
                 min_stake = tier["minNotional"] / (prior_max_lev or tier["maxLeverage"])
-                max_stake = tier["maxNotional"] / tier["maxLeverage"]
+                max_stake = (
+                    tier["maxNotional"] / tier["maxLeverage"]
+                    if tier["maxNotional"] is not None
+                    else float("inf")
+                )
                 prior_max_lev = tier["maxLeverage"]
                 if min_stake <= stake_amount <= max_stake:
                     return tier["maxLeverage"]

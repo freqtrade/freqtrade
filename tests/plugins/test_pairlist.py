@@ -1396,7 +1396,7 @@ def test_gen_pair_whitelist_not_supported(mocker, default_conf, tickers) -> None
     )
 
     with pytest.raises(
-        OperationalException, match=r"Exchange does not support dynamic whitelist.*"
+        OperationalException, match=r"Exchange .* does not support dynamic whitelist.*"
     ):
         get_patched_freqtradebot(mocker, default_conf)
 
@@ -1410,7 +1410,9 @@ def test_pair_whitelist_not_supported_Spread(mocker, default_conf, tickers) -> N
         exchange_has=MagicMock(return_value=False),
     )
 
-    with pytest.raises(OperationalException, match=r"Exchange does not support fetchTickers, .*"):
+    with pytest.raises(
+        OperationalException, match=r"Exchange .* does not support fetchTickers, .*"
+    ):
         get_patched_freqtradebot(mocker, default_conf)
 
     mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))

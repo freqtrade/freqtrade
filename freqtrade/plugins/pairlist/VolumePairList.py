@@ -8,7 +8,7 @@ import logging
 from datetime import timedelta
 from typing import Any, Literal
 
-from freqtrade.constants import ListPairsWithTimeframes
+from freqtrade.constants import DOCS_LINK, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.exchange_types import Tickers
@@ -78,9 +78,11 @@ class VolumePairList(IPairList):
             and self._exchange.get_option("tickers_have_quoteVolume")
         ):
             raise OperationalException(
-                "Exchange does not support dynamic whitelist in this configuration. "
-                "Please edit your config and either remove Volumepairlist, "
-                "or switch to using candles. and restart the bot."
+                f"Exchange {self._exchange.name} does not support dynamic whitelist in this "
+                "configuration. Please edit your config and either remove Volumepairlist, "
+                "or switch to using candles and restart the bot. "
+                f"You can find more information about this in the documentation under "
+                f"{DOCS_LINK}/plugins/#volumepairlist-advanced-mode ."
             )
 
         if not self._validate_keys(self._sort_key):

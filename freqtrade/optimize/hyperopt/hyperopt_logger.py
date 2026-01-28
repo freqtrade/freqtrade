@@ -21,6 +21,11 @@ def logging_mp_setup(log_queue: Queue, verbosity: int):
         root = logging.getLogger()
         root.setLevel(verbosity)
         root.addHandler(h)
+        # Disable freqtrade logging outside of the main process
+        # This only leaves logging from the strategy (unless it's prefixed with "freqtrade.")
+        # and eventually from other libraries.
+        if verbosity > logging.DEBUG:
+            logging.getLogger("freqtrade").setLevel(logging.WARNING)
 
 
 def logging_mp_handle(q: Queue):

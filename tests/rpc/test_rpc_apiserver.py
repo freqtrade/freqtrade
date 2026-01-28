@@ -1931,16 +1931,34 @@ def gen_annotation_params():
         "width": 2,
         "line_style": "dashed",
     }
+    point_annotation = {
+        "type": "point",
+        "x": "2024-01-01 15:30:00",
+        "y": 97000,
+        "color": "",
+        "label": "some label",
+        "size": 10,
+        "shape": "circle",
+    }
 
     line_wrong = deepcopy(line_annotation)
     line_wrong["line_style"] = "dashed2222"
+    point_wrong = deepcopy(point_annotation)
+    point_wrong["shape"] = "circle2222"
+    # annotations / expected
     return [
         ([area_annotation], [area_annotation]),  # Only area
         ([line_annotation], [line_annotation]),  # Only line
-        ([area_annotation, line_annotation], [area_annotation, line_annotation]),  # Both together
+        ([point_annotation], [point_annotation]),  # Only point
+        ([area_annotation, line_annotation], [area_annotation, line_annotation]),  # mark and line
+        (
+            [area_annotation, line_annotation, point_annotation],
+            [area_annotation, line_annotation, point_annotation],
+        ),  # all together
         ([], []),  # Empty
         ([line_wrong], []),  # Invalid line
         ([area_annotation, line_wrong], [area_annotation]),  # Invalid line
+        ([point_wrong], []),  # Invalid point
     ]
 
 
@@ -2508,6 +2526,7 @@ def test_api_plot_config(botclient, mocker, tmp_path):
 def test_api_strategies(botclient, tmp_path):
     ftbot, client = botclient
     ftbot.config["user_data_dir"] = tmp_path
+    ftbot.config["runmode"] = RunMode.WEBSERVER
 
     rc = client_get(client, f"{BASE_URI}/strategies")
 
@@ -2533,8 +2552,9 @@ def test_api_strategies(botclient, tmp_path):
 
 
 def test_api_strategy(botclient, tmp_path, mocker):
-    _ftbot, client = botclient
-    _ftbot.config["user_data_dir"] = tmp_path
+    ftbot, client = botclient
+    ftbot.config["user_data_dir"] = tmp_path
+    ftbot.config["runmode"] = RunMode.WEBSERVER
 
     rc = client_get(client, f"{BASE_URI}/strategy/{CURRENT_TEST_STRATEGY}")
 
@@ -2563,6 +2583,7 @@ def test_api_strategy(botclient, tmp_path, mocker):
 
 def test_api_exchanges(botclient):
     _ftbot, client = botclient
+    _ftbot.config["runmode"] = RunMode.WEBSERVER
 
     rc = client_get(client, f"{BASE_URI}/exchanges")
     assert_response(rc)
@@ -2617,6 +2638,7 @@ def test_api_exchanges(botclient):
 def test_list_hyperoptloss(botclient, tmp_path):
     ftbot, client = botclient
     ftbot.config["user_data_dir"] = tmp_path
+    ftbot.config["runmode"] = RunMode.WEBSERVER
 
     rc = client_get(client, f"{BASE_URI}/hyperoptloss")
     assert_response(rc)
@@ -2633,6 +2655,8 @@ def test_list_hyperoptloss(botclient, tmp_path):
 def test_api_freqaimodels(botclient, tmp_path, mocker):
     ftbot, client = botclient
     ftbot.config["user_data_dir"] = tmp_path
+    ftbot.config["runmode"] = RunMode.WEBSERVER
+
     mocker.patch(
         "freqtrade.resolvers.freqaimodel_resolver.FreqaiModelResolver.search_all_objects",
         return_value=[
@@ -2804,6 +2828,7 @@ def test_api_pairlists_evaluate(botclient, tmp_path, mocker):
 
 def test_list_available_pairs(botclient):
     ftbot, client = botclient
+    ftbot.config["runmode"] = RunMode.WEBSERVER
 
     rc = client_get(client, f"{BASE_URI}/available_pairs")
 

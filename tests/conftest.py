@@ -3184,7 +3184,7 @@ def leverage_tiers():
             },
             {
                 "minNotional": 5000000,
-                "maxNotional": 30000000,
+                "maxNotional": None,
                 "maintenanceMarginRate": 0.5,
                 "maxLeverage": 1,
                 "maintAmt": 1527500.0,

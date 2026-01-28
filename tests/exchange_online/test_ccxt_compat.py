@@ -517,12 +517,13 @@ class TestCCXTExchange:
             for tier in pair_tiers:
                 for key in ["maintenanceMarginRate", "minNotional", "maxNotional", "maxLeverage"]:
                     assert key in tier
-                    assert tier[key] >= 0.0
-                assert tier["maxNotional"] > tier["minNotional"]
+                    # maxNotional can be None (no limit)
+                    assert tier[key] is None or tier[key] >= 0.0
+                assert tier["maxNotional"] is None or tier["maxNotional"] > tier["minNotional"]
                 assert tier["maxLeverage"] <= oldLeverage
                 assert tier["maintenanceMarginRate"] >= oldMaintenanceMarginRate
                 assert tier["minNotional"] > oldminNotional
-                assert tier["maxNotional"] > oldmaxNotional
+                assert tier["maxNotional"] is None or tier["maxNotional"] > oldmaxNotional
                 oldLeverage = tier["maxLeverage"]
                 oldMaintenanceMarginRate = tier["maintenanceMarginRate"]
                 oldminNotional = tier["minNotional"]

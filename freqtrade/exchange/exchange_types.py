@@ -115,5 +115,27 @@ class CcxtPosition(TypedDict):
 
 CcxtOrder = dict[str, Any]
 
+
+class LeverageTier(TypedDict):
+    """
+    Represents a single leverage tier returned by the exchange.
+
+    Attributes:
+        minNotional: Minimum notional value (quote currency) for which this tier applies.
+        maxNotional: Maximum notional value (quote currency) for which this tier applies.
+            When ``maxNotional`` is ``None``, the tier is unbounded on the upper side,
+            i.e. there is no maximum notional limit for this tier
+        maintenanceMarginRate: Maintenance margin rate for this tier (fraction, e.g. 0.005 for 0.5%)
+        maxLeverage: Maximum leverage allowed for this tier
+        maintAmt: Optional fixed maintenance margin amount, if provided by the exchange
+    """
+
+    minNotional: float
+    maxNotional: float | None
+    maintenanceMarginRate: float
+    maxLeverage: float
+    maintAmt: float | None
+
+
 # pair, timeframe, candleType, OHLCV, drop last?,
 OHLCVResponse = tuple[str, str, CandleType, list, bool]

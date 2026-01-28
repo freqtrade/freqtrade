@@ -1,8 +1,5 @@
 # Trading with Leverage
 
-!!! Warning "Beta feature"
-    This feature is still in it's testing phase. Should you notice something you think is wrong please let us know via Discord or via Github Issue.
-
 !!! Note "Multiple bots on one account"
     You can't run 2 bots on the same account with leverage. For leveraged / margin trading, freqtrade assumes it's the only user of the account, and all liquidation levels are calculated based on this assumption.
 

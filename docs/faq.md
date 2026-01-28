@@ -29,6 +29,13 @@ You can however use the [`adjust_trade_position()` callback](strategy-callbacks.
 
 Backtesting provides an option for this in `--eps` - however this is only there to highlight "hidden" signals, and will not work in live.
 
+### Does freqtrade support sandbox accounts?
+
+No, but you can use dry-run mode to simulate trading without risking real funds.
+
+Sandbox markets are separate, simulated markets - which are not suitable to test your strategy in a realistic environment.
+These markets usually have different order books, liquidity and trading behaviour (usually with very few participants) - which makes them unsuitable for realistic tests of your strategy.
+
 ### The bot does not start
 
 Running the bot with `freqtrade trade --config config.json` shows the output `freqtrade: command not found`.

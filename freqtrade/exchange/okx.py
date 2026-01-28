@@ -182,7 +182,10 @@ class Okx(Exchange):
             return float("inf")
 
         pair_tiers = self._leverage_tiers[pair]
-        return pair_tiers[-1]["maxNotional"] / leverage
+        last_max_notional = pair_tiers[-1]["maxNotional"]
+        if last_max_notional is None:
+            return float("inf")
+        return last_max_notional / leverage
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> dict:
         params = super()._get_stop_params(side, ordertype, stop_price)

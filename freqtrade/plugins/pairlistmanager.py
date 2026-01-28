@@ -51,8 +51,8 @@ class PairListManager(LoggingMixin):
             invalid = ". ".join([p.name for p in self._pairlist_handlers if p.needstickers])
 
             raise OperationalException(
-                "Exchange does not support fetchTickers, therefore the following pairlists "
-                "cannot be used. Please edit your config and restart the bot.\n"
+                f"Exchange {self._exchange.name} does not support fetchTickers, therefore the "
+                "following pairlists cannot be used. Please edit your config and restart the bot.\n"
                 f"{invalid}."
             )
 

@@ -1292,6 +1292,22 @@ Currently two types of annotations are supported, `area` and `line`.
 }
 ```
 
+#### Point
+
+``` json
+{
+    "type": "point", // Type of the annotation, currently only "point" is supported
+    "x": "2024-01-01 15:00:00", // Start date of the point
+    "y": 94000.2,  // Price / y axis value
+    "color": "",
+    "z_level": 5, // z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.
+    "label": "some label",
+    "size": 2, // Optional, line width in pixels. Defaults to 10
+    "symbol": "circle", // Optional, can be "circle", "rect", "roundRect", "triangle", "pin", "arrow", "none".
+
+}
+```
+
 The below example will mark the chart with areas for the hours 8 and 15, with a grey color, highlighting the market open and close hours.
 This is obviously a very basic example.
 
