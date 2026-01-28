@@ -36,6 +36,7 @@ ALL_GATES=(
     "p17_degraded_mode"
     "p17_invalid_symbol"
     "p18_paper_forward_test"
+    "p19_observability_audit"
 )
 
 # Parse flags

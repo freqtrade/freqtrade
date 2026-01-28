@@ -1,28 +1,32 @@
 import ccxt
+import logging
 import sys
 import time
 import pprint
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Ensure we can import freqtrade.exchange.icicibreeze
 # This import is needed to register the shim
 try:
     import freqtrade.exchange.icicibreeze
 except ImportError as e:
-    print(f"Could not import freqtrade.exchange.icicibreeze: {e}")
+    logger.error(f"Could not import freqtrade.exchange.icicibreeze: {e}")
     sys.exit(1)
 
 try:
-    print("Initializing Exchange...")
+    logger.info("Initializing Exchange...")
     ex = ccxt.icicibreeze({"enableRateLimit": True})
 
-    print("Loading markets...")
+    logger.info("Loading markets...")
     ex.load_markets()
 
-    print("Fetching Ticker for BTC/USDT...")
+    logger.info("Fetching Ticker for BTC/USDT...")
     t = ex.fetchTicker("BTC/USDT")
 
-    print("\nTicker Result:")
-    pprint.pprint(t)
+    logger.info("\nTicker Result:")
+    logger.info(pprint.pformat(t))
 
     assert isinstance(t, dict), "Ticker must be a dictionary"
     assert t["symbol"] == "BTC/USDT", f"Symbol mismatch: {t.get('symbol')}"
@@ -32,10 +36,8 @@ try:
     assert "bid" in t, "Missing 'bid'"
     assert "ask" in t, "Missing 'ask'"
 
-    print("\nSUCCESS: fetchTicker verified.")
+    logger.info("\nSUCCESS: fetchTicker verified.")
 
-except Exception as e:
-    print(f"\nERROR: {e}")
-    import traceback
-
-    traceback.print_exc()
+except Exception:
+    logger.exception("P19: Failed to verify fetchTicker")
+    sys.exit(1)

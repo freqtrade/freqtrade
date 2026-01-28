@@ -34,9 +34,9 @@ def run_smoke_ticker():
         print(f"TIMESTAMP: {ticker['timestamp']}")
         print(f"DATETIME: {ticker['datetime']}")
     except OperationalException as e:
-        logger.error(f"FAILED: {e}")
-    except Exception as e:
-        logger.error(f"FAILED: Unexpected error: {e}")
+        logger.warning(f"Note: fetch_ticker failed (expected if mock credentials used): {e}")
+    except Exception:
+        logger.exception("P19: FAILED: Unexpected error")
 
 
 if __name__ == "__main__":

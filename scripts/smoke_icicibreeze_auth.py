@@ -39,8 +39,8 @@ def run_smoke_auth():
         else:
             logger.error("FAILED: Breeze object NOT initialized")
             return
-    except Exception as e:
-        logger.error(f"FAILED: Initialization error: {e}")
+    except Exception:
+        logger.exception("P19: FAILED: Initialization error")
         return
 
     # 2. Test Rate Limiter (100/min)
@@ -55,8 +55,8 @@ def run_smoke_auth():
             logger.info(f"PASSED: Rate limiter blocked 101st request: {e}")
         else:
             logger.error(f"FAILED: Unexpected OperationalException: {e}")
-    except Exception as e:
-        logger.error(f"FAILED: Unexpected error: {e}")
+    except Exception:
+        logger.exception("P19: FAILED: Unexpected error in Rate Limiter test")
 
     logger.info("SMOKE TEST FINISHED SUCCESSFULLY")
 

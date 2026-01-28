@@ -46,8 +46,8 @@ def run_smoke_markets():
                 return
     except OperationalException as e:
         logger.warning(f"Note: fetch_ticker failed (expected if mock credentials used): {e}")
-    except Exception as e:
-        logger.error(f"FAILED: Unexpected error in fetch_ticker: {e}")
+    except Exception:
+        logger.exception("P19: Failed: Unexpected error in fetch_ticker")
         return
 
     # 2. Test fetch_ohlcv
@@ -64,8 +64,8 @@ def run_smoke_markets():
             logger.info(f"First candle: {candle}")
     except OperationalException as e:
         logger.warning(f"Note: fetch_ohlcv failed (expected if mock credentials used): {e}")
-    except Exception as e:
-        logger.error(f"FAILED: Unexpected error in fetch_ohlcv: {e}")
+    except Exception:
+        logger.exception("P19: Failed: Unexpected error in fetch_ohlcv")
         return
 
     logger.info("SMOKE TEST FINISHED")

@@ -169,6 +169,6 @@ class IndiaOptionsAutoStrategy(IStrategy):
 
             logger.info("RISK_OK entry for %s: %s", pair, reason)
             return True
-        except Exception as e:
-            logger.error("Error in risk guardrail check: %s", e)
+        except Exception:
+            logger.exception("P19: Error in risk guardrail check")
             return True

@@ -1,14 +1,18 @@
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def generate_metrics(trades_file: str, out_file: str, pair: str, timeframe: str, timerange: str):
     try:
         trades_path = Path(trades_file)
         if not trades_path.exists():
-            print(f"ERROR: Trades file not found: {trades_file}", file=sys.stderr)
+            logger.error(f"Trades file not found: {trades_file}")
             sys.exit(1)
 
         with trades_path.open("r") as f:
@@ -38,10 +42,10 @@ def generate_metrics(trades_file: str, out_file: str, pair: str, timeframe: str,
         with Path(out_file).open("w") as f:
             json.dump(metrics, f, indent=4)
 
-        print(f"Metrics written to {out_file}")
+        logger.info(f"Metrics written to {out_file}")
 
-    except Exception as e:
-        print(f"ERROR: Failed to generate metrics: {e}", file=sys.stderr)
+    except Exception:
+        logger.exception("P19: Failed to generate metrics")
         sys.exit(1)
 
 

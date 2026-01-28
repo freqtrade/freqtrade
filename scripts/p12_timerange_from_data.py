@@ -38,8 +38,8 @@ def get_timerange(pair: str, timeframe: str, datadir: str, data_format: str):
         # Format: YYYYMMDD-YYYYMMDD
         print(f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}")
 
-    except Exception as e:
-        print(f"ERROR: Failed to load data: {e}", file=sys.stderr)
+    except Exception:
+        logger.exception("P19: Failed to load data")
         sys.exit(1)
 
 

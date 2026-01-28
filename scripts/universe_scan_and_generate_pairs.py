@@ -280,7 +280,7 @@ def _build_pairs_report(
                 ]
             stock_entries.append((underlying, stock_pairs))
         except Exception as exc:
-            logger.error("Failed to scan stock %s: %s", underlying, exc)
+            logger.exception("P19: Failed to scan stock %s", underlying)
             skipped_underlyings.append({"underlying": underlying, "reason": f"error: {exc}"})
 
     if universe.top_n_stocks:
@@ -310,7 +310,7 @@ def _build_pairs_report(
             pairs.extend(selection.option_pairs)
             selected_indices.append(underlying)
         except Exception as exc:
-            logger.error("Failed to scan index %s: %s", underlying, exc)
+            logger.exception("P19: Failed to scan index %s", underlying)
             skipped_underlyings.append({"underlying": underlying, "reason": f"error: {exc}"})
 
     # 3. Apply Cap and Deterministic Sort

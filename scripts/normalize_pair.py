@@ -66,9 +66,9 @@ def main() -> None:
     args = parser.parse_args()
     try:
         print(normalize_pair(args.pair))
-    except ValueError as exc:
-        logger.error("Invalid pair format: %s", args.pair)
-        raise SystemExit(1) from exc
+    except ValueError:
+        logger.exception("P19: Invalid pair format: %s", args.pair)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
