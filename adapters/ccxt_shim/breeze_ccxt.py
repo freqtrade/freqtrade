@@ -438,7 +438,9 @@ class BreezeCCXT(ccxt.Exchange):
                 }
 
         if not info:
-            logger.warning("Cash symbol not found for whitelist entry: %s", format_pair(spec))
+            logger.warning(
+                "Cash symbol not found for whitelist entry: %s/%s", spec.underlying, spec.quote
+            )
             return None
 
         symbol = format_pair(spec) if spec.quote == "INR" else f"{spec.underlying}/{spec.quote}"
