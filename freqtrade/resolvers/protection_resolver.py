@@ -4,10 +4,14 @@ This module load custom pairlists
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from freqtrade.constants import Config
 from freqtrade.plugins.protections import IProtection
 from freqtrade.resolvers import IResolver
+
+if TYPE_CHECKING:
+    from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
@@ -25,13 +29,17 @@ class ProtectionResolver(IResolver):
 
     @staticmethod
     def load_protection(
-        protection_name: str, config: Config, protection_config: dict
+        protection_name: str,
+        config: Config,
+        protection_config: dict,
+        wallets: "Wallets | None" = None,
     ) -> IProtection:
         """
         Load the protection with protection_name
         :param protection_name: Classname of the pairlist
         :param config: configuration dictionary
         :param protection_config: Configuration dedicated to this pairlist
+        :param wallets: Wallets object
         :return: initialized Protection class
         """
         return ProtectionResolver.load_object(
@@ -40,5 +48,6 @@ class ProtectionResolver(IResolver):
             kwargs={
                 "config": config,
                 "protection_config": protection_config,
+                "wallets": wallets,
             },
         )

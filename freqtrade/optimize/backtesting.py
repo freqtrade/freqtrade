@@ -300,7 +300,7 @@ class Backtesting:
 
     def _load_protections(self, strategy: IStrategy):
         if self.config.get("enable_protections", False):
-            self.protections = ProtectionManager(self.config, strategy.protections)
+            self.protections = ProtectionManager(self.config, strategy.protections, self.wallets)
 
     def load_bt_data(self) -> tuple[dict[str, DataFrame], TimeRange]:
         """

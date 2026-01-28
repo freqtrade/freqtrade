@@ -1,11 +1,14 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from freqtrade.constants import Config, LongShort
 from freqtrade.enums import ExitType
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
+
+if TYPE_CHECKING:
+    from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
@@ -15,8 +18,10 @@ class StoplossGuard(IProtection):
     has_global_stop: bool = True
     has_local_stop: bool = True
 
-    def __init__(self, config: Config, protection_config: dict[str, Any]) -> None:
-        super().__init__(config, protection_config)
+    def __init__(
+        self, config: Config, protection_config: dict[str, Any], wallets: "Wallets | None" = None
+    ) -> None:
+        super().__init__(config, protection_config, wallets)
 
         self._trade_limit = protection_config.get("trade_limit", 10)
         self._disable_global_stop = protection_config.get("only_per_pair", False)

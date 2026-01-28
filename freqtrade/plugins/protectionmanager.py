@@ -4,7 +4,7 @@ Protection manager class
 
 import logging
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from freqtrade.constants import Config, LongShort
 from freqtrade.exceptions import ConfigurationError
@@ -13,13 +13,18 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections import IProtection
 from freqtrade.resolvers import ProtectionResolver
 
+if TYPE_CHECKING:
+    from freqtrade.wallets import Wallets
 
 logger = logging.getLogger(__name__)
 
 
 class ProtectionManager:
-    def __init__(self, config: Config, protections: list) -> None:
+    def __init__(
+        self, config: Config, protections: list, wallets: "Wallets | None" = None
+    ) -> None:
         self._config = config
+        self._wallets = wallets
 
         self._protection_handlers: list[IProtection] = []
         self.validate_protections(protections)
@@ -28,6 +33,7 @@ class ProtectionManager:
                 protection_handler_config["method"],
                 config=config,
                 protection_config=protection_handler_config,
+                wallets=wallets,
             )
             self._protection_handlers.append(protection_handler)
 

@@ -175,7 +175,7 @@ class FreqtradeBot(LoggingMixin):
 
         self.strategy.ft_bot_start()
         # Initialize protections AFTER bot start - otherwise parameters are not loaded.
-        self.protections = ProtectionManager(self.config, self.strategy.protections)
+        self.protections = ProtectionManager(self.config, self.strategy.protections, self.wallets)
 
         def log_took_too_long(duration: float, time_limit: float):
             logger.warning(

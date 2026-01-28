@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
@@ -8,6 +8,9 @@ from freqtrade.constants import Config, LongShort
 from freqtrade.data.metrics import calculate_max_drawdown
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
+
+if TYPE_CHECKING:
+    from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
@@ -17,8 +20,10 @@ class MaxDrawdown(IProtection):
     has_global_stop: bool = True
     has_local_stop: bool = False
 
-    def __init__(self, config: Config, protection_config: dict[str, Any]) -> None:
-        super().__init__(config, protection_config)
+    def __init__(
+        self, config: Config, protection_config: dict[str, Any], wallets: "Wallets | None" = None
+    ) -> None:
+        super().__init__(config, protection_config, wallets)
 
         self._trade_limit = protection_config.get("trade_limit", 1)
         self._max_allowed_drawdown = protection_config.get("max_allowed_drawdown", 0.0)
@@ -58,9 +63,19 @@ class MaxDrawdown(IProtection):
 
         # Drawdown is always positive
         try:
-            # TODO: This should use absolute profit calculation, considering account balance.
-            drawdown_obj = calculate_max_drawdown(trades_df, value_col="close_profit")
-            drawdown = drawdown_obj.drawdown_abs
+            starting_balance = 0
+            if self._wallets:
+                # We need to know the starting balance for the period (or current balance)
+                # to calculate the relative drawdown.
+                # Assuming wallets.get_total() returns current total balance.
+                current_balance = self._wallets.get_total(self._config["stake_currency"])
+                # Calculate starting balance based on closed trades profit.
+                starting_balance = current_balance - trades_df["profit_abs"].sum()
+
+            drawdown_obj = calculate_max_drawdown(
+                trades_df, value_col="profit_abs", starting_balance=starting_balance
+            )
+            drawdown = drawdown_obj.relative_account_drawdown
         except ValueError:
             return None
 
