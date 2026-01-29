@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProtectionManager:
-    def __init__(
-        self, config: Config, protections: list, wallets: "Wallets | None" = None
-    ) -> None:
+    def __init__(self, config: Config, protections: list, wallets: "Wallets | None" = None) -> None:
         self._config = config
         self._wallets = wallets
 

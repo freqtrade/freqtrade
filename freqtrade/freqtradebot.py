@@ -1489,10 +1489,7 @@ class FreqtradeBot(LoggingMixin):
             return False
 
         # If enter order is fulfilled but there is no stoploss, we add a stoploss on exchange
-        if (
-            self.strategy.order_types.get("stoploss_on_exchange")
-            and len(stoploss_orders) == 0
-        ):
+        if self.strategy.order_types.get("stoploss_on_exchange") and len(stoploss_orders) == 0:
             stop_price = trade.stoploss_or_liquidation
 
             if self.create_stoploss_order(trade=trade, stop_price=stop_price):
