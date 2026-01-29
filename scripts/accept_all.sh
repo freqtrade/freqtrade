@@ -47,13 +47,18 @@ ALL_GATES=(
 )
 
 # Parse flags
-MODE="pos"
+# Parse flags
+TARGET_MODE="auto"
 GATES_ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --neg)
-            MODE="neg"
+            TARGET_MODE="neg"
+            shift
+            ;;
+        --pos)
+            TARGET_MODE="pos"
             shift
             ;;
         *)
@@ -63,35 +68,123 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [ ${#GATES_ARGS[@]} -gt 0 ]; then
-    GATES=()
-    for TARGET in "${GATES_ARGS[@]}"; do
-        MATCH=""
-        for g in "${ALL_GATES[@]}"; do
-            if [[ "$g" == "$TARGET" ]]; then
-                MATCH="$g"
-                break
-            fi
-        done
+# Gates that support Negative mode
+HARDENED_GATES=(
+    "p22_real_mode_market_data"
+    "p25_security_master_refresh"
+    "p26_indicator_governance"
+    "p27_smart_money"
+)
 
-        if [ -n "$MATCH" ]; then
-            GATES+=("$MATCH")
-        else
-            echo "ERROR: Unknown gate: $TARGET"
-            echo "Available gates: ${ALL_GATES[*]}"
-            exit 1
+function is_hardened() {
+    local gate=$1
+    for h in "${HARDENED_GATES[@]}"; do
+        if [[ "$h" == "$gate" ]]; then
+            return 0
         fi
     done
-    echo "=== EXECUTING TARGET GATES: ${GATES[*]} (RUN_ID: $RUN_ID, MODE: $MODE) ==="
+    return 1
+}
+
+EXEC_PLAN=()
+
+# 1. Resolve Execution Plan
+if [ ${#GATES_ARGS[@]} -gt 0 ]; then
+    # Custom Filter Mode
+    for TARGET in "${GATES_ARGS[@]}"; do
+        # Check for explicit suffixes
+        if [[ "$TARGET" =~ ^(.*)_(pos|neg)$ ]]; then
+            BASE_NAME="${BASH_REMATCH[1]}"
+            SUFFIX="${BASH_REMATCH[2]}"
+            
+            # Validate Base Name
+            MATCH=""
+            for g in "${ALL_GATES[@]}"; do
+                if [[ "$g" == "$BASE_NAME" ]]; then
+                    MATCH="$g"
+                    break
+                fi
+            done
+            
+            if [ -n "$MATCH" ]; then
+                EXEC_PLAN+=("${MATCH}:${SUFFIX}")
+            else
+                echo "ERROR: Unknown gate base name: $BASE_NAME (from $TARGET)"
+                echo "Available gates: ${ALL_GATES[*]}"
+                exit 1
+            fi
+        else
+            # No suffix - match base name exactly
+            MATCH=""
+            for g in "${ALL_GATES[@]}"; do
+                if [[ "$g" == "$TARGET" ]]; then
+                    MATCH="$g"
+                    break
+                fi
+            done
+            
+            if [ -n "$MATCH" ]; then
+                # Expand based on TARGET_MODE and Hardening
+                if [[ "$TARGET_MODE" == "neg" ]]; then
+                     EXEC_PLAN+=("${MATCH}:neg")
+                elif [[ "$TARGET_MODE" == "pos" ]]; then
+                     EXEC_PLAN+=("${MATCH}:pos")
+                else
+                     # Auto mode
+                     EXEC_PLAN+=("${MATCH}:pos")
+                     if is_hardened "$MATCH"; then
+                         EXEC_PLAN+=("${MATCH}:neg")
+                     fi
+                fi
+            else
+                echo "ERROR: Unknown gate: $TARGET"
+                echo "Available gates: ${ALL_GATES[*]}"
+                exit 1
+            fi
+        fi
+    done
+    
+    BANNER="CUSTOM_FILTER (count=${#EXEC_PLAN[@]})"
+
 else
-    GATES=("${ALL_GATES[@]}")
-    echo "=== STARTING FULL ACCEPTANCE SUITE (RUN_ID: $RUN_ID, MODE: $MODE) ==="
+    # Full Suite
+    # Iterate ALL_GATES and expand
+    for g in "${ALL_GATES[@]}"; do
+        if [[ "$TARGET_MODE" == "neg" ]]; then
+             EXEC_PLAN+=("${g}:neg")
+        elif [[ "$TARGET_MODE" == "pos" ]]; then
+             EXEC_PLAN+=("${g}:pos")
+        else
+             # Auto - defaults to pos, plus neg if hardened
+             EXEC_PLAN+=("${g}:pos")
+             if is_hardened "$g"; then
+                 EXEC_PLAN+=("${g}:neg")
+             fi
+        fi
+    done
+    
+    if [[ "$TARGET_MODE" == "auto" ]]; then
+        BANNER="suite(pos+neg)"
+    else
+        BANNER="suite(${TARGET_MODE}-only)"
+    fi
 fi
+
+echo "=== STARTING ACCEPTANCE SUITE (RUN_ID: $RUN_ID, MODE: $BANNER) ==="
+echo "Resolved Execution Plan:"
+for item in "${EXEC_PLAN[@]}"; do
+    echo " - $item"
+done
 echo "Run Folder: $RUN_DIR"
 
 FAILED=0
 
-for gate in "${GATES[@]}"; do
+for item in "${EXEC_PLAN[@]}"; do
+    # Split item "gate:mode"
+    # shellcheck disable=SC2001
+    gate="${item%%:*}"
+    CURRENT_MODE="${item##*:}"
+    
     GATE_SCRIPT="scripts/gates/${gate}.sh"
     if [ ! -f "$GATE_SCRIPT" ]; then
         echo "ERROR: Gate script missing: $GATE_SCRIPT"
@@ -100,41 +193,26 @@ for gate in "${GATES[@]}"; do
     fi
 
     echo ""
+    echo ">>> Executing Gate: $gate (Mode: $CURRENT_MODE)"
     
-    # Determine which modes to run for this gate
-    # P22 and P25 require BOTH modes for full verification as per "Delta Harden" req
-    MODES_TO_RUN=("$MODE")
-    if [[ "$MODE" == "pos" ]]; then
-       if [[ "$gate" == "p22_real_mode_market_data" ]] || \
-          [[ "$gate" == "p25_security_master_refresh" ]] || \
-          [[ "$gate" == "p26_indicator_governance" ]] || \
-          [[ "$gate" == "p27_smart_money" ]]; then
-           MODES_TO_RUN=("pos" "neg")
-           echo ">>> Info: Automatically scheduling Neg mode for hardened gate: $gate"
-       fi
-    fi
-
-    for CURRENT_MODE in "${MODES_TO_RUN[@]}"; do
-        echo ">>> Executing Gate: $gate (Mode: $CURRENT_MODE)"
-        
-        # Run gate with mode argument
-        if bash "$GATE_SCRIPT" --mode="$CURRENT_MODE"; then
-            echo ">>> Gate $gate ($CURRENT_MODE): PASS"
-        else
-            echo ">>> Gate $gate ($CURRENT_MODE): FAIL"
-            # Print log path to help debugging (path now includes mode suffix)
-            LOG_PATH="$RUN_DIR/gates/${gate}_${CURRENT_MODE}/gate.log"
-            echo "Check log: $LOG_PATH"
-            FAILED=1
-            # If a mode fails, do we stop? Yes, fail fast for that gate.
-            break 
-        fi
-    done
-    
-    if [ "$FAILED" -eq 1 ]; then
-        break # Fail fast entire suite
+    # Run gate with mode argument
+    if bash "$GATE_SCRIPT" --mode="$CURRENT_MODE"; then
+        echo ">>> Gate $gate ($CURRENT_MODE): PASS"
+    else
+        echo ">>> Gate $gate ($CURRENT_MODE): FAIL"
+        # Print log path to help debugging (path now includes mode suffix)
+        LOG_PATH="$RUN_DIR/gates/${gate}_${CURRENT_MODE}/gate.log"
+        echo "Check log: $LOG_PATH"
+        FAILED=1
+        # Fail fast
+        break 
     fi
 done
+
+if [ "$FAILED" -eq 1 ]; then
+    # Break logic handled above, just ensure flow consistency
+    :
+fi
 
 echo ""
 echo "=== ACCEPTANCE SUITE SUMMARY ==="
