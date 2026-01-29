@@ -35,6 +35,7 @@ def read_ui_version(dest_folder: Path) -> str | None:
 def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     from io import BytesIO
     from zipfile import ZipFile
+
     from rich.progress import (
         BarColumn,
         DownloadColumn,

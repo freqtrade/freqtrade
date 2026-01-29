@@ -1961,7 +1961,7 @@ class Telegram(RPCHandler):
             "*/bl_delete [pair]:* `Remove from blacklist`\n"
             "*/marketdir [dir]:* `Set market direction`\n"
             "\n"
-            "ℹ️ *Info*\n"
+            "ℹ️ *Info*\n"  # noqa: RUF001
             "*/balance:* `Show balances`\n"
             "*/locks:* `Show active locks`\n"
             "*/unlock <pair|id>:* `Unlock pair/id`\n"

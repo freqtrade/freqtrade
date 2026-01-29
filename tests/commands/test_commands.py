@@ -769,6 +769,10 @@ def test_download_and_install_ui(mocker, tmp_path):
     file_like_object.seek(0)
     requests_mock.content = file_like_object.read()
 
+    requests_mock.__enter__.return_value = requests_mock
+    requests_mock.iter_content.return_value = [requests_mock.content]
+    requests_mock.headers = {"content-length": "100"}
+
     mocker.patch("freqtrade.commands.deploy_ui.requests.get", return_value=requests_mock)
 
     mocker.patch("freqtrade.commands.deploy_ui.Path.is_dir", side_effect=[True, False])
