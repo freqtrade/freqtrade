@@ -39,6 +39,9 @@ ALL_GATES=(
     "p19_observability_audit"
     "p20_no_open_ports_pos"
     "p21_secrets_hygiene"
+    "p22_real_mode_market_data"
+    "p23_session_token_telegram"
+    "p25_security_master_refresh"
 )
 
 # Parse flags
