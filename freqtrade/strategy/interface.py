@@ -30,7 +30,6 @@ from freqtrade.enums import (
 from freqtrade.exceptions import OperationalException, StrategyError
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_next_date, timeframe_to_seconds
 from freqtrade.ft_types import AnnotationType
-from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (
@@ -1224,7 +1223,6 @@ class IStrategy(ABC, HyperStrategyMixin):
 
         else:
             logger.debug("Skipping TA Analysis for already analyzed candle")
-            dataframe = remove_entry_exit_signals(dataframe)
 
         logger.debug("Loop Analysis Launched")
 
