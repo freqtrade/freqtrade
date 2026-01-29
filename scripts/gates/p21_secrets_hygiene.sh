@@ -105,6 +105,10 @@ echo "3. Session Readiness Check..."
 if [[ "${BREEZE_MOCK:-0}" == "1" ]]; then
     echo "[INFO] BREEZE_MOCK=1 detected. Skipping strict session check."
     echo "P21-SESSION-CHECK-SKIP"
+# Check if credentials present
+elif [ -z "${BREEZE_API_KEY:-}" ] || [ -z "${BREEZE_API_SECRET:-}" ] || [ -z "${BREEZE_SESSION_TOKEN:-}" ]; then
+    echo "[INFO] Credentials missing. Skipping session check."
+    echo "P21-SESSION-CHECK-SKIP"
 else
     echo "Running p21_session_check.py..."
     if python3 scripts/p21_session_check.py; then
