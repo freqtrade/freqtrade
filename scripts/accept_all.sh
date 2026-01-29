@@ -42,6 +42,8 @@ ALL_GATES=(
     "p22_real_mode_market_data"
     "p23_session_token_telegram"
     "p25_security_master_refresh"
+    "p26_indicator_governance"
+    "p27_smart_money"
 )
 
 # Parse flags
