@@ -3,61 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Freqtrade UI</title>
+  <title>Freqtrade - UI Not Installed</title>
   <style>
     :root {
-      --bg-color: #1a1a1a;
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
       --text-color: #e0e0e0;
-      --accent-color: #00b0ff;
+      --text-muted: #a0a0a0;
+      --accent-color: #2196f3;
+      --accent-hover: #1976d2;
       --code-bg: #2d2d2d;
+      --border-color: #333;
+      --success-color: #4caf50;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
     body {
       background-color: var(--bg-color);
       color: var(--text-color);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       text-align: center;
-      margin: 0;
       display: flex;
       justify-content: center;
+      align-items: center;
       min-height: 100vh;
+      line-height: 1.6;
     }
     .main-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
       max-width: 600px;
-      padding: 2rem;
+      width: 90%;
+      padding: 3rem 2rem;
+      border: 1px solid var(--border-color);
     }
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1.5rem;
-      color: var(--accent-color);
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #fff;
+      font-weight: 700;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
     }
     p {
-      font-size: 1.1rem;
-      line-height: 1.6;
       margin-bottom: 1rem;
     }
-    code {
+    .code-container {
+      position: relative;
       background-color: var(--code-bg);
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
+      border-radius: 8px;
+      margin: 2rem 0;
+      border: 1px solid var(--border-color);
+      text-align: left;
+    }
+    code {
       font-family: 'Courier New', Courier, monospace;
       font-size: 1.1rem;
       display: block;
-      margin: 1.5rem 0;
-      border: 1px solid #444;
+      padding: 1.5rem;
+      padding-right: 4rem;
+      color: #fff;
+      overflow-x: auto;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .copy-btn.copied {
+      color: var(--success-color);
+      border-color: var(--success-color);
+    }
+    .links {
+      margin-top: 2.5rem;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    a {
+      color: var(--accent-color);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+    .icon {
+      margin-right: 0.4rem;
     }
   </style>
 </head>
 <body>
   <div class="main-container">
     <h1>Freqtrade UI Not Installed</h1>
-    <p>The web interface files are currently missing.</p>
+    <p class="subtitle">The web interface files are missing from your installation.</p>
+
     <p>To install the UI, please run the following command in your terminal and restart your bot:</p>
-    <code>freqtrade install-ui</code>
-    <p>Once installed, refresh this page to access the Freqtrade UI.</p>
+
+    <div class="code-container">
+      <code id="install-cmd">freqtrade install-ui</code>
+      <button class="copy-btn" onclick="copyCommand()" aria-label="Copy command">Copy</button>
+    </div>
+
+    <p>Once installed, refresh this page to access the dashboard.</p>
+
+    <div class="links">
+      <a href="https://www.freqtrade.io/en/latest/" target="_blank" rel="noopener">
+        <span class="icon">📚</span>Documentation
+      </a>
+      <a href="https://discord.gg/freqtrade" target="_blank" rel="noopener">
+        <span class="icon">💬</span>Discord Community
+      </a>
+    </div>
   </div>
+
+  <script>
+    function copyCommand() {
+      const cmd = document.getElementById('install-cmd').innerText;
+      navigator.clipboard.writeText(cmd).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.classList.add('copied');
+
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    }
+  </script>
 </body>
 </html>
