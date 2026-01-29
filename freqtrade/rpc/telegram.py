@@ -638,11 +638,11 @@ class Telegram(RPCHandler):
         if float(msg["profit_ratio"]) >= 0.05:
             return "\N{ROCKET}"
         elif float(msg["profit_ratio"]) >= 0.0:
-            return "\N{EIGHT SPOKED ASTERISK}"
+            return "\N{MONEY BAG}"
         elif msg["exit_reason"] == "stop_loss":
-            return "\N{WARNING SIGN}"
+            return "\N{OCTAGONAL SIGN}"
         else:
-            return "\N{CROSS MARK}"
+            return "\N{DOWN-POINTING RED TRIANGLE}"
 
     def _prepare_order_details(self, filled_orders: list, quote_currency: str, is_open: bool):
         """
@@ -791,6 +791,7 @@ class Telegram(RPCHandler):
                     ]
                 )
 
+            profit_emoji = "🟢" if r["profit_ratio"] >= 0 else "🔴"
             lines.extend(
                 [
                     f"*Open Rate:* `{round_value(r['open_rate'], 8)}`",
@@ -803,7 +804,7 @@ class Telegram(RPCHandler):
                         else ""
                     ),
                     ("*Unrealized Profit:* " if r["is_open"] else "*Close Profit: *")
-                    + f"`{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
+                    + f"{profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
                 ]
             )
 
@@ -1924,74 +1925,50 @@ class Telegram(RPCHandler):
                 "(only applies to limit orders).` \n"
             )
         message = (
-            "🎮 *Bot Control*\n"
-            "------------\n"
+            "🤖 *Bot Control*\n"
             "*/start:* `Starts the trader`\n"
-            "*/pause:* `Pause the new entries for trader, but handles open trades gracefully`\n"
             "*/stop:* `Stops the trader`\n"
-            "*/stopentry:* `Stops entering, but handles open trades gracefully` \n"
-            "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
-            "regardless of profit`\n"
-            "*/fx <trade_id>|all:* `Alias to /forceexit`\n"
+            "*/pause:* `Pause new entries (keeps open trades)`\n"
+            "*/stopentry:* `Alias for /pause` \n"
+            "*/forceexit <id>|all:* `Instantly exits trade(s)`\n"
+            "*/fx <id>|all:* `Alias for /forceexit`\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
-            "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
-            "*/reload_trade <trade_id>:* `Reload trade from exchange Orders`\n"
-            "*/cancel_open_order <trade_id>:* `Cancels open orders for trade. "
-            "Only valid when the trade has open orders.`\n"
-            "*/coo <trade_id>|all:* `Alias to /cancel_open_order`\n"
-            "\n"
-            "⚙️ *Configuration*\n"
-            "------------\n"
-            "*/whitelist [sorted] [baseonly]:* `Show current whitelist. Optionally in "
-            "order and/or only displaying the base currency of each pairing.`\n"
-            "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
-            "to the blacklist.` \n"
-            "*/blacklist_delete [pairs]| /bl_delete [pairs]:* "
-            "`Delete pair / pattern from blacklist. Will reset on reload_conf.` \n"
-            "*/reload_config:* `Reload configuration file` \n"
-            "*/unlock <pair|id>:* `Unlock this Pair (or this lock id if it's numeric)`\n"
-            "*/show_config:* `Show running configuration` \n"
-            "*/marketdir [long | short | even | none]:* `Updates the user managed variable "
-            "that represents the current market direction. If no direction is provided `"
-            "`the currently set market direction will be output.` \n"
-            "\n"
-            "ℹ️ *Information*\n"  # noqa: RUF001
-            "------------\n"
-            "*/locks:* `Show currently locked pairs`\n"
-            "*/balance:* `Show bot managed balance per currency`\n"
-            "*/balance total:* `Show account balance per currency`\n"
-            "*/logs [limit]:* `Show latest logs - defaults to 10` \n"
-            "*/count:* `Show number of active trades compared to allowed number of trades`\n"
-            "*/health* `Show latest process timestamp - defaults to 1970-01-01 00:00:00` \n"
-            "*/list_custom_data <trade_id> <key>:* `List custom_data for Trade ID & Key combo.`\n"
-            "`If no Key is supplied it will list all key-value pairs found for that Trade ID.`\n"
-            "*/help:* `This help message`\n"
-            "*/version:* `Show version`\n"
+            "*/delete <id>:* `Delete trade from DB (no exchange action)`\n"
+            "*/reload_trade <id>:* `Reload trade from exchange`\n"
+            "*/cancel_open_order <id>:* `Cancel open orders`\n"
             "\n"
             "📊 *Statistics*\n"
-            "------------\n"
-            "*/status <trade_id>|[table]:* `Lists all open trades`\n"
-            "         *<trade_id> :* `Lists one or more specific trades.`\n"
-            "                        `Separate multiple <trade_id> with a blank space.`\n"
-            "         *table :* `will display trades in a table`\n"
-            "                `pending buy orders are marked with an asterisk (*)`\n"
-            "                `pending sell orders are marked with a double asterisk (**)`\n"
-            "*/entries <pair|none>:* `Shows the enter_tag performance`\n"
-            "*/exits <pair|none>:* `Shows the exit reason performance`\n"
-            "*/mix_tags <pair|none>:* `Shows combined entry tag + exit reason performance`\n"
-            "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
-            "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
-            "over the last n days`\n"
-            "*/profit_long [<n>]:* `Lists cumulative profit from all finished long trades, "
-            "over the last n days`\n"
-            "*/profit_short [<n>]:* `Lists cumulative profit from all finished short trades, "
-            "over the last n days`\n"
-            "*/performance:* `Show performance of each finished trade grouped by pair`\n"
-            "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n"
-            "*/weekly <n>:* `Shows statistics per week, over the last n weeks`\n"
-            "*/monthly <n>:* `Shows statistics per month, over the last n months`\n"
-            "*/stats:* `Shows Wins / losses by Sell reason as well as "
-            "Avg. holding durations for buys and sells.`\n"
+            "*/status <id>|[table]:* `List open trades`\n"
+            "*/profit [<n>]:* `Cumulative profit (last n days)`\n"
+            "*/profit_long [<n>]:* `Long profit`\n"
+            "*/profit_short [<n>]:* `Short profit`\n"
+            "*/daily <n>:* `Daily profit`\n"
+            "*/weekly <n>:* `Weekly profit`\n"
+            "*/monthly <n>:* `Monthly profit`\n"
+            "*/trades [limit]:* `Recent closed trades`\n"
+            "*/performance:* `Performance by pair`\n"
+            "*/stats:* `Win/Loss stats and durations`\n"
+            "*/count:* `Active trade count`\n"
+            "*/entries <pair>:* `Entry tag performance`\n"
+            "*/exits <pair>:* `Exit reason performance`\n"
+            "*/mix_tags <pair>:* `Combined tag performance`\n"
+            "\n"
+            "⚙️ *Configuration*\n"
+            "*/show_config:* `Show running config`\n"
+            "*/reload_config:* `Reload config file`\n"
+            "*/whitelist [sorted|baseonly]:* `Show whitelist`\n"
+            "*/blacklist [pair]:* `Show/add to blacklist`\n"
+            "*/bl_delete [pair]:* `Remove from blacklist`\n"
+            "*/marketdir [dir]:* `Set market direction`\n"
+            "\n"
+            "ℹ️ *Info*\n"  # noqa: RUF001
+            "*/balance:* `Show balances`\n"
+            "*/locks:* `Show active locks`\n"
+            "*/unlock <pair|id>:* `Unlock pair/id`\n"
+            "*/logs [limit]:* `Show recent logs`\n"
+            "*/health:* `Health check`\n"
+            "*/version:* `Show version`\n"
+            "*/help:* `Show this help`\n"
         )
 
         await self._send_msg(message, parse_mode=ParseMode.MARKDOWN)

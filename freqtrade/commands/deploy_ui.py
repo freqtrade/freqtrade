@@ -36,10 +36,40 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     from io import BytesIO
     from zipfile import ZipFile
 
+    from rich.progress import (
+        BarColumn,
+        DownloadColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeRemainingColumn,
+    )
+
     logger.info(f"Downloading {dl_url}")
-    resp = requests.get(dl_url, timeout=req_timeout).content
+
+    content = BytesIO()
+    with requests.get(dl_url, stream=True, timeout=req_timeout) as resp:
+        resp.raise_for_status()
+        total_length = int(resp.headers.get("content-length", 0))
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            DownloadColumn(),
+            TimeRemainingColumn(),
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Downloading FreqUI...", total=total_length)
+
+            for chunk in resp.iter_content(chunk_size=8192):
+                if chunk:
+                    content.write(chunk)
+                    progress.update(task, advance=len(chunk))
+
     dest_folder.mkdir(parents=True, exist_ok=True)
-    with ZipFile(BytesIO(resp)) as zf:
+    content.seek(0)
+    with ZipFile(content) as zf:
         for fn in zf.filelist:
             with zf.open(fn) as x:
                 destfile = dest_folder / fn.filename
