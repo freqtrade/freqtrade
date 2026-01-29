@@ -98,18 +98,36 @@ for gate in "${GATES[@]}"; do
     fi
 
     echo ""
-    echo ">>> Executing Gate: $gate (Mode: $MODE)"
     
-    # Run gate with mode argument
-    if bash "$GATE_SCRIPT" --mode="$MODE"; then
-        echo ">>> Gate $gate: PASS"
-    else
-        echo ">>> Gate $gate: FAIL"
-        # Print log path to help debugging (path now includes mode suffix)
-        LOG_PATH="$RUN_DIR/gates/${gate}_${MODE}/gate.log"
-        echo "Check log: $LOG_PATH"
-        FAILED=1
-        break # Fail fast
+    # Determine which modes to run for this gate
+    # P22 and P25 require BOTH modes for full verification as per "Delta Harden" req
+    MODES_TO_RUN=("$MODE")
+    if [[ "$MODE" == "pos" ]]; then
+       if [[ "$gate" == "p22_real_mode_market_data" ]] || [[ "$gate" == "p25_security_master_refresh" ]]; then
+           MODES_TO_RUN=("pos" "neg")
+           echo ">>> Info: Automatically scheduling Neg mode for hardened gate: $gate"
+       fi
+    fi
+
+    for CURRENT_MODE in "${MODES_TO_RUN[@]}"; do
+        echo ">>> Executing Gate: $gate (Mode: $CURRENT_MODE)"
+        
+        # Run gate with mode argument
+        if bash "$GATE_SCRIPT" --mode="$CURRENT_MODE"; then
+            echo ">>> Gate $gate ($CURRENT_MODE): PASS"
+        else
+            echo ">>> Gate $gate ($CURRENT_MODE): FAIL"
+            # Print log path to help debugging (path now includes mode suffix)
+            LOG_PATH="$RUN_DIR/gates/${gate}_${CURRENT_MODE}/gate.log"
+            echo "Check log: $LOG_PATH"
+            FAILED=1
+            # If a mode fails, do we stop? Yes, fail fast for that gate.
+            break 
+        fi
+    done
+    
+    if [ "$FAILED" -eq 1 ]; then
+        break # Fail fast entire suite
     fi
 done
 

@@ -70,7 +70,12 @@ def fetch_real():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mock", action="store_true", help="Use mock fixtures instead of download")
+    parser.add_argument("--output", help="Output directory", default=str(CACHE_DIR))
     args = parser.parse_args()
+
+    # Override CACHE_DIR if provided
+    global CACHE_DIR
+    CACHE_DIR = Path(args.output)
 
     # Check env var too
     is_mock = args.mock or os.environ.get("BREEZE_MOCK", "0") == "1"
