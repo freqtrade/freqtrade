@@ -70,8 +70,9 @@ if [ "$GATE_MODE" == "pos" ]; then
         --fno "$CACHE_DIR/FONSEScripMaster.txt" \
         --output "$OUT_FILE_2"
         
-    if ! diff -q "$OUT_FILE" "$OUT_FILE_2"; then
-        echo "[FAIL] Output is not deterministic!"
+    # Exclude generated_at_utc from comparison
+    if ! diff <(jq 'del(.meta.generated_at_utc)' "$OUT_FILE") <(jq 'del(.meta.generated_at_utc)' "$OUT_FILE_2"); then
+        echo "[FAIL] Output is not deterministic (content differs)!"
         finish_gate 1
     fi
     rm "$OUT_FILE_2"
