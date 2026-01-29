@@ -181,7 +181,7 @@ class StrategyResolver(IResolver):
             )
 
     @staticmethod
-    def validate_strategy(strategy: IStrategy) -> IStrategy:
+    def validate_strategy(strategy: IStrategy) -> IStrategy:  # noqa: C901
         if strategy.config.get("trading_mode", TradingMode.SPOT) != TradingMode.SPOT:
             # Require new method
             warn_deprecated_setting(strategy, "sell_profit_only", "exit_profit_only", True)

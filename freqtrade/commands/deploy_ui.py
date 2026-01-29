@@ -68,6 +68,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
                     progress.update(task, advance=len(chunk))
 
     dest_folder.mkdir(parents=True, exist_ok=True)
+    content.seek(0)
     with ZipFile(content) as zf:
         for fn in zf.filelist:
             with zf.open(fn) as x:
