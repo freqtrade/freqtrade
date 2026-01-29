@@ -25,6 +25,7 @@ class StrategyWithLegacyMethods(IStrategy):
     def custom_sell(self, pair, trade, current_time, current_rate, current_profit, **kwargs):
         return None
 
+
 def test_deprecation_warnings_legacy_methods(default_conf, caplog):
     caplog.set_level(logging.WARNING)
 

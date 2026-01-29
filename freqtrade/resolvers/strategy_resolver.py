@@ -342,5 +342,3 @@ def warn_deprecated_setting(strategy: IStrategy, old: str, new: str, error=False
             raise OperationalException(errormsg)
         logger.warning(errormsg)
         setattr(strategy, new, getattr(strategy, f"{old}"))
-
-
