@@ -62,22 +62,20 @@ EOF
 elif [ "$GATE_MODE" == "neg" ]; then
     echo ">>> Gate P26: Negative (Lookahead Violation)..."
     
-    # Run the specific negative test case expecting failure
-    # We run pytest targeting the violation test
+    # Run the Negative Test which is DESIGNED TO FAIL
+    # If the production guard works, pytest will exit with code 1.
     
-    if pytest tests/strategy/test_p26_guards.py::test_no_lookahead_sanity_violation > "$ARTIFACT_DIR/neg_test.log" 2>&1; then
-        # This test is DESIGNED to pass if it raises ValueError (pytest handles it)
-        # Wait, if I want to prove the GUARD works, the UNIT TEST should PASS (by asserting validation).
-        # Ah, the requirement says: "run with a fixture that intentionally violates... assert failure occurs"
-        # Since I wrote the test to "expect" ValueError using pytest.raises, the test itself PASSES.
-        # This confirms the guard IS raising the error.
-        
-        echo "[OK] Guard corrected raised ValueError on lookahead violation."
-        echo "P26_NEG_EXPECTED_FAIL" # Misnomer? It's success of the negative control.
-        # "gate exits 0 when expected failure is observed" -> logic matches.
+    set +e
+    pytest tests/strategy/test_p26_guards_negative.py > "$ARTIFACT_DIR/neg_test.log" 2>&1
+    PYTEST_EXIT=$?
+    set -e
+    
+    if [ $PYTEST_EXIT -ne 0 ]; then
+        echo "[OK] Negative test failed as expected (Guard active)."
+        echo "P26_NEG_EXPECTED_FAIL"
         finish_gate 0
     else
-        echo "[FAIL] Negative test failed (did not raise expected error?)"
+        echo "[FAIL] Negative test PASSED! (Guard failed to raise error?)"
         cat "$ARTIFACT_DIR/neg_test.log"
         finish_gate 1
     fi

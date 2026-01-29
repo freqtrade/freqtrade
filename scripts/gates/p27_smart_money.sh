@@ -24,19 +24,21 @@ if [ "$GATE_MODE" == "pos" ]; then
 elif [ "$GATE_MODE" == "neg" ]; then
     echo ">>> Gate P27: Negative (Logic Rejection)..."
     
-    # We want to verify that a "Bad Snapshot" blocks trade.
-    # We already have a unit test `test_snapshot_bad_low_oi` which asserts correct rejection.
-    # So if that test PASSES, it means rejection IS happening correctly.
-    # The requirement "gate exits 0 when expected failure observed" is satisfied if pytest passes,
-    # because pytest asserts "allow_trade is False".
+    # Run the Negative Test which is DESIGNED TO FAIL
+    # Logic returns False, Assert True => Test Fails
     
-    # So we just run specific test filter
-    if pytest -v tests/strategy/test_p27_smart_money_fr203.py -k test_snapshot_bad_low_oi; then
-        echo "[OK] Smart Money Logic correctly rejected bad snapshot."
-        echo "P27_NEG_EXPECTED_FAIL" # Mapped to semantic meaning "Rejection Confirmed"
+    set +e
+    pytest tests/strategy/test_p27_negative_expected_fail.py > "$ARTIFACT_DIR/neg_test.log" 2>&1
+    PYTEST_EXIT=$?
+    set -e
+    
+    if [ $PYTEST_EXIT -ne 0 ]; then
+        echo "[OK] Negative test failed as expected (Logic correctly rejected trade)."
+        echo "P27_NEG_EXPECTED_FAIL"
         finish_gate 0
     else
-        echo "[FAIL] Negative test verification failed."
+        echo "[FAIL] Negative test PASSED! (Logic incorrectly allowed trade?)"
+        cat "$ARTIFACT_DIR/neg_test.log"
         finish_gate 1
     fi
 

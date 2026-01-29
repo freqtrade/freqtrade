@@ -105,7 +105,10 @@ for gate in "${GATES[@]}"; do
     # P22 and P25 require BOTH modes for full verification as per "Delta Harden" req
     MODES_TO_RUN=("$MODE")
     if [[ "$MODE" == "pos" ]]; then
-       if [[ "$gate" == "p22_real_mode_market_data" ]] || [[ "$gate" == "p25_security_master_refresh" ]]; then
+       if [[ "$gate" == "p22_real_mode_market_data" ]] || \
+          [[ "$gate" == "p25_security_master_refresh" ]] || \
+          [[ "$gate" == "p26_indicator_governance" ]] || \
+          [[ "$gate" == "p27_smart_money" ]]; then
            MODES_TO_RUN=("pos" "neg")
            echo ">>> Info: Automatically scheduling Neg mode for hardened gate: $gate"
        fi
