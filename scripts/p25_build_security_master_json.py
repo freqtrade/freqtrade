@@ -5,6 +5,7 @@ Parses raw TXT files (using adapters.ccxt_shim.security_master logic)
 and emits a normalized, optimized JSON.
 """
 
+import argparse
 import datetime
 import json
 import logging
@@ -24,23 +25,26 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("P25Build")
 
-CACHE_DIR = Path("user_data/cache/security_master")
-OUTPUT_FILE = CACHE_DIR / "latest.json"
 
+def build(cash_path: str, fno_path: str, output_path: str):
+    nse_path = Path(cash_path)
+    fno_path = Path(fno_path)
+    final_output = Path(output_path)
 
-def build():
-    nse_path = CACHE_DIR / "NSEScripMaster.txt"
-    fno_path = CACHE_DIR / "FONSEScripMaster.txt"
+    if not nse_path.exists():
+        # P25 Hardening requirement: exit 2 if input missing
+        print(f"ERROR: Input file not found: {nse_path}")
+        sys.exit(2)
 
-    if not nse_path.exists() or not fno_path.exists():
-        logger.error(f"Missing input files in {CACHE_DIR}. Run fetch script first.")
-        sys.exit(1)
+    if not fno_path.exists():
+        print(f"ERROR: Input file not found: {fno_path}")
+        sys.exit(2)
 
     # Load Data
-    logger.info("Parsing NSE Cash Master...")
+    logger.info(f"Parsing NSE Cash Master from {nse_path}...")
     nse_data = load_nse_cash_master(str(nse_path))
 
-    logger.info("Parsing NFO Options Master...")
+    logger.info(f"Parsing NFO Options Master from {fno_path}...")
     fno_data = load_nfo_options_master(str(fno_path))
 
     # Structuring Output
@@ -79,13 +83,13 @@ def build():
     output["futures"].sort(key=lambda x: (x["underlying"], x["expiry_yyyymmdd"]))
 
     # Atomic Write
-    tmp_path = OUTPUT_FILE.with_suffix(".tmp")
+    tmp_path = final_output.with_suffix(".tmp")
     logger.info(f"Writing {tmp_path}...")
     with tmp_path.open("w") as f:
         json.dump(output, f, indent=None)
 
-    logger.info(f"Renaming to {OUTPUT_FILE}...")
-    tmp_path.replace(OUTPUT_FILE)
+    logger.info(f"Renaming to {final_output}...")
+    tmp_path.replace(final_output)
 
     logger.info("Build Complete.")
     logger.info(
@@ -95,5 +99,16 @@ def build():
     )
 
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cash", required=True, help="Path to NSEScripMaster.txt")
+    parser.add_argument("--fno", required=True, help="Path to FONSEScripMaster.txt")
+    parser.add_argument("--output", required=True, help="Path to output JSON")
+
+    args = parser.parse_args()
+
+    build(args.cash, args.fno, args.output)
+
+
 if __name__ == "__main__":
-    build()
+    main()
