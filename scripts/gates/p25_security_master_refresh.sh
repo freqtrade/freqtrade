@@ -33,6 +33,13 @@ if [ "$GATE_MODE" == "pos" ]; then
         cp "user_data/data/icicibreeze/NSEScripMaster.txt" "$CACHE_DIR/"
         cp "user_data/data/icicibreeze/FONSEScripMaster.txt" "$CACHE_DIR/"
     else
+        echo "1. Checking Connectivity..."
+        if ! curl --head --fail --connect-timeout 3 "https://scriptmaster.icicidirect.com/Content/File/txt/NSEScripMaster.txt" > /dev/null 2>&1; then
+            echo "P25_SKIP_NO_NETWORK"
+            echo "[INFO] Network unreachable. Skipping real fetch."
+            finish_gate 0
+        fi
+
         echo "1. Fetching Master (Real Mode)..."
         $PYTHON scripts/p25_fetch_security_master.py --output "$CACHE_DIR"
     fi
