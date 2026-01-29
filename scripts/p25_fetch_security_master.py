@@ -62,8 +62,8 @@ def fetch_real():
                 for chunk in resp.iter_content(chunk_size=8192):
                     f.write(chunk)
             logger.info(f"Downloaded {fname}")
-        except Exception as e:
-            logger.error(f"Failed to download {url}: {e}")
+        except Exception:
+            logger.error(f"Failed to download {url}", exc_info=True)
             sys.exit(1)
 
 
