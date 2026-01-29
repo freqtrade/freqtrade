@@ -13,6 +13,7 @@ from freqtrade.persistence.models import PairLock
 from freqtrade.plugins.protections import IProtection
 from freqtrade.resolvers import ProtectionResolver
 
+
 if TYPE_CHECKING:
     from freqtrade.wallets import Wallets
 

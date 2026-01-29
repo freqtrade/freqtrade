@@ -82,6 +82,7 @@ def test_handle_stoploss_on_exchange(
         create_stoploss=stoploss,
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
+    freqtrade.strategy.order_types["stoploss_on_exchange"] = True
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # First case: when stoploss is not yet set but the order is open
@@ -213,6 +214,7 @@ def test_handle_stoploss_on_exchange_emergency(
         create_stoploss=stoploss,
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
+    freqtrade.strategy.order_types["stoploss_on_exchange"] = True
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     freqtrade.enter_positions()
@@ -291,6 +293,7 @@ def test_handle_stoploss_on_exchange_partial(
         create_stoploss=stoploss,
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
+    freqtrade.strategy.order_types["stoploss_on_exchange"] = True
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     freqtrade.enter_positions()
@@ -351,6 +354,7 @@ def test_handle_stoploss_on_exchange_partial_cancel_here(
         create_stoploss=stoploss,
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
+    freqtrade.strategy.order_types["stoploss_on_exchange"] = True
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     freqtrade.enter_positions()
@@ -421,6 +425,7 @@ def test_handle_sle_cancel_cant_recreate(
         get_fee=fee,
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
+    freqtrade.strategy.order_types["stoploss_on_exchange"] = True
     mocker.patch.multiple(
         freqtrade.exchange,
         create_order=MagicMock(

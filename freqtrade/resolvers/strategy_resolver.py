@@ -204,9 +204,7 @@ class StrategyResolver(IResolver):
         warn_deprecated_setting(strategy, "sell_profit_only", "exit_profit_only")
         warn_deprecated_setting(strategy, "sell_profit_offset", "exit_profit_offset")
         warn_deprecated_setting(strategy, "use_sell_signal", "use_exit_signal")
-        warn_deprecated_setting(
-            strategy, "ignore_roi_if_buy_signal", "ignore_roi_if_entry_signal"
-        )
+        warn_deprecated_setting(strategy, "ignore_roi_if_buy_signal", "ignore_roi_if_entry_signal")
 
         if not check_override(strategy, IStrategy, "populate_buy_trend") and not check_override(
             strategy, IStrategy, "populate_entry_trend"
@@ -214,9 +212,9 @@ class StrategyResolver(IResolver):
             raise OperationalException(
                 "`populate_entry_trend` or `populate_buy_trend` must be implemented."
             )
-        if not check_override(
-            strategy, IStrategy, "populate_sell_trend"
-        ) and not check_override(strategy, IStrategy, "populate_exit_trend"):
+        if not check_override(strategy, IStrategy, "populate_sell_trend") and not check_override(
+            strategy, IStrategy, "populate_exit_trend"
+        ):
             raise OperationalException(
                 "`populate_exit_trend` or `populate_sell_trend` must be implemented."
             )
@@ -349,5 +347,3 @@ def warn_deprecated_setting(strategy: IStrategy, old: str, new: str, error=False
             raise OperationalException(errormsg)
         logger.warning(errormsg)
         setattr(strategy, new, getattr(strategy, f"{old}"))
-
-
