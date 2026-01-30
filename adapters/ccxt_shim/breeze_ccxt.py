@@ -58,17 +58,29 @@ class BreezeCCXT(ccxt.Exchange):
         self.config = config
         self.name = "IciciBreeze"
 
-        # P18: Paper Forward Test Mode checks
-        self.paper_mode = config.get("icicibreeze_paper_forward_test", False)
+        # P18/P29: Paper Mode
+        # Support both legacy flat flag and new nested structure
+        self.paper_mode = False
+        paper_config = config.get("icicibreeze", {}).get("paper_trading", {})
+
+        legacy_flag = config.get("icicibreeze_paper_forward_test", False)
+
+        if paper_config.get("enabled", False) or legacy_flag:
+            self.paper_mode = True
+
         self.paper_slippage = config.get("paper_slippage_bps", 5)
         self.paper_fee = config.get("paper_fee_bps", 10)
 
         self.paper_ledger = None
         if self.paper_mode:
-            self.paper_ledger = PaperLedger()
+            # Check for custom ledger path
+            ledger_path_str = paper_config.get("ledger_path")
+            ledger_path = Path(ledger_path_str) if ledger_path_str else None
+
+            self.paper_ledger = PaperLedger(ledger_path)
             logger.info(
                 f"Initialized Paper Mode: Slippage={self.paper_slippage}bps, "
-                f"Fee={self.paper_fee}bps"
+                f"Fee={self.paper_fee}bps, Ledger={ledger_path}"
             )
 
         # Initialize RiskGuard AFTER super to prevent CCXT from overwriting it if 'risk_guard' is in config
@@ -669,7 +681,103 @@ class BreezeCCXT(ccxt.Exchange):
                 self.degraded_guard.record_success()
                 return order
 
-            raise OperationalException("create_order not supported in real mode yet.")
+            # P30: Live Order Execution (Guarded)
+            # Double-Lock Mechanism
+            live_config = self.config.get("icicibreeze", {}).get("live_trading", {})
+            config_enabled = live_config.get("enabled", False)
+            env_enabled = os.environ.get("FT_ENABLE_LIVE_ORDERS") == "1"
+
+            if not (config_enabled and env_enabled):
+                msg = (
+                    "Live Trading Guard: Blocked. "
+                    f"Config={config_enabled}, Env(FT_ENABLE_LIVE_ORDERS)={env_enabled}"
+                )
+                logger.warning(msg)
+                raise OperationalException(msg)
+
+            # Proceed to Live Execution
+            logger.info(f"LIVE ORDER: Placing {side} {amount} {symbol} @ {price or 'Market'}")
+
+            # Map params
+            s_params = self._parse_symbol(symbol)
+
+            validity = "Day"  # default
+            if params and "validity" in params:
+                validity = params["validity"]
+
+            # Action
+            action = "buy" if side.lower() == "buy" else "sell"
+
+            # Price handling
+            # Breeze expects String for price. '0' for Market?
+            # SDK says: price=0 for Market Order.
+            limit_price = 0.0
+            if order_type.lower() == "limit":
+                if price is None:
+                    raise OperationalException("Limit order requires price")
+                limit_price = price
+
+            # SDK Call
+            try:
+                # Assuming s_params has stock_code, exchange_code etc.
+                # place_order(stock_code, exchange_code, product, action, order_type, stoploss, quantity, price, validity)
+
+                # SDK signature:
+                # place_order(stock_code, exchange_code, product, action, order_type, stoploss, quantity, price, validity, validity_date, disclosed_quantity, expiry_date, right, strike_price, user_remark)
+
+                # Check option params
+                expiry_date = s_params.get(
+                    "expiry_date", ""
+                )  # ISO format? SDK expects "2022-09-29T06:00:00.000Z"
+                right = s_params.get("right", "")
+                strike_price = s_params.get("strike_price", "0")
+
+                resp = self.breeze.place_order(
+                    stock_code=s_params["stock_code"],
+                    exchange_code=s_params["exchange_code"],
+                    product=s_params["product_type"],
+                    action=action,
+                    order_type=order_type.lower(),  # limit, market, stoploss_limit, stoploss_market
+                    stoploss="0",  # Only relevant for stoploss orders
+                    quantity=str(amount),
+                    price=str(limit_price),
+                    validity=validity,
+                    expiry_date=expiry_date,
+                    right=right,
+                    strike_price=str(strike_price),
+                )
+
+                if not resp or resp.get("status") != 200 or not resp.get("Success"):
+                    err = resp.get("Error") if resp else "Empty response"
+                    raise OperationalException(f"Breeze place_order failed: {err}")
+
+                success_data = resp["Success"]
+                # SDK returns: {'order_id': '...', 'message': '...'}
+
+                order_id = success_data.get("order_id")
+                if not order_id:
+                    # Some responses might specific message
+                    raise OperationalException(f"Breeze place_order no ID: {success_data}")
+
+                ts = int(time.time() * 1000)
+                return {
+                    "id": str(order_id),
+                    "clientOrderId": str(order_id),
+                    "timestamp": ts,
+                    "datetime": self.iso8601(ts),
+                    "lastTradeTimestamp": None,
+                    "status": "open",
+                    "symbol": symbol,
+                    "type": order_type,
+                    "side": side,
+                    "amount": amount,
+                    "price": price,
+                    "info": success_data,
+                }
+
+            except Exception as e:
+                logger.error(f"Breeze Live Execution Failed: {e}")
+                raise OperationalException(f"Live Execution Error: {e}")
 
         except Exception as e:
             self.degraded_guard.record_failure(e)

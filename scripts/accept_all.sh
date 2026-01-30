@@ -44,6 +44,9 @@ ALL_GATES=(
     "p25_security_master_refresh"
     "p26_indicator_governance"
     "p27_smart_money"
+    "p28_execution_microstructure"
+    "p29_real_mode_paper_trade"
+    "p30_live_guard"
 )
 
 # Parse flags
@@ -74,6 +77,8 @@ HARDENED_GATES=(
     "p25_security_master_refresh"
     "p26_indicator_governance"
     "p27_smart_money"
+    "p28_execution_microstructure"
+    "p29_real_mode_paper_trade"
 )
 
 function is_hardened() {

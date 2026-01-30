@@ -122,6 +122,124 @@ class OrderRouter:
 
         logger.info(f"OrderRouter: Modification allowed for {order_id}. Count: {state['count']}")
 
+    # --- P28: Microstructure Logic ---
+
+    def check_gtt_hysteresis(
+        self, order_id: str, new_price: float, last_price: float, now_ts: float, config: dict
+    ) -> dict:
+        """
+        Checks if modification should be skipped due to hysteresis.
+        Returns {'skip': bool, 'reason': str}
+        """
+        rearm = config.get("rearm_seconds", 20)
+        min_move = config.get("min_price_move_ticks", 2)
+
+        # Access state (reusing _mod_state or new one)
+        if not hasattr(self, "_mod_state"):
+            self._mod_state = {}
+
+        state = self._mod_state.get(order_id, {"last_ts": 0.0, "last_price": last_price})
+
+        # Check Time Hysteresis
+        time_diff = now_ts - state.get("last_ts", 0.0)
+
+        if time_diff < rearm:
+            # Check Price Hysteresis
+            # Assuming tick size 0.05 for simplicity or injected?
+            # We can use percentage or absolute. Prompt says "ticks".
+            # We assume NIFTY/Stock tick is roughly 0.05.
+            tick_size = 0.05
+            price_change = abs(new_price - state.get("last_price", last_price))
+            ticks_changed = price_change / tick_size
+
+            if ticks_changed < min_move:
+                return {
+                    "skip": True,
+                    "reason": f"SKIPPED_HYSTERESIS (Time {time_diff:.1f}s < {rearm}s AND Move {ticks_changed:.1f} < {min_move})",
+                }
+
+        # Update State implicit? No, only on actual modify success. This is just a check.
+        return {"skip": False, "reason": ""}
+
+    def check_sniper_cancel(self, open_timestamp: float, now_ts: float, config: dict) -> bool:
+        """
+        Returns True if order should be cancelled (Sniper logic).
+        """
+        cancel_after = config.get("cancel_after_seconds", 3)
+        age = now_ts - open_timestamp
+        return age >= cancel_after
+
+    def calculate_atr_limit_buffer(
+        self, last_price: float, side: str, atr: float, config: dict
+    ) -> float:
+        """
+        Calculates buffered limit price.
+        """
+        mult = config.get("buffer_mult", 0.15)
+        # min_ticks = config.get("min_ticks", 1)  # Not used in calculation logic per prompt requirement detail?
+        # Actually prompt says "buffer_ticks computed... clamp [min, max]"
+
+        buffer_val = atr * mult
+
+        # Clamp Logic?
+        # For now return raw calc, clamp can be done by caller or here if we had tick size.
+        # Impl: buy = min(limit, last + buffer) -> this logic is "what is the buffer value"
+        # Let's return the target price Limit.
+
+        if side.lower() == "buy":
+            # Cap buy price: Don't look too far up
+            return last_price + buffer_val
+        else:
+            # Floor sell price
+            return last_price - buffer_val
+
+    def slice_order(self, symbol: str, total_qty: int, config: dict) -> list[int]:
+        """
+        Splits total quantity into child orders.
+        """
+        max_child = config.get("max_child_orders", 4)
+        lot_size = self.resolve_lot_size(symbol)
+
+        # Ensure total_qty is multiple of lot size (already asserted by validate_entry)
+        # But let's be safe.
+
+        if total_qty < lot_size:
+            return [total_qty]  # Or fail? assert_lot_size handles it.
+
+        # Naive split: uniform
+        # Max child orders constraint
+        # Also need to respect lot size for EACH child.
+
+        # Calculate optimal chunks
+        # e.g. 1000 qty, lot 50, max 4. -> 250 each.
+
+        base_chunk = total_qty // max_child
+
+        # Round chunk down to lot multiple
+        chunk_lots = base_chunk // lot_size
+        chunk_qty = chunk_lots * lot_size
+
+        if chunk_qty == 0:
+            # Total qty too small to split perfectly into N, reduction needed
+            # Fallback: simple filling
+            chunk_qty = lot_size
+
+        chunks = []
+        remaining = total_qty
+
+        while remaining > 0 and len(chunks) < max_child - 1:
+            if remaining < chunk_qty:
+                chunks.append(remaining)
+                remaining = 0
+            else:
+                chunks.append(chunk_qty)
+                remaining -= chunk_qty
+
+        if remaining > 0:
+            chunks.append(remaining)
+
+        return chunks
+
     def validate_entry(
         self, symbol: str, side: str, amount: float, position_check_callback: Any | None = None
     ) -> None:

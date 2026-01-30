@@ -2,6 +2,7 @@ import csv
 import logging
 import os
 import time
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -10,17 +11,56 @@ logger = logging.getLogger(__name__)
 
 
 class PaperLedger:
-    def __init__(self, data_dir: Path | None = None):
-        if data_dir:
-            self.base_dir = data_dir
+    def __init__(self, location: Path | None = None):
+        """
+        :param location: Path to sqlite file (e.g. paper.sqlite) OR directory for CSVs.
+        """
+        self.mode = "csv"
+
+        if location and str(location).endswith(".sqlite"):
+            self.mode = "sqlite"
+            self.db_path = location
+            self._ensure_db_dir()
+            self._init_db()
         else:
-            self.base_dir = Path("user_data") / "generated" / "paper_ledger"
+            if location:
+                self.base_dir = location
+            else:
+                self.base_dir = Path("user_data") / "generated" / "paper_ledger"
 
-        self.trades_file = self.base_dir / "paper_trades.csv"
-        self.daily_file = self.base_dir / "paper_daily_summary.csv"
+            self.trades_file = self.base_dir / "paper_trades.csv"
+            self.daily_file = self.base_dir / "paper_daily_summary.csv"
+            self._ensure_dir()
+            self._ensure_headers()
 
-        self._ensure_dir()
-        self._ensure_headers()
+    def _ensure_db_dir(self):
+        try:
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Failed to create db directory: {e}")
+
+    def _init_db(self):
+        try:
+            conn = sqlite3.connect(self.db_path)
+            c = conn.cursor()
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS trades (
+                    id TEXT PRIMARY KEY,
+                    timestamp INTEGER,
+                    datetime TEXT,
+                    symbol TEXT,
+                    side TEXT,
+                    amount REAL,
+                    price REAL,
+                    cost REAL,
+                    fee_cost REAL,
+                    details JSON
+                )
+            """)
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Failed to init sqlite db: {e}")
 
     def _ensure_dir(self):
         try:
@@ -55,18 +95,60 @@ class PaperLedger:
 
     def record_trade(self, trade: Dict[str, Any]):
         """
-        Append a trade to the ledger and update daily summary.
-        Expected trade dict keys matching the CSV header where applicable.
+        Record trade to backend (CSV or SQLite).
         """
+        if self.mode == "sqlite":
+            self._record_sqlite(trade)
+        else:
+            self._record_csv(trade)
+
+    def _record_sqlite(self, trade: Dict[str, Any]):
+        try:
+            import json
+
+            conn = sqlite3.connect(self.db_path)
+            c = conn.cursor()
+
+            ts = trade.get("timestamp", int(time.time() * 1000))
+            dt = datetime.utcfromtimestamp(ts / 1000).isoformat()
+
+            details = {
+                "base_price": trade.get("base_price"),
+                "slippage_bps": trade.get("slippage_bps"),
+                "fee": trade.get("fee"),
+            }
+
+            c.execute(
+                """
+                INSERT OR REPLACE INTO trades 
+                (id, timestamp, datetime, symbol, side, amount, price, cost, fee_cost, details)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    trade.get("id"),
+                    ts,
+                    dt,
+                    trade.get("symbol"),
+                    trade.get("side"),
+                    trade.get("amount"),
+                    trade.get("price"),
+                    trade.get("cost"),
+                    trade.get("fee", {}).get("cost", 0)
+                    if isinstance(trade.get("fee"), dict)
+                    else 0,
+                    json.dumps(details),
+                ),
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Failed to record sqlite trade: {e}")
+
+    def _record_csv(self, trade: Dict[str, Any]):
         try:
             ts = trade.get("timestamp", int(time.time() * 1000))
             utc_dt = datetime.utcfromtimestamp(ts / 1000)
-            # Simple IST approximation for display (UTC+5:30)
-            # In a real app we might use pytz, but let's keep it simple and dependency-free if possible
-            # or rely on system provided timezone if needed.
-            # Only for logging purposes.
-            # Let's strictly use UTC for calculation logic, but user requested local_ts_ist.
-            # 5.5 hours = 19800 seconds
+            # IST approximation
             ist_ts = ts / 1000 + 19800
             ist_dt = datetime.utcfromtimestamp(ist_ts)
 
