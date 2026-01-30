@@ -80,6 +80,16 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     with (dest_folder / ".uiversion").open("w") as f:
         f.write(version)
 
+    from freqtrade.loggers.rich_console import get_rich_console
+
+    console = get_rich_console()
+    console.print()
+    console.print(f"[bold green]✅ FreqUI {version} installed successfully![/bold green]")
+    console.print(f"Installed to: [bold]{dest_folder}[/bold]")
+    console.print("\n[bold]Next steps:[/bold]")
+    console.print("1. Restart your bot to load the new UI.")
+    console.print("2. Access the dashboard in your browser.")
+
 
 def get_ui_download_url(version: str | None, prerelease: bool) -> tuple[str, str]:
     base_url = "https://api.github.com/repos/freqtrade/frequi/"

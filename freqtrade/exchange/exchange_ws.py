@@ -44,8 +44,26 @@ class ExchangeWS:
     def cleanup(self) -> None:
         logger.debug("Cleanup called - stopping")
         self._klines_watching.clear()
-        for task in self._background_tasks:
-            task.cancel()
+        # Cancel all tasks
+        for _ in range(3):
+            try:
+                tasks = list(self._background_tasks)
+                for task in tasks:
+                    if hasattr(self, "_loop") and not self._loop.is_closed():
+                        self._loop.call_soon_threadsafe(task.cancel)
+                break
+            except RuntimeError:
+                # Set changed size during iteration
+                continue
+
+        # Wait for tasks to cleanup
+        start = time.time()
+        while self._background_tasks:
+            time.sleep(0.01)
+            if time.time() - start > 5:
+                logger.warning("Timeout waiting for background tasks to cancel")
+                break
+
         if hasattr(self, "_loop") and not self._loop.is_closed():
             self.reset_connections()
 
