@@ -6,6 +6,7 @@ from freqtrade.constants import Config, LongShort
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
+
 if TYPE_CHECKING:
     from freqtrade.wallets import Wallets
 

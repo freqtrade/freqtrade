@@ -10,6 +10,7 @@ from freqtrade.misc import plural
 from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import LocalTrade
 
+
 if TYPE_CHECKING:
     from freqtrade.wallets import Wallets
 

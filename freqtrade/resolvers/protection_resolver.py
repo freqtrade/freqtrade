@@ -10,6 +10,7 @@ from freqtrade.constants import Config
 from freqtrade.plugins.protections import IProtection
 from freqtrade.resolvers import IResolver
 
+
 if TYPE_CHECKING:
     from freqtrade.wallets import Wallets
 
