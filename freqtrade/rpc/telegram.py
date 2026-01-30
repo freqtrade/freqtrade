@@ -768,45 +768,36 @@ class Telegram(RPCHandler):
             r["profit_abs_r"] = fmt_coin(r["profit_abs"], r["quote_currency"])
             r["realized_profit_r"] = fmt_coin(r["realized_profit"], r["quote_currency"])
             r["total_profit_abs_r"] = fmt_coin(r["total_profit_abs"], r["quote_currency"])
+            profit_emoji = "🟢" if r["profit_ratio"] >= 0 else "🔴"
             lines = [
-                f"*Trade ID:* `{r['trade_id']}`"
-                + (f" `(since {r['open_date_hum']})`" if r["is_open"] else ""),
-                f"*Current Pair:* {r['pair']}",
-                (
-                    f"*Direction:* {'🔴 `Short`' if r.get('is_short') else '🟢 `Long`'}"
-                    + (f" ` ({r['leverage']}x)`" if r.get("leverage") else "")
-                ),
-                f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`",
-                f"*Total invested:* `{r['max_stake_amount_r']}`" if position_adjust else "",
-                f"*Enter Tag:* `{r['enter_tag']}`" if r["enter_tag"] else "",
-                f"*Exit Reason:* `{r['exit_reason']}`" if r.get("exit_reason") else "",
+                f"*{r['pair']}*   (#{r['trade_id']})",
+                f"{'🔴 `Short`' if r.get('is_short') else '🟢 `Long`'}"
+                + (f" ` ({r['leverage']}x)`" if r.get("leverage") else "")
+                + f"   {profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
+                f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`"
+                + (f" / `{r['max_stake_amount_r']}`" if position_adjust else ""),
+                f"*Open:* `{round_value(r['open_rate'], 8)}`",
+                f"*Current:* `{round_value(r['current_rate'], 8)}`"
+                if r["is_open"]
+                else f"*Close:* `{round_value(r['close_rate'], 8)}`",
             ]
+
+            if r["is_open"]:
+                lines.append(f"*Age:* `{r['open_date_hum']}`")
+
+            if r["enter_tag"]:
+                lines.append(f"*Tag:* `{r['enter_tag']}`")
+            if r.get("exit_reason"):
+                lines.append(f"*Exit:* `{r['exit_reason']}`")
 
             if position_adjust:
                 max_buy_str = f"/{max_entries + 1}" if (max_entries > 0) else ""
                 lines.extend(
                     [
-                        f"*Number of Entries:* `{r['nr_of_successful_entries']}{max_buy_str}`",
-                        f"*Number of Exits:* `{r['nr_of_successful_exits']}`",
+                        f"*Entries:* `{r['nr_of_successful_entries']}{max_buy_str}`",
+                        f"*Exits:* `{r['nr_of_successful_exits']}`",
                     ]
                 )
-
-            profit_emoji = "🟢" if r["profit_ratio"] >= 0 else "🔴"
-            lines.extend(
-                [
-                    f"*Open Rate:* `{round_value(r['open_rate'], 8)}`",
-                    f"*Close Rate:* `{round_value(r['close_rate'], 8)}`" if r["close_rate"] else "",
-                    f"*Open Date:* `{r['open_date']}`",
-                    f"*Close Date:* `{r['close_date']}`" if r["close_date"] else "",
-                    (
-                        f" \n*Current Rate:* `{round_value(r['current_rate'], 8)}`"
-                        if r["is_open"]
-                        else ""
-                    ),
-                    ("*Unrealized Profit:* " if r["is_open"] else "*Close Profit: *")
-                    + f"{profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
-                ]
-            )
 
             if r["is_open"]:
                 if (
@@ -1914,61 +1905,61 @@ class Telegram(RPCHandler):
         :return: None
         """
         force_enter_text = (
-            "*/forcelong <pair> [<rate>]:* `Instantly buys the given pair. "
+            "   /forcelong <pair> [<rate>] - Instantly buys the given pair. "
             "Optionally takes a rate at which to buy "
-            "(only applies to limit orders).` \n"
+            "(only applies to limit orders). \n"
         )
         if self._rpc._freqtrade.trading_mode != TradingMode.SPOT:
             force_enter_text += (
-                "*/forceshort <pair> [<rate>]:* `Instantly shorts the given pair. "
+                "   /forceshort <pair> [<rate>] - Instantly shorts the given pair. "
                 "Optionally takes a rate at which to sell "
-                "(only applies to limit orders).` \n"
+                "(only applies to limit orders). \n"
             )
         message = (
             "🤖 *Bot Control*\n"
-            "*/start:* `Starts the trader`\n"
-            "*/stop:* `Stops the trader`\n"
-            "*/pause:* `Pause new entries (keeps open trades)`\n"
-            "*/stopentry:* `Alias for /pause` \n"
-            "*/forceexit <id>|all:* `Instantly exits trade(s)`\n"
-            "*/fx <id>|all:* `Alias for /forceexit`\n"
+            "   /start - Starts the trader\n"
+            "   /stop - Stops the trader\n"
+            "   /pause - Pause new entries (keeps open trades)\n"
+            "   /stopentry - Alias for /pause \n"
+            "   /forceexit <id>|all - Instantly exits trade(s)\n"
+            "   /fx <id>|all - Alias for /forceexit\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
-            "*/delete <id>:* `Delete trade from DB (no exchange action)`\n"
-            "*/reload_trade <id>:* `Reload trade from exchange`\n"
-            "*/cancel_open_order <id>:* `Cancel open orders`\n"
+            "   /delete <id> - Delete trade from DB (no exchange action)\n"
+            "   /reload_trade <id> - Reload trade from exchange\n"
+            "   /cancel_open_order <id> - Cancel open orders\n"
             "\n"
             "📊 *Statistics*\n"
-            "*/status <id>|[table]:* `List open trades`\n"
-            "*/profit [<n>]:* `Cumulative profit (last n days)`\n"
-            "*/profit_long [<n>]:* `Long profit`\n"
-            "*/profit_short [<n>]:* `Short profit`\n"
-            "*/daily <n>:* `Daily profit`\n"
-            "*/weekly <n>:* `Weekly profit`\n"
-            "*/monthly <n>:* `Monthly profit`\n"
-            "*/trades [limit]:* `Recent closed trades`\n"
-            "*/performance:* `Performance by pair`\n"
-            "*/stats:* `Win/Loss stats and durations`\n"
-            "*/count:* `Active trade count`\n"
-            "*/entries <pair>:* `Entry tag performance`\n"
-            "*/exits <pair>:* `Exit reason performance`\n"
-            "*/mix_tags <pair>:* `Combined tag performance`\n"
+            "   /status <id>|[table] - List open trades\n"
+            "   /profit [<n>] - Cumulative profit (last n days)\n"
+            "   /profit_long [<n>] - Long profit\n"
+            "   /profit_short [<n>] - Short profit\n"
+            "   /daily <n> - Daily profit\n"
+            "   /weekly <n> - Weekly profit\n"
+            "   /monthly <n> - Monthly profit\n"
+            "   /trades [limit] - Recent closed trades\n"
+            "   /performance - Performance by pair\n"
+            "   /stats - Win/Loss stats and durations\n"
+            "   /count - Active trade count\n"
+            "   /entries <pair> - Entry tag performance\n"
+            "   /exits <pair> - Exit reason performance\n"
+            "   /mix_tags <pair> - Combined tag performance\n"
             "\n"
             "⚙️ *Configuration*\n"
-            "*/show_config:* `Show running config`\n"
-            "*/reload_config:* `Reload config file`\n"
-            "*/whitelist [sorted|baseonly]:* `Show whitelist`\n"
-            "*/blacklist [pair]:* `Show/add to blacklist`\n"
-            "*/bl_delete [pair]:* `Remove from blacklist`\n"
-            "*/marketdir [dir]:* `Set market direction`\n"
+            "   /show_config - Show running config\n"
+            "   /reload_config - Reload config file\n"
+            "   /whitelist [sorted|baseonly] - Show whitelist\n"
+            "   /blacklist [pair] - Show/add to blacklist\n"
+            "   /bl_delete [pair] - Remove from blacklist\n"
+            "   /marketdir [dir] - Set market direction\n"
             "\n"
             "ℹ️ *Info*\n"  # noqa: RUF001
-            "*/balance:* `Show balances`\n"
-            "*/locks:* `Show active locks`\n"
-            "*/unlock <pair|id>:* `Unlock pair/id`\n"
-            "*/logs [limit]:* `Show recent logs`\n"
-            "*/health:* `Health check`\n"
-            "*/version:* `Show version`\n"
-            "*/help:* `Show this help`\n"
+            "   /balance - Show balances\n"
+            "   /locks - Show active locks\n"
+            "   /unlock <pair|id> - Unlock pair/id\n"
+            "   /logs [limit] - Show recent logs\n"
+            "   /health - Health check\n"
+            "   /version - Show version\n"
+            "   /help - Show this help\n"
         )
 
         await self._send_msg(message, parse_mode=ParseMode.MARKDOWN)

@@ -423,11 +423,10 @@ async def test_telegram_status_multi_entry(default_conf, update, mocker, fee) ->
     await telegram._status(update=update, context=MagicMock())
     assert msg_mock.call_count == 4
     msg = msg_mock.call_args_list[3][0][0]
-    assert re.search(r"Number of Entries.*2", msg)
+    assert re.search(r"Entries.*2", msg)
     # Exit order is still open, hence not a successful exit
-    assert re.search(r"Number of Exits.*0", msg)
-    assert re.search(r"Close Date:", msg) is None
-    assert re.search(r"Close Profit:", msg) is None
+    assert re.search(r"Exits.*0", msg)
+    assert re.search(r"Close:", msg) is None
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -448,8 +447,7 @@ async def test_telegram_status_closed_trade(default_conf, update, mocker, fee) -
     await telegram._status(update=update, context=context)
     assert msg_mock.call_count == 1
     msg = msg_mock.call_args_list[0][0][0]
-    assert re.search(r"Close Date:", msg)
-    assert re.search(r"Close Profit:", msg)
+    assert re.search(r"Close:", msg)
 
 
 async def test_order_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -592,8 +590,7 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     # and no line should be empty
     lines = msg_mock.call_args_list[0][0][0].split("\n")
     assert "" not in lines[:-1]
-    assert "Close Rate" not in "".join(lines)
-    assert "Close Profit" not in "".join(lines)
+    assert "Close:" not in "".join(lines)
 
     assert msg_mock.call_count == 3
     assert "ETH/BTC" in msg_mock.call_args_list[0][0][0]
@@ -607,8 +604,7 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
 
     lines = msg_mock.call_args_list[0][0][0].split("\n")
     assert "" not in lines[:-1]
-    assert "Close Rate" not in "".join(lines)
-    assert "Close Profit" not in "".join(lines)
+    assert "Close:" not in "".join(lines)
 
     assert msg_mock.call_count == 2
     assert "LTC/BTC" in msg_mock.call_args_list[0][0][0]
@@ -624,8 +620,8 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
 
     msg1 = msg_mock.call_args_list[0][0][0]
 
-    assert "Close Rate" not in msg1
-    assert "Trade ID:* `2`" in msg1
+    assert "Close:" not in msg1
+    assert "*LTC/BTC*   (#2)" in msg1
 
 
 async def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -2140,7 +2136,7 @@ async def test_help_handle(default_conf, update, mocker) -> None:
 
     await telegram._help(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert "*/help:* `Show this help`" in msg_mock.call_args_list[0][0][0]
+    assert "/help - Show this help" in msg_mock.call_args_list[0][0][0]
 
 
 async def test_version_handle(default_conf, update, mocker) -> None:
