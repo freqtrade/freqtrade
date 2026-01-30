@@ -8,12 +8,23 @@ from freqtrade.exceptions import OperationalException
 
 @pytest.fixture(autouse=True)
 def force_market_open():
-    """Ensure market is open for all mock order tests."""
-    with mock.patch.dict(os.environ, {"FT_FORCE_MARKET_OPEN": "1", "RISK_GUARD_ENABLED": "false"}):
+    """Ensure market is open and live guard passes for all mock order tests."""
+    with mock.patch.dict(
+        os.environ,
+        {
+            "FT_FORCE_MARKET_OPEN": "1",
+            "RISK_GUARD_ENABLED": "false",
+            "FT_ENABLE_LIVE_ORDERS": "1",
+        },
+    ):
         yield
 
 
-MOCK_CONFIG = {"options": {"mode": "mock"}, "risk_guard": {"enabled": False}}
+MOCK_CONFIG = {
+    "options": {"mode": "mock"},
+    "risk_guard": {"enabled": False},
+    "icicibreeze": {"live_trading": {"enabled": True}},
+}
 
 
 def test_sync_mock_execution():
