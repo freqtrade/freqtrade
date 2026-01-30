@@ -2731,7 +2731,7 @@ class Exchange:
         Build Coroutines to execute as part of refresh_latest_ohlcv
         """
         input_coroutines: list[Coroutine[Any, Any, OHLCVResponse]] = []
-        cached_pairs = []
+        cached_pairs: list[PairWithTimeframe] = []
         if not pair_list:
             return input_coroutines, cached_pairs
 
