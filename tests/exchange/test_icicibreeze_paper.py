@@ -1,3 +1,4 @@
+import os
 from unittest import mock
 
 import pytest
@@ -23,16 +24,17 @@ def paper_config(tmp_path):
 
 @pytest.fixture
 def paper_exchange(paper_config):
-    # Patch PaperLedger to use our tmp path
-    with mock.patch("adapters.ccxt_shim.paper_ledger.PaperLedger") as MockLedger:
-        # Mock instance
-        mock_ledger_instance = MockLedger.return_value
+    with mock.patch.dict(os.environ, {"FT_ENABLE_LIVE_ORDERS": "1", "BREEZE_MOCK": "1"}):
+        # Patch PaperLedger to use our tmp path
+        with mock.patch("adapters.ccxt_shim.paper_ledger.PaperLedger") as MockLedger:
+            # Mock instance
+            mock_ledger_instance = MockLedger.return_value
 
-        ex = BreezeCCXT(paper_config)
+            ex = BreezeCCXT(paper_config)
 
-        # Inject our mock instance (though init likely did it)
-        ex.paper_ledger = mock_ledger_instance
-        yield ex
+            # Inject our mock instance (though init likely did it)
+            ex.paper_ledger = mock_ledger_instance
+            yield ex
 
 
 def test_paper_mode_initialization(paper_config):
