@@ -1,5 +1,5 @@
 import os
-import pytest
+from unittest import mock
 from adapters.ccxt_shim.rate_limiter import RateLimiter
 
 

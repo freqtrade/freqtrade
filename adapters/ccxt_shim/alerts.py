@@ -22,6 +22,9 @@ class AlertManager:
 
     def alert(self, category: str, message: str, priority: str = "HIGH"):
         """
+        Trigger an alert.
+        Checks suppression window for the given category.
+        """
         now = self._now_fn()
         last_ts = self._last_alert_ts.get(category, 0.0)
 

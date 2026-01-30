@@ -120,11 +120,11 @@ AG_WORKSPACE:
           - "scheduler_start_on_import"
           - "thread_start_on_import"
         commands:
-          - "rg -n \"^(?!\\s*#).*\\b(requests\\.|httpx\\.|aiohttp\\.|websocket\\.|BreezeConnect\\(|create_task\\(|Thread\\(|schedule\\.)\" src/ tests/ || true"
+          - "rg -n \"^(?!\\s*#).*\\b(requests\\.|httpx\\.|aiohttp\\.|websocket\\.|BreezeConnect\\(|create_task\\(|Thread\\(|schedule\\.|patch_ccxt\\()\" src/ adapters/ freqtrade/ tests/ || true"
       orchestrator_scan:
         rule: "Only main/orchestrator may call bootstrap/start loop."
         commands:
-          - "rg -n \"\\b(start|run|bootstrap|init)_(scheduler|loop|engine)\\b\" src/ | head -n 200"
+          - "rg -n \"\\b(start|run|bootstrap|init)_(scheduler|loop|engine)\\b\" src/ adapters/ | head -n 200"
       tracer_gate:
         requirement: "viztracer trace must show expected sequence markers"
         markers_required:
@@ -138,3 +138,42 @@ AG_WORKSPACE:
     violation_handling:
       - STOP_ON_FIRST_VIOLATION
       - require_fix_before_any_new_work
+
+# =========================
+
+# ADD: TIME DETERMINISM WORKSPACE CHECKS
+
+# =========================
+
+  time_determinism_guard:
+    objective: "Prevent flaky gates by banning wall-clock and sleep in unit tests and requiring injectables."
+    checks_required:
+      ban_wall_clock_in_tests:
+        commands:
+          - "rg -n \"\\b(time\\.sleep\\(|asyncio\\.sleep\\(|datetime\\.now\\(|time\\.time\\(|perf_counter\\()\" tests/ || true"
+      require_injection_for_time_deps:
+        commands:
+          - "rg -n \"class\\s+(RateLimiter|AlertManager)\\b|def\\s+__init__\\(.*(now_fn|sleep_fn)\" adapters/ccxt_shim/ || true"
+    violation_handling:
+      - STOP_ON_FIRST_VIOLATION
+
+# =========================
+
+# ADD: EXIT SELL PATH WORKSPACE CHECKS
+
+# =========================
+
+  exit_policy_guard:
+    objective: "Ensure exits are possible in real mode without permitting shorts."
+    checks_required:
+      detect_sell_block_without_escape_hatch:
+        commands:
+          - "rg -n \"buyer_only|assert_buyer_only|Sell orders are disabled\" adapters/ccxt_shim/ | head -n 200"
+      require_reduceonly_or_position_source:
+        commands:
+          - "rg -n \"reduceOnly|ft_exit|fetch_positions\\(\" adapters/ccxt_shim/ | head -n 200"
+      require_test_for_exit_path:
+        commands:
+          - "rg -n \"reduceOnly|ft_exit\" tests/ | head -n 200"
+    violation_handling:
+      - STOP_ON_FIRST_VIOLATION
