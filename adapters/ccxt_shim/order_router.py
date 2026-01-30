@@ -22,6 +22,8 @@ class OrderRouter:
         """
         self._get_markets = markets_source_callback
         self.paper_mode = False
+        self.mock_mode = False
+        self.live_trading_enabled = False
 
     def resolve_lot_size(self, symbol: str) -> int:
         """
@@ -30,7 +32,9 @@ class OrderRouter:
         """
         markets = self._get_markets()
         if not markets:
-            if not self.paper_mode:
+            # Only warn if we are in a fully live, non-mock, non-paper context
+            should_warn = self.live_trading_enabled and not self.paper_mode and not self.mock_mode
+            if should_warn:
                 logger.warning(f"OrderRouter: Markets empty during lot resolution for {symbol}.")
             return 1
 

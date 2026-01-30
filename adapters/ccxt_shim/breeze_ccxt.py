@@ -29,6 +29,7 @@ from adapters.ccxt_shim.security_master import (
 )
 from adapters.ccxt_shim.market_hours import MarketHoursGuard
 from adapters.ccxt_shim.risk_guard import RiskGuard
+from adapters.ccxt_shim import health_snapshot
 from adapters.ccxt_shim.order_router import OrderRouter
 from adapters.ccxt_shim.rate_limiter import RateLimiter
 from adapters.ccxt_shim.degraded_mode import DegradedModeGuard
@@ -99,8 +100,16 @@ class BreezeCCXT(ccxt.Exchange):
         self._security_master_cache: dict[str, Any] | None = None
         self.market_hours = MarketHoursGuard()
         self.degraded_guard = DegradedModeGuard()
+
+        # Initialize OrderRouter
         self.order_router = OrderRouter(lambda: self.markets)
         self.order_router.paper_mode = self.paper_mode
+        self.order_router.mock_mode = self._is_mock_mode()
+
+        # P30: Live Enablement Check for Router
+        live_config = self.config.get("icicibreeze", {}).get("live_trading", {})
+        config_enabled = live_config.get("enabled", False)
+        self.order_router.live_trading_enabled = config_enabled
 
         # Mock Order Storage
         self._mock_orders: dict[str, dict] = {}
@@ -488,17 +497,19 @@ class BreezeCCXT(ccxt.Exchange):
             res = self.breeze.get_quotes(**s_params)
             if not res or res.get("status") != 200 or not res.get("Success"):
                 raise OperationalException(
-                    f"Breeze fetch_ticker failed: "
-                    f"{res.get('Error') if res else 'Empty response from SDK'}"
+                    f"Breeze fetch_ticker failed: {res.get('Error') if res else 'Empty response from SDK'}"
                 )
+
             data = res["Success"][0]
             ts = int(time.time() * 1000)
             if data.get("ltt"):
                 try:
+                    # LTT format example: 28-Feb-2023 10:00:00
                     ts = int(datetime.strptime(data["ltt"], "%d-%b-%Y %H:%M:%S").timestamp() * 1000)
                 except Exception:
                     logger.warning("Could not parse LTT timestamp: %s", data.get("ltt"))
-            return {
+
+            ticker = {
                 "symbol": symbol,
                 "timestamp": ts,
                 "datetime": self.iso8601(ts),
@@ -510,7 +521,11 @@ class BreezeCCXT(ccxt.Exchange):
                 "close": float(data.get("ltp", 0)),
                 "info": data,
             }
+            health_snapshot.update("call", {"method": "fetch_ticker"})
+            return ticker
+
         except Exception as e:
+            health_snapshot.update("error", {"code": "fetch_ticker_error", "message": str(e)})
             logger.debug("fetch_ticker error: %s", e)
             raise OperationalException("Error in fetch_ticker. See debug logs for details.") from e
 
@@ -590,11 +605,14 @@ class BreezeCCXT(ccxt.Exchange):
                     ]
                 )
             ohlcv.sort(key=lambda x: x[0])
+            health_snapshot.update("call", {"method": "fetch_ohlcv"})
             return ohlcv[:limit]
         except Exception as e:
+            msg = str(e)
+            health_snapshot.update("error", {"code": "fetch_ohlcv_sdk_error", "message": msg})
             logger.warning(
                 f"event=icicibreeze_fetch_ohlcv_sdk_error symbol={symbol} "
-                f"timeframe={timeframe} error={str(e)}"
+                f"timeframe={timeframe} error={msg}"
             )
             return []
 
@@ -616,6 +634,23 @@ class BreezeCCXT(ccxt.Exchange):
             self.rate_limiter.allow("create_order")
             self.market_hours.assert_can_create_order(side, symbol)
             self.degraded_guard.assert_can_order(side, symbol)
+
+            # P30: Live Order Execution (Guarded) - HOISTED
+            # Checked EARLY to prevent risk counter increment on blocked attempts
+            live_config = self.config.get("icicibreeze", {}).get("live_trading", {})
+            config_enabled = live_config.get("enabled", False)
+            env_enabled = os.environ.get("FT_ENABLE_LIVE_ORDERS") == "1"
+
+            if not (config_enabled and env_enabled):
+                # P30 Live Guard Block
+                # Defined in policy_codes.py as "Live Trading Guard: Blocked"
+                msg = (
+                    "Live Trading Guard: Blocked. "
+                    f"Config={config_enabled}, Env(FT_ENABLE_LIVE_ORDERS)={env_enabled}"
+                )
+                logger.warning(msg)
+                health_snapshot.update("policy_block")
+                raise OperationalException(msg)
 
             # P15 Risk Guard Check
             # We need ticker data for spread check. Since this is sync, we can fetch it.
@@ -657,6 +692,8 @@ class BreezeCCXT(ccxt.Exchange):
                 return self._create_paper_order(symbol, order_type, side, amount)
 
             if self._is_mock_mode():
+                # Clean log hygiene for mock
+                logger.info(f"LIVE_ROUTE_MOCK: Placing {side} {amount} {symbol} (Mock)")
                 ts = int(time.time() * 1000)
                 rand = random.randint(0, 1000000)  # nosec
                 seed = f"{symbol}-{side}-{amount}-{ts}-{rand}"
@@ -683,21 +720,7 @@ class BreezeCCXT(ccxt.Exchange):
                 self.degraded_guard.record_success()
                 return order
 
-            # P30: Live Order Execution (Guarded)
-            # Double-Lock Mechanism
-            live_config = self.config.get("icicibreeze", {}).get("live_trading", {})
-            config_enabled = live_config.get("enabled", False)
-            env_enabled = os.environ.get("FT_ENABLE_LIVE_ORDERS") == "1"
-
-            if not (config_enabled and env_enabled):
-                msg = (
-                    "Live Trading Guard: Blocked. "
-                    f"Config={config_enabled}, Env(FT_ENABLE_LIVE_ORDERS)={env_enabled}"
-                )
-                logger.warning(msg)
-                raise OperationalException(msg)
-
-            # Proceed to Live Execution
+            # Proceed to Live Execution (Real Broker)
             logger.info(f"LIVE ORDER: Placing {side} {amount} {symbol} @ {price or 'Market'}")
 
             # Map params

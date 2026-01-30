@@ -47,6 +47,11 @@ ALL_GATES=(
     "p28_execution_microstructure"
     "p29_real_mode_paper_trade"
     "p30_live_guard"
+    "p31_health_snapshot"
+    "p32_alerting_transitions"
+    "p33_backup_restore"
+    "p34_circuit_breaker"
+    "p35_ops_runbook"
 )
 
 # Parse flags
@@ -80,6 +85,11 @@ HARDENED_GATES=(
     "p28_execution_microstructure"
     "p29_real_mode_paper_trade"
     "p30_live_guard"
+    "p31_health_snapshot"
+    "p32_alerting_transitions"
+    "p33_backup_restore"
+    "p34_circuit_breaker"
+    "p35_ops_runbook"
 )
 
 function is_hardened() {

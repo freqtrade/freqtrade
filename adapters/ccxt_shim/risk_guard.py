@@ -85,12 +85,20 @@ class RiskGuard:
 
         # 2. Max Trades Per Day
         if self.daily_trades_count >= self.max_trades_per_day:
-            return True, "max_trades_per_day"
+            msg = "max_trades_per_day"
+            from adapters.ccxt_shim.alerts import trigger
+
+            trigger("RISK_BLOCK", f"{msg}: {self.daily_trades_count} >= {self.max_trades_per_day}")
+            return True, msg
 
         # 3. Intraday Cutoff
         current_time_str = now_ist.strftime("%H:%M")
         if current_time_str >= self.cutoff_time_str:
-            return True, "intraday_cutoff"
+            msg = "intraday_cutoff"
+            from adapters.ccxt_shim.alerts import trigger
+
+            trigger("RISK_BLOCK", f"{msg}: {current_time_str} >= {self.cutoff_time_str}")
+            return True, msg
 
         # 4. Spread Guard (Entries Only)
         if is_entry and self.spread_enabled and price_surface:
@@ -100,7 +108,11 @@ class RiskGuard:
                 mid = (bid + ask) / 2
                 spread_pct = ((ask - bid) / mid) * 100
                 if spread_pct > self.max_spread_pct:
-                    return True, "spread_guard"
+                    msg = "spread_guard"
+                    from adapters.ccxt_shim.alerts import trigger
+
+                    trigger("RISK_BLOCK", f"{msg}: {spread_pct:.2f}% > {self.max_spread_pct:.2f}%")
+                    return True, msg
 
         return False, ""
 

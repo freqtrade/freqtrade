@@ -46,7 +46,8 @@ def check_p30_neg():
         sys.exit(1)
     except Exception as e:
         msg = str(e)
-        logger.exception(f"Caught Expected Exception: {msg}")
+        # Suppressing traceback for cleaner audit, just printing message
+        print(f"Caught Exception: {msg}")
 
         if "market_closed" in msg and "blocking entry" in msg:
             print("P30_NEG_EXPECTED_BLOCK")

@@ -26,6 +26,28 @@ class DegradedModeGuard:
 
         if self.degraded:
             logger.warning("DEGRADED MODE FORCED via FT_DEGRADED_MODE=1")
+        else:
+            # P34: Load Persistence
+            try:
+                from adapters.ccxt_shim import health_snapshot
+
+                state = health_snapshot.load()
+                cb = state.get("circuit_breaker", {})
+                if cb.get("tripped"):
+                    tripped_at = cb.get("tripped_at", 0)
+                    now = time.time()
+                    # Check if still valid (using failure_window or separate cooldown)
+                    # For now, using failure_window logic (if it was recent enough to still be relevant?)
+                    # Actually, if it tripped, it should stay tripped until explicitly reset or timeout.
+                    # Let's say we honor it if within 2 * failure_window (example)
+                    if now - tripped_at < (self.failure_window * 10):
+                        self.failures = cb.get("failures", self.failure_threshold)
+                        self.last_failure_ts = tripped_at
+                        logger.warning(
+                            f"DegradedModeGuard: Restored TRIPPED state from snapshot (ts={tripped_at})"
+                        )
+            except Exception as e:
+                logger.warning(f"DegradedModeGuard: Failed to load persistence: {e}")
 
     def record_failure(self, exc: Exception) -> None:
         """
@@ -48,6 +70,22 @@ class DegradedModeGuard:
         logger.warning(
             f"DegradedModeGuard: Failure recorded ({self.failures}/{self.failure_threshold}) - {exc}"
         )
+
+        if self.failures >= self.failure_threshold:
+            from adapters.ccxt_shim.alerts import trigger
+
+            trigger("DEGRADED_ENTER", f"Circuit Breaker Tripped. Last Error: {exc}")
+
+            # P34 Persistence
+            try:
+                from adapters.ccxt_shim import health_snapshot
+
+                health_snapshot.update(
+                    "circuit_breaker",
+                    {"tripped": True, "tripped_at": now, "failures": self.failures},
+                )
+            except Exception as e:
+                logger.warning(f"DegradedModeGuard: Failed to persist failure: {e}")
 
         # Auto-trigger if enabled (P17 focus is mostly on Forced Mode, but logic handles it)
         # Note: Auto-trigger logic not fully enforced via env var in P17 plan, relies on forced mode primarily.

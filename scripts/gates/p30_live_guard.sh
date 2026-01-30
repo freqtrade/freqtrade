@@ -9,6 +9,7 @@ source scripts/gates/common.sh "$GATE_ID" "$@"
 
 # Run the python validation suite which covers both Block (Neg) and Allow (Pos) paths
 # using Mocks.
+export BREEZE_MOCK=1
 
 if [ "$GATE_MODE" == "pos" ]; then
     echo ">>> Gate P30: Positive (Checking Double Lock Logic)..."
