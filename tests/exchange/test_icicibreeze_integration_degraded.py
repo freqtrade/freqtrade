@@ -14,9 +14,13 @@ def degraded_exchange_forced():
             "FT_DEGRADED_MODE": "1",
             "FT_DEGRADED_BLOCK_ENTRIES": "1",
             "FT_RATE_LIMIT_DISABLE": "1",  # Disable limit to isolate degraded
+            "FT_ENABLE_LIVE_ORDERS": "1",
         },
     ):
-        exposure = {"risk_guard": {"enabled": False}}
+        exposure = {
+            "risk_guard": {"enabled": False},
+            "icicibreeze": {"live_trading": {"enabled": True}},
+        }
         exchange = BreezeCCXT(config=exposure)
         yield exchange
 

@@ -17,9 +17,13 @@ def rate_limited_exchange():
             "FT_RATE_LIMIT_PER_MINUTE": "10",
             "FT_RATE_LIMIT_MODE": "block",
             "FT_RATE_LIMIT_DISABLE": "0",
+            "FT_ENABLE_LIVE_ORDERS": "1",
         },
     ):
-        exposure = {"risk_guard": {"enabled": False}}  # Disable risk guard to isolate rate limit
+        exposure = {
+            "risk_guard": {"enabled": False},
+            "icicibreeze": {"live_trading": {"enabled": True}},
+        }
         exchange = BreezeCCXT(config=exposure)
         yield exchange
 

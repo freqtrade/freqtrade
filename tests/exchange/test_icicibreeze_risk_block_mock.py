@@ -16,6 +16,7 @@ def mock_exchange():
             "allow_exits_when_blocked": True,
         },
         "options": {"key": "mock_key", "secret": "mock_secret", "session_token": "mock_token"},
+        "icicibreeze": {"live_trading": {"enabled": True}},
     }
     exchange = BreezeCCXT(config)
     # exchange._set_mock_mode(True) # Not needed/doesn't exist, api_key="mock_key" triggers it
@@ -26,7 +27,7 @@ def mock_exchange():
 async def test_risk_block_buy_entry(mock_exchange):
     # Should raise OperationalException with risk_block prefix
     # Must force market open to reach risk check
-    with patch.dict(os.environ, {"FT_FORCE_MARKET_OPEN": "1"}):
+    with patch.dict(os.environ, {"FT_FORCE_MARKET_OPEN": "1", "FT_ENABLE_LIVE_ORDERS": "1"}):
         with pytest.raises(OperationalException, match="risk_block:max_trades_per_day"):
             # Try await, if fails catch type error? No, better to detect.
             if hasattr(mock_exchange, "create_order") and asyncio.iscoroutinefunction(

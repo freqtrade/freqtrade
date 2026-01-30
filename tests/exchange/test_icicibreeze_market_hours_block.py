@@ -12,10 +12,19 @@ def exchange_forced_closed():
     """Fixture providing BreezeCCXT instance with market forced closed."""
     with mock.patch.dict(
         os.environ,
-        {"FT_FORCE_MARKET_CLOSED": "1", "BREEZE_MOCK": "1", "RISK_GUARD_ENABLED": "false"},
+        {
+            "FT_FORCE_MARKET_CLOSED": "1",
+            "BREEZE_MOCK": "1",
+            "RISK_GUARD_ENABLED": "false",
+            "FT_ENABLE_LIVE_ORDERS": "1",  # Pass Live Guard
+        },
     ):
         # Initialize exchange after env var set to ensure guard picks it up
-        config = {"dry_run": True, "risk_guard": {"enabled": False}}
+        config = {
+            "dry_run": True,
+            "risk_guard": {"enabled": False},
+            "icicibreeze": {"live_trading": {"enabled": True}},
+        }
         exchange = BreezeCCXT(config)
         yield exchange
 
@@ -24,9 +33,19 @@ def exchange_forced_closed():
 def exchange_forced_open():
     """Fixture providing BreezeCCXT instance with market forced open."""
     with mock.patch.dict(
-        os.environ, {"FT_FORCE_MARKET_OPEN": "1", "BREEZE_MOCK": "1", "RISK_GUARD_ENABLED": "false"}
+        os.environ,
+        {
+            "FT_FORCE_MARKET_OPEN": "1",
+            "BREEZE_MOCK": "1",
+            "RISK_GUARD_ENABLED": "false",
+            "FT_ENABLE_LIVE_ORDERS": "1",  # Pass Live Guard
+        },
     ):
-        config = {"dry_run": True, "risk_guard": {"enabled": False}}
+        config = {
+            "dry_run": True,
+            "risk_guard": {"enabled": False},
+            "icicibreeze": {"live_trading": {"enabled": True}},
+        }
         exchange = BreezeCCXT(config)
         yield exchange
 

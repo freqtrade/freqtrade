@@ -17,6 +17,7 @@ def paper_config(tmp_path):
         "key": "mock_key",
         "secret": "mock_secret",
         "icici_mode": "mock",  # To fetch mock prices for execution
+        "icicibreeze": {"live_trading": {"enabled": True}},
     }
 
 

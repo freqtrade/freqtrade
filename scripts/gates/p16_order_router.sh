@@ -8,6 +8,7 @@ source scripts/gates/common.sh "p16" "$@"
 # Determinism
 export BREEZE_MOCK=1
 export FT_FORCE_MARKET_OPEN=1
+export FT_ENABLE_LIVE_ORDERS=1
 unset BREEZE_API_KEY BREEZE_API_SECRET BREEZE_SESSION_TOKEN
 
 # Paths
@@ -18,8 +19,8 @@ if [ ! -f "$BASE_CFG" ]; then
     echo "ERROR: Config missing: $BASE_CFG"
     finish_gate 1
 fi
-# Relax RiskGuard for P16 tests (disable intraday cutoff/max trades)
-jq '.risk_guard.enabled = false' "$BASE_CFG" > "$GATE_CFG"
+# Relax RiskGuard for P16 tests (disable intraday cutoff/max trades) and Enable Live Trading
+jq '.risk_guard.enabled = false | .icicibreeze.live_trading.enabled = true' "$BASE_CFG" > "$GATE_CFG"
 
 PY_SCRIPT="$ARTIFACT_DIR/run_p16_test.py"
 
