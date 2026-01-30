@@ -69,22 +69,31 @@ class OrderRouter:
             )
 
     def assert_buyer_only(
-        self, symbol: str, side: str, position_check_callback: Any | None
+        self,
+        symbol: str,
+        side: str,
+        position_check_callback: Any | None,
+        reduce_only: bool = False,
     ) -> None:
         """
         Enforce Buyer Only policy.
         BUY: Always Allowed.
-        SELL: Allowed ONLY if it corresponds to an existing open position (Exit).
-              If we cannot determine position state, we BLOCK SELLs to be safe (Short Prevention).
+        SELL: Allowed ONLY if it corresponds to an existing open position (Exit) OR reduceOnly=True.
+              If we cannot determine position state, we BLOCK SELLs to be safe UNLESS reduceOnly is explicit.
         """
         if side.lower() == "buy":
             return
 
         # If logic reaches here, it's a SELL
+        
+        # P35.5 T4: Allow explicit reduceOnly to bypass position check
+        if reduce_only:
+             return
+
         if position_check_callback is None:
             # Fail safe: Block if we can't check positions
             raise OperationalException(
-                f"order_router_block:buyer_only (Sell blocked, no position check available)"
+                "order_router_block:buyer_only (Sell blocked, no position check available)"
             )
 
         # Check if we have an open position for this symbol
@@ -93,7 +102,7 @@ class OrderRouter:
 
         if not is_open_long:
             raise OperationalException(
-                f"order_router_block:buyer_only (Sell blocked, no open position)"
+                "order_router_block:buyer_only (Sell blocked, no open position)"
             )
 
     def track_and_assert_modify(self, order_id: str, now_ts: float) -> None:
@@ -131,7 +140,13 @@ class OrderRouter:
     # --- P28: Microstructure Logic ---
 
     def check_gtt_hysteresis(
-        self, order_id: str, new_price: float, last_price: float, now_ts: float, config: dict
+        self,
+        order_id: str,
+        new_price: float,
+        last_price: float,
+        now_ts: float,
+        config: dict,
+        tick_size: float | None = None,
     ) -> dict:
         """
         Checks if modification should be skipped due to hysteresis.
@@ -151,10 +166,10 @@ class OrderRouter:
 
         if time_diff < rearm:
             # Check Price Hysteresis
-            # Assuming tick size 0.05 for simplicity or injected?
-            # We can use percentage or absolute. Prompt says "ticks".
-            # We assume NIFTY/Stock tick is roughly 0.05.
-            tick_size = 0.05
+            # Priority: param > config? > default 0.05
+            if tick_size is None or tick_size <= 0:
+                tick_size = config.get("tick_size", 0.05)
+
             price_change = abs(new_price - state.get("last_price", last_price))
             ticks_changed = price_change / tick_size
 
@@ -247,7 +262,12 @@ class OrderRouter:
         return chunks
 
     def validate_entry(
-        self, symbol: str, side: str, amount: float, position_check_callback: Any | None = None
+        self,
+        symbol: str,
+        side: str,
+        amount: float,
+        position_check_callback: Any | None = None,
+        reduce_only: bool = False,
     ) -> None:
         """
         Primary validation entry point.
@@ -257,6 +277,6 @@ class OrderRouter:
         self.assert_lot_size(symbol, amount, lot_size)
 
         # 2. Buyer Only
-        self.assert_buyer_only(symbol, side, position_check_callback)
+        self.assert_buyer_only(symbol, side, position_check_callback, reduce_only)
 
         logger.info(f"OrderRouter: Validated {side} {amount} {symbol} (Lot: {lot_size})")

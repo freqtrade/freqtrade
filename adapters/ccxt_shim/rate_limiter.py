@@ -15,7 +15,10 @@ class RateLimiter:
     blocking for testing.
     """
 
-    def __init__(self):
+    def __init__(self, now_fn=None, sleep_fn=None):
+        self._now = now_fn or time.time
+        self._sleep = sleep_fn or time.sleep
+
         # Configuration via Environment Variables (Shim standard)
         self.enabled = os.environ.get("FT_RATE_LIMIT_DISABLE", "0") != "1"
 
@@ -29,7 +32,7 @@ class RateLimiter:
         # Token Bucket State
         self.capacity = self.per_minute
         self.tokens = float(self.capacity)
-        self.last_refill = time.time()
+        self.last_refill = self._now()
 
         # Refill rate: tokens per second
         # If per_minute=60, rate=1.0 token/sec
@@ -44,7 +47,7 @@ class RateLimiter:
             logger.warning("RateLimiter is DISABLED via FT_RATE_LIMIT_DISABLE")
 
     def _refill(self):
-        now = time.time()
+        now = self._now()
         elapsed = now - self.last_refill
 
         if elapsed > 0:
@@ -94,7 +97,7 @@ class RateLimiter:
         logger.info(
             f"RATE_LIMIT_SLEEP: op={op} cost={cost} remaining={self.tokens:.2f} sleep={sleep_time:.3f}s"
         )
-        time.sleep(sleep_time)
+        self._sleep(sleep_time)
 
         # After sleep, refill and consume
         self._refill()

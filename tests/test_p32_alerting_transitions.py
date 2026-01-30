@@ -1,6 +1,5 @@
 import pytest
-import time
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from adapters.ccxt_shim import alerts
 
 
@@ -23,15 +22,29 @@ def test_alert_trigger(alert_manager):
 
 def test_suppression(alert_manager):
     with patch("adapters.ccxt_shim.alerts.logger") as mock_logger:
+        # Control time via lambda
+        current_time = [1000.0]
+
+        def mock_now():
+            return current_time[0]
+
+        # Re-init manager with mock clock
+        # We need to poke the singleton or use get_instance with args if supported (we added support)
+        # But get_instance protects singleton.
+        # Strategy: Force reset singleton
+        alerts.AlertManager._instance = None
+        am = alerts.AlertManager.get_instance(now_fn=mock_now)
+
         # First alert
-        alert_manager.alert("SUPPRESS_CAT", "Msg 1", "HIGH")
+        am.alert("SUPPRESS_CAT", "Msg 1", "HIGH")
         assert mock_logger.error.call_count == 1
 
         # Second alert immediately (should be suppressed)
-        alert_manager.alert("SUPPRESS_CAT", "Msg 2", "HIGH")
+        am.alert("SUPPRESS_CAT", "Msg 2", "HIGH")
         assert mock_logger.error.call_count == 1
 
-        # Wait for suppression window expiration (mock time)
-        with patch("time.time", return_value=time.time() + 61):
-            alert_manager.alert("SUPPRESS_CAT", "Msg 3", "HIGH")
-            assert mock_logger.error.call_count == 2
+        # Advance time > 60s
+        current_time[0] += 61.0
+
+        am.alert("SUPPRESS_CAT", "Msg 3", "HIGH")
+        assert mock_logger.error.call_count == 2

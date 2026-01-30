@@ -100,6 +100,9 @@ def update(event: str, payload: dict | None = None) -> None:
     # Event mapping to internal methods
     instance = HealthSnapshot.get_instance()
 
+    if payload is None:
+        payload = {}
+
     if event == "call":
         method = payload.get("method")
         if method:

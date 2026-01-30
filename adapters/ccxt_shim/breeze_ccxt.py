@@ -79,7 +79,6 @@ class BreezeCCXT(ccxt.Exchange):
             ledger_path = Path(ledger_path_str) if ledger_path_str else None
 
             self.paper_ledger = PaperLedger(ledger_path)
-            self.paper_ledger = PaperLedger(ledger_path)
             logger.info(
                 f"Initialized Paper Mode: Slippage={self.paper_slippage}bps, "
                 f"Fee={self.paper_fee}bps, Ledger={ledger_path}"
@@ -667,7 +666,8 @@ class BreezeCCXT(ccxt.Exchange):
                 logger.warning(f"RiskGuard BLOCKED {side} order for {symbol}: {reason}")
                 raise OperationalException(f"risk_block:{reason}")
 
-            self.risk_guard.record_trade_attempt(symbol, side)
+            # P35.5 T5: Move record_trade_attempt to success
+            # self.risk_guard.record_trade_attempt(symbol, side)
 
             # P16 Order Router Check
             def position_check(sym: str) -> bool:
@@ -684,12 +684,17 @@ class BreezeCCXT(ccxt.Exchange):
                     )
                     return False
 
-            self.order_router.validate_entry(symbol, side, amount, position_check)
+            # P35.5 T4: Pass reduceOnly to router
+            reduce_only = params.get("reduceOnly", False) if params else False
+            self.order_router.validate_entry(symbol, side, amount, position_check, reduce_only)
 
             # P18: Paper Forward Mode
             if self.paper_mode:
                 logger.info("Intercepting create_order for Paper Execution Mode")
-                return self._create_paper_order(symbol, order_type, side, amount)
+                res = self._create_paper_order(symbol, order_type, side, amount)
+                # P35.5 T5: Record Risk Success (Paper Mode)
+                self.risk_guard.record_trade_success(symbol, side)
+                return res
 
             if self._is_mock_mode():
                 # Clean log hygiene for mock
@@ -718,6 +723,8 @@ class BreezeCCXT(ccxt.Exchange):
                 }
                 self._mock_orders[order_id] = order
                 self.degraded_guard.record_success()
+                # P35.5 T5: Record Risk Success (Mock Mode)
+                self.risk_guard.record_trade_success(symbol, side)
                 return order
 
             # Proceed to Live Execution (Real Broker)
@@ -783,6 +790,9 @@ class BreezeCCXT(ccxt.Exchange):
                 if not order_id:
                     # Some responses might specific message
                     raise OperationalException(f"Breeze place_order no ID: {success_data}")
+
+                # P35.5 T5: Record Risk Success (Real Mode)
+                self.risk_guard.record_trade_success(symbol, side)
 
                 ts = int(time.time() * 1000)
                 return {
@@ -902,8 +912,6 @@ class BreezeCCXT(ccxt.Exchange):
                 return self._mock_orders[order_id]
             raise OperationalException(f"Mock order {order_id} not found.")
         raise OperationalException("cancel_order not supported in real mode yet.")
-
-        return self.fetch_order(order_id, symbol)
 
     def edit_order(
         self,

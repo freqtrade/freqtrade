@@ -1,6 +1,5 @@
 import pytest
 import os
-import time
 from unittest import mock
 from adapters.ccxt_shim.rate_limiter import RateLimiter
 
@@ -18,18 +17,47 @@ def rate_limiter_sleep():
         yield RateLimiter()
 
 
-def test_sleep_mode_delays(rate_limiter_sleep):
-    # Drain 60 tokens
-    for _ in range(60):
-        rate_limiter_sleep.allow("test_drain")
+class FakeClock:
+    def __init__(self):
+        self.time = 1000000.0
 
-    start_time = time.time()
+    def now(self):
+        return self.time
 
-    # 61st call should sleep for approx 1s (to get 1 token)
-    # We cheat/check token logic: refill rate is 1/sec.
-    # Cost 1. Needed 1. Time = 1s.
-    rate_limiter_sleep.allow("test_sleep")
+    def sleep(self, duration):
+        self.time += duration
 
-    elapsed = time.time() - start_time
-    assert elapsed >= 0.9  # Allow slight timing jitter
-    assert elapsed < 2.0  # Shouldn't sleep excessively
+
+def test_sleep_mode_delays():
+    clock = FakeClock()
+
+    with mock.patch.dict(
+        os.environ,
+        {
+            "FT_RATE_LIMIT_PER_MINUTE": "60",  # 1 token per second
+            "FT_RATE_LIMIT_MODE": "sleep",
+            "FT_RATE_LIMIT_DISABLE": "0",
+        },
+    ):
+        # Inject Fake Clock
+        rl = RateLimiter(now_fn=clock.now, sleep_fn=clock.sleep)
+
+        # Drain 60 tokens (Instant)
+        # We need to ensure refill logic uses clock.now
+        # _refill uses self._now()
+
+        # Initial refill happens at init (1000000.0)
+
+        for _ in range(60):
+            rl.allow("test_drain")
+
+        # Tokens should be 0.
+
+        # 61st call should sleep.
+        # Cost 1. Rate 1/sec. Sleep = 1.0s.
+
+        rl.allow("test_sleep")
+
+        # Clock should have advanced by 1.0s
+        assert clock.time >= 1000000.99
+        assert clock.time <= 1000001.1

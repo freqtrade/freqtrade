@@ -11,6 +11,8 @@ import logging
 import os
 from datetime import datetime, time, timedelta, timezone
 
+from freqtrade.exceptions import OperationalException
+
 logger = logging.getLogger(__name__)
 
 # NSE Market Hours (IST)
@@ -116,7 +118,7 @@ class MarketHoursGuard:
                 )
                 # Use a standard Exception that Freqtrade caught handle, or specific CCXT error if imported
                 # Using generic Exception with specific string that Freqtrade might log
-                raise Exception(msg)
+                raise OperationalException(f"market_hours_block:{msg}")
 
         # Sell/Exits are always allowed (read-only + close position)
 

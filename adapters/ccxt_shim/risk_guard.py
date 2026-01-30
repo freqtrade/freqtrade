@@ -116,7 +116,7 @@ class RiskGuard:
 
         return False, ""
 
-    def record_trade_attempt(self, symbol: str, side: str):
+    def record_trade_success(self, symbol: str, side: str):
         """
         Record a successful trade submission to update counters.
         """
