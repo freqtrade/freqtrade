@@ -2732,6 +2732,9 @@ class Exchange:
         """
         input_coroutines: list[Coroutine[Any, Any, OHLCVResponse]] = []
         cached_pairs = []
+        if not pair_list:
+            return input_coroutines, cached_pairs
+
         # optimization: cache timeframes as a set outside the loop to avoid repeated property access
         # and linear search
         available_timeframes = set(self.timeframes)
