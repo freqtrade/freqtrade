@@ -2732,6 +2732,10 @@ class Exchange:
         """
         input_coroutines: list[Coroutine[Any, Any, OHLCVResponse]] = []
         cached_pairs = []
+        # optimization: cache timeframes as a set outside the loop to avoid repeated property access
+        # and linear search
+        available_timeframes = set(self.timeframes)
+
         for pair, timeframe, candle_type in set(pair_list):
             if candle_type == CandleType.FUNDING_RATE and timeframe != (
                 ff_tf := self.get_option("funding_fee_timeframe")
@@ -2743,7 +2747,7 @@ class Exchange:
                     f"downloading {ff_tf} instead."
                 )
                 timeframe = ff_tf
-            invalid_timeframe = timeframe not in self.timeframes and candle_type in (
+            invalid_timeframe = timeframe not in available_timeframes and candle_type in (
                 CandleType.SPOT,
                 CandleType.FUTURES,
             )
