@@ -79,6 +79,7 @@ HARDENED_GATES=(
     "p27_smart_money"
     "p28_execution_microstructure"
     "p29_real_mode_paper_trade"
+    "p30_live_guard"
 )
 
 function is_hardened() {

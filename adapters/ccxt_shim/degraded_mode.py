@@ -36,6 +36,13 @@ class DegradedModeGuard:
         if now - self.last_failure_ts > self.failure_window:
             self.failures = 0
 
+        # Check for Policy Blocks (Safety checks shouldn't trigger circuit breaker)
+        from adapters.ccxt_shim.policy_codes import is_safety_block
+
+        if is_safety_block(str(exc)):
+            logger.info(f"DegradedModeGuard: Ignoring policy block: {exc}")
+            return
+
         self.failures += 1
         self.last_failure_ts = now
         logger.warning(

@@ -12,15 +12,12 @@ if [ "$GATE_MODE" == "pos" ]; then
     
     # Check for credentials
     if [ -z "${BREEZE_API_KEY:-}" ]; then
-        echo ">>> WARNING: BREEZE_API_KEY not set. Using dummy for routing check."
-        # The python script uses dummies if missing, so we are fine.
-        # But wait, if we use dummy keys, SDK init might fail or succeed depending on validation.
-        # BreezeCCXT generates session if secret present.
-        # If we just want to verify ROUTING logic, dummy keys are fine as long as 
-        # fetch_ticker doesn't block us (caught exception) or we mock it.
-        # Our check script relies on caught exception in create_order/fetch_ticker.
+        echo ">>> WARNING: BREEZE_API_KEY not set."
+        echo "P29_SKIP_MISSING_CREDS_POS"
+        finish_gate 0
     fi
      
+    # Only run if we didn't skip
     if python3 scripts/p29_check_paper_execution.py; then
         echo "P29_POS_PASS"
         finish_gate 0

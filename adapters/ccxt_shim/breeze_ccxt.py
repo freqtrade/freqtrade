@@ -78,6 +78,7 @@ class BreezeCCXT(ccxt.Exchange):
             ledger_path = Path(ledger_path_str) if ledger_path_str else None
 
             self.paper_ledger = PaperLedger(ledger_path)
+            self.paper_ledger = PaperLedger(ledger_path)
             logger.info(
                 f"Initialized Paper Mode: Slippage={self.paper_slippage}bps, "
                 f"Fee={self.paper_fee}bps, Ledger={ledger_path}"
@@ -99,6 +100,7 @@ class BreezeCCXT(ccxt.Exchange):
         self.market_hours = MarketHoursGuard()
         self.degraded_guard = DegradedModeGuard()
         self.order_router = OrderRouter(lambda: self.markets)
+        self.order_router.paper_mode = self.paper_mode
 
         # Mock Order Storage
         self._mock_orders: dict[str, dict] = {}

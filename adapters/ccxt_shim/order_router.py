@@ -21,6 +21,7 @@ class OrderRouter:
         :param markets_source_callback: Callable returning the current markets dict (self.markets from exchange).
         """
         self._get_markets = markets_source_callback
+        self.paper_mode = False
 
     def resolve_lot_size(self, symbol: str) -> int:
         """
@@ -29,7 +30,8 @@ class OrderRouter:
         """
         markets = self._get_markets()
         if not markets:
-            logger.warning(f"OrderRouter: Markets empty during lot resolution for {symbol}.")
+            if not self.paper_mode:
+                logger.warning(f"OrderRouter: Markets empty during lot resolution for {symbol}.")
             return 1
 
         market = markets.get(symbol)
