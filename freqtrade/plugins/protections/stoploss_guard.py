@@ -7,6 +7,7 @@ from freqtrade.enums import ExitType
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
+
 if TYPE_CHECKING:
     from freqtrade.wallets import Wallets
 
