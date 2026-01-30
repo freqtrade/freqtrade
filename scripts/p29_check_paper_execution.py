@@ -3,6 +3,7 @@ import os
 import shutil
 import sqlite3
 import time
+import logging
 from pathlib import Path
 
 # Ensure project root is in path
@@ -102,12 +103,11 @@ def verify_p29_paper_execution():
         print(">>> P29 Verification Successful.")
 
     except Exception as e:
-        print(f"ERROR: Unexpected exception during order placement: {e}")
-        import traceback
-
-        traceback.print_exc()
+        logger.exception(f"Unexpected exception during order placement: {e}")
         sys.exit(1)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("p29_check")
     verify_p29_paper_execution()

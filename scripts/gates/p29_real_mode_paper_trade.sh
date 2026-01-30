@@ -33,9 +33,10 @@ elif [ "$GATE_MODE" == "neg" ]; then
     echo ">>> Gate P29: Negative (Missing Creds Skip)..."
     
     # Force unset creds
-    export BREEZE_API_KEY=""
-    export BREEZE_API_SECRET=""
-    export BREEZE_SESSION_TOKEN=""
+    # Force unset creds
+    unset BREEZE_API_KEY
+    unset BREEZE_API_SECRET
+    unset BREEZE_SESSION_TOKEN
     
     # We want to verify that the system detects missing creds and (conceptually) skips
     # or fails gracefully.

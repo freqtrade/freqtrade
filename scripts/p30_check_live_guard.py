@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import logging
 from unittest.mock import MagicMock
 
 # Ensure project root is in path
@@ -69,9 +70,11 @@ def verify_p30_guard():
         print("[OK] SDK place_order called.")
 
     except Exception as e:
-        print(f"ERROR: Logic Flow Failed: {e}")
+        logger.exception(f"Logic Flow Failed: {e}")
         sys.exit(1)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("p30_check")
     verify_p30_guard()
