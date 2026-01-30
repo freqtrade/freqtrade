@@ -46,14 +46,17 @@ def check_p30_neg():
         sys.exit(1)
     except Exception as e:
         msg = str(e)
-        # Suppressing traceback for cleaner audit, just printing message
-        logger.error(f"Caught expected exception: {msg}", exc_info=True)
 
+        # Check for expected block first logic
         if "market_closed" in msg and "blocking entry" in msg:
+            # P19/P30 Requirement: Log expected block cleanly without traceback
+            logger.info(f"EXPECTED_BLOCK: {msg}")
             print("P30_NEG_EXPECTED_BLOCK")
             print("[OK] Blocked by Market Hours despite Live Enablement.")
             sys.exit(0)
         else:
+            # Unexpected error: Log with traceback
+            logger.error(f"Caught unexpected exception: {msg}", exc_info=True)
             print(f"ERROR: Unexpected exception: {msg}")
             sys.exit(1)
 

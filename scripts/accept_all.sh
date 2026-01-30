@@ -12,6 +12,11 @@ export RUN_ID
 RUN_DIR="user_data/generated/accept_runs/$RUN_ID"
 mkdir -p "$RUN_DIR"
 
+# Enable full suite logging
+FULL_LOG="${RUN_DIR}/accept_all_full.log"
+echo "Logging entire suite execution to: $FULL_LOG"
+exec > >(tee -a "$FULL_LOG") 2>&1
+
 # Full list of gates in sequence
 ALL_GATES=(
     "p00_governance"
@@ -130,7 +135,7 @@ if [ ${#GATES_ARGS[@]} -gt 0 ]; then
                 exit 1
             fi
         else
-            # No suffix - match base name exactly
+            # No suffix - match base name exactly OR prefix
             MATCH=""
             for g in "${ALL_GATES[@]}"; do
                 if [[ "$g" == "$TARGET" ]]; then
@@ -138,6 +143,25 @@ if [ ${#GATES_ARGS[@]} -gt 0 ]; then
                     break
                 fi
             done
+            
+            # If no exact match, try prefix match
+            if [ -z "$MATCH" ]; then
+                MATCH_COUNT=0
+                CANDIDATE=""
+                for g in "${ALL_GATES[@]}"; do
+                    if [[ "$g" == "$TARGET"* ]]; then
+                        CANDIDATE="$g"
+                        MATCH_COUNT=$((MATCH_COUNT + 1))
+                    fi
+                done
+                
+                if [ "$MATCH_COUNT" -eq 1 ]; then
+                    MATCH="$CANDIDATE"
+                elif [ "$MATCH_COUNT" -gt 1 ]; then
+                    echo "ERROR: Ambiguous gate prefix: $TARGET (Matches $MATCH_COUNT gates)"
+                    exit 1
+                fi
+            fi
             
             if [ -n "$MATCH" ]; then
                 # Expand based on TARGET_MODE and Hardening
