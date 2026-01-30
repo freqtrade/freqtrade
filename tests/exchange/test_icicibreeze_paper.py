@@ -104,7 +104,7 @@ def test_ledger_persistence_integration(tmp_path):
     from adapters.ccxt_shim.paper_ledger import PaperLedger
 
     ledger_dir = tmp_path / "ledger_test"
-    ledger = PaperLedger(data_dir=ledger_dir)
+    ledger = PaperLedger(location=ledger_dir)
 
     trade = {
         "id": "p-1",
