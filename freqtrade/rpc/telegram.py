@@ -744,6 +744,93 @@ class Telegram(RPCHandler):
         else:
             await self._status_msg(update, context)
 
+    def _get_status_msg_lines(
+        self, r: dict[str, Any], position_adjust: bool, max_entries: int
+    ) -> list[str]:
+        r["open_date_hum"] = dt_humanize_delta(r["open_date"])
+
+        r["stake_amount_r"] = fmt_coin(r["stake_amount"], r["quote_currency"])
+        r["max_stake_amount_r"] = fmt_coin(
+            r["max_stake_amount"] or r["stake_amount"], r["quote_currency"]
+        )
+        r["profit_abs_r"] = fmt_coin(r["profit_abs"], r["quote_currency"])
+        r["realized_profit_r"] = fmt_coin(r["realized_profit"], r["quote_currency"])
+        r["total_profit_abs_r"] = fmt_coin(r["total_profit_abs"], r["quote_currency"])
+        profit_emoji = "🟢" if r["profit_ratio"] >= 0 else "🔴"
+        lines = [
+            f"*{r['pair']}*   (#{r['trade_id']})",
+            f"{'🔴 `Short`' if r.get('is_short') else '🟢 `Long`'}"
+            + (f" ` ({r['leverage']}x)`" if r.get("leverage") else "")
+            + f"   {profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
+            f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`"
+            + (f" / `{r['max_stake_amount_r']}`" if position_adjust else ""),
+            f"*Open:* `{round_value(r['open_rate'], 8)}`",
+            f"*Current:* `{round_value(r['current_rate'], 8)}`"
+            if r["is_open"]
+            else f"*Close:* `{round_value(r['close_rate'], 8)}`",
+        ]
+
+        if r["is_open"]:
+            lines.append(f"*Age:* `{r['open_date_hum']}`")
+
+        if r["enter_tag"]:
+            lines.append(f"*Tag:* `{r['enter_tag']}`")
+        if r.get("exit_reason"):
+            lines.append(f"*Exit:* `{r['exit_reason']}`")
+
+        if position_adjust:
+            max_buy_str = f"/{max_entries + 1}" if (max_entries > 0) else ""
+            lines.extend(
+                [
+                    f"*Entries:* `{r['nr_of_successful_entries']}{max_buy_str}`",
+                    f"*Exits:* `{r['nr_of_successful_exits']}`",
+                ]
+            )
+
+        if r["is_open"]:
+            if r.get("realized_profit") is not None and r.get("realized_profit_ratio") is not None:
+                lines.append(
+                    f"*Realized Profit:* `{format_pct(r['realized_profit_ratio'])} "
+                    f"({r['realized_profit_r']})`"
+                )
+            if r.get("total_profit_ratio") is not None:
+                lines.append(
+                    f"*Total Profit:* `{format_pct(r['total_profit_ratio'])} "
+                    f"({r['total_profit_abs_r']})`"
+                )
+
+            # Append empty line to improve readability
+            lines.append(" ")
+            # Adding liquidation only if it is not None
+            if liquidation := r.get("liquidation_price"):
+                lines.append(f"*Liquidation:* `{round_value(liquidation, 8)}`")
+
+            if (
+                r["stop_loss_abs"] != r["initial_stop_loss_abs"]
+                and r["initial_stop_loss_ratio"] is not None
+            ):
+                # Adding initial stoploss only if it is different from stoploss
+                lines.append(
+                    f"*Initial Stoploss:* `{r['initial_stop_loss_abs']:.8f}` "
+                    f"`({format_pct(r['initial_stop_loss_ratio'])})`"
+                )
+
+            # Adding stoploss and stoploss percentage only if it is not None
+            lines.append(
+                f"*Stoploss:* `{round_value(r['stop_loss_abs'], 8)}` "
+                + (f"`({format_pct(r['stop_loss_ratio'])})`" if r["stop_loss_ratio"] else "")
+            )
+            lines.append(
+                f"*Stoploss distance:* `{round_value(r['stoploss_current_dist'], 8)}` "
+                f"`({format_pct(r['stoploss_current_dist_ratio'])})`"
+            )
+            if open_orders := r.get("open_orders"):
+                lines.append(
+                    f"*Open Order:* `{open_orders}`"
+                    + (f"- `{r['exit_order_status']}`" if r["exit_order_status"] else "")
+                )
+        return lines
+
     async def _status_msg(self, update: Update, context: CallbackContext) -> None:
         """
         handler for `/status` and `/status <id>`.
@@ -759,92 +846,7 @@ class Telegram(RPCHandler):
         position_adjust = self._config.get("position_adjustment_enable", False)
         max_entries = self._config.get("max_entry_position_adjustment", -1)
         for r in results:
-            r["open_date_hum"] = dt_humanize_delta(r["open_date"])
-
-            r["stake_amount_r"] = fmt_coin(r["stake_amount"], r["quote_currency"])
-            r["max_stake_amount_r"] = fmt_coin(
-                r["max_stake_amount"] or r["stake_amount"], r["quote_currency"]
-            )
-            r["profit_abs_r"] = fmt_coin(r["profit_abs"], r["quote_currency"])
-            r["realized_profit_r"] = fmt_coin(r["realized_profit"], r["quote_currency"])
-            r["total_profit_abs_r"] = fmt_coin(r["total_profit_abs"], r["quote_currency"])
-            profit_emoji = "🟢" if r["profit_ratio"] >= 0 else "🔴"
-            lines = [
-                f"*{r['pair']}*   (#{r['trade_id']})",
-                f"{'🔴 `Short`' if r.get('is_short') else '🟢 `Long`'}"
-                + (f" ` ({r['leverage']}x)`" if r.get("leverage") else "")
-                + f"   {profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
-                f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`"
-                + (f" / `{r['max_stake_amount_r']}`" if position_adjust else ""),
-                f"*Open:* `{round_value(r['open_rate'], 8)}`",
-                f"*Current:* `{round_value(r['current_rate'], 8)}`"
-                if r["is_open"]
-                else f"*Close:* `{round_value(r['close_rate'], 8)}`",
-            ]
-
-            if r["is_open"]:
-                lines.append(f"*Age:* `{r['open_date_hum']}`")
-
-            if r["enter_tag"]:
-                lines.append(f"*Tag:* `{r['enter_tag']}`")
-            if r.get("exit_reason"):
-                lines.append(f"*Exit:* `{r['exit_reason']}`")
-
-            if position_adjust:
-                max_buy_str = f"/{max_entries + 1}" if (max_entries > 0) else ""
-                lines.extend(
-                    [
-                        f"*Entries:* `{r['nr_of_successful_entries']}{max_buy_str}`",
-                        f"*Exits:* `{r['nr_of_successful_exits']}`",
-                    ]
-                )
-
-            if r["is_open"]:
-                if (
-                    r.get("realized_profit") is not None
-                    and r.get("realized_profit_ratio") is not None
-                ):
-                    lines.append(
-                        f"*Realized Profit:* `{format_pct(r['realized_profit_ratio'])} "
-                        f"({r['realized_profit_r']})`"
-                    )
-                if r.get("total_profit_ratio") is not None:
-                    lines.append(
-                        f"*Total Profit:* `{format_pct(r['total_profit_ratio'])} "
-                        f"({r['total_profit_abs_r']})`"
-                    )
-
-                # Append empty line to improve readability
-                lines.append(" ")
-                # Adding liquidation only if it is not None
-                if liquidation := r.get("liquidation_price"):
-                    lines.append(f"*Liquidation:* `{round_value(liquidation, 8)}`")
-
-                if (
-                    r["stop_loss_abs"] != r["initial_stop_loss_abs"]
-                    and r["initial_stop_loss_ratio"] is not None
-                ):
-                    # Adding initial stoploss only if it is different from stoploss
-                    lines.append(
-                        f"*Initial Stoploss:* `{r['initial_stop_loss_abs']:.8f}` "
-                        f"`({format_pct(r['initial_stop_loss_ratio'])})`"
-                    )
-
-                # Adding stoploss and stoploss percentage only if it is not None
-                lines.append(
-                    f"*Stoploss:* `{round_value(r['stop_loss_abs'], 8)}` "
-                    + (f"`({format_pct(r['stop_loss_ratio'])})`" if r["stop_loss_ratio"] else "")
-                )
-                lines.append(
-                    f"*Stoploss distance:* `{round_value(r['stoploss_current_dist'], 8)}` "
-                    f"`({format_pct(r['stoploss_current_dist_ratio'])})`"
-                )
-                if open_orders := r.get("open_orders"):
-                    lines.append(
-                        f"*Open Order:* `{open_orders}`"
-                        + (f"- `{r['exit_order_status']}`" if r["exit_order_status"] else "")
-                    )
-
+            lines = self._get_status_msg_lines(r, position_adjust, max_entries)
             await self.__send_status_msg(lines, r)
 
     async def __send_status_msg(self, lines: list[str], r: dict[str, Any]) -> None:
