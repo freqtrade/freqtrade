@@ -137,3 +137,5 @@ user_data.old_*/
 
 # Common log formats
 *.jsonl
+
+generated/

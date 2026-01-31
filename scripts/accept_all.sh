@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 RUN_ID=$(date +%Y%m%d_%H%M%S)
 export RUN_ID
 
-RUN_DIR="user_data/generated/accept_runs/$RUN_ID"
+RUN_DIR="generated/accept_runs/$RUN_ID"
 mkdir -p "$RUN_DIR"
 
 # Enable full suite logging
@@ -267,8 +267,8 @@ else
 fi
 
 # Create final bundle
-BUNDLE="user_data/generated/accept_runs/${RUN_ID}.tar.gz"
-tar -czf "$BUNDLE" -C "user_data/generated/accept_runs" "$RUN_ID"
+BUNDLE="generated/accept_runs/${RUN_ID}.tar.gz"
+tar -czf "$BUNDLE" -C "generated/accept_runs" "$RUN_ID"
 
 echo ""
 echo "Final Artifact: $BUNDLE"

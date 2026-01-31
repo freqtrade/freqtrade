@@ -33,7 +33,7 @@ export RUN_ID
 
 # Define artifact directory under the run ID, separated by mode
 # e.g. .../gates/p14_pos or .../gates/p14_neg
-ARTIFACT_DIR="user_data/generated/accept_runs/$RUN_ID/gates/${GATE_ID}_${GATE_MODE}"
+ARTIFACT_DIR="generated/accept_runs/$RUN_ID/gates/${GATE_ID}_${GATE_MODE}"
 mkdir -p "$ARTIFACT_DIR"
 GATE_LOG="$ARTIFACT_DIR/gate.log"
 
