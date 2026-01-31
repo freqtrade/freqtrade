@@ -1,3 +1,4 @@
+import math
 from collections.abc import Sequence
 from typing import Any, TypeAlias
 
@@ -19,10 +20,15 @@ def print_rich_table(
     justify="right",
     table_kwargs: dict[str, Any] | None = None,
 ) -> None:
+    if table_kwargs is None:
+        table_kwargs = {}
+    if "row_styles" not in table_kwargs:
+        table_kwargs["row_styles"] = ["", "dim"]
+
     table = Table(
         *[c if isinstance(c, Column) else Column(c, justify=justify) for c in headers],
         title=summary,
-        **(table_kwargs or {}),
+        **table_kwargs,
     )
 
     for row in tabular_data:
@@ -43,7 +49,11 @@ def print_rich_table(
 
 
 def _format_value(value: Any, *, floatfmt: str) -> str:
+    if value is None:
+        return "-"
     if isinstance(value, float):
+        if math.isnan(value):
+            return "-"
         return f"{value:{floatfmt}}"
     return str(value)
 
@@ -57,7 +67,12 @@ def print_df_rich_table(
     index_name: str | None = None,
     table_kwargs: dict[str, Any] | None = None,
 ) -> None:
-    table = Table(title=summary, **(table_kwargs or {}))
+    if table_kwargs is None:
+        table_kwargs = {}
+    if "row_styles" not in table_kwargs:
+        table_kwargs["row_styles"] = ["", "dim"]
+
+    table = Table(title=summary, **table_kwargs)
 
     if show_index:
         index_name = str(index_name) if index_name else tabular_data.index.name

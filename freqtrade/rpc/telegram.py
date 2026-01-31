@@ -638,11 +638,11 @@ class Telegram(RPCHandler):
         if float(msg["profit_ratio"]) >= 0.05:
             return "\N{ROCKET}"
         elif float(msg["profit_ratio"]) >= 0.0:
-            return "\N{MONEY BAG}"
+            return "🟢"
         elif msg["exit_reason"] == "stop_loss":
             return "\N{OCTAGONAL SIGN}"
         else:
-            return "\N{DOWN-POINTING RED TRIANGLE}"
+            return "🔴"
 
     def _prepare_order_details(self, filled_orders: list, quote_currency: str, is_open: bool):
         """
@@ -764,6 +764,7 @@ class Telegram(RPCHandler):
             + f"   {profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
             f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`"
             + (f" / `{r['max_stake_amount_r']}`" if position_adjust else ""),
+            " ",
             f"*Open:* `{round_value(r['open_rate'], 8)}`",
             f"*Current:* `{round_value(r['current_rate'], 8)}`"
             if r["is_open"]
@@ -771,6 +772,7 @@ class Telegram(RPCHandler):
         ]
 
         if r["is_open"]:
+            lines.append(" ")
             lines.append(f"*Age:* `{r['open_date_hum']}`")
 
         if r["enter_tag"]:
