@@ -96,13 +96,12 @@ if [ "$GATE_MODE" == "pos" ]; then
 elif [ "$GATE_MODE" == "neg" ]; then
     echo ">>> Gate P38: Negative (Circuit Breaker Resilience)..."
     
-    run_soak 10
-    FT_PID=$?
+    FT_PID=$(run_soak 10 | tail -n1)
     
-    # 1. Inject CB Open State (python script)
+    # 1. Inject CB Open State and Export immediately to prevent overwrite lag
     echo "Injecting Circuit Open state..."
     $PYTHON <<'EOF'
-from adapters.ccxt_shim import health_snapshot
+from adapters.ccxt_shim import health_snapshot, metrics_exporter
 import time
 # Inject circuit open
 health_snapshot.update("circuit_breaker", {
@@ -110,14 +109,9 @@ health_snapshot.update("circuit_breaker", {
     "failures": 5,
     "last_failure_ts": time.time()
 })
-print("Injected CB Open.")
+metrics_exporter.export_metrics()
+print("Injected CB Open and Exported.")
 EOF
-    
-    # Wait for potential reaction or just ensure process lives
-    sleep 5
-    
-    # 2. Run Exporter
-    $PYTHON -c "from adapters.ccxt_shim.metrics_exporter import export_metrics; export_metrics()"
     
     # 3. Assert Circuit Open metric
     if grep -q "circuit_open_total 1" "$METRICS_PROM"; then
@@ -125,7 +119,7 @@ EOF
     else
         echo "[FAIL] circuit_open_total=1 NOT found"
         cat "$METRICS_PROM"
-        kill $FT_PID || true
+        kill "$FT_PID" || true
         finish_gate 1
     fi
     

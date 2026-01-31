@@ -29,6 +29,7 @@ class HealthSnapshot:
             "create_order": [],
         }
         self._ensure_dir()
+        self.load_into_self()
 
     @classmethod
     def get_instance(cls):
@@ -108,6 +109,17 @@ class HealthSnapshot:
             tmp_path.rename(HEALTH_FILE)
         except Exception as e:
             logger.error(f"Failed to write health snapshot: {e}")
+
+    def load_into_self(self):
+        data = self.load()
+        if not data:
+            return
+        self._counters = data.get("counters", self._counters)
+        self._last_calls = data.get("last_calls", self._last_calls)
+        self._last_error = data.get("last_error", self._last_error)
+        self._mode = data.get("runtime", {}).get("mode", self._mode)
+        self._circuit_breaker = data.get("circuit_breaker", self._circuit_breaker)
+        self._durations = data.get("durations", self._durations)
 
     def load(self) -> dict:
         try:
