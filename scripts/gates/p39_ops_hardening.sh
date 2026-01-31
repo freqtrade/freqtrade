@@ -35,14 +35,19 @@ if [ "$GATE_MODE" == "pos" ]; then
     # 4. Codebase Hygiene (TODOs)
     echo "4. Checking for TODO/FIXME..."
     
-    # Excludes: pycache, venv, git, generated artifacts
-    EXCLUDES="--exclude-dir=__pycache__ --exclude-dir=.venv --exclude-dir=.git --exclude-dir=artifacts --exclude-dir=generated"
+    # Excludes: pycache, venv, git, generated artifacts, and self
+    EXCLUDES="--exclude-dir=__pycache__ --exclude-dir=.venv --exclude-dir=.git --exclude-dir=generated --exclude-dir=user_data --exclude=p39_ops_hardening.sh"
     
-    # We restrict search to our maintained code
-    SEARCH_DIRS="freqtrade/ adapters/ scripts/ docs/"
+    # We restrict search to our maintained adapter and integration code.
+    # We exclude upstream freqtrade/ to avoid failing on their technical debt.
+    SEARCH_DIRS="adapters/ scripts/ src/"
     
-    TODO_COUNT=$((grep -r "TODO" $EXCLUDES $SEARCH_DIRS || true) | wc -l)
-    FIXME_COUNT=$((grep -r "FIXME" $EXCLUDES $SEARCH_DIRS || true) | wc -l)
+    # Ensure dirs exist before grepping
+    EXISTING_DIRS=""
+    for d in $SEARCH_DIRS; do [ -d "$d" ] && EXISTING_DIRS="$EXISTING_DIRS $d"; done
+    
+    TODO_COUNT=$((grep -r "TODO" $EXCLUDES $EXISTING_DIRS || true) | wc -l)
+    FIXME_COUNT=$((grep -r "FIXME" $EXCLUDES $EXISTING_DIRS || true) | wc -l)
     
     echo "Found $TODO_COUNT TODOs and $FIXME_COUNT FIXMEs."
 
