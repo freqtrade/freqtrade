@@ -1,12 +1,14 @@
+import json
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from freqtrade.exceptions import OperationalException
-
 logger = logging.getLogger(__name__)
+
+HALT_FILE = Path("user_data/generated/runtime/live_halt.json")
 
 
 class RiskGuard:
@@ -24,10 +26,19 @@ class RiskGuard:
 
         self.allow_exits_when_blocked = self.config.get("allow_exits_when_blocked", True)
 
-        # In-memory state (non-persistent for P15)
+        # In-memory state (non-persistent for P15, now Persistent P40)
         self.daily_trades_count = 0
         self.ist_tz = ZoneInfo("Asia/Kolkata")
         self.last_reset_date = self.get_now_ist().strftime("%Y-%m-%d")
+
+        # P40: Persistent Halts
+        self._halt_state = {
+            "entries_blocked": False,
+            "block_reason": None,
+            "consecutive_losses": 0,
+            "daily_loss_sum": 0.0,
+        }
+        self.load_state()
 
     def get_now_ist(self) -> datetime:
         # P15: Allow forcing time via ENV for deterministic testing
@@ -129,3 +140,75 @@ class RiskGuard:
             logger.info(
                 f"RiskGuard: Trade recorded. Daily Count: {self.daily_trades_count}/{self.max_trades_per_day}"
             )
+        self.persist_state()
+
+    def _ensure_dir(self):
+        try:
+            HALT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Failed to create risk halt dir: {e}")
+
+    def load_state(self):
+        try:
+            if HALT_FILE.exists():
+                with HALT_FILE.open("r") as f:
+                    data = json.load(f)
+
+                # Verify day consistency
+                loaded_date = data.get("date")
+                if loaded_date == self.last_reset_date:
+                    self.daily_trades_count = data.get("daily_trades_count", 0)
+                    self._halt_state = data.get("halt_state", self._halt_state)
+                    logger.info("RiskGuard: Loaded persistent state from disk.")
+                else:
+                    logger.info("RiskGuard: Stored state is from previous day. Ignoring.")
+        except Exception as e:
+            logger.error(f"Failed to load risk state: {e}")
+
+    def persist_state(self):
+        self._ensure_dir()
+        data = {
+            "date": self.last_reset_date,
+            "daily_trades_count": self.daily_trades_count,
+            "halt_state": self._halt_state,
+            "updated_at": self.get_now_ist().isoformat(),
+        }
+        try:
+            tmp_path = HALT_FILE.with_suffix(".tmp")
+            with tmp_path.open("w") as f:
+                json.dump(data, f, indent=2)
+            tmp_path.rename(HALT_FILE)
+        except Exception as e:
+            logger.error(f"Failed to persist risk state: {e}")
+
+    def record_loss(self, amount_abs: float):
+        """
+        Record a realized loss to update counters/halts.
+        """
+        self._halt_state["daily_loss_sum"] += abs(amount_abs)
+        self._halt_state["consecutive_losses"] += 1
+
+        # Check thresholds
+        max_daily = self.config.get("max_daily_loss", 0)
+        max_consecutive = self.config.get("max_consecutive_losses", 0)
+
+        if max_daily > 0 and self._halt_state["daily_loss_sum"] >= max_daily:
+            self._halt_state["entries_blocked"] = True
+            self._halt_state["block_reason"] = (
+                f"max_daily_loss ({self._halt_state['daily_loss_sum']} >= {max_daily})"
+            )
+
+        if max_consecutive > 0 and self._halt_state["consecutive_losses"] >= max_consecutive:
+            self._halt_state["entries_blocked"] = True
+            self._halt_state["block_reason"] = (
+                f"max_consecutive_losses ({self._halt_state['consecutive_losses']} >= {max_consecutive})"
+            )
+
+        self.persist_state()
+
+    def record_win(self):
+        """
+        Record a realized win to reset consecutive loss counter.
+        """
+        self._halt_state["consecutive_losses"] = 0
+        self.persist_state()

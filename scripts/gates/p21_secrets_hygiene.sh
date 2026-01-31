@@ -48,7 +48,7 @@ fi
 # -------------------------------------------------------------
 echo "2. Scanning Artifacts for Leaks..."
 # Scan the entire run directory for this execution
-SCANDIR="user_data/generated/accept_runs/${RUN_ID}"
+SCANDIR="generated/accept_runs/${RUN_ID}"
 
 if [ -d "$SCANDIR" ]; then
     LEAK_PATTERNS=(
@@ -93,7 +93,8 @@ if [ -d "$SCANDIR" ]; then
         echo "[OK] Artifact Scan Clean."
     fi
 else
-    echo "[WARN] No artifacts found to scan yet."
+    echo "[FAIL] No artifacts found to scan at $SCANDIR. This indicates a pipeline config error."
+    finish_gate 1
 fi
 
 # -------------------------------------------------------------

@@ -33,6 +33,8 @@ from adapters.ccxt_shim import health_snapshot
 from adapters.ccxt_shim.order_router import OrderRouter
 from adapters.ccxt_shim.rate_limiter import RateLimiter
 from adapters.ccxt_shim.degraded_mode import DegradedModeGuard
+from adapters.ccxt_shim.live_readiness import LiveReadiness
+from adapters.ccxt_shim.order_idempotency import OrderIdempotency
 from freqtrade.exceptions import OperationalException
 
 
@@ -58,6 +60,9 @@ class BreezeCCXT(ccxt.Exchange):
         super().__init__(config)
         self.config = config
         self.name = "IciciBreeze"
+
+        # P40: Idempotency
+        self.idempotency = OrderIdempotency()
 
         # P18/P29: Paper Mode
         # Support both legacy flat flag and new nested structure
@@ -651,6 +656,36 @@ class BreezeCCXT(ccxt.Exchange):
                 health_snapshot.update("policy_block")
                 raise OperationalException(msg)
 
+            # P40: Live Readiness & Deadman
+            if not self._is_paper_trading:
+                readiness = LiveReadiness.check_readiness(self.config)
+                if not readiness["ok"]:
+                    msg = f"Live Readiness Failed: {readiness['code']} - {readiness['reason']}"
+                    health_snapshot.update("policy_block")
+                    raise OperationalException(msg)
+
+                deadman = LiveReadiness.check_deadman()
+                if not deadman["ok"]:
+                    msg = f"Deadman Switch Failed: {deadman['code']} - {deadman['reason']}"
+                    health_snapshot.update("policy_block")
+                    raise OperationalException(msg)
+
+            # P40: Idempotency Check
+            client_id_fields = {
+                "pair": symbol,
+                "side": side,
+                "amount": str(amount),
+                "price": str(price),
+                "timeframe": params.get("timeframe") if params else "",
+                "candle_open_time": params.get("candle_open_time") if params else "",
+            }
+            client_order_id = self.idempotency.make_client_order_id(client_id_fields)
+            if self.idempotency.is_duplicate(client_order_id):
+                msg = f"DUPLICATE_SUPPRESSED: Order {client_order_id} already exists"
+                logger.warning(msg)
+                health_snapshot.update("policy_block")
+                raise OperationalException(f"idempotency_block:{msg}")
+
             # P15 Risk Guard Check
             # We need ticker data for spread check. Since this is sync, we can fetch it.
             try:
@@ -794,6 +829,10 @@ class BreezeCCXT(ccxt.Exchange):
 
                 # P35.5 T5: Record Risk Success (Real Mode)
                 self.risk_guard.record_trade_success(symbol, side)
+
+                # P40: Register Idempotency
+                self.idempotency.register(client_order_id)
+
                 health_snapshot.update("call", {"method": "create_order", "duration": 0})
 
                 ts = int(time.time() * 1000)

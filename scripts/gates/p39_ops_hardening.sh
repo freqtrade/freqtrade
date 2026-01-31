@@ -32,16 +32,24 @@ if [ "$GATE_MODE" == "pos" ]; then
     fi
 
     # 4. Codebase Hygiene (TODOs)
+    # 4. Codebase Hygiene (TODOs)
     echo "4. Checking for TODO/FIXME..."
-    # We allow some, but maybe warn? Or fail if threshold exceeded?
-    # Requirement: "check for any TODO or FIXME".
-    # We'll just list them and maybe count them.
-    TODO_COUNT=$((grep -r "TODO" freqtrade/ adapters/ scripts/ || true) | wc -l)
-    FIXME_COUNT=$((grep -r "FIXME" freqtrade/ adapters/ scripts/ || true) | wc -l)
+    
+    # Excludes: pycache, venv, git, generated artifacts
+    EXCLUDES="--exclude-dir=__pycache__ --exclude-dir=.venv --exclude-dir=.git --exclude-dir=artifacts --exclude-dir=generated"
+    
+    # We restrict search to our maintained code
+    SEARCH_DIRS="freqtrade/ adapters/ scripts/ docs/"
+    
+    TODO_COUNT=$((grep -r "TODO" $EXCLUDES $SEARCH_DIRS || true) | wc -l)
+    FIXME_COUNT=$((grep -r "FIXME" $EXCLUDES $SEARCH_DIRS || true) | wc -l)
+    
     echo "Found $TODO_COUNT TODOs and $FIXME_COUNT FIXMEs."
+
     if [ "$FIXME_COUNT" -gt 0 ]; then
-        echo "[WARN] FIXMEs found. Review required."
-        # Not failing for now unless strict
+        echo "[FAIL] FIXMEs found in codebase. This indicates known broken code."
+        grep -r "FIXME" $EXCLUDES $SEARCH_DIRS
+        finish_gate 1
     fi
     
     # 5. Ops Runbook
