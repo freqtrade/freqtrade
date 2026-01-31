@@ -46,7 +46,7 @@ AG_GLOBAL:
   test:{unit:{net:false,fs:false,det:true,glob:false},int:{sdk:mock,sqlite:temp},regr:REQ}
   net:{bind:"127.0.0.1",ports:{st:8501,h:8000,nv:6080,v:5900},open:false,approval:true,docs:[deploy,compose,security]}
 
-# === TERMINAL: keep prefixes minimal; rely on unix_prefix matching ===
+## === TERMINAL: keep prefixes minimal; rely on unix_prefix matching ===
 
   terminal:
     auto_exec:

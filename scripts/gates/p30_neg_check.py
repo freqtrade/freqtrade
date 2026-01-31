@@ -1,13 +1,13 @@
-import sys
-import os
-from unittest.mock import MagicMock
 import logging
+import os
+import sys
+from pathlib import Path
+from unittest.mock import MagicMock
 
 # Ensure project root is in path
-sys.path.append(os.getcwd())
+sys.path.append(str(Path.cwd()))
 
 from adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
-from freqtrade.exceptions import OperationalException
 
 
 def check_p30_neg():

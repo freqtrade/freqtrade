@@ -1,9 +1,8 @@
 import json
-import os
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +103,7 @@ class HealthSnapshot:
 
         try:
             tmp_path = HEALTH_FILE.with_suffix(".tmp")
-            with open(tmp_path, "w") as f:
+            with tmp_path.open("w") as f:
                 json.dump(data, f, indent=2)
             tmp_path.rename(HEALTH_FILE)
         except Exception as e:
@@ -114,7 +113,7 @@ class HealthSnapshot:
         try:
             if not HEALTH_FILE.exists():
                 return {}
-            with open(HEALTH_FILE, "r") as f:
+            with HEALTH_FILE.open() as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Failed to load health snapshot: {e}")
