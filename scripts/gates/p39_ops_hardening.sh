@@ -36,8 +36,8 @@ if [ "$GATE_MODE" == "pos" ]; then
     # We allow some, but maybe warn? Or fail if threshold exceeded?
     # Requirement: "check for any TODO or FIXME".
     # We'll just list them and maybe count them.
-    TODO_COUNT=$(grep -r "TODO" src/ adapters/ | wc -l)
-    FIXME_COUNT=$(grep -r "FIXME" src/ adapters/ | wc -l)
+    TODO_COUNT=$((grep -r "TODO" freqtrade/ adapters/ scripts/ || true) | wc -l)
+    FIXME_COUNT=$((grep -r "FIXME" freqtrade/ adapters/ scripts/ || true) | wc -l)
     echo "Found $TODO_COUNT TODOs and $FIXME_COUNT FIXMEs."
     if [ "$FIXME_COUNT" -gt 0 ]; then
         echo "[WARN] FIXMEs found. Review required."

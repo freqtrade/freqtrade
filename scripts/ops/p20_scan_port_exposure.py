@@ -50,6 +50,7 @@ ALLOWLIST = {
     "tests/rpc/test_rpc_apiserver.py": ["0.0.0.0"],
     "freqtrade/configuration/deploy_config.py": ["0.0.0.0"],
     "scripts/ops/p20_scan_port_exposure.py": ["0.0.0.0", "8080:8080"],
+    "docs/PHASE_P39.md": ["0.0.0.0"],
 }
 
 RISKY_PATTERNS = [
