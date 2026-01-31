@@ -21,6 +21,7 @@ def force_market_open():
 
 
 MOCK_CONFIG = {
+    "dry_run": True,
     "options": {"mode": "mock"},
     "risk_guard": {"enabled": False},
     "icicibreeze": {"live_trading": {"enabled": True}},
