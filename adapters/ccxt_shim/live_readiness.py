@@ -61,7 +61,9 @@ class LiveReadiness:
         """
         # 1. Config Check (Session Token)
         # Note: BREEZE_MOCK env might be handled outside, but checking config consistency here.
-        icici_config = config.get("icicibreeze", {})
+        icici_config = config.get("icicibreeze") or config.get("exchange", {}).get(
+            "icicibreeze", {}
+        )
         if not icici_config.get("session_token") and not os.environ.get("BREEZE_SESSION_TOKEN"):
             # In mock mode this might be allowed, so check mock flag
             if not os.environ.get("BREEZE_MOCK"):

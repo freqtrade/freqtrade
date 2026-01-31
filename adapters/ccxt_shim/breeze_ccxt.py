@@ -630,6 +630,14 @@ class BreezeCCXT(ccxt.Exchange):
             }
         raise OperationalException("fetch_balance not supported in real mode yet.")
 
+    @property
+    def _is_paper_trading(self) -> bool:
+        """
+        True if dry_run.
+        Note: Mock mode (FT_MOCK) does NOT imply paper trading for logic gates.
+        It allows testing 'Live' logic with stubbed adapter.
+        """
+        return self.config.get("dry_run", False)
 
     def create_order(
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
@@ -642,7 +650,11 @@ class BreezeCCXT(ccxt.Exchange):
 
             # P30: Live Order Execution (Guarded) - HOISTED
             # Checked EARLY to prevent risk counter increment on blocked attempts
-            live_config = self.config.get("icicibreeze", {}).get("live_trading", {})
+            # Fallback to exchange dict if root key stripped
+            icici_conf = self.config.get("icicibreeze") or self.config.get("exchange", {}).get(
+                "icicibreeze", {}
+            )
+            live_config = icici_conf.get("live_trading", {})
             config_enabled = live_config.get("enabled", False)
             env_enabled = os.environ.get("FT_ENABLE_LIVE_ORDERS") == "1"
 
@@ -654,6 +666,7 @@ class BreezeCCXT(ccxt.Exchange):
                     f"Config={config_enabled}, Env(FT_ENABLE_LIVE_ORDERS)={env_enabled}"
                 )
                 logger.warning(msg)
+                logger.warning(f"DEBUG: icicibreeze config: {self.config.get('icicibreeze')}")
                 health_snapshot.update("policy_block")
                 raise OperationalException(msg)
 

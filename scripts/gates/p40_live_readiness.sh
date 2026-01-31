@@ -12,13 +12,17 @@ echo ">>> Gate P40: Setup..."
 
 # Ensure secrets dir exists
 mkdir -p user_data/secrets
+# Touch Security Master to ensure freshness for gate
+touch user_data/data/icicibreeze/NSEScripMaster.txt
+touch user_data/data/icicibreeze/FONSEScripMaster.txt
 
 # Mock Config with Live Trading Enabled
-cat > "${RUN_DIR}/config_p40.json" <<EOF
+cat > "${ARTIFACT_DIR}/config_p40.json" <<EOF
 {
     "max_open_trades": 1,
     "stake_currency": "INR",
     "stake_amount": 1000,
+    "stoploss": -0.99,
     "fiat_display_currency": "INR",
     "dry_run": false,
     "timeframe": "1m",
@@ -36,8 +40,19 @@ cat > "${RUN_DIR}/config_p40.json" <<EOF
         "key": "mock_key",
         "secret": "mock_secret",
         "pair_whitelist": ["RELIANCE/INR"],
-        "pair_blacklist": []
+        "pair_blacklist": [],
+        "icicibreeze": {
+            "app_key": "mock_app_key",
+            "s_key": "mock_s_key",
+            "session_token": "mock_token",
+            "live_trading": {
+                "enabled": true
+            }
+        }
     },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
     "icicibreeze": {
         "app_key": "mock_app_key",
         "s_key": "mock_s_key",
@@ -54,7 +69,7 @@ cat > "${RUN_DIR}/config_p40.json" <<EOF
 EOF
 
 # Strategy for Immediate Buy
-cat > "${RUN_DIR}/strategy.py" <<EOF
+cat > "${ARTIFACT_DIR}/strategy.py" <<EOF
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
 
@@ -84,23 +99,24 @@ if [ "$GATE_MODE" == "pos" ]; then
 
     export FT_ENABLE_LIVE_ORDERS=1
     export BREEZE_MOCK=1
+    export FT_FORCE_MARKET_OPEN=1
     
     # Run
     timeout 15s "$FREQTRADE" trade \
-        --config "${RUN_DIR}/config_p40.json" \
+        --config "${ARTIFACT_DIR}/config_p40.json" \
         --strategy TestStrategy \
-        --strategy-path "${RUN_DIR}" \
+        --strategy-path "${ARTIFACT_DIR}" \
         --user-data-dir user_data \
-        > "${RUN_DIR}/p40_pos.log" 2>&1 || true
+        > "${ARTIFACT_DIR}/p40_pos.log" 2>&1 || true
 
-    if grep -q "Deadman Switch Failed" "${RUN_DIR}/p40_pos.log"; then
+    if grep -q "Deadman Switch Failed" "${ARTIFACT_DIR}/p40_pos.log"; then
         echo "[FAIL] Deadman blocked valid orders."
-        cat "${RUN_DIR}/p40_pos.log" | tail -n 20
+        cat "${ARTIFACT_DIR}/p40_pos.log" | tail -n 20
         finish_gate 1
     else
         echo "[OK] Deadman check passed."
         # Verify attempt
-        if grep -q "LIVE ORDER: Placing" "${RUN_DIR}/p40_pos.log" || grep -q "Mock mode" "${RUN_DIR}/p40_pos.log"; then
+        if grep -q "LIVE ORDER: Placing" "${ARTIFACT_DIR}/p40_pos.log" || grep -q "Mock mode" "${ARTIFACT_DIR}/p40_pos.log"; then
              echo "[OK] Order placement logic reached."
         fi
         finish_gate 0
@@ -114,21 +130,22 @@ elif [ "$GATE_MODE" == "neg" ]; then
 
     export FT_ENABLE_LIVE_ORDERS=1
     export BREEZE_MOCK=1
+    export FT_FORCE_MARKET_OPEN=1
 
     # Run
     timeout 15s "$FREQTRADE" trade \
-        --config "${RUN_DIR}/config_p40.json" \
+        --config "${ARTIFACT_DIR}/config_p40.json" \
         --strategy TestStrategy \
-        --strategy-path "${RUN_DIR}" \
+        --strategy-path "${ARTIFACT_DIR}" \
         --user-data-dir user_data \
-        > "${RUN_DIR}/p40_neg.log" 2>&1 || true
+        > "${ARTIFACT_DIR}/p40_neg.log" 2>&1 || true
 
-    if grep -q "Deadman Switch Failed" "${RUN_DIR}/p40_neg.log"; then
+    if grep -q "Deadman Switch Failed" "${ARTIFACT_DIR}/p40_neg.log"; then
         echo "[OK] Deadman blocked live orders."
         finish_gate 0
     else
         echo "[FAIL] Deadman check failed to block or log missing."
-        cat "${RUN_DIR}/p40_neg.log" | tail -n 20
+        cat "${ARTIFACT_DIR}/p40_neg.log" | tail -n 20
         finish_gate 1
     fi
 
