@@ -40,6 +40,12 @@ GATE_LOG="$ARTIFACT_DIR/gate.log"
 # Define OUT_DIR for legacy compatibility/internal use
 OUT_DIR="$ARTIFACT_DIR"
 
+# Ensure isolation: Clear stale runtime health/metrics if they exist
+# This prevents gates from inheriting TRIP or error states from previous runs.
+rm -f user_data/generated/runtime/health.json
+rm -f user_data/generated/runtime/metrics.json
+rm -f user_data/generated/runtime/metrics.prom
+
 echo "=== Starting Gate: $GATE_ID (Mode: $GATE_MODE) ==="
 
 # Preflight checks
