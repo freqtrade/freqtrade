@@ -23,6 +23,12 @@ class HealthSnapshot:
         self._last_error = {"code": None, "message": None}
         self._mode = {"breeze_mock": False, "paper_trading": False, "live_trading_enabled": False}
         self._circuit_breaker = {}
+        # Limit lists to 50 items
+        self._durations = {
+            "fetch_ticker": [],
+            "fetch_ohlcv": [],
+            "create_order": [],
+        }
         self._ensure_dir()
 
     @classmethod
@@ -41,10 +47,19 @@ class HealthSnapshot:
         self._mode = {"breeze_mock": mock, "paper_trading": paper, "live_trading_enabled": live}
         self.persist()
 
-    def record_call(self, method_name: str):
+    def record_call(self, method_name: str, duration_ms: int | None = None):
         key = f"{method_name}_utc"
+        # Update timestamp if key exists (whitelist of tracked methods)
         if key in self._last_calls:
             self._last_calls[key] = datetime.now(timezone.utc).isoformat()
+
+            # Update duration if provided and tracked
+            if duration_ms is not None and method_name in self._durations:
+                # Keep last 50
+                self._durations[method_name].append(duration_ms)
+                if len(self._durations[method_name]) > 50:
+                    self._durations[method_name].pop(0)
+
             self.persist()
 
     def increment_counter(self, counter_name: str):
@@ -63,6 +78,16 @@ class HealthSnapshot:
         self._circuit_breaker = data
         self.persist()
 
+    def get_p50_latency(self, method_name: str) -> int:
+        durs = self._durations.get(method_name, [])
+        if not durs:
+            return 0
+        sorted_durs = sorted(durs)
+        return sorted_durs[len(sorted_durs) // 2]
+
+    def get_counters(self) -> dict:
+        return self._counters.copy()
+
     def persist(self):
         data = {
             "meta": {
@@ -74,6 +99,7 @@ class HealthSnapshot:
             "counters": self._counters,
             "last_error": self._last_error,
             "circuit_breaker": self._circuit_breaker,
+            "durations": self._durations,
         }
 
         try:
@@ -105,8 +131,9 @@ def update(event: str, payload: dict | None = None) -> None:
 
     if event == "call":
         method = payload.get("method")
+        duration = payload.get("duration")  # Optional
         if method:
-            instance.record_call(method)
+            instance.record_call(method, duration)
 
     elif event == "mode":
         instance.update_mode(
@@ -130,3 +157,11 @@ def update(event: str, payload: dict | None = None) -> None:
 
 def load() -> dict:
     return HealthSnapshot.get_instance().load()
+
+
+def get_p50_latency(method: str) -> int:
+    return HealthSnapshot.get_instance().get_p50_latency(method)
+
+
+def get_counters() -> dict:
+    return HealthSnapshot.get_instance().get_counters()

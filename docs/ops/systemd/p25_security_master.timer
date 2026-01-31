@@ -1,0 +1,11 @@
+[Unit]
+Description=Trigger Security Master Refresh Daily at 06:00 UTC
+Requires=p25_security_master.service
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+Persistent=true
+RandomizedDelaySec=5m
+
+[Install]
+WantedBy=timers.target

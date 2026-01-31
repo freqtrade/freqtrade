@@ -1,0 +1,11 @@
+[Unit]
+Description=Trigger Backup Daily at 02:00 UTC
+Requires=p33_backup.service
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

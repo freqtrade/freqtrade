@@ -1,0 +1,14 @@
+[Unit]
+Description=Freqtrade Security Master Refresh (ICICI)
+After=network.target
+
+[Service]
+Type=oneshot
+User=trader
+Group=trader
+WorkingDirectory=/home/trader/work/freqtrade-icicibreeze
+# Use with_lock to ensure atomic execution
+ExecStart=/usr/bin/python3 scripts/ops/with_lock.py --lock /var/tmp/p25_refresh.lock --cmd "bash scripts/gates/p25_security_master_refresh.sh --mode=pos"
+
+[Install]
+WantedBy=multi-user.target

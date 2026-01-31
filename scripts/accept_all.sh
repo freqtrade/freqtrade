@@ -57,6 +57,10 @@ ALL_GATES=(
     "p33_backup_restore"
     "p34_circuit_breaker"
     "p35_ops_runbook"
+    "p36_metrics_exporter"
+    "p37_scheduler_templates"
+    "p38_soak_stability"
+    "p39_ops_hardening"
 )
 
 # Parse flags

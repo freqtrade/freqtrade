@@ -1,0 +1,13 @@
+[Unit]
+Description=Freqtrade Backup Service
+After=network.target
+
+[Service]
+Type=oneshot
+User=trader
+Group=trader
+WorkingDirectory=/home/trader/work/freqtrade-icicibreeze
+ExecStart=/usr/bin/python3 scripts/ops/with_lock.py --lock /var/tmp/p33_backup.lock --cmd "bash scripts/gates/p33_backup_restore.sh --mode=pos"
+
+[Install]
+WantedBy=multi-user.target
