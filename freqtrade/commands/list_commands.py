@@ -39,7 +39,7 @@ def start_list_exchanges(args: dict[str, Any]) -> None:
             available_exchanges = [e for e in available_exchanges if e["valid"] is not False]
             title = f"Exchanges available for Freqtrade ({len(available_exchanges)} exchanges):"
         show_fut_reasons = args.get("list_exchanges_futures_options", False)
-        table = Table(title=title)
+        table = Table(title=title, row_styles=["", "dim"])
 
         table.add_column("Exchange Name")
         table.add_column("Class Name")
@@ -62,7 +62,7 @@ def start_list_exchanges(args: dict[str, Any]) -> None:
                 continue
             name = Text(exchange["name"])
             if exchange["supported"]:
-                name.append(" (Supported)", style="italic")
+                name.append(" ✅", style="italic")
                 name.stylize("green bold")
             classname = Text(exchange["classname"])
             if exchange["is_alias"]:

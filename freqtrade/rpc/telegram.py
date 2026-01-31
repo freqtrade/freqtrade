@@ -638,11 +638,11 @@ class Telegram(RPCHandler):
         if float(msg["profit_ratio"]) >= 0.05:
             return "\N{ROCKET}"
         elif float(msg["profit_ratio"]) >= 0.0:
-            return "\N{EIGHT SPOKED ASTERISK}"
+            return "🟢"
         elif msg["exit_reason"] == "stop_loss":
-            return "\N{WARNING SIGN}"
+            return "\N{OCTAGONAL SIGN}"
         else:
-            return "\N{CROSS MARK}"
+            return "🔴"
 
     def _prepare_order_details(self, filled_orders: list, quote_currency: str, is_open: bool):
         """
@@ -744,6 +744,95 @@ class Telegram(RPCHandler):
         else:
             await self._status_msg(update, context)
 
+    def _get_status_msg_lines(
+        self, r: dict[str, Any], position_adjust: bool, max_entries: int
+    ) -> list[str]:
+        r["open_date_hum"] = dt_humanize_delta(r["open_date"])
+
+        r["stake_amount_r"] = fmt_coin(r["stake_amount"], r["quote_currency"])
+        r["max_stake_amount_r"] = fmt_coin(
+            r["max_stake_amount"] or r["stake_amount"], r["quote_currency"]
+        )
+        r["profit_abs_r"] = fmt_coin(r["profit_abs"], r["quote_currency"])
+        r["realized_profit_r"] = fmt_coin(r["realized_profit"], r["quote_currency"])
+        r["total_profit_abs_r"] = fmt_coin(r["total_profit_abs"], r["quote_currency"])
+        profit_emoji = "🟢" if r["profit_ratio"] >= 0 else "🔴"
+        lines = [
+            f"*{r['pair']}*   (#{r['trade_id']})",
+            f"{'🔴 `Short`' if r.get('is_short') else '🟢 `Long`'}"
+            + (f" ` ({r['leverage']}x)`" if r.get("leverage") else "")
+            + f"   {profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
+            f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`"
+            + (f" / `{r['max_stake_amount_r']}`" if position_adjust else ""),
+            " ",
+            f"*Open:* `{round_value(r['open_rate'], 8)}`",
+            f"*Current:* `{round_value(r['current_rate'], 8)}`"
+            if r["is_open"]
+            else f"*Close:* `{round_value(r['close_rate'], 8)}`",
+        ]
+
+        if r["is_open"]:
+            lines.append(" ")
+            lines.append(f"*Age:* `{r['open_date_hum']}`")
+
+        if r["enter_tag"]:
+            lines.append(f"*Tag:* `{r['enter_tag']}`")
+        if r.get("exit_reason"):
+            lines.append(f"*Exit:* `{r['exit_reason']}`")
+
+        if position_adjust:
+            max_buy_str = f"/{max_entries + 1}" if (max_entries > 0) else ""
+            lines.extend(
+                [
+                    f"*Entries:* `{r['nr_of_successful_entries']}{max_buy_str}`",
+                    f"*Exits:* `{r['nr_of_successful_exits']}`",
+                ]
+            )
+
+        if r["is_open"]:
+            if r.get("realized_profit") is not None and r.get("realized_profit_ratio") is not None:
+                lines.append(
+                    f"*Realized Profit:* `{format_pct(r['realized_profit_ratio'])} "
+                    f"({r['realized_profit_r']})`"
+                )
+            if r.get("total_profit_ratio") is not None:
+                lines.append(
+                    f"*Total Profit:* `{format_pct(r['total_profit_ratio'])} "
+                    f"({r['total_profit_abs_r']})`"
+                )
+
+            # Append empty line to improve readability
+            lines.append(" ")
+            # Adding liquidation only if it is not None
+            if liquidation := r.get("liquidation_price"):
+                lines.append(f"*Liquidation:* `{round_value(liquidation, 8)}`")
+
+            if (
+                r["stop_loss_abs"] != r["initial_stop_loss_abs"]
+                and r["initial_stop_loss_ratio"] is not None
+            ):
+                # Adding initial stoploss only if it is different from stoploss
+                lines.append(
+                    f"*Initial Stoploss:* `{r['initial_stop_loss_abs']:.8f}` "
+                    f"`({format_pct(r['initial_stop_loss_ratio'])})`"
+                )
+
+            # Adding stoploss and stoploss percentage only if it is not None
+            lines.append(
+                f"*Stoploss:* `{round_value(r['stop_loss_abs'], 8)}` "
+                + (f"`({format_pct(r['stop_loss_ratio'])})`" if r["stop_loss_ratio"] else "")
+            )
+            lines.append(
+                f"*Stoploss distance:* `{round_value(r['stoploss_current_dist'], 8)}` "
+                f"`({format_pct(r['stoploss_current_dist_ratio'])})`"
+            )
+            if open_orders := r.get("open_orders"):
+                lines.append(
+                    f"*Open Order:* `{open_orders}`"
+                    + (f"- `{r['exit_order_status']}`" if r["exit_order_status"] else "")
+                )
+        return lines
+
     async def _status_msg(self, update: Update, context: CallbackContext) -> None:
         """
         handler for `/status` and `/status <id>`.
@@ -759,100 +848,7 @@ class Telegram(RPCHandler):
         position_adjust = self._config.get("position_adjustment_enable", False)
         max_entries = self._config.get("max_entry_position_adjustment", -1)
         for r in results:
-            r["open_date_hum"] = dt_humanize_delta(r["open_date"])
-
-            r["stake_amount_r"] = fmt_coin(r["stake_amount"], r["quote_currency"])
-            r["max_stake_amount_r"] = fmt_coin(
-                r["max_stake_amount"] or r["stake_amount"], r["quote_currency"]
-            )
-            r["profit_abs_r"] = fmt_coin(r["profit_abs"], r["quote_currency"])
-            r["realized_profit_r"] = fmt_coin(r["realized_profit"], r["quote_currency"])
-            r["total_profit_abs_r"] = fmt_coin(r["total_profit_abs"], r["quote_currency"])
-            lines = [
-                f"*Trade ID:* `{r['trade_id']}`"
-                + (f" `(since {r['open_date_hum']})`" if r["is_open"] else ""),
-                f"*Current Pair:* {r['pair']}",
-                (
-                    f"*Direction:* {'🔴 `Short`' if r.get('is_short') else '🟢 `Long`'}"
-                    + (f" ` ({r['leverage']}x)`" if r.get("leverage") else "")
-                ),
-                f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`",
-                f"*Total invested:* `{r['max_stake_amount_r']}`" if position_adjust else "",
-                f"*Enter Tag:* `{r['enter_tag']}`" if r["enter_tag"] else "",
-                f"*Exit Reason:* `{r['exit_reason']}`" if r.get("exit_reason") else "",
-            ]
-
-            if position_adjust:
-                max_buy_str = f"/{max_entries + 1}" if (max_entries > 0) else ""
-                lines.extend(
-                    [
-                        f"*Number of Entries:* `{r['nr_of_successful_entries']}{max_buy_str}`",
-                        f"*Number of Exits:* `{r['nr_of_successful_exits']}`",
-                    ]
-                )
-
-            lines.extend(
-                [
-                    f"*Open Rate:* `{round_value(r['open_rate'], 8)}`",
-                    f"*Close Rate:* `{round_value(r['close_rate'], 8)}`" if r["close_rate"] else "",
-                    f"*Open Date:* `{r['open_date']}`",
-                    f"*Close Date:* `{r['close_date']}`" if r["close_date"] else "",
-                    (
-                        f" \n*Current Rate:* `{round_value(r['current_rate'], 8)}`"
-                        if r["is_open"]
-                        else ""
-                    ),
-                    ("*Unrealized Profit:* " if r["is_open"] else "*Close Profit: *")
-                    + f"`{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
-                ]
-            )
-
-            if r["is_open"]:
-                if (
-                    r.get("realized_profit") is not None
-                    and r.get("realized_profit_ratio") is not None
-                ):
-                    lines.append(
-                        f"*Realized Profit:* `{format_pct(r['realized_profit_ratio'])} "
-                        f"({r['realized_profit_r']})`"
-                    )
-                if r.get("total_profit_ratio") is not None:
-                    lines.append(
-                        f"*Total Profit:* `{format_pct(r['total_profit_ratio'])} "
-                        f"({r['total_profit_abs_r']})`"
-                    )
-
-                # Append empty line to improve readability
-                lines.append(" ")
-                # Adding liquidation only if it is not None
-                if liquidation := r.get("liquidation_price"):
-                    lines.append(f"*Liquidation:* `{round_value(liquidation, 8)}`")
-
-                if (
-                    r["stop_loss_abs"] != r["initial_stop_loss_abs"]
-                    and r["initial_stop_loss_ratio"] is not None
-                ):
-                    # Adding initial stoploss only if it is different from stoploss
-                    lines.append(
-                        f"*Initial Stoploss:* `{r['initial_stop_loss_abs']:.8f}` "
-                        f"`({format_pct(r['initial_stop_loss_ratio'])})`"
-                    )
-
-                # Adding stoploss and stoploss percentage only if it is not None
-                lines.append(
-                    f"*Stoploss:* `{round_value(r['stop_loss_abs'], 8)}` "
-                    + (f"`({format_pct(r['stop_loss_ratio'])})`" if r["stop_loss_ratio"] else "")
-                )
-                lines.append(
-                    f"*Stoploss distance:* `{round_value(r['stoploss_current_dist'], 8)}` "
-                    f"`({format_pct(r['stoploss_current_dist_ratio'])})`"
-                )
-                if open_orders := r.get("open_orders"):
-                    lines.append(
-                        f"*Open Order:* `{open_orders}`"
-                        + (f"- `{r['exit_order_status']}`" if r["exit_order_status"] else "")
-                    )
-
+            lines = self._get_status_msg_lines(r, position_adjust, max_entries)
             await self.__send_status_msg(lines, r)
 
     async def __send_status_msg(self, lines: list[str], r: dict[str, Any]) -> None:
@@ -1913,85 +1909,61 @@ class Telegram(RPCHandler):
         :return: None
         """
         force_enter_text = (
-            "*/forcelong <pair> [<rate>]:* `Instantly buys the given pair. "
+            "   /forcelong <pair> [<rate>] - Instantly buys the given pair. "
             "Optionally takes a rate at which to buy "
-            "(only applies to limit orders).` \n"
+            "(only applies to limit orders). \n"
         )
         if self._rpc._freqtrade.trading_mode != TradingMode.SPOT:
             force_enter_text += (
-                "*/forceshort <pair> [<rate>]:* `Instantly shorts the given pair. "
+                "   /forceshort <pair> [<rate>] - Instantly shorts the given pair. "
                 "Optionally takes a rate at which to sell "
-                "(only applies to limit orders).` \n"
+                "(only applies to limit orders). \n"
             )
         message = (
-            "🎮 *Bot Control*\n"
-            "------------\n"
-            "*/start:* `Starts the trader`\n"
-            "*/pause:* `Pause the new entries for trader, but handles open trades gracefully`\n"
-            "*/stop:* `Stops the trader`\n"
-            "*/stopentry:* `Stops entering, but handles open trades gracefully` \n"
-            "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
-            "regardless of profit`\n"
-            "*/fx <trade_id>|all:* `Alias to /forceexit`\n"
+            "🤖 *Bot Control*\n"
+            "   /start - Starts the trader\n"
+            "   /stop - Stops the trader\n"
+            "   /pause - Pause new entries (keeps open trades)\n"
+            "   /stopentry - Alias for /pause \n"
+            "   /forceexit <id>|all - Instantly exits trade(s)\n"
+            "   /fx <id>|all - Alias for /forceexit\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
-            "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
-            "*/reload_trade <trade_id>:* `Reload trade from exchange Orders`\n"
-            "*/cancel_open_order <trade_id>:* `Cancels open orders for trade. "
-            "Only valid when the trade has open orders.`\n"
-            "*/coo <trade_id>|all:* `Alias to /cancel_open_order`\n"
-            "\n"
-            "⚙️ *Configuration*\n"
-            "------------\n"
-            "*/whitelist [sorted] [baseonly]:* `Show current whitelist. Optionally in "
-            "order and/or only displaying the base currency of each pairing.`\n"
-            "*/blacklist [pair]:* `Show current blacklist, or adds one or more pairs "
-            "to the blacklist.` \n"
-            "*/blacklist_delete [pairs]| /bl_delete [pairs]:* "
-            "`Delete pair / pattern from blacklist. Will reset on reload_conf.` \n"
-            "*/reload_config:* `Reload configuration file` \n"
-            "*/unlock <pair|id>:* `Unlock this Pair (or this lock id if it's numeric)`\n"
-            "*/show_config:* `Show running configuration` \n"
-            "*/marketdir [long | short | even | none]:* `Updates the user managed variable "
-            "that represents the current market direction. If no direction is provided `"
-            "`the currently set market direction will be output.` \n"
-            "\n"
-            "ℹ️ *Information*\n"  # noqa: RUF001
-            "------------\n"
-            "*/locks:* `Show currently locked pairs`\n"
-            "*/balance:* `Show bot managed balance per currency`\n"
-            "*/balance total:* `Show account balance per currency`\n"
-            "*/logs [limit]:* `Show latest logs - defaults to 10` \n"
-            "*/count:* `Show number of active trades compared to allowed number of trades`\n"
-            "*/health* `Show latest process timestamp - defaults to 1970-01-01 00:00:00` \n"
-            "*/list_custom_data <trade_id> <key>:* `List custom_data for Trade ID & Key combo.`\n"
-            "`If no Key is supplied it will list all key-value pairs found for that Trade ID.`\n"
-            "*/help:* `This help message`\n"
-            "*/version:* `Show version`\n"
+            "   /delete <id> - Delete trade from DB (no exchange action)\n"
+            "   /reload_trade <id> - Reload trade from exchange\n"
+            "   /cancel_open_order <id> - Cancel open orders\n"
             "\n"
             "📊 *Statistics*\n"
-            "------------\n"
-            "*/status <trade_id>|[table]:* `Lists all open trades`\n"
-            "         *<trade_id> :* `Lists one or more specific trades.`\n"
-            "                        `Separate multiple <trade_id> with a blank space.`\n"
-            "         *table :* `will display trades in a table`\n"
-            "                `pending buy orders are marked with an asterisk (*)`\n"
-            "                `pending sell orders are marked with a double asterisk (**)`\n"
-            "*/entries <pair|none>:* `Shows the enter_tag performance`\n"
-            "*/exits <pair|none>:* `Shows the exit reason performance`\n"
-            "*/mix_tags <pair|none>:* `Shows combined entry tag + exit reason performance`\n"
-            "*/trades [limit]:* `Lists last closed trades (limited to 10 by default)`\n"
-            "*/profit [<n>]:* `Lists cumulative profit from all finished trades, "
-            "over the last n days`\n"
-            "*/profit_long [<n>]:* `Lists cumulative profit from all finished long trades, "
-            "over the last n days`\n"
-            "*/profit_short [<n>]:* `Lists cumulative profit from all finished short trades, "
-            "over the last n days`\n"
-            "*/performance:* `Show performance of each finished trade grouped by pair`\n"
-            "*/daily <n>:* `Shows profit or loss per day, over the last n days`\n"
-            "*/weekly <n>:* `Shows statistics per week, over the last n weeks`\n"
-            "*/monthly <n>:* `Shows statistics per month, over the last n months`\n"
-            "*/stats:* `Shows Wins / losses by Sell reason as well as "
-            "Avg. holding durations for buys and sells.`\n"
+            "   /status <id>|[table] - List open trades\n"
+            "   /profit [<n>] - Cumulative profit (last n days)\n"
+            "   /profit_long [<n>] - Long profit\n"
+            "   /profit_short [<n>] - Short profit\n"
+            "   /daily <n> - Daily profit\n"
+            "   /weekly <n> - Weekly profit\n"
+            "   /monthly <n> - Monthly profit\n"
+            "   /trades [limit] - Recent closed trades\n"
+            "   /performance - Performance by pair\n"
+            "   /stats - Win/Loss stats and durations\n"
+            "   /count - Active trade count\n"
+            "   /entries <pair> - Entry tag performance\n"
+            "   /exits <pair> - Exit reason performance\n"
+            "   /mix_tags <pair> - Combined tag performance\n"
+            "\n"
+            "⚙️ *Configuration*\n"
+            "   /show_config - Show running config\n"
+            "   /reload_config - Reload config file\n"
+            "   /whitelist [sorted|baseonly] - Show whitelist\n"
+            "   /blacklist [pair] - Show/add to blacklist\n"
+            "   /bl_delete [pair] - Remove from blacklist\n"
+            "   /marketdir [dir] - Set market direction\n"
+            "\n"
+            "ℹ️ *Info*\n"  # noqa: RUF001
+            "   /balance - Show balances\n"
+            "   /locks - Show active locks\n"
+            "   /unlock <pair|id> - Unlock pair/id\n"
+            "   /logs [limit] - Show recent logs\n"
+            "   /health - Health check\n"
+            "   /version - Show version\n"
+            "   /help - Show this help\n"
         )
 
         await self._send_msg(message, parse_mode=ParseMode.MARKDOWN)

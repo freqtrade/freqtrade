@@ -3,61 +3,279 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Freqtrade UI</title>
+  <title>Freqtrade - UI Not Installed</title>
   <style>
     :root {
-      --bg-color: #1a1a1a;
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
       --text-color: #e0e0e0;
-      --accent-color: #00b0ff;
+      --text-muted: #a0a0a0;
+      --accent-color: #2196f3;
+      --accent-hover: #1976d2;
       --code-bg: #2d2d2d;
+      --border-color: #333;
+      --success-color: #4caf50;
+      --btn-bg: #2d2d2d;
+      --btn-hover: #3d3d3d;
+    }
+    [data-theme="light"] {
+      --bg-color: #f5f5f5;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --text-muted: #666666;
+      --accent-color: #2196f3;
+      --accent-hover: #1976d2;
+      --code-bg: #f0f0f0;
+      --border-color: #ddd;
+      --success-color: #43a047;
+      --btn-bg: #e0e0e0;
+      --btn-hover: #d0d0d0;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
     body {
       background-color: var(--bg-color);
       color: var(--text-color);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       text-align: center;
-      margin: 0;
       display: flex;
       justify-content: center;
+      align-items: center;
       min-height: 100vh;
+      line-height: 1.6;
     }
     .main-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
       max-width: 600px;
-      padding: 2rem;
+      width: 90%;
+      padding: 3rem 2rem;
+      border: 1px solid var(--border-color);
     }
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1.5rem;
-      color: var(--accent-color);
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+      font-weight: 700;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
     }
     p {
-      font-size: 1.1rem;
-      line-height: 1.6;
       margin-bottom: 1rem;
     }
-    code {
+    .code-container {
+      position: relative;
       background-color: var(--code-bg);
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
+      border-radius: 8px;
+      margin: 2rem 0;
+      border: 1px solid var(--border-color);
+      text-align: left;
+    }
+    code {
       font-family: 'Courier New', Courier, monospace;
       font-size: 1.1rem;
       display: block;
-      margin: 1.5rem 0;
-      border: 1px solid #444;
+      padding: 1.5rem;
+      padding-right: 4rem;
+      color: var(--text-color);
+      overflow-x: auto;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--text-color);
+    }
+    .copy-btn.copied {
+      color: var(--success-color);
+      border-color: var(--success-color);
+    }
+    .links {
+      margin-top: 2.5rem;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    a {
+      color: var(--accent-color);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+    .icon {
+      margin-right: 0.4rem;
+    }
+
+    /* New Elements */
+    .theme-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: var(--btn-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 0.5rem;
+      border-radius: 50%;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover {
+      background: var(--btn-hover);
+      transform: scale(1.05);
+    }
+    .theme-toggle .icon {
+      margin-right: 0;
+      font-size: 1.2rem;
+    }
+
+    .actions {
+        margin-top: 1.5rem;
+    }
+
+    .refresh-btn {
+      background-color: var(--accent-color);
+      color: #fff;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .refresh-btn:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+    .refresh-btn:active {
+      transform: translateY(0);
+    }
+    .refresh-btn:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+    <span class="icon" aria-hidden="true">🌙</span>
+  </button>
+
   <div class="main-container">
     <h1>Freqtrade UI Not Installed</h1>
-    <p>The web interface files are currently missing.</p>
+    <p class="subtitle">The web interface files are missing from your installation.</p>
+
     <p>To install the UI, please run the following command in your terminal and restart your bot:</p>
-    <code>freqtrade install-ui</code>
-    <p>Once installed, refresh this page to access the Freqtrade UI.</p>
+
+    <div class="code-container">
+      <code id="install-cmd">freqtrade install-ui</code>
+      <button class="copy-btn" onclick="copyCommand()" aria-label="Copy command" aria-live="polite">Copy</button>
+    </div>
+
+    <p>Once installed, refresh this page to access the dashboard.</p>
+
+    <div class="actions">
+      <button class="refresh-btn" onclick="refreshPage()" aria-busy="false">
+        <span class="icon" aria-hidden="true">🔄</span> Check Again
+      </button>
+    </div>
+
+    <div class="links">
+      <a href="https://www.freqtrade.io/en/latest/" target="_blank" rel="noopener">
+        <span class="icon">📚</span>Documentation
+      </a>
+      <a href="https://discord.gg/freqtrade" target="_blank" rel="noopener">
+        <span class="icon">💬</span>Discord Community
+      </a>
+    </div>
   </div>
+
+  <script>
+    function copyCommand() {
+      const cmd = document.getElementById('install-cmd').innerText;
+      navigator.clipboard.writeText(cmd).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.classList.add('copied');
+
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    }
+
+    function refreshPage() {
+      const btn = document.querySelector('.refresh-btn');
+      const icon = btn.querySelector('.icon');
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      icon.style.display = 'inline-block';
+      icon.style.animation = 'spin 1s linear infinite';
+      btn.innerHTML = '<span class="icon" style="display:inline-block; animation: spin 1s linear infinite" aria-hidden="true">🔄</span> Checking...';
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      const currentTheme = body.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      setTheme(newTheme);
+    }
+
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      const btn = document.querySelector('.theme-toggle .icon');
+      btn.innerText = theme === 'light' ? '☀️' : '🌙';
+    }
+
+    // Initialize theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+  </script>
 </body>
 </html>

@@ -423,11 +423,10 @@ async def test_telegram_status_multi_entry(default_conf, update, mocker, fee) ->
     await telegram._status(update=update, context=MagicMock())
     assert msg_mock.call_count == 4
     msg = msg_mock.call_args_list[3][0][0]
-    assert re.search(r"Number of Entries.*2", msg)
+    assert re.search(r"Entries.*2", msg)
     # Exit order is still open, hence not a successful exit
-    assert re.search(r"Number of Exits.*0", msg)
-    assert re.search(r"Close Date:", msg) is None
-    assert re.search(r"Close Profit:", msg) is None
+    assert re.search(r"Exits.*0", msg)
+    assert re.search(r"Close:", msg) is None
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -448,8 +447,7 @@ async def test_telegram_status_closed_trade(default_conf, update, mocker, fee) -
     await telegram._status(update=update, context=context)
     assert msg_mock.call_count == 1
     msg = msg_mock.call_args_list[0][0][0]
-    assert re.search(r"Close Date:", msg)
-    assert re.search(r"Close Profit:", msg)
+    assert re.search(r"Close:", msg)
 
 
 async def test_order_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -592,8 +590,7 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     # and no line should be empty
     lines = msg_mock.call_args_list[0][0][0].split("\n")
     assert "" not in lines[:-1]
-    assert "Close Rate" not in "".join(lines)
-    assert "Close Profit" not in "".join(lines)
+    assert "Close:" not in "".join(lines)
 
     assert msg_mock.call_count == 3
     assert "ETH/BTC" in msg_mock.call_args_list[0][0][0]
@@ -607,8 +604,7 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
 
     lines = msg_mock.call_args_list[0][0][0].split("\n")
     assert "" not in lines[:-1]
-    assert "Close Rate" not in "".join(lines)
-    assert "Close Profit" not in "".join(lines)
+    assert "Close:" not in "".join(lines)
 
     assert msg_mock.call_count == 2
     assert "LTC/BTC" in msg_mock.call_args_list[0][0][0]
@@ -624,8 +620,8 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
 
     msg1 = msg_mock.call_args_list[0][0][0]
 
-    assert "Close Rate" not in msg1
-    assert "Trade ID:* `2`" in msg1
+    assert "Close:" not in msg1
+    assert "*LTC/BTC*   (#2)" in msg1
 
 
 async def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -2140,7 +2136,7 @@ async def test_help_handle(default_conf, update, mocker) -> None:
 
     await telegram._help(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert "*/help:* `This help message`" in msg_mock.call_args_list[0][0][0]
+    assert "/help - Show this help" in msg_mock.call_args_list[0][0][0]
 
 
 async def test_version_handle(default_conf, update, mocker) -> None:
@@ -2439,7 +2435,7 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             }
         )
         assert msg_mock.call_args[0][0] == (
-            "\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n"
+            "\N{OCTAGONAL SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n"
             "*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH / -24.812 USD)`\n"
             "*Enter Tag:* `buy_signal1`\n"
             "*Exit Reason:* `stop_loss`\n"
@@ -2481,7 +2477,7 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             }
         )
         assert msg_mock.call_args[0][0] == (
-            "\N{WARNING SIGN} *Binance (dry):* Partially exiting KEY/ETH (#1)\n"
+            "\N{OCTAGONAL SIGN} *Binance (dry):* Partially exiting KEY/ETH (#1)\n"
             "*Unrealized Sub Profit:* `-57.41% (loss: -0.05746 ETH / -24.812 USD)`\n"
             "*Cumulative Profit:* `-0.15746 ETH / -24.812 USD`\n"
             "*Enter Tag:* `buy_signal1`\n"
@@ -2521,7 +2517,7 @@ def test_send_msg_exit_notification(default_conf, mocker) -> None:
             }
         )
         assert msg_mock.call_args[0][0] == (
-            "\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n"
+            "\N{OCTAGONAL SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n"
             "*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH)`\n"
             "*Enter Tag:* `buy_signal1`\n"
             "*Exit Reason:* `stop_loss`\n"
@@ -2620,7 +2616,7 @@ def test_send_msg_exit_fill_notification(
         leverage_text = f" ({leverage:.3g}x)`\n" if leverage and leverage != 1.0 else "`\n"
         direction_emoji = "🔴" if direction == "Short" else "🟢"
         assert msg_mock.call_args[0][0] == (
-            "\N{WARNING SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n"
+            "\N{OCTAGONAL SIGN} *Binance (dry):* Exited KEY/ETH (#1)\n"
             "*Profit:* `-57.41% (loss: -0.05746 ETH)`\n"
             f"*Enter Tag:* `{enter_signal}`\n"
             "*Exit Reason:* `stop_loss`\n"
@@ -2772,7 +2768,7 @@ def test_send_msg_exit_notification_no_fiat(
     leverage_text = f" ({leverage:.3g}x)" if leverage and leverage != 1.0 else ""
     direction_emoji = "🔴" if direction == "Short" else "🟢"
     assert msg_mock.call_args[0][0] == (
-        "\N{WARNING SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n"
+        "\N{OCTAGONAL SIGN} *Binance (dry):* Exiting KEY/ETH (#1)\n"
         "*Unrealized Profit:* `-57.41% (loss: -0.05746 ETH)`\n"
         f"*Enter Tag:* `{enter_signal}`\n"
         "*Exit Reason:* `stop_loss`\n"
@@ -2791,11 +2787,11 @@ def test_send_msg_exit_notification_no_fiat(
     [
         ({"profit_ratio": 0.201, "exit_reason": "roi"}, "\N{ROCKET}"),
         ({"profit_ratio": 0.051, "exit_reason": "roi"}, "\N{ROCKET}"),
-        ({"profit_ratio": 0.0256, "exit_reason": "roi"}, "\N{EIGHT SPOKED ASTERISK}"),
-        ({"profit_ratio": 0.01, "exit_reason": "roi"}, "\N{EIGHT SPOKED ASTERISK}"),
-        ({"profit_ratio": 0.0, "exit_reason": "roi"}, "\N{EIGHT SPOKED ASTERISK}"),
-        ({"profit_ratio": -0.05, "exit_reason": "stop_loss"}, "\N{WARNING SIGN}"),
-        ({"profit_ratio": -0.02, "exit_reason": "sell_signal"}, "\N{CROSS MARK}"),
+        ({"profit_ratio": 0.0256, "exit_reason": "roi"}, "🟢"),
+        ({"profit_ratio": 0.01, "exit_reason": "roi"}, "🟢"),
+        ({"profit_ratio": 0.0, "exit_reason": "roi"}, "🟢"),
+        ({"profit_ratio": -0.05, "exit_reason": "stop_loss"}, "\N{OCTAGONAL SIGN}"),
+        ({"profit_ratio": -0.02, "exit_reason": "sell_signal"}, "🔴"),
     ],
 )
 def test__exit_emoji(default_conf, mocker, msg, expected):
