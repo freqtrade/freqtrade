@@ -17,6 +17,7 @@ def paper_config(tmp_path):
         # Ensure we don't try to connect to real Breeze
         "key": "mock_key",
         "secret": "mock_secret",
+        "dry_run": True,
         "icici_mode": "mock",  # To fetch mock prices for execution
         "icicibreeze": {"live_trading": {"enabled": True}},
     }

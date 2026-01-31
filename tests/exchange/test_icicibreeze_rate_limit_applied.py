@@ -21,6 +21,7 @@ def rate_limited_exchange():
         },
     ):
         exposure = {
+            "dry_run": True,
             "risk_guard": {"enabled": False},
             "icicibreeze": {"live_trading": {"enabled": True}},
         }
