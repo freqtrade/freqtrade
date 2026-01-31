@@ -24,7 +24,7 @@ tar -czf "$BACKUP_FILE" \
     --exclude="user_data/plot" \
     --exclude="user_data/*.sqlite-wal" \
     --exclude="user_data/*.sqlite-shm" \
-    user_data
+    user_data || [[ $? -eq 1 ]]
 
 echo "Backup Created Successfully."
 echo "PATH=$BACKUP_FILE"
