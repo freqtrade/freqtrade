@@ -119,3 +119,21 @@ target/
 !config_examples/config_freqai.example.json
 
 docker-compose-*.yml
+
+# Virtualenv / caches
+.ruff_cache/
+
+# Your evidence bundles and logs
+artifacts/
+
+# Runtime generated outputs
+user_data/generated/
+
+# Archived/rotated user_data trees
+user_data.old_*/
+
+# Accept-run archives
+**/generated/accept_runs/
+
+# Common log formats
+*.jsonl
