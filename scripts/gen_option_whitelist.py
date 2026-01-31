@@ -13,10 +13,9 @@ from zoneinfo import ZoneInfo
 
 from unittest.mock import MagicMock
 
-import sys
-
-# Mock breeze_connect to avoid 504 Gateway Timeout on import
-sys.modules["breeze_connect"] = MagicMock()
+# Mock breeze_connect to avoid 504 Gateway Timeout on import (unless in real mode)
+if "real" not in sys.argv:
+    sys.modules["breeze_connect"] = MagicMock()
 
 from adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
 from adapters.ccxt_shim.instrument import InstrumentSpec, InstrumentType, format_pair
