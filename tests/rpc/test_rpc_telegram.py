@@ -2787,11 +2787,11 @@ def test_send_msg_exit_notification_no_fiat(
     [
         ({"profit_ratio": 0.201, "exit_reason": "roi"}, "\N{ROCKET}"),
         ({"profit_ratio": 0.051, "exit_reason": "roi"}, "\N{ROCKET}"),
-            ({"profit_ratio": 0.0256, "exit_reason": "roi"}, "🟢"),
-            ({"profit_ratio": 0.01, "exit_reason": "roi"}, "🟢"),
-            ({"profit_ratio": 0.0, "exit_reason": "roi"}, "🟢"),
+        ({"profit_ratio": 0.0256, "exit_reason": "roi"}, "🟢"),
+        ({"profit_ratio": 0.01, "exit_reason": "roi"}, "🟢"),
+        ({"profit_ratio": 0.0, "exit_reason": "roi"}, "🟢"),
         ({"profit_ratio": -0.05, "exit_reason": "stop_loss"}, "\N{OCTAGONAL SIGN}"),
-            ({"profit_ratio": -0.02, "exit_reason": "sell_signal"}, "🔴"),
+        ({"profit_ratio": -0.02, "exit_reason": "sell_signal"}, "🔴"),
     ],
 )
 def test__exit_emoji(default_conf, mocker, msg, expected):
