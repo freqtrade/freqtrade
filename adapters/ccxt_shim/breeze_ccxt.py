@@ -725,6 +725,7 @@ class BreezeCCXT(ccxt.Exchange):
                 self.degraded_guard.record_success()
                 # P35.5 T5: Record Risk Success (Mock Mode)
                 self.risk_guard.record_trade_success(symbol, side)
+                health_snapshot.update("call", {"method": "create_order", "duration": 0})
                 return order
 
             # Proceed to Live Execution (Real Broker)
@@ -793,6 +794,7 @@ class BreezeCCXT(ccxt.Exchange):
 
                 # P35.5 T5: Record Risk Success (Real Mode)
                 self.risk_guard.record_trade_success(symbol, side)
+                health_snapshot.update("call", {"method": "create_order", "duration": 0})
 
                 ts = int(time.time() * 1000)
                 return {
@@ -990,7 +992,7 @@ class BreezeCCXT(ccxt.Exchange):
         h = hashlib.sha256(symbol.encode()).hexdigest()
         last = 2500.0 + (int(h[:3], 16) % 100)
         ts = int(time.time() * 1000)
-        return {
+        ticker = {
             "symbol": symbol,
             "timestamp": ts,
             "datetime": self.iso8601(ts),
@@ -1002,6 +1004,8 @@ class BreezeCCXT(ccxt.Exchange):
             "close": last,
             "info": {"mock": True},
         }
+        health_snapshot.update("call", {"method": "fetch_ticker", "duration": 0})
+        return ticker
 
     def _get_mock_data_path(self, symbol: str, timeframe: str) -> Path:
         """Get path for mock data persistence."""
@@ -1077,8 +1081,10 @@ class BreezeCCXT(ccxt.Exchange):
         if since is not None:
             res = [cand for cand in merged if cand[0] >= since][:limit]
             logger.debug("Returning %d candles from since=%d", len(res), since)
+            health_snapshot.update("call", {"method": "fetch_ohlcv", "duration": 0})
             return res
         res = merged[-limit:] if limit is not None else merged
+        health_snapshot.update("call", {"method": "fetch_ohlcv", "duration": 0})
         logger.debug("Returning %d candles (no since)", len(res))
         return res
 

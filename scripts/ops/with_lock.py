@@ -30,13 +30,13 @@ def main():
         try:
             os.makedirs(lock_dir, exist_ok=True)
         except Exception as e:
-            logger.error(f"Failed to create lock directory: {e}")
+            logger.error(f"Failed to create lock directory: {e}", exc_info=True)
             sys.exit(1)
 
     try:
         lock_fd = open(lock_path, "w")
     except Exception as e:
-        logger.error(f"Failed to open lock file: {e}")
+        logger.error(f"Failed to open lock file: {e}", exc_info=True)
         sys.exit(1)
 
     try:
@@ -56,7 +56,7 @@ def main():
         logger.info(f"Command finished with exit code {ret}")
         sys.exit(ret)
     except Exception as e:
-        logger.error(f"Failed to run command: {e}")
+        logger.error(f"Failed to run command: {e}", exc_info=True)
         sys.exit(1)
     finally:
         # Unlock is automatic on file close/process exit, but being explicit is good
