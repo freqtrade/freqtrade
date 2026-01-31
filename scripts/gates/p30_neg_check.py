@@ -54,11 +54,11 @@ def check_p30_neg():
             print("P30_NEG_EXPECTED_BLOCK")
             print("[OK] Blocked by Market Hours despite Live Enablement.")
             sys.exit(0)
-        else:
-            # Unexpected error: Log with traceback
-            logger.error(f"Caught unexpected exception: {msg}", exc_info=True)
-            print(f"ERROR: Unexpected exception: {msg}")
-            sys.exit(1)
+
+        # Unexpected error: Log with traceback
+        logger.error(f"Caught unexpected exception: {msg}", exc_info=True)
+        print(f"ERROR: Unexpected exception: {msg}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
