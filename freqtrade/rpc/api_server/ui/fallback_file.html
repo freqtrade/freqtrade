@@ -195,7 +195,7 @@
 </head>
 <body>
   <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
-    <span class="icon">🌙</span>
+    <span class="icon" aria-hidden="true">🌙</span>
   </button>
 
   <div class="main-container">
@@ -206,14 +206,14 @@
 
     <div class="code-container">
       <code id="install-cmd">freqtrade install-ui</code>
-      <button class="copy-btn" onclick="copyCommand()" aria-label="Copy command">Copy</button>
+      <button class="copy-btn" onclick="copyCommand()" aria-label="Copy command" aria-live="polite">Copy</button>
     </div>
 
     <p>Once installed, refresh this page to access the dashboard.</p>
 
     <div class="actions">
-      <button class="refresh-btn" onclick="refreshPage()">
-        <span class="icon">🔄</span> Check Again
+      <button class="refresh-btn" onclick="refreshPage()" aria-busy="false">
+        <span class="icon" aria-hidden="true">🔄</span> Check Again
       </button>
     </div>
 
@@ -249,9 +249,10 @@
       const btn = document.querySelector('.refresh-btn');
       const icon = btn.querySelector('.icon');
       btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
       icon.style.display = 'inline-block';
       icon.style.animation = 'spin 1s linear infinite';
-      btn.innerHTML = '<span class="icon" style="display:inline-block; animation: spin 1s linear infinite">🔄</span> Checking...';
+      btn.innerHTML = '<span class="icon" style="display:inline-block; animation: spin 1s linear infinite" aria-hidden="true">🔄</span> Checking...';
 
       setTimeout(() => {
         window.location.reload();
