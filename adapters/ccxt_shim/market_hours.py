@@ -143,7 +143,7 @@ class MarketHoursGuard:
                     "reason": msg,
                 }
             )
-            raise Exception(msg)
+            raise OperationalException(f"market_hours_block:{msg}")
 
     def assert_can_edit_order(self, order_id: str, symbol: str):
         """
@@ -160,4 +160,4 @@ class MarketHoursGuard:
                     "reason": msg,
                 }
             )
-            raise Exception(msg)
+            raise OperationalException(f"market_hours_block:{msg}")

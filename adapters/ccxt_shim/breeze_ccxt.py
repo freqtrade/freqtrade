@@ -944,7 +944,7 @@ class BreezeCCXT(ccxt.Exchange):
 
         # Wait a bit? Or assume atomic enough?
         # Create new order behaves as a new entry/exit.
-        return self.create_order(symbol, type, side, amount, price, params)
+        return self.create_order(symbol, order_type, side, amount, price, params)
 
     def fetch_order(self, order_id, symbol=None, params: dict | None = None):
         if self._is_mock_mode():
