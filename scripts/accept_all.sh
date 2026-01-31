@@ -100,6 +100,8 @@ HARDENED_GATES=(
     "p33_backup_restore"
     "p34_circuit_breaker"
     "p35_ops_runbook"
+    "p38_soak_stability"
+    "p40_live_readiness"
 )
 
 function is_hardened() {

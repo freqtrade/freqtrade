@@ -36,6 +36,20 @@ If `LiveReadiness` fails:
 - Check Disk Space.
 - Check Session Token.
 - Ensure Deadman is fresh.
+- Ensure Security Master is fresh (`scripts/refresh_instruments.sh`).
+
+## 1.4 Daily Preparation
+
+1. **Refresh Token**: Get new Session Token (max 24h validity).
+2. **Refresh Instruments**:
+
+   ```bash
+   # Downloads latest scrip master from ICICI
+   bash scripts/refresh_instruments.sh
+   # (Note: P25 handles verification, this is the action)
+   ```
+
+3. **Verify Disk**: Ensure >2GB logs space.
 
 ## 2. Prerequisites
 

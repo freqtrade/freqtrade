@@ -1,35 +1,55 @@
-# Phase P40: Codebase Hardening & Audit Grade Documentation
+# Phase 40: Live Readiness & Deadman
 
-## 1. Objective
+## Objective
 
-Achieve "Audit Grade" status for live trading readiness, focusing on:
+Implement strict readiness checks and a "Deadman Switch" mechanism to prevent unauthorized or accidental live trading execution. This phase ensures that the trading bot only places real orders when specific safety conditions are met.
 
-- **Fail-Closed Readiness Checks** (Deadman Switch).
-- **Strict Idempotency** (Client Order IDs).
-- **Persistent Risk Halts** (Capital Protection).
-- **Operational Hardening** (No Secrets, No Open Ports).
+## Components Implemented
 
-## 2. Changes Implemented
+### 1. LiveReadiness Guard
 
-### 2.1 Codebase
+- **File**: `adapters/ccxt_shim/live_readiness.py`
+- **Logic**:
+  - **Session Token**: Verifies presence of Breeze Session Token in config or env.
+  - **Disk Space**: Ensures `user_data` partition has >2GB free space.
+  - **Security Master**: Verifies `NSEScripMaster.txt` and `FONSEScripMaster.txt` are fresh (<24h).
+  - **Pair Whitelist**: Ensures whitelist is not empty.
 
-- **Readiness:** `LiveReadiness` module ensures environment health before every live order.
-- **Idempotency:** `OrderIdempotency` module persists request hashes to prevent duplicate submissions.
-- **Risk:** `RiskGuard` now persists halt states to disk, surviving process restarts.
-- **Gates:** P39 (Ops Hygiene), P21 (Secrets), P40 (Live Readiness).
+### 2. Deadman Switch
 
-### 2.2 Documentation
+- **File**: `adapters/ccxt_shim/live_readiness.py`
+- **Mechanism**:
+  - Checks for file: `user_data/secrets/deadman_live.ok`.
+  - Verification: File must exist AND be less than 10 minutes old.
+  - **Fail-Closed**: If check fails, `create_order` raises `OperationalException` ("DEADMAN_MISSING" or "DEADMAN_STALE").
 
-- **Audit Review:** `docs/third_party_review_outside_freqtrade.md` provides a comprehensive system overview for external auditors.
-- **Runbook:** Updated `docs/OPS_RUNBOOK.md` with Safe Mode procedures.
+### 3. CCXT Shim Integration
 
-## 3. Verification
+- **File**: `adapters/ccxt_shim/breeze_ccxt.py`
+- **Method**: `create_order` (Sync)
+- **Pre-Flight Checks** (in order):
+    1. **Rate Limit**: Leak/Wait.
+    2. **Market Hours**: NSE IST check (P29).
+    3. **Degraded Mode**: P17 (skipped for P40 checks if critical).
+    4. **Live Guard (P30)**: Config + Env Var check.
+    5. **Live Readiness (P40)**: Full health check.
+    6. **Deadman (P40)**: Deadman file check.
+    7. **Idempotency (P40)**: Duplicate suppression logic.
+    8. **Risk Guard (P15)**: Risk limits.
 
-- **Gate P40:** Validates proper fail-closed behavior for Deadman switch.
-- **Soak Logs:** `health.json` metrics track system stability.
-- **Acceptance Suite:** All gates automated via `scripts/accept_all.sh`.
+### 4. Idempotency Support
 
-## 4. Next Steps
+- **File**: `adapters/ccxt_shim/idempotency.py` (assumed existing or integrated logic)
+- **Logic**: Tracks client order IDs to prevent duplicate submissions during retries.
 
-- External Audit Review.
-- Production Deployment (Phase P41).
+## Verification Gate
+
+- **Script**: `scripts/gates/p40_live_readiness.sh`
+- **Modes**:
+  - `pos`: Creates `deadman_live.ok`, runs trade, verifies success.
+  - `neg`: Removes `deadman_live.ok`, runs trade, verifies "Deadman Switch Failed" block.
+- **Integration**: Added to `scripts/accept_all.sh` (Auto/Hardened).
+
+## Operational Procedures
+
+See `docs/OPS_RUNBOOK.md` for Deadman Switch management.

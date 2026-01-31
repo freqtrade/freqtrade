@@ -1,96 +1,40 @@
-# Third Party Review: High Frequency Trading System (ICICI Breeze Adapter)
+# Third Party Review: Outside Freqtrade Core
 
-**Revision:** 1.0.0
-**Date:** 2026-01-31
-**Scope:** `adapters/ccxt_shim`, `freqtrade` integration, Security & Risk Modules.
+This document outlines the scope for third-party auditing of components that exist **outside** the standard Freqtrade codebase but are critical for the ICICI Breeze integration.
 
-## 1. System Overview
+## Scope
 
-This system integrates Freqtrade with ICICI Breeze API via a custom CCXT-compatible Shim ("BreezeCCXT").
-It implements Strict Risk Gates (P15), Clean Architecture (P35), and Fail-Closed Security (P40).
+### 1. Adapter Layer (`adapters/ccxt_shim/`)
 
-### Architecture (Ports & Adapters)
+The `ccxt_shim` is a custom adapter implementing the CCXT interface for ICICI Breeze. It is NOT part of standard Freqtrade.
 
-```mermaid
-graph TD
-    User[Trader / Ops] -->|SSH / API| FT[Freqtrade Core]
-    FT -->|CCXT Interface| Shim[BreezeCCXT Shim]
-    
-    subgraph Adapters [adapters/ccxt_shim]
-        Shim --> Router[OrderRouter (P16)]
-        Shim --> Risk[RiskGuard (P15/P40)]
-        Shim --> Ready[LiveReadiness (P40)]
-        Shim --> Idem[Idempotency (P40)]
-        Shim --> Circuit[CircuitBreaker]
-    end
-    
-    subgraph Infrastructure
-        Risk -->|Persist| Disk[user_data/generated]
-        Idem -->|Persist| Disk
-        Ready -->|Check| Secrets[Deadman Switch]
-    end
-    
-    Shim -->|HTTP| Breeze[ICICI Breeze API]
-```
+- [ ] **Auth Hygiene**: Ensure Session Tokens and API Keys are never logged (verified in P21).
+- [ ] **Rate Limiting**: Verify leaky bucket implementation respects 1 req/sec strict limit.
+- [ ] **Error Handling**: Verify translation of Breeze exceptions to `OperationalException` (fail-safe).
+- [ ] **Market Hours**: Verify IST time conversion logic (critical for India markets).
 
-## 2. Security Posture
+### 2. Guardrails (`adapters/ccxt_shim/*_guard.py`)
 
-### 2.1 Secrets Hygiene (Gate P21)
+Custom safety logic injected into the adapter.
 
-- **Policy:** Zero secrets in code/logs.
-- **Implementation:** `p21_secrets_hygiene.sh` scans all artifacts post-run.
-- **Evidence:** Logs are sanitized. API keys injected via Env/File only.
+- [ ] **Risk Guard**: Daily trade limit, Max Drawdown logic. Is it stateful? Is persistence robust?
+- [ ] **Deadman Switch**: Is the file check atomic? Race conditions?
+- [ ] **Live Readiness**: Disk space check thresholds.
 
-### 2.2 Network Security (Gate P20)
+### 3. Operational Scripts (`scripts/`)
 
-- **Policy:** Zero open ports on public interfaces.
-- **Implementation:** `p20_no_open_ports_pos.sh` calls `p20_scan_port_exposure.py`.
-- **Status:** PASS (Localhost binding forced).
+- [ ] **Gate Scripts**: Verify that gate scripts (`p*_*.sh`) accurately simulate production constraints.
+- [ ] **Common Utils**: Review `common.sh` for environment variable leakage.
 
-## 3. Operational Hardening
+### 4. Infrastructure & Environment
 
-### 3.1 Live Readiness (Gate P40)
+- [ ] **Secrets Management**: check `user_data/secrets` permissions (0600).
+- [ ] **Network Egress**: Verify no unauthorized calls (only to `api.icicidirect.com`).
 
-- **Mechanism:** `LiveReadiness.check()` enforces Fail-Closed.
-- **Checks:**
-  1. Deadman Switch (`user_data/secrets/deadman_live.ok`) presence & freshness (<10m).
-  2. Disk Space (>2GB).
-  3. Session Token validity.
-- **Failure Mode:** `OperationalException` (Trade Blocked).
+## Release Certification
 
-### 3.2 Order Idempotency (Gate P40)
+Before "Live Beta", a code review by an independent developer (not the author) is required for:
 
-- **Mechanism:** `OrderIdempotency` class with persistence.
-- **Logic:** Request -> Hash(Fields) -> Cache Check -> Block if Exists.
-- **Persistence:** `runtime/order_id_cache.json` (survives restarts).
-
-### 3.3 Capital Risk Guard (Gate P15)
-
-- **Mechanism:** `RiskGuard` enforces:
-  - Max Loss Per Day.
-  - Max Consecutive Losses.
-  - Max Open Positions.
-- **Persistence:** `runtime/live_halt.json`. A halt triggers a persistent block until manual reset or next day.
-
-## 4. Operational Invariants
-
-| Invariant | Implementation | Failure Handling |
-|-----------|----------------|------------------|
-| **No Duplicate Orders** | `OrderIdempotency.is_duplicate` | Raise `DUPLICATE_SUPPRESSED` |
-| **No Unattended Runs** | `check_deadman` | Raise `DEADMAN_FAIL` |
-| **No Infinite Loss** | `RiskGuard.record_loss` | Persistent Halt (Entry Block) |
-| **No Broken Code** | `P39 Hygiene Gate` | CI Failure on FIXME/TODO |
-
-## 5. Verification Evidence
-
-- **Soak Testing:** P38 gate runs 90s soak, verifying `health.json` metrics.
-- **Audit Logs:** All runs archive artifacts to `generated/accept_runs/$RUN_ID`.
-- **Gate Suite:** `scripts/accept_all.sh` runs 40+ checks daily.
-
-## 6. Runbook Reference
-
-See `docs/ops/RUNBOOK.md` for:
-
-- resetting risk halts
-- renewing deadman switch
-- rotating API keys
+- `breeze_ccxt.py` (Core Logic)
+- `order_router.py` (Routing Logic)
+- `live_readiness.py` (Safety Logic)
