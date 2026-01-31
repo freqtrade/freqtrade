@@ -63,12 +63,13 @@ def verify_p30_guard():
     }
     exchange.breeze = mock_breeze
 
-    # Create Deadman File for P40 Compliance
+    # Create Deadman File for P40 Compliance with secure permissions
     from pathlib import Path
 
     deadman_file = Path("user_data/secrets/deadman_live.ok")
     deadman_file.parent.mkdir(parents=True, exist_ok=True)
     deadman_file.touch()
+    os.chmod(deadman_file, 0o600)
 
     # Mock RiskGuard to avoid 'intraday_cutoff' or other risk blocks
     exchange.risk_guard = MagicMock()

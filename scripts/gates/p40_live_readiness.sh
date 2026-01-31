@@ -95,6 +95,7 @@ if [ "$GATE_MODE" == "pos" ]; then
     
     # Enable Deadman
     touch user_data/secrets/deadman_live.ok
+    chmod 600 user_data/secrets/deadman_live.ok
     touch -m user_data/secrets/deadman_live.ok
 
     export FT_ENABLE_LIVE_ORDERS=1
