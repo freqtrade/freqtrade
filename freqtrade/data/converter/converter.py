@@ -111,12 +111,13 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     # Forwardfill close for missing columns
     df["close"] = df["close"].ffill()
     # Use close for "open, high, low"
-    df.loc[:, ["open", "high", "low"]] = df[["open", "high", "low"]].fillna(
+    df.fillna(
         value={
             "open": df["close"],
             "high": df["close"],
             "low": df["close"],
-        }
+        },
+        inplace=True,
     )
     df.reset_index(inplace=True)
     len_before = len(dataframe)
