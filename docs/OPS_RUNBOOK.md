@@ -2,7 +2,42 @@
 
 This runbook describes how to operate the Freqtrade bot with the ICICI Breeze adapter in production.
 
-## 1. Prerequisites
+## 1. Safety & Emergency Procedures
+
+### 1.1 Deadman Switch (Live Mode)
+
+Live trading requires a fresh "deadman" file every 10 minutes.
+**To Renew:**
+
+```bash
+touch user_data/secrets/deadman_live.ok
+```
+
+**To Stop (Emergency):**
+
+```bash
+rm user_data/secrets/deadman_live.ok
+```
+
+(Trading will halt on next order attempt).
+
+### 1.2 Resetting Risk Halts
+
+If `RiskGuard` blocks entries (Max Loss/Consecutive Losses):
+
+1. Stop Freqtrade.
+2. Delete `user_data/generated/runtime/live_halt.json`.
+3. Restart.
+
+### 1.3 Readiness Failures
+
+If `LiveReadiness` fails:
+
+- Check Disk Space.
+- Check Session Token.
+- Ensure Deadman is fresh.
+
+## 2. Prerequisites
 
 - **Python 3.10+**
 - **Systemd** (for Linux service management)

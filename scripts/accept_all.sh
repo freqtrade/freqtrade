@@ -61,6 +61,7 @@ ALL_GATES=(
     "p37_scheduler_templates"
     "p38_soak_stability"
     "p39_ops_hardening"
+    "p40_live_readiness"
 )
 
 # Parse flags

@@ -630,6 +630,7 @@ class BreezeCCXT(ccxt.Exchange):
             }
         raise OperationalException("fetch_balance not supported in real mode yet.")
 
+
     def create_order(
         self, symbol, order_type, side, amount, price=None, params: dict | None = None
     ):
@@ -721,7 +722,9 @@ class BreezeCCXT(ccxt.Exchange):
 
             # P35.5 T4: Pass reduceOnly to router
             reduce_only = params.get("reduceOnly", False) if params else False
-            self.order_router.validate_entry(symbol, side, amount, position_check, reduce_only)
+            self.order_router.validate_entry(
+                symbol, side, amount, position_check, reduce_only, client_order_id
+            )
 
             # P18: Paper Forward Mode
             if self.paper_mode:

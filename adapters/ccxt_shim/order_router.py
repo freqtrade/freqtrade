@@ -85,10 +85,10 @@ class OrderRouter:
             return
 
         # If logic reaches here, it's a SELL
-        
+
         # P35.5 T4: Allow explicit reduceOnly to bypass position check
         if reduce_only:
-             return
+            return
 
         if position_check_callback is None:
             # Fail safe: Block if we can't check positions
@@ -268,6 +268,7 @@ class OrderRouter:
         amount: float,
         position_check_callback: Any | None = None,
         reduce_only: bool = False,
+        client_order_id: str | None = None,
     ) -> None:
         """
         Primary validation entry point.
@@ -279,4 +280,5 @@ class OrderRouter:
         # 2. Buyer Only
         self.assert_buyer_only(symbol, side, position_check_callback, reduce_only)
 
-        logger.info(f"OrderRouter: Validated {side} {amount} {symbol} (Lot: {lot_size})")
+        cid_log = f" [CID: {client_order_id}]" if client_order_id else ""
+        logger.info(f"OrderRouter: Validated {side} {amount} {symbol} (Lot: {lot_size}){cid_log}")
