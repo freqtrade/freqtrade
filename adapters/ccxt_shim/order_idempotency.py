@@ -68,7 +68,11 @@ class OrderIdempotency:
         pair = str(fields.get("pair", "")).upper()
         side = str(fields.get("side", "")).lower()
         amount = f"{float(fields.get('amount', 0)):.8f}"
-        price = f"{float(fields.get('price', 0)):.8f}"
+        raw_price = fields.get("price")
+        if raw_price in [None, "None", ""]:
+            price = "0.00000000"
+        else:
+            price = f"{float(raw_price):.8f}"
 
         # Optional context
         tf = fields.get("timeframe", "")

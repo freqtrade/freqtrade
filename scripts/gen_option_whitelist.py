@@ -11,7 +11,12 @@ from statistics import median
 from typing import Callable
 from zoneinfo import ZoneInfo
 
-sys.path.append(os.getcwd())
+from unittest.mock import MagicMock
+
+import sys
+
+# Mock breeze_connect to avoid 504 Gateway Timeout on import
+sys.modules["breeze_connect"] = MagicMock()
 
 from adapters.ccxt_shim.breeze_ccxt import BreezeCCXT
 from adapters.ccxt_shim.instrument import InstrumentSpec, InstrumentType, format_pair

@@ -57,7 +57,7 @@ def test_paper_create_order_simulates_fill(paper_exchange):
             with mock.patch.object(
                 paper_exchange.risk_guard, "should_block_entry", return_value=(False, "OK")
             ):
-                order = paper_exchange.create_order(symbol, "limit", side, amount)
+                order = paper_exchange.create_order(symbol, "limit", side, amount, 1000.0)
 
             # Checks
             assert order["status"] == "closed"
@@ -98,7 +98,7 @@ def test_real_order_blocked_in_paper_mode(paper_exchange):
             with mock.patch.object(
                 paper_exchange.risk_guard, "should_block_entry", return_value=(False, "OK")
             ):
-                paper_exchange.create_order("SBIN/INR", "limit", "buy", 1)
+                paper_exchange.create_order("SBIN/INR", "limit", "buy", 1, 100.0)
 
     assert len(paper_exchange._mock_orders) == 0
 
