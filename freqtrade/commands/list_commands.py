@@ -37,7 +37,10 @@ def start_list_exchanges(args: dict[str, Any]) -> None:
             )
         else:
             available_exchanges = [e for e in available_exchanges if e["valid"] is not False]
-            title = f"Exchanges available for Freqtrade ({len(available_exchanges)} exchanges):"
+            title = (
+                f"Exchanges available for Freqtrade - Crypto P Edition "
+                f"({len(available_exchanges)} exchanges):"
+            )
         show_fut_reasons = args.get("list_exchanges_futures_options", False)
         table = Table(title=title, row_styles=["", "dim"])
 

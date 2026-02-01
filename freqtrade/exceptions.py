@@ -1,6 +1,6 @@
 class FreqtradeException(Exception):
     """
-    Freqtrade base exception. Handled at the outermost level.
+    Freqtrade - Crypto P Edition base exception. Handled at the outermost level.
     All other exception types are subclasses of this exception type.
     """
 

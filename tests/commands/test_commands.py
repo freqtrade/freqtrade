@@ -754,7 +754,7 @@ def test_clean_ui_subdir(mocker, tmp_path, caplog):
     )
     folder = tmp_path / "uitests"
     clean_ui_subdir(folder)
-    assert log_has("Removing UI directory content.", caplog)
+    assert log_has("Removing Freqtrade - Crypto P Edition UI directory content.", caplog)
     assert rd_mock.call_count == 1
     assert ul_mock.call_count == 1
 

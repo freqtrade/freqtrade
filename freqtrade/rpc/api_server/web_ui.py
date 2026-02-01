@@ -13,6 +13,11 @@ async def favicon():
     return FileResponse(str(Path(__file__).parent / "ui/favicon.ico"))
 
 
+@router_ui.get("/logo.png", include_in_schema=False)
+async def logo():
+    return FileResponse(str(Path(__file__).parent / "ui/logo.png"))
+
+
 @router_ui.get("/fallback_file.html", include_in_schema=False)
 async def fallback():
     return FileResponse(str(Path(__file__).parent / "ui/fallback_file.html"))
