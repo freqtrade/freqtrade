@@ -227,6 +227,10 @@ class IFreqaiModel(ABC):
         """
         while not self._stop_event.is_set():
             time.sleep(1)
+
+            if not self.train_queue:
+                continue
+
             pair = self.train_queue[0]
 
             # ensure pair is available in dp

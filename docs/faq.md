@@ -2,7 +2,7 @@
 
 ## Supported Markets
 
-Freqtrade supports spot trading, as well as (isolated) futures trading for some selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an up-to-date list of supported exchanges.
+Freqtrade supports spot trading, as well as futures trading for some selected exchanges. Please refer to the [documentation start page](index.md#supported-futures-exchanges-experimental) for an up-to-date list of supported exchanges.
 
 ### Can my bot open short positions?
 
@@ -28,6 +28,13 @@ No. Freqtrade will only open one position per pair at a time.
 You can however use the [`adjust_trade_position()` callback](strategy-callbacks.md#adjust-trade-position) to adjust an open position.
 
 Backtesting provides an option for this in `--eps` - however this is only there to highlight "hidden" signals, and will not work in live.
+
+### Does freqtrade support sandbox accounts?
+
+No, but you can use dry-run mode to simulate trading without risking real funds.
+
+Sandbox markets are separate, simulated markets - which are not suitable to test your strategy in a realistic environment.
+These markets usually have different order books, liquidity and trading behaviour (usually with very few participants) - which makes them unsuitable for realistic tests of your strategy.
 
 ### The bot does not start
 

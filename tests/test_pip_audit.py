@@ -4,6 +4,7 @@ Original Idea and base for this implementation by Michael Kennedy's blog:
 https://mkennedy.codes/posts/python-supply-chain-security-made-easy/
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -11,6 +12,12 @@ from pathlib import Path
 import pytest
 
 
+IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
+
+
+# Skip this test in github actions - github issues a security warning on it's own.
+# This is to detect local transient dependencies.
+@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Skip pip-audit in GitHub Actions")
 def test_pip_audit_no_vulnerabilities():
     """
     Run pip-audit to check for known security vulnerabilities.

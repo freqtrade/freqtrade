@@ -432,7 +432,6 @@ freqtrade download-data --timerange 20250625-20250801 --config tests/testdata/co
 freqtrade backtesting --config tests/testdata/config.tests.usdt.json -s SampleStrategy --userdir user_data_bttest/ --cache none --timerange 20250701-20250801
 ```
 
-
 ## Continuous integration
 
 This documents some decisions taken for the CI Pipeline.
@@ -464,10 +463,10 @@ git checkout -b new_release <commitid>
 Determine if crucial bugfixes have been made between this commit and the current state, and eventually cherry-pick these.
 
 * Merge the release branch (stable) into this branch.
-* Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2019.7` for July 2019). Minor versions can be `2019.7.1` should we need to do a second release that month. Version numbers must follow allowed versions from PEP0440 to avoid failures pushing to pypi.
+* Edit `freqtrade/__init__.py` and add the version matching the current date (for example `2025.7` for July 2025). Minor versions can be `2025.7.1` should we need to do a second release that month. Version numbers must follow allowed versions from PEP0440 to avoid failures pushing to pypi.
 * Commit this part.
 * Push that branch to the remote and create a PR against the **stable branch**.
-* Update develop version to next version following the pattern `2019.8-dev`.
+* Update develop version to next version following the pattern `2025.8-dev`.
 
 ### Create changelog from git commits
 

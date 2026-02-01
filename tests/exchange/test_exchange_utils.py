@@ -1,6 +1,7 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 from datetime import UTC, datetime, timedelta
 from math import isnan, nan
+from unittest.mock import MagicMock
 
 import pytest
 from ccxt import (
@@ -28,6 +29,7 @@ from freqtrade.exchange import (
     timeframe_to_seconds,
 )
 from freqtrade.exchange.check_exchange import check_exchange
+from freqtrade.exchange.exchange_utils import _exchange_has_helper
 from tests.conftest import log_has_re
 
 
@@ -385,3 +387,42 @@ def test_amount_to_contract_precision_standalone(
 ):
     res = amount_to_contract_precision(amount, precision, precision_mode, contract_size)
     assert pytest.approx(res) == expected
+
+
+def test_exchange__exchange_has_helper():
+    e_mod = MagicMock()
+    e_mod.has = {
+        "fetchTicker": True,
+        "fetchOHLCV": False,
+        "fetchTrades": True,
+        "fetchMyTrades": False,
+        "fetchOrder": True,
+    }
+    required = {
+        "fetchOHLCV": [],
+        "fetchTicker": [],
+        "fetchMyTrades": ["fetchTrades"],
+        "fetchOrder": ["fetchOpenOrder", "fetchClosedOrder"],
+    }
+    missing = _exchange_has_helper(e_mod, required)
+    assert set(missing) == {"fetchOHLCV"}
+
+    e_mod.has = {
+        "fetchTicker": True,
+        "fetchOHLCV": False,
+        "fetchTrades": False,
+        "fetchMyTrades": False,
+        "fetchOrder": True,
+    }
+    missing = _exchange_has_helper(e_mod, required)
+    assert set(missing) == {"fetchOHLCV", "fetchMyTrades"}
+
+    e_mod.has = {
+        "fetchTicker": True,
+        "fetchOHLCV": False,
+        "fetchTrades": False,
+        "fetchMyTrades": False,
+        "fetchOrder": False,
+    }
+    missing = _exchange_has_helper(e_mod, required)
+    assert set(missing) == {"fetchOHLCV", "fetchMyTrades", "fetchOrder"}

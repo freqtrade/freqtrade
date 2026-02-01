@@ -12,6 +12,14 @@ from freqtrade.util.coin_gecko import FtCoinGeckoApi
 from tests.conftest import log_has, log_has_re
 
 
+@pytest.fixture(autouse=True)
+def reset_singleton_instance():
+    # Reset the singleton instance before each test
+    CryptoToFiatConverter._instances = {}
+    yield
+    CryptoToFiatConverter._instances = {}
+
+
 def test_fiat_convert_is_singleton():
     fiat_convert = CryptoToFiatConverter({"a": 22})
     fiat_convert2 = CryptoToFiatConverter({})

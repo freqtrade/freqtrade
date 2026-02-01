@@ -82,7 +82,7 @@ def test_dt_humanize() -> None:
     assert dt_humanize_delta(dt_now() - timedelta(minutes=50)) == "50 minutes ago"
     assert dt_humanize_delta(dt_now() - timedelta(hours=16)) == "16 hours ago"
     assert dt_humanize_delta(dt_now() - timedelta(hours=16, minutes=30)) == "16 hours ago"
-    assert dt_humanize_delta(dt_now() - timedelta(days=16, hours=10, minutes=25)) == "16 days ago"
+    assert dt_humanize_delta(dt_now() - timedelta(days=16, hours=10, minutes=25)) == "a month ago"
     assert dt_humanize_delta(dt_now() - timedelta(minutes=50)) == "50 minutes ago"
 
 

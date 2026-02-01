@@ -46,8 +46,9 @@ runs:
       id: tags
       env:
         BRANCH_NAME_INPUT: ${{ github.event.inputs.branch_name }}
+        EVENT_NAME: ${{ github.event_name }}
       run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+        if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
           BRANCH_NAME="${BRANCH_NAME_INPUT}"
         else
           BRANCH_NAME="${GITHUB_REF##*/}"

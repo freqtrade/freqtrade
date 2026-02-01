@@ -68,6 +68,7 @@ class Binance(Exchange):
             "BFUSD": "USDT",
         },
     }
+    _can_use_data_download_fast = True
 
     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
         (TradingMode.SPOT, MarginMode.NONE),
@@ -181,7 +182,8 @@ class Binance(Exchange):
                     return DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS)
 
         if (
-            self._config["exchange"].get("only_from_ccxt", False)
+            not self._can_use_data_download_fast
+            or self._config["exchange"].get("only_from_ccxt", False)
             or
             # only download timeframes with significant improvements,
             # otherwise fall back to rest API
@@ -405,7 +407,10 @@ class Binance(Exchange):
     ) -> tuple[str, list[list]]:
         logger.info(f"Fetching trades for {pair} from Binance, {from_id=}, {since=}, {until=}")
 
-        if not self._config["exchange"].get("only_from_ccxt", False):
+        if (
+            not self._config["exchange"].get("only_from_ccxt", False)
+            and self._can_use_data_download_fast
+        ):
             if from_id is None or not since:
                 trades = await self._api_async.fetch_trades(
                     pair,
@@ -569,3 +574,5 @@ class Binanceus(Binance):
     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
         (TradingMode.SPOT, MarginMode.NONE),
     ]
+    # binance vision does not have data for binanceus
+    _can_use_data_download_fast = False

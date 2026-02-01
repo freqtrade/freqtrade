@@ -2794,8 +2794,10 @@ def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
         ("LTC/BTC", "1h", CandleType.SPOT),
     ]
 
-    ohlcv_data = {p: ohlcv for p in pairs}
-    ohlcv_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
+    def ohlcv_side_effect(requested_pairs, *args, **kwargs):
+        return {p: ohlcv for p in requested_pairs}
+
+    ohlcv_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv", side_effect=ohlcv_side_effect)
     mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
     exchange = get_patched_exchange(mocker, default_conf)
 
@@ -2813,6 +2815,14 @@ def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
     ohlcv_mock.reset_mock()
     res = exchange.refresh_ohlcv_with_cache(pairs, start.timestamp())
     assert ohlcv_mock.call_count == 0
+    assert len(res) == 5
+
+    # # re-run with one additional pair
+    res = exchange.refresh_ohlcv_with_cache(
+        pairs + [("NEW/PAIR", "1d", CandleType.SPOT)], start.timestamp()
+    )
+    assert ohlcv_mock.call_count == 1
+    assert len(res) == 6
 
     # Expire 5m cache
     time_machine.move_to(start + timedelta(minutes=6), tick=False)
@@ -2821,6 +2831,7 @@ def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
     res = exchange.refresh_ohlcv_with_cache(pairs, start.timestamp())
     assert ohlcv_mock.call_count == 1
     assert len(ohlcv_mock.call_args_list[0][0][0]) == 1
+    assert len(res) == 5
 
     # Expire 5m and 1h cache
     time_machine.move_to(start + timedelta(hours=2), tick=False)
@@ -2829,6 +2840,7 @@ def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
     res = exchange.refresh_ohlcv_with_cache(pairs, start.timestamp())
     assert ohlcv_mock.call_count == 1
     assert len(ohlcv_mock.call_args_list[0][0][0]) == 2
+    assert len(res) == 5
 
     # Expire all caches
     time_machine.move_to(start + timedelta(days=1, hours=2), tick=False)
@@ -2838,6 +2850,7 @@ def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
     assert ohlcv_mock.call_count == 1
     assert len(ohlcv_mock.call_args_list[0][0][0]) == 5
     assert ohlcv_mock.call_args_list[0][0][0] == pairs
+    assert len(res) == 5
 
 
 def test_refresh_latest_ohlcv_funding_rate(mocker, default_conf_usdt, caplog) -> None:
@@ -6181,6 +6194,10 @@ def test_get_max_leverage_futures(default_conf, mocker, leverage_tiers):
     assert pytest.approx(exchange.get_max_leverage("BNB/USDT:USDT", 1500)) == 25
     assert exchange.get_max_leverage("BTC/USDT:USDT", 300000000) == 2.0
     assert exchange.get_max_leverage("BTC/USDT:USDT", 600000000) == 1.0  # Last tier
+
+    # Test ADA - last maxNotional is None
+    assert exchange.get_max_leverage("ADA/USDT:USDT", 2500000) == 2.0  # Second last tier
+    assert exchange.get_max_leverage("ADA/USDT:USDT", 6000000) == 1.0  # Last tier, open maxNotional
 
     assert exchange.get_max_leverage("SPONGE/USDT:USDT", 200) == 1.0  # Pair not in leverage_tiers
     assert exchange.get_max_leverage("BTC/USDT:USDT", 0.0) == 125.0  # No stake amount

@@ -15,7 +15,7 @@ def test_strategy_updater_start(user_dir, capsys) -> None:
     tmpdirp = Path(user_dir) / "strategies"
     tmpdirp.mkdir(parents=True, exist_ok=True)
     shutil.copy(teststrats / "strategy_test_v2.py", tmpdirp)
-    old_code = (teststrats / "strategy_test_v2.py").read_text()
+    old_code = (teststrats / "strategy_test_v2.py").read_text(encoding="utf-8")
 
     args = ["strategy-updater", "--userdir", str(user_dir), "--strategy-list", "StrategyTestV2"]
     pargs = get_args(args)
@@ -29,7 +29,7 @@ def test_strategy_updater_start(user_dir, capsys) -> None:
     # updated file exists
     new_file = tmpdirp / "strategy_test_v2.py"
     assert new_file.exists()
-    new_code = new_file.read_text()
+    new_code = new_file.read_text(encoding="utf-8")
     assert "INTERFACE_VERSION = 3" in new_code
     assert "INTERFACE_VERSION = 2" in old_code
     captured = capsys.readouterr()

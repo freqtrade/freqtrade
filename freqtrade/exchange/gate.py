@@ -10,8 +10,7 @@ from freqtrade.enums import MarginMode, PriceType, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.exchange_types import CcxtOrder, FtHas
-from freqtrade.misc import safe_value_fallback2
+from freqtrade.exchange.exchange_types import FtHas
 
 
 logger = logging.getLogger(__name__)
@@ -132,6 +131,3 @@ class Gate(Exchange):
                                 "rate": pair_fees[takerOrMaker],
                             }
         return trades
-
-    def get_order_id_conditional(self, order: CcxtOrder) -> str:
-        return safe_value_fallback2(order, order, "id_stop", "id")

@@ -103,7 +103,13 @@ ARGS_BACKTEST_SHOW = [
     "backtest_breakdown",
 ]
 
-ARGS_LIST_EXCHANGES = ["print_one_column", "list_exchanges_all", "trading_mode", "dex_exchanges"]
+ARGS_LIST_EXCHANGES = [
+    "print_one_column",
+    "list_exchanges_all",
+    "trading_mode",
+    "dex_exchanges",
+    "list_exchanges_futures_options",
+]
 
 ARGS_LIST_TIMEFRAMES = ["exchange", "print_one_column", "trading_mode"]
 

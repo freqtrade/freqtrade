@@ -139,7 +139,7 @@ class IResolver:
         :return: object class
         """
         logger.debug(f"Searching for {cls.object_type.__name__} {object_name} in '{directory}'")
-        for entry in directory.iterdir():
+        for entry in sorted(directory.iterdir()):
             # Only consider python files
             if entry.suffix != ".py":
                 logger.debug("Ignoring %s", entry)
@@ -148,7 +148,7 @@ class IResolver:
                 logger.debug("Ignoring broken symlink %s", entry)
                 continue
             module_path = entry.resolve()
-            if entry.read_text().find(f"class {object_name}(") == -1:
+            if entry.read_text(encoding="utf-8").find(f"class {object_name}(") == -1:
                 logger.debug(f"Skipping {module_path} as it does not contain class {object_name}.")
                 continue
 

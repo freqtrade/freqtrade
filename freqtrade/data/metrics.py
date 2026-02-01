@@ -334,7 +334,10 @@ def calculate_expectancy(trades: pd.DataFrame) -> tuple[float, float]:
 
 
 def calculate_sortino(
-    trades: pd.DataFrame, min_date: datetime, max_date: datetime, starting_balance: float
+    trades: pd.DataFrame,
+    min_date: datetime | None,
+    max_date: datetime | None,
+    starting_balance: float,
 ) -> float:
     """
     Calculate sortino
@@ -362,7 +365,10 @@ def calculate_sortino(
 
 
 def calculate_sharpe(
-    trades: pd.DataFrame, min_date: datetime, max_date: datetime, starting_balance: float
+    trades: pd.DataFrame,
+    min_date: datetime | None,
+    max_date: datetime | None,
+    starting_balance: float,
 ) -> float:
     """
     Calculate sharpe
@@ -389,7 +395,10 @@ def calculate_sharpe(
 
 
 def calculate_calmar(
-    trades: pd.DataFrame, min_date: datetime, max_date: datetime, starting_balance: float
+    trades: pd.DataFrame,
+    min_date: datetime | None,
+    max_date: datetime | None,
+    starting_balance: float,
 ) -> float:
     """
     Calculate calmar

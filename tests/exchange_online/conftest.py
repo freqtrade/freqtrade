@@ -435,14 +435,13 @@ EXCHANGES = {
         "candle_count": 1000,
         "orderbook_max_entries": 50,
     },
-    # TODO: re-enable htx once certificates work again
-    # "htx": {
-    #     "pair": "ETH/BTC",
-    #     "stake_currency": "BTC",
-    #     "hasQuoteVolume": True,
-    #     "timeframe": "1h",
-    #     "candle_count": 1000,
-    # },
+    "htx": {
+        "pair": "ETH/BTC",
+        "stake_currency": "BTC",
+        "hasQuoteVolume": True,
+        "timeframe": "1h",
+        "candle_count": 1000,
+    },
     "bitvavo": {
         "pair": "BTC/EUR",
         "stake_currency": "EUR",
@@ -523,6 +522,8 @@ EXCHANGES = {
         "candle_count": 5000,
         "orderbook_max_entries": 20,
         "futures_pair": "BTC/USDC:USDC",
+        # Assert that HIP3 pairs are fetched as part of load_markets
+        "futures_alt_pairs": ["XYZ-NVDA/USDC:USDC", "VNTL-ANTHROPIC/USDH:USDH"],
         "hasQuoteVolumeFutures": True,
         "leverage_tiers_public": False,
         "leverage_in_spot_market": False,

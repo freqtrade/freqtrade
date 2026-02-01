@@ -52,6 +52,12 @@ class Wallets:
         self._last_wallet_refresh: datetime | None = None
         self.update()
 
+    def __repr__(self) -> str:
+        return (
+            f"Wallets(stake_currency={self._stake_currency}, start_cap={self._start_cap}, "
+            f"wallets={len(self._wallets)}, positions={len(self._positions)})"
+        )
+
     def get_free(self, currency: str) -> float:
         balance = self._wallets.get(currency)
         if balance and balance.free:
@@ -198,7 +204,10 @@ class Wallets:
                 continue
             size = self._exchange._contracts_to_amount(symbol, position["contracts"])
             collateral = safe_value_fallback(position, "initialMargin", "collateral", 0.0)
-            leverage = position.get("leverage")
+            leverage: float | None = position.get("leverage")
+            if not leverage:
+                trade = Trade.get_trades_proxy(is_open=True, pair=symbol)
+                leverage = trade[0].leverage if trade else None
             _parsed_positions[symbol] = PositionWallet(
                 symbol,
                 position=size,

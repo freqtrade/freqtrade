@@ -125,7 +125,7 @@ def __run_backtest_bg(btconfig: Config):
         ApiBG.bgtask_running = False
 
 
-@router.post("/backtest", response_model=BacktestResponse, tags=["webserver", "backtest"])
+@router.post("/backtest", response_model=BacktestResponse)
 async def api_start_backtest(
     bt_settings: BacktestRequest, background_tasks: BackgroundTasks, config=Depends(get_config)
 ):
@@ -168,7 +168,7 @@ async def api_start_backtest(
     }
 
 
-@router.get("/backtest", response_model=BacktestResponse, tags=["webserver", "backtest"])
+@router.get("/backtest", response_model=BacktestResponse)
 def api_get_backtest():
     """
     Get backtesting result.
@@ -215,7 +215,7 @@ def api_get_backtest():
     }
 
 
-@router.delete("/backtest", response_model=BacktestResponse, tags=["webserver", "backtest"])
+@router.delete("/backtest", response_model=BacktestResponse)
 def api_delete_backtest():
     """Reset backtesting"""
     if ApiBG.bgtask_running:
@@ -242,7 +242,7 @@ def api_delete_backtest():
     }
 
 
-@router.get("/backtest/abort", response_model=BacktestResponse, tags=["webserver", "backtest"])
+@router.get("/backtest/abort", response_model=BacktestResponse)
 def api_backtest_abort():
     if not ApiBG.bgtask_running:
         return {
@@ -262,17 +262,13 @@ def api_backtest_abort():
     }
 
 
-@router.get(
-    "/backtest/history", response_model=list[BacktestHistoryEntry], tags=["webserver", "backtest"]
-)
+@router.get("/backtest/history", response_model=list[BacktestHistoryEntry])
 def api_backtest_history(config=Depends(get_config)):
     # Get backtest result history, read from metadata files
     return get_backtest_resultlist(config["user_data_dir"] / "backtest_results")
 
 
-@router.get(
-    "/backtest/history/result", response_model=BacktestResponse, tags=["webserver", "backtest"]
-)
+@router.get("/backtest/history/result", response_model=BacktestResponse)
 def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config)):
     # Get backtest result history, read from metadata files
     bt_results_base: Path = config["user_data_dir"] / "backtest_results"
@@ -299,11 +295,7 @@ def api_backtest_history_result(filename: str, strategy: str, config=Depends(get
     }
 
 
-@router.delete(
-    "/backtest/history/{file}",
-    response_model=list[BacktestHistoryEntry],
-    tags=["webserver", "backtest"],
-)
+@router.delete("/backtest/history/{file}", response_model=list[BacktestHistoryEntry])
 def api_delete_backtest_history_entry(file: str, config=Depends(get_config)):
     # Get backtest result history, read from metadata files
     bt_results_base: Path = config["user_data_dir"] / "backtest_results"
@@ -319,11 +311,7 @@ def api_delete_backtest_history_entry(file: str, config=Depends(get_config)):
     return get_backtest_resultlist(config["user_data_dir"] / "backtest_results")
 
 
-@router.patch(
-    "/backtest/history/{file}",
-    response_model=list[BacktestHistoryEntry],
-    tags=["webserver", "backtest"],
-)
+@router.patch("/backtest/history/{file}", response_model=list[BacktestHistoryEntry])
 def api_update_backtest_history_entry(
     file: str, body: BacktestMetadataUpdate, config=Depends(get_config)
 ):
@@ -346,11 +334,7 @@ def api_update_backtest_history_entry(
     return get_backtest_result(file_abs)
 
 
-@router.get(
-    "/backtest/history/{file}/market_change",
-    response_model=BacktestMarketChange,
-    tags=["webserver", "backtest"],
-)
+@router.get("/backtest/history/{file}/market_change", response_model=BacktestMarketChange)
 def api_get_backtest_market_change(file: str, config=Depends(get_config)):
     bt_results_base: Path = config["user_data_dir"] / "backtest_results"
     for fn in (

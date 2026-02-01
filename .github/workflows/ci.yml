@@ -16,8 +16,8 @@ on:
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}"
   cancel-in-progress: true
-permissions:
-  repository-projects: read
+permissions: {}
+
 jobs:
   tests:
     name: "Tests and Linting"
@@ -28,17 +28,17 @@ jobs:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Install uv
-      uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+      uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
       with:
         activate-environment: true
         enable-cache: true
@@ -178,12 +178,12 @@ jobs:
     name: "Mypy Version Check"
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 #v6.1.0
       with:
         python-version: "3.12"
 
@@ -196,11 +196,11 @@ jobs:
     name: "Pre-commit checks"
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
 
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
       with:
         python-version: "3.12"
     - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
@@ -209,7 +209,7 @@ jobs:
     name: "Documentation build"
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
 
@@ -218,7 +218,7 @@ jobs:
         ./tests/test_docs.sh
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
       with:
         python-version: "3.12"
 
@@ -241,17 +241,17 @@ jobs:
     name: "Tests and Linting - Online tests"
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
       with:
         python-version: "3.12"
 
     - name: Install uv
-      uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+      uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
       with:
         activate-environment: true
         enable-cache: true
@@ -275,6 +275,7 @@ jobs:
 
   # Notify only once - when CI completes (and after deploy) in case it's successful
   notify-complete:
+    name: "Notify CI Completion"
     needs: [
       build,
       build-linux-online
@@ -282,8 +283,6 @@ jobs:
     runs-on: ubuntu-22.04
     # Discord notification can't handle schedule events
     if: github.event_name != 'schedule' && github.repository == 'freqtrade/freqtrade'
-    permissions:
-      repository-projects: read
     steps:
 
     - name: Check user permission
@@ -321,12 +320,12 @@ jobs:
       with:
         jobs: ${{ toJSON(needs) }}
 
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
       with:
         python-version: "3.12"
 
@@ -336,7 +335,7 @@ jobs:
         python -m build --sdist --wheel
 
     - name: Upload artifacts 📦
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.1.0
       with:
         name: freqtrade-build
         path: |
@@ -349,7 +348,7 @@ jobs:
         python -m build --sdist --wheel ft_client
 
     - name: Upload artifacts 📦
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.1.0
       with:
         name: freqtrade-client-build
         path: |
@@ -365,15 +364,15 @@ jobs:
       name: testpypi
       url: https://test.pypi.org/p/freqtrade
     permissions:
-      id-token: write
+      id-token: write # Needed for pypa/gh-action-pypi-publish
 
     steps:
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
 
     - name: Download artifact  📦
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
       with:
         pattern: freqtrade*-build
         path: dist
@@ -394,15 +393,15 @@ jobs:
       name: pypi
       url: https://pypi.org/p/freqtrade
     permissions:
-      id-token: write
+      id-token: write # Needed for pypa/gh-action-pypi-publish
 
     steps:
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
 
     - name: Download artifact  📦
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
       with:
         pattern: freqtrade*-build
         path: dist
@@ -420,7 +419,7 @@ jobs:
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
     uses: ./.github/workflows/docker-build.yml
     permissions:
-      packages: write
+      packages: write # Needed to push package versions
       contents: read
     secrets:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
@@ -434,6 +433,6 @@ jobs:
     # Only run on push, schedule, or release events
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'freqtrade/freqtrade'
     permissions:
-      packages: write
+      packages: write # Needed to delete package versions
     with:
       package_name: 'freqtrade'

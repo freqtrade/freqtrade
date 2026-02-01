@@ -41,7 +41,7 @@ ranging from the simplest (0) to the most detailed per pair, per buy and per sel
 * 1: profit summaries grouped by enter_tag
 * 2: profit summaries grouped by enter_tag and exit_tag
 * 3: profit summaries grouped by pair and enter_tag
-* 4: profit summaries grouped by pair, enter_ and exit_tag (this can get quite large)
+* 4: profit summaries grouped by pair, enter_tag and exit_tag (this can get quite large)
 * 5: profit summaries grouped by exit_tag
 
 More options are available by running with the `-h` option.
@@ -52,11 +52,10 @@ By default, `backtesting-analysis` processes the most recent backtest results in
 If you want to analyze results from an earlier backtest, use the `--backtest-filename` option to specify the desired file. This lets you revisit and re-analyze historical backtest outputs at any time by providing the filename of the relevant backtest result:
 
 ``` bash
-freqtrade backtesting-analysis -c <config.json> --timeframe <tf> --strategy <strategy_name> --timerange <timerange> --export signals --backtest-filename backtest-result-2025-03-05_20-38-34.zip
+freqtrade backtesting -c <config.json> --strategy <strategy_name> --timerange <timerange> --export signals --backtest-filename backtest-result-2025-03-05_20-38-34.zip
 ```
 
-You should see some output similar to below in the logs with the name of the timestamped
-filename that was exported:
+You should see some output similar to below in the logs with the name of the timestamped filename that was exported:
 
 ```
 2022-06-14 16:28:32,698 - freqtrade.misc - INFO - dumping json to "mystrat_backtest-2022-06-14_16-28-32.json"
@@ -64,14 +63,14 @@ filename that was exported:
 
 You can then use that filename in `backtesting-analysis`:
 
-```
-freqtrade backtesting-analysis -c <config.json> --backtest-filename=mystrat_backtest-2022-06-14_16-28-32.json
+``` bash
+freqtrade backtesting-analysis -c <config.json> --backtest-filename=backtest-result-2025-03-05_20-38-34.zip
 ```
 
 To use a result from a different results directory, you can use  `--backtest-directory` to specify the directory
 
 ``` bash
-freqtrade backtesting-analysis -c <config.json> --backtest-directory custom_results/ --backtest-filename mystrat_backtest-2022-06-14_16-28-32.json
+freqtrade backtesting-analysis -c <config.json> --backtest-directory custom_results/ --backtest-filename backtest-result-2025-03-05_20-38-34.zip
 ```
 
 ### Tuning the buy tags and sell tags to display
@@ -85,7 +84,7 @@ To show only certain buy and sell tags in the displayed output, use the followin
 
 For example:
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 2 --enter-reason-list enter_tag_a enter_tag_b --exit-reason-list roi custom_exit_tag_a stop_loss
 ```
 
@@ -96,7 +95,7 @@ values present on signal candles to allow fine-grained investigation and tuning 
 indicators. To print out a column for a given set of indicators, use the `--indicator-list`
 option:
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c <config.json> --analysis-groups 0 2 --enter-reason-list enter_tag_a enter_tag_b --exit-reason-list roi custom_exit_tag_a stop_loss --indicator-list rsi rsi_1h bb_lowerband ema_9 macd macdsignal
 ```
 
@@ -108,24 +107,24 @@ output.
     The indicator values will be displayed for both entry and exit points. If `--indicator-list all` is specified, 
     only the indicators at the entry point will be shown to avoid excessively large lists, which could occur depending on the strategy.
 
-There are a range of candle and trade-related fields that are included in the analysis so are 
+There are a range of candle and trade-related fields that are included in the analysis so are
 automatically accessible by including them on the indicator-list, and these include:
 
-- **open_date     :** trade open datetime
-- **close_date    :** trade close datetime
-- **min_rate      :** minimum price seen throughout the position
-- **max_rate      :** maximum price seen throughout the position
-- **open          :** signal candle open price
-- **close         :** signal candle close price
-- **high          :** signal candle high price
-- **low           :** signal candle low price
-- **volume        :** signal candle volume
-- **profit_ratio  :** trade profit ratio
-- **profit_abs    :** absolute profit return of the trade 
+* **open_date     :** trade open datetime
+* **close_date    :** trade close datetime
+* **min_rate      :** minimum price seen throughout the position
+* **max_rate      :** maximum price seen throughout the position
+* **open          :** signal candle open price
+* **close         :** signal candle close price
+* **high          :** signal candle high price
+* **low           :** signal candle low price
+* **volume        :** signal candle volume
+* **profit_ratio  :** trade profit ratio
+* **profit_abs    :** absolute profit return of the trade 
 
 #### Sample Output for Indicator Values
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen 
 ```
 
@@ -158,13 +157,13 @@ The `--indicator-list` option, by default, displays indicator values for both en
 
 Example: Display indicator values at entry signals:
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen --entry-only
 ```
 
 Example: Display indicator values at exit signals:
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen --exit-only
 ```
 
@@ -181,7 +180,7 @@ To show only trades between dates within your backtested timerange, supply the u
 
 For example, if your backtest timerange was `20220101-20221231` but you only want to output trades in January:
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c <config.json> --timerange 20220101-20220201
 ```
 
@@ -189,7 +188,7 @@ freqtrade backtesting-analysis -c <config.json> --timerange 20220101-20220201
 
 Use the `--rejected-signals` option to print out rejected signals.
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c <config.json> --rejected-signals
 ```
 
@@ -198,13 +197,13 @@ freqtrade backtesting-analysis -c <config.json> --rejected-signals
 Some of the tabular outputs can become large, so printing them out to the terminal is not preferable.
 Use the `--analysis-to-csv` option to disable printing out of tables to standard out and write them to CSV files.
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c <config.json> --analysis-to-csv
 ```
 
 By default this will write one file per output table you specified in the `backtesting-analysis` command, e.g.
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c <config.json> --analysis-to-csv --rejected-signals --analysis-groups 0 1
 ```
 
@@ -216,6 +215,6 @@ This will write to `user_data/backtest_results`:
 
 To override where the files will be written, also specify the `--analysis-csv-path` option.
 
-```bash
+``` bash
 freqtrade backtesting-analysis -c <config.json> --analysis-to-csv --analysis-csv-path another/data/path/
 ```
