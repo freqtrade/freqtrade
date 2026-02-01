@@ -24,7 +24,7 @@ from tests.conftest import (
 def test_parse_args_None(caplog) -> None:
     with pytest.raises(SystemExit):
         main([])
-    assert log_has_re(r"Usage of Freqtrade requires a subcommand.*", caplog)
+    assert log_has_re(r"Usage of Freqtrade - Crypto P Edition requires a subcommand.*", caplog)
 
 
 def test_parse_args_version(capsys) -> None:
@@ -32,7 +32,9 @@ def test_parse_args_version(capsys) -> None:
         main(["-V"])
     captured = capsys.readouterr()
     assert re.search(r"CCXT Version:\s.*", captured.out, re.MULTILINE)
-    assert re.search(r"Freqtrade Version:\s+freqtrade\s.*", captured.out, re.MULTILINE)
+    assert re.search(
+        r"Freqtrade - Crypto P Edition Version:\s+freqtrade\s.*", captured.out, re.MULTILINE
+    )
 
 
 def test_parse_args_backtesting(mocker) -> None:

@@ -2259,7 +2259,7 @@ class Telegram(RPCHandler):
             update.effective_user.id if topic_id is not None and update.effective_user else None
         )
 
-        msg = f"""Freqtrade Bot Info:
+        msg = f"""Freqtrade - Crypto P Edition Bot Info:
         ```json
             {{
                 "enabled": true,

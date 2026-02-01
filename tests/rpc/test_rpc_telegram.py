@@ -3064,5 +3064,5 @@ async def test__tg_info(default_conf_usdt, mocker, update):
 
     assert context.bot.send_message.call_count == 1
     content = context.bot.send_message.call_args[1]["text"]
-    assert "Freqtrade Bot Info:\n" in content
+    assert "Freqtrade - Crypto P Edition Bot Info:\n" in content
     assert '"chat_id": "1235"' in content
