@@ -744,32 +744,40 @@ class Telegram(RPCHandler):
         else:
             await self._status_msg(update, context)
 
-    def _get_status_msg_lines(
-        self, r: dict[str, Any], position_adjust: bool, max_entries: int
-    ) -> list[str]:
-        r["open_date_hum"] = dt_humanize_delta(r["open_date"])
+    def _get_status_header(self, r: dict[str, Any]) -> list[str]:
+        return [f"{'🔴' if r.get('is_short') else '🟢'} *{r['pair']}* (#{r['trade_id']})"]
 
+    def _get_status_profit(self, r: dict[str, Any], position_adjust: bool) -> list[str]:
         r["stake_amount_r"] = fmt_coin(r["stake_amount"], r["quote_currency"])
         r["max_stake_amount_r"] = fmt_coin(
             r["max_stake_amount"] or r["stake_amount"], r["quote_currency"]
         )
         r["profit_abs_r"] = fmt_coin(r["profit_abs"], r["quote_currency"])
-        r["realized_profit_r"] = fmt_coin(r["realized_profit"], r["quote_currency"])
-        r["total_profit_abs_r"] = fmt_coin(r["total_profit_abs"], r["quote_currency"])
         profit_emoji = "🟢" if r["profit_ratio"] >= 0 else "🔴"
+
         lines = [
-            f"*{r['pair']}*   (#{r['trade_id']})",
-            f"{'🔴 `Short`' if r.get('is_short') else '🟢 `Long`'}"
-            + (f" ` ({r['leverage']}x)`" if r.get("leverage") else "")
-            + f"   {profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`",
+            f"*Profit:* {profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`"
+            + (f" `({r['leverage']}x)`" if r.get("leverage") else ""),
             f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`"
             + (f" / `{r['max_stake_amount_r']}`" if position_adjust else ""),
-            " ",
-            f"*Open:* `{round_value(r['open_rate'], 8)}`",
-            f"*Current:* `{round_value(r['current_rate'], 8)}`"
-            if r["is_open"]
-            else f"*Close:* `{round_value(r['close_rate'], 8)}`",
         ]
+        return lines
+
+    def _get_status_prices(self, r: dict[str, Any]) -> list[str]:
+        lines = []
+        price_line = f"*Entry:* `{round_value(r['open_rate'], 8)}`"
+        if r["is_open"]:
+            price_line += f" ➜ *Current:* `{round_value(r['current_rate'], 8)}`"
+        else:
+            price_line += f" ➜ *Close:* `{round_value(r['close_rate'], 8)}`"
+        lines.append(price_line)
+        return lines
+
+    def _get_status_details(
+        self, r: dict[str, Any], position_adjust: bool, max_entries: int
+    ) -> list[str]:
+        lines = []
+        r["open_date_hum"] = dt_humanize_delta(r["open_date"])
 
         if r["is_open"]:
             lines.append(" ")
@@ -790,6 +798,9 @@ class Telegram(RPCHandler):
             )
 
         if r["is_open"]:
+            r["realized_profit_r"] = fmt_coin(r["realized_profit"], r["quote_currency"])
+            r["total_profit_abs_r"] = fmt_coin(r["total_profit_abs"], r["quote_currency"])
+
             if r.get("realized_profit") is not None and r.get("realized_profit_ratio") is not None:
                 lines.append(
                     f"*Realized Profit:* `{format_pct(r['realized_profit_ratio'])} "
@@ -801,9 +812,7 @@ class Telegram(RPCHandler):
                     f"({r['total_profit_abs_r']})`"
                 )
 
-            # Append empty line to improve readability
             lines.append(" ")
-            # Adding liquidation only if it is not None
             if liquidation := r.get("liquidation_price"):
                 lines.append(f"*Liquidation:* `{round_value(liquidation, 8)}`")
 
@@ -811,13 +820,11 @@ class Telegram(RPCHandler):
                 r["stop_loss_abs"] != r["initial_stop_loss_abs"]
                 and r["initial_stop_loss_ratio"] is not None
             ):
-                # Adding initial stoploss only if it is different from stoploss
                 lines.append(
                     f"*Initial Stoploss:* `{r['initial_stop_loss_abs']:.8f}` "
                     f"`({format_pct(r['initial_stop_loss_ratio'])})`"
                 )
 
-            # Adding stoploss and stoploss percentage only if it is not None
             lines.append(
                 f"*Stoploss:* `{round_value(r['stop_loss_abs'], 8)}` "
                 + (f"`({format_pct(r['stop_loss_ratio'])})`" if r["stop_loss_ratio"] else "")
@@ -831,6 +838,15 @@ class Telegram(RPCHandler):
                     f"*Open Order:* `{open_orders}`"
                     + (f"- `{r['exit_order_status']}`" if r["exit_order_status"] else "")
                 )
+        return lines
+
+    def _get_status_msg_lines(
+        self, r: dict[str, Any], position_adjust: bool, max_entries: int
+    ) -> list[str]:
+        lines = self._get_status_header(r)
+        lines.extend(self._get_status_profit(r, position_adjust))
+        lines.extend(self._get_status_prices(r))
+        lines.extend(self._get_status_details(r, position_adjust, max_entries))
         return lines
 
     async def _status_msg(self, update: Update, context: CallbackContext) -> None:
@@ -1349,7 +1365,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_start()
-        await self._send_msg(f"Status: `{msg['status']}`")
+        await self._send_msg(f"✅ *Status:* `{msg['status']}`")
 
     @authorized_only
     async def _stop(self, update: Update, context: CallbackContext) -> None:
@@ -1361,7 +1377,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_stop()
-        await self._send_msg(f"Status: `{msg['status']}`")
+        await self._send_msg(f"🛑 *Status:* `{msg['status']}`")
 
     @authorized_only
     async def _reload_config(self, update: Update, context: CallbackContext) -> None:
@@ -1373,7 +1389,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_reload_config()
-        await self._send_msg(f"Status: `{msg['status']}`")
+        await self._send_msg(f"🔄 *Status:* `{msg['status']}`")
 
     @authorized_only
     async def _pause(self, update: Update, context: CallbackContext) -> None:
@@ -1385,7 +1401,7 @@ class Telegram(RPCHandler):
         :return: None
         """
         msg = self._rpc._rpc_pause()
-        await self._send_msg(f"Status: `{msg['status']}`")
+        await self._send_msg(f"⏸️ *Status:* `{msg['status']}`")
 
     @authorized_only
     async def _reload_trade_from_exchange(self, update: Update, context: CallbackContext) -> None:
@@ -1396,7 +1412,7 @@ class Telegram(RPCHandler):
             raise RPCException("Trade-id not set.")
         trade_id = int(context.args[0])
         msg = self._rpc._rpc_reload_trade_from_exchange(trade_id)
-        await self._send_msg(f"Status: `{msg['status']}`")
+        await self._send_msg(f"🔄 *Status:* `{msg['status']}`")
 
     @authorized_only
     async def _force_exit(self, update: Update, context: CallbackContext) -> None:
@@ -1975,9 +1991,10 @@ class Telegram(RPCHandler):
         Shows the last process timestamp
         """
         health = self._rpc.health()
-        message = f"Last process: `{health['last_process_loc']}`\n"
-        message += f"Initial bot start: `{health['bot_start_loc']}`\n"
-        message += f"Last bot restart: `{health['bot_startup_loc']}`"
+        message = f"💓 *System Health*\n"
+        message += f"⏱️ *Last process:* `{health['last_process_loc']}`\n"
+        message += f"🚀 *Bot start:* `{health['bot_start_loc']}`\n"
+        message += f"🔄 *Last restart:* `{health['bot_startup_loc']}`"
         await self._send_msg(message)
 
     @authorized_only

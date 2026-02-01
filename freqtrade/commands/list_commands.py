@@ -134,7 +134,7 @@ def _print_objs_tabular(objs: list, print_colorized: bool) -> None:
                     "custom-Params": ", ".join(custom_params) if custom_params else "",
                 }
             )
-    table = Table()
+    table = Table(row_styles=["", "dim"])
 
     for header in objs_to_print[0].keys():
         table.add_column(header.capitalize(), justify="right")

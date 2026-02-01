@@ -621,7 +621,7 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     msg1 = msg_mock.call_args_list[0][0][0]
 
     assert "Close:" not in msg1
-    assert "*LTC/BTC*   (#2)" in msg1
+    assert "🟢 *LTC/BTC* (#2)" in msg1
 
 
 async def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -1280,6 +1280,7 @@ async def test_start_handle(default_conf, update, mocker) -> None:
     await telegram._start(update=update, context=MagicMock())
     assert freqtradebot.state == State.RUNNING
     assert msg_mock.call_count == 1
+    assert "✅ *Status:* `starting trader ...`" in msg_mock.call_args_list[0][0][0]
 
 
 async def test_start_handle_already_running(default_conf, update, mocker) -> None:
@@ -1301,7 +1302,7 @@ async def test_stop_handle(default_conf, update, mocker) -> None:
     await telegram._stop(update=update, context=MagicMock())
     assert freqtradebot.state == State.STOPPED
     assert msg_mock.call_count == 1
-    assert "stopping trader" in msg_mock.call_args_list[0][0][0]
+    assert "🛑 *Status:* `stopping trader ...`" in msg_mock.call_args_list[0][0][0]
 
 
 async def test_stop_handle_already_stopped(default_conf, update, mocker) -> None:
@@ -1323,7 +1324,7 @@ async def test_pause_handle(default_conf, update, mocker) -> None:
     assert freqtradebot.state == State.PAUSED
     assert msg_mock.call_count == 1
     assert (
-        "paused, no more entries will occur from now. Run /start to enable entries."
+        "⏸️ *Status:* `paused, no more entries will occur from now. Run /start to enable entries.`"
         in msg_mock.call_args_list[0][0][0]
     )
 
@@ -1336,7 +1337,7 @@ async def test_reload_config_handle(default_conf, update, mocker) -> None:
     await telegram._reload_config(update=update, context=MagicMock())
     assert freqtradebot.state == State.RELOAD_CONFIG
     assert msg_mock.call_count == 1
-    assert "Reloading config" in msg_mock.call_args_list[0][0][0]
+    assert "🔄 *Status:* `Reloading config ...`" in msg_mock.call_args_list[0][0][0]
 
 
 async def test_telegram_forceexit_handle(
@@ -2096,7 +2097,7 @@ async def test_telegram_reload_trade_from_exchange(mocker, update, default_conf,
     context.args = [5]
 
     await telegram._reload_trade_from_exchange(update=update, context=context)
-    assert "Status: `Reloaded from orders from exchange`" in msg_mock.call_args_list[0][0][0]
+    assert "🔄 *Status:* `Reloaded from orders from exchange`" in msg_mock.call_args_list[0][0][0]
 
 
 @pytest.mark.parametrize("is_short", [True, False])
