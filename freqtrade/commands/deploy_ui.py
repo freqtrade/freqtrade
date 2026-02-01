@@ -12,7 +12,7 @@ req_timeout = 30
 
 def clean_ui_subdir(directory: Path):
     if directory.is_dir():
-        logger.info("Removing UI directory content.")
+        logger.info("Removing Freqtrade - Crypto P Edition UI directory content.")
 
         for p in reversed(list(directory.glob("**/*"))):  # iterate contents from leaves to root
             if p.name in (".gitkeep", "fallback_file.html"):
@@ -60,7 +60,9 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
             TimeRemainingColumn(),
             transient=True,
         ) as progress:
-            task = progress.add_task("Downloading FreqUI...", total=total_length)
+            task = progress.add_task(
+                "Downloading Freqtrade - Crypto P Edition UI...", total=total_length
+            )
 
             for chunk in resp.iter_content(chunk_size=8192):
                 if chunk:
@@ -84,7 +86,9 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
 
     console = get_rich_console()
     console.print()
-    console.print(f"[bold green]✅ FreqUI {version} installed successfully![/bold green]")
+    console.print(
+        f"[bold green]✅ Freqtrade - Crypto P Edition UI {version} installed successfully![/bold green]"
+    )
     console.print(f"Installed to: [bold]{dest_folder}[/bold]")
     console.print("\n[bold]Next steps:[/bold]")
     console.print("1. Restart your bot to load the new UI.")
