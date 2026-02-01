@@ -1,5 +1,5 @@
 """
-Freqtrade is the main module of this bot. It contains the FreqtradeBot class.
+Freqtrade - Crypto P Edition is the main module of this bot. It contains the FreqtradeBot class.
 """
 
 import logging
@@ -72,7 +72,7 @@ logger = logging.getLogger(__name__)
 
 class FreqtradeBot(LoggingMixin):
     """
-    Freqtrade is the main class of the bot.
+    Freqtrade - Crypto P Edition is the main class of the bot.
     This is from here the bot start its logic.
     """
 

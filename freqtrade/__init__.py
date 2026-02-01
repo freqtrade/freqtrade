@@ -1,4 +1,4 @@
-"""Freqtrade bot"""
+"""Freqtrade - Crypto P Edition"""
 
 __version__ = "2026.2-dev"
 

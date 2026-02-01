@@ -21,7 +21,7 @@ positional arguments:
     backtesting-show    Show past Backtest results
     backtesting-analysis
                         Backtest Analysis module.
-    edge                Edge module. No longer part of Freqtrade
+    edge                Edge module. No longer part of Freqtrade - Crypto P Edition
     hyperopt            Hyperopt module.
     hyperopt-list       List Hyperopt results
     hyperopt-show       Show details of Hyperopt results
