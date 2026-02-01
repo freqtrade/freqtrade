@@ -140,7 +140,7 @@ class ApiServer(RPCHandler):
             )
 
         self.app = FastAPI(
-            title="Freqtrade - Crypto P Edition API",
+            title="Crypto P's Magical Crypto Circus API",
             docs_url="/docs" if api_config.get("enable_openapi", False) else None,
             redoc_url=None,
             default_response_class=FTJSONResponse,
