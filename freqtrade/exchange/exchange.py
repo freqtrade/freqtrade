@@ -245,6 +245,7 @@ class Exchange:
 
         # Cached timeframes
         self._timeframes: list[str] | None = None
+        self._quote_currencies_cache: list[str] | None = None
 
         # Holds public_trades
         self._trades: dict[PairWithTimeframe, DataFrame] = {}
@@ -556,12 +557,17 @@ class Exchange:
         """
         Return a list of supported quote currencies
         """
+        if self._quote_currencies_cache is not None:
+            return self._quote_currencies_cache
+
         markets = self.markets
-        return sorted(set([x["quote"] for _, x in markets.items()]))
+        self._quote_currencies_cache = sorted(set([x["quote"] for _, x in markets.items()]))
+        return self._quote_currencies_cache
 
     def get_pair_quote_currency(self, pair: str) -> str:
         """Return a pair's quote currency (base/quote:settlement)"""
-        return self.markets.get(pair, {}).get("quote", "")
+        market = self.markets.get(pair)
+        return market["quote"] if market else ""
 
     def get_pair_base_currency(self, pair: str) -> str:
         """Return a pair's base currency (base/quote:settlement)"""
@@ -725,6 +731,7 @@ class Exchange:
                 self._ws_async.options = self._api.options
             self._last_markets_refresh = dt_ts()
             self._timeframes = None
+            self._quote_currencies_cache = None
 
             if is_initial and self._ft_has["needs_trading_fees"]:
                 self._trading_fees = self.fetch_trading_fees()
@@ -759,15 +766,24 @@ class Exchange:
         Get valid pair combination of curr_1 and curr_2 by trying both combinations.
         """
         yielded = False
-        for pair in (
-            f"{curr_1}/{curr_2}",
-            f"{curr_2}/{curr_1}",
-            f"{curr_1}/{curr_2}:{curr_2}",
-            f"{curr_2}/{curr_1}:{curr_1}",
-        ):
-            if pair in self.markets and self.markets[pair].get("active"):
-                yielded = True
-                yield pair
+        # Optimization: Manual unrolling to avoid creating a tuple and iterating
+        pair = f"{curr_1}/{curr_2}"
+        if pair in self.markets and self.markets[pair].get("active"):
+            yielded = True
+            yield pair
+        pair = f"{curr_2}/{curr_1}"
+        if pair in self.markets and self.markets[pair].get("active"):
+            yielded = True
+            yield pair
+        pair = f"{curr_1}/{curr_2}:{curr_2}"
+        if pair in self.markets and self.markets[pair].get("active"):
+            yielded = True
+            yield pair
+        pair = f"{curr_2}/{curr_1}:{curr_1}"
+        if pair in self.markets and self.markets[pair].get("active"):
+            yielded = True
+            yield pair
+
         if not yielded:
             raise ValueError(f"Could not combine {curr_1} and {curr_2} to get a valid pair.")
 
