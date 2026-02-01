@@ -87,7 +87,8 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     console = get_rich_console()
     console.print()
     console.print(
-        f"[bold green]✅ Freqtrade - Crypto P Edition UI {version} installed successfully![/bold green]"
+        f"[bold green]✅ Freqtrade - Crypto P Edition UI {version} "
+        "installed successfully![/bold green]"
     )
     console.print(f"Installed to: [bold]{dest_folder}[/bold]")
     console.print("\n[bold]Next steps:[/bold]")
