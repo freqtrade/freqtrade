@@ -51,9 +51,7 @@ def ohlcv_to_dataframe(
     # Optimization: Only convert if not already float64
     cols_to_check = ["open", "high", "low", "close", "volume"]
     if not all(df[col].dtype == "float64" for col in cols_to_check):
-        df = df.astype(
-            dtype={col: "float" for col in cols_to_check}
-        )
+        df = df.astype(dtype={col: "float" for col in cols_to_check})
     return clean_ohlcv_dataframe(
         df, timeframe, pair, fill_missing=fill_missing, drop_incomplete=drop_incomplete
     )
