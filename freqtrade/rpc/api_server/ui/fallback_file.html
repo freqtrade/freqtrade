@@ -3,279 +3,184 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Freqtrade - Crypto P Edition - UI Not Installed</title>
+  <title>Crypto P's Magical Crypto Circus!</title>
   <style>
     :root {
-      --bg-color: #121212;
-      --card-bg: #1e1e1e;
+      --bg-color: #0d0015; /* Dark purple/black */
       --text-color: #e0e0e0;
-      --text-muted: #a0a0a0;
-      --accent-color: #2196f3;
-      --accent-hover: #1976d2;
-      --code-bg: #2d2d2d;
-      --border-color: #333;
-      --success-color: #4caf50;
-      --btn-bg: #2d2d2d;
-      --btn-hover: #3d3d3d;
-    }
-    [data-theme="light"] {
-      --bg-color: #f5f5f5;
-      --card-bg: #ffffff;
-      --text-color: #333333;
-      --text-muted: #666666;
-      --accent-color: #2196f3;
-      --accent-hover: #1976d2;
-      --code-bg: #f0f0f0;
-      --border-color: #ddd;
-      --success-color: #43a047;
-      --btn-bg: #e0e0e0;
-      --btn-hover: #d0d0d0;
-    }
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+      --accent-primary: #ff00ff; /* Magenta */
+      --accent-secondary: #00ffff; /* Cyan */
+      --card-bg: #1a0b2e;
+      --nav-bg: #240046;
+      --btn-bg: #ff00ff;
+      --btn-text: #ffffff;
     }
     body {
       background-color: var(--bg-color);
       color: var(--text-color);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      text-align: center;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif; /* Playful font */
+      margin: 0;
+      padding: 0;
       line-height: 1.6;
     }
-    .main-container {
-      background-color: var(--card-bg);
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      max-width: 600px;
-      width: 90%;
-      padding: 3rem 2rem;
-      border: 1px solid var(--border-color);
+    header {
+      background-color: var(--nav-bg);
+      padding: 1rem;
+      text-align: center;
+      border-bottom: 3px solid var(--accent-secondary);
+    }
+    .logo-container {
+      margin-bottom: 1rem;
+    }
+    .logo {
+      max-width: 150px;
+      height: auto;
+      border-radius: 50%;
+      border: 3px solid var(--accent-primary);
+      box-shadow: 0 0 15px var(--accent-primary);
     }
     h1 {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-      color: var(--text-color);
-      font-weight: 700;
+      color: var(--accent-secondary);
+      font-size: 2.5rem;
+      text-shadow: 2px 2px var(--accent-primary);
+      margin: 0.5rem 0;
     }
-    .subtitle {
-      color: var(--text-muted);
-      margin-bottom: 2rem;
+    nav {
+      margin-top: 1rem;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin: 0 10px;
+      font-weight: bold;
       font-size: 1.1rem;
+      transition: color 0.3s;
+    }
+    nav a:hover {
+      color: var(--accent-primary);
+      text-shadow: 0 0 5px var(--accent-primary);
+    }
+    .hero {
+      text-align: center;
+      padding: 3rem 1rem;
+      background: linear-gradient(180deg, var(--bg-color) 0%, var(--card-bg) 100%);
+    }
+    .content-section {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background-color: var(--card-bg);
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+      border: 1px solid var(--accent-primary);
+    }
+    h2 {
+      color: var(--accent-primary);
+      border-bottom: 2px solid var(--accent-secondary);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    h3 {
+      color: var(--accent-secondary);
+      margin-top: 1.5rem;
     }
     p {
       margin-bottom: 1rem;
+      font-size: 1.1rem;
     }
-    .code-container {
-      position: relative;
-      background-color: var(--code-bg);
-      border-radius: 8px;
-      margin: 2rem 0;
-      border: 1px solid var(--border-color);
-      text-align: left;
+    .install-notice {
+      background-color: rgba(255, 0, 255, 0.1);
+      border: 2px dashed var(--accent-secondary);
+      padding: 1.5rem;
+      margin-top: 2rem;
+      border-radius: 10px;
+      text-align: center;
     }
     code {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 1.1rem;
-      display: block;
-      padding: 1.5rem;
-      padding-right: 4rem;
-      color: var(--text-color);
-      overflow-x: auto;
-    }
-    .copy-btn {
-      position: absolute;
-      top: 50%;
-      right: 10px;
-      transform: translateY(-50%);
-      background-color: transparent;
-      border: 1px solid var(--border-color);
-      color: var(--text-muted);
-      border-radius: 4px;
-      padding: 0.4rem 0.8rem;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .copy-btn:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: var(--text-color);
-    }
-    .copy-btn.copied {
-      color: var(--success-color);
-      border-color: var(--success-color);
-    }
-    .links {
-      margin-top: 2.5rem;
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      flex-wrap: wrap;
-    }
-    a {
-      color: var(--accent-color);
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-    a:hover {
-      color: var(--accent-hover);
-      text-decoration: underline;
-    }
-    .icon {
-      margin-right: 0.4rem;
-    }
-
-    /* New Elements */
-    .theme-toggle {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: var(--btn-bg);
-      border: 1px solid var(--border-color);
-      color: var(--text-color);
-      padding: 0.5rem;
-      border-radius: 50%;
-      cursor: pointer;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    .theme-toggle:hover {
-      background: var(--btn-hover);
-      transform: scale(1.05);
-    }
-    .theme-toggle .icon {
-      margin-right: 0;
+      background-color: #000;
+      color: #0f0;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      font-family: monospace;
       font-size: 1.2rem;
+      display: inline-block;
+      margin: 1rem 0;
     }
-
-    .actions {
-        margin-top: 1.5rem;
+    footer {
+      text-align: center;
+      padding: 2rem;
+      background-color: var(--nav-bg);
+      color: #aaa;
+      margin-top: 3rem;
+      border-top: 2px solid var(--accent-primary);
     }
-
-    .refresh-btn {
-      background-color: var(--accent-color);
-      color: #fff;
-      border: none;
+    .btn {
+      display: inline-block;
+      background-color: var(--btn-bg);
+      color: var(--btn-text);
       padding: 0.8rem 1.5rem;
-      font-size: 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background-color 0.2s, transform 0.1s;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .refresh-btn:hover {
-      background-color: var(--accent-hover);
-      transform: translateY(-1px);
-    }
-    .refresh-btn:active {
-      transform: translateY(0);
-    }
-    .refresh-btn:disabled {
-      opacity: 0.7;
-      cursor: wait;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    .btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 10px var(--accent-primary);
     }
   </style>
 </head>
 <body>
-  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
-    <span class="icon" aria-hidden="true">🌙</span>
-  </button>
 
-  <div class="main-container">
-    <h1>Freqtrade - Crypto P Edition UI Not Installed</h1>
-    <p class="subtitle">The web interface files are missing from your installation.</p>
-
-    <p>To install the UI, please run the following command in your terminal and restart your bot:</p>
-
-    <div class="code-container">
-      <code id="install-cmd">freqtrade install-ui</code>
-      <button class="copy-btn" onclick="copyCommand()" aria-label="Copy command" aria-live="polite">Copy</button>
-    </div>
-
-    <p>Once installed, refresh this page to access the dashboard.</p>
-
-    <div class="actions">
-      <button class="refresh-btn" onclick="refreshPage()" aria-busy="false">
-        <span class="icon" aria-hidden="true">🔄</span> Check Again
-      </button>
-    </div>
-
-    <div class="links">
-      <a href="https://www.freqtrade.io/en/latest/" target="_blank" rel="noopener">
-        <span class="icon">📚</span>Documentation
-      </a>
-      <a href="https://discord.gg/freqtrade" target="_blank" rel="noopener">
-        <span class="icon">💬</span>Discord Community
-      </a>
-    </div>
+<header>
+  <div class="logo-container">
+    <img src="/logo.png" alt="Crypto P Logo" class="logo">
   </div>
+  <h1>Crypto P's Magical Crypto Circus!</h1>
+  <nav>
+    <a href="#">Home</a>
+    <a href="#">Sign Up</a>
+    <a href="#">Login</a>
+    <a href="#">Dashboard</a>
+    <a href="#">Crypto Signals</a>
+    <a href="#">Live Charts</a>
+    <a href="#">About Crypto P</a>
+    <a href="#">Contact</a>
+  </nav>
+</header>
 
-  <script>
-    function copyCommand() {
-      const cmd = document.getElementById('install-cmd').innerText;
-      navigator.clipboard.writeText(cmd).then(() => {
-        const btn = document.querySelector('.copy-btn');
-        const originalText = btn.innerText;
-        btn.innerText = 'Copied!';
-        btn.classList.add('copied');
+<div class="hero">
+  <h2>Welcome to the Show!</h2>
+  <p>Step into the most dazzling carousel for your crypto trading.</p>
+</div>
 
-        setTimeout(() => {
-          btn.innerText = originalText;
-          btn.classList.remove('copied');
-        }, 2000);
-      }).catch(err => {
-        console.error('Failed to copy text: ', err);
-      });
-    }
+<div class="content-section">
+  <h2>Meet Crypto P</h2>
+  <p><strong>Crypto P</strong> is the eccentric mastermind behind Crypto P's Magical Server! With high energy, a love for cryptocurrency, and a passion for innovation, Crypto P is constantly developing new ideas, trading bots, and crypto signals. A true visionary with a mix of seriousness and playfulness, Crypto P brings the magic of cryptocurrency to life!</p>
+</div>
 
-    function refreshPage() {
-      const btn = document.querySelector('.refresh-btn');
-      const icon = btn.querySelector('.icon');
-      btn.disabled = true;
-      btn.setAttribute('aria-busy', 'true');
-      icon.style.display = 'inline-block';
-      icon.style.animation = 'spin 1s linear infinite';
-      btn.innerHTML = '<span class="icon" style="display:inline-block; animation: spin 1s linear infinite" aria-hidden="true">🔄</span> Checking...';
+<div class="content-section">
+  <h2>The Philosophy of Crypto P</h2>
+  <p>Crypto P believes in the power of decentralization, the potential of blockchain technology, and the freedom that comes with it. The journey is as important as the destination, and Crypto P loves to share the excitement with others. From building advanced trading bots to providing real-time crypto signals, Crypto P’s goal is to make the crypto world accessible to everyone!</p>
+</div>
 
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    }
+<div class="content-section">
+  <h2>Crypto P’s Vision</h2>
+  <p>With a deep understanding of the crypto markets, Crypto P combines technical expertise with a creative and psychedelic spirit. Crypto P’s vision is to create a platform that not only provides valuable tools and insights for traders but also engages the community with fun, vibrant, and thought-provoking content. Whether it’s through high-energy crypto signals, innovative bots, or live charts, Crypto P is here to guide you on your crypto journey.</p>
+</div>
 
-    function toggleTheme() {
-      const body = document.body;
-      const currentTheme = body.getAttribute('data-theme');
-      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-      setTheme(newTheme);
-    }
+<div class="content-section install-notice">
+  <h3>Unlock the Full Magic!</h3>
+  <p>The Magical UI is currently hiding. Summon it with this spell:</p>
+  <code>freqtrade install-ui</code>
+  <p>Then refresh this page to enter the dashboard!</p>
+  <button class="btn" onclick="location.reload()">🔄 Refresh Magic</button>
+</div>
 
-    function setTheme(theme) {
-      document.body.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
-      const btn = document.querySelector('.theme-toggle .icon');
-      btn.innerText = theme === 'light' ? '☀️' : '🌙';
-    }
+<footer>
+  <p>&copy; 2026 Crypto P's Magical Crypto Circus!</p>
+</footer>
 
-    // Initialize theme
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
-  </script>
 </body>
 </html>

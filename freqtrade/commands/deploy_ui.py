@@ -12,10 +12,10 @@ req_timeout = 30
 
 def clean_ui_subdir(directory: Path):
     if directory.is_dir():
-        logger.info("Removing Freqtrade - Crypto P Edition UI directory content.")
+        logger.info("Removing Crypto P's Magical Crypto Circus UI directory content.")
 
         for p in reversed(list(directory.glob("**/*"))):  # iterate contents from leaves to root
-            if p.name in (".gitkeep", "fallback_file.html"):
+            if p.name in (".gitkeep", "fallback_file.html", "logo.png"):
                 continue
             if p.is_file():
                 p.unlink()
@@ -61,7 +61,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
             transient=True,
         ) as progress:
             task = progress.add_task(
-                "Downloading Freqtrade - Crypto P Edition UI...", total=total_length
+                "Downloading Crypto P's Magical Crypto Circus UI...", total=total_length
             )
 
             for chunk in resp.iter_content(chunk_size=8192):
@@ -87,7 +87,7 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     console = get_rich_console()
     console.print()
     console.print(
-        f"[bold green]✅ Freqtrade - Crypto P Edition UI {version} installed successfully![/bold green]"
+        f"[bold green]✅ Crypto P's Magical Crypto Circus UI {version} installed successfully![/bold green]"
     )
     console.print(f"Installed to: [bold]{dest_folder}[/bold]")
     console.print("\n[bold]Next steps:[/bold]")
