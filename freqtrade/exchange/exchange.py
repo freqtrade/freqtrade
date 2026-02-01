@@ -243,6 +243,9 @@ class Exchange:
         self._klines: dict[PairWithTimeframe, DataFrame] = {}
         self._expiring_candle_cache: dict[tuple[str, int], PeriodicCache] = {}
 
+        # Cached timeframes
+        self._timeframes: list[str] | None = None
+
         # Holds public_trades
         self._trades: dict[PairWithTimeframe, DataFrame] = {}
 
@@ -431,6 +434,9 @@ class Exchange:
 
     @property
     def timeframes(self) -> list[str]:
+        if self._timeframes is not None:
+            return self._timeframes
+
         market_type = (
             "spot"
             if self.trading_mode != TradingMode.FUTURES
@@ -439,7 +445,8 @@ class Exchange:
         timeframes = self._api.options.get("timeframes", {}).get(market_type)
         if timeframes is None:
             timeframes = self._api.timeframes
-        return list((timeframes or {}).keys())
+        self._timeframes = list((timeframes or {}).keys())
+        return self._timeframes
 
     @property
     def markets(self) -> dict[str, Any]:
@@ -717,6 +724,7 @@ class Exchange:
                 self._ws_async.set_markets_from_exchange(self._api_async)
                 self._ws_async.options = self._api.options
             self._last_markets_refresh = dt_ts()
+            self._timeframes = None
 
             if is_initial and self._ft_has["needs_trading_fees"]:
                 self._trading_fees = self.fetch_trading_fees()
