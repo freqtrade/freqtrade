@@ -39,20 +39,19 @@ def ohlcv_to_dataframe(
     df = DataFrame(ohlcv, columns=cols)
 
     # Floor date to seconds to account for exchange imprecisions
-    df["date"] = to_datetime(df["date"], unit="ms", utc=True).dt.floor("s")
+    if df["date"].dtype.kind in "if":
+        # Optimization: Use integer division and unit='s' to avoid dt.floor('s')
+        df["date"] = to_datetime(df["date"] // 1000, unit="s", utc=True)
+    else:
+        df["date"] = to_datetime(df["date"], unit="ms", utc=True).dt.floor("s")
 
     # Some exchanges return int values for Volume and even for OHLC.
     # Convert them since TA-LIB indicators used in the strategy assume floats
     # and fail with exception...
-    df = df.astype(
-        dtype={
-            "open": "float",
-            "high": "float",
-            "low": "float",
-            "close": "float",
-            "volume": "float",
-        }
-    )
+    # Optimization: Only convert if not already float64
+    cols_to_check = ["open", "high", "low", "close", "volume"]
+    if not all(df[col].dtype == "float64" for col in cols_to_check):
+        df = df.astype(dtype={col: "float" for col in cols_to_check})
     return clean_ohlcv_dataframe(
         df, timeframe, pair, fill_missing=fill_missing, drop_incomplete=drop_incomplete
     )
@@ -75,7 +74,8 @@ def clean_ohlcv_dataframe(
     :return: DataFrame
     """
     # group by index and aggregate results to eliminate duplicate ticks
-    data = data.groupby(by="date", as_index=False, sort=True).agg(
+    # sort=False as data is already sorted, providing a small performance boost
+    data = data.groupby(by="date", as_index=False, sort=False).agg(
         {
             "open": "first",
             "high": "max",
