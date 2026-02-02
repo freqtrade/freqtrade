@@ -90,7 +90,7 @@ def is_file_in_dir(file: Path, directory: Path) -> bool:
 
 
 def pair_to_filename(pair: str) -> str:
-    for ch in ["/", " ", ".", "@", "$", "+", ":"]:
+    for ch in ["/", " ", ".", "@", "$", "+", ":", "\\"]:
         pair = pair.replace(ch, "_")
     return pair
 

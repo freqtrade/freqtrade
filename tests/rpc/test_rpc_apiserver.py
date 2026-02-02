@@ -3439,3 +3439,42 @@ def test_api_markets_webserver(botclient):
 
     assert "hyperliquid_spot" in ApiBG.exchanges
     assert "binance_spot" in ApiBG.exchanges
+
+def test_api_download_data_validation(botclient, mocker, tmp_path):
+    ftbot, client = botclient
+    ftbot.config["runmode"] = RunMode.WEBSERVER
+    ftbot.config["user_data_dir"] = tmp_path
+
+    # Test invalid pair characters
+    body = {
+        "pairs": ["ETH/BTC", "../../passwd"],
+        "timeframes": ["5m"],
+    }
+    rc = client_post(client, f"{BASE_URI}/download_data", body)
+    assert_response(rc, 422)
+    # Pydantic validation error structure
+    assert "Invalid pair name: ../../passwd" in rc.text
+
+    # Test valid pair
+    body["pairs"] = ["ETH/BTC"]
+    mocker.patch("freqtrade.data.history.history_utils.download_data", return_value=None)
+    rc = client_post(client, f"{BASE_URI}/download_data", body)
+    assert_response(rc, 200)
+
+def test_security_headers(botclient):
+    _ftbot, client = botclient
+    rc = client_get(client, f"{BASE_URI}/ping")
+    assert rc.headers["Content-Security-Policy"]
+    assert rc.headers["X-Content-Type-Options"] == "nosniff"
+    assert rc.headers["X-Frame-Options"] == "DENY"
+    assert "Permissions-Policy" in rc.headers
+    assert "Referrer-Policy" in rc.headers
+    assert rc.headers["Referrer-Policy"] == "same-origin"
+    assert rc.headers["Cache-Control"] == "no-store, no-cache, must-revalidate"
+
+def test_api_logs_validation(botclient):
+    _ftbot, client = botclient
+    rc = client_get(client, f"{BASE_URI}/logs?limit=0")
+    assert_response(rc, 422)
+    rc = client_get(client, f"{BASE_URI}/logs?limit=10001")
+    assert_response(rc, 422)

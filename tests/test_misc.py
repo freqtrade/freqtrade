@@ -86,6 +86,7 @@ def test_is_file_in_dir(tmp_path):
         ("LBTC:1022/SAI", "LBTC_1022_SAI"),
         ("$PAC/BTC", "_PAC_BTC"),
         ("ACC_OLD/BTC", "ACC_OLD_BTC"),
+        ("ETH\\BTC", "ETH_BTC"),
     ],
 )
 def test_pair_to_filename(pair, expected_result):
