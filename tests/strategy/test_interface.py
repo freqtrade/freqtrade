@@ -1053,4 +1053,4 @@ def test_pandas_warning_direct(ohlcv_history, function, raises, recwarn):
 def test_pandas_warning_through_analyze_pair(ohlcv_history, mocker, recwarn):
     mocker.patch.object(_STRATEGY.dp, "ohlcv", return_value=ohlcv_history)
     _STRATEGY.analyze_pair("ETH/BTC")
-    assert len(recwarn) == 0, f"warnings: {', '.join(recwarn.list)}"
+    assert len(recwarn) == 0, f"warnings: {', '.join([str(w.message) for w in recwarn.list])}"
