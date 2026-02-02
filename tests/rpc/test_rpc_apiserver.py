@@ -3440,6 +3440,7 @@ def test_api_markets_webserver(botclient):
     assert "hyperliquid_spot" in ApiBG.exchanges
     assert "binance_spot" in ApiBG.exchanges
 
+
 def test_api_download_data_validation(botclient, mocker, tmp_path):
     ftbot, client = botclient
     ftbot.config["runmode"] = RunMode.WEBSERVER
@@ -3461,6 +3462,7 @@ def test_api_download_data_validation(botclient, mocker, tmp_path):
     rc = client_post(client, f"{BASE_URI}/download_data", body)
     assert_response(rc, 200)
 
+
 def test_security_headers(botclient):
     _ftbot, client = botclient
     rc = client_get(client, f"{BASE_URI}/ping")
@@ -3471,6 +3473,7 @@ def test_security_headers(botclient):
     assert "Referrer-Policy" in rc.headers
     assert rc.headers["Referrer-Policy"] == "same-origin"
     assert rc.headers["Cache-Control"] == "no-store, no-cache, must-revalidate"
+
 
 def test_api_logs_validation(botclient):
     _ftbot, client = botclient
