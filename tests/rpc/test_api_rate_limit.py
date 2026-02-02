@@ -1,14 +1,13 @@
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
-from freqtrade.rpc.api_server import ApiServer
-from freqtrade.rpc.rpc import RPC
-from freqtrade.enums import RunMode
-from freqtrade.loggers import setup_logging
-from unittest.mock import MagicMock
-
 from requests.auth import _basic_auth_str
 
+from freqtrade.enums import RunMode
+from freqtrade.loggers import setup_logging
+from freqtrade.rpc.api_server import ApiServer
+from freqtrade.rpc.rpc import RPC
 from tests.conftest import get_patched_freqtradebot
 
 
@@ -61,20 +60,23 @@ def test_login_rate_limit(botclient_ratelimit):
     # Fail 5 times
     for _ in range(5):
         rc = client.post(
-            f"{BASE_URI}/token/login", headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
+            f"{BASE_URI}/token/login",
+            headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")},
         )
         assert rc.status_code == 401
 
     # 6th attempt should be rate limited
     rc = client.post(
-        f"{BASE_URI}/token/login", headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
+        f"{BASE_URI}/token/login",
+        headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")},
     )
     assert rc.status_code == 429
     assert "Too many login attempts" in rc.json()["detail"]
 
     # Even correct password should fail now
     rc = client.post(
-        f"{BASE_URI}/token/login", headers={"Authorization": _basic_auth_str(_TEST_USER, _TEST_PASS)}
+        f"{BASE_URI}/token/login",
+        headers={"Authorization": _basic_auth_str(_TEST_USER, _TEST_PASS)},
     )
     assert rc.status_code == 429
 
@@ -86,20 +88,20 @@ def test_login_success_resets_limit(botclient_ratelimit):
     for _ in range(4):
         client.post(
             f"{BASE_URI}/token/login",
-            headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
+            headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")},
         )
 
     # Succeed
     rc = client.post(
         f"{BASE_URI}/token/login",
-        headers={"Authorization": _basic_auth_str(_TEST_USER, _TEST_PASS)}
+        headers={"Authorization": _basic_auth_str(_TEST_USER, _TEST_PASS)},
     )
     assert rc.status_code == 200
 
     # Fail 1 time (would be 5th if not reset)
     rc = client.post(
         f"{BASE_URI}/token/login",
-        headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
+        headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")},
     )
     assert rc.status_code == 401
 
@@ -107,12 +109,12 @@ def test_login_success_resets_limit(botclient_ratelimit):
     for _ in range(4):
         client.post(
             f"{BASE_URI}/token/login",
-            headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
+            headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")},
         )
 
     # 6th attempt (after 5 failures)
     rc = client.post(
         f"{BASE_URI}/token/login",
-        headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
+        headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")},
     )
     assert rc.status_code == 429
