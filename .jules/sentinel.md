@@ -1,0 +1,4 @@
+## 2026-02-01 - [FastAPI Validation & Exception Handling]
+**Vulnerability:** Not strictly a vulnerability, but a pattern: When replacing explicit type declarations in FastAPI endpoints (e.g. `pair: str`) with custom Dependencies (e.g. `pair: str = Depends(validate)`), if the dependency makes the field optional (returns None) but the Response Model requires it, it causes a `ResponseValidationError` (500 error) instead of `RequestValidationError` (422 error).
+**Learning:** Using `Query(..., pattern=r"...")` directly in the endpoint signature is safer and cleaner than custom Dependencies for simple validation, as it preserves the "required" nature of the field at the interface level and correctly triggers 422 for client errors.
+**Prevention:** Prefer standard FastAPI validation (Pydantic/Query/Path) over custom dependencies for basic type/format checks to ensure correct error status codes.
