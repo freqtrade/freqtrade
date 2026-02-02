@@ -128,42 +128,64 @@
       cursor: pointer;
       font-size: 1rem;
       transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
     }
     .btn:hover {
       transform: scale(1.05);
       box-shadow: 0 0 10px var(--accent-primary);
     }
-    /* Accessibility Focus Styles */
-    a:focus-visible, button:focus-visible {
+
+    /* Accessibility & UX Improvements */
+    :focus-visible {
       outline: 3px solid var(--accent-secondary);
       outline-offset: 2px;
-      border-radius: 4px;
-    }
-    .btn:focus-visible {
-      border-radius: 25px;
     }
 
-    /* Code Copy Section */
-    .code-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin: 1rem 0;
-    }
-    .copy-btn {
-      background-color: var(--accent-secondary);
-      color: var(--bg-color);
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      cursor: pointer;
+    .skip-link {
+      position: absolute;
+      top: -100px;
+      left: 0;
+      background: var(--accent-primary);
+      color: white;
+      padding: 1rem;
+      z-index: 1000;
+      text-decoration: none;
       font-weight: bold;
-      font-family: sans-serif;
+      transition: top 0.3s;
     }
+
+    .skip-link:focus {
+      top: 0;
+    }
+
+    .copy-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .copy-btn {
+        background: transparent;
+        border: 2px solid var(--accent-secondary);
+        color: var(--accent-secondary);
+        cursor: pointer;
+        padding: 5px 12px;
+        border-radius: 5px;
+        font-size: 1.2rem;
+        transition: all 0.2s;
+    }
+
     .copy-btn:hover {
-      background-color: #fff;
+        background: rgba(0, 255, 255, 0.1);
+        transform: scale(1.1);
+    }
+
+    .copy-btn:active {
+        transform: scale(0.95);
     }
   </style>
   <script>
@@ -180,53 +202,78 @@
   </script>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to content</a>
 
-<header>
-  <div class="logo-container">
-    <img src="/logo.png" alt="Crypto P Logo" class="logo">
-  </div>
-  <h1>Freqtrade - Crypto P Edition</h1>
-  <nav>
-    <a href="https://freqtrade.io" target="_blank" rel="noopener noreferrer">Docs</a>
-    <a href="https://github.com/freqtrade/freqtrade" target="_blank" rel="noopener noreferrer">GitHub</a>
-    <a href="https://discord.gg/freqtrade" target="_blank" rel="noopener noreferrer">Discord</a>
-  </nav>
-</header>
+    <header>
+      <div class="logo-container">
+        <img src="/logo.png" alt="Crypto P Logo" class="logo">
+      </div>
+      <h1>Freqtrade - Crypto P Edition</h1>
+      <nav>
+        <a href="https://www.freqtrade.io/en/latest/" target="_blank" rel="noopener noreferrer">Documentation</a>
+        <a href="https://github.com/freqtrade/freqtrade" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </nav>
+    </header>
 
-<div class="hero">
-  <h2>Welcome to the Show!</h2>
-  <p>Step into the most dazzling carousel for your crypto trading.</p>
-</div>
+    <main id="main-content">
+        <div class="hero">
+          <h2>Welcome to the Show!</h2>
+          <p>Step into the most dazzling carousel for your crypto trading.</p>
+        </div>
 
-<div class="content-section">
-  <h2>Meet Crypto P</h2>
-  <p><strong>Crypto P</strong> is the eccentric mastermind behind Crypto P's Magical Server! With high energy, a love for cryptocurrency, and a passion for innovation, Crypto P is constantly developing new ideas, trading bots, and crypto signals. A true visionary with a mix of seriousness and playfulness, Crypto P brings the magic of cryptocurrency to life!</p>
-</div>
+        <section class="content-section">
+          <h2>Meet Crypto P</h2>
+          <p><strong>Crypto P</strong> is the eccentric mastermind behind Crypto P's Magical Server! With high energy, a love for cryptocurrency, and a passion for innovation, Crypto P is constantly developing new ideas, trading bots, and crypto signals. A true visionary with a mix of seriousness and playfulness, Crypto P brings the magic of cryptocurrency to life!</p>
+        </section>
 
-<div class="content-section">
-  <h2>The Philosophy of Crypto P</h2>
-  <p>Crypto P believes in the power of decentralization, the potential of blockchain technology, and the freedom that comes with it. The journey is as important as the destination, and Crypto P loves to share the excitement with others. From building advanced trading bots to providing real-time crypto signals, Crypto P’s goal is to make the crypto world accessible to everyone!</p>
-</div>
+        <section class="content-section">
+          <h2>The Philosophy of Crypto P</h2>
+          <p>Crypto P believes in the power of decentralization, the potential of blockchain technology, and the freedom that comes with it. The journey is as important as the destination, and Crypto P loves to share the excitement with others. From building advanced trading bots to providing real-time crypto signals, Crypto P’s goal is to make the crypto world accessible to everyone!</p>
+        </section>
 
-<div class="content-section">
-  <h2>Crypto P’s Vision</h2>
-  <p>With a deep understanding of the crypto markets, Crypto P combines technical expertise with a creative and psychedelic spirit. Crypto P’s vision is to create a platform that not only provides valuable tools and insights for traders but also engages the community with fun, vibrant, and thought-provoking content. Whether it’s through high-energy crypto signals, innovative bots, or live charts, Crypto P is here to guide you on your crypto journey.</p>
-</div>
+        <section class="content-section">
+          <h2>Crypto P’s Vision</h2>
+          <p>With a deep understanding of the crypto markets, Crypto P combines technical expertise with a creative and psychedelic spirit. Crypto P’s vision is to create a platform that not only provides valuable tools and insights for traders but also engages the community with fun, vibrant, and thought-provoking content. Whether it’s through high-energy crypto signals, innovative bots, or live charts, Crypto P is here to guide you on your crypto journey.</p>
+        </section>
 
-<div class="content-section install-notice">
-  <h3>Unlock the Full Edition!</h3>
-  <p>The UI is currently hiding. Install it with this command:</p>
-  <div class="code-container">
-    <code id="install-cmd">freqtrade install-ui</code>
-    <button id="copy-btn" class="copy-btn" onclick="copyCommand()" aria-label="Copy install command to clipboard">📋 Copy</button>
-  </div>
-  <p>Then refresh this page to enter the dashboard!</p>
-  <button class="btn" onclick="location.reload()">🔄 Refresh</button>
-</div>
+        <section class="content-section install-notice">
+          <h3>Unlock the Full Edition!</h3>
+          <p>The UI is currently hiding. Install it with this command:</p>
 
-<footer>
-  <p>&copy; 2026 Freqtrade - Crypto P Edition</p>
-</footer>
+          <div class="copy-container">
+             <code id="install-cmd">freqtrade install-ui</code>
+             <button class="copy-btn" onclick="copyCommand()" aria-label="Copy install command">📋</button>
+          </div>
 
+          <p>Then refresh this page to enter the dashboard!</p>
+          <button class="btn" onclick="location.reload()">🔄 Refresh</button>
+        </section>
+    </main>
+
+    <footer>
+      <p>&copy; 2026 Freqtrade - Crypto P Edition</p>
+    </footer>
+
+    <script>
+        function copyCommand() {
+            const cmdText = document.getElementById('install-cmd').innerText;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(cmdText).then(() => {
+                    const btn = document.querySelector('.copy-btn');
+                    const originalText = btn.innerText;
+                    btn.innerText = '✅';
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Copy failed. Please copy the command manually.');
+                });
+            } else {
+                // Fallback for non-secure contexts if possible, or just alert
+                alert('Copy not supported in this environment. Please copy manually.');
+            }
+        }
+    </script>
 </body>
 </html>
