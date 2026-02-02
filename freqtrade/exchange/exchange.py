@@ -245,6 +245,7 @@ class Exchange:
 
         # Cached timeframes
         self._timeframes: list[str] | None = None
+        self._quote_currencies_cache: list[str] | None = None
 
         # Holds public_trades
         self._trades: dict[PairWithTimeframe, DataFrame] = {}
@@ -556,8 +557,11 @@ class Exchange:
         """
         Return a list of supported quote currencies
         """
+        if self._quote_currencies_cache is not None:
+            return self._quote_currencies_cache
         markets = self.markets
-        return sorted(set([x["quote"] for _, x in markets.items()]))
+        self._quote_currencies_cache = sorted(set([x["quote"] for _, x in markets.items()]))
+        return self._quote_currencies_cache
 
     def get_pair_quote_currency(self, pair: str) -> str:
         """Return a pair's quote currency (base/quote:settlement)"""
@@ -725,6 +729,7 @@ class Exchange:
                 self._ws_async.options = self._api.options
             self._last_markets_refresh = dt_ts()
             self._timeframes = None
+            self._quote_currencies_cache = None
 
             if is_initial and self._ft_has["needs_trading_fees"]:
                 self._trading_fees = self.fetch_trading_fees()
