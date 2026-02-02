@@ -19,7 +19,7 @@ ALGORITHM = "HS256"
 
 router_login = APIRouter()
 # Rate limiter: 100 IPs, 60 seconds block
-login_attempts_cache = TTLCache(maxsize=100, ttl=60)
+login_attempts_cache: TTLCache = TTLCache(maxsize=100, ttl=60)
 
 
 def verify_auth(api_config, username: str, password: str):

@@ -1,14 +1,18 @@
 
-import pytest
-from fastapi.testclient import TestClient
-from freqtrade.rpc.api_server import ApiServer
-from freqtrade.rpc.rpc import RPC
-from freqtrade.enums import RunMode
-from freqtrade.loggers import setup_logging
-from tests.conftest import get_patched_freqtradebot
 from unittest.mock import MagicMock
 
+import pytest
+from fastapi.testclient import TestClient
+
+from freqtrade.enums import RunMode
+from freqtrade.loggers import setup_logging
+from freqtrade.rpc.api_server import ApiServer
+from freqtrade.rpc.rpc import RPC
+from tests.conftest import get_patched_freqtradebot
+
+
 BASE_URI = "/api/v1"
+
 
 @pytest.fixture
 def botclient_security(default_conf, mocker):
@@ -42,6 +46,7 @@ def botclient_security(default_conf, mocker):
             apiserver.cleanup()
         ApiServer.shutdown()
 
+
 def test_security_headers(botclient_security):
     _ftbot, client = botclient_security
 
@@ -49,10 +54,14 @@ def test_security_headers(botclient_security):
     assert rc.status_code == 200
     headers = rc.headers
 
-    assert headers["Content-Security-Policy"] == "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    assert (
+        headers["Content-Security-Policy"]
+        == "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    )
     assert headers["X-Content-Type-Options"] == "nosniff"
     assert headers["X-Frame-Options"] == "DENY"
     assert headers["Strict-Transport-Security"] == "max-age=63072000; includeSubDomains"
+
 
 def test_cors_restrictions(botclient_security):
     _ftbot, client = botclient_security
@@ -63,7 +72,7 @@ def test_cors_restrictions(botclient_security):
         headers={
             "Origin": "http://example.com",
             "Access-Control-Request-Method": "GET",
-        }
+        },
     )
     assert rc.status_code == 200
     assert "access-control-allow-methods" in rc.headers
@@ -75,27 +84,31 @@ def test_cors_restrictions(botclient_security):
         headers={
             "Origin": "http://example.com",
             "Access-Control-Request-Method": "TRACE",
-        }
+        },
     )
     # It might return 200 but allow methods shouldn't have TRACE
     if "access-control-allow-methods" in rc.headers:
         assert "TRACE" not in rc.headers["access-control-allow-methods"]
 
+
 def test_generic_exception_handling(botclient_security, mocker):
     _ftbot, client = botclient_security
 
     # Patch RPC._rpc_show_config to raise exception
-    mocker.patch("freqtrade.rpc.rpc.RPC._rpc_show_config", side_effect=Exception("Secret Stack Trace"))
+    mocker.patch(
+        "freqtrade.rpc.rpc.RPC._rpc_show_config", side_effect=Exception("Secret Stack Trace")
+    )
 
     from requests.auth import _basic_auth_str
+
     rc = client.get(
-        f"{BASE_URI}/show_config",
-        headers={"Authorization": _basic_auth_str("user", "password")}
+        f"{BASE_URI}/show_config", headers={"Authorization": _basic_auth_str("user", "password")}
     )
     assert rc.status_code == 500
     assert rc.json() == {"error": "Internal Server Error"}
     # The stack trace should NOT be in the response
     assert "Secret Stack Trace" not in rc.text
+
 
 def test_pair_validation(botclient_security):
     _ftbot, client = botclient_security

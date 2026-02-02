@@ -5,14 +5,17 @@ from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.rpc import RPC
 from freqtrade.enums import RunMode
 from freqtrade.loggers import setup_logging
-from tests.conftest import get_patched_freqtradebot
 from unittest.mock import MagicMock
+
 from requests.auth import _basic_auth_str
-import time
+
+from tests.conftest import get_patched_freqtradebot
+
 
 BASE_URI = "/api/v1"
 _TEST_USER = "FreqTrader"
 _TEST_PASS = "SuperSecurePassword1!"
+
 
 @pytest.fixture
 def botclient_ratelimit(default_conf, mocker):
@@ -38,6 +41,7 @@ def botclient_ratelimit(default_conf, mocker):
 
     # Reset cache for each test
     from freqtrade.rpc.api_server.api_auth import login_attempts_cache
+
     login_attempts_cache.clear()
 
     try:
@@ -57,25 +61,23 @@ def test_login_rate_limit(botclient_ratelimit):
     # Fail 5 times
     for _ in range(5):
         rc = client.post(
-            f"{BASE_URI}/token/login",
-            headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
+            f"{BASE_URI}/token/login", headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
         )
         assert rc.status_code == 401
 
     # 6th attempt should be rate limited
     rc = client.post(
-        f"{BASE_URI}/token/login",
-        headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
+        f"{BASE_URI}/token/login", headers={"Authorization": _basic_auth_str(_TEST_USER, "WrongPass")}
     )
     assert rc.status_code == 429
     assert "Too many login attempts" in rc.json()["detail"]
 
     # Even correct password should fail now
     rc = client.post(
-        f"{BASE_URI}/token/login",
-        headers={"Authorization": _basic_auth_str(_TEST_USER, _TEST_PASS)}
+        f"{BASE_URI}/token/login", headers={"Authorization": _basic_auth_str(_TEST_USER, _TEST_PASS)}
     )
     assert rc.status_code == 429
+
 
 def test_login_success_resets_limit(botclient_ratelimit):
     _ftbot, client = botclient_ratelimit

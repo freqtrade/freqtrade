@@ -78,11 +78,14 @@ def botclient(default_conf, mocker):
     try:
         apiserver = ApiServer(default_conf)
         apiserver.add_rpc_handler(rpc)
+
+        from freqtrade.rpc.api_server.api_auth import login_attempts_cache
+        login_attempts_cache.clear()
+
         # We need to use the TestClient as a context manager to
         # handle lifespan events correctly
         with TestClient(apiserver.app) as client:
             yield ftbot, client
-        # Cleanup ... ?
     finally:
         if apiserver:
             apiserver.cleanup()
