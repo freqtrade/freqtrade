@@ -111,7 +111,7 @@
       text-align: center;
       padding: 2rem;
       background-color: var(--nav-bg);
-      color: #aaa;
+      color: var(--text-color); /* Improved contrast */
       margin-top: 3rem;
       border-top: 2px solid var(--accent-primary);
     }
@@ -124,6 +124,9 @@
       text-decoration: none;
       font-weight: bold;
       margin-top: 1rem;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
       transition: transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
       border: none;
@@ -185,6 +188,18 @@
         transform: scale(0.95);
     }
   </style>
+  <script>
+    function copyCommand() {
+      const commandText = document.getElementById('install-cmd').innerText;
+      navigator.clipboard.writeText(commandText).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.innerText = '✅ Copied!';
+        setTimeout(() => {
+          btn.innerText = '📋 Copy';
+        }, 2000);
+      });
+    }
+  </script>
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to content</a>

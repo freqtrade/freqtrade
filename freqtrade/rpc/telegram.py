@@ -1895,7 +1895,8 @@ class Telegram(RPCHandler):
         except (TypeError, ValueError, IndexError):
             limit = 10
         logs = RPC._rpc_get_logs(limit)["logs"]
-        msgs = ""
+        msgs_list = []
+        current_len = 0
         msg_template = "*{}* {}: {} \\- `{}`"
         for logrec in logs:
             msg = msg_template.format(
@@ -1904,16 +1905,20 @@ class Telegram(RPCHandler):
                 escape_markdown(logrec[3], version=2),
                 escape_markdown(logrec[4], version=2),
             )
-            if len(msgs + msg) + 10 >= MAX_MESSAGE_LENGTH:
+            # Add 1 for the newline character
+            msg_len = len(msg) + 1
+            if current_len + msg_len + 10 >= MAX_MESSAGE_LENGTH:
                 # Send message immediately if it would become too long
-                await self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN_V2)
-                msgs = msg + "\n"
+                await self._send_msg("".join(msgs_list), parse_mode=ParseMode.MARKDOWN_V2)
+                msgs_list = [msg + "\n"]
+                current_len = msg_len
             else:
                 # Append message to messages to send
-                msgs += msg + "\n"
+                msgs_list.append(msg + "\n")
+                current_len += msg_len
 
-        if msgs:
-            await self._send_msg(msgs, parse_mode=ParseMode.MARKDOWN_V2)
+        if msgs_list:
+            await self._send_msg("".join(msgs_list), parse_mode=ParseMode.MARKDOWN_V2)
 
     @authorized_only
     async def _help(self, update: Update, context: CallbackContext) -> None:

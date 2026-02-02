@@ -192,6 +192,10 @@ class ApiServer(RPCHandler):
             status_code=502, content={"error": f"Error querying {request.url.path}: {exc.message}"}
         )
 
+    def handle_generic_exception(self, request, exc):
+        logger.error(f"API Error calling: {exc}", exc_info=exc)
+        return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
+
     def configure_app(self, app: FastAPI, config):
         from freqtrade.rpc.api_server.api_auth import http_basic_or_jwt_token, router_login
         from freqtrade.rpc.api_server.api_background_tasks import router as api_bg_tasks
@@ -260,15 +264,28 @@ class ApiServer(RPCHandler):
         # UI Router MUST be last!
         app.include_router(router_ui, prefix="")
 
+        @app.middleware("http")
+        async def add_security_headers(request, call_next):
+            response = await call_next(request)
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; style-src 'self' 'unsafe-inline'; "
+                "script-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+            )
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+            return response
+
         app.add_middleware(
             CORSMiddleware,
             allow_origins=config["api_server"].get("CORS_origins", []),
             allow_credentials=True,
-            allow_methods=["*"],
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
             allow_headers=["*"],
         )
 
         app.add_exception_handler(RPCException, self.handle_rpc_exception)
+        app.add_exception_handler(Exception, self.handle_generic_exception)
         app.add_event_handler(event_type="startup", func=self._api_startup_event)
         app.add_event_handler(event_type="shutdown", func=self._api_shutdown_event)
 

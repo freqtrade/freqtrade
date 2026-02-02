@@ -36,23 +36,13 @@ def ohlcv_to_dataframe(
     """
     logger.debug(f"Converting candle (OHLCV) data to dataframe for pair {pair}.")
     cols = DEFAULT_DATAFRAME_COLUMNS
-    df = DataFrame(ohlcv, columns=cols)
+    # Use float dtype to avoid astype conversion later and handle int volume/prices
+    df = DataFrame(ohlcv, columns=cols, dtype="float")
 
     # Floor date to seconds to account for exchange imprecisions
-    df["date"] = to_datetime(df["date"], unit="ms", utc=True).dt.floor("s")
+    # Optimization: Integer arithmetic is faster than datetime conversion
+    df["date"] = to_datetime(df["date"] // 1000 * 1000, unit="ms", utc=True)
 
-    # Some exchanges return int values for Volume and even for OHLC.
-    # Convert them since TA-LIB indicators used in the strategy assume floats
-    # and fail with exception...
-    df = df.astype(
-        dtype={
-            "open": "float",
-            "high": "float",
-            "low": "float",
-            "close": "float",
-            "volume": "float",
-        }
-    )
     return clean_ohlcv_dataframe(
         df, timeframe, pair, fill_missing=fill_missing, drop_incomplete=drop_incomplete
     )
@@ -75,7 +65,7 @@ def clean_ohlcv_dataframe(
     :return: DataFrame
     """
     # group by index and aggregate results to eliminate duplicate ticks
-    data = data.groupby(by="date", as_index=False, sort=True).agg(
+    data = data.groupby(by="date", as_index=False, sort=False).agg(
         {
             "open": "first",
             "high": "max",
