@@ -274,6 +274,11 @@ class ApiServer(RPCHandler):
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["X-Frame-Options"] = "DENY"
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+            response.headers["Permissions-Policy"] = (
+                "geolocation=(), microphone=(), camera=(), payment=()"
+            )
+            response.headers["Referrer-Policy"] = "same-origin"
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
             return response
 
         app.add_middleware(

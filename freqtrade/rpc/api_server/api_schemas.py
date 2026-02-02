@@ -1,7 +1,15 @@
+import re
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import AwareDatetime, BaseModel, RootModel, SerializeAsAny, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    RootModel,
+    SerializeAsAny,
+    field_validator,
+    model_validator,
+)
 
 from freqtrade.constants import DL_DATA_TIMEFRAMES, IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
@@ -513,6 +521,14 @@ class DownloadDataPayload(ExchangeModePayloadMixin, BaseModel):
     erase: bool = False
     download_trades: bool = False
     candle_types: list[str] | None = None
+
+    @field_validator("pairs")
+    @classmethod
+    def validate_pairs(cls, v):
+        for pair in v:
+            if not re.match(r"^[a-zA-Z0-9/_:]+$", pair):
+                raise ValueError(f"Invalid pair name: {pair}")
+        return v
 
     @model_validator(mode="before")
     def check_mutually_exclusive(cls, values):

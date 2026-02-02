@@ -92,7 +92,7 @@ def show_config(rpc: RPC | None = Depends(get_rpc_optional), config=Depends(get_
 
 
 @router.get("/logs", response_model=Logs, tags=["Info"])
-def logs(limit: int | None = None):
+def logs(limit: int | None = Query(None, ge=1, le=10000)):
     return RPC._rpc_get_logs(limit)
 
 

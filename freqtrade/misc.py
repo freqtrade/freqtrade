@@ -90,7 +90,7 @@ def is_file_in_dir(file: Path, directory: Path) -> bool:
 
 
 def pair_to_filename(pair: str) -> str:
-    for ch in ["/", " ", ".", "@", "$", "+", ":"]:
+    for ch in ["/", " ", ".", "@", "$", "+", ":", "\\"]:
         pair = pair.replace(ch, "_")
     return pair
 
@@ -201,9 +201,7 @@ def json_to_dataframe(data: str) -> pd.DataFrame:
         # Optimize parsing using rapidjson directly
         json_dict = rapidjson.loads(data)
         dataframe = pd.DataFrame(
-            json_dict["data"],
-            columns=json_dict["columns"],
-            index=json_dict["index"]
+            json_dict["data"], columns=json_dict["columns"], index=json_dict["index"]
         )
     except (ValueError, KeyError, rapidjson.JSONDecodeError):
         # Fallback to pandas if structure is not matching 'split' or other errors
