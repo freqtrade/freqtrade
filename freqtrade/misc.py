@@ -197,7 +197,18 @@ def json_to_dataframe(data: str) -> pd.DataFrame:
     :param data: A JSON string
     :returns: A pandas DataFrame from the JSON string
     """
-    dataframe = pd.read_json(StringIO(data), orient="split")
+    try:
+        # Optimize parsing using rapidjson directly
+        json_dict = rapidjson.loads(data)
+        dataframe = pd.DataFrame(
+            json_dict["data"],
+            columns=json_dict["columns"],
+            index=json_dict["index"]
+        )
+    except (ValueError, KeyError, rapidjson.JSONDecodeError):
+        # Fallback to pandas if structure is not matching 'split' or other errors
+        dataframe = pd.read_json(StringIO(data), orient="split")
+
     if "date" in dataframe.columns:
         dataframe["date"] = pd.to_datetime(dataframe["date"], unit="ms", utc=True)
 

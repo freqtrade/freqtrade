@@ -198,10 +198,16 @@ def test_ohlcv_fill_up_missing_data2(caplog):
 )
 def test_ohlcv_to_dataframe_multi(timeframe):
     data = generate_test_data(timeframe, 180)
+    # Convert DataFrame to list of lists (simulating ccxt output)
+    # Date needs to be converted to int64 ms timestamp
+    ohlcv_data = data.copy()
+    ohlcv_data["date"] = ohlcv_data["date"].astype(np.int64) // 1000 // 1000
+    ohlcv_list = ohlcv_data.values.tolist()
+
     assert len(data) == 180
-    df = ohlcv_to_dataframe(data, timeframe, "UNITTEST/USDT")
+    df = ohlcv_to_dataframe(ohlcv_list, timeframe, "UNITTEST/USDT")
     assert len(df) == len(data) - 1
-    df1 = ohlcv_to_dataframe(data, timeframe, "UNITTEST/USDT", drop_incomplete=False)
+    df1 = ohlcv_to_dataframe(ohlcv_list, timeframe, "UNITTEST/USDT", drop_incomplete=False)
     assert len(df1) == len(data)
     assert data.equals(df1)
 
@@ -211,7 +217,13 @@ def test_ohlcv_to_dataframe_multi(timeframe):
     else:
         # Shift by half a timeframe
         data1.loc[:, "date"] = data1.loc[:, "date"] + (pd.to_timedelta(timeframe) / 2)
-    df2 = ohlcv_to_dataframe(data1, timeframe, "UNITTEST/USDT")
+
+    # Prepare data1 for ohlcv_to_dataframe
+    ohlcv_data1 = data1.copy()
+    ohlcv_data1["date"] = ohlcv_data1["date"].astype(np.int64) // 1000 // 1000
+    ohlcv_list1 = ohlcv_data1.values.tolist()
+
+    df2 = ohlcv_to_dataframe(ohlcv_list1, timeframe, "UNITTEST/USDT")
 
     assert len(df2) == len(data) - 1
     tfs = timeframe_to_seconds(timeframe)
