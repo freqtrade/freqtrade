@@ -11,7 +11,7 @@ from pydantic import (
     model_validator,
 )
 
-from freqtrade.constants import DL_DATA_TIMEFRAMES, IntOrInf
+from freqtrade.constants import DL_DATA_TIMEFRAMES, PAIR_REGEX, IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
 from freqtrade.ft_types import AnnotationType, ValidExchangesType
 from freqtrade.rpc.api_server.webserver_bgwork import ProgressTask
@@ -414,6 +414,13 @@ class LocksPayload(BaseModel):
     until: AwareDatetime
     reason: str | None = None
 
+    @field_validator("pair")
+    @classmethod
+    def validate_pair(cls, v):
+        if not re.match(PAIR_REGEX, v):
+            raise ValueError(f"Invalid pair name: {v}")
+        return v
+
 
 class DeleteLockRequest(BaseModel):
     pair: str | None = None
@@ -433,6 +440,13 @@ class ForceEnterPayload(BaseModel):
     stakeamount: float | None = None
     entry_tag: str | None = None
     leverage: float | None = None
+
+    @field_validator("pair")
+    @classmethod
+    def validate_pair(cls, v):
+        if not re.match(PAIR_REGEX, v):
+            raise ValueError(f"Invalid pair name: {v}")
+        return v
 
 
 class ForceExitPayload(BaseModel):
@@ -526,7 +540,7 @@ class DownloadDataPayload(ExchangeModePayloadMixin, BaseModel):
     @classmethod
     def validate_pairs(cls, v):
         for pair in v:
-            if not re.match(r"^[a-zA-Z0-9/_:]+$", pair):
+            if not re.match(PAIR_REGEX, pair):
                 raise ValueError(f"Invalid pair name: {pair}")
         return v
 
@@ -559,6 +573,13 @@ class PairCandlesRequest(BaseModel):
     timeframe: str
     limit: int | None = None
     columns: list[str] | None = None
+
+    @field_validator("pair")
+    @classmethod
+    def validate_pair(cls, v):
+        if not re.match(PAIR_REGEX, v):
+            raise ValueError(f"Invalid pair name: {v}")
+        return v
 
 
 class PairHistoryRequest(PairCandlesRequest, ExchangeModePayloadMixin):

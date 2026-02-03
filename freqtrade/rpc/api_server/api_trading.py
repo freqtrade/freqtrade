@@ -4,6 +4,7 @@ import re
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 
+from freqtrade.constants import PAIR_REGEX
 from freqtrade.enums import TradingMode
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_schemas import (
@@ -59,21 +60,21 @@ def count(rpc: RPC = Depends(get_rpc)):
 
 @router.get("/entries", response_model=list[Entry], tags=["Trading-info"])
 def entries(
-    pair: str | None = Query(None, pattern=r"^[a-zA-Z0-9/_:]+$"), rpc: RPC = Depends(get_rpc)
+    pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)
 ):
     return rpc._rpc_enter_tag_performance(pair)
 
 
 @router.get("/exits", response_model=list[Exit], tags=["Trading-info"])
 def exits(
-    pair: str | None = Query(None, pattern=r"^[a-zA-Z0-9/_:]+$"), rpc: RPC = Depends(get_rpc)
+    pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)
 ):
     return rpc._rpc_exit_reason_performance(pair)
 
 
 @router.get("/mix_tags", response_model=list[MixTag], tags=["Trading-info"])
 def mix_tags(
-    pair: str | None = Query(None, pattern=r"^[a-zA-Z0-9/_:]+$"), rpc: RPC = Depends(get_rpc)
+    pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)
 ):
     return rpc._rpc_mix_tag_performance(pair)
 
@@ -230,8 +231,6 @@ def list_custom_data(trade_id: int, key: str | None = Query(None), rpc: RPC = De
     summary="(deprecated) Please use /forceenter instead",
 )
 def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
-    if not re.match(r"^[a-zA-Z0-9/_:]+$", payload.pair):
-        raise HTTPException(status_code=400, detail="Invalid pair format")
     ordertype = payload.ordertype.value if payload.ordertype else None
 
     trade = rpc._rpc_force_entry(
@@ -335,7 +334,7 @@ def reload_config(rpc: RPC = Depends(get_rpc)):
 
 @router.get("/pair_candles", response_model=PairHistory, tags=["Candle data"])
 def pair_candles(
-    pair: str = Query(..., pattern=r"^[a-zA-Z0-9/_:]+$"),
+    pair: str = Query(..., pattern=PAIR_REGEX),
     timeframe: str = Query(...),
     limit: int | None = None,
     rpc: RPC = Depends(get_rpc),
@@ -345,8 +344,6 @@ def pair_candles(
 
 @router.post("/pair_candles", response_model=PairHistory, tags=["Candle data"])
 def pair_candles_filtered(payload: PairCandlesRequest, rpc: RPC = Depends(get_rpc)):
-    if not re.match(r"^[a-zA-Z0-9/_:]+$", payload.pair):
-        raise HTTPException(status_code=400, detail="Invalid pair format")
     # Advanced pair_candles endpoint with column filtering
     return rpc._rpc_analysed_dataframe(
         payload.pair, payload.timeframe, payload.limit, payload.columns

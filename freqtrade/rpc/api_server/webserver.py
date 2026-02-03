@@ -286,7 +286,7 @@ class ApiServer(RPCHandler):
             allow_origins=config["api_server"].get("CORS_origins", []),
             allow_credentials=True,
             allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-            allow_headers=["*"],
+            allow_headers=["Authorization", "Content-Type", "Accept"],
         )
 
         app.add_exception_handler(RPCException, self.handle_rpc_exception)
