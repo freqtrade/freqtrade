@@ -1,5 +1,4 @@
 import logging
-import re
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
