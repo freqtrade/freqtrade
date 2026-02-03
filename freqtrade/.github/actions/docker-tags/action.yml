@@ -1,0 +1,93 @@
+name: 'docker-tags'
+description: 'Set Docker default Tag environment variables'
+# inputs:
+outputs:
+  BRANCH_NAME:
+    description: 'The branch name'
+    value: ${{ steps.tags.outputs.BRANCH_NAME }}
+  TAG:
+    description: 'The Docker tag'
+    value: ${{ steps.tags.outputs.TAG }}
+  TAG_PLOT:
+    description: 'The Docker tag for the plot'
+    value: ${{ steps.tags.outputs.TAG_PLOT }}
+  TAG_FREQAI:
+    description: 'The Docker tag for the freqai'
+    value: ${{ steps.tags.outputs.TAG_FREQAI }}
+  TAG_FREQAI_RL:
+    description: 'The Docker tag for the freqai_rl'
+    value: ${{ steps.tags.outputs.TAG_FREQAI_RL }}
+  TAG_FREQAI_TORCH:
+    description: 'The Docker tag for the freqai_torch'
+    value: ${{ steps.tags.outputs.TAG_FREQAI_TORCH }}
+  TAG_ARM:
+    description: 'The Docker tag for the arm'
+    value: ${{ steps.tags.outputs.TAG_ARM }}
+  TAG_PLOT_ARM:
+    description: 'The Docker tag for the plot arm'
+    value: ${{ steps.tags.outputs.TAG_PLOT_ARM }}
+  TAG_FREQAI_ARM:
+    description: 'The Docker tag for the freqai arm'
+    value: ${{ steps.tags.outputs.TAG_FREQAI_ARM }}
+  TAG_FREQAI_RL_ARM:
+    description: 'The Docker tag for the freqai_rl arm'
+    value: ${{ steps.tags.outputs.TAG_FREQAI_RL_ARM }}
+  TAG_PI:
+    description: 'The Docker tag for the pi'
+    value: ${{ steps.tags.outputs.TAG_PI }}
+  CACHE_TAG_PI:
+    description: 'The Docker cache tag for the pi'
+    value: ${{ steps.tags.outputs.CACHE_TAG_PI }}
+runs:
+  using: "composite"
+  steps:
+    - name: Extract branch name
+      shell: bash
+      id: tags
+      env:
+        BRANCH_NAME_INPUT: ${{ github.event.inputs.branch_name }}
+        EVENT_NAME: ${{ github.event_name }}
+      run: |
+        if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+          BRANCH_NAME="${BRANCH_NAME_INPUT}"
+        else
+          BRANCH_NAME="${GITHUB_REF##*/}"
+        fi
+
+        # Replace / with _ to create a valid tag
+        TAG=$(echo "${BRANCH_NAME}" | sed -e "s/\//_/g")
+        TAG_PLOT=${TAG}_plot
+        TAG_FREQAI=${TAG}_freqai
+        TAG_FREQAI_RL=${TAG_FREQAI}rl
+        TAG_FREQAI_TORCH=${TAG_FREQAI}torch
+
+        TAG_ARM=${TAG}_arm
+        TAG_PLOT_ARM=${TAG_PLOT}_arm
+        TAG_FREQAI_ARM=${TAG_FREQAI}_arm
+        TAG_FREQAI_RL_ARM=${TAG_FREQAI_RL}_arm
+
+        TAG_PI="${TAG}_pi"
+
+        CACHE_TAG_PI=${CACHE_IMAGE}:${TAG_PI}_cache
+
+        echo "BRANCH_NAME=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
+        echo "TAG=${TAG}" >> "$GITHUB_OUTPUT"
+        echo "TAG_PLOT=${TAG_PLOT}" >> "$GITHUB_OUTPUT"
+        echo "TAG_FREQAI=${TAG_FREQAI}" >> "$GITHUB_OUTPUT"
+        echo "TAG_FREQAI_RL=${TAG_FREQAI_RL}" >> "$GITHUB_OUTPUT"
+        echo "TAG_FREQAI_TORCH=${TAG_FREQAI_TORCH}" >> "$GITHUB_OUTPUT"
+        echo "TAG_ARM=${TAG_ARM}" >> "$GITHUB_OUTPUT"
+        echo "TAG_PLOT_ARM=${TAG_PLOT_ARM}" >> "$GITHUB_OUTPUT"
+        echo "TAG_FREQAI_ARM=${TAG_FREQAI_ARM}" >> "$GITHUB_OUTPUT"
+        echo "TAG_FREQAI_RL_ARM=${TAG_FREQAI_RL_ARM}" >> "$GITHUB_OUTPUT"
+        echo "TAG_PI=${TAG_PI}" >> "$GITHUB_OUTPUT"
+
+        echo "CACHE_TAG_PI=${CACHE_TAG_PI}" >> "$GITHUB_OUTPUT"
+
+        cat "$GITHUB_OUTPUT"
+
+    - name: Save commit SHA to file
+      shell: bash
+      # Add commit to docker container
+      run: |
+        echo "${GITHUB_SHA}" > freqtrade_commit

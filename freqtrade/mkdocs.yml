@@ -1,0 +1,133 @@
+site_name: Freqtrade
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, 'https://www.freqtrade.io/en/']
+site_description: Freqtrade is a free and open source crypto trading bot written in Python, designed to support all major exchanges and be controlled via Telegram or builtin Web UI
+repo_url: https://github.com/freqtrade/freqtrade
+edit_uri: edit/develop/docs/
+use_directory_urls: True
+nav:
+    - Home: index.md
+    - Quickstart with Docker: docker_quickstart.md
+    - Installation: installation.md
+    - Freqtrade Basics: bot-basics.md
+    - Configuration: configuration.md
+    - Strategy Quickstart: strategy-101.md
+    - Strategy Customization: strategy-customization.md
+    - Strategy Callbacks: strategy-callbacks.md
+    - Stoploss: stoploss.md
+    - Plugins: plugins.md
+    - Start the bot: bot-usage.md
+    - Control the bot:
+        - Telegram: telegram-usage.md
+        - freqUI: freq-ui.md
+        - REST API: rest-api.md
+        - Web Hook: webhook-config.md
+    - Data Downloading: data-download.md
+    - Backtesting: backtesting.md
+    - Hyperopt: hyperopt.md
+    - FreqAI:
+        - Introduction: freqai.md
+        - Configuration: freqai-configuration.md
+        - Parameter table: freqai-parameter-table.md
+        - Feature engineering: freqai-feature-engineering.md
+        - Running FreqAI: freqai-running.md
+        - Reinforcement Learning: freqai-reinforcement-learning.md
+        - Developer guide: freqai-developers.md
+    - Short / Leverage: leverage.md
+    - Utility Sub-commands: utils.md
+    - Plotting: plotting.md
+    - Exchange-specific Notes: exchanges.md
+    - Data Analysis:
+        - Jupyter Notebooks: data-analysis.md
+        - Strategy analysis: strategy_analysis_example.md
+        - Backtest analysis: advanced-backtesting.md
+    - Advanced Topics:
+        - Advanced Post-installation Tasks: advanced-setup.md
+        - Trade Object: trade-object.md
+        - Lookahead analysis: lookahead-analysis.md
+        - Recursive analysis: recursive-analysis.md
+        - Advanced Strategy: strategy-advanced.md
+        - Advanced Hyperopt: advanced-hyperopt.md
+        - Orderflow: advanced-orderflow.md
+        - Producer/Consumer mode: producer-consumer.md
+        - SQL Cheat-sheet: sql_cheatsheet.md
+    - FAQ: faq.md
+    - Strategy migration: strategy_migration.md
+    - Updating Freqtrade: updating.md
+    - Deprecated Features: deprecated.md
+    - Contributors Guide: developer.md
+theme:
+  name: material
+  logo: "images/logo.png"
+  favicon: "images/logo.png"
+  icon:
+    repo: fontawesome/brands/github
+  custom_dir: "docs/overrides"
+  features:
+    - content.code.annotate
+    - search.share
+    - content.code.copy
+    - content.action.edit
+    - navigation.top
+    - navigation.footer
+  palette:
+    - scheme: default
+      primary: "blue grey"
+      accent: "tear"
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: "blue grey"
+      accent: "tear"
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+extra_css:
+  - "stylesheets/ft.extra.css"
+extra_javascript:
+  - javascripts/config.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+exclude_docs: |
+    /commands/*
+    /includes/*
+markdown_extensions:
+  - attr_list
+  - admonition
+  - footnotes
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.pathconverter
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      base_path: docs
+      check_paths: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - mdx_truly_sane_lists
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+extra:
+  version:
+    provider: mike
+    alias: true
+  analytics:
+    provider: google
+    property: G-VH170LG9M5
+plugins:
+  - search:
+      enabled: true
+  - mike:
+      deploy_prefix: 'en'
+      canonical_version: 'stable'

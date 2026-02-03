@@ -1,0 +1,62 @@
+numpy==2.4.1
+pandas==2.3.3
+bottleneck==1.6.0
+numexpr==2.14.1
+# Indicator libraries
+ft-pandas-ta==0.3.16
+ta-lib==0.6.8
+technical==1.5.4
+
+ccxt==4.5.34
+cryptography==46.0.3
+aiohttp==3.13.3
+SQLAlchemy==2.0.45
+python-telegram-bot==22.5
+# can't be hard-pinned due to telegram-bot pinning httpx with ~
+httpx>=0.24.1
+humanize==4.15.0
+cachetools==6.2.4
+requests==2.32.5
+urllib3==2.6.3
+certifi==2026.1.4
+jsonschema==4.26.0
+tabulate==0.9.0
+pycoingecko==3.2.0
+jinja2==3.1.6
+joblib==1.5.3
+rich==14.2.0
+pyarrow==23.0.0; platform_machine != 'armv7l'
+
+
+# Load ticker files 30% faster
+python-rapidjson==1.23
+# Properly format api responses
+orjson==3.11.5
+
+# Notify systemd
+sdnotify==0.3.2
+
+# API Server
+fastapi==0.128.0
+pydantic==2.12.5
+uvicorn==0.40.0
+pyjwt==2.10.1
+aiofiles==25.1.0
+psutil==7.2.1
+
+# Building config files interactively
+questionary==2.1.1
+prompt-toolkit==3.0.52
+# Extensions to datetime library
+python-dateutil==2.9.0.post0
+pytz==2025.2
+
+#Futures
+schedule==1.2.2
+
+#WS Messages
+websockets==16.0
+janus==2.0.0
+
+ast-comments==1.2.3
+packaging==25.0

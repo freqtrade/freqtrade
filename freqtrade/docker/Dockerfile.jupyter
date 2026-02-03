@@ -1,0 +1,8 @@
+FROM freqtradeorg/freqtrade:develop_plot
+
+
+# Pin prompt-toolkit to avoid questionary version conflict
+RUN pip install jupyterlab "prompt-toolkit<=3.0.36" jupyter-client --user --no-cache-dir
+
+# Empty the ENTRYPOINT to allow all commands
+ENTRYPOINT []

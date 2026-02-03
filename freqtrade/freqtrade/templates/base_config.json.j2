@@ -1,0 +1,69 @@
+{%set volume_pairlist = '{
+            "method": "VolumePairList",
+            "number_assets": 20,
+            "sort_key": "quoteVolume",
+            "min_value": 0,
+            "refresh_period": 1800
+        }' %}
+{
+    "$schema": "https://schema.freqtrade.io/schema.json",
+    "max_open_trades": {{ max_open_trades }},
+    "stake_currency": "{{ stake_currency }}",
+    "stake_amount": {{ stake_amount }},
+    "tradable_balance_ratio": 0.99,
+{{- ('\n    "fiat_display_currency": "' + fiat_display_currency + '",') if fiat_display_currency else ''}}
+{{- ('\n    "timeframe": "' + timeframe + '",') if timeframe else '' }}
+    "dry_run": {{ dry_run | lower }},
+    "dry_run_wallet": 1000,
+    "cancel_open_orders_on_exit": false,
+    "trading_mode": "{{ trading_mode }}",
+    "margin_mode": "{{ margin_mode }}",
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    {{ exchange | indent(4) }},
+    "pairlists": [
+        {{ volume_pairlist }}
+    ],
+    "telegram": {
+        "enabled": {{ telegram | lower }},
+        "token": "{{ telegram_token }}",
+        "chat_id": "{{ telegram_chat_id }}"
+    },
+    "api_server": {
+        "enabled": {{ api_server | lower }},
+        "listen_ip_address": "{{ api_server_listen_addr | default("127.0.0.1", true) }}",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "{{ api_server_jwt_key }}",
+        "ws_token": "{{ api_server_ws_token }}",
+        "CORS_origins": [],
+        "username": "{{ api_server_username }}",
+        "password": "{{ api_server_password }}"
+    },
+    "bot_name": "freqtrade",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

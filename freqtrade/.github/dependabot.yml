@@ -1,0 +1,65 @@
+version: 2
+updates:
+- package-ecosystem: docker
+  cooldown:
+    default-days: 7
+  directories:
+    - "/"
+    - "/docker"
+  schedule:
+    interval: daily
+  ignore:
+  - dependency-name: "*"
+    update-types: ["version-update:semver-major"]
+  open-pull-requests-limit: 10
+
+- package-ecosystem: devcontainers
+  directory: "/"
+  cooldown:
+    default-days: 7
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+
+- package-ecosystem: pip
+  directory: "/"
+  cooldown:
+    default-days: 7
+    exclude:
+      - ccxt
+  schedule:
+    interval: "cron"
+    # Monday at 03:00
+    cronjob: "0 3 * * 1"
+  open-pull-requests-limit: 15
+  target-branch: develop
+  groups:
+    types:
+      patterns:
+        - "types-*"
+    pytest:
+      patterns:
+        - "pytest*"
+    mkdocs:
+      patterns:
+        - "mkdocs*"
+    scipy:
+      patterns:
+        - "scipy"
+        - "scipy-stubs"
+
+- package-ecosystem: "github-actions"
+  directory: "/"
+  cooldown:
+    default-days: 7
+  schedule:
+    interval: "cron"
+    # Monday at 03:00
+    cronjob: "0 3 * * 1"
+  open-pull-requests-limit: 10
+  target-branch: develop
+  groups:
+    actions:
+      patterns:
+        # Combine updates for github provided actions
+        - "actions/*"

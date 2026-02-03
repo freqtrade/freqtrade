@@ -1,0 +1,9 @@
+include LICENSE
+include README.md
+recursive-include freqtrade *.py
+recursive-include freqtrade/templates/ *.j2 *.ipynb
+include freqtrade/exchange/binance_leverage_tiers.json
+include freqtrade/rpc/api_server/ui/fallback_file.html
+include freqtrade/rpc/api_server/ui/favicon.ico
+
+prune tests

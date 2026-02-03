@@ -1,0 +1,346 @@
+[build-system]
+requires = ["setuptools >= 64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "freqtrade"
+dynamic = ["version"]
+
+authors = [
+  {name = "Freqtrade Team"},
+  {name = "Freqtrade Team", email = "freqtrade@protonmail.com"},
+]
+
+description = "Freqtrade - Crypto Trading Bot"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "GPLv3"}
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: MacOS",
+    "Operating System :: Unix",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+dependencies = [
+  # from requirements.txt
+  "ccxt>=4.5.4",
+  "SQLAlchemy>=2.0.6",
+  "python-telegram-bot>=20.1",
+  "humanize>=4.0.0",
+  "cachetools",
+  "requests",
+  "httpx>=0.24.1",
+  "urllib3",
+  "jsonschema",
+  "numpy>2.0,<3.0",
+  "pandas>=2.2.0,<3.0",
+  "TA-Lib<0.7",
+  "ft-pandas-ta",
+  "technical",
+  "tabulate",
+  "pycoingecko>=3.2.0",
+  "python-rapidjson",
+  "orjson",
+  "jinja2",
+  "questionary",
+  "prompt-toolkit",
+  "joblib>=1.2.0",
+  "rich",
+  'pyarrow; platform_machine != "armv7l"',
+  "fastapi",
+  "pydantic>=2.2.0",
+  "pyjwt",
+  "websockets",
+  "uvicorn",
+  "psutil",
+  "schedule",
+  "janus",
+  "ast-comments",
+  "aiofiles",
+  "aiohttp",
+  "cryptography",
+  "sdnotify",
+  "python-dateutil",
+  "pytz",
+  "packaging",
+  "freqtrade-client",
+]
+
+[project.optional-dependencies]
+# Requirements used for submodules
+plot = ["plotly>=4.0"]
+hyperopt = [
+  "scipy",
+  "scikit-learn",
+  "optuna > 4.0.0",
+  "cmaes",
+  "filelock",
+]
+freqai = [
+  "scikit-learn",
+  "joblib",
+  "lightgbm",
+  "xgboost",
+  "tensorboard",
+  "datasieve>=0.1.5",
+]
+freqai_rl = [
+  "torch; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+  "gymnasium",
+  "stable-baselines3; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+  "sb3-contrib; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+  "tqdm",
+]
+develop = [
+  "isort",
+  "mypy",
+  "pre-commit",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
+  "pytest-random-order",
+  "pytest-timeout",
+  "pytest-xdist",
+  "pytest",
+  "ruff",
+  "scipy-stubs",
+  "time-machine",
+  "types-cachetools",
+  "types-filelock",
+  "types-python-dateutil",
+  "types-requests",
+  "types-tabulate",
+]
+jupyter = [
+  "jupyter",
+  "nbstripout",
+  "ipykernel",
+  "nbconvert",
+]
+all = [
+  "freqtrade[plot,hyperopt,freqai,freqai_rl,jupyter]",
+]
+dev = [
+  "freqtrade[all,develop]",
+]
+
+[project.urls]
+Homepage = "https://github.com/freqtrade/freqtrade"
+Documentation = "https://freqtrade.io"
+"Bug Tracker" = "https://github.com/freqtrade/freqtrade/issues"
+
+
+[project.scripts]
+freqtrade = "freqtrade.main:main"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["freqtrade*"]
+exclude = ["tests", "tests.*", "user_data", "user_data*"]
+namespaces = true
+
+[tool.setuptools.dynamic]
+version = {attr = "freqtrade.__version__"}
+
+[tool.black]
+line-length = 100
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  # Exclude vendor directory
+  | vendor
+)
+'''
+
+[tool.isort]
+line_length = 100
+profile = "black"
+# multi_line_output=3
+lines_after_imports=2
+skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"]
+known_first_party = ["freqtrade_client"]
+
+[tool.pytest.ini_options]
+# TODO: should be migrated to [tool.pytest] as support for this was added in 9.0
+log_format = "%(asctime)s %(levelname)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--dist loadscope"
+
+[tool.mypy]
+ignore_missing_imports = true
+namespace_packages = false
+warn_unused_ignores = true
+exclude = [
+    '^build_helpers\.py$',
+    '^ft_client/build/.*$',
+]
+plugins = [
+  "sqlalchemy.ext.mypy.plugin"
+]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+  "freqtrade.templates.*",
+  "tests.strategy.strats"
+]
+# Disable attr-defined check due to ta-lib not having type stubs
+disable_error_code = "attr-defined"
+
+[tool.pyright]
+include = ["freqtrade", "ft_client"]
+exclude = [
+  "**/__pycache__",
+  "build_helpers/*.py",
+  "ft_client/build/*",
+  "build/*",
+]
+ignore = ["freqtrade/vendor/**"]
+pythonPlatform = "All"
+pythonVersion = "3.11"
+
+typeCheckingMode = "off"
+# analyzeUnannotatedFunctions = false
+
+reportArgumentType = false  # 155
+reportAssignmentType = false  # 12
+reportAttributeAccessIssue = false  # 255
+reportCallIssue = false  # 23
+reportGeneralTypeIssues = false  # 48
+reportIncompatibleMethodOverride = false  # 15
+reportIncompatibleVariableOverride = false  # 5
+reportIndexIssue = false  # 22
+reportMissingImports = false  # 5
+reportOperatorIssue = false  # 7
+reportOptionalMemberAccess = false  # 35
+reportOptionalOperand = false  # 7
+reportPossiblyUnboundVariable = false  # 36
+reportPrivateImportUsage = false  # 5
+reportRedeclaration = false  # 1
+reportReturnType = false  # 28
+reportTypedDictNotRequiredAccess = false  # 27
+
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".env", ".venv"]
+
+[tool.ruff.lint]
+extend-select = [
+  "C90",    # mccabe
+  "B",      # bugbear
+  # "N",    # pep8-naming
+  "F",      # pyflakes
+  "E",      # pycodestyle
+  "W",      # pycodestyle
+  "UP",     # pyupgrade
+  "I",      # isort
+  "A",      # flake8-builtins
+  "TID",    # flake8-tidy-imports
+  # "EXE",  # flake8-executable
+  # "C4",     # flake8-comprehensions
+  "YTT",    # flake8-2020
+  "S",      # flake8-bandit
+  # "DTZ",  # flake8-datetimez
+  # "RSE",  # flake8-raise
+  # "TCH",  # flake8-type-checking
+  "PTH",    # flake8-use-pathlib
+  "RUF",    # ruff
+  "ASYNC",  # flake8-async
+  "NPY",    # numpy
+]
+
+extend-ignore = [
+  "E241",  # Multiple spaces after comma
+  "E272",  # Multiple spaces before keyword
+  "E221",  # Multiple spaces before operator
+  "B007",  # Loop control variable not used
+  "B904",  # BugBear - except raise from
+  "S603",  # `subprocess` call: check for execution of untrusted input
+  "S607",  # Starting a process with a partial executable path
+  "S608",  # Possible SQL injection vector through string-based query construction
+  "NPY002",  # Numpy legacy random generator
+  "RUF010",  # Use explicit conversion flag
+  "RUF012",  # mutable-class-default
+  "RUF022",  # unsorted-dunder-all
+  "RUF005",  # list concatenation
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.per-file-ignores]
+"freqtrade/freqai/**/*.py" = [
+  "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
+]
+"tests/**.py" = [
+  "S101",  # allow assert in tests
+  "S104",  #  Possible binding to all interfaces
+  "S311",  # Standard pseudo-random generators are not suitable for cryptographic purposes
+  "S105",  # Possible hardcoded password assigned to: "secret"
+  "S106",  # Possible hardcoded password assigned to argument: "token_type"
+  "S110",  # `try`-`except`-`pass` detected, consider logging the exception
+  ]
+
+"freqtrade/templates/**.py" = [
+  "RUF100",  # Allow unused noqa
+]
+
+"ft_client/test_client/**.py" = [
+  "S101",  # allow assert in tests
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+known-first-party = ["freqtrade_client"]
+
+[tool.flake8]
+# Default from https://flake8.pycqa.org/en/latest/user/options.html#cmdoption-flake8-ignore
+# minus E226
+ignore = ["E121","E123","E126","E24", "E203","E704","W503","W504"]
+max-line-length = 100
+max-complexity = 12
+exclude = [
+    ".git",
+    "__pycache__",
+    ".eggs",
+    "user_data",
+    ".venv",
+    ".env",
+]
+
+[tool.codespell]
+ignore-words-list = "coo,fo,strat,zar,selectin"
+skip="*.svg,./user_data,freqtrade/rpc/api_server/ui/installed,freqtrade/exchange/*.json"

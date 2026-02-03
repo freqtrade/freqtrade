@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  freqtrade:
+    image: freqtrade-custom
+    container_name: freqtrade-test
+    volumes:
+      - ../user_data:/freqtrade/user_data
+      - ../functions:/freqtrade/functions
+    working_dir: /freqtrade
+    command: ["webserver", "-c", "user_data/config.json"]
+    environment:
+      - PYTHONUNBUFFERED=1
+    tty: true
+    stdin_open: true
+    ports:
+     - "127.0.0.1:8080:8080"

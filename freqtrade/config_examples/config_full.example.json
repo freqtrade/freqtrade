@@ -1,0 +1,218 @@
+{
+    "$schema": "https://schema.freqtrade.io/schema.json",
+    "max_open_trades": 3,
+    "stake_currency": "BTC",
+    "stake_amount": 0.05,
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "USD",
+    "amount_reserve_percent": 0.05,
+    "available_capital": 1000,
+    "amend_last_stake_amount": false,
+    "last_stake_amount_min_ratio": 0.5,
+    "dry_run": true,
+    "dry_run_wallet": 1000,
+    "cancel_open_orders_on_exit": false,
+    "timeframe": "5m",
+    "trailing_stop": false,
+    "trailing_stop_positive": 0.005,
+    "trailing_stop_positive_offset": 0.0051,
+    "trailing_only_offset_is_reached": false,
+    "use_exit_signal": true,
+    "exit_profit_only": false,
+    "exit_profit_offset": 0.0,
+    "ignore_roi_if_entry_signal": false,
+    "ignore_buying_expired_candle_after": 300,
+    "trading_mode": "spot",
+    "margin_mode": "",
+    "minimal_roi": {
+        "40": 0.0,
+        "30": 0.01,
+        "20": 0.02,
+        "0": 0.04
+    },
+    "stoploss": -0.10,
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0
+    },
+    "order_types": {
+        "entry": "limit",
+        "exit": "limit",
+        "emergency_exit": "market",
+        "force_exit": "market",
+        "force_entry": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": false,
+        "stoploss_price_type": "last",
+        "stoploss_on_exchange_interval": 60,
+        "stoploss_on_exchange_limit_ratio": 0.99
+    },
+    "order_time_in_force": {
+        "entry": "GTC",
+        "exit": "GTC"
+    },
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        },
+        {
+            "method": "DelistFilter",
+            "max_days_from_now": 0,
+        },
+        {
+            "method": "FullTradesFilter"
+        },
+        {
+            "method": "VolumePairList",
+            "number_assets": 20,
+            "sort_key": "quoteVolume",
+            "refresh_period": 1800
+        },
+        {
+            "method": "AgeFilter",
+            "min_days_listed": 10
+        },
+        {
+            "method": "PrecisionFilter"
+        },
+        {
+            "method": "PriceFilter",
+            "low_price_ratio": 0.01,
+            "min_price": 0.00000010
+        },
+        {
+            "method": "SpreadFilter",
+            "max_spread_ratio": 0.005
+        },
+        {
+            "method": "RangeStabilityFilter",
+            "lookback_days": 10,
+            "min_rate_of_change": 0.01,
+            "refresh_period": 1440
+        }
+    ],
+    "exchange": {
+        "name": "binance",
+        "key": "your_exchange_key",
+        "secret": "your_exchange_secret",
+        "password": "",
+        "log_responses": false,
+        // "unknown_fee_rate": 1,
+        "ccxt_config": {},
+        "ccxt_async_config": {},
+        "pair_whitelist": [
+            "ALGO/BTC",
+            "ATOM/BTC",
+            "BAT/BTC",
+            "BCH/BTC",
+            "BRD/BTC",
+            "EOS/BTC",
+            "ETH/BTC",
+            "IOTA/BTC",
+            "LINK/BTC",
+            "LTC/BTC",
+            "NEO/BTC",
+            "NXS/BTC",
+            "XMR/BTC",
+            "XRP/BTC",
+            "XTZ/BTC"
+        ],
+        "pair_blacklist": [
+            "DOGE/BTC"
+        ],
+        "outdated_offset": 5,
+        "markets_refresh_interval": 60
+    },
+    "telegram": {
+        "enabled": false,
+        "token": "your_telegram_token",
+        "chat_id": "your_telegram_chat_id",
+        "notification_settings": {
+            "status": "on",
+            "warning": "on",
+            "startup": "on",
+            "entry": "on",
+            "entry_fill": "on",
+            "exit": {
+                "roi": "off",
+                "emergency_exit": "off",
+                "force_exit": "off",
+                "exit_signal": "off",
+                "trailing_stop_loss": "off",
+                "stop_loss": "off",
+                "stoploss_on_exchange": "off",
+                "custom_exit": "off"
+            },
+            "exit_fill": "on",
+            "entry_cancel": "on",
+            "exit_cancel": "on",
+            "protection_trigger": "off",
+            "protection_trigger_global": "on",
+            "show_candle": "off"
+        },
+        "reload": true,
+        "balance_dust_level": 0.01
+    },
+    "api_server": {
+        "enabled": false,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "enable_openapi": false,
+        "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
+        "username": "freqtrader",
+        "password": "SuperSecurePassword",
+        "ws_token": "secret_ws_t0ken."
+    },
+    "external_message_consumer": {
+        "enabled": false,
+        "producers": [
+            {
+                "name": "default",
+                "host": "127.0.0.2",
+                "port": 8080,
+                "ws_token": "secret_ws_t0ken."
+            }
+        ],
+        "wait_timeout": 300,
+        "ping_timeout": 10,
+        "sleep_time": 10,
+        "remove_entry_exit_signals": false,
+        "message_size_limit": 8
+    },
+    "bot_name": "freqtrade",
+    "db_url": "sqlite:///tradesv3.sqlite",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5,
+        "heartbeat_interval": 60
+    },
+    "disable_dataframe_checks": false,
+    "strategy": "SampleStrategy",
+    "strategy_path": "user_data/strategies/",
+    "recursive_strategy_search": false,
+    "add_config_files": [],
+    "reduce_df_footprint": false,
+    "dataformat_ohlcv": "feather",
+    "dataformat_trades": "feather"
+}

@@ -1,0 +1,90 @@
+{
+    "$schema": "https://schema.freqtrade.io/schema.json",
+    "max_open_trades": 5,
+    "stake_currency": "EUR",
+    "stake_amount": 10,
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "EUR",
+    "timeframe": "5m",
+    "dry_run": true,
+    "cancel_open_orders_on_exit": false,
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing":{
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exchange": {
+        "name": "kraken",
+        "key": "your_exchange_key",
+        "secret": "your_exchange_key",
+        "ccxt_config": {},
+        "ccxt_async_config": {
+        },
+        "pair_whitelist": [
+            "ADA/EUR",
+            "ATOM/EUR",
+            "BAT/EUR",
+            "BCH/EUR",
+            "BTC/EUR",
+            "DAI/EUR",
+            "DASH/EUR",
+            "EOS/EUR",
+            "ETC/EUR",
+            "ETH/EUR",
+            "LINK/EUR",
+            "LTC/EUR",
+            "QTUM/EUR",
+            "REP/EUR",
+            "WAVES/EUR",
+            "XLM/EUR",
+            "XMR/EUR",
+            "XRP/EUR",
+            "XTZ/EUR",
+            "ZEC/EUR"
+        ],
+        "pair_blacklist": [
+
+        ]
+    },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
+    "telegram": {
+        "enabled": false,
+        "token": "your_telegram_token",
+        "chat_id": "your_telegram_chat_id"
+    },
+    "api_server": {
+        "enabled": false,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
+        "username": "freqtrader",
+        "password": "SuperSecurePassword"
+    },
+    "bot_name": "freqtrade",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    },
+    "download_trades": true
+}

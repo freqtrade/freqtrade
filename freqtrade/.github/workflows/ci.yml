@@ -1,0 +1,438 @@
+name: Freqtrade CI
+
+on:
+  push:
+    branches:
+      - stable
+      - develop
+      - ci/*
+    tags:
+  release:
+    types: [published]
+  pull_request:
+  schedule:
+    - cron:  '0 3 * * 4'
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}"
+  cancel-in-progress: true
+permissions: {}
+
+jobs:
+  tests:
+    name: "Tests and Linting"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ "ubuntu-22.04", "ubuntu-24.04", "macos-14", "macos-15" , "windows-2022", "windows-2025" ]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
+      with:
+        activate-environment: true
+        enable-cache: true
+        python-version: ${{ matrix.python-version }}
+        cache-dependency-glob: "requirements**.txt"
+        cache-suffix: "${{ matrix.python-version }}"
+
+    - name: Installation - macOS (Brew)
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        # brew update
+        # TODO: Should be the brew upgrade
+        brew install libomp
+
+    - name: Installation (python)
+      run: |
+        uv pip install --upgrade wheel
+        uv pip install -r requirements-dev.txt
+        uv pip install -e ft_client/
+        uv pip install -e .
+
+    - name: Check for version alignment
+      run: |
+        python build_helpers/freqtrade_client_version_align.py
+
+    - name: Tests
+      if: (!(runner.os == 'Linux' && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04'))
+      run: |
+        pytest --random-order --durations 20 -n auto
+
+    - name: Tests with Coveralls
+      if: (runner.os == 'Linux' && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04')
+      run: |
+        pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
+
+    - uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+      if: (runner.os == 'Linux' && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04')
+      with:
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Cleanup codecov dirty state files
+      if: (runner.os == 'Linux' && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04')
+      run: |
+        # See https://github.com/codecov/codecov-action/issues/1851
+        rm -rf codecov codecov.SHA256SUM codecov.SHA256SUM.sig
+
+    - name: Run json schema extract
+      # This must be kept before the repository check to ensure that the schema is up-to-date
+      run: |
+        python build_helpers/extract_config_json_schema.py
+
+    - name: Run command docs partials extract
+      # This must be kept before the repository check to ensure that the docs are up-to-date
+      if: ${{ (matrix.python-version == '3.13') }}
+      run: |
+        python build_helpers/create_command_partials.py
+
+    - name: Check for repository changes - *nix
+      if: ${{ (runner.os != 'Windows') }}
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        else
+          echo "Repository is clean, no changes detected."
+        fi
+
+    - name: Check for repository changes - Windows
+      if: ${{ runner.os == 'Windows' }}
+      run: |
+        if (git status --porcelain) {
+          Write-Host "Repository is dirty, changes detected:"
+          git status
+          git diff
+          exit 1
+        }
+        else {
+          Write-Host "Repository is clean, no changes detected."
+        }
+
+    - name: Backtesting (multi)
+      run: |
+        freqtrade create-userdir --userdir user_data
+        cp tests/testdata/config.tests.json user_data/config.json
+        freqtrade new-strategy -s AwesomeStrategy
+        freqtrade new-strategy -s AwesomeStrategyMin --template minimal
+        freqtrade new-strategy -s AwesomeStrategyAdv --template advanced
+        freqtrade backtesting --datadir tests/testdata --strategy-list AwesomeStrategy AwesomeStrategyMin AwesomeStrategyAdv -i 5m
+
+    - name: Hyperopt
+      run: |
+        cp tests/testdata/config.tests.json config.json
+        freqtrade create-userdir --userdir user_data
+        freqtrade hyperopt --datadir tests/testdata -e 6 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
+
+    - name: Sort imports (isort)
+      run: |
+        isort --check .
+
+    - name: Run Ruff
+      run: |
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
+
+    - name: Mypy
+      if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15' }}
+      run: |
+        mypy freqtrade scripts tests
+
+    - name: Run Pester tests (PowerShell)
+      if: ${{ runner.os == 'Windows' }}
+      shell: powershell
+      run: |
+        $PSVersionTable
+        Get-PSRepository | Format-List *
+        Set-PSRepository psgallery -InstallationPolicy trusted
+        Install-Module -Name Pester -RequiredVersion 5.3.1 -Confirm:$false -Force -SkipPublisherCheck
+        $Error.clear()
+        Invoke-Pester -Path "tests" -CI
+        if ($Error.Length -gt 0) {exit 1}
+
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@c2597273488aeda841dd1e891321952b51f7996f #v2.2.1
+      if: ${{ failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
+      with:
+          severity: error
+          details: Freqtrade CI failed on ${{ matrix.os }} with Python ${{ matrix.python-version }}!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+
+  mypy-version-check:
+    name: "Mypy Version Check"
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 #v6.1.0
+      with:
+        python-version: "3.12"
+
+    - name: pre-commit dependencies
+      run: |
+        pip install pyaml
+        python build_helpers/pre_commit_update.py
+
+  pre-commit:
+    name: "Pre-commit checks"
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      with:
+        python-version: "3.12"
+    - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+
+  docs-check:
+    name: "Documentation build"
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Documentation syntax
+      run: |
+        ./tests/test_docs.sh
+
+    - name: Set up Python
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      with:
+        python-version: "3.12"
+
+    - name: Documentation build
+      run: |
+        pip install -r docs/requirements-docs.txt
+        mkdocs build
+
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@c2597273488aeda841dd1e891321952b51f7996f #v2.2.1
+      if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+          severity: error
+          details: Freqtrade doc test failed!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+
+
+  build-linux-online:
+    # Run pytest with "live" checks
+    name: "Tests and Linting - Online tests"
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      with:
+        python-version: "3.12"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
+      with:
+        activate-environment: true
+        enable-cache: true
+        python-version: "3.12"
+        cache-dependency-glob: "requirements**.txt"
+        cache-suffix: "3.12"
+
+    - name: Installation - *nix
+      run: |
+        uv pip install --upgrade wheel
+        uv pip install -r requirements-dev.txt
+        uv pip install -e ft_client/
+        uv pip install -e .
+
+    - name: Tests incl. ccxt compatibility tests
+      env:
+        CI_WEB_PROXY: http://152.67.66.8:13128
+      run: |
+        pytest --random-order --longrun --durations 20 -n auto
+
+
+  # Notify only once - when CI completes (and after deploy) in case it's successful
+  notify-complete:
+    name: "Notify CI Completion"
+    needs: [
+      build,
+      build-linux-online
+    ]
+    runs-on: ubuntu-22.04
+    # Discord notification can't handle schedule events
+    if: github.event_name != 'schedule' && github.repository == 'freqtrade/freqtrade'
+    steps:
+
+    - name: Check user permission
+      id: check
+      continue-on-error: true
+      uses: prince-chrismc/check-actor-permissions-action@d504e74ba31658f4cdf4fcfeb509d4c09736d88e # v3.0.2
+      with:
+        permission: "write"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Discord notification
+      uses: rjstone/discord-webhook-notify@c2597273488aeda841dd1e891321952b51f7996f #v2.2.1
+      if: steps.check.outputs.permitted == 'true' && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      with:
+          severity: info
+          details: Test Completed!
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+
+  build:
+    if: always()
+    name: "Build"
+    needs: [
+      tests,
+      docs-check,
+      mypy-version-check,
+      pre-commit,
+    ]
+    runs-on: ubuntu-22.04
+
+    steps:
+
+    - name: Decide whether the needed jobs succeeded or failed
+      uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe  # v1.2.2
+      with:
+        jobs: ${{ toJSON(needs) }}
+
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      with:
+        python-version: "3.12"
+
+    - name: Build distribution
+      run: |
+        pip install -U build
+        python -m build --sdist --wheel
+
+    - name: Upload artifacts 📦
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.1.0
+      with:
+        name: freqtrade-build
+        path: |
+          dist
+        retention-days: 10
+
+    - name: Build Client distribution
+      run: |
+        pip install -U build
+        python -m build --sdist --wheel ft_client
+
+    - name: Upload artifacts 📦
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.1.0
+      with:
+        name: freqtrade-client-build
+        path: |
+          ft_client/dist
+        retention-days: 10
+
+  deploy-test-pypi:
+    name: "Publish Python 🐍 distribution 📦 to TestPyPI"
+    needs: [ build ]
+    runs-on: ubuntu-22.04
+    if: (github.event_name == 'release')
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/freqtrade
+    permissions:
+      id-token: write # Needed for pypa/gh-action-pypi-publish
+
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Download artifact  📦
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      with:
+        pattern: freqtrade*-build
+        path: dist
+        merge-multiple: true
+
+    - name: Publish to PyPI (Test)
+      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
+
+  deploy-pypi:
+    name: "Publish Python 🐍 distribution 📦 to PyPI"
+    needs: [ build ]
+    runs-on: ubuntu-22.04
+    if: (github.event_name == 'release')
+    environment:
+      name: pypi
+      url: https://pypi.org/p/freqtrade
+    permissions:
+      id-token: write # Needed for pypa/gh-action-pypi-publish
+
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Download artifact  📦
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      with:
+        pattern: freqtrade*-build
+        path: dist
+        merge-multiple: true
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+
+
+  docker-build:
+    name: "Docker Build and Deploy"
+    needs: [
+     build,
+    ]
+    if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
+    uses: ./.github/workflows/docker-build.yml
+    permissions:
+      packages: write # Needed to push package versions
+      contents: read
+    secrets:
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
+
+  packages-cleanup:
+    name: "Docker Package Cleanup"
+    uses: ./.github/workflows/packages-cleanup.yml
+    # Only run on push, schedule, or release events
+    if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'freqtrade/freqtrade'
+    permissions:
+      packages: write # Needed to delete package versions
+    with:
+      package_name: 'freqtrade'

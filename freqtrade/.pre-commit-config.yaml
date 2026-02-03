@@ -1,0 +1,88 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+
+  - repo: local
+    # Keep json schema in sync with the config schema
+    # This will write the files - and fail pre-commit if a file has been changed.
+    hooks:
+      - id: Extract config json schema
+        name: extract-config-json-schema
+        entry: "python build_helpers/extract_config_json_schema.py"
+        language: python
+        pass_filenames: false
+        additional_dependencies: ["python-rapidjson", "jsonschema"]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: "7.3.0"
+    hooks:
+      - id: flake8
+        additional_dependencies: [Flake8-pyproject]
+        # stages: [push]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v1.19.1"
+    hooks:
+      - id: mypy
+        exclude: build_helpers
+        additional_dependencies:
+          - types-cachetools==6.2.0.20251022
+          - types-filelock==3.2.7
+          - types-requests==2.32.4.20260107
+          - types-tabulate==0.9.0.20241207
+          - types-python-dateutil==2.9.0.20251115
+          - scipy-stubs==1.17.0.1
+          - SQLAlchemy==2.0.45
+        # stages: [push]
+
+  - repo: https://github.com/pycqa/isort
+    rev: "7.0.0"
+    hooks:
+      - id: isort
+        name: isort (python)
+        # stages: [push]
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    # Ruff version.
+    rev: 'v0.14.14'
+    hooks:
+      - id: ruff
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+        exclude: |
+            (?x)^(
+                tests/.*|
+                .*\.svg|
+                .*\.yml|
+                .*\.json
+            )$
+      - id: mixed-line-ending
+      - id: debug-statements
+      - id: check-ast
+      - id: trailing-whitespace
+        exclude: |
+          (?x)^(
+                .*\.md
+            )$
+
+  - repo: https://github.com/stefmolin/exif-stripper
+    rev: 1.2.0
+    hooks:
+      - id: strip-exif
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+    - id: codespell
+      additional_dependencies:
+        - tomli
+
+  # Ensure github actions remain safe
+  - repo: https://github.com/woodruffw/zizmor-pre-commit
+    rev: v1.22.0
+    hooks:
+    - id: zizmor

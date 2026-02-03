@@ -1,0 +1,84 @@
+{
+    "$schema": "https://schema.freqtrade.io/schema.json",
+    "max_open_trades": 3,
+    "stake_currency": "USDT",
+    "stake_amount": 30,
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "USD",
+    "timeframe": "5m",
+    "dry_run": true,
+    "cancel_open_orders_on_exit": false,
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exchange": {
+        "name": "binance",
+        "key": "your_exchange_key",
+        "secret": "your_exchange_secret",
+        "ccxt_config": {},
+        "ccxt_async_config": {
+        },
+        "pair_whitelist": [
+            "ALGO/USDT",
+            "ATOM/USDT",
+            "BAT/USDT",
+            "BCH/USDT",
+            "BRD/USDT",
+            "EOS/USDT",
+            "ETH/USDT",
+            "IOTA/USDT",
+            "LINK/USDT",
+            "LTC/USDT",
+            "NEO/USDT",
+            "NXS/USDT",
+            "XMR/USDT",
+            "XRP/USDT",
+            "XTZ/USDT"
+        ],
+        "pair_blacklist": [
+            "BNB/.*"
+        ]
+    },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
+    "telegram": {
+        "enabled": false,
+        "token": "your_telegram_token",
+        "chat_id": "your_telegram_chat_id"
+    },
+    "api_server": {
+        "enabled": false,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "verbosity": "error",
+        "jwt_secret_key": "somethingrandom",
+        "CORS_origins": [],
+        "username": "freqtrader",
+        "password": "SuperSecurePassword"
+    },
+    "bot_name": "freqtrade",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

@@ -1,0 +1,3 @@
+(qtpylib.crossed_above(dataframe["rsi"], self.sell_rsi.value)) &  # Signal: RSI crosses above sell_rsi
+(dataframe["tema"] > dataframe["bb_middleband"]) &  # Guard: tema above BB middle
+(dataframe["tema"] < dataframe["tema"].shift(1)) &  # Guard: tema is falling
