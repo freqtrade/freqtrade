@@ -58,23 +58,17 @@ def count(rpc: RPC = Depends(get_rpc)):
 
 
 @router.get("/entries", response_model=list[Entry], tags=["Trading-info"])
-def entries(
-    pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)
-):
+def entries(pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_enter_tag_performance(pair)
 
 
 @router.get("/exits", response_model=list[Exit], tags=["Trading-info"])
-def exits(
-    pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)
-):
+def exits(pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_exit_reason_performance(pair)
 
 
 @router.get("/mix_tags", response_model=list[MixTag], tags=["Trading-info"])
-def mix_tags(
-    pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)
-):
+def mix_tags(pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_mix_tag_performance(pair)
 
 
