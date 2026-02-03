@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(pytest:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(python:*)"
+    ]
+  }
+}

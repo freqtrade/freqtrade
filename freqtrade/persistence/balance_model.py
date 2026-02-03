@@ -55,9 +55,11 @@ class Balance(ModelBase):
 
     # Trade/Order association (optional)
     ft_trade_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("trades.id"), nullable=True, index=True
+        Integer, ForeignKey("trades.id", ondelete="CASCADE"), nullable=True, index=True
     )
-    ft_order_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("orders.id"), nullable=True)
+    ft_order_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=True
+    )
 
     # Profit metrics at this point
     total_profit: Mapped[float | None] = mapped_column(Float(), nullable=True)

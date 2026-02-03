@@ -46,6 +46,7 @@ from freqtrade.exchange import (
 from freqtrade.exchange.exchange_types import CcxtOrder
 from freqtrade.leverage import interest
 from freqtrade.misc import safe_value_fallback
+from freqtrade.persistence.balance_model import Balance
 from freqtrade.persistence.base import ModelBase, SessionType
 from freqtrade.persistence.custom_data import CustomDataWrapper, _CustomData
 from freqtrade.util import FtPrecise, dt_from_ts, dt_now, dt_ts, dt_ts_none, round_value
@@ -1754,7 +1755,20 @@ class Trade(ModelBase, LocalTrade):
         return value
 
     def delete(self) -> None:
+        # Delete balances associated with this trade
+        balances = Balance.session.scalars(
+            select(Balance).filter(Balance.ft_trade_id == self.id)
+        ).all()
+        for balance in balances:
+            Balance.session.delete(balance)
+
+        # Delete orders and their associated balances
         for order in self.orders:
+            order_balances = Balance.session.scalars(
+                select(Balance).filter(Balance.ft_order_id == order.id)
+            ).all()
+            for balance in order_balances:
+                Balance.session.delete(balance)
             Order.session.delete(order)
 
         CustomDataWrapper.delete_custom_data(trade_id=self.id)
