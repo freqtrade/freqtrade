@@ -101,7 +101,11 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
         expected_delta_ns = timeframe_to_msecs(timeframe) * 1_000_000
         dates = dataframe["date"].values.view(np.int64)
         # Check if all time differences match the expected timeframe
-        if np.all(dates[1:] - dates[:-1] == expected_delta_ns):
+        # AND if the first date is aligned to the timeframe (e.g. 00:00 for 1d)
+        if (
+            dates[0] % expected_delta_ns == 0
+            and np.all(dates[1:] - dates[:-1] == expected_delta_ns)
+        ):
             return dataframe
 
     resample_interval = timeframe_to_resample_freq(timeframe)
