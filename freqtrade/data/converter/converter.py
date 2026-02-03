@@ -91,9 +91,19 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     using the previous close as price for "open", "high", "low" and "close", volume is set to 0
 
     """
-    from freqtrade.exchange import timeframe_to_resample_freq
+    from freqtrade.exchange import timeframe_to_msecs, timeframe_to_resample_freq
 
     ohlcv_dict = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+
+    if not dataframe.empty:
+        # Optimization: Check if data is contiguous before resampling
+        # 1ms = 1_000_000 ns
+        expected_delta_ns = timeframe_to_msecs(timeframe) * 1_000_000
+        dates = dataframe["date"].values.view(np.int64)
+        # Check if all time differences match the expected timeframe
+        if np.all(dates[1:] - dates[:-1] == expected_delta_ns):
+            return dataframe
+
     resample_interval = timeframe_to_resample_freq(timeframe)
     # Resample to create "NAN" values
     df = dataframe.resample(resample_interval, on="date").agg(ohlcv_dict)

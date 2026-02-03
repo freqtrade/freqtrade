@@ -765,21 +765,22 @@ class Exchange:
         Get valid pair combination of curr_1 and curr_2 by trying both combinations.
         """
         yielded = False
+        markets = self.markets
         # Optimization: Manual unrolling to avoid creating a tuple and iterating
         pair = f"{curr_1}/{curr_2}"
-        if pair in self.markets and self.markets[pair].get("active"):
+        if pair in markets and markets[pair].get("active"):
             yielded = True
             yield pair
         pair = f"{curr_2}/{curr_1}"
-        if pair in self.markets and self.markets[pair].get("active"):
+        if pair in markets and markets[pair].get("active"):
             yielded = True
             yield pair
         pair = f"{curr_1}/{curr_2}:{curr_2}"
-        if pair in self.markets and self.markets[pair].get("active"):
+        if pair in markets and markets[pair].get("active"):
             yielded = True
             yield pair
         pair = f"{curr_2}/{curr_1}:{curr_1}"
-        if pair in self.markets and self.markets[pair].get("active"):
+        if pair in markets and markets[pair].get("active"):
             yielded = True
             yield pair
 
@@ -2331,8 +2332,13 @@ class Exchange:
             )
             raise PricingError from e
         logger.debug(
-            f"{pair} - {name} price from orderbook {price_side.capitalize()}"
-            f"side - top {order_book_top} order book {side} rate {rate:.8f}"
+            "%s - %s price from orderbook %sside - top %s order book %s rate %.8f",
+            pair,
+            name,
+            price_side.capitalize(),
+            order_book_top,
+            side,
+            rate,
         )
         return rate
 

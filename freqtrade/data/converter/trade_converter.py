@@ -3,6 +3,7 @@ Functions to convert data from one format to another
 """
 
 import logging
+from operator import itemgetter
 from pathlib import Path
 
 import pandas as pd
@@ -39,7 +40,10 @@ def trades_dict_to_list(trades: list[dict]) -> TradeList:
     :param trades: List of trades, as returned by ccxt.fetch_trades.
     :return: List of Lists, with constants.DEFAULT_TRADES_COLUMNS as columns
     """
-    return [[t[col] for col in DEFAULT_TRADES_COLUMNS] for t in trades]
+    # Optimization: itemgetter is significantly faster than list comprehension
+    # for extracting values from a list of dicts.
+    getter = itemgetter(*DEFAULT_TRADES_COLUMNS)
+    return [list(getter(t)) for t in trades]
 
 
 def trades_convert_types(trades: DataFrame) -> DataFrame:
