@@ -2645,7 +2645,10 @@ async def test_warning_notification(default_conf, mocker) -> None:
 def test_startup_notification(default_conf, mocker) -> None:
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
     telegram.send_msg({"type": RPCMessageType.STARTUP, "status": "*Custom:* `Hello World`"})
-    assert msg_mock.call_args[0][0] == "🚀 *Freqtrade - Crypto P Edition* Started!\n*Custom:* `Hello World`"
+    assert (
+        msg_mock.call_args[0][0]
+        == "🚀 *Freqtrade - Crypto P Edition* Started!\n*Custom:* `Hello World`"
+    )
 
 
 def test_send_msg_strategy_msg_notification(default_conf, mocker) -> None:
