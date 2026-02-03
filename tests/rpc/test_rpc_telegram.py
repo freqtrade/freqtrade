@@ -621,7 +621,7 @@ async def test_status_handle(default_conf, update, ticker, fee, mocker) -> None:
     msg1 = msg_mock.call_args_list[0][0][0]
 
     assert "Close:" not in msg1
-    assert "🟢 *LTC/BTC* (#2)" in msg1
+    assert "🔺 *LTC/BTC* (#2)" in msg1
 
 
 async def test_status_table_handle(default_conf, update, ticker, fee, mocker) -> None:
@@ -2137,7 +2137,7 @@ async def test_help_handle(default_conf, update, mocker) -> None:
 
     await telegram._help(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert "/help - Show this help" in msg_mock.call_args_list[0][0][0]
+    assert "`/help`         - Show this help" in msg_mock.call_args_list[0][0][0]
 
 
 async def test_version_handle(default_conf, update, mocker) -> None:
@@ -2645,7 +2645,10 @@ async def test_warning_notification(default_conf, mocker) -> None:
 def test_startup_notification(default_conf, mocker) -> None:
     telegram, _, msg_mock = get_telegram_testobject(mocker, default_conf)
     telegram.send_msg({"type": RPCMessageType.STARTUP, "status": "*Custom:* `Hello World`"})
-    assert msg_mock.call_args[0][0] == "*Custom:* `Hello World`"
+    assert (
+        msg_mock.call_args[0][0]
+        == "🚀 *Freqtrade - Crypto P Edition* Started!\n*Custom:* `Hello World`"
+    )
 
 
 def test_send_msg_strategy_msg_notification(default_conf, mocker) -> None:
