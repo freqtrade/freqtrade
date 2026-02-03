@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Freqtrade - Crypto P Edition. Install the UI to access the dashboard.">
+  <meta property="og:title" content="Freqtrade - Crypto P Edition">
+  <meta property="og:description" content="Install the UI to access the dashboard.">
+  <meta property="og:image" content="/logo.png">
+
   <title>Freqtrade - Crypto P Edition</title>
   <link rel="icon" type="image/png" href="/logo.png">
   <style>
@@ -15,6 +20,7 @@
       --nav-bg: #240046;
       --btn-bg: #ff00ff;
       --btn-text: #ffffff;
+      --success-color: #00ff00;
     }
     body {
       background-color: var(--bg-color);
@@ -39,6 +45,10 @@
       border-radius: 50%;
       border: 3px solid var(--accent-primary);
       box-shadow: 0 0 15px var(--accent-primary);
+      transition: transform 0.3s;
+    }
+    .logo:hover {
+      transform: rotate(5deg) scale(1.05);
     }
     h1 {
       color: var(--accent-secondary);
@@ -56,10 +66,13 @@
       font-weight: bold;
       font-size: 1.1rem;
       transition: color 0.3s;
+      padding: 0.5rem;
+      border-radius: 5px;
     }
-    nav a:hover {
+    nav a:hover, nav a:focus {
       color: var(--accent-primary);
       text-shadow: 0 0 5px var(--accent-primary);
+      background: rgba(255, 255, 255, 0.1);
     }
     .hero {
       text-align: center;
@@ -74,6 +87,11 @@
       border-radius: 15px;
       box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
       border: 1px solid var(--accent-primary);
+      transition: transform 0.2s;
+    }
+    .content-section:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 25px rgba(138, 43, 226, 0.5);
     }
     h2 {
       color: var(--accent-primary);
@@ -92,7 +110,7 @@
     .install-notice {
       background-color: rgba(255, 0, 255, 0.1);
       border: 2px dashed var(--accent-secondary);
-      padding: 1.5rem;
+      padding: 2rem;
       margin-top: 2rem;
       border-radius: 10px;
       text-align: center;
@@ -100,47 +118,54 @@
     code {
       background-color: #000;
       color: #0f0;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      font-family: monospace;
-      font-size: 1.2rem;
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 1.3rem;
       display: inline-block;
       margin: 1rem 0;
+      border: 1px solid #333;
     }
     footer {
       text-align: center;
       padding: 2rem;
       background-color: var(--nav-bg);
-      color: var(--text-color); /* Improved contrast */
+      color: var(--text-color);
       margin-top: 3rem;
       border-top: 2px solid var(--accent-primary);
     }
     .btn {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
       background-color: var(--btn-bg);
       color: var(--btn-text);
-      padding: 0.8rem 1.5rem;
-      border-radius: 25px;
+      padding: 0.8rem 2rem;
+      border-radius: 50px;
       text-decoration: none;
       font-weight: bold;
-      margin-top: 1rem;
+      margin-top: 1.5rem;
       border: none;
       cursor: pointer;
-      font-size: 1rem;
-      transition: transform 0.2s, box-shadow 0.2s;
-      cursor: pointer;
-      border: none;
-      font-size: 1rem;
+      font-size: 1.1rem;
+      transition: all 0.2s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
     .btn:hover {
       transform: scale(1.05);
-      box-shadow: 0 0 10px var(--accent-primary);
+      box-shadow: 0 0 15px var(--accent-primary);
+      background-color: #ff33ff;
+    }
+    .btn:active {
+        transform: scale(0.98);
     }
 
     /* Accessibility & UX Improvements */
     :focus-visible {
       outline: 3px solid var(--accent-secondary);
-      outline-offset: 2px;
+      outline-offset: 4px;
+      border-radius: 4px;
     }
 
     .skip-link {
@@ -164,8 +189,9 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
+        gap: 15px;
         flex-wrap: wrap;
+        margin: 1rem 0;
     }
 
     .copy-btn {
@@ -173,33 +199,60 @@
         border: 2px solid var(--accent-secondary);
         color: var(--accent-secondary);
         cursor: pointer;
-        padding: 5px 12px;
-        border-radius: 5px;
-        font-size: 1.2rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 1.1rem;
         transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
     }
 
     .copy-btn:hover {
-        background: rgba(0, 255, 255, 0.1);
-        transform: scale(1.1);
+        background: rgba(0, 255, 255, 0.15);
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2);
     }
 
     .copy-btn:active {
-        transform: scale(0.95);
+        transform: translateY(0);
+    }
+
+    .copy-btn.copied {
+        border-color: var(--success-color);
+        color: var(--success-color);
+        background: rgba(0, 255, 0, 0.1);
+    }
+
+    /* Spinner */
+    .spinner {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .btn.loading .spinner {
+        display: block;
+    }
+
+    .btn.loading .btn-text {
+        display: none; /* Optional: hide text or keep it */
+    }
+
+    @media (max-width: 600px) {
+        h1 { font-size: 2rem; }
+        .content-section { margin: 1rem; padding: 1.5rem; }
+        .copy-container { flex-direction: column; gap: 5px; }
     }
   </style>
-  <script>
-    function copyCommand() {
-      const commandText = document.getElementById('install-cmd').innerText;
-      navigator.clipboard.writeText(commandText).then(() => {
-        const btn = document.getElementById('copy-btn');
-        btn.innerText = '✅ Copied!';
-        setTimeout(() => {
-          btn.innerText = '📋 Copy';
-        }, 2000);
-      });
-    }
-  </script>
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to content</a>
@@ -209,7 +262,7 @@
         <img src="/logo.png" alt="Crypto P Logo" class="logo">
       </div>
       <h1>Freqtrade - Crypto P Edition</h1>
-      <nav>
+      <nav aria-label="Main Navigation">
         <a href="https://www.freqtrade.io/en/latest/" target="_blank" rel="noopener noreferrer">Documentation</a>
         <a href="https://github.com/freqtrade/freqtrade" target="_blank" rel="noopener noreferrer">GitHub</a>
       </nav>
@@ -217,36 +270,42 @@
 
     <main id="main-content">
         <div class="hero">
-          <h2>Welcome to the Show!</h2>
+          <h2>Welcome to the Show! 🎪</h2>
           <p>Step into the most dazzling carousel for your crypto trading.</p>
         </div>
 
         <section class="content-section">
-          <h2>Meet Crypto P</h2>
+          <h2>Meet Crypto P 🎩</h2>
           <p><strong>Crypto P</strong> is the eccentric mastermind behind Crypto P's Magical Server! With high energy, a love for cryptocurrency, and a passion for innovation, Crypto P is constantly developing new ideas, trading bots, and crypto signals. A true visionary with a mix of seriousness and playfulness, Crypto P brings the magic of cryptocurrency to life!</p>
         </section>
 
         <section class="content-section">
-          <h2>The Philosophy of Crypto P</h2>
+          <h2>The Philosophy of Crypto P ✨</h2>
           <p>Crypto P believes in the power of decentralization, the potential of blockchain technology, and the freedom that comes with it. The journey is as important as the destination, and Crypto P loves to share the excitement with others. From building advanced trading bots to providing real-time crypto signals, Crypto P’s goal is to make the crypto world accessible to everyone!</p>
         </section>
 
         <section class="content-section">
-          <h2>Crypto P’s Vision</h2>
+          <h2>Crypto P’s Vision 🔮</h2>
           <p>With a deep understanding of the crypto markets, Crypto P combines technical expertise with a creative and psychedelic spirit. Crypto P’s vision is to create a platform that not only provides valuable tools and insights for traders but also engages the community with fun, vibrant, and thought-provoking content. Whether it’s through high-energy crypto signals, innovative bots, or live charts, Crypto P is here to guide you on your crypto journey.</p>
         </section>
 
         <section class="content-section install-notice">
-          <h3>Unlock the Full Edition!</h3>
+          <h3>🚀 Unlock the Full Edition!</h3>
           <p>The UI is currently hiding. Install it with this command:</p>
 
           <div class="copy-container">
              <code id="install-cmd">freqtrade install-ui</code>
-             <button class="copy-btn" onclick="copyCommand()" aria-label="Copy install command">📋</button>
+             <button class="copy-btn" onclick="copyCommand()" aria-label="Copy install command">
+                <span class="icon">📋</span>
+                <span class="text">Copy</span>
+             </button>
           </div>
 
           <p>Then refresh this page to enter the dashboard!</p>
-          <button class="btn" onclick="location.reload()">🔄 Refresh</button>
+          <button class="btn" onclick="refreshPage(this)" aria-label="Refresh page">
+              <span class="spinner"></span>
+              <span class="btn-text">🔄 Refresh Dashboard</span>
+          </button>
         </section>
     </main>
 
@@ -257,22 +316,54 @@
     <script>
         function copyCommand() {
             const cmdText = document.getElementById('install-cmd').innerText;
+            const btn = document.querySelector('.copy-btn');
+            const iconSpan = btn.querySelector('.icon');
+            const textSpan = btn.querySelector('.text');
+
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(cmdText).then(() => {
-                    const btn = document.querySelector('.copy-btn');
-                    const originalText = btn.innerText;
-                    btn.innerText = '✅';
+                    btn.classList.add('copied');
+                    iconSpan.innerText = '✅';
+                    textSpan.innerText = 'Copied!';
+
                     setTimeout(() => {
-                        btn.innerText = originalText;
+                        btn.classList.remove('copied');
+                        iconSpan.innerText = '📋';
+                        textSpan.innerText = 'Copy';
                     }, 2000);
                 }).catch(err => {
                     console.error('Failed to copy: ', err);
                     alert('Copy failed. Please copy the command manually.');
                 });
             } else {
-                // Fallback for non-secure contexts if possible, or just alert
-                alert('Copy not supported in this environment. Please copy manually.');
+                // Fallback
+                const textArea = document.createElement("textarea");
+                textArea.value = cmdText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    btn.classList.add('copied');
+                    iconSpan.innerText = '✅';
+                    textSpan.innerText = 'Copied!';
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        iconSpan.innerText = '📋';
+                        textSpan.innerText = 'Copy';
+                    }, 2000);
+                } catch (err) {
+                    alert('Copy failed. Please copy manually.');
+                }
+                document.body.removeChild(textArea);
             }
+        }
+
+        function refreshPage(btn) {
+            btn.classList.add('loading');
+            // Small delay to show the spinner before reload (mostly for UX feel)
+            setTimeout(() => {
+                location.reload();
+            }, 500);
         }
     </script>
 </body>

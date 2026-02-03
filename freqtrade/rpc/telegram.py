@@ -581,7 +581,7 @@ class Telegram(RPCHandler):
             message = f"\N{WARNING SIGN} *ERROR:* \n {msg['status']}"
 
         elif msg["type"] == RPCMessageType.STARTUP:
-            message = f"{msg['status']}"
+            message = f"🚀 *Freqtrade - Crypto P Edition* Started!\n{msg['status']}"
         elif msg["type"] == RPCMessageType.STRATEGY_MSG:
             message = f"{msg['msg']}"
         else:
@@ -745,7 +745,8 @@ class Telegram(RPCHandler):
             await self._status_msg(update, context)
 
     def _get_status_header(self, r: dict[str, Any]) -> list[str]:
-        return [f"{'🔴' if r.get('is_short') else '🟢'} *{r['pair']}* (#{r['trade_id']})"]
+        direction_emoji = "🔻" if r.get("is_short") else "🔺"
+        return [f"{direction_emoji} *{r['pair']}* (#{r['trade_id']})"]
 
     def _get_status_profit(self, r: dict[str, Any], position_adjust: bool) -> list[str]:
         r["stake_amount_r"] = fmt_coin(r["stake_amount"], r["quote_currency"])
@@ -756,7 +757,7 @@ class Telegram(RPCHandler):
         profit_emoji = "🟢" if r["profit_ratio"] >= 0 else "🔴"
 
         lines = [
-            f"*Profit:* {profit_emoji} `{format_pct(r['profit_ratio'])}` `({r['profit_abs_r']})`"
+            f"*Profit:* {profit_emoji} *{format_pct(r['profit_ratio'])}* `({r['profit_abs_r']})`"
             + (f" `({r['leverage']}x)`" if r.get("leverage") else ""),
             f"*Amount:* `{r['amount']} ({r['stake_amount_r']})`"
             + (f" / `{r['max_stake_amount_r']}`" if position_adjust else ""),
@@ -765,7 +766,7 @@ class Telegram(RPCHandler):
 
     def _get_status_prices(self, r: dict[str, Any]) -> list[str]:
         lines = []
-        price_line = f"*Entry:* `{round_value(r['open_rate'], 8)}`"
+        price_line = f"📉 *Entry:* `{round_value(r['open_rate'], 8)}`"
         if r["is_open"]:
             price_line += f" ➜ *Current:* `{round_value(r['current_rate'], 8)}`"
         else:
@@ -781,12 +782,13 @@ class Telegram(RPCHandler):
 
         if r["is_open"]:
             lines.append(" ")
-            lines.append(f"*Age:* `{r['open_date_hum']}`")
+            details = f"⏱️ *Age:* `{r['open_date_hum']}`"
+            if r["enter_tag"]:
+                details += f" | 🏷️ *Tag:* `{r['enter_tag']}`"
+            lines.append(details)
 
-        if r["enter_tag"]:
-            lines.append(f"*Tag:* `{r['enter_tag']}`")
         if r.get("exit_reason"):
-            lines.append(f"*Exit:* `{r['exit_reason']}`")
+            lines.append(f"🚪 *Exit:* `{r['exit_reason']}`")
 
         if position_adjust:
             max_buy_str = f"/{max_entries + 1}" if (max_entries > 0) else ""
@@ -1942,49 +1944,40 @@ class Telegram(RPCHandler):
             )
         message = (
             "🤖 *Bot Control*\n"
-            "   /start - Starts the trader\n"
-            "   /stop - Stops the trader\n"
-            "   /pause - Pause new entries (keeps open trades)\n"
-            "   /stopentry - Alias for /pause \n"
-            "   /forceexit <id>|all - Instantly exits trade(s)\n"
-            "   /fx <id>|all - Alias for /forceexit\n"
+            "   `/start`      - Starts the trader\n"
+            "   `/stop`       - Stops the trader\n"
+            "   `/pause`      - Pause new entries (keeps open trades)\n"
+            "   `/forceexit <id>|all` - Instantly exits trade(s)\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
-            "   /delete <id> - Delete trade from DB (no exchange action)\n"
-            "   /reload_trade <id> - Reload trade from exchange\n"
-            "   /cancel_open_order <id> - Cancel open orders\n"
+            "   `/delete <id>` - Delete trade from DB (no exchange action)\n"
+            "   `/reload_trade <id>` - Reload trade from exchange\n"
+            "   `/cancel_open_order <id>` - Cancel open orders\n"
             "\n"
             "📊 *Statistics*\n"
-            "   /status <id>|[table] - List open trades\n"
-            "   /profit [<n>] - Cumulative profit (last n days)\n"
-            "   /profit_long [<n>] - Long profit\n"
-            "   /profit_short [<n>] - Short profit\n"
-            "   /daily <n> - Daily profit\n"
-            "   /weekly <n> - Weekly profit\n"
-            "   /monthly <n> - Monthly profit\n"
-            "   /trades [limit] - Recent closed trades\n"
-            "   /performance - Performance by pair\n"
-            "   /stats - Win/Loss stats and durations\n"
-            "   /count - Active trade count\n"
-            "   /entries <pair> - Entry tag performance\n"
-            "   /exits <pair> - Exit reason performance\n"
-            "   /mix_tags <pair> - Combined tag performance\n"
+            "   `/status <id>|[table]` - List open trades\n"
+            "   `/profit [<n>]` - Cumulative profit (last n days)\n"
+            "   `/daily <n>`    - Daily profit\n"
+            "   `/weekly <n>`   - Weekly profit\n"
+            "   `/monthly <n>`  - Monthly profit\n"
+            "   `/trades [limit]` - Recent closed trades\n"
+            "   `/performance`  - Performance by pair\n"
+            "   `/stats`        - Win/Loss stats and durations\n"
+            "   `/count`        - Active trade count\n"
             "\n"
             "⚙️ *Configuration*\n"
-            "   /show_config - Show running config\n"
-            "   /reload_config - Reload config file\n"
-            "   /whitelist [sorted|baseonly] - Show whitelist\n"
-            "   /blacklist [pair] - Show/add to blacklist\n"
-            "   /bl_delete [pair] - Remove from blacklist\n"
-            "   /marketdir [dir] - Set market direction\n"
+            "   `/show_config`  - Show running config\n"
+            "   `/reload_config` - Reload config file\n"
+            "   `/whitelist`    - Show whitelist\n"
+            "   `/blacklist`    - Show blacklist\n"
+            "   `/marketdir`    - Set market direction\n"
             "\n"
             "ℹ️ *Info*\n"  # noqa: RUF001
-            "   /balance - Show balances\n"
-            "   /locks - Show active locks\n"
-            "   /unlock <pair|id> - Unlock pair/id\n"
-            "   /logs [limit] - Show recent logs\n"
-            "   /health - Health check\n"
-            "   /version - Show version\n"
-            "   /help - Show this help\n"
+            "   `/balance`      - Show balances\n"
+            "   `/locks`        - Show active locks\n"
+            "   `/logs [limit]` - Show recent logs\n"
+            "   `/health`       - Health check\n"
+            "   `/version`      - Show version\n"
+            "   `/help`         - Show this help\n"
         )
 
         await self._send_msg(message, parse_mode=ParseMode.MARKDOWN)
