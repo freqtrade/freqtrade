@@ -70,7 +70,7 @@ class Kraken(Exchange):
         return consolidated
 
     @retrier
-    def get_balances(self) -> CcxtBalances:
+    def get_balances(self, params: dict | None = None) -> CcxtBalances:
         if self._config["dry_run"]:
             return {}
 

@@ -26,6 +26,8 @@ hesitate to read the source code and understand the mechanism of this bot.
 
 Please read the [exchange-specific notes](docs/exchanges.md) to learn about special configurations that maybe needed for each exchange.
 
+### Supported Spot Exchanges
+
 - [X] [Binance](https://www.binance.com/)
 - [X] [BingX](https://bingx.com/invite/0EM9RX)
 - [X] [Bitget](https://www.bitget.com/)
@@ -39,7 +41,7 @@ Please read the [exchange-specific notes](docs/exchanges.md) to learn about spec
 - [X] [MyOKX](https://okx.com/) (OKX EEA)
 - [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
-### Supported Futures Exchanges (experimental)
+### Supported Futures Exchanges
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Bitget](https://www.bitget.com/)

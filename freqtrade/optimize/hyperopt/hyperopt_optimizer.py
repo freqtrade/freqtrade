@@ -6,7 +6,7 @@ and will be sent to the hyperopt worker processes.
 import logging
 import sys
 import warnings
-from datetime import UTC, datetime
+from datetime import datetime
 from multiprocessing import Manager
 from pathlib import Path
 from typing import Any
@@ -42,6 +42,7 @@ from freqtrade.optimize.space import (
     ft_IntDistribution,
 )
 from freqtrade.resolvers.hyperopt_resolver import HyperOptLossResolver
+from freqtrade.util import dt_now
 from freqtrade.util.dry_run_wallet import get_dry_run_wallet
 
 
@@ -269,7 +270,7 @@ class HyperOptimizer:
         Keep this function as optimized as possible!
         """
         HyperoptStateContainer.set_state(HyperoptState.OPTIMIZE)
-        backtest_start_time = datetime.now(UTC)
+        backtest_start_time = dt_now()
 
         for attr_name, attr in self.backtesting.strategy.enumerate_parameters():
             if attr.in_space and attr.optimize:
@@ -320,7 +321,7 @@ class HyperOptimizer:
         bt_results = self.backtesting.backtest(
             processed=processed, start_date=self.min_date, end_date=self.max_date
         )
-        backtest_end_time = datetime.now(UTC)
+        backtest_end_time = dt_now()
         bt_results.update(
             {
                 "backtest_start_time": int(backtest_start_time.timestamp()),

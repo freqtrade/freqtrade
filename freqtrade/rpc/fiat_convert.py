@@ -5,7 +5,6 @@ e.g BTC to USD
 
 import logging
 from datetime import datetime
-from typing import Any
 
 from requests.exceptions import RequestException
 
@@ -13,6 +12,7 @@ from freqtrade.constants import SUPPORTED_FIAT, Config
 from freqtrade.mixins.logging_mixin import LoggingMixin
 from freqtrade.util import FtTTLCache
 from freqtrade.util.coin_gecko import FtCoinGeckoApi
+from freqtrade.util.singleton import SingletonMeta
 
 
 logger = logging.getLogger(__name__)
@@ -32,25 +32,15 @@ coingecko_mapping = {
 }
 
 
-class CryptoToFiatConverter(LoggingMixin):
+class CryptoToFiatConverter(LoggingMixin, metaclass=SingletonMeta):
     """
     Main class to initiate Crypto to FIAT.
     This object contains a list of pair Crypto, FIAT
     This object is also a Singleton
     """
 
-    __instance = None
-
     _coinlistings: list[dict] = []
     _backoff: float = 0.0
-
-    def __new__(cls, *args: Any, **kwargs: Any) -> Any:
-        """
-        Singleton pattern to ensure only one instance is created.
-        """
-        if not cls.__instance:
-            cls.__instance = super().__new__(cls)
-        return cls.__instance
 
     def __init__(self, config: Config) -> None:
         # Timeout: 6h

@@ -25,8 +25,14 @@ on:
         default: true
         type: boolean
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
 env:
   PACKAGE_NAME: "freqtrade"
+
+permissions: {}
 
 jobs:
   deploy-docker:
@@ -34,11 +40,11 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.repository == 'freqtrade/freqtrade'
     permissions:
-      packages: write
+      packages: write  # Needed to delete package versions
 
     steps:
     - name: "Delete untagged Package Versions"
-      uses: actions/delete-package-versions@v5
+      uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
       with:
         package-name: ${{ inputs.package_name || env.PACKAGE_NAME }}
         package-type: 'container'

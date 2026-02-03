@@ -30,7 +30,7 @@ def log_config_error_range(path: str, errmsg: str) -> str:
         offsetlist = re.findall(r"(?<=Parse\serror\sat\soffset\s)\d+", errmsg)
         if offsetlist:
             offset = int(offsetlist[0])
-            text = Path(path).read_text()
+            text = Path(path).read_text(encoding="utf-8")
             # Fetch an offset of 80 characters around the error line
             subtext = text[offset - min(80, offset) : offset + 80]
             segments = subtext.split("\n")

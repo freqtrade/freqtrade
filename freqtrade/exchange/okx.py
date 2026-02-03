@@ -14,7 +14,6 @@ from freqtrade.exceptions import (
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.common import API_RETRY_COUNT, retrier
 from freqtrade.exchange.exchange_types import CcxtOrder, FtHas
-from freqtrade.misc import safe_value_fallback2
 from freqtrade.util import dt_now, dt_ts
 
 
@@ -183,7 +182,10 @@ class Okx(Exchange):
             return float("inf")
 
         pair_tiers = self._leverage_tiers[pair]
-        return pair_tiers[-1]["maxNotional"] / leverage
+        last_max_notional = pair_tiers[-1]["maxNotional"]
+        if last_max_notional is None:
+            return float("inf")
+        return last_max_notional / leverage
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> dict:
         params = super()._get_stop_params(side, ordertype, stop_price)
@@ -258,11 +260,6 @@ class Okx(Exchange):
             except ccxt.BaseError as e:
                 raise OperationalException(e) from e
         raise RetryableOrderError(f"StoplossOrder not found (pair: {pair} id: {order_id}).")
-
-    def get_order_id_conditional(self, order: CcxtOrder) -> str:
-        if order.get("type", "") == "stop":
-            return safe_value_fallback2(order, order, "id_stop", "id")
-        return order["id"]
 
     def _fetch_orders_emulate(self, pair: str, since_ms: int) -> list[CcxtOrder]:
         orders = []

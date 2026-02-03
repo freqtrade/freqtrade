@@ -17,14 +17,17 @@ concurrency:
   group: "${{ github.workflow }}"
   cancel-in-progress: true
 
+permissions:
+  contents: read
 
 jobs:
   build-and-push:
+    name: "Build and Push Devcontainer Image"
     permissions:
-      packages: write
+      packages: write  # Needed to push package versions
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
     - name: Login to GitHub Container Registry
@@ -40,3 +43,14 @@ jobs:
         imageName: ghcr.io/${{ github.repository }}-devcontainer
         cacheFrom: ghcr.io/${{ github.repository }}-devcontainer
         push: always
+
+
+  packages-cleanup:
+    name: "Docker Package Cleanup"
+    uses: ./.github/workflows/packages-cleanup.yml
+    # Only run on push, schedule, or release events
+    if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'freqtrade/freqtrade'
+    permissions:
+      packages: write # Needed to delete package versions
+    with:
+      package_name: 'freqtrade-devcontainer'

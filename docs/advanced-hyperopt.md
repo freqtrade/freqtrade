@@ -133,7 +133,7 @@ class MyAwesomeStrategy(IStrategy):
         ]
 
         # Define a custom max_open_trades space
-        def max_open_trades_space(self) -> List[Dimension]:
+        def max_open_trades_space() -> List[Dimension]:
             return [
                 Integer(-1, 10, name='max_open_trades'),
             ]
@@ -142,7 +142,7 @@ class MyAwesomeStrategy(IStrategy):
 !!! Note
     All overrides are optional and can be mixed/matched as necessary.
 
-### Dynamic parameters
+## Dynamic parameters
 
 Parameters can also be defined dynamically, but must be available to the instance once the [`bot_start()` callback](strategy-callbacks.md#bot-start) has been called.
 
@@ -159,7 +159,7 @@ class MyAwesomeStrategy(IStrategy):
 !!! Warning
     Parameters created this way will not show up in the `list-strategies` parameter count.
 
-### Overriding Base estimator
+## Overriding Base estimator
 
 You can define your own optuna sampler for Hyperopt by implementing `generate_estimator()` in the Hyperopt subclass.
 
@@ -207,7 +207,6 @@ Some research will be necessary to find additional Samplers (from optunahub) for
     ```
 
     Obviously the same approach will work for all other Samplers optuna supports.
-
 
 ## Space options
 

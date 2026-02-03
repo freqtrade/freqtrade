@@ -157,6 +157,11 @@ class Profit(BaseModel):
     winrate: float
     expectancy: float
     expectancy_ratio: float
+    sharpe: float
+    sortino: float
+    sqn: float
+    calmar: float
+    cagr: float
     max_drawdown: float
     max_drawdown_abs: float
     max_drawdown_start: str

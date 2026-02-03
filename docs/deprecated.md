@@ -120,8 +120,8 @@ The script below should serve as an example - you may need to adjust the timefra
 
 ``` bash
 # Cleanup no longer needed data
-rm user_data/data/<exchange>/futures/*-mark-*
-rm user_data/data/<exchange>/futures/*-funding_rate-*
+rm user_data/data/<exchange>/futures/*-mark*
+rm user_data/data/<exchange>/futures/*-funding_rate*
 
 # download new data (only required once to fix the mark and funding fee data)
 freqtrade download-data -t 1h --trading-mode futures --candle-types funding_rate mark [...] --timerange <full timerange you've got other data for>

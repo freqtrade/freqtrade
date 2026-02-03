@@ -14,6 +14,7 @@ class ValidExchangesType(TypedDict):
     valid: bool
     supported: bool
     comment: str
+    comment_futures: str
     dex: bool
     is_alias: bool
     alias_for: str | None

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/pair_history", response_model=PairHistory, tags=["candle data"])
+@router.get("/pair_history", response_model=PairHistory, tags=["Candle data"])
 def pair_history(
     pair: str,
     timeframe: str,
@@ -43,7 +43,7 @@ def pair_history(
         raise HTTPException(status_code=502, detail=str(e))
 
 
-@router.post("/pair_history", response_model=PairHistory, tags=["candle data"])
+@router.post("/pair_history", response_model=PairHistory, tags=["Candle data"])
 def pair_history_filtered(payload: PairHistoryRequest, config=Depends(get_config)):
     # The initial call to this endpoint can be slow, as it may need to initialize
     # the exchange class.

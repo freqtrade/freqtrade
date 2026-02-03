@@ -1,10 +1,10 @@
 import subprocess  # noqa: S404, RUF100
 import time
 
-from tests.conftest import is_arm, is_mac
+from tests.conftest import is_mac
 
 
-MAXIMUM_STARTUP_TIME = 0.7 if is_mac() and not is_arm(True) else 0.5
+MAXIMUM_STARTUP_TIME = 0.7 if is_mac() else 0.5
 
 
 def test_startup_time():

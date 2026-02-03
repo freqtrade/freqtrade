@@ -66,8 +66,7 @@ class StrategyUpdater:
         target_file = Path.joinpath(strategies_backup_folder, strategy_obj["location_rel"])
 
         # read the file
-        with Path(source_file).open("r") as f:
-            old_code = f.read()
+        old_code = Path(source_file).read_text(encoding="utf-8")
         if not strategies_backup_folder.is_dir():
             Path(strategies_backup_folder).mkdir(parents=True, exist_ok=True)
 
@@ -80,8 +79,7 @@ class StrategyUpdater:
         # update the code
         new_code = self.update_code(old_code)
         # write the modified code to the destination folder
-        with Path(source_file).open("w") as f:
-            f.write(new_code)
+        Path(source_file).write_text(new_code, encoding="utf-8")
 
     # define the function to update the code
     def update_code(self, code):

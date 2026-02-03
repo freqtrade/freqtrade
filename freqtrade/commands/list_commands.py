@@ -38,13 +38,15 @@ def start_list_exchanges(args: dict[str, Any]) -> None:
         else:
             available_exchanges = [e for e in available_exchanges if e["valid"] is not False]
             title = f"Exchanges available for Freqtrade ({len(available_exchanges)} exchanges):"
-
+        show_fut_reasons = args.get("list_exchanges_futures_options", False)
         table = Table(title=title)
 
         table.add_column("Exchange Name")
         table.add_column("Class Name")
         table.add_column("Markets")
         table.add_column("Reason")
+        if show_fut_reasons:
+            table.add_column("Futures Reason")
 
         trading_mode = args.get("trading_mode", None)
         dex_only = args.get("dex_exchanges", False)
@@ -78,12 +80,14 @@ def start_list_exchanges(args: dict[str, Any]) -> None:
             if exchange["dex"]:
                 trade_modes = Text("DEX: ") + trade_modes
                 trade_modes.stylize("bold", 0, 3)
+            futcol = [] if not show_fut_reasons else [exchange["comment_futures"]]
 
             table.add_row(
                 name,
                 classname,
                 trade_modes,
                 exchange["comment"],
+                *futcol,
                 style=None if exchange["valid"] else "red",
             )
             # table.add_row(*[exchange[header] for header in headers])

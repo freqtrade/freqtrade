@@ -1,8 +1,5 @@
 # Trading with Leverage
 
-!!! Warning "Beta feature"
-    This feature is still in it's testing phase. Should you notice something you think is wrong please let us know via Discord or via Github Issue.
-
 !!! Note "Multiple bots on one account"
     You can't run 2 bots on the same account with leverage. For leveraged / margin trading, freqtrade assumes it's the only user of the account, and all liquidation levels are calculated based on this assumption.
 
@@ -55,7 +52,7 @@ Perpetual swaps (also known as Perpetual Futures) are contracts traded at a pric
 In addition to the gains/losses from the change in price of the futures contract, traders also exchange _funding fees_, which are gains/losses worth an amount that is derived from the difference in price between the futures contract and the underlying asset. The difference in price between a futures contract and the underlying asset varies between exchanges.
 
 To trade in futures markets, you'll have to set `trading_mode` to "futures".
-You will also have to pick a "margin mode" (explanation below) - with freqtrade currently only supporting isolated margin.
+You will also have to pick a "margin mode" (explanation below).
 
 ``` json
 "trading_mode": "futures",

@@ -975,6 +975,18 @@ def test_get_historic_ohlcv_binance(
         archive_mock.assert_called_once()
     if api_called:
         api_mock.assert_called_once()
+    candle_mock.reset_mock()
+    api_mock.reset_mock()
+    archive_mock.reset_mock()
+
+    # binanceus does not use archive mode!
+    exchange._can_use_data_download_fast = False
+    df = exchange.get_historic_ohlcv(pair, timeframe, since_ms, candle_type, is_new_pair, until_ms)
+    # Never uses archive
+    assert archive_mock.call_count == 0
+    assert candle_mock.call_count == (0 if not candle_called else 1)
+    if api_called:
+        assert api_mock.call_count == 1
 
 
 @pytest.mark.parametrize(

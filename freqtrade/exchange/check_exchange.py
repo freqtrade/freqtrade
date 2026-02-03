@@ -47,14 +47,16 @@ def check_exchange(config: Config, check_for_bad: bool = True) -> bool:
             f"{', '.join(available_exchanges())}"
         )
 
-    valid, reason, _ = validate_exchange(exchange)
+    valid, reason, _, _ = validate_exchange(exchange)
     if not valid:
         if check_for_bad:
             raise OperationalException(
-                f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}'
+                f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}.'
             )
         else:
-            logger.warning(f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}')
+            logger.warning(
+                f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}.'
+            )
 
     if MAP_EXCHANGE_CHILDCLASS.get(exchange, exchange) in SUPPORTED_EXCHANGES:
         logger.info(

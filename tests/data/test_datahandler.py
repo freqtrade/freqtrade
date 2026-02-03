@@ -288,7 +288,7 @@ def test_jsondatahandler_trades_load(testdatadir, caplog):
     dh.trades_load("XRP/ETH", TradingMode.SPOT)
     assert not log_has(logmsg, caplog)
 
-    # Test conversation is happening
+    # Test conversion is happening
     dh.trades_load("XRP/OLD", TradingMode.SPOT)
     assert log_has(logmsg, caplog)
 

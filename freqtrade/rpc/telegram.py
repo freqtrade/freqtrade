@@ -1285,7 +1285,7 @@ class Telegram(RPCHandler):
                 if curr["is_position"]:
                     curr_output = (
                         f"*{curr['currency']}:*\n"
-                        f"\t`{curr['side']}: {curr['position']:.8f}`\n"
+                        f"\t`{curr['side']}: {round_value(curr['position'], 8)}`\n"
                         f"\t`Est. {curr['stake']}: "
                         f"{fmt_coin(curr['est_stake'], curr['stake'], False)}`\n"
                     )
@@ -1296,10 +1296,10 @@ class Telegram(RPCHandler):
 
                     curr_output = (
                         f"*{curr['currency']}:*\n"
-                        f"\t`Available: {curr['free']:.8f}`\n"
-                        f"\t`Balance: {curr['balance']:.8f}`\n"
-                        f"\t`Pending: {curr['used']:.8f}`\n"
-                        f"\t`Bot Owned: {curr['bot_owned']:.8f}`\n"
+                        f"\t`Available: {fmt_coin(curr['free'], curr['currency'], False)}`\n"
+                        f"\t`Balance: {fmt_coin(curr['balance'], curr['currency'], False)}`\n"
+                        f"\t`Pending: {fmt_coin(curr['used'], curr['currency'], False)}`\n"
+                        f"\t`Bot Owned: {fmt_coin(curr['bot_owned'], curr['currency'], False)}`\n"
                         f"\t`Est. {curr['stake']}: {est_stake}`\n"
                     )
 

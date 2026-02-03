@@ -37,6 +37,8 @@ Freqtrade is a free and open source crypto trading bot written in Python. It is 
 
 Please read the [exchange specific notes](exchanges.md) to learn about eventual, special configurations needed for each exchange.
 
+### Supported Spot Exchanges
+
 - [X] [Binance](https://www.binance.com/)
 - [X] [BingX](https://bingx.com/invite/0EM9RX)
 - [X] [Bitget](https://www.bitget.com/)
@@ -50,7 +52,7 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 - [X] [MyOKX](https://okx.com/) (OKX EEA)
 - [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
-### Supported Futures Exchanges (experimental)
+### Supported Futures Exchanges
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Bitget](https://www.bitget.com/)

@@ -1,28 +1,28 @@
-## Highlighted changes
+# Highlighted changes
 
 - ...
 
-### How to update
+## How to update
 
 As always, you can update your bot using one of the following commands:
 
-#### docker-compose
+### docker-compose
 
 ```bash
 docker-compose pull
 docker-compose up -d
 ```
 
-#### Installation via setup script
+### Installation via setup script
 
-```
+``` bash
 # Deactivate venv and run 
 ./setup.sh --update
 ```
 
-#### Plain native installation
+### Plain native installation
 
-```
+``` bash
 git pull
 pip install -U -r requirements.txt
 ```
