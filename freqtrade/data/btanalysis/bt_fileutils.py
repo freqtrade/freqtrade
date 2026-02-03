@@ -235,6 +235,8 @@ def _get_backtest_files(dirname: Path) -> list[Path]:
 
 def _extract_backtest_result(filename: Path) -> list[BacktestHistoryEntryType]:
     metadata = load_backtest_metadata(filename)
+    if "strategy" in metadata:
+        metadata = {metadata["strategy"]: metadata[metadata["strategy"]]}
     return [
         {
             "filename": filename.stem,

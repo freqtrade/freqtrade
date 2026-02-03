@@ -504,6 +504,7 @@ class Backtesting:
                 if col in df_analyzed.columns:
                     df_analyzed[col] = (
                         df_analyzed.loc[:, col]
+                        .infer_objects(copy=False)
                         .replace([nan], [0 if not tag_col else None])
                         .shift(1)
                     )
