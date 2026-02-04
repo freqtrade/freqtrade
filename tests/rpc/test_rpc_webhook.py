@@ -479,6 +479,128 @@ def test_send_msg_discord(default_conf, mocker):
     assert "fields" in msg_mock.call_args_list[0][0][0]["embeds"][0]
 
 
+def test_discord_init(default_conf, mocker):
+    """Test Discord class initialization."""
+    default_conf["discord"] = {"enabled": True, "webhook_url": "https://webhookurl..."}
+    discord = Discord(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+
+    assert discord._config == default_conf
+    assert discord._url == "https://webhookurl..."
+    assert discord._format == "json"
+    assert discord.strategy == default_conf.get("strategy", "")
+    assert discord.timeframe == default_conf.get("timeframe", "")
+
+
+def test_send_msg_discord_entry_fill(default_conf, mocker):
+    """Test Discord ENTRY_FILL message formatting."""
+    default_conf["discord"] = {"enabled": True, "webhook_url": "https://webhookurl..."}
+    msg_mock = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    discord = Discord(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+
+    msg = {
+        "type": RPCMessageType.ENTRY_FILL,
+        "trade_id": 1,
+        "exchange": "Binance",
+        "pair": "ETH/BTC",
+        "direction": "Long",
+        "open_rate": 0.004,
+        "amount": 0.8,
+        "open_date": datetime.now(),
+        "stake_amount": 0.8,
+        "stake_currency": "BTC",
+        "enter_tag": "enter_tag_test",
+    }
+    discord.send_msg(msg=msg)
+
+    assert msg_mock.call_count == 1
+    assert "embeds" in msg_mock.call_args_list[0][0][0]
+    embed = msg_mock.call_args_list[0][0][0]["embeds"][0]
+    assert "title" in embed
+    assert "Trade: ETH/BTC" in embed["title"]
+    # Entry messages should have blue color (0x0000FF)
+    assert embed["color"] == 0x0000FF
+
+
+def test_send_msg_discord_profit_color(default_conf, mocker):
+    """Test Discord uses green color for profitable exits."""
+    default_conf["discord"] = {"enabled": True, "webhook_url": "https://webhookurl..."}
+    msg_mock = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    discord = Discord(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+
+    msg = {
+        "type": RPCMessageType.EXIT_FILL,
+        "trade_id": 1,
+        "exchange": "Binance",
+        "pair": "ETH/BTC",
+        "direction": "Long",
+        "gain": "profit",
+        "close_rate": 0.005,
+        "amount": 0.8,
+        "order_type": "limit",
+        "open_date": datetime.now() - timedelta(days=1),
+        "close_date": datetime.now(),
+        "open_rate": 0.004,
+        "current_rate": 0.005,
+        "profit_amount": 0.001,
+        "profit_ratio": 0.20,  # Positive profit
+        "stake_currency": "BTC",
+        "enter_tag": "enter_tag",
+        "exit_reason": ExitType.ROI.value,
+    }
+    discord.send_msg(msg=msg)
+
+    assert msg_mock.call_count == 1
+    embed = msg_mock.call_args_list[0][0][0]["embeds"][0]
+    # Green color for profit
+    assert embed["color"] == 0x00FF00
+
+
+def test_send_msg_discord_loss_color(default_conf, mocker):
+    """Test Discord uses red color for losing exits."""
+    default_conf["discord"] = {"enabled": True, "webhook_url": "https://webhookurl..."}
+    msg_mock = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    discord = Discord(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+
+    msg = {
+        "type": RPCMessageType.EXIT_FILL,
+        "trade_id": 1,
+        "exchange": "Binance",
+        "pair": "ETH/BTC",
+        "direction": "Long",
+        "gain": "loss",
+        "close_rate": 0.003,
+        "amount": 0.8,
+        "order_type": "limit",
+        "open_date": datetime.now() - timedelta(days=1),
+        "close_date": datetime.now(),
+        "open_rate": 0.004,
+        "current_rate": 0.003,
+        "profit_amount": -0.001,
+        "profit_ratio": -0.25,  # Negative profit (loss)
+        "stake_currency": "BTC",
+        "enter_tag": "enter_tag",
+        "exit_reason": ExitType.STOP_LOSS.value,
+    }
+    discord.send_msg(msg=msg)
+
+    assert msg_mock.call_count == 1
+    embed = msg_mock.call_args_list[0][0][0]["embeds"][0]
+    # Red color for loss
+    assert embed["color"] == 0xFF0000
+
+
+def test_discord_cleanup(default_conf, mocker):
+    """Test Discord cleanup method does not raise errors."""
+    default_conf["discord"] = {"enabled": True, "webhook_url": "https://webhookurl..."}
+    discord = Discord(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+
+    # Cleanup should not raise any exceptions
+    discord.cleanup()
+
+
 def test_nested_payload_format(default_conf, mocker):
     webhook_config = {
         "enabled": True,
