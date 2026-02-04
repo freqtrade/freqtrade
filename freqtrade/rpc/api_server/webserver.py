@@ -189,12 +189,19 @@ class ApiServer(RPCHandler):
     def handle_rpc_exception(self, request, exc):
         logger.error(f"API Error calling: {exc}")
         return JSONResponse(
-            status_code=502, content={"error": f"Error querying {request.url.path}: {exc.message}"}
+            status_code=502,
+            content={
+                "error": f"Error querying {request.url.path}: {exc.message}",
+                "status": "error",
+            },
         )
 
     def handle_generic_exception(self, request, exc):
         logger.error(f"API Error calling: {exc}", exc_info=exc)
-        return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal Server Error", "status": "error"},
+        )
 
     def configure_app(self, app: FastAPI, config):
         from freqtrade.rpc.api_server.api_auth import http_basic_or_jwt_token, router_login

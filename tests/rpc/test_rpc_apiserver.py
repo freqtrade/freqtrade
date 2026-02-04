@@ -1744,7 +1744,10 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
 
     rc = client_post(client, f"{BASE_URI}/{endpoint}", data={"pair": "ETH/BTC"})
     assert_response(rc, 502)
-    assert rc.json() == {"error": f"Error querying /api/v1/{endpoint}: Force_entry not enabled."}
+    assert rc.json() == {
+        "error": f"Error querying /api/v1/{endpoint}: Force_entry not enabled.",
+        "status": "error",
+    }
 
     # enable forcebuy
     ftbot.config["force_entry_enable"] = True
@@ -1862,7 +1865,10 @@ def test_api_forceexit(botclient, mocker, ticker, fee, markets):
 
     rc = client_post(client, f"{BASE_URI}/forceexit", data={"tradeid": "1"})
     assert_response(rc, 502)
-    assert rc.json() == {"error": "Error querying /api/v1/forceexit: invalid argument"}
+    assert rc.json() == {
+        "error": "Error querying /api/v1/forceexit: invalid argument",
+        "status": "error",
+    }
     Trade.rollback()
 
     create_mock_trades(fee)

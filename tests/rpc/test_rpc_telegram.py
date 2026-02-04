@@ -1209,7 +1209,7 @@ async def test_balance_handle_empty_response(default_conf, update, mocker) -> No
     await telegram._balance(update=update, context=MagicMock())
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
-    assert "Starting capital: `0 BTC" in result
+    assert "💰 *Starting capital:* `0 BTC" in result
 
 
 async def test_balance_handle_empty_response_dry(default_conf, update, mocker) -> None:
@@ -1222,7 +1222,7 @@ async def test_balance_handle_empty_response_dry(default_conf, update, mocker) -
     result = msg_mock.call_args_list[0][0][0]
     assert msg_mock.call_count == 1
     assert "*Warning:* Simulated balances in Dry Mode." in result
-    assert "Starting capital: `990 BTC`" in result
+    assert "💰 *Starting capital:* `990 BTC`" in result
 
 
 async def test_balance_handle_too_large_response(default_conf, update, mocker) -> None:
@@ -2137,7 +2137,7 @@ async def test_help_handle(default_conf, update, mocker) -> None:
 
     await telegram._help(update=update, context=MagicMock())
     assert msg_mock.call_count == 1
-    assert "`/help`         - Show this help" in msg_mock.call_args_list[0][0][0]
+    assert "• `/help`         — Show this help" in msg_mock.call_args_list[0][0][0]
 
 
 async def test_version_handle(default_conf, update, mocker) -> None:
