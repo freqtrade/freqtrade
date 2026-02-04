@@ -416,6 +416,25 @@ class DataProvider:
                     return (DataFrame(), datetime.fromtimestamp(0, tz=UTC))
             return df, date
         else:
+            # Dynamic timeframe support: try to load data from exchange if not cached
+            if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE) and self._exchange is not None:
+                try:
+                    candle_type = self._config.get("candle_type_def", CandleType.SPOT)
+                    logger.info(f"Loading data for {pair} {timeframe} dynamically")
+
+                    # Try to refresh data from exchange
+                    pair_with_timeframe = (pair, timeframe, candle_type)
+                    results = self._exchange.refresh_latest_ohlcv([pair_with_timeframe])
+
+                    if pair_with_timeframe in results and not results[pair_with_timeframe].empty:
+                        df = results[pair_with_timeframe]
+                        now = datetime.now(UTC)
+                        self.__cached_pairs[pair_key] = (df, now)
+                        return df, now
+                    else:
+                        logger.warning(f"No data available for {pair} {timeframe}")
+                except Exception as e:
+                    logger.warning(f"Failed to load data for {pair} {timeframe}: {e}")
             return (DataFrame(), datetime.fromtimestamp(0, tz=UTC))
 
     @property
