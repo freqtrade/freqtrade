@@ -90,9 +90,16 @@ def is_file_in_dir(file: Path, directory: Path) -> bool:
 
 
 def pair_to_filename(pair: str) -> str:
-    for ch in ["/", " ", ".", "@", "$", "+", ":", "\\"]:
-        pair = pair.replace(ch, "_")
-    return pair
+    return (
+        pair.replace("/", "_")
+        .replace(" ", "_")
+        .replace(".", "_")
+        .replace("@", "_")
+        .replace("$", "_")
+        .replace("+", "_")
+        .replace(":", "_")
+        .replace("\\", "_")
+    )
 
 
 def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):
@@ -131,11 +138,10 @@ def safe_value_fallback(obj: DictMap, key1: str, key2: str | None = None, defaul
     Then search key2 in obj - return that if it's not none - then use default_value.
     Else falls back to None.
     """
-    if key1 in obj and obj[key1] is not None:
-        return obj[key1]
-    else:
-        if key2 and key2 in obj and obj[key2] is not None:
-            return obj[key2]
+    if (v1 := obj.get(key1)) is not None:
+        return v1
+    if key2 and (v2 := obj.get(key2)) is not None:
+        return v2
     return default_value
 
 

@@ -560,7 +560,7 @@ class Exchange:
         if self._quote_currencies_cache is not None:
             return self._quote_currencies_cache
         markets = self.markets
-        self._quote_currencies_cache = sorted(set([x["quote"] for _, x in markets.items()]))
+        self._quote_currencies_cache = sorted({x["quote"] for x in markets.values()})
         return self._quote_currencies_cache
 
     def get_pair_quote_currency(self, pair: str) -> str:
