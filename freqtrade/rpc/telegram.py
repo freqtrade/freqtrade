@@ -1283,7 +1283,7 @@ class Telegram(RPCHandler):
         if self._config["dry_run"]:
             output += "*Warning:* Simulated balances in Dry Mode.\n"
         starting_cap = fmt_coin(result["starting_capital"], self._config["stake_currency"])
-        output += f"Starting capital: `{starting_cap}`"
+        output += f"💰 *Starting capital:* `{starting_cap}`"
         starting_cap_fiat = (
             fmt_coin(result["starting_capital_fiat"], self._config["fiat_display_currency"])
             if result["starting_capital_fiat"] > 0
@@ -1332,7 +1332,7 @@ class Telegram(RPCHandler):
 
         if total_dust_balance > 0:
             output += (
-                f"*{total_dust_currencies} Other "
+                f"🪙 *{total_dust_currencies} Other "
                 f"{plural(total_dust_currencies, 'Currency', 'Currencies')} "
                 f"(< {balance_dust_level} {result['stake']}):*\n"
                 f"\t`Est. {result['stake']}: "
@@ -1349,7 +1349,7 @@ class Telegram(RPCHandler):
             f"\t`{result['symbol']}: {value}`{fiat_val}\n" if result["symbol"] else ""
         )
         output += (
-            f"\n*Estimated Value{' (Bot managed assets only)' if not full_result else ''}*:\n"
+            f"\n💎 *Estimated Value{' (Bot managed assets only)' if not full_result else ''}*:\n"
             f"\t`{result['stake']}: {total_stake}`{stake_improve}\n"
             f"{fiat_estimated_value}"
         )
@@ -1899,12 +1899,24 @@ class Telegram(RPCHandler):
         logs = RPC._rpc_get_logs(limit)["logs"]
         msgs_list: list[str] = []
         current_len = 0
-        msg_template = "*{}* {}: {} \\- `{}`"
+
+        level_emojis = {
+            "CRITICAL": "🛑",
+            "ERROR": "🚨",
+            "WARNING": "⚠️",
+            "INFO": "ℹ️",
+            "DEBUG": "🐛",
+        }
+
+        msg_template = "*{}* {}: {} {} \\- `{}`"
         for logrec in logs:
+            level = logrec[3]
+            emoji = level_emojis.get(level, "🔹")
             msg = msg_template.format(
                 escape_markdown(logrec[0], version=2),
                 escape_markdown(logrec[2], version=2),
-                escape_markdown(logrec[3], version=2),
+                emoji,
+                escape_markdown(level, version=2),
                 escape_markdown(logrec[4], version=2),
             )
             # Add 1 for the newline character
@@ -1944,40 +1956,40 @@ class Telegram(RPCHandler):
             )
         message = (
             "🤖 *Bot Control*\n"
-            "   `/start`      - Starts the trader\n"
-            "   `/stop`       - Stops the trader\n"
-            "   `/pause`      - Pause new entries (keeps open trades)\n"
-            "   `/forceexit <id>|all` - Instantly exits trade(s)\n"
+            "• `/start`      — Starts the trader\n"
+            "• `/stop`       — Stops the trader\n"
+            "• `/pause`      — Pause new entries (keeps open trades)\n"
+            "• `/forceexit <id>|all` — Instantly exits trade(s)\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
-            "   `/delete <id>` - Delete trade from DB (no exchange action)\n"
-            "   `/reload_trade <id>` - Reload trade from exchange\n"
-            "   `/cancel_open_order <id>` - Cancel open orders\n"
+            "• `/delete <id>` — Delete trade from DB (no exchange action)\n"
+            "• `/reload_trade <id>` — Reload trade from exchange\n"
+            "• `/cancel_open_order <id>` — Cancel open orders\n"
             "\n"
             "📊 *Statistics*\n"
-            "   `/status <id>|[table]` - List open trades\n"
-            "   `/profit [<n>]` - Cumulative profit (last n days)\n"
-            "   `/daily <n>`    - Daily profit\n"
-            "   `/weekly <n>`   - Weekly profit\n"
-            "   `/monthly <n>`  - Monthly profit\n"
-            "   `/trades [limit]` - Recent closed trades\n"
-            "   `/performance`  - Performance by pair\n"
-            "   `/stats`        - Win/Loss stats and durations\n"
-            "   `/count`        - Active trade count\n"
+            "• `/status <id>|[table]` — List open trades\n"
+            "• `/profit [<n>]` — Cumulative profit (last n days)\n"
+            "• `/daily <n>`    — Daily profit\n"
+            "• `/weekly <n>`   — Weekly profit\n"
+            "• `/monthly <n>`  — Monthly profit\n"
+            "• `/trades [limit]` — Recent closed trades\n"
+            "• `/performance`  — Performance by pair\n"
+            "• `/stats`        — Win/Loss stats and durations\n"
+            "• `/count`        — Active trade count\n"
             "\n"
             "⚙️ *Configuration*\n"
-            "   `/show_config`  - Show running config\n"
-            "   `/reload_config` - Reload config file\n"
-            "   `/whitelist`    - Show whitelist\n"
-            "   `/blacklist`    - Show blacklist\n"
-            "   `/marketdir`    - Set market direction\n"
+            "• `/show_config`  — Show running config\n"
+            "• `/reload_config` — Reload config file\n"
+            "• `/whitelist`    — Show whitelist\n"
+            "• `/blacklist`    — Show blacklist\n"
+            "• `/marketdir`    — Set market direction\n"
             "\n"
             "ℹ️ *Info*\n"  # noqa: RUF001
-            "   `/balance`      - Show balances\n"
-            "   `/locks`        - Show active locks\n"
-            "   `/logs [limit]` - Show recent logs\n"
-            "   `/health`       - Health check\n"
-            "   `/version`      - Show version\n"
-            "   `/help`         - Show this help\n"
+            "• `/balance`      — Show balances\n"
+            "• `/locks`        — Show active locks\n"
+            "• `/logs [limit]` — Show recent logs\n"
+            "• `/health`       — Health check\n"
+            "• `/version`      — Show version\n"
+            "• `/help`         — Show this help\n"
         )
 
         await self._send_msg(message, parse_mode=ParseMode.MARKDOWN)
