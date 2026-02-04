@@ -105,7 +105,7 @@ def test_generic_exception_handling(botclient_security, mocker):
         f"{BASE_URI}/show_config", headers={"Authorization": _basic_auth_str("user", "password")}
     )
     assert rc.status_code == 500
-    assert rc.json() == {"error": "Internal Server Error"}
+    assert rc.json() == {"error": "Internal Server Error", "status": "error"}
     # The stack trace should NOT be in the response
     assert "Secret Stack Trace" not in rc.text
 

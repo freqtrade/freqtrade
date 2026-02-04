@@ -1904,7 +1904,7 @@ class Telegram(RPCHandler):
             "CRITICAL": "🛑",
             "ERROR": "🚨",
             "WARNING": "⚠️",
-            "INFO": "ℹ️",
+            "INFO": "ℹ️",  # noqa: RUF001
             "DEBUG": "🐛",
         }
 
