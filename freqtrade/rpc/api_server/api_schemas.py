@@ -22,6 +22,13 @@ class ExchangeModePayloadMixin(BaseModel):
     margin_mode: MarginMode | None = None
     exchange: str | None = None
 
+    @field_validator("exchange")
+    @classmethod
+    def validate_exchange(cls, v):
+        if v is not None and not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError(f"Invalid exchange name: {v}")
+        return v
+
 
 class Ping(BaseModel):
     status: str
@@ -426,6 +433,13 @@ class DeleteLockRequest(BaseModel):
     pair: str | None = None
     lockid: int | None = None
 
+    @field_validator("pair")
+    @classmethod
+    def validate_pair(cls, v):
+        if v is not None and not re.match(PAIR_REGEX, v):
+            raise ValueError(f"Invalid pair name: {v}")
+        return v
+
 
 class Logs(BaseModel):
     log_count: int
@@ -458,6 +472,14 @@ class ForceExitPayload(BaseModel):
 
 class BlacklistPayload(BaseModel):
     blacklist: list[str]
+
+    @field_validator("blacklist")
+    @classmethod
+    def validate_blacklist(cls, v):
+        for pair in v:
+            if "(" in pair or ")" in pair:
+                raise ValueError(f"Invalid pair name: {pair}")
+        return v
 
 
 class BlacklistResponse(BaseModel):
@@ -525,6 +547,21 @@ class PairListsPayload(ExchangeModePayloadMixin, BaseModel):
     pairlists: list[dict[str, Any]]
     blacklist: list[str]
     stake_currency: str
+
+    @field_validator("blacklist")
+    @classmethod
+    def validate_blacklist(cls, v):
+        for pair in v:
+            if "(" in pair or ")" in pair:
+                raise ValueError(f"Invalid pair name: {pair}")
+        return v
+
+    @field_validator("stake_currency")
+    @classmethod
+    def validate_stake_currency(cls, v):
+        if not re.match(r"^[a-zA-Z0-9-]+$", v):
+            raise ValueError(f"Invalid stake currency: {v}")
+        return v
 
 
 class DownloadDataPayload(ExchangeModePayloadMixin, BaseModel):

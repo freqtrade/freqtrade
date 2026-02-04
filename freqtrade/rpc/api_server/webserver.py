@@ -275,7 +275,8 @@ class ApiServer(RPCHandler):
             response.headers["X-Frame-Options"] = "DENY"
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
             response.headers["Permissions-Policy"] = (
-                "geolocation=(), microphone=(), camera=(), payment=()"
+                "geolocation=(), microphone=(), camera=(), payment=(), "
+                "usb=(), vr=(), display-capture=(), serial=(), autoplay=(), fullscreen=()"
             )
             response.headers["Referrer-Policy"] = "same-origin"
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
