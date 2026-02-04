@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from functools import lru_cache
 
 import ccxt
 from ccxt import ROUND_DOWN, ROUND_UP
@@ -6,6 +7,7 @@ from ccxt import ROUND_DOWN, ROUND_UP
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts
 
 
+@lru_cache(maxsize=32)
 def timeframe_to_seconds(timeframe: str) -> int:
     """
     Translates the timeframe interval value written in the human readable
@@ -15,6 +17,7 @@ def timeframe_to_seconds(timeframe: str) -> int:
     return ccxt.Exchange.parse_timeframe(timeframe)
 
 
+@lru_cache(maxsize=32)
 def timeframe_to_minutes(timeframe: str) -> int:
     """
     Same as timeframe_to_seconds, but returns minutes.
@@ -22,6 +25,7 @@ def timeframe_to_minutes(timeframe: str) -> int:
     return ccxt.Exchange.parse_timeframe(timeframe) // 60
 
 
+@lru_cache(maxsize=32)
 def timeframe_to_msecs(timeframe: str) -> int:
     """
     Same as timeframe_to_seconds, but returns milliseconds.
@@ -61,6 +65,14 @@ def timeframe_to_prev_date(timeframe: str, date: datetime | None = None) -> date
     if not date:
         date = datetime.now(UTC)
 
+    interval = timeframe_to_msecs(timeframe)
+    # 1 month in ms = 30 * 24 * 3600 * 1000 = 2,592,000,000
+    # For timeframes < 1 month, we can use simple arithmetic
+    if interval < 2592000000:
+        timestamp = dt_ts(date)
+        new_timestamp = (timestamp // interval) * interval
+        return dt_from_ts(new_timestamp)
+
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_DOWN) // 1000
     return dt_from_ts(new_timestamp)
 
@@ -74,5 +86,14 @@ def timeframe_to_next_date(timeframe: str, date: datetime | None = None) -> date
     """
     if not date:
         date = datetime.now(UTC)
+
+    interval = timeframe_to_msecs(timeframe)
+    # 1 month in ms = 30 * 24 * 3600 * 1000 = 2,592,000,000
+    # For timeframes < 1 month, we can use simple arithmetic
+    if interval < 2592000000:
+        timestamp = dt_ts(date)
+        new_timestamp = (timestamp // interval + 1) * interval
+        return dt_from_ts(new_timestamp)
+
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_UP) // 1000
     return dt_from_ts(new_timestamp)
