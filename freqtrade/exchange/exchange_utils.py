@@ -4,6 +4,9 @@ Exchange support utils
 
 import inspect
 from datetime import UTC, datetime, timedelta
+from decimal import ROUND_DOWN as dec_ROUND_DOWN
+from decimal import ROUND_UP as dec_ROUND_UP
+from decimal import Decimal
 from math import ceil, floor, isnan
 from typing import Any
 
@@ -276,9 +279,6 @@ def __price_to_precision_significant_digits(
     """
     Implementation of ROUND_UP/Round_down for significant digits mode.
     """
-    from decimal import ROUND_DOWN as dec_ROUND_DOWN
-    from decimal import ROUND_UP as dec_ROUND_UP
-    from decimal import Decimal
 
     dec = Decimal(str(price))
     string = f"{dec:f}"

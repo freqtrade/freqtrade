@@ -89,17 +89,13 @@ def is_file_in_dir(file: Path, directory: Path) -> bool:
     return file.is_file() and file.parent.samefile(directory)
 
 
+_PAIR_TO_FILENAME_TRANS = str.maketrans(
+    {"/": "_", " ": "_", ".": "_", "@": "_", "$": "_", "+": "_", ":": "_", "\\": "_"}
+)
+
+
 def pair_to_filename(pair: str) -> str:
-    return (
-        pair.replace("/", "_")
-        .replace(" ", "_")
-        .replace(".", "_")
-        .replace("@", "_")
-        .replace("$", "_")
-        .replace("+", "_")
-        .replace(":", "_")
-        .replace("\\", "_")
-    )
+    return pair.translate(_PAIR_TO_FILENAME_TRANS)
 
 
 def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):
