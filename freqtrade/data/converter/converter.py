@@ -41,7 +41,7 @@ def ohlcv_to_dataframe(
 
     # Floor date to seconds to account for exchange imprecisions
     # Optimization: Integer arithmetic is faster than datetime conversion
-    df["date"] = to_datetime(df["date"].values // 1000, unit="s", utc=True)
+    df["date"] = to_datetime(df["date"] // 1000 * 1000, unit="ms", utc=True)
 
     return clean_ohlcv_dataframe(
         df, timeframe, pair, fill_missing=fill_missing, drop_incomplete=drop_incomplete
@@ -75,6 +75,10 @@ def clean_ohlcv_dataframe(
                 "volume": "max",
             }
         )
+    else:
+        # If no grouping is needed, we must copy to ensure we don't modify the input in-place
+        data = data.copy()
+
     # eliminate partial candle
     if drop_incomplete:
         data.drop(data.tail(1).index, inplace=True)
