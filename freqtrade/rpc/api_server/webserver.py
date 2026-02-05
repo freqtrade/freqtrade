@@ -138,6 +138,11 @@ class ApiServer(RPCHandler):
                 "SECURITY WARNING - `jwt_secret_key` is not set or default. "
                 "Using a generated random key. Login sessions will not persist across restarts."
             )
+        elif len(api_config.get("jwt_secret_key", "")) < 12:
+            logger.warning(
+                "SECURITY WARNING - `jwt_secret_key` is too short (less than 12 characters). "
+                "Please use a stronger key."
+            )
 
         self.app = FastAPI(
             title="Crypto P's Magical Crypto Circus API",
@@ -276,14 +281,14 @@ class ApiServer(RPCHandler):
             response = await call_next(request)
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; style-src 'self' 'unsafe-inline'; "
-                "script-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+                "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'"
             )
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["X-Frame-Options"] = "DENY"
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
             response.headers["Permissions-Policy"] = (
                 "geolocation=(), microphone=(), camera=(), payment=(), "
-                "usb=(), vr=(), display-capture=(), serial=(), autoplay=(), fullscreen=()"
+                "usb=(), vr=(), display-capture=(), serial=(), autoplay=(), fullscreen=(), sync-xhr=()"
             )
             response.headers["Referrer-Policy"] = "same-origin"
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
@@ -350,6 +355,7 @@ class ApiServer(RPCHandler):
             log_config=None,
             access_log=True if verbosity != "error" else False,
             ws_ping_interval=None,  # We do this explicitly ourselves
+            server_header=False,
         )
         try:
             self._server = UvicornServer(uvconfig)

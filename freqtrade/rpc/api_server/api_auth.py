@@ -18,14 +18,19 @@ logger = logging.getLogger(__name__)
 ALGORITHM = "HS256"
 
 router_login = APIRouter()
-# Rate limiter: 100 IPs, 60 seconds block
-login_attempts_cache: TTLCache = TTLCache(maxsize=100, ttl=60)
+# Rate limiter: 1000 IPs, 60 seconds block
+login_attempts_cache: TTLCache = TTLCache(maxsize=1000, ttl=60)
 
 
 def verify_auth(api_config, username: str, password: str):
     """Verify username/password"""
-    return secrets.compare_digest(username, api_config.get("username")) and secrets.compare_digest(
-        password, api_config.get("password")
+    conf_user = api_config.get("username")
+    conf_pass = api_config.get("password")
+    if not conf_user or not conf_pass:
+        return False
+
+    return secrets.compare_digest(username, conf_user) and secrets.compare_digest(
+        password, conf_pass
     )
 
 

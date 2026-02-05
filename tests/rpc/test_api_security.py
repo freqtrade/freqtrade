@@ -56,14 +56,14 @@ def test_security_headers(botclient_security):
     assert (
         headers["Content-Security-Policy"]
         == "default-src 'self'; style-src 'self' 'unsafe-inline'; "
-        "script-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+        "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'"
     )
     assert headers["X-Content-Type-Options"] == "nosniff"
     assert headers["X-Frame-Options"] == "DENY"
     assert headers["Strict-Transport-Security"] == "max-age=63072000; includeSubDomains"
     assert headers["Permissions-Policy"] == (
         "geolocation=(), microphone=(), camera=(), payment=(), "
-        "usb=(), vr=(), display-capture=(), serial=(), autoplay=(), fullscreen=()"
+        "usb=(), vr=(), display-capture=(), serial=(), autoplay=(), fullscreen=(), sync-xhr=()"
     )
     assert headers["Referrer-Policy"] == "same-origin"
 
