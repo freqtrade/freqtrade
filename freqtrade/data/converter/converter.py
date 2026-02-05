@@ -65,20 +65,15 @@ def clean_ohlcv_dataframe(
     :return: DataFrame
     """
     # group by index and aggregate results to eliminate duplicate ticks
-    if data["date"].duplicated().any():
-        data = data.groupby(by="date", as_index=False, sort=False).agg(
-            {
-                "open": "first",
-                "high": "max",
-                "low": "min",
-                "close": "last",
-                "volume": "max",
-            }
-        )
-    else:
-        # If no grouping is needed, we must copy to ensure we don't modify the input in-place
-        data = data.copy()
-
+    data = data.groupby(by="date", as_index=False, sort=False).agg(
+        {
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "max",
+        }
+    )
     # eliminate partial candle
     if drop_incomplete:
         data.drop(data.tail(1).index, inplace=True)
