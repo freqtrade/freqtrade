@@ -242,6 +242,33 @@
         transform: translateY(0);
     }
 
+    .btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        filter: grayscale(0.5);
+        transform: none;
+    }
+
+    .logo-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
     .copy-btn.copied {
         border-color: var(--success-color);
         color: var(--success-color);
@@ -280,15 +307,18 @@
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to content</a>
+    <div id="a11y-status" class="sr-only" aria-live="polite"></div>
 
     <header>
       <div class="logo-container">
-        <img src="/logo.png" alt="Crypto P Logo" class="logo" onclick="spinLogo(this)">
+        <button class="logo-btn" onclick="spinLogo(this)" aria-label="Spin the logo">
+            <img src="/logo.png" alt="Crypto P Logo" class="logo">
+        </button>
       </div>
       <h1>Freqtrade - Crypto P Edition</h1>
       <nav aria-label="Main Navigation">
-        <a href="https://www.freqtrade.io/en/latest/" target="_blank" rel="noopener noreferrer">Documentation</a>
-        <a href="https://github.com/freqtrade/freqtrade" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://www.freqtrade.io/en/latest/" target="_blank" rel="noopener noreferrer" aria-label="Documentation (opens in new tab)">Documentation</a>
+        <a href="https://github.com/freqtrade/freqtrade" target="_blank" rel="noopener noreferrer" aria-label="GitHub (opens in new tab)">GitHub</a>
       </nav>
     </header>
 
@@ -319,15 +349,19 @@
 
           <div class="copy-container">
              <code id="install-cmd">freqtrade install-ui</code>
-             <button class="copy-btn" onclick="copyCommand()" aria-label="Copy install command">
+             <button class="copy-btn" onclick="copyCommand('install-cmd', this)" aria-label="Copy install command">
                 <span class="icon">📋</span>
                 <span class="text">Copy</span>
              </button>
           </div>
 
-          <p class="docker-hint">
-            <strong>🐳 Docker User?</strong> Run: <code>docker compose run --rm freqtrade install-ui</code>
-          </p>
+          <div class="docker-hint" style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+            <strong>🐳 Docker User?</strong> Run:
+            <code id="docker-cmd">docker compose run --rm freqtrade install-ui</code>
+            <button class="copy-btn" onclick="copyCommand('docker-cmd', this)" aria-label="Copy docker command" style="font-size: 0.9rem; padding: 0.4rem;">
+                <span class="icon">📋</span>
+             </button>
+          </div>
 
           <p>Then refresh this page to enter the dashboard!</p>
           <button class="btn" onclick="refreshPage(this)" aria-label="Refresh page">
@@ -342,24 +376,33 @@
     </footer>
 
     <script>
-        function copyCommand() {
-            const cmdText = document.getElementById('install-cmd').innerText;
-            const btn = document.querySelector('.copy-btn');
+        function copyCommand(elementId, btn) {
+            const cmdText = document.getElementById(elementId).innerText;
             const iconSpan = btn.querySelector('.icon');
-            const textSpan = btn.querySelector('.text');
+            const textSpan = btn.querySelector('.text'); // May be null for icon-only buttons
+
+            const originalIcon = '📋';
+            const originalText = textSpan ? textSpan.innerText : '';
+
+            function onCopySuccess() {
+                btn.classList.add('copied');
+                iconSpan.innerText = '✅';
+                if (textSpan) textSpan.innerText = 'Copied!';
+
+                // Announce to screen readers
+                const liveRegion = document.getElementById('a11y-status');
+                if (liveRegion) liveRegion.textContent = 'Command copied to clipboard';
+
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    iconSpan.innerText = originalIcon;
+                    if (textSpan) textSpan.innerText = originalText;
+                    if (liveRegion) liveRegion.textContent = '';
+                }, 2000);
+            }
 
             if (navigator.clipboard) {
-                navigator.clipboard.writeText(cmdText).then(() => {
-                    btn.classList.add('copied');
-                    iconSpan.innerText = '✅';
-                    textSpan.innerText = 'Copied!';
-
-                    setTimeout(() => {
-                        btn.classList.remove('copied');
-                        iconSpan.innerText = '📋';
-                        textSpan.innerText = 'Copy';
-                    }, 2000);
-                }).catch(err => {
+                navigator.clipboard.writeText(cmdText).then(onCopySuccess).catch(err => {
                     console.error('Failed to copy: ', err);
                     alert('Copy failed. Please copy the command manually.');
                 });
@@ -371,14 +414,7 @@
                 textArea.select();
                 try {
                     document.execCommand('copy');
-                    btn.classList.add('copied');
-                    iconSpan.innerText = '✅';
-                    textSpan.innerText = 'Copied!';
-                    setTimeout(() => {
-                        btn.classList.remove('copied');
-                        iconSpan.innerText = '📋';
-                        textSpan.innerText = 'Copy';
-                    }, 2000);
+                    onCopySuccess();
                 } catch (err) {
                     alert('Copy failed. Please copy manually.');
                 }
@@ -387,6 +423,7 @@
         }
 
         function refreshPage(btn) {
+            btn.disabled = true;
             btn.classList.add('loading');
             // Small delay to show the spinner before reload (mostly for UX feel)
             setTimeout(() => {
@@ -394,7 +431,8 @@
             }, 500);
         }
 
-        function spinLogo(img) {
+        function spinLogo(btn) {
+            const img = btn.querySelector('img');
             img.classList.remove('spinning');
             void img.offsetWidth; // Trigger reflow
             img.classList.add('spinning');
