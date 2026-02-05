@@ -537,21 +537,21 @@ class Exchange:
         if not markets:
             raise OperationalException("Markets were not loaded.")
 
-        if base_currencies:
-            markets = {k: v for k, v in markets.items() if v["base"] in base_currencies}
-        if quote_currencies:
-            markets = {k: v for k, v in markets.items() if v["quote"] in quote_currencies}
-        if tradable_only:
-            markets = {k: v for k, v in markets.items() if self.market_is_tradable(v)}
-        if spot_only:
-            markets = {k: v for k, v in markets.items() if self.market_is_spot(v)}
-        if margin_only:
-            markets = {k: v for k, v in markets.items() if self.market_is_margin(v)}
-        if futures_only:
-            markets = {k: v for k, v in markets.items() if self.market_is_future(v)}
-        if active_only:
-            markets = {k: v for k, v in markets.items() if market_is_active(v)}
-        return markets
+        # Optimize: Convert lists to sets for O(1) lookup
+        base_currencies_set = set(base_currencies) if base_currencies else None
+        quote_currencies_set = set(quote_currencies) if quote_currencies else None
+
+        return {
+            k: v
+            for k, v in markets.items()
+            if (not base_currencies_set or v.get("base") in base_currencies_set)
+            and (not quote_currencies_set or v.get("quote") in quote_currencies_set)
+            and (not tradable_only or self.market_is_tradable(v))
+            and (not spot_only or self.market_is_spot(v))
+            and (not margin_only or self.market_is_margin(v))
+            and (not futures_only or self.market_is_future(v))
+            and (not active_only or market_is_active(v))
+        }
 
     def get_quote_currencies(self) -> list[str]:
         """

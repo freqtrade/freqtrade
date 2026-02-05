@@ -41,7 +41,7 @@ def ohlcv_to_dataframe(
 
     # Floor date to seconds to account for exchange imprecisions
     # Optimization: Integer arithmetic is faster than datetime conversion
-    df["date"] = to_datetime(df["date"] // 1000 * 1000, unit="ms", utc=True)
+    df["date"] = to_datetime(df["date"].values // 1000, unit="s", utc=True)
 
     return clean_ohlcv_dataframe(
         df, timeframe, pair, fill_missing=fill_missing, drop_incomplete=drop_incomplete
@@ -65,15 +65,16 @@ def clean_ohlcv_dataframe(
     :return: DataFrame
     """
     # group by index and aggregate results to eliminate duplicate ticks
-    data = data.groupby(by="date", as_index=False, sort=False).agg(
-        {
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "max",
-        }
-    )
+    if data["date"].duplicated().any():
+        data = data.groupby(by="date", as_index=False, sort=False).agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "max",
+            }
+        )
     # eliminate partial candle
     if drop_incomplete:
         data.drop(data.tail(1).index, inplace=True)
