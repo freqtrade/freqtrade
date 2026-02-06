@@ -28,6 +28,9 @@
       --btn-text: #ffffff;
       --success-color: #00ff00;
     }
+    html {
+        scroll-behavior: smooth;
+    }
     body {
       background-color: var(--bg-color);
       color: var(--text-color);
@@ -65,6 +68,14 @@
         50% { transform: rotate(180deg) scale(1.2); }
         100% { transform: rotate(360deg) scale(1); }
     }
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
     h1 {
       color: var(--accent-secondary);
       font-size: 2.5rem;
@@ -83,11 +94,13 @@
       transition: color 0.3s;
       padding: 0.5rem;
       border-radius: 5px;
+      border-bottom: 2px solid transparent;
     }
     nav a:hover, nav a:focus {
       color: var(--accent-primary);
       text-shadow: 0 0 5px var(--accent-primary);
       background: rgba(255, 255, 255, 0.1);
+      border-bottom-color: var(--accent-primary);
     }
     .hero {
       text-align: center;
@@ -302,6 +315,65 @@
         h1 { font-size: 2rem; }
         .content-section { margin: 1rem; padding: 1.5rem; }
         .copy-container { flex-direction: column; gap: 5px; }
+    }
+    /* Tooltips */
+    [aria-label] {
+        position: relative;
+    }
+    button[aria-label]:hover::after {
+        content: attr(aria-label);
+        position: absolute;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        animation: fadeIn 0.2s forwards;
+        z-index: 1000;
+        border: 1px solid var(--accent-secondary);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    /* Print Styles */
+    @media print {
+        body {
+            background-color: white !important;
+            color: black !important;
+        }
+        header, nav, footer, .copy-container, .btn, .skip-link, .install-notice, button {
+            display: none !important;
+        }
+        .hero {
+            background: none !important;
+            color: black !important;
+        }
+        .content-section {
+            background-color: white !important;
+            box-shadow: none !important;
+            border: 1px solid #ccc !important;
+            color: black !important;
+            break-inside: avoid;
+            margin: 0 0 1rem 0;
+        }
+        h1, h2, h3, p {
+            color: black !important;
+            text-shadow: none !important;
+            border-color: #000 !important;
+        }
+        a {
+            text-decoration: underline;
+            color: black;
+        }
+        a[href^="http"]::after {
+            content: " (" attr(href) ")";
+        }
     }
   </style>
 </head>
