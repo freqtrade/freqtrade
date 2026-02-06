@@ -196,6 +196,8 @@ def amount_to_contracts(amount: float, contract_size: float | None) -> float:
     :return: num-contracts
     """
     if contract_size and contract_size != 1:
+        if amount == 0:
+            return 0.0
         return float(FtPrecise(amount) / FtPrecise(contract_size))
     else:
         return amount
@@ -210,6 +212,8 @@ def contracts_to_amount(num_contracts: float, contract_size: float | None) -> fl
     """
 
     if contract_size and contract_size != 1:
+        if num_contracts == 0:
+            return 0.0
         return float(FtPrecise(num_contracts) * FtPrecise(contract_size))
     else:
         return num_contracts
