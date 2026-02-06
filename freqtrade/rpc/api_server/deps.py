@@ -80,7 +80,7 @@ def is_trading_mode(config=Depends(get_config)):
 
 class RateLimiter:
     def __init__(self, max_calls: int, time_seconds: int):
-        self.cache = TTLCache(maxsize=1000, ttl=time_seconds)
+        self.cache: TTLCache = TTLCache(maxsize=1000, ttl=time_seconds)
         self.max_calls = max_calls
 
     async def __call__(self, request: Request):
