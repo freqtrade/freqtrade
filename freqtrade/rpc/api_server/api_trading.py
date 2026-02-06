@@ -34,7 +34,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     StatusMsg,
     WhitelistResponse,
 )
-from freqtrade.rpc.api_server.deps import get_config, get_rpc
+from freqtrade.rpc.api_server.deps import RateLimiter, get_config, get_rpc
 from freqtrade.rpc.rpc import RPCException
 
 
@@ -216,12 +216,18 @@ def list_custom_data(trade_id: int, key: str | None = Query(None), rpc: RPC = De
 
 
 # /forcebuy is deprecated with short addition. use /forceentry instead
-@router.post("/forceenter", response_model=ForceEnterResponse, tags=["Trades"])
+@router.post(
+    "/forceenter",
+    response_model=ForceEnterResponse,
+    tags=["Trades"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 @router.post(
     "/forcebuy",
     response_model=ForceEnterResponse,
     tags=["Trades"],
     summary="(deprecated) Please use /forceenter instead",
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
 )
 def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
@@ -245,12 +251,18 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
 
 
 # /forcesell is deprecated with short addition. use /forceexit instead
-@router.post("/forceexit", response_model=ResultMsg, tags=["Trades"])
+@router.post(
+    "/forceexit",
+    response_model=ResultMsg,
+    tags=["Trades"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 @router.post(
     "/forcesell",
     response_model=ResultMsg,
     tags=["Trades"],
     summary="(deprecated) Please use /forceexit instead",
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
 )
 def forceexit(payload: ForceExitPayload, rpc: RPC = Depends(get_rpc)):
     ordertype = payload.ordertype.value if payload.ordertype else None
@@ -264,12 +276,22 @@ def blacklist(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_blacklist()
 
 
-@router.post("/blacklist", response_model=BlacklistResponse, tags=["Pairlist"])
+@router.post(
+    "/blacklist",
+    response_model=BlacklistResponse,
+    tags=["Pairlist"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def blacklist_post(payload: BlacklistPayload, rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_blacklist(payload.blacklist)
 
 
-@router.delete("/blacklist", response_model=BlacklistResponse, tags=["Pairlist"])
+@router.delete(
+    "/blacklist",
+    response_model=BlacklistResponse,
+    tags=["Pairlist"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def blacklist_delete(pairs_to_delete: list[str] = Query([]), rpc: RPC = Depends(get_rpc)):
     """Provide a list of pairs to delete from the blacklist"""
 
@@ -303,24 +325,54 @@ def add_locks(payload: list[LocksPayload], rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_locks()
 
 
-@router.post("/start", response_model=StatusMsg, tags=["Bot-control"])
+@router.post(
+    "/start",
+    response_model=StatusMsg,
+    tags=["Bot-control"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def start(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_start()
 
 
-@router.post("/stop", response_model=StatusMsg, tags=["Bot-control"])
+@router.post(
+    "/stop",
+    response_model=StatusMsg,
+    tags=["Bot-control"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def stop(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_stop()
 
 
-@router.post("/pause", response_model=StatusMsg, tags=["Bot-control"])
-@router.post("/stopentry", response_model=StatusMsg, tags=["Bot-control"])
-@router.post("/stopbuy", response_model=StatusMsg, tags=["Bot-control"])
+@router.post(
+    "/pause",
+    response_model=StatusMsg,
+    tags=["Bot-control"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
+@router.post(
+    "/stopentry",
+    response_model=StatusMsg,
+    tags=["Bot-control"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
+@router.post(
+    "/stopbuy",
+    response_model=StatusMsg,
+    tags=["Bot-control"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def pause(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_pause()
 
 
-@router.post("/reload_config", response_model=StatusMsg, tags=["Bot-control"])
+@router.post(
+    "/reload_config",
+    response_model=StatusMsg,
+    tags=["Bot-control"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def reload_config(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_reload_config()
 

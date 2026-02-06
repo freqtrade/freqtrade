@@ -2,7 +2,8 @@ from collections.abc import AsyncIterator
 from typing import Any
 from uuid import uuid4
 
-from fastapi import Depends, HTTPException
+from cachetools import TTLCache
+from fastapi import Depends, HTTPException, Request, status
 
 from freqtrade.constants import Config
 from freqtrade.enums import TRADE_MODES, RunMode
@@ -75,3 +76,21 @@ def is_trading_mode(config=Depends(get_config)):
     if config["runmode"] not in TRADE_MODES:
         raise HTTPException(status_code=503, detail="Bot is not in the correct state.")
     return None
+
+
+class RateLimiter:
+    def __init__(self, max_calls: int, time_seconds: int):
+        self.cache: TTLCache = TTLCache(maxsize=1000, ttl=time_seconds)
+        self.max_calls = max_calls
+
+    async def __call__(self, request: Request):
+        client_ip = request.client.host if request.client else "unknown"
+        # Rate limit per IP and endpoint path
+        key = f"{client_ip}:{request.url.path}"
+        calls = self.cache.get(key, 0)
+        if calls >= self.max_calls:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Rate limit exceeded",
+            )
+        self.cache[key] = calls + 1

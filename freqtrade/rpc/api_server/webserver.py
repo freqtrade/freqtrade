@@ -280,7 +280,8 @@ class ApiServer(RPCHandler):
         async def add_security_headers(request, call_next):
             response = await call_next(request)
             response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; style-src 'self' 'unsafe-inline'; "
+                "default-src 'self'; base-uri 'self'; form-action 'self'; "
+                "style-src 'self' 'unsafe-inline'; "
                 "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'"
             )
             response.headers["X-Content-Type-Options"] = "nosniff"
