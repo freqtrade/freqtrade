@@ -36,12 +36,17 @@ def ohlcv_to_dataframe(
     """
     logger.debug(f"Converting candle (OHLCV) data to dataframe for pair {pair}.")
     cols = DEFAULT_DATAFRAME_COLUMNS
-    # Use float dtype to avoid astype conversion later and handle int volume/prices
-    df = DataFrame(ohlcv, columns=cols, dtype="float")
+    # Optimization: Let pandas infer types (int for timestamp), then convert.
+    df = DataFrame(ohlcv, columns=cols)
 
     # Floor date to seconds to account for exchange imprecisions
     # Optimization: Integer arithmetic is faster than datetime conversion
     df["date"] = to_datetime(df["date"] // 1000 * 1000, unit="ms", utc=True)
+
+    # Ensure other columns are float
+    # cols[1:] are ["open", "high", "low", "close", "volume"]
+    float_cols = {col: "float" for col in cols if col != "date"}
+    df = df.astype(float_cols, copy=False)
 
     return clean_ohlcv_dataframe(
         df, timeframe, pair, fill_missing=fill_missing, drop_incomplete=drop_incomplete
@@ -65,15 +70,19 @@ def clean_ohlcv_dataframe(
     :return: DataFrame
     """
     # group by index and aggregate results to eliminate duplicate ticks
-    data = data.groupby(by="date", as_index=False, sort=False).agg(
-        {
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "max",
-        }
-    )
+    if data.duplicated(subset=["date"]).any():
+        data = data.groupby(by="date", as_index=False, sort=False).agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "max",
+            }
+        )
+    else:
+        data = data.copy()
+
     # eliminate partial candle
     if drop_incomplete:
         data.drop(data.tail(1).index, inplace=True)
