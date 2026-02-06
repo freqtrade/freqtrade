@@ -55,7 +55,8 @@ def test_security_headers(botclient_security):
 
     assert (
         headers["Content-Security-Policy"]
-        == "default-src 'self'; style-src 'self' 'unsafe-inline'; "
+        == "default-src 'self'; base-uri 'self'; form-action 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
         "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'"
     )
     assert headers["X-Content-Type-Options"] == "nosniff"
@@ -133,3 +134,84 @@ def test_pair_validation(botclient_security):
     # Valid pair with numbers and :
     rc = client.get(f"{BASE_URI}/entries?pair=XRP/USDT:USDT", headers=headers)
     assert rc.status_code == 200
+
+
+def test_validate_wildcard_pair():
+    from freqtrade.rpc.api_server.api_schemas import validate_wildcard_pair
+
+    # Valid
+    assert validate_wildcard_pair(["BTC/USDT"]) == ["BTC/USDT"]
+    assert validate_wildcard_pair(["BTC/.*"]) == ["BTC/.*"]
+    assert validate_wildcard_pair([".*"]) == [".*"]
+    assert validate_wildcard_pair(["BTC-PERP/USDT:USDT"]) == ["BTC-PERP/USDT:USDT"]
+
+    # Invalid
+    with pytest.raises(ValueError, match="Invalid pair name"):
+        validate_wildcard_pair(["BTC/USDT;"])
+    with pytest.raises(ValueError, match="Invalid pair name"):
+        validate_wildcard_pair(["<script>"])
+    with pytest.raises(ValueError, match="Invalid pair name"):
+        validate_wildcard_pair(["(BTC)/USDT"])
+
+
+def test_blacklist_payload_validation():
+    from pydantic import ValidationError
+
+    from freqtrade.rpc.api_server.api_schemas import BlacklistPayload
+
+    # Valid
+    payload = BlacklistPayload(blacklist=["BTC/.*"])
+    assert payload.blacklist == ["BTC/.*"]
+
+    # Invalid
+    with pytest.raises(ValidationError):
+        BlacklistPayload(blacklist=["<script>alert(1)</script>"])
+    with pytest.raises(ValidationError):
+        BlacklistPayload(blacklist=["BTC/USDT; DROP TABLE"])
+
+
+def test_force_entry_payload_validation():
+    from pydantic import ValidationError
+
+    from freqtrade.rpc.api_server.api_schemas import ForceEnterPayload
+
+    # Valid
+    payload = ForceEnterPayload(pair="BTC/USDT", entry_tag="safe_tag")
+    assert payload.entry_tag == "safe_tag"
+
+    # Invalid entry_tag
+    with pytest.raises(ValidationError):
+        ForceEnterPayload(pair="BTC/USDT", entry_tag="<script>")
+    with pytest.raises(ValidationError):
+        ForceEnterPayload(pair="BTC/USDT", entry_tag="tag with spaces")
+
+
+@pytest.mark.asyncio
+async def test_rate_limiter():
+    from fastapi import HTTPException
+
+    from freqtrade.rpc.api_server.deps import RateLimiter
+
+    limiter = RateLimiter(max_calls=2, time_seconds=1)
+    request = MagicMock()
+    request.client.host = "127.0.0.1"
+    request.url.path = "/test"
+
+    # Call 1 - OK
+    await limiter(request)
+
+    # Call 2 - OK
+    await limiter(request)
+
+    # Call 3 - Fail
+    with pytest.raises(HTTPException) as excinfo:
+        await limiter(request)
+    assert excinfo.value.status_code == 429
+
+    # Test different IP
+    request2 = MagicMock()
+    request2.client.host = "192.168.1.1"
+    request2.url.path = "/test"
+
+    # Call 1 new IP - OK
+    await limiter(request2)

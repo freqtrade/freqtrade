@@ -462,6 +462,13 @@ class ForceEnterPayload(BaseModel):
             raise ValueError(f"Invalid pair name: {v}")
         return v
 
+    @field_validator("entry_tag")
+    @classmethod
+    def validate_entry_tag(cls, v):
+        if v is not None and not re.match(r"^[a-zA-Z0-9_.-]+$", v):
+            raise ValueError(f"Invalid entry tag: {v}")
+        return v
+
 
 class ForceExitPayload(BaseModel):
     tradeid: str | int
@@ -470,16 +477,26 @@ class ForceExitPayload(BaseModel):
     price: float | None = None
 
 
+BLACKLIST_PAIR_REGEX = r"^[a-zA-Z0-9/_:?*.-]+$"
+
+
+def validate_wildcard_pair(v: list[str]) -> list[str]:
+    for pair in v:
+        if not re.match(BLACKLIST_PAIR_REGEX, pair):
+            raise ValueError(f"Invalid pair name: {pair}")
+        # Additional check to ensure no parenthesis are used (redundant with regex but explicit)
+        if "(" in pair or ")" in pair:
+            raise ValueError(f"Invalid pair name: {pair}")
+    return v
+
+
 class BlacklistPayload(BaseModel):
     blacklist: list[str]
 
     @field_validator("blacklist")
     @classmethod
     def validate_blacklist(cls, v):
-        for pair in v:
-            if "(" in pair or ")" in pair:
-                raise ValueError(f"Invalid pair name: {pair}")
-        return v
+        return validate_wildcard_pair(v)
 
 
 class BlacklistResponse(BaseModel):
@@ -551,10 +568,7 @@ class PairListsPayload(ExchangeModePayloadMixin, BaseModel):
     @field_validator("blacklist")
     @classmethod
     def validate_blacklist(cls, v):
-        for pair in v:
-            if "(" in pair or ")" in pair:
-                raise ValueError(f"Invalid pair name: {pair}")
-        return v
+        return validate_wildcard_pair(v)
 
     @field_validator("stake_currency")
     @classmethod
