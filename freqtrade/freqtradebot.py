@@ -338,7 +338,8 @@ class FreqtradeBot(LoggingMixin):
         if trades:
             # Extend active-pair whitelist with pairs of open trades
             # It ensures that candle (OHLCV) data are downloaded for open trades as well
-            _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist])
+            _whitelist_set = set(_whitelist)
+            _whitelist.extend([trade.pair for trade in trades if trade.pair not in _whitelist_set])
 
         # Called last to include the included pairs
         if _prev_whitelist != _whitelist:
@@ -611,10 +612,7 @@ class FreqtradeBot(LoggingMixin):
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
         # Remove pairs for currently opened trades from the whitelist
-        for trade in Trade.get_open_trades():
-            if trade.pair in whitelist:
-                whitelist.remove(trade.pair)
-                logger.debug("Ignoring %s in pair whitelist", trade.pair)
+        whitelist = self._filter_whitelist_for_open_trades(whitelist, Trade.get_open_trades())
 
         if not whitelist:
             self.log_once(
@@ -649,6 +647,28 @@ class FreqtradeBot(LoggingMixin):
             logger.debug("Found no enter signals for whitelisted currencies. Trying again...")
 
         return trades_created
+
+    def _filter_whitelist_for_open_trades(
+        self, whitelist: list[str], open_trades: list[Trade]
+    ) -> list[str]:
+        """
+        Remove pairs for currently opened trades from the whitelist
+        """
+        if not open_trades:
+            return whitelist
+
+        whitelist_set = set(whitelist)
+        pairs_to_remove = set()
+        for trade in open_trades:
+            if trade.pair in whitelist_set:
+                whitelist_set.remove(trade.pair)
+                pairs_to_remove.add(trade.pair)
+                logger.debug("Ignoring %s in pair whitelist", trade.pair)
+
+        if pairs_to_remove:
+            whitelist = [p for p in whitelist if p not in pairs_to_remove]
+
+        return whitelist
 
     def create_trade(self, pair: str) -> bool:
         """

@@ -148,11 +148,10 @@ def safe_value_fallback2(dict1: DictMap, dict2: DictMap, key1: str, key2: str, d
     Else falls back to None.
 
     """
-    if key1 in dict1 and dict1[key1] is not None:
-        return dict1[key1]
-    else:
-        if key2 in dict2 and dict2[key2] is not None:
-            return dict2[key2]
+    if (v1 := dict1.get(key1)) is not None:
+        return v1
+    if (v2 := dict2.get(key2)) is not None:
+        return v2
     return default_value
 
 
