@@ -648,7 +648,9 @@ class FreqtradeBot(LoggingMixin):
 
         return trades_created
 
-    def _filter_whitelist_for_open_trades(self, whitelist: list[str], open_trades: list[Trade]) -> list[str]:
+    def _filter_whitelist_for_open_trades(
+        self, whitelist: list[str], open_trades: list[Trade]
+    ) -> list[str]:
         """
         Remove pairs for currently opened trades from the whitelist
         """

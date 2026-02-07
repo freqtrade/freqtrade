@@ -2947,7 +2947,7 @@ class Exchange:
         return candles
 
     def _now_is_time_to_refresh(
-        self, pair: str, timeframe: str, candle_type: CandleType, now: int = None
+        self, pair: str, timeframe: str, candle_type: CandleType, now: int | None = None
     ) -> bool:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_msecs(timeframe)
