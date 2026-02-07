@@ -612,18 +612,7 @@ class FreqtradeBot(LoggingMixin):
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
         # Remove pairs for currently opened trades from the whitelist
-        open_trades = Trade.get_open_trades()
-        if open_trades:
-            whitelist_set = set(whitelist)
-            pairs_to_remove = set()
-            for trade in open_trades:
-                if trade.pair in whitelist_set:
-                    whitelist_set.remove(trade.pair)
-                    pairs_to_remove.add(trade.pair)
-                    logger.debug("Ignoring %s in pair whitelist", trade.pair)
-
-            if pairs_to_remove:
-                whitelist = [p for p in whitelist if p not in pairs_to_remove]
+        whitelist = self._filter_whitelist_for_open_trades(whitelist, Trade.get_open_trades())
 
         if not whitelist:
             self.log_once(
@@ -658,6 +647,26 @@ class FreqtradeBot(LoggingMixin):
             logger.debug("Found no enter signals for whitelisted currencies. Trying again...")
 
         return trades_created
+
+    def _filter_whitelist_for_open_trades(self, whitelist: list[str], open_trades: list[Trade]) -> list[str]:
+        """
+        Remove pairs for currently opened trades from the whitelist
+        """
+        if not open_trades:
+            return whitelist
+
+        whitelist_set = set(whitelist)
+        pairs_to_remove = set()
+        for trade in open_trades:
+            if trade.pair in whitelist_set:
+                whitelist_set.remove(trade.pair)
+                pairs_to_remove.add(trade.pair)
+                logger.debug("Ignoring %s in pair whitelist", trade.pair)
+
+        if pairs_to_remove:
+            whitelist = [p for p in whitelist if p not in pairs_to_remove]
+
+        return whitelist
 
     def create_trade(self, pair: str) -> bool:
         """
