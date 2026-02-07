@@ -54,11 +54,7 @@ def test_input_max_length_entry_tag(botclient_sentinel):
 
     # 300 chars > 255 limit (to be implemented)
     long_tag = "a" * 300
-    payload = {
-        "pair": "XRP/BTC",
-        "entry_tag": long_tag,
-        "side": "long"
-    }
+    payload = {"pair": "XRP/BTC", "entry_tag": long_tag, "side": "long"}
 
     rc = client.post(f"{BASE_URI}/forceenter", json=payload, headers=headers)
 
@@ -86,7 +82,7 @@ def test_xss_protection_header(botclient_sentinel):
     # CURRENTLY: Missing
     # AFTER FIX: Present
     if "X-XSS-Protection" not in headers:
-         pytest.fail("X-XSS-Protection header missing")
+        pytest.fail("X-XSS-Protection header missing")
 
     assert headers["X-XSS-Protection"] == "1; mode=block"
 
@@ -129,6 +125,8 @@ def test_login_long_password(botclient_sentinel):
     # It will return 400 if we raise HTTPException(400).
 
     if rc.status_code == 401:
-        pytest.fail("Login endpoint accepted long password for check (returned 401 instead of 400/422)")
+        pytest.fail(
+            "Login endpoint accepted long password for check (returned 401 instead of 400/422)"
+        )
 
     assert rc.status_code == 400
