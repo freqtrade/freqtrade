@@ -19,7 +19,7 @@ ALGORITHM = "HS256"
 
 router_login = APIRouter()
 # Rate limiter: 1000 IPs, 60 seconds block
-login_attempts_cache: TTLCache = TTLCache(maxsize=1000, ttl=60)
+login_attempts_cache: TTLCache = TTLCache(maxsize=10000, ttl=60)
 
 
 def verify_auth(api_config, username: str, password: str):
@@ -141,6 +141,12 @@ def token_login(
     form_data: HTTPBasicCredentials = Depends(security),
     api_config=Depends(get_api_config),
 ):
+    if len(form_data.username) > 255 or len(form_data.password) > 255:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or password too long.",
+        )
+
     client_ip = request.client.host if request.client else "unknown"
     attempts = login_attempts_cache.get(client_ip, 0)
     if attempts >= 5:

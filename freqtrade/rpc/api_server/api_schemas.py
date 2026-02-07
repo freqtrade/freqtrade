@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import (
     AwareDatetime,
     BaseModel,
+    Field,
     RootModel,
     SerializeAsAny,
     field_validator,
@@ -20,7 +21,7 @@ from freqtrade.rpc.api_server.webserver_bgwork import ProgressTask
 class ExchangeModePayloadMixin(BaseModel):
     trading_mode: TradingMode | None = None
     margin_mode: MarginMode | None = None
-    exchange: str | None = None
+    exchange: str | None = Field(None, max_length=50)
 
     @field_validator("exchange")
     @classmethod
@@ -416,10 +417,10 @@ class Locks(BaseModel):
 
 
 class LocksPayload(BaseModel):
-    pair: str
+    pair: str = Field(..., max_length=50)
     side: str = "*"  # Default to both sides
     until: AwareDatetime
-    reason: str | None = None
+    reason: str | None = Field(None, max_length=255)
 
     @field_validator("pair")
     @classmethod
@@ -430,7 +431,7 @@ class LocksPayload(BaseModel):
 
 
 class DeleteLockRequest(BaseModel):
-    pair: str | None = None
+    pair: str | None = Field(None, max_length=50)
     lockid: int | None = None
 
     @field_validator("pair")
@@ -447,12 +448,12 @@ class Logs(BaseModel):
 
 
 class ForceEnterPayload(BaseModel):
-    pair: str
+    pair: str = Field(..., max_length=50)
     side: SignalDirection = SignalDirection.LONG
     price: float | None = None
     ordertype: OrderTypeValues | None = None
     stakeamount: float | None = None
-    entry_tag: str | None = None
+    entry_tag: str | None = Field(None, max_length=255)
     leverage: float | None = None
 
     @field_validator("pair")
@@ -482,6 +483,8 @@ BLACKLIST_PAIR_REGEX = r"^[a-zA-Z0-9/_:?*.-]+$"
 
 def validate_wildcard_pair(v: list[str]) -> list[str]:
     for pair in v:
+        if len(pair) > 50:
+            raise ValueError(f"Pair name too long: {pair}")
         if not re.match(BLACKLIST_PAIR_REGEX, pair):
             raise ValueError(f"Invalid pair name: {pair}")
         # Additional check to ensure no parenthesis are used (redundant with regex but explicit)
@@ -563,7 +566,7 @@ class PairListsResponse(BaseModel):
 class PairListsPayload(ExchangeModePayloadMixin, BaseModel):
     pairlists: list[dict[str, Any]]
     blacklist: list[str]
-    stake_currency: str
+    stake_currency: str = Field(..., max_length=20)
 
     @field_validator("blacklist")
     @classmethod
@@ -591,6 +594,8 @@ class DownloadDataPayload(ExchangeModePayloadMixin, BaseModel):
     @classmethod
     def validate_pairs(cls, v):
         for pair in v:
+            if len(pair) > 50:
+                raise ValueError(f"Pair name too long: {pair}")
             if not re.match(PAIR_REGEX, pair):
                 raise ValueError(f"Invalid pair name: {pair}")
         return v
@@ -620,7 +625,7 @@ class AvailablePairs(BaseModel):
 
 
 class PairCandlesRequest(BaseModel):
-    pair: str
+    pair: str = Field(..., max_length=50)
     timeframe: str
     limit: int | None = None
     columns: list[str] | None = None

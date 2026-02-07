@@ -150,7 +150,7 @@ def status(rpc: RPC = Depends(get_rpc)):
 # on big databases. Correct response model: response_model=TradeResponse,
 @router.get("/trades", tags=["Trading-info", "Trades"])
 def trades(
-    limit: int = Query(500, ge=1, description="Maximum number of different trades to return data"),
+    limit: int = Query(500, ge=1, le=1000, description="Maximum number of different trades to return data"),
     offset: int = Query(0, ge=0, description="Number of trades to skip for pagination"),
     order_by_id: bool = Query(
         True, description="Sort trades by id (default: True). If False, sorts by latest timestamp"
@@ -188,7 +188,7 @@ def trade_reload(tradeid: int, rpc: RPC = Depends(get_rpc)):
 @router.get("/trades/open/custom-data", response_model=list[ListCustomData], tags=["Trades"])
 def list_open_trades_custom_data(
     key: str | None = Query(None, description="Optional key to filter data"),
-    limit: int = Query(100, ge=1, description="Maximum number of different trades to return data"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of different trades to return data"),
     offset: int = Query(0, ge=0, description="Number of trades to skip for pagination"),
     rpc: RPC = Depends(get_rpc),
 ):
