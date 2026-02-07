@@ -2767,6 +2767,7 @@ class Exchange:
         # optimization: cache timeframes as a set outside the loop to avoid repeated property access
         # and linear search
         available_timeframes = set(self.timeframes)
+        current_dates: dict[str, int] = {}
 
         for pair, timeframe, candle_type in set(pair_list):
             if candle_type == CandleType.FUNDING_RATE and timeframe != (
@@ -2791,10 +2792,15 @@ class Exchange:
                 )
                 continue
 
+            if timeframe not in current_dates:
+                current_dates[timeframe] = dt_ts(timeframe_to_prev_date(timeframe))
+
             if (
                 (pair, timeframe, candle_type) not in self._klines
                 or not cache
-                or self._now_is_time_to_refresh(pair, timeframe, candle_type)
+                or self._now_is_time_to_refresh(
+                    pair, timeframe, candle_type, now=current_dates[timeframe]
+                )
             ):
                 input_coroutines.append(
                     self._build_coroutine(pair, timeframe, candle_type, since_ms, cache)
@@ -2940,12 +2946,15 @@ class Exchange:
                 self._expiring_candle_cache[(c[1], since_ms)][c] = val
         return candles
 
-    def _now_is_time_to_refresh(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
+    def _now_is_time_to_refresh(
+        self, pair: str, timeframe: str, candle_type: CandleType, now: int | None = None
+    ) -> bool:
         # Timeframe in seconds
         interval_in_sec = timeframe_to_msecs(timeframe)
         plr = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
         # current,active candle open date
-        now = dt_ts(timeframe_to_prev_date(timeframe))
+        if now is None:
+            now = dt_ts(timeframe_to_prev_date(timeframe))
         return plr < now
 
     @retrier_async

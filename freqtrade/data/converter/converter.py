@@ -197,30 +197,28 @@ def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
      b_sum       b_size       bids       asks       a_size       a_sum
     -------------------------------------------------------------------
     """
-    cols = ["bids", "b_size"]
+    # Use numpy for faster processing
+    bids_data = np.array(bids)
+    asks_data = np.array(asks)
 
-    bids_frame = DataFrame(bids, columns=cols)
-    # add cumulative sum column
-    bids_frame["b_sum"] = bids_frame["b_size"].cumsum()
-    cols2 = ["asks", "a_size"]
-    asks_frame = DataFrame(asks, columns=cols2)
-    # add cumulative sum column
-    asks_frame["a_sum"] = asks_frame["a_size"].cumsum()
+    b_bids = bids_data[:, 0] if bids_data.size > 0 else np.array([])
+    b_size = bids_data[:, 1] if bids_data.size > 0 else np.array([])
+    b_sum = np.cumsum(b_size)
 
-    frame = pd.concat(
-        [
-            bids_frame["b_sum"],
-            bids_frame["b_size"],
-            bids_frame["bids"],
-            asks_frame["asks"],
-            asks_frame["a_size"],
-            asks_frame["a_sum"],
-        ],
-        axis=1,
-        keys=["b_sum", "b_size", "bids", "asks", "a_size", "a_sum"],
+    a_asks = asks_data[:, 0] if asks_data.size > 0 else np.array([])
+    a_size = asks_data[:, 1] if asks_data.size > 0 else np.array([])
+    a_sum = np.cumsum(a_size)
+
+    return pd.DataFrame(
+        {
+            "b_sum": pd.Series(b_sum),
+            "b_size": pd.Series(b_size),
+            "bids": pd.Series(b_bids),
+            "asks": pd.Series(a_asks),
+            "a_size": pd.Series(a_size),
+            "a_sum": pd.Series(a_sum),
+        }
     )
-    # logger.info('order book %s', frame )
-    return frame
 
 
 def convert_ohlcv_format(
