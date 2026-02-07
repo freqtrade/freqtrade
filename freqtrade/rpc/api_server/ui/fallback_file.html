@@ -102,6 +102,13 @@
       background: rgba(255, 255, 255, 0.1);
       border-bottom-color: var(--accent-primary);
     }
+    .external-icon {
+        width: 1em;
+        height: 1em;
+        margin-left: 0.3em;
+        vertical-align: text-top;
+        fill: currentColor;
+    }
     .hero {
       text-align: center;
       padding: 3rem 1rem;
@@ -145,8 +152,16 @@
     }
     .docker-hint {
         font-size: 0.9rem;
-        opacity: 0.8;
-        margin-top: 0.5rem;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        background: rgba(0, 255, 255, 0.05);
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 255, 255, 0.2);
     }
     .docker-hint code {
         font-size: 0.9rem;
@@ -200,8 +215,9 @@
 
     /* Accessibility & UX Improvements */
     :focus-visible {
-      outline: 3px solid var(--accent-secondary);
-      outline-offset: 4px;
+      outline: 2px solid var(--accent-secondary);
+      outline-offset: 2px;
+      box-shadow: 0 0 10px var(--accent-secondary);
       border-radius: 4px;
     }
 
@@ -341,14 +357,68 @@
     }
     @keyframes fadeIn { to { opacity: 1; } }
 
+    /* Toast Notification */
+    .toast-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2000;
+        pointer-events: none;
+    }
+
+    .toast-notification {
+        background-color: var(--card-bg);
+        color: var(--text-color);
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: 1px solid var(--accent-secondary);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: slideUpFade 0.3s forwards;
+    }
+
+    .toast-notification.success {
+        border-color: var(--success-color);
+    }
+
+    .toast-notification.error {
+        border-color: #ff3333;
+    }
+
+    @keyframes slideUpFade {
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeOut {
+        to { opacity: 0; transform: translateY(-20px); }
+    }
+
     /* Print Styles */
     @media print {
         body {
             background-color: white !important;
             color: black !important;
         }
-        header, nav, footer, .copy-container, .btn, .skip-link, .install-notice, button {
+        header, nav, footer, .btn, .skip-link, button, .toast-container {
             display: none !important;
+        }
+        .install-notice, .copy-container, .docker-hint {
+            display: block !important;
+            border: 1px solid #ccc !important;
+            box-shadow: none !important;
+            background: none !important;
+            color: black !important;
+        }
+        code {
+            border: 1px solid #ccc;
+            background: #f0f0f0 !important;
+            color: black !important;
         }
         .hero {
             background: none !important;
@@ -380,6 +450,7 @@
 <body>
     <a href="#main-content" class="skip-link">Skip to content</a>
     <div id="a11y-status" class="sr-only" aria-live="polite"></div>
+    <div id="toast-container" class="toast-container"></div>
 
     <header>
       <div class="logo-container">
@@ -389,8 +460,14 @@
       </div>
       <h1>Freqtrade - Crypto P Edition</h1>
       <nav aria-label="Main Navigation">
-        <a href="https://www.freqtrade.io/en/latest/" target="_blank" rel="noopener noreferrer" aria-label="Documentation (opens in new tab)">Documentation</a>
-        <a href="https://github.com/freqtrade/freqtrade" target="_blank" rel="noopener noreferrer" aria-label="GitHub (opens in new tab)">GitHub</a>
+        <a href="https://www.freqtrade.io/en/latest/" target="_blank" rel="noopener noreferrer" aria-label="Documentation (opens in new tab)">
+            Documentation
+            <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z" /></svg>
+        </a>
+        <a href="https://github.com/freqtrade/freqtrade" target="_blank" rel="noopener noreferrer" aria-label="GitHub (opens in new tab)">
+            GitHub
+            <svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z" /></svg>
+        </a>
       </nav>
     </header>
 
@@ -427,7 +504,7 @@
              </button>
           </div>
 
-          <div class="docker-hint" style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+          <div class="docker-hint">
             <strong>🐳 Docker User?</strong> Run:
             <code id="docker-cmd">docker compose run --rm freqtrade install-ui</code>
             <button class="copy-btn" onclick="copyCommand('docker-cmd', this)" aria-label="Copy docker command" style="font-size: 0.9rem; padding: 0.4rem;">
@@ -448,6 +525,25 @@
     </footer>
 
     <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+
+            const icon = type === 'success' ? '✅' : '❌';
+            toast.innerHTML = `<span aria-hidden="true">${icon}</span><span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            // Auto remove
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s forwards';
+                toast.addEventListener('animationend', () => {
+                    toast.remove();
+                });
+            }, 3000);
+        }
+
         function copyCommand(elementId, btn) {
             const cmdText = document.getElementById(elementId).innerText;
             const iconSpan = btn.querySelector('.icon');
@@ -465,6 +561,8 @@
                 const liveRegion = document.getElementById('a11y-status');
                 if (liveRegion) liveRegion.textContent = 'Command copied to clipboard';
 
+                showToast('Command copied to clipboard!', 'success');
+
                 setTimeout(() => {
                     btn.classList.remove('copied');
                     iconSpan.innerText = originalIcon;
@@ -473,10 +571,14 @@
                 }, 2000);
             }
 
+            function onCopyError() {
+                showToast('Copy failed. Please copy manually.', 'error');
+            }
+
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(cmdText).then(onCopySuccess).catch(err => {
                     console.error('Failed to copy: ', err);
-                    alert('Copy failed. Please copy the command manually.');
+                    onCopyError();
                 });
             } else {
                 // Fallback
@@ -488,7 +590,7 @@
                     document.execCommand('copy');
                     onCopySuccess();
                 } catch (err) {
-                    alert('Copy failed. Please copy manually.');
+                    onCopyError();
                 }
                 document.body.removeChild(textArea);
             }
