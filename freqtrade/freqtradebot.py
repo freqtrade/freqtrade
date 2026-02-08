@@ -657,18 +657,14 @@ class FreqtradeBot(LoggingMixin):
         if not open_trades:
             return whitelist
 
-        whitelist_set = set(whitelist)
-        pairs_to_remove = set()
-        for trade in open_trades:
-            if trade.pair in whitelist_set:
-                whitelist_set.remove(trade.pair)
-                pairs_to_remove.add(trade.pair)
-                logger.debug("Ignoring %s in pair whitelist", trade.pair)
+        open_trade_pairs = {trade.pair for trade in open_trades}
 
-        if pairs_to_remove:
-            whitelist = [p for p in whitelist if p not in pairs_to_remove]
+        if logger.isEnabledFor(logging.DEBUG):
+            for pair in open_trade_pairs:
+                if pair in whitelist:
+                    logger.debug("Ignoring %s in pair whitelist", pair)
 
-        return whitelist
+        return [p for p in whitelist if p not in open_trade_pairs]
 
     def create_trade(self, pair: str) -> bool:
         """

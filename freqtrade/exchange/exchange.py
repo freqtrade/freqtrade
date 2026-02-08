@@ -1714,11 +1714,11 @@ class Exchange:
     def fetch_stoploss_order(
         self, order_id: str, pair: str, params: dict | None = None
     ) -> CcxtOrder:
-        if self.get_option("stoploss_query_requires_stop_flag"):
+        if self._ft_has.get("stoploss_query_requires_stop_flag"):
             params = params or {}
             params["stop"] = True
         order = self.fetch_order(order_id, pair, params)
-        val = self.get_option("stoploss_algo_order_info_id")
+        val = self._ft_has.get("stoploss_algo_order_info_id")
         if val and order.get("status", "open") == "closed":
             if new_orderid := order.get("info", {}).get(val):
                 # Fetch real order, which was placed by the algo order.
@@ -2430,7 +2430,7 @@ class Exchange:
         :param order: ccxt order dict
         :return: correct order id
         """
-        if self.get_option("stoploss_query_requires_stop_flag") and (
+        if self._ft_has.get("stoploss_query_requires_stop_flag") and (
             order["type"] in ("stoploss", "stop")
         ):
             return safe_value_fallback(order, "id_stop", "id")
@@ -2771,7 +2771,7 @@ class Exchange:
 
         for pair, timeframe, candle_type in set(pair_list):
             if candle_type == CandleType.FUNDING_RATE and timeframe != (
-                ff_tf := self.get_option("funding_fee_timeframe")
+                ff_tf := self._ft_has.get("funding_fee_timeframe")
             ):
                 # TODO: does this message make sense? would docs be better?
                 # if any, this should be cached to avoid log spam!
