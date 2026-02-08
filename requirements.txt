@@ -1,5 +1,5 @@
 numpy==2.4.1
-pandas==2.3.3
+pandas==3.0.0
 bottleneck==1.6.0
 numexpr==2.14.1
 # Indicator libraries
