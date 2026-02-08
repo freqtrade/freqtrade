@@ -1601,11 +1601,16 @@ class Exchange:
             )
             if self.trading_mode == TradingMode.FUTURES:
                 params["reduceOnly"] = True
-                if "stoploss_price_type" in order_types and "stop_price_type_field" in self._ft_has:
-                    price_type = self._ft_has["stop_price_type_value_mapping"][
+                if (
+                    "stoploss_price_type" in order_types
+                    and "stop_price_type_field" in self._ft_has
+                    and "stop_price_type_value_mapping" in self._ft_has
+                ):
+                    price_type = self._ft_has["stop_price_type_value_mapping"].get(
                         order_types.get("stoploss_price_type", PriceType.LAST)
-                    ]
-                    params[str(self._ft_has["stop_price_type_field"])] = price_type
+                    )
+                    if price_type:
+                        params[str(self._ft_has["stop_price_type_field"])] = price_type
 
             amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
 
@@ -2771,7 +2776,7 @@ class Exchange:
 
         for pair, timeframe, candle_type in set(pair_list):
             if candle_type == CandleType.FUNDING_RATE and timeframe != (
-                ff_tf := self._ft_has.get("funding_fee_timeframe")
+                ff_tf := str(self._ft_has.get("funding_fee_timeframe") or "1h")
             ):
                 # TODO: does this message make sense? would docs be better?
                 # if any, this should be cached to avoid log spam!
