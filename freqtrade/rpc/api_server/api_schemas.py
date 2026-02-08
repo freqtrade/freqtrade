@@ -607,7 +607,7 @@ class DownloadDataPayload(ExchangeModePayloadMixin, BaseModel):
         if v is None:
             return v
         for timeframe in v:
-            if not re.match(r"^[0-9]+[a-zA-Z]+$", timeframe):
+            if not re.match(r"^[0-9]+[mhdwMy]$", timeframe):
                 raise ValueError(f"Invalid timeframe: {timeframe}")
         return v
 
@@ -651,7 +651,7 @@ class PairCandlesRequest(BaseModel):
     @field_validator("timeframe")
     @classmethod
     def validate_timeframe(cls, v):
-        if not re.match(r"^[0-9]+[a-zA-Z]+$", v):
+        if not re.match(r"^[0-9]+[mhdwMy]$", v):
             raise ValueError(f"Invalid timeframe: {v}")
         return v
 

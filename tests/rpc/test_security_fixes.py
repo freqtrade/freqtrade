@@ -1,17 +1,20 @@
 
-import pytest
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
-from fastapi import Request, HTTPException
 
-from freqtrade.rpc.api_server.deps import RateLimiter, _limiters
+import pytest
+from fastapi import HTTPException, Request
+from pydantic import ValidationError
+
 from freqtrade.configuration.config_secrets import sanitize_config
 from freqtrade.rpc.api_server.api_schemas import (
-    ForceEnterPayload,
     DownloadDataPayload,
-    PairCandlesRequest,
+    ForceEnterPayload,
     LocksPayload,
+    PairCandlesRequest,
 )
-from pydantic import ValidationError
+from freqtrade.rpc.api_server.deps import RateLimiter, _limiters
+
 
 # --- RateLimiter Tests ---
 @pytest.mark.asyncio
@@ -46,6 +49,7 @@ async def test_rate_limiter_shared_state():
         await limiter2(request)
     assert excinfo.value.status_code == 429
 
+
 @pytest.mark.asyncio
 async def test_rate_limiter_distinct_params():
     """
@@ -67,10 +71,11 @@ async def test_rate_limiter_distinct_params():
         await limiter1(request)
 
     # Limiter2 should still work
-    await limiter2(request) # 1
-    await limiter2(request) # 2
-    await limiter2(request) # 3
+    await limiter2(request)  # 1
+    await limiter2(request)  # 2
+    await limiter2(request)  # 3
     # It works
+
 
 # --- Secret Redaction Tests ---
 def test_sanitize_config_secrets():
@@ -95,7 +100,8 @@ def test_sanitize_config_secrets():
     assert sanitized["api_server"]["jwt_secret_key"] == "REDACTED"
     assert sanitized["api_server"]["ws_token"] == "REDACTED"
     assert sanitized["webhook"]["url"] == "REDACTED"
-    assert sanitized["api_server"]["listen_ip_address"] == "127.0.0.1" # Not redacted
+    assert sanitized["api_server"]["listen_ip_address"] == "127.0.0.1"  # Not redacted
+
 
 # --- Input Validation Tests ---
 def test_force_enter_payload_validation():
@@ -117,6 +123,7 @@ def test_force_enter_payload_validation():
     with pytest.raises(ValidationError):
         ForceEnterPayload(pair="BTC(USDT", stakeamount=10)
 
+
 def test_download_data_payload_validation():
     """
     Verify DownloadDataPayload validation.
@@ -131,6 +138,11 @@ def test_download_data_payload_validation():
     # Invalid timeframes
     with pytest.raises(ValidationError):
         DownloadDataPayload(pairs=["BTC/USDT"], timeframes=["invalid"])
+
+    # Invalid timeframe unit
+    with pytest.raises(ValidationError):
+        DownloadDataPayload(pairs=["BTC/USDT"], timeframes=["5x"])
+
 
 def test_pair_candles_request_validation():
     """
@@ -151,16 +163,16 @@ def test_pair_candles_request_validation():
     with pytest.raises(ValidationError):
         PairCandlesRequest(pair="BTC/USDT", timeframe="invalid", limit=100)
 
+
 def test_locks_payload_validation():
     """
     Verify LocksPayload validation.
     """
-    from datetime import datetime, timezone
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Valid
     LocksPayload(pair="BTC/USDT", until=now, side="long")
 
     # Invalid side (too long)
     with pytest.raises(ValidationError):
-        LocksPayload(pair="BTC/USDT", until=now, side="long"*10)
+        LocksPayload(pair="BTC/USDT", until=now, side="long" * 10)
