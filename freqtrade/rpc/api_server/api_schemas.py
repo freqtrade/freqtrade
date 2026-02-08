@@ -418,7 +418,7 @@ class Locks(BaseModel):
 
 class LocksPayload(BaseModel):
     pair: str = Field(..., max_length=50)
-    side: str = "*"  # Default to both sides
+    side: str = Field("*", max_length=25)  # Default to both sides
     until: AwareDatetime
     reason: str | None = Field(None, max_length=255)
 
@@ -450,9 +450,9 @@ class Logs(BaseModel):
 class ForceEnterPayload(BaseModel):
     pair: str = Field(..., max_length=50)
     side: SignalDirection = SignalDirection.LONG
-    price: float | None = None
+    price: float | None = Field(None, gt=0)
     ordertype: OrderTypeValues | None = None
-    stakeamount: float | None = None
+    stakeamount: float | None = Field(None, gt=0)
     entry_tag: str | None = Field(None, max_length=255)
     leverage: float | None = None
 
@@ -584,7 +584,7 @@ class PairListsPayload(ExchangeModePayloadMixin, BaseModel):
 class DownloadDataPayload(ExchangeModePayloadMixin, BaseModel):
     pairs: list[str]
     timeframes: list[str] | None = DL_DATA_TIMEFRAMES
-    days: int | None = None
+    days: int | None = Field(None, gt=0)
     timerange: str | None = None
     erase: bool = False
     download_trades: bool = False
@@ -599,6 +599,16 @@ class DownloadDataPayload(ExchangeModePayloadMixin, BaseModel):
                 raise ValueError(f"Pair name too long: {pair}")
             if not re.match(PAIR_REGEX, pair):
                 raise ValueError(f"Invalid pair name: {pair}")
+        return v
+
+    @field_validator("timeframes")
+    @classmethod
+    def validate_timeframes(cls, v):
+        if v is None:
+            return v
+        for timeframe in v:
+            if not re.match(r"^[0-9]+[mhdwMy]$", timeframe):
+                raise ValueError(f"Invalid timeframe: {timeframe}")
         return v
 
     @model_validator(mode="before")
@@ -628,7 +638,7 @@ class AvailablePairs(BaseModel):
 class PairCandlesRequest(BaseModel):
     pair: str = Field(..., max_length=50)
     timeframe: str
-    limit: int | None = None
+    limit: int | None = Field(None, gt=0, le=1500)
     columns: list[str] | None = None
 
     @field_validator("pair")
@@ -636,6 +646,13 @@ class PairCandlesRequest(BaseModel):
     def validate_pair(cls, v):
         if not re.match(PAIR_REGEX, v):
             raise ValueError(f"Invalid pair name: {v}")
+        return v
+
+    @field_validator("timeframe")
+    @classmethod
+    def validate_timeframe(cls, v):
+        if not re.match(r"^[0-9]+[mhdwMy]$", v):
+            raise ValueError(f"Invalid timeframe: {v}")
         return v
 
 
