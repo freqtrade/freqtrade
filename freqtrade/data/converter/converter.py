@@ -70,15 +70,21 @@ def clean_ohlcv_dataframe(
     :return: DataFrame
     """
     # group by index and aggregate results to eliminate duplicate ticks
-    data = data.groupby(by="date", as_index=False, sort=False).agg(
-        {
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "max",
-        }
-    )
+    # Optimization: Skip groupby if dates are unique
+    if not data["date"].is_unique:
+        data = data.groupby(by="date", as_index=False, sort=False).agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "max",
+            }
+        )
+    else:
+        data.sort_values(by="date", inplace=True)
+        data.reset_index(drop=True, inplace=True)
+        data = data[["date", "open", "high", "low", "close", "volume"]]
 
     # eliminate partial candle
     if drop_incomplete:
@@ -209,16 +215,24 @@ def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
     a_size = asks_data[:, 1] if asks_data.size > 0 else np.array([])
     a_sum = np.cumsum(a_size)
 
-    return pd.DataFrame(
-        {
-            "b_sum": pd.Series(b_sum),
-            "b_size": pd.Series(b_size),
-            "bids": pd.Series(b_bids),
-            "asks": pd.Series(a_asks),
-            "a_size": pd.Series(a_size),
-            "a_sum": pd.Series(a_sum),
-        }
-    )
+    # Optimization: Create DataFrame directly from dict of arrays if lengths match.
+    # Otherwise use concat to handle alignment.
+    if len(b_bids) == len(a_asks):
+        return pd.DataFrame(
+            {
+                "b_sum": b_sum,
+                "b_size": b_size,
+                "bids": b_bids,
+                "asks": a_asks,
+                "a_size": a_size,
+                "a_sum": a_sum,
+            }
+        )
+
+    # Fallback for mismatched lengths (e.g. at end of orderbook)
+    df_bids = pd.DataFrame({"b_sum": b_sum, "b_size": b_size, "bids": b_bids})
+    df_asks = pd.DataFrame({"asks": a_asks, "a_size": a_size, "a_sum": a_sum})
+    return pd.concat([df_bids, df_asks], axis=1)
 
 
 def convert_ohlcv_format(

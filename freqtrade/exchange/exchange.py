@@ -1545,6 +1545,29 @@ class Exchange:
         params.update({self._ft_has["stop_price_param"]: stop_price})
         return params
 
+    def _get_stoploss_params(
+        self,
+        pair: str,
+        side: BuySell,
+        ordertype: str,
+        stop_price_norm: float,
+        order_types: dict,
+    ) -> dict:
+        params = self._get_stop_params(side=side, ordertype=ordertype, stop_price=stop_price_norm)
+        if self.trading_mode == TradingMode.FUTURES:
+            params["reduceOnly"] = True
+            if (
+                "stoploss_price_type" in order_types
+                and "stop_price_type_field" in self._ft_has
+                and "stop_price_type_value_mapping" in self._ft_has
+            ):
+                price_type = self._ft_has["stop_price_type_value_mapping"].get(
+                    order_types.get("stoploss_price_type", PriceType.LAST)
+                )
+                if price_type:
+                    params[str(self._ft_has["stop_price_type_field"])] = price_type
+        return params
+
     @retrier(retries=0)
     def create_stoploss(
         self,
@@ -1596,17 +1619,9 @@ class Exchange:
             return dry_order
 
         try:
-            params = self._get_stop_params(
-                side=side, ordertype=ordertype, stop_price=stop_price_norm
+            params = self._get_stoploss_params(
+                pair, side, ordertype, stop_price_norm, order_types
             )
-            if self.trading_mode == TradingMode.FUTURES:
-                params["reduceOnly"] = True
-                if "stoploss_price_type" in order_types and "stop_price_type_field" in self._ft_has:
-                    price_type = self._ft_has["stop_price_type_value_mapping"][
-                        order_types.get("stoploss_price_type", PriceType.LAST)
-                    ]
-                    params[self._ft_has["stop_price_type_field"]] = price_type
-
             amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
 
             self._lev_prep(pair, leverage, side, accept_fail=True)
@@ -1714,11 +1729,11 @@ class Exchange:
     def fetch_stoploss_order(
         self, order_id: str, pair: str, params: dict | None = None
     ) -> CcxtOrder:
-        if self.get_option("stoploss_query_requires_stop_flag"):
+        if self._ft_has.get("stoploss_query_requires_stop_flag"):
             params = params or {}
             params["stop"] = True
         order = self.fetch_order(order_id, pair, params)
-        val = self.get_option("stoploss_algo_order_info_id")
+        val = self._ft_has.get("stoploss_algo_order_info_id")
         if val and order.get("status", "open") == "closed":
             if new_orderid := order.get("info", {}).get(val):
                 # Fetch real order, which was placed by the algo order.
@@ -2430,7 +2445,7 @@ class Exchange:
         :param order: ccxt order dict
         :return: correct order id
         """
-        if self.get_option("stoploss_query_requires_stop_flag") and (
+        if self._ft_has.get("stoploss_query_requires_stop_flag") and (
             order["type"] in ("stoploss", "stop")
         ):
             return safe_value_fallback(order, "id_stop", "id")
@@ -2771,7 +2786,7 @@ class Exchange:
 
         for pair, timeframe, candle_type in set(pair_list):
             if candle_type == CandleType.FUNDING_RATE and timeframe != (
-                ff_tf := self.get_option("funding_fee_timeframe")
+                ff_tf := str(self._ft_has.get("funding_fee_timeframe") or "1h")
             ):
                 # TODO: does this message make sense? would docs be better?
                 # if any, this should be cached to avoid log spam!

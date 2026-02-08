@@ -69,9 +69,10 @@ def timeframe_to_prev_date(timeframe: str, date: datetime | None = None) -> date
     # 1 month in ms = 30 * 24 * 3600 * 1000 = 2,592,000,000
     # For timeframes < 1 month, we can use simple arithmetic
     if interval < 2592000000:
-        timestamp = dt_ts(date)
+        # Optimization: Inline date conversion to avoid function calls
+        timestamp = int(date.timestamp() * 1000)
         new_timestamp = (timestamp // interval) * interval
-        return dt_from_ts(new_timestamp)
+        return datetime.fromtimestamp(new_timestamp / 1000, tz=UTC)
 
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_DOWN) // 1000
     return dt_from_ts(new_timestamp)
@@ -91,9 +92,10 @@ def timeframe_to_next_date(timeframe: str, date: datetime | None = None) -> date
     # 1 month in ms = 30 * 24 * 3600 * 1000 = 2,592,000,000
     # For timeframes < 1 month, we can use simple arithmetic
     if interval < 2592000000:
-        timestamp = dt_ts(date)
+        # Optimization: Inline date conversion to avoid function calls
+        timestamp = int(date.timestamp() * 1000)
         new_timestamp = (timestamp // interval + 1) * interval
-        return dt_from_ts(new_timestamp)
+        return datetime.fromtimestamp(new_timestamp / 1000, tz=UTC)
 
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_UP) // 1000
     return dt_from_ts(new_timestamp)
