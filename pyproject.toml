@@ -40,7 +40,7 @@ dependencies = [
   "urllib3",
   "jsonschema",
   "numpy>2.0,<3.0",
-  "pandas>=2.2.0,<3.0",
+  "pandas>=2.2.0,<4.0",
   "TA-Lib<0.7",
   "ft-pandas-ta",
   "technical",
