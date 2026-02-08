@@ -7,7 +7,7 @@ ft-pandas-ta==0.3.16
 ta-lib==0.6.8
 technical==1.5.4
 
-ccxt==4.5.35
+ccxt==4.5.36
 cryptography==46.0.3
 aiohttp==3.13.3
 SQLAlchemy==2.0.46
