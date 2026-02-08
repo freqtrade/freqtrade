@@ -271,6 +271,11 @@
         transform: translateY(0);
     }
 
+    .copy-btn.small {
+        font-size: 0.9rem;
+        padding: 0.4rem;
+    }
+
     .btn:disabled {
         opacity: 0.7;
         cursor: not-allowed;
@@ -410,14 +415,17 @@
         }
         .install-notice, .copy-container, .docker-hint {
             display: block !important;
-            border: 1px solid #ccc !important;
+            border: 2px solid #000 !important;
             box-shadow: none !important;
             background: none !important;
             color: black !important;
         }
+        .install-notice {
+            background-color: transparent !important;
+        }
         code {
-            border: 1px solid #ccc;
-            background: #f0f0f0 !important;
+            border: 1px solid #000;
+            background: #fff !important;
             color: black !important;
         }
         .hero {
@@ -427,7 +435,7 @@
         .content-section {
             background-color: white !important;
             box-shadow: none !important;
-            border: 1px solid #ccc !important;
+            border: 1px solid #000 !important;
             color: black !important;
             break-inside: avoid;
             margin: 0 0 1rem 0;
@@ -449,8 +457,7 @@
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to content</a>
-    <div id="a11y-status" class="sr-only" aria-live="polite"></div>
-    <div id="toast-container" class="toast-container"></div>
+    <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
 
     <header>
       <div class="logo-container">
@@ -507,7 +514,7 @@
           <div class="docker-hint">
             <strong>🐳 Docker User?</strong> Run:
             <code id="docker-cmd">docker compose run --rm freqtrade install-ui</code>
-            <button class="copy-btn" onclick="copyCommand('docker-cmd', this)" aria-label="Copy docker command" style="font-size: 0.9rem; padding: 0.4rem;">
+            <button class="copy-btn small" onclick="copyCommand('docker-cmd', this)" aria-label="Copy docker command">
                 <span class="icon">📋</span>
              </button>
           </div>
@@ -549,25 +556,28 @@
             const iconSpan = btn.querySelector('.icon');
             const textSpan = btn.querySelector('.text'); // May be null for icon-only buttons
 
-            const originalIcon = '📋';
-            const originalText = textSpan ? textSpan.innerText : '';
+            if (!btn.dataset.originalIcon) {
+                btn.dataset.originalIcon = iconSpan ? iconSpan.innerText : '📋';
+            }
+            const originalIcon = btn.dataset.originalIcon;
+
+            if (textSpan && !btn.dataset.originalText) {
+                btn.dataset.originalText = textSpan.innerText;
+            }
 
             function onCopySuccess() {
                 btn.classList.add('copied');
-                iconSpan.innerText = '✅';
+                if (iconSpan) iconSpan.innerText = '✅';
                 if (textSpan) textSpan.innerText = 'Copied!';
-
-                // Announce to screen readers
-                const liveRegion = document.getElementById('a11y-status');
-                if (liveRegion) liveRegion.textContent = 'Command copied to clipboard';
 
                 showToast('Command copied to clipboard!', 'success');
 
                 setTimeout(() => {
                     btn.classList.remove('copied');
-                    iconSpan.innerText = originalIcon;
-                    if (textSpan) textSpan.innerText = originalText;
-                    if (liveRegion) liveRegion.textContent = '';
+                    if (iconSpan) iconSpan.innerText = originalIcon;
+                    if (textSpan && btn.dataset.originalText) {
+                        textSpan.innerText = btn.dataset.originalText;
+                    }
                 }, 2000);
             }
 
