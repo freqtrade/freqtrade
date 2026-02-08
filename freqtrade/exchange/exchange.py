@@ -1605,7 +1605,7 @@ class Exchange:
                     price_type = self._ft_has["stop_price_type_value_mapping"][
                         order_types.get("stoploss_price_type", PriceType.LAST)
                     ]
-                    params[self._ft_has["stop_price_type_field"]] = price_type
+                    params[str(self._ft_has["stop_price_type_field"])] = price_type
 
             amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
 

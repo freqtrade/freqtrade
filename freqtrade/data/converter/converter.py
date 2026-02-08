@@ -81,6 +81,9 @@ def clean_ohlcv_dataframe(
                 "volume": "max",
             }
         )
+    else:
+        data.sort_values(by="date", inplace=True)
+        data.reset_index(drop=True, inplace=True)
 
     # eliminate partial candle
     if drop_incomplete:
