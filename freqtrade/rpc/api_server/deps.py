@@ -78,9 +78,15 @@ def is_trading_mode(config=Depends(get_config)):
     return None
 
 
+_limiters: dict[tuple[int, int], TTLCache] = {}
+
+
 class RateLimiter:
     def __init__(self, max_calls: int, time_seconds: int):
-        self.cache: TTLCache = TTLCache(maxsize=1000, ttl=time_seconds)
+        self.limiter_key = (max_calls, time_seconds)
+        if self.limiter_key not in _limiters:
+            _limiters[self.limiter_key] = TTLCache(maxsize=1000, ttl=time_seconds)
+        self.cache = _limiters[self.limiter_key]
         self.max_calls = max_calls
 
     async def __call__(self, request: Request):
