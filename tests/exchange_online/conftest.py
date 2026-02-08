@@ -1,5 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
+from typing import Any, TypedDict
 
 import pytest
 
@@ -9,12 +10,31 @@ from freqtrade.resolvers.exchange_resolver import ExchangeResolver
 from tests.conftest import EXMS, get_default_conf_usdt
 
 
-EXCHANGE_FIXTURE_TYPE = tuple[Exchange, str]
+class TestExchangeOnlineSetup(TypedDict):
+    pair: str
+    stake_currency: str
+    use_ci_proxy: bool
+    hasQuoteVolume: bool
+    timeframe: str
+    candle_count: int
+    futures: bool
+    futures_pair: str | None
+    candle_count_futures: int | None
+    hasQuoteVolumeFutures: bool | None
+    leverage_tiers_public: bool
+    leverage_in_spot_market: bool
+    trades_lookback_hours: int
+    private_methods: list[str] | None
+    sample_order: list[dict[str, Any]] | None
+    sample_my_trades: list[dict[str, Any]] | None
+    skip_ws_tests: bool | None
+
+
+EXCHANGE_FIXTURE_TYPE = tuple[Exchange, str, TestExchangeOnlineSetup]
 EXCHANGE_WS_FIXTURE_TYPE = tuple[Exchange, str, str]
 
-
 # Exchanges that should be tested online
-EXCHANGES = {
+EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
     "binance": {
         "pair": "BTC/USDT",
         "stake_currency": "USDT",
@@ -24,6 +44,7 @@ EXCHANGES = {
         "candle_count": 1000,
         "futures": True,
         "futures_pair": "BTC/USDT:USDT",
+        "candle_count_futures": 1500,
         "hasQuoteVolumeFutures": True,
         "leverage_tiers_public": False,
         "leverage_in_spot_market": False,
@@ -244,6 +265,7 @@ EXCHANGES = {
         "candle_count": 1000,
         "futures": True,
         "futures_pair": "BTC/USDT:USDT",
+        "candle_count_futures": 1999,
         "hasQuoteVolumeFutures": True,
         "leverage_tiers_public": True,
         "leverage_in_spot_market": True,
@@ -532,6 +554,8 @@ EXCHANGES = {
     },
 }
 
+EXCHANGES_FUTURES = [exch for exch, params in EXCHANGES.items() if params.get("futures")]
+
 
 @pytest.fixture(scope="class")
 def exchange_conf():
@@ -561,26 +585,25 @@ def set_test_proxy(config: Config, use_proxy: bool) -> Config:
 
 
 def get_exchange(exchange_name, exchange_conf):
-    exchange_conf = set_test_proxy(
-        exchange_conf, EXCHANGES[exchange_name].get("use_ci_proxy", False)
-    )
+    exchange_params = EXCHANGES[exchange_name]
+    exchange_conf = set_test_proxy(exchange_conf, exchange_params.get("use_ci_proxy", False))
     exchange_conf["exchange"]["name"] = exchange_name
-    exchange_conf["stake_currency"] = EXCHANGES[exchange_name]["stake_currency"]
+    exchange_conf["stake_currency"] = exchange_params["stake_currency"]
     exchange = ExchangeResolver.load_exchange(
         exchange_conf, validate=True, load_leverage_tiers=True
     )
 
-    return exchange, exchange_name
+    return exchange, exchange_name, exchange_params
 
 
 def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
-    if EXCHANGES[exchange_name].get("futures") is not True:
+    exchange_params = EXCHANGES[exchange_name]
+
+    if exchange_params.get("futures") is not True:
         pytest.skip(f"Exchange {exchange_name} does not support futures.")
     else:
         exchange_conf = deepcopy(exchange_conf)
-        exchange_conf = set_test_proxy(
-            exchange_conf, EXCHANGES[exchange_name].get("use_ci_proxy", False)
-        )
+        exchange_conf = set_test_proxy(exchange_conf, exchange_params.get("use_ci_proxy", False))
         exchange_conf["trading_mode"] = "futures"
         exchange_conf["margin_mode"] = "isolated"
 
@@ -596,15 +619,17 @@ def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
 @pytest.fixture(params=EXCHANGES, scope="class")
 def exchange(request, exchange_conf, class_mocker):
     class_mocker.patch(f"{EXMS}.ft_additional_exchange_init")
-    exchange, name = get_exchange(request.param, exchange_conf)
-    yield exchange, name
+    exchange, name, exchange_params = get_exchange(request.param, exchange_conf)
+    yield exchange, name, exchange_params
     exchange.close()
 
 
-@pytest.fixture(params=EXCHANGES, scope="class")
+@pytest.fixture(params=EXCHANGES_FUTURES, scope="class")
 def exchange_futures(request, exchange_conf, class_mocker):
-    exchange, name = get_futures_exchange(request.param, exchange_conf, class_mocker)
-    yield exchange, name
+    exchange, name, exchange_params = get_futures_exchange(
+        request.param, exchange_conf, class_mocker
+    )
+    yield exchange, name, exchange_params
     exchange.close()
 
 
@@ -621,10 +646,10 @@ def exchange_ws(request, exchange_conf, exchange_mode, class_mocker):
     if exchange_param.get("skip_ws_tests"):
         pytest.skip(f"{request.param} does not support websocket tests.")
     if exchange_mode == "spot":
-        exchange, name = get_exchange(request.param, exchange_conf)
+        exchange, name, _ = get_exchange(request.param, exchange_conf)
         pair = exchange_param["pair"]
     elif exchange_param.get("futures"):
-        exchange, name = get_futures_exchange(
+        exchange, name, _ = get_futures_exchange(
             request.param, exchange_conf, class_mocker=class_mocker
         )
         pair = exchange_param["futures_pair"]

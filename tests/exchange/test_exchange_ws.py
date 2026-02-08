@@ -85,7 +85,7 @@ async def test_exchangews_ohlcv(mocker, time_machine, caplog):
         except TimeoutError:
             return False
 
-    ccxt_object.un_watch_ohlcv_for_symbols = AsyncMock(side_effect=NotSupported)
+    ccxt_object.un_watch_ohlcv_for_symbols = AsyncMock(side_effect=[NotSupported, ValueError])
     ccxt_object.watch_ohlcv = AsyncMock(side_effect=controlled_sleeper)
     ccxt_object.close = AsyncMock()
     time_machine.move_to("2024-11-01 01:00:02 +00:00")
@@ -138,7 +138,7 @@ async def test_exchangews_ohlcv(mocker, time_machine, caplog):
         }
 
         # Cleanup happened.
-        ccxt_object.un_watch_ohlcv_for_symbols = AsyncMock(side_effect=ValueError)
+        # Triggers 2nd call to un_watch_ohlcv_for_symbols which raises ValueError
         exchange_ws.schedule_ohlcv("ETH/BTC", "1m", CandleType.SPOT)
 
         # Verify final state

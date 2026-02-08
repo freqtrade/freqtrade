@@ -1869,7 +1869,9 @@ class IStrategy(ABC, HyperStrategyMixin):
                 if isinstance(annotation, dict):
                     # Convert to AnnotationType
                     try:
-                        AnnotationTypeTA.validate_python(annotation)
+                        # "forbid" extra fields to catch user errors
+                        # Can be questioned if this creates many problems
+                        AnnotationTypeTA.validate_python(annotation, extra="forbid")
                         annotations_new.append(annotation)
                     except ValidationError as e:
                         logger.error(f"Invalid annotation data: {annotation}. Error: {e}")

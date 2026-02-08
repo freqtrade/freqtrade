@@ -13,7 +13,7 @@ from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection
-from freqtrade.exceptions import OperationalException, StrategyError
+from freqtrade.exceptions import DependencyException, OperationalException, StrategyError
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.hyper import detect_all_parameters
@@ -956,20 +956,20 @@ def test_auto_hyperopt_interface(default_conf):
     strategy.__class__.exit22_rsi = IntParameter([0, 10], default=5)
 
     with pytest.raises(
-        OperationalException, match=r"Cannot determine parameter space for exit22_rsi\."
+        DependencyException, match=r"Cannot determine parameter space for exit22_rsi\."
     ):
         detect_all_parameters(strategy.__class__)
 
     # Invalid parameter space
     strategy.__class__.exit22_rsi = IntParameter([0, 10], default=5, space="all")
     with pytest.raises(
-        OperationalException, match=r"'all' is not a valid space\. Parameter: exit22_rsi\."
+        DependencyException, match=r"'all' is not a valid space\. Parameter: exit22_rsi\."
     ):
         detect_all_parameters(strategy.__class__)
 
     strategy.__class__.exit22_rsi = IntParameter([0, 10], default=5, space="hello:world:22")
     with pytest.raises(
-        OperationalException,
+        DependencyException,
         match=r"'hello:world:22' is not a valid space\. Parameter: exit22_rsi\.",
     ):
         detect_all_parameters(strategy.__class__)

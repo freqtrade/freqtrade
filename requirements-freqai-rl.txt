@@ -2,7 +2,7 @@
 -r requirements-freqai.txt
 
 # Required for freqai-rl
-torch==2.9.1; sys_platform != 'darwin' or platform_machine != 'x86_64'
+torch==2.10.0; sys_platform != 'darwin' or platform_machine != 'x86_64'
 gymnasium==1.2.3
 # SB3 >=2.5.0 depends on torch 2.3.0 - which implies it dropped support x86 macos
 stable_baselines3==2.7.1; sys_platform != 'darwin' or platform_machine != 'x86_64'

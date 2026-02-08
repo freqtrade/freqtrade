@@ -2,7 +2,7 @@ name: Binance Leverage tiers update
 
 on:
   schedule:
-    - cron: "0 3 * * 4"
+    - cron: "25 3 * * 4"
   # on demand
   workflow_dispatch:
 
@@ -24,12 +24,19 @@ jobs:
       with:
         persist-credentials: false
 
-    - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
-        python-version: "3.12"
+        python-version: "3.14"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
+      with:
+        activate-environment: true
+        enable-cache: false
+        python-version: "3.14"
 
     - name: Install ccxt
-      run: pip install ccxt
+      run: uv pip install ccxt orjson
 
     - name: Run leverage tier update
       env:
@@ -39,7 +46,7 @@ jobs:
       run: python build_helpers/binance_update_lev_tiers.py
 
 
-    - uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725 # v8.0.0
+    - uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
       with:
         token: ${{ secrets.REPO_SCOPED_TOKEN }}
         add-paths: freqtrade/exchange/binance_leverage_tiers.json

@@ -34,6 +34,7 @@ class PointAnnotationType(_BaseAnnotationType, total=False):
     y: float
     size: int
     shape: Literal["circle", "rect", "roundRect", "triangle", "pin", "arrow", "none"]
+    rotate: int
 
 
 AnnotationType = AreaAnnotationType | LineAnnotationType | PointAnnotationType

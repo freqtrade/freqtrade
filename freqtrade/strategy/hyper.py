@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from freqtrade.constants import Config
-from freqtrade.exceptions import OperationalException
+from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.strategy.parameters import BaseParameter
@@ -179,10 +179,10 @@ def detect_all_parameters(
                     attr.space = space
                     break
         if attr.space is None:
-            raise OperationalException(f"Cannot determine parameter space for {attr_name}.")
+            raise DependencyException(f"Cannot determine parameter space for {attr_name}.")
 
         if attr.space in ("all", "default") or attr.space.isidentifier() is False:
-            raise OperationalException(
+            raise DependencyException(
                 f"'{attr.space}' is not a valid space. Parameter: {attr_name}."
             )
         attr.name = attr_name

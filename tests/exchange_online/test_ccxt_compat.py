@@ -13,21 +13,21 @@ from freqtrade.enums import CandleType
 from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.exchange.exchange import Exchange, timeframe_to_msecs
 from freqtrade.util import dt_floor_day, dt_now, dt_ts
-from tests.exchange_online.conftest import EXCHANGE_FIXTURE_TYPE, EXCHANGES
+from tests.exchange_online.conftest import EXCHANGE_FIXTURE_TYPE
 
 
 @pytest.mark.longrun
 class TestCCXTExchange:
     def test_load_markets(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
-        pair = EXCHANGES[exchangename]["pair"]
+        exch, _, exchange_params = exchange
+        pair = exchange_params["pair"]
         markets = exch.markets
         assert pair in markets
         assert isinstance(markets[pair], dict)
         assert exch.market_is_spot(markets[pair])
 
     def test_has_validations(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
+        exch, exchangename, _ = exchange
 
         exch.validate_ordertypes(
             {
@@ -49,26 +49,28 @@ class TestCCXTExchange:
         )
 
     def test_ohlcv_limit(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
-        expected_count = EXCHANGES[exchangename].get("candle_count")
+        exch, _, exchange_params = exchange
+        expected_count = exchange_params.get("candle_count")
         if not expected_count:
             pytest.skip("No expected candle count for exchange")
 
         assert exch.ohlcv_candle_limit("1m", CandleType.SPOT) == expected_count
 
     def test_ohlcv_limit_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange_futures
-        expected_count = EXCHANGES[exchangename].get("candle_count")
+        exch, _, exchange_params = exchange_futures
+        expected_count = exchange_params.get(
+            "candle_count_futures", exchange_params.get("candle_count")
+        )
         if not expected_count:
             pytest.skip("No expected candle count for exchange")
 
-        assert exch.ohlcv_candle_limit("1m", CandleType.SPOT) == expected_count
+        assert exch.ohlcv_candle_limit("1m", CandleType.FUTURES) == expected_count
 
     def test_load_markets_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        exchange, exchangename = exchange_futures
-        pair = EXCHANGES[exchangename]["pair"]
-        pair1 = EXCHANGES[exchangename].get("futures_pair", pair)
-        alternative_pairs = EXCHANGES[exchangename].get("futures_alt_pairs", [])
+        exchange, _, exchange_params = exchange_futures
+        pair = exchange_params["pair"]
+        pair1 = exchange_params.get("futures_pair", pair)
+        alternative_pairs = exchange_params.get("futures_alt_pairs", [])
         markets = exchange.markets
         for pair in [pair1] + alternative_pairs:
             assert pair in markets, f"Futures pair {pair} not found in markets"
@@ -77,8 +79,8 @@ class TestCCXTExchange:
             assert exchange.market_is_future(markets[pair])
 
     def test_ccxt_order_parse(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchange_name = exchange
-        if orders := EXCHANGES[exchange_name].get("sample_order"):
+        exch, exchangename, exchange_params = exchange
+        if orders := exchange_params.get("sample_order"):
             for order in orders:
                 pair = order["pair"]
                 exchange_response: dict = order["exchange_response"]
@@ -106,11 +108,11 @@ class TestCCXTExchange:
                 assert po["amount"] == expected["amount"]
                 assert isinstance(po["status"], str)
         else:
-            pytest.skip(f"No sample order available for exchange {exchange_name}")
+            pytest.skip(f"No sample order available for exchange {exchangename}")
 
     def test_ccxt_my_trades_parse(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchange_name = exchange
-        if trades := EXCHANGES[exchange_name].get("sample_my_trades"):
+        exch, exchangename, exchange_params = exchange
+        if trades := exchange_params.get("sample_my_trades"):
             pair = "SOL/USDT"
             for trade in trades:
                 po = exch._api.parse_trade(trade)
@@ -130,11 +132,11 @@ class TestCCXTExchange:
                         assert isinstance(fee["currency"], str)
 
         else:
-            pytest.skip(f"No sample Trades available for exchange {exchange_name}")
+            pytest.skip(f"No sample Trades available for exchange {exchangename}")
 
     def test_ccxt_balances_parse(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchange_name = exchange
-        if balance_response := EXCHANGES[exchange_name].get("sample_balances"):
+        exch, exchangename, exchange_params = exchange
+        if balance_response := exchange_params.get("sample_balances"):
             balances = exch._api.parse_balance(balance_response["exchange_response"])
             expected = balance_response["expected"]
             for currency, balance in expected.items():
@@ -143,31 +145,31 @@ class TestCCXTExchange:
                 assert balance == balances[currency]
             pass
         else:
-            pytest.skip(f"No sample Balances available for exchange {exchange_name}")
+            pytest.skip(f"No sample Balances available for exchange {exchangename}")
 
     def test_ccxt_fetch_tickers(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
-        pair = EXCHANGES[exchangename]["pair"]
+        exch, _, exchange_params = exchange
+        pair = exchange_params["pair"]
 
         tickers = exch.get_tickers()
         assert pair in tickers
         assert "ask" in tickers[pair]
         assert "bid" in tickers[pair]
-        if EXCHANGES[exchangename].get("tickers_have_bid_ask"):
+        if exchange_params.get("tickers_have_bid_ask"):
             assert tickers[pair]["bid"] is not None
             assert tickers[pair]["ask"] is not None
         assert "quoteVolume" in tickers[pair]
-        if EXCHANGES[exchangename].get("hasQuoteVolume"):
+        if exchange_params.get("hasQuoteVolume"):
             assert tickers[pair]["quoteVolume"] is not None
 
     def test_ccxt_fetch_tickers_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange_futures
+        exch, exchangename, exchange_params = exchange_futures
         if not exch or exchangename in ("gate"):
             # exchange_futures only returns values for supported exchanges
             return
 
-        pair = EXCHANGES[exchangename]["pair"]
-        pair = EXCHANGES[exchangename].get("futures_pair", pair)
+        pair = exchange_params["pair"]
+        pair = exchange_params.get("futures_pair", pair)
 
         tickers = exch.get_tickers()
         assert pair in tickers
@@ -176,28 +178,28 @@ class TestCCXTExchange:
         assert "bid" in tickers[pair]
         assert tickers[pair]["bid"] is not None
         assert "quoteVolume" in tickers[pair]
-        if EXCHANGES[exchangename].get("hasQuoteVolumeFutures"):
+        if exchange_params.get("hasQuoteVolumeFutures"):
             assert tickers[pair]["quoteVolume"] is not None
 
     def test_ccxt_fetch_ticker(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
-        pair = EXCHANGES[exchangename]["pair"]
+        exch, _, exchange_params = exchange
+        pair = exchange_params["pair"]
 
         ticker = exch.fetch_ticker(pair)
         assert "ask" in ticker
         assert "bid" in ticker
-        if EXCHANGES[exchangename].get("tickers_have_bid_ask"):
+        if exchange_params.get("tickers_have_bid_ask"):
             assert ticker["ask"] is not None
             assert ticker["bid"] is not None
         assert "quoteVolume" in ticker
-        if EXCHANGES[exchangename].get("hasQuoteVolume"):
+        if exchange_params.get("hasQuoteVolume"):
             assert ticker["quoteVolume"] is not None
 
     def test_ccxt_fetch_l2_orderbook(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
-        pair = EXCHANGES[exchangename]["pair"]
+        exch, exchangename, exchange_params = exchange
+        pair = exchange_params["pair"]
         l2 = exch.fetch_l2_order_book(pair)
-        orderbook_max_entries = EXCHANGES[exchangename].get("orderbook_max_entries")
+        orderbook_max_entries = exchange_params.get("orderbook_max_entries")
         assert "asks" in l2
         assert "bids" in l2
         assert len(l2["asks"]) >= 1
@@ -235,9 +237,9 @@ class TestCCXTExchange:
                     assert len(l2["asks"]) == next_limit
 
     def test_ccxt_fetch_ohlcv(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
-        pair = EXCHANGES[exchangename]["pair"]
-        timeframe = EXCHANGES[exchangename]["timeframe"]
+        exch, _, exchange_params = exchange
+        pair = exchange_params["pair"]
+        timeframe = exchange_params["timeframe"]
 
         pair_tf = (pair, timeframe, CandleType.SPOT)
 
@@ -257,8 +259,8 @@ class TestCCXTExchange:
         """
         Test that pair data starts at the provided startdate
         """
-        exch, exchangename = exchange
-        pair = EXCHANGES[exchangename]["pair"]
+        exch, _, exchange_params = exchange
+        pair = exchange_params["pair"]
         timeframe = "1d"
 
         pair_tf = (pair, timeframe, CandleType.SPOT)
@@ -308,12 +310,12 @@ class TestCCXTExchange:
             assert candles[0][0] == since_ms or (since_ms + timeframe_ms)
 
     def test_ccxt__async_get_candle_history(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exc, exchangename = exchange
+        exc, _, exchange_params = exchange
 
         if not exc._ft_has["ohlcv_has_history"]:
             pytest.skip("Exchange does not support candle history")
-        pair = EXCHANGES[exchangename]["pair"]
-        timeframe = EXCHANGES[exchangename]["timeframe"]
+        pair = exchange_params["pair"]
+        timeframe = exchange_params["timeframe"]
         self._ccxt__async_get_candle_history(exc, pair, timeframe, CandleType.SPOT)
 
     @pytest.mark.parametrize(
@@ -329,9 +331,9 @@ class TestCCXTExchange:
     def test_ccxt__async_get_candle_history_futures(
         self, exchange_futures: EXCHANGE_FIXTURE_TYPE, candle_type: CandleType
     ):
-        exchange, exchangename = exchange_futures
-        pair = EXCHANGES[exchangename].get("futures_pair", EXCHANGES[exchangename]["pair"])
-        timeframe = EXCHANGES[exchangename]["timeframe"]
+        exchange, _, exchange_params = exchange_futures
+        pair = exchange_params.get("futures_pair", exchange_params["pair"])
+        timeframe = exchange_params["timeframe"]
         if candle_type == CandleType.FUNDING_RATE:
             timeframe = exchange._ft_has.get(
                 "funding_fee_timeframe", exchange._ft_has["mark_ohlcv_timeframe"]
@@ -348,9 +350,9 @@ class TestCCXTExchange:
         )
 
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        exchange, exchangename = exchange_futures
+        exchange, _, exchange_params = exchange_futures
 
-        pair = EXCHANGES[exchangename].get("futures_pair", EXCHANGES[exchangename]["pair"])
+        pair = exchange_params.get("futures_pair", exchange_params["pair"])
         since = int((datetime.now(UTC) - timedelta(days=5)).timestamp() * 1000)
         timeframe_ff = exchange._ft_has.get(
             "funding_fee_timeframe", exchange._ft_has["mark_ohlcv_timeframe"]
@@ -397,8 +399,8 @@ class TestCCXTExchange:
         )
 
     def test_ccxt_fetch_mark_price_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        exchange, exchangename = exchange_futures
-        pair = EXCHANGES[exchangename].get("futures_pair", EXCHANGES[exchangename]["pair"])
+        exchange, _, exchange_params = exchange_futures
+        pair = exchange_params.get("futures_pair", exchange_params["pair"])
         since = int((datetime.now(UTC) - timedelta(days=5)).timestamp() * 1000)
         candle_type = CandleType.from_string(
             exchange.get_option("mark_ohlcv_price", default=CandleType.MARK)
@@ -422,8 +424,8 @@ class TestCCXTExchange:
         assert mark_candles[mark_candles["date"] == this_hour].iloc[0]["open"] != 0.0
 
     def test_ccxt__calculate_funding_fees(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        exchange, exchangename = exchange_futures
-        pair = EXCHANGES[exchangename].get("futures_pair", EXCHANGES[exchangename]["pair"])
+        exchange, _, exchange_params = exchange_futures
+        pair = exchange_params.get("futures_pair", exchange_params["pair"])
         since = datetime.now(UTC) - timedelta(days=5)
 
         funding_fee = exchange._fetch_and_calculate_funding_fees(
@@ -434,10 +436,10 @@ class TestCCXTExchange:
         assert funding_fee != 0
 
     def test_ccxt__async_get_trade_history(self, exchange: EXCHANGE_FIXTURE_TYPE, mocker):
-        exch, exchangename = exchange
-        if not (lookback := EXCHANGES[exchangename].get("trades_lookback_hours")):
+        exch, exchangename, exchange_params = exchange
+        if not (lookback := exchange_params.get("trades_lookback_hours")):
             pytest.skip("test_fetch_trades not enabled for this exchange")
-        pair = EXCHANGES[exchangename]["pair"]
+        pair = exchange_params["pair"]
         since = int((datetime.now(UTC) - timedelta(hours=lookback)).timestamp() * 1000)
         nvspy = mocker.spy(exch, "_get_trade_pagination_next_value")
         res = exch.loop.run_until_complete(exch._async_get_trade_history(pair, since, None, None))
@@ -464,50 +466,46 @@ class TestCCXTExchange:
         assert 0 < exch.get_fee(pair, "market", "sell") < threshold
 
     def test_ccxt_get_fee_spot(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
-        pair = EXCHANGES[exchangename]["pair"]
+        exch, _, exchange_params = exchange
+        pair = exchange_params["pair"]
         self._ccxt_get_fee(exch, pair)
 
     def test_ccxt_get_fee_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange_futures
-        pair = EXCHANGES[exchangename].get("futures_pair", EXCHANGES[exchangename]["pair"])
+        exch, _, exchange_params = exchange_futures
+        pair = exchange_params.get("futures_pair", exchange_params["pair"])
         self._ccxt_get_fee(exch, pair)
 
     def test_ccxt_get_max_leverage_spot(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        spot, spot_name = exchange
+        spot, _, exchange_params = exchange
         if spot:
-            leverage_in_market_spot = EXCHANGES[spot_name].get("leverage_in_spot_market")
+            leverage_in_market_spot = exchange_params.get("leverage_in_spot_market")
             if leverage_in_market_spot:
-                spot_pair = EXCHANGES[spot_name].get("pair", EXCHANGES[spot_name]["pair"])
+                spot_pair = exchange_params.get("pair", exchange_params["pair"])
                 spot_leverage = spot.get_max_leverage(spot_pair, 20)
                 assert isinstance(spot_leverage, float) or isinstance(spot_leverage, int)
                 assert spot_leverage >= 1.0
 
     def test_ccxt_get_max_leverage_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        futures, futures_name = exchange_futures
-        leverage_tiers_public = EXCHANGES[futures_name].get("leverage_tiers_public")
+        futures, _, exchange_params = exchange_futures
+        leverage_tiers_public = exchange_params.get("leverage_tiers_public")
         if leverage_tiers_public:
-            futures_pair = EXCHANGES[futures_name].get(
-                "futures_pair", EXCHANGES[futures_name]["pair"]
-            )
+            futures_pair = exchange_params.get("futures_pair", exchange_params["pair"])
             futures_leverage = futures.get_max_leverage(futures_pair, 20)
             assert isinstance(futures_leverage, float) or isinstance(futures_leverage, int)
             assert futures_leverage >= 1.0
 
     def test_ccxt_get_contract_size(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        futures, futures_name = exchange_futures
-        futures_pair = EXCHANGES[futures_name].get("futures_pair", EXCHANGES[futures_name]["pair"])
+        futures, _, exchange_params = exchange_futures
+        futures_pair = exchange_params.get("futures_pair", exchange_params["pair"])
         contract_size = futures.get_contract_size(futures_pair)
         assert isinstance(contract_size, float) or isinstance(contract_size, int)
         assert contract_size >= 0.0
 
     def test_ccxt_load_leverage_tiers(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        futures, futures_name = exchange_futures
-        if EXCHANGES[futures_name].get("leverage_tiers_public"):
+        futures, _, exchange_params = exchange_futures
+        if exchange_params.get("leverage_tiers_public"):
             leverage_tiers = futures.load_leverage_tiers()
-            futures_pair = EXCHANGES[futures_name].get(
-                "futures_pair", EXCHANGES[futures_name]["pair"]
-            )
+            futures_pair = exchange_params.get("futures_pair", exchange_params["pair"])
             assert isinstance(leverage_tiers, dict)
             assert futures_pair in leverage_tiers
             pair_tiers = leverage_tiers[futures_pair]
@@ -530,11 +528,9 @@ class TestCCXTExchange:
                 oldmaxNotional = tier["maxNotional"]
 
     def test_ccxt_dry_run_liquidation_price(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        futures, futures_name = exchange_futures
-        if EXCHANGES[futures_name].get("leverage_tiers_public"):
-            futures_pair = EXCHANGES[futures_name].get(
-                "futures_pair", EXCHANGES[futures_name]["pair"]
-            )
+        futures, _, exchange_params = exchange_futures
+        if exchange_params.get("leverage_tiers_public"):
+            futures_pair = exchange_params.get("futures_pair", exchange_params["pair"])
 
             liquidation_price = futures.dry_run_liquidation_price(
                 pair=futures_pair,
@@ -563,19 +559,19 @@ class TestCCXTExchange:
             assert liquidation_price >= 0.0
 
     def test_ccxt_get_max_pair_stake_amount(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
-        futures, futures_name = exchange_futures
-        futures_pair = EXCHANGES[futures_name].get("futures_pair", EXCHANGES[futures_name]["pair"])
+        futures, _, exchange_params = exchange_futures
+        futures_pair = exchange_params.get("futures_pair", exchange_params["pair"])
         max_stake_amount = futures.get_max_pair_stake_amount(futures_pair, 40000)
         assert isinstance(max_stake_amount, float)
         assert max_stake_amount >= 0.0
 
     def test_private_method_presence(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
-        for method in EXCHANGES[exchangename].get("private_methods", []):
+        exch, _, exchange_params = exchange
+        for method in exchange_params.get("private_methods", []):
             assert hasattr(exch._api, method)
 
     def test_ccxt_bitget_ohlcv_candle_limit(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exch, exchangename = exchange
+        exch, exchangename, _ = exchange
         if exchangename != "bitget":
             pytest.skip("This test is only for the Bitget exchange")
 

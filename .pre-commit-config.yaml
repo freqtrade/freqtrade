@@ -30,9 +30,9 @@ repos:
           - types-filelock==3.2.7
           - types-requests==2.32.4.20260107
           - types-tabulate==0.9.0.20241207
-          - types-python-dateutil==2.9.0.20251115
-          - scipy-stubs==1.17.0.1
-          - SQLAlchemy==2.0.45
+          - types-python-dateutil==2.9.0.20260124
+          - scipy-stubs==1.17.0.2
+          - SQLAlchemy==2.0.46
         # stages: [push]
 
   - repo: https://github.com/pycqa/isort

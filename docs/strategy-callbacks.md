@@ -1303,7 +1303,8 @@ Currently two types of annotations are supported, `area` and `line`.
     "z_level": 5, // z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.
     "label": "some label",
     "size": 2, // Optional, line width in pixels. Defaults to 10
-    "symbol": "circle", // Optional, can be "circle", "rect", "roundRect", "triangle", "pin", "arrow", "none".
+    "shape": "circle", // Optional, can be "circle", "rect", "roundRect", "triangle", "pin", "arrow", "none".
+    "rotate": 0, // Optional, rotation of the shape/symbol in degrees. Defaults to 0
 
 }
 ```
@@ -1385,7 +1386,7 @@ Entries will be validated, and won't be passed to the UI if they don't correspon
                         }
                     )
                 elif (start_dt.hour % 2) == 0:
-                price = dataframe.loc[dataframe["date"] == start_dt, ["close"]].mean()
+                price = dataframe.loc[dataframe["date"] == start_dt, "close"].mean()
                     annotations.append(
                         {
                             "type": "area",
