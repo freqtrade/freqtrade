@@ -20,6 +20,8 @@ _SENSITIVE_KEYS = [
     "telegram.chat_id",
     "discord.webhook_url",
     "api_server.password",
+    "api_server.jwt_secret_key",
+    "api_server.ws_token",
     "webhook.url",
 ]
 

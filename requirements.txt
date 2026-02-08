@@ -1,5 +1,5 @@
-numpy==2.4.2
-pandas==2.3.3
+numpy==2.4.1
+pandas==3.0.0
 bottleneck==1.6.0
 numexpr==2.14.1
 # Indicator libraries
@@ -7,7 +7,7 @@ ft-pandas-ta==0.3.16
 ta-lib==0.6.8
 technical==1.5.4
 
-ccxt==4.5.35
+ccxt==4.5.36
 cryptography==46.0.3
 aiohttp==3.13.3
 SQLAlchemy==2.0.46
@@ -31,7 +31,7 @@ pyarrow==23.0.0; platform_machine != 'armv7l'
 # Load ticker files 30% faster
 python-rapidjson==1.23
 # Properly format api responses
-orjson==3.11.5
+orjson==3.11.6
 
 # Notify systemd
 sdnotify==0.3.2
@@ -40,9 +40,9 @@ sdnotify==0.3.2
 fastapi==0.128.0
 pydantic==2.12.5
 uvicorn==0.40.0
-pyjwt==2.10.1
+pyjwt==2.11.0
 aiofiles==25.1.0
-psutil==7.2.1
+psutil==7.2.2
 
 # Building config files interactively
 questionary==2.1.1
