@@ -1545,6 +1545,29 @@ class Exchange:
         params.update({self._ft_has["stop_price_param"]: stop_price})
         return params
 
+    def _get_stoploss_params(
+        self,
+        pair: str,
+        side: BuySell,
+        ordertype: str,
+        stop_price_norm: float,
+        order_types: dict,
+    ) -> dict:
+        params = self._get_stop_params(side=side, ordertype=ordertype, stop_price=stop_price_norm)
+        if self.trading_mode == TradingMode.FUTURES:
+            params["reduceOnly"] = True
+            if (
+                "stoploss_price_type" in order_types
+                and "stop_price_type_field" in self._ft_has
+                and "stop_price_type_value_mapping" in self._ft_has
+            ):
+                price_type = self._ft_has["stop_price_type_value_mapping"].get(
+                    order_types.get("stoploss_price_type", PriceType.LAST)
+                )
+                if price_type:
+                    params[str(self._ft_has["stop_price_type_field"])] = price_type
+        return params
+
     @retrier(retries=0)
     def create_stoploss(
         self,
@@ -1596,22 +1619,9 @@ class Exchange:
             return dry_order
 
         try:
-            params = self._get_stop_params(
-                side=side, ordertype=ordertype, stop_price=stop_price_norm
+            params = self._get_stoploss_params(
+                pair, side, ordertype, stop_price_norm, order_types
             )
-            if self.trading_mode == TradingMode.FUTURES:
-                params["reduceOnly"] = True
-                if (
-                    "stoploss_price_type" in order_types
-                    and "stop_price_type_field" in self._ft_has
-                    and "stop_price_type_value_mapping" in self._ft_has
-                ):
-                    price_type = self._ft_has["stop_price_type_value_mapping"].get(
-                        order_types.get("stoploss_price_type", PriceType.LAST)
-                    )
-                    if price_type:
-                        params[str(self._ft_has["stop_price_type_field"])] = price_type
-
             amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
 
             self._lev_prep(pair, leverage, side, accept_fail=True)
