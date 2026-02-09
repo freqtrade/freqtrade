@@ -1,3 +1,4 @@
+
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
@@ -144,59 +145,32 @@ def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tic
     start = datetime(2024, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
     time_machine.move_to(start, tick=False)
 
-    # Start data generation 20 days earlier to ensure we have data for the lookback period
-    data_start = (start - timedelta(days=20)).strftime("%Y-%m-%d")
+    # Generate deterministic data ensuring correct order
+    # TKN: +6 (100 -> 106)
+    # ETH: +5 (100 -> 105)
+    # NEO: +4 (100 -> 104)
+    # BTC: +3 (100 -> 103)
+    # XRP: +2 (100 -> 102)
+
+    def generate_pair_data(start_price, end_price):
+        return pd.DataFrame({
+            "timestamp": [
+                "2024-07-01 00:00:00", "2024-07-01 01:00:00", "2024-07-01 02:00:00",
+                "2024-07-01 03:00:00", "2024-07-01 04:00:00", "2024-07-01 05:00:00"
+            ],
+            "open": [start_price] * 6,
+            "high": [end_price] * 6,
+            "low": [start_price] * 6,
+            "close": [start_price + (end_price - start_price) * i / 5 for i in range(6)],
+            "volume": [1000] * 6,
+        })
+
     mock_ohlcv_data = {
-        ("ETH/USDT", "1d", CandleType.SPOT): pd.DataFrame(
-            ohlcv_to_dataframe(
-                generate_test_data_raw("1d", 100, data_start, random_seed=12),
-                "1d",
-                pair="ETH/USDT",
-                fill_missing=True,
-            )
-        ),
-        ("BTC/USDT", "1d", CandleType.SPOT): pd.DataFrame(
-            ohlcv_to_dataframe(
-                generate_test_data_raw("1d", 100, data_start, random_seed=13),
-                "1d",
-                pair="BTC/USDT",
-                fill_missing=True,
-            )
-        ),
-        ("XRP/USDT", "1d", CandleType.SPOT): pd.DataFrame(
-            ohlcv_to_dataframe(
-                generate_test_data_raw("1d", 100, data_start, random_seed=14),
-                "1d",
-                pair="XRP/USDT",
-                fill_missing=True,
-            )
-        ),
-        ("NEO/USDT", "1d", CandleType.SPOT): pd.DataFrame(
-            ohlcv_to_dataframe(
-                generate_test_data_raw("1d", 100, data_start, random_seed=15),
-                "1d",
-                pair="NEO/USDT",
-                fill_missing=True,
-            )
-        ),
-        ("TKN/USDT", "1d", CandleType.SPOT): pd.DataFrame(
-            # Make sure always have highest percentage
-            {
-                "timestamp": [
-                    "2024-07-01 00:00:00",
-                    "2024-07-01 01:00:00",
-                    "2024-07-01 02:00:00",
-                    "2024-07-01 03:00:00",
-                    "2024-07-01 04:00:00",
-                    "2024-07-01 05:00:00",
-                ],
-                "open": [100, 102, 101, 103, 104, 105],
-                "high": [102, 103, 102, 104, 105, 106],
-                "low": [99, 101, 100, 102, 103, 104],
-                "close": [101, 102, 103, 104, 105, 106],
-                "volume": [1000, 1500, 2000, 2500, 3000, 3500],
-            }
-        ),
+        ("TKN/USDT", "1d", CandleType.SPOT): generate_pair_data(100, 106),
+        ("ETH/USDT", "1d", CandleType.SPOT): generate_pair_data(100, 105),
+        ("NEO/USDT", "1d", CandleType.SPOT): generate_pair_data(100, 104),
+        ("BTC/USDT", "1d", CandleType.SPOT): generate_pair_data(100, 103),
+        ("XRP/USDT", "1d", CandleType.SPOT): generate_pair_data(100, 102),
     }
 
     mocker.patch(f"{EXMS}.refresh_latest_ohlcv", MagicMock(return_value=mock_ohlcv_data))

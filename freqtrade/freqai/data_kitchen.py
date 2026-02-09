@@ -875,6 +875,8 @@ class FreqaiDataKitchen:
         for label in self.data_dictionary["train_labels"].columns:
             if not pd.api.types.is_numeric_dtype(self.data_dictionary["train_labels"][label]):
                 continue
+            if not pd.api.types.is_numeric_dtype(self.data_dictionary["train_labels"][label]):
+                continue
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
             self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
 

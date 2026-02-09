@@ -307,11 +307,12 @@ def get_backtest_market_change(filename: Path, include_ts: bool = True) -> pd.Da
     else:
         df = pd.read_feather(filename)
     if include_ts:
-        # Check if timezone aware
-        if str(df["date"].dtype).endswith("UTC]"):
-            df.loc[:, "__date_ts"] = df.loc[:, "date"].astype("datetime64[ms, UTC]").astype("int64")
+        if isinstance(df.dtypes["date"], pd.DatetimeTZDtype):
+            df.loc[:, "__date_ts"] = (
+                df.loc[:, "date"].astype("datetime64[ms, UTC]").astype(np.int64)
+            )
         else:
-            df.loc[:, "__date_ts"] = df.loc[:, "date"].astype("datetime64[ms]").astype("int64")
+            df.loc[:, "__date_ts"] = df.loc[:, "date"].astype("datetime64[ms]").astype(np.int64)
     return df
 
 
