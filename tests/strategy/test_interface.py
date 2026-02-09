@@ -5,9 +5,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 import pandas as pd
 from pandas import DataFrame, concat
+import pytest
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH
@@ -161,7 +161,7 @@ def test_get_signal_exception_valueerror(mocker, caplog, ohlcv_history):
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, "date"] = pd.Timestamp(dt_now() - timedelta(minutes=16)).floor("ms")
+    ohlcv_history.loc[1, "date"] = dt_now() - timedelta(minutes=16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history["exit_long"] = 0
@@ -180,7 +180,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
 def test_get_signal_no_sell_column(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, "date"] = pd.Timestamp(dt_now()).floor("ms")
+    ohlcv_history.loc[1, "date"] = dt_now()
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     # Intentionally don't set sell column
@@ -224,7 +224,7 @@ def test_ignore_expired_candle(default_conf):
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
-    ohlcv_history.loc[1, "date"] = pd.Timestamp(dt_now() - timedelta(minutes=16)).floor("ms")
+    ohlcv_history.loc[1, "date"] = dt_now() - timedelta(minutes=16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history["sell"] = 0
