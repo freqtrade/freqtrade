@@ -29,7 +29,7 @@ def verify_auth(api_config, username: str, password: str):
     if not conf_user or not conf_pass:
         return False
 
-    return secrets.compare_digest(username, conf_user) and secrets.compare_digest(
+    return secrets.compare_digest(username, conf_user) & secrets.compare_digest(
         password, conf_pass
     )
 

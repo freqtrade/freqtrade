@@ -138,9 +138,9 @@ class ApiServer(RPCHandler):
                 "SECURITY WARNING - `jwt_secret_key` is not set or default. "
                 "Using a generated random key. Login sessions will not persist across restarts."
             )
-        elif len(api_config.get("jwt_secret_key", "")) < 12:
+        elif len(api_config.get("jwt_secret_key", "")) < 32:
             logger.warning(
-                "SECURITY WARNING - `jwt_secret_key` is too short (less than 12 characters). "
+                "SECURITY WARNING - `jwt_secret_key` is too short (less than 32 characters). "
                 "Please use a stronger key."
             )
 
@@ -282,7 +282,8 @@ class ApiServer(RPCHandler):
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; base-uri 'self'; form-action 'self'; "
                 "style-src 'self' 'unsafe-inline'; "
-                "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'"
+                "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; "
+                "frame-ancestors 'none'"
             )
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["X-Frame-Options"] = "DENY"

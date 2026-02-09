@@ -12,8 +12,10 @@ from pydantic import (
     model_validator,
 )
 
+from freqtrade.configuration.timerange import TimeRange
 from freqtrade.constants import DL_DATA_TIMEFRAMES, PAIR_REGEX, IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
+from freqtrade.exceptions import ConfigurationError
 from freqtrade.ft_types import AnnotationType, ValidExchangesType
 from freqtrade.rpc.api_server.webserver_bgwork import ProgressTask
 
@@ -474,8 +476,8 @@ class ForceEnterPayload(BaseModel):
 class ForceExitPayload(BaseModel):
     tradeid: str | int
     ordertype: OrderTypeValues | None = None
-    amount: float | None = None
-    price: float | None = None
+    amount: float | None = Field(None, gt=0)
+    price: float | None = Field(None, gt=0)
 
 
 BLACKLIST_PAIR_REGEX = r"^[a-zA-Z0-9/_:?*.-]+$"
@@ -609,6 +611,16 @@ class DownloadDataPayload(ExchangeModePayloadMixin, BaseModel):
         for timeframe in v:
             if not re.match(r"^[0-9]+[mhdwMy]$", timeframe):
                 raise ValueError(f"Invalid timeframe: {timeframe}")
+        return v
+
+    @field_validator("timerange")
+    @classmethod
+    def validate_timerange(cls, v):
+        if v and v != "None":
+            try:
+                TimeRange.parse_timerange(v)
+            except ConfigurationError as e:
+                raise ValueError(str(e)) from e
         return v
 
     @model_validator(mode="before")

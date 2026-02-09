@@ -57,7 +57,8 @@ def test_security_headers(botclient_security):
         headers["Content-Security-Policy"]
         == "default-src 'self'; base-uri 'self'; form-action 'self'; "
         "style-src 'self' 'unsafe-inline'; "
-        "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'"
+        "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; "
+        "frame-ancestors 'none'"
     )
     assert headers["X-Content-Type-Options"] == "nosniff"
     assert headers["X-Frame-Options"] == "DENY"
@@ -215,3 +216,38 @@ async def test_rate_limiter():
 
     # Call 1 new IP - OK
     await limiter(request2)
+
+def test_force_exit_payload_negative_values():
+    from pydantic import ValidationError
+    from freqtrade.rpc.api_server.api_schemas import ForceExitPayload
+
+    # This should raise ValidationError because we added gt=0 constraint
+    with pytest.raises(ValidationError) as excinfo:
+        ForceExitPayload(tradeid="1", price=-100, amount=-10)
+
+    assert "Input should be greater than 0" in str(excinfo.value)
+
+
+def test_download_data_payload_invalid_timerange():
+    from pydantic import ValidationError
+    from freqtrade.rpc.api_server.api_schemas import DownloadDataPayload
+
+    # This should raise ValidationError because we added validation
+    with pytest.raises(ValidationError) as excinfo:
+        DownloadDataPayload(pairs=["BTC/USDT"], timerange="invalid-timerange")
+
+    # TimeRange.parse_timerange raises ConfigurationError
+    # Pydantic wraps it. The message should contain "Incorrect syntax for timerange"
+    assert 'Incorrect syntax for timerange "invalid-timerange"' in str(excinfo.value)
+
+
+def test_verify_auth_logic():
+    from freqtrade.rpc.api_server.api_auth import verify_auth
+
+    config = {"username": "user", "password": "password"}
+
+    assert verify_auth(config, "user", "password") is True
+    assert verify_auth(config, "user", "wrong") is False
+    assert verify_auth(config, "wrong", "password") is False
+    assert verify_auth(config, "wrong", "wrong") is False
+    assert verify_auth({}, "user", "password") is False
