@@ -601,7 +601,7 @@ class FreqtradeBot(LoggingMixin):
     # enter positions / open trades logic and methods
     #
 
-    def enter_positions(self) -> int:
+    def enter_positions(self, open_trades: list[Trade] | None = None) -> int:
         """
         Tries to execute entry orders for new trades (positions)
         """
@@ -612,7 +612,9 @@ class FreqtradeBot(LoggingMixin):
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
         # Remove pairs for currently opened trades from the whitelist
-        whitelist = self._filter_whitelist_for_open_trades(whitelist, Trade.get_open_trades())
+        whitelist = self._filter_whitelist_for_open_trades(
+            whitelist, open_trades if open_trades is not None else Trade.get_open_trades()
+        )
 
         if not whitelist:
             self.log_once(

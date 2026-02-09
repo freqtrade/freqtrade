@@ -267,6 +267,8 @@ def amount_to_contract_precision(
     :param contract_size: contract size - taken from exchange.get_contract_size(pair)
     :return: truncated amount
     """
+    if amount == 0:
+        return 0.0
     if amount_precision is not None and precisionMode is not None:
         contracts = amount_to_contracts(amount, contract_size)
         amount_p = amount_to_precision(contracts, amount_precision, precisionMode)

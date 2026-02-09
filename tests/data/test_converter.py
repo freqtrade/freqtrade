@@ -201,7 +201,13 @@ def test_ohlcv_to_dataframe_multi(timeframe):
     # Convert DataFrame to list of lists (simulating ccxt output)
     # Date needs to be converted to int64 ms timestamp
     ohlcv_data = data.copy()
-    ohlcv_data["date"] = ohlcv_data["date"].astype(np.int64) // 1000 // 1000
+    values = ohlcv_data["date"].astype(np.int64)
+    if values[0] > 1e16:
+        ohlcv_data["date"] = values // 1_000_000
+    elif values[0] > 1e13:
+        ohlcv_data["date"] = values // 1_000
+    else:
+        ohlcv_data["date"] = values
     ohlcv_list = ohlcv_data.values.tolist()
 
     assert len(data) == 180
@@ -209,6 +215,11 @@ def test_ohlcv_to_dataframe_multi(timeframe):
     assert len(df) == len(data) - 1
     df1 = ohlcv_to_dataframe(ohlcv_list, timeframe, "UNITTEST/USDT", drop_incomplete=False)
     assert len(df1) == len(data)
+
+    # Align dtypes
+    if data["date"].dtype != df1["date"].dtype:
+        data["date"] = data["date"].astype(df1["date"].dtype)
+
     assert data.equals(df1)
 
     data1 = data.copy()
@@ -220,7 +231,13 @@ def test_ohlcv_to_dataframe_multi(timeframe):
 
     # Prepare data1 for ohlcv_to_dataframe
     ohlcv_data1 = data1.copy()
-    ohlcv_data1["date"] = ohlcv_data1["date"].astype(np.int64) // 1000 // 1000
+    values1 = ohlcv_data1["date"].astype(np.int64)
+    if values1[0] > 1e16:
+        ohlcv_data1["date"] = values1 // 1_000_000
+    elif values1[0] > 1e13:
+        ohlcv_data1["date"] = values1 // 1_000
+    else:
+        ohlcv_data1["date"] = values1
     ohlcv_list1 = ohlcv_data1.values.tolist()
 
     df2 = ohlcv_to_dataframe(ohlcv_list1, timeframe, "UNITTEST/USDT")
@@ -584,6 +601,12 @@ def test_convert_trades_to_ohlcv(testdatadir, tmp_path, caplog):
     # Load new data
     df_1m = load_pair_history(datadir=tmp_path, timeframe="1m", pair=pair)
     df_5m = load_pair_history(datadir=tmp_path, timeframe="5m", pair=pair)
+
+    # Cast to match pandas 3.0 resolution if necessary
+    if dfbak_1m["date"].dtype != df_1m["date"].dtype:
+        dfbak_1m["date"] = dfbak_1m["date"].astype(df_1m["date"].dtype)
+    if dfbak_5m["date"].dtype != df_5m["date"].dtype:
+        dfbak_5m["date"] = dfbak_5m["date"].astype(df_5m["date"].dtype)
 
     assert_frame_equal(dfbak_1m, df_1m, check_exact=True)
     assert_frame_equal(dfbak_5m, df_5m, check_exact=True)

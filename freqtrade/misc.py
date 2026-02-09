@@ -25,7 +25,9 @@ def dump_json_to_file(file_obj: TextIO, data: Any) -> None:
     :param file_obj: File object to write to
     :param data: JSON Data to save
     """
-    rapidjson.dump(data, file_obj, default=str, number_mode=rapidjson.NM_NATIVE)
+    rapidjson.dump(
+        data, file_obj, default=str, number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN
+    )
 
 
 def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:
