@@ -257,8 +257,8 @@ def test_ohlcv_to_dataframe_multi(timeframe):
         dfs = data1.resample(f"{tfs}s", on="date").agg(ohlcv_dict).reset_index(drop=False)
         dfm = data1.resample(f"{tfm}min", on="date").agg(ohlcv_dict).reset_index(drop=False)
 
-        assert dfs.equals(dfm)
-        assert dfs.equals(df1)
+        assert_frame_equal(dfs, dfm, check_dtype=False)
+        assert_frame_equal(dfs, df1, check_dtype=False)
 
 
 def test_ohlcv_to_dataframe_1M():

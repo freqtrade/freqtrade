@@ -200,7 +200,7 @@ def json_to_dataframe(data: str) -> pd.DataFrame:
     """
     try:
         # Optimize parsing using rapidjson directly
-        json_dict = rapidjson.loads(data)
+        json_dict = rapidjson.loads(data, number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)
         dataframe = pd.DataFrame(
             json_dict["data"], columns=json_dict["columns"], index=json_dict["index"]
         )

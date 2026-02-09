@@ -5,8 +5,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
+import pandas as pd
 from pandas import DataFrame, concat
+import pytest
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH
