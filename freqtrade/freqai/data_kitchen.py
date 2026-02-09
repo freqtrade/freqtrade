@@ -433,9 +433,9 @@ class FreqaiDataKitchen:
             append_df[label] = predictions[label]
             if append_df[label].dtype == object:
                 continue
-            if "labels_mean" in self.data:
+            if "labels_mean" in self.data and label in self.data["labels_mean"]:
                 append_df[f"{label}_mean"] = self.data["labels_mean"][label]
-            if "labels_std" in self.data:
+            if "labels_std" in self.data and label in self.data["labels_std"]:
                 append_df[f"{label}_std"] = self.data["labels_std"][label]
 
         for extra_col in self.data["extra_returns_per_train"]:
@@ -875,6 +875,8 @@ class FreqaiDataKitchen:
         for label in self.data_dictionary["train_labels"].columns:
             if self.data_dictionary["train_labels"][label].dtype == object:
                 continue
+            if not pd.api.types.is_numeric_dtype(self.data_dictionary["train_labels"][label]):
+                continue
             f = spy.stats.norm.fit(self.data_dictionary["train_labels"][label])
             self.data["labels_mean"][label], self.data["labels_std"][label] = f[0], f[1]
 
@@ -899,7 +901,7 @@ class FreqaiDataKitchen:
         self.find_labels(dataframe)
 
         for key in self.label_list:
-            if dataframe[key].dtype == object:
+            if not pd.api.types.is_numeric_dtype(dataframe[key]):
                 self.unique_classes[key] = dataframe[key].dropna().unique()
 
         if self.unique_classes:

@@ -313,9 +313,7 @@ def get_backtest_market_change(filename: Path, include_ts: bool = True) -> pd.Da
                 df.loc[:, "date"].astype("datetime64[ms, UTC]").astype(np.int64)
             )
         else:
-            df.loc[:, "__date_ts"] = (
-                df.loc[:, "date"].astype("datetime64[ms]").astype(np.int64)
-            )
+            df.loc[:, "__date_ts"] = df.loc[:, "date"].astype("datetime64[ms]").astype(np.int64)
     return df
 
 

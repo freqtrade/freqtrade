@@ -6,8 +6,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pandas as pd
-from pandas import DataFrame, concat
 import pytest
+from pandas import DataFrame, concat
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH

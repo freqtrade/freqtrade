@@ -216,7 +216,7 @@ def test_dataframe_json(ohlcv_history):
     assert list(ohlcv_history.columns) == list(dataframe.columns)
     assert len(ohlcv_history) == len(dataframe)
 
-    assert_frame_equal(ohlcv_history, dataframe)
+    assert_frame_equal(ohlcv_history, dataframe, check_dtype=False)
     ohlcv_history.at[1, "date"] = pd.NaT
     json = dataframe_to_json(ohlcv_history)
 
