@@ -317,6 +317,12 @@ class Exchange:
         if self._exchange_ws:
             self._exchange_ws.cleanup()
         logger.debug("Exchange object destroyed, closing async loop")
+        # Check if loop is already running (e.g. in tests)
+        # In this case we can't close the loop/session synchronously
+        if self.loop.is_running():
+            logger.debug("Loop is already running, skipping close")
+            return
+
         if (
             getattr(self, "_api_async", None)
             and inspect.iscoroutinefunction(self._api_async.close)
