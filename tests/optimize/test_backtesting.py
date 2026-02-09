@@ -786,10 +786,10 @@ def test_backtest_one(default_conf, mocker, testdatadir) -> None:
             "amount": [0.00957442, 0.0097064],
             "open_date": pd.to_datetime(
                 [dt_utc(2018, 1, 29, 18, 40, 0), dt_utc(2018, 1, 30, 3, 30, 0)], utc=True
-            ),
+            ).astype("datetime64[ms, UTC]"),
             "close_date": pd.to_datetime(
                 [dt_utc(2018, 1, 29, 22, 35, 0), dt_utc(2018, 1, 30, 4, 10, 0)], utc=True
-            ),
+            ).astype("datetime64[ms, UTC]"),
             "open_rate": [0.104445, 0.10302485],
             "close_rate": [0.104969, 0.103541],
             "fee_open": [0.0025, 0.0025],
