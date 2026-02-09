@@ -1619,9 +1619,7 @@ class Exchange:
             return dry_order
 
         try:
-            params = self._get_stoploss_params(
-                pair, side, ordertype, stop_price_norm, order_types
-            )
+            params = self._get_stoploss_params(pair, side, ordertype, stop_price_norm, order_types)
             amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
 
             self._lev_prep(pair, leverage, side, accept_fail=True)
