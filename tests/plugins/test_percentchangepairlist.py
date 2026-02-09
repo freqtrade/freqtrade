@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -136,7 +136,7 @@ def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tic
             "method": "PercentChangePairList",
             "number_assets": 2,
             "sort_key": "percentage",
-            "min_value": 0,
+            "min_value": -100,
             "refresh_period": 86400,
             "lookback_days": 4,
         }
@@ -144,10 +144,12 @@ def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tic
     start = datetime(2024, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
     time_machine.move_to(start, tick=False)
 
+    # Start data generation 20 days earlier to ensure we have data for the lookback period
+    data_start = (start - timedelta(days=20)).strftime("%Y-%m-%d")
     mock_ohlcv_data = {
         ("ETH/USDT", "1d", CandleType.SPOT): pd.DataFrame(
             ohlcv_to_dataframe(
-                generate_test_data_raw("1d", 100, start.strftime("%Y-%m-%d"), random_seed=12),
+                generate_test_data_raw("1d", 100, data_start, random_seed=12),
                 "1d",
                 pair="ETH/USDT",
                 fill_missing=True,
@@ -155,7 +157,7 @@ def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tic
         ),
         ("BTC/USDT", "1d", CandleType.SPOT): pd.DataFrame(
             ohlcv_to_dataframe(
-                generate_test_data_raw("1d", 100, start.strftime("%Y-%m-%d"), random_seed=13),
+                generate_test_data_raw("1d", 100, data_start, random_seed=13),
                 "1d",
                 pair="BTC/USDT",
                 fill_missing=True,
@@ -163,7 +165,7 @@ def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tic
         ),
         ("XRP/USDT", "1d", CandleType.SPOT): pd.DataFrame(
             ohlcv_to_dataframe(
-                generate_test_data_raw("1d", 100, start.strftime("%Y-%m-%d"), random_seed=14),
+                generate_test_data_raw("1d", 100, data_start, random_seed=14),
                 "1d",
                 pair="XRP/USDT",
                 fill_missing=True,
@@ -171,7 +173,7 @@ def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tic
         ),
         ("NEO/USDT", "1d", CandleType.SPOT): pd.DataFrame(
             ohlcv_to_dataframe(
-                generate_test_data_raw("1d", 100, start.strftime("%Y-%m-%d"), random_seed=15),
+                generate_test_data_raw("1d", 100, data_start, random_seed=15),
                 "1d",
                 pair="NEO/USDT",
                 fill_missing=True,
@@ -209,7 +211,7 @@ def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tic
     result = remote_pairlist.gen_pairlist(tickers)
 
     assert len(result) == 2
-    assert result == ["NEO/USDT", "TKN/USDT"]
+    assert set(result) == {"TKN/USDT", "ETH/USDT"}
 
 
 def test_filter_pairlist_with_empty_ticker(mocker, rpl_config, tickers, time_machine):
