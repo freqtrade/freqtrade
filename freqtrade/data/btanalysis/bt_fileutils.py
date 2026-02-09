@@ -10,7 +10,6 @@ from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, Literal
 
-import numpy as np
 import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN

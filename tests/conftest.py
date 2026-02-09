@@ -205,7 +205,16 @@ def generate_test_data(timeframe: str, size: int, start: str = "2020-07-05", ran
 def generate_test_data_raw(timeframe: str, size: int, start: str = "2020-07-05", random_seed=42):
     """Generates data in the ohlcv format used by ccxt"""
     df = generate_test_data(timeframe, size, start, random_seed)
-    df["date"] = df.loc[:, "date"].values.astype("datetime64[ns]").astype(np.int64) // 10**6
+    values = df.loc[:, "date"].astype(np.int64)
+    if values[0] > 1e16:
+        # Nanoseconds (1.6e18)
+        df["date"] = values // 1_000_000
+    elif values[0] > 1e13:
+        # Microseconds (1.6e15)
+        df["date"] = values // 1_000
+    else:
+        # Milliseconds or Seconds
+        df["date"] = values
     return list(list(x) for x in zip(*(df[x].values.tolist() for x in df.columns), strict=False))
 
 

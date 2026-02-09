@@ -873,7 +873,7 @@ class FreqaiDataKitchen:
 
         self.data["labels_mean"], self.data["labels_std"] = {}, {}
         for label in self.data_dictionary["train_labels"].columns:
-            if self.data_dictionary["train_labels"][label].dtype == object:
+            if not pd.api.types.is_numeric_dtype(self.data_dictionary["train_labels"][label]):
                 continue
             if not pd.api.types.is_numeric_dtype(self.data_dictionary["train_labels"][label]):
                 continue

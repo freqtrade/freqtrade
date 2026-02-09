@@ -519,11 +519,11 @@ class Exchange:
         fallback_val = self._ft_has.get("ohlcv_candle_limit", ccxt_val)
         if candle_type == CandleType.FUNDING_RATE:
             fallback_val = self._ft_has.get("funding_fee_candle_limit", fallback_val)
-        return int(
-            self._ft_has.get("ohlcv_candle_limit_per_timeframe", {}).get(
-                timeframe, str(fallback_val)
-            )
-        )
+
+        if limit := self._ft_has.get("ohlcv_candle_limit_per_timeframe", {}).get(timeframe):
+            return int(limit)
+
+        return int(fallback_val)
 
     def get_markets(
         self,
@@ -774,19 +774,19 @@ class Exchange:
         markets = self.markets
         # Optimization: Manual unrolling to avoid creating a tuple and iterating
         pair = f"{curr_1}/{curr_2}"
-        if pair in markets and markets[pair].get("active"):
+        if (market := markets.get(pair)) and market.get("active"):
             yielded = True
             yield pair
         pair = f"{curr_2}/{curr_1}"
-        if pair in markets and markets[pair].get("active"):
+        if (market := markets.get(pair)) and market.get("active"):
             yielded = True
             yield pair
         pair = f"{curr_1}/{curr_2}:{curr_2}"
-        if pair in markets and markets[pair].get("active"):
+        if (market := markets.get(pair)) and market.get("active"):
             yielded = True
             yield pair
         pair = f"{curr_2}/{curr_1}:{curr_1}"
-        if pair in markets and markets[pair].get("active"):
+        if (market := markets.get(pair)) and market.get("active"):
             yielded = True
             yield pair
 
