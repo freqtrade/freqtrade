@@ -87,11 +87,9 @@ def test_sanitize_config_secrets():
             "password": "secret_password",
             "jwt_secret_key": "secret_jwt",
             "ws_token": "secret_ws_token",
-            "listen_ip_address": "127.0.0.1"
+            "listen_ip_address": "127.0.0.1",
         },
-        "webhook": {
-            "url": "https://secret.url"
-        }
+        "webhook": {"url": "https://secret.url"},
     }
 
     sanitized = sanitize_config(config)

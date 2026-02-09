@@ -9,3 +9,7 @@
 ## 2026-06-15 - Contextual Copy Feedback
 **Learning:** Users often look at the text they are copying, not the button they clicked. Flashing the container of the copied text (e.g., green border) provides stronger confirmation than just button text changes.
 **Action:** Enhance copy actions by visually confirming the *source* element changed state, not just the trigger button.
+
+## 2026-06-15 - Lightweight Accessibility
+**Learning:** In dependency-free environments (like standalone HTML), CSS-only tooltips using `attr(aria-label)` provide excellent accessibility feedback without JavaScript overhead or external libraries.
+**Action:** Use `[aria-label]:hover::after` pattern for lightweight, accessible tooltips in static pages to enhance UX without bloat.
