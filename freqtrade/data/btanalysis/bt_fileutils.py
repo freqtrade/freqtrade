@@ -308,7 +308,14 @@ def get_backtest_market_change(filename: Path, include_ts: bool = True) -> pd.Da
     else:
         df = pd.read_feather(filename)
     if include_ts:
-        df.loc[:, "__date_ts"] = df.loc[:, "date"].astype("datetime64[ns]").astype(np.int64) // 10**6
+        if isinstance(df.dtypes["date"], pd.DatetimeTZDtype):
+            df.loc[:, "__date_ts"] = (
+                df.loc[:, "date"].astype("datetime64[ms, UTC]").astype(np.int64)
+            )
+        else:
+            df.loc[:, "__date_ts"] = (
+                df.loc[:, "date"].astype("datetime64[ms]").astype(np.int64)
+            )
     return df
 
 

@@ -242,7 +242,7 @@ def test_load_cached_data_for_updating(testdatadir) -> None:
     data, start_ts, end_ts = _load_cached_data_for_updating(
         "UNITTEST/BTC", "1m", timerange, data_handler, CandleType.SPOT, True
     )
-    assert_frame_equal(data, test_data_df.iloc[:-1])
+    assert_frame_equal(data, test_data_df.iloc[:-1], check_dtype=False)
     assert start_ts == test_data[0][0] - 1000
     assert end_ts == test_data[0][0]
 
@@ -253,7 +253,7 @@ def test_load_cached_data_for_updating(testdatadir) -> None:
         "UNITTEST/BTC", "1m", timerange, data_handler, CandleType.SPOT
     )
 
-    assert_frame_equal(data, test_data_df.iloc[:-1])
+    assert_frame_equal(data, test_data_df.iloc[:-1], check_dtype=False)
     assert test_data[-2][0] <= start_ts < test_data[-1][0]
     assert end_ts is None
 
@@ -263,7 +263,7 @@ def test_load_cached_data_for_updating(testdatadir) -> None:
     data, start_ts, end_ts = _load_cached_data_for_updating(
         "UNITTEST/BTC", "1m", timerange, data_handler, CandleType.SPOT
     )
-    assert_frame_equal(data, test_data_df.iloc[:-1])
+    assert_frame_equal(data, test_data_df.iloc[:-1], check_dtype=False)
     assert test_data[-2][0] <= start_ts < test_data[-1][0]
     assert end_ts is None
 

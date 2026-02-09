@@ -8,6 +8,7 @@ from collections.abc import Generator, Sequence
 from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
+import pandas as pd
 import psutil
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
@@ -1515,7 +1516,14 @@ class RPC:
                 df_cols = [col for col in dataframe_columns if col in cols_set]
                 dataframe = dataframe.loc[:, df_cols]
 
-            dataframe.loc[:, "__date_ts"] = dataframe.loc[:, "date"].astype("datetime64[ms, UTC]").astype(int64)
+            if isinstance(dataframe.dtypes["date"], pd.DatetimeTZDtype):
+                dataframe.loc[:, "__date_ts"] = (
+                    dataframe.loc[:, "date"].astype("datetime64[ms, UTC]").astype(int64)
+                )
+            else:
+                dataframe.loc[:, "__date_ts"] = (
+                    dataframe.loc[:, "date"].astype("datetime64[ms]").astype(int64)
+                )
             # Move signal close to separate column when signal for easy plotting
             for sig_type in signals.keys():
                 if sig_type in dataframe.columns:

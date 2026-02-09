@@ -217,8 +217,10 @@ async def test_rate_limiter():
     # Call 1 new IP - OK
     await limiter(request2)
 
+
 def test_force_exit_payload_negative_values():
     from pydantic import ValidationError
+
     from freqtrade.rpc.api_server.api_schemas import ForceExitPayload
 
     # This should raise ValidationError because we added gt=0 constraint
@@ -230,6 +232,7 @@ def test_force_exit_payload_negative_values():
 
 def test_download_data_payload_invalid_timerange():
     from pydantic import ValidationError
+
     from freqtrade.rpc.api_server.api_schemas import DownloadDataPayload
 
     # This should raise ValidationError because we added validation
