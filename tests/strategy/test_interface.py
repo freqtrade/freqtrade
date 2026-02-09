@@ -5,8 +5,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
+import pandas as pd
 from pandas import DataFrame, concat
+import pytest
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH
@@ -33,7 +34,7 @@ _STRATEGY.dp = DataProvider({}, None, None)
 
 
 def test_returns_latest_signal(ohlcv_history):
-    ohlcv_history.loc[1, "date"] = dt_now()
+    ohlcv_history.loc[1, "date"] = pd.Timestamp(dt_now()).floor("ms")
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history["enter_long"] = 0

@@ -41,7 +41,9 @@ def ohlcv_to_dataframe(
 
     # Floor date to seconds to account for exchange imprecisions
     # Optimization: Integer arithmetic is faster than datetime conversion
-    df["date"] = to_datetime(df["date"] // 1000 * 1000, unit="ms", utc=True)
+    df["date"] = to_datetime(df["date"] // 1000 * 1000, unit="ms", utc=True).astype(
+        "datetime64[ns, UTC]"
+    )
 
     # Ensure other columns are float
     # cols[1:] are ["open", "high", "low", "close", "volume"]

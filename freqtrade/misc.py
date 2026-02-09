@@ -25,7 +25,12 @@ def dump_json_to_file(file_obj: TextIO, data: Any) -> None:
     :param file_obj: File object to write to
     :param data: JSON Data to save
     """
-    rapidjson.dump(data, file_obj, default=str, number_mode=rapidjson.NM_NATIVE)
+    rapidjson.dump(
+        data,
+        file_obj,
+        default=str,
+        number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN,
+    )
 
 
 def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:
@@ -60,7 +65,7 @@ def json_load(datafile: TextIO) -> Any:
     Use this to have a consistent experience,
     set number_mode to "NM_NATIVE" for greatest speed
     """
-    return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
+    return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)
 
 
 def file_load_json(file: Path):
@@ -200,7 +205,7 @@ def json_to_dataframe(data: str) -> pd.DataFrame:
     """
     try:
         # Optimize parsing using rapidjson directly
-        json_dict = rapidjson.loads(data)
+        json_dict = rapidjson.loads(data, number_mode=rapidjson.NM_NATIVE | rapidjson.NM_NAN)
         dataframe = pd.DataFrame(
             json_dict["data"], columns=json_dict["columns"], index=json_dict["index"]
         )

@@ -56,10 +56,10 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
             "amount": [4806.87657523, 970.63960782],
             "open_date": pd.to_datetime(
                 [dt_utc(2018, 1, 29, 18, 40, 0), dt_utc(2018, 1, 30, 3, 30, 0)], utc=True
-            ),
+            ).astype("datetime64[ms, UTC]"),
             "close_date": pd.to_datetime(
                 [dt_utc(2018, 1, 29, 22, 00, 0), dt_utc(2018, 1, 30, 4, 10, 0)], utc=True
-            ),
+            ).astype("datetime64[ms, UTC]"),
             "open_rate": [0.10401764891917063, 0.10302485],
             "close_rate": [0.10453904064307624, 0.10354126528822055],
             "fee_open": [0.0025, 0.0025],
