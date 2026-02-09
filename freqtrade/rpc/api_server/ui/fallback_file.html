@@ -76,6 +76,37 @@
             scroll-behavior: auto !important;
         }
     }
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--accent-secondary);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        color: var(--accent-secondary);
+        margin-bottom: 1rem;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+    }
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--success-color);
+        box-shadow: 0 0 8px var(--success-color);
+        animation: pulse 2s infinite;
+    }
+    .status-dot.inactive {
+        background-color: #ff3333;
+        box-shadow: 0 0 8px #ff3333;
+        animation: none;
+    }
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
     h1 {
       color: var(--accent-secondary);
       font-size: 2.5rem;
@@ -123,7 +154,19 @@
       box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
       border: 1px solid var(--accent-primary);
       transition: transform 0.2s;
+      opacity: 0;
+      animation: fadeUp 0.6s ease-out forwards;
     }
+    .content-section:nth-of-type(1) { animation-delay: 0.1s; }
+    .content-section:nth-of-type(2) { animation-delay: 0.2s; }
+    .content-section:nth-of-type(3) { animation-delay: 0.3s; }
+    .content-section:nth-of-type(4) { animation-delay: 0.4s; }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .content-section:hover {
         transform: translateY(-5px);
         box-shadow: 0 5px 25px rgba(138, 43, 226, 0.5);
@@ -166,17 +209,55 @@
     .docker-hint code {
         font-size: 0.9rem;
         padding: 0.2rem 0.5rem;
+        margin: 0; /* Override default margin */
+        border: none;
     }
+    /* Terminal Style */
+    .terminal-wrapper {
+        display: inline-block;
+        background-color: #000;
+        border-radius: 8px;
+        border: 1px solid #333;
+        margin: 1rem 0;
+        overflow: hidden;
+        min-width: 300px;
+        text-align: left;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .terminal-header {
+        background: #2a2a2a;
+        padding: 5px 10px;
+        display: flex;
+        gap: 6px;
+        border-bottom: 1px solid #333;
+    }
+    .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+    .dot.red { background: #ff5f56; }
+    .dot.yellow { background: #ffbd2e; }
+    .dot.green { background: #27c93f; }
+
     code {
-      background-color: #000;
       color: #0f0;
       padding: 0.8rem 1.2rem;
-      border-radius: 8px;
       font-family: 'Courier New', monospace;
       font-size: 1.3rem;
-      display: inline-block;
-      margin: 1rem 0;
-      border: 1px solid #333;
+      display: block; /* Takes full width of wrapper */
+      cursor: pointer;
+    }
+    code:hover {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    code::selection {
+        background: var(--accent-primary);
+        color: white;
+    }
+    .terminal-wrapper.copied {
+        border-color: var(--success-color);
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
     }
     footer {
       text-align: center;
@@ -341,7 +422,8 @@
     [aria-label] {
         position: relative;
     }
-    button[aria-label]:hover::after {
+    /* Applied to buttons and links with aria-label */
+    [aria-label]:not(.logo-btn):hover::after {
         content: attr(aria-label);
         position: absolute;
         bottom: 110%;
@@ -460,6 +542,11 @@
     <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
 
     <header>
+      <div class="status-badge">
+          <span class="status-dot"></span> Server Online
+          <span style="opacity: 0.3">|</span>
+          <span class="status-dot inactive"></span> UI Not Installed
+      </div>
       <div class="logo-container">
         <button class="logo-btn" onclick="spinLogo(this)" aria-label="Spin the logo">
             <img src="/logo.png" alt="Crypto P Logo" class="logo">
@@ -504,7 +591,12 @@
           <p>The UI is currently hiding. Install it with this command:</p>
 
           <div class="copy-container">
-             <code id="install-cmd">freqtrade install-ui</code>
+             <div class="terminal-wrapper">
+                 <div class="terminal-header">
+                     <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                 </div>
+                 <code id="install-cmd" onclick="selectText(this)" title="Click to select">freqtrade install-ui</code>
+             </div>
              <button class="copy-btn" onclick="copyCommand('install-cmd', this)" aria-label="Copy install command">
                 <span class="icon">📋</span>
                 <span class="text">Copy</span>
@@ -513,7 +605,7 @@
 
           <div class="docker-hint">
             <strong>🐳 Docker User?</strong> Run:
-            <code id="docker-cmd">docker compose run --rm freqtrade install-ui</code>
+            <code id="docker-cmd" onclick="selectText(this)" title="Click to select">docker compose run --rm freqtrade install-ui</code>
             <button class="copy-btn small" onclick="copyCommand('docker-cmd', this)" aria-label="Copy docker command">
                 <span class="icon">📋</span>
              </button>
@@ -551,8 +643,19 @@
             }, 3000);
         }
 
+        function selectText(element) {
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
         function copyCommand(elementId, btn) {
-            const cmdText = document.getElementById(elementId).innerText;
+            const codeElement = document.getElementById(elementId);
+            const cmdText = codeElement.innerText;
+            const terminalWrapper = codeElement.closest('.terminal-wrapper'); // Find parent wrapper if exists
+
             const iconSpan = btn.querySelector('.icon');
             const textSpan = btn.querySelector('.text'); // May be null for icon-only buttons
 
@@ -567,6 +670,8 @@
 
             function onCopySuccess() {
                 btn.classList.add('copied');
+                if (terminalWrapper) terminalWrapper.classList.add('copied');
+
                 if (iconSpan) iconSpan.innerText = '✅';
                 if (textSpan) textSpan.innerText = 'Copied!';
 
@@ -574,6 +679,8 @@
 
                 setTimeout(() => {
                     btn.classList.remove('copied');
+                    if (terminalWrapper) terminalWrapper.classList.remove('copied');
+
                     if (iconSpan) iconSpan.innerText = originalIcon;
                     if (textSpan && btn.dataset.originalText) {
                         textSpan.innerText = btn.dataset.originalText;
