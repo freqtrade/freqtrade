@@ -10,7 +10,6 @@ from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, Literal
 
-import numpy as np
 import pandas as pd
 
 from freqtrade.constants import LAST_BT_RESULT_FN
@@ -308,7 +307,11 @@ def get_backtest_market_change(filename: Path, include_ts: bool = True) -> pd.Da
     else:
         df = pd.read_feather(filename)
     if include_ts:
-        df.loc[:, "__date_ts"] = df.loc[:, "date"].astype("datetime64[ns]").astype(np.int64) // 10**6
+        # Check if timezone aware
+        if str(df["date"].dtype).endswith("UTC]"):
+            df.loc[:, "__date_ts"] = df.loc[:, "date"].astype("datetime64[ms, UTC]").astype("int64")
+        else:
+            df.loc[:, "__date_ts"] = df.loc[:, "date"].astype("datetime64[ms]").astype("int64")
     return df
 
 

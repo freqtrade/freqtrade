@@ -15,6 +15,9 @@ from freqtrade.enums import CandleType, TradingMode
 logger = logging.getLogger(__name__)
 
 
+OHLCV_AGG = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+
+
 def ohlcv_to_dataframe(
     ohlcv: list,
     timeframe: str,
@@ -107,8 +110,6 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
     """
     from freqtrade.exchange import timeframe_to_msecs, timeframe_to_resample_freq
 
-    ohlcv_dict = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
-
     if not dataframe.empty:
         # Optimization: Check if data is contiguous before resampling
         # 1ms = 1_000_000 ns
@@ -123,7 +124,7 @@ def ohlcv_fill_up_missing_data(dataframe: DataFrame, timeframe: str, pair: str) 
 
     resample_interval = timeframe_to_resample_freq(timeframe)
     # Resample to create "NAN" values
-    df = dataframe.resample(resample_interval, on="date").agg(ohlcv_dict)
+    df = dataframe.resample(resample_interval, on="date").agg(OHLCV_AGG)
 
     # Forwardfill close for missing columns
     df["close"] = df["close"].ffill()

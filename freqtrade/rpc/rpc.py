@@ -1515,7 +1515,15 @@ class RPC:
                 df_cols = [col for col in dataframe_columns if col in cols_set]
                 dataframe = dataframe.loc[:, df_cols]
 
-            dataframe.loc[:, "__date_ts"] = dataframe.loc[:, "date"].astype("datetime64[ms, UTC]").astype(int64)
+            if getattr(dataframe["date"].dtype, "tz", None) is not None:
+                dataframe.loc[:, "__date_ts"] = (
+                    dataframe.loc[:, "date"].astype("datetime64[ms, UTC]").astype(int64)
+                )
+            else:
+                dataframe.loc[:, "__date_ts"] = (
+                    dataframe.loc[:, "date"].astype("datetime64[ms]").astype(int64)
+                )
+
             # Move signal close to separate column when signal for easy plotting
             for sig_type in signals.keys():
                 if sig_type in dataframe.columns:
