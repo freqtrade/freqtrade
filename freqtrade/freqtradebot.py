@@ -16,7 +16,6 @@ from schedule import Scheduler
 from freqtrade import constants
 from freqtrade.configuration import remove_exchange_credentials, validate_config_consistency
 from freqtrade.constants import BuySell, Config, EntryExecuteMode, ExchangeConfig, LongShort
-from freqtrade.data.converter import order_book_to_dataframe
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (
     ExitCheckTuple,
@@ -290,11 +289,11 @@ class FreqtradeBot(LoggingMixin):
         # Check if we need to adjust our current positions before attempting to enter new trades.
         if self.strategy.position_adjustment_enable:
             with self._exit_lock:
-                self.process_open_trade_positions()
+                self.process_open_trade_positions(trades)
 
         # Then looking for entry opportunities
-        if self.state == State.RUNNING and self.get_free_open_trades():
-            self.enter_positions()
+        if self.state == State.RUNNING and self.get_free_open_trades(trades):
+            self.enter_positions(trades)
         self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
@@ -347,13 +346,16 @@ class FreqtradeBot(LoggingMixin):
 
         return _whitelist
 
-    def get_free_open_trades(self) -> int:
+    def get_free_open_trades(self, open_trades: list[Trade] | None = None) -> int:
         """
         Return the number of free open trades slots or 0 if
         max number of open trades reached
         """
-        open_trades = Trade.get_open_trade_count()
-        return max(0, self.config["max_open_trades"] - open_trades)
+        if open_trades is None:
+            open_trades_count = Trade.get_open_trade_count()
+        else:
+            open_trades_count = len([t for t in open_trades if t.is_open])
+        return max(0, self.config["max_open_trades"] - open_trades_count)
 
     def update_all_liquidation_prices(self) -> None:
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.CROSS:
@@ -611,10 +613,12 @@ class FreqtradeBot(LoggingMixin):
         if not whitelist:
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
+
+        if open_trades is None:
+            open_trades = Trade.get_open_trades()
+
         # Remove pairs for currently opened trades from the whitelist
-        whitelist = self._filter_whitelist_for_open_trades(
-            whitelist, open_trades if open_trades is not None else Trade.get_open_trades()
-        )
+        whitelist = self._filter_whitelist_for_open_trades(whitelist, open_trades)
 
         if not whitelist:
             self.log_once(
@@ -684,6 +688,9 @@ class FreqtradeBot(LoggingMixin):
 
         # get_free_open_trades is checked before create_trade is called
         # but it is still used here to prevent opening too many trades within one iteration
+        # Note: This is an extra check - the loop in enter_positions also checks this.
+        # However, we must check it here again because we might have opened trades in the
+        # previous iterations of the loop.
         if not self.get_free_open_trades():
             logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
             return False
@@ -731,12 +738,17 @@ class FreqtradeBot(LoggingMixin):
     #
     # Modify positions / DCA logic and methods
     #
-    def process_open_trade_positions(self):
+    def process_open_trade_positions(self, open_trades: list[Trade] | None = None):
         """
         Tries to execute additional buy or sell orders for open trades (positions)
         """
+        if open_trades is None:
+            open_trades = Trade.get_open_trades()
+
         # Walk through each pair and check if it needs changes
-        for trade in Trade.get_open_trades():
+        for trade in open_trades:
+            if not trade.is_open:
+                continue
             # If there is any open orders, wait for them to finish.
             # TODO Remove to allow mul open orders
             if trade.has_open_position or trade.has_open_orders:
@@ -853,9 +865,10 @@ class FreqtradeBot(LoggingMixin):
         conf_bids_to_ask_delta = conf.get("bids_to_ask_delta", 0)
         logger.info(f"Checking depth of market for {pair} ...")
         order_book = self.exchange.fetch_l2_order_book(pair, 1000)
-        order_book_data_frame = order_book_to_dataframe(order_book["bids"], order_book["asks"])
-        order_book_bids = order_book_data_frame["b_size"].sum()
-        order_book_asks = order_book_data_frame["a_size"].sum()
+        # Orderbook is a dict of lists of lists: {'bids': [[price, amount], ...], 'asks': ...}
+        # We only need the sum of amounts (index 1)
+        order_book_bids = sum(b[1] for b in order_book["bids"])
+        order_book_asks = sum(a[1] for a in order_book["asks"])
 
         entry_side = order_book_bids if side == SignalDirection.LONG else order_book_asks
         exit_side = order_book_asks if side == SignalDirection.LONG else order_book_bids
