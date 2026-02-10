@@ -6,7 +6,7 @@ import logging
 
 import numpy as np
 import pandas as pd
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame
 
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, Config
 from freqtrade.enums import CandleType, TradingMode
