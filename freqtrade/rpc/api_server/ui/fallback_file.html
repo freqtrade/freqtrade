@@ -211,6 +211,8 @@
         padding: 0.2rem 0.5rem;
         margin: 0; /* Override default margin */
         border: none;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
     }
     /* Terminal Style */
     .terminal-wrapper {
@@ -221,6 +223,8 @@
         margin: 1rem 0;
         overflow: hidden;
         min-width: 300px;
+        max-width: 100%;
+        overflow-x: auto;
         text-align: left;
         transition: border-color 0.3s, box-shadow 0.3s;
     }
@@ -247,6 +251,7 @@
       font-size: 1.3rem;
       display: block; /* Takes full width of wrapper */
       cursor: pointer;
+      white-space: nowrap;
     }
     code:hover {
         background: rgba(255, 255, 255, 0.05);
@@ -495,6 +500,10 @@
         header, nav, footer, .btn, .skip-link, button, .toast-container {
             display: none !important;
         }
+        .terminal-wrapper {
+            background-color: white !important;
+            border: 1px solid #000;
+        }
         .install-notice, .copy-container, .docker-hint {
             display: block !important;
             border: 2px solid #000 !important;
@@ -540,6 +549,12 @@
 <body>
     <a href="#main-content" class="skip-link">Skip to content</a>
     <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
+    <noscript>
+        <div class="install-notice" style="border-color: #ff3333; background: rgba(255, 51, 51, 0.1);">
+            <h3>⚠️ JavaScript Required</h3>
+            <p>Please enable JavaScript to use the copy buttons and refresh the dashboard.</p>
+        </div>
+    </noscript>
 
     <header>
       <div class="status-badge">
@@ -595,7 +610,7 @@
                  <div class="terminal-header">
                      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
                  </div>
-                 <code id="install-cmd" onclick="selectText(this)" title="Click to select">freqtrade install-ui</code>
+                 <code id="install-cmd" onclick="selectText(this)" onkeydown="handleKeyPress(event, this)" tabindex="0" role="button" title="Click or Enter to select">freqtrade install-ui</code>
              </div>
              <button class="copy-btn" onclick="copyCommand('install-cmd', this)" aria-label="Copy install command">
                 <span class="icon">📋</span>
@@ -605,7 +620,7 @@
 
           <div class="docker-hint">
             <strong>🐳 Docker User?</strong> Run:
-            <code id="docker-cmd" onclick="selectText(this)" title="Click to select">docker compose run --rm freqtrade install-ui</code>
+            <code id="docker-cmd" onclick="selectText(this)" onkeydown="handleKeyPress(event, this)" tabindex="0" role="button" title="Click or Enter to select">docker compose run --rm freqtrade install-ui</code>
             <button class="copy-btn small" onclick="copyCommand('docker-cmd', this)" aria-label="Copy docker command">
                 <span class="icon">📋</span>
              </button>
@@ -626,8 +641,15 @@
     <script>
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
+
+            // Limit to 3 toasts
+            if (container.children.length >= 3) {
+                container.firstChild.remove();
+            }
+
             const toast = document.createElement('div');
             toast.className = `toast-notification ${type}`;
+            if (type !== 'success') toast.setAttribute('role', 'alert');
 
             const icon = type === 'success' ? '✅' : '❌';
             toast.innerHTML = `<span aria-hidden="true">${icon}</span><span>${message}</span>`;
@@ -649,6 +671,13 @@
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
+        }
+
+        function handleKeyPress(event, element) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                selectText(element);
+            }
         }
 
         function copyCommand(elementId, btn) {
