@@ -319,7 +319,7 @@ class Exchange:
         logger.debug("Exchange object destroyed, closing async loop")
         # Check if loop is already running (e.g. in tests)
         # In this case we can't close the loop/session synchronously
-        if self.loop.is_running():
+        if self.loop and self.loop.is_running():
             logger.debug("Loop is already running, skipping close")
             return
 

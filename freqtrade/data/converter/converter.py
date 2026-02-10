@@ -50,7 +50,7 @@ def ohlcv_to_dataframe(
         # We use np.int64 to ensure we don't overflow on 32bit systems/timestamps
         dates = pd.to_datetime(
             ohlcv_np[:, 0].astype(np.int64) // 1000 * 1000, unit="ms", utc=True
-        )
+        ).astype("datetime64[ns, UTC]")
 
         df = DataFrame(
             {
