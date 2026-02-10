@@ -12,18 +12,15 @@ from freqtrade.rpc.api_server.api_schemas import (
     LocksPayload,
     PairCandlesRequest,
 )
-from freqtrade.rpc.api_server.deps import RateLimiter, _limiters
+from freqtrade.rpc.api_server.deps import RateLimiter
 
 
 # --- RateLimiter Tests ---
 @pytest.mark.asyncio
-async def test_rate_limiter_shared_state():
+async def test_rate_limiter_isolated_state():
     """
-    Verify that RateLimiter shares state across instances with same parameters.
+    Verify that RateLimiter uses isolated state across instances with same parameters.
     """
-    # Clear existing limiters
-    _limiters.clear()
-
     limiter1 = RateLimiter(max_calls=2, time_seconds=60)
     limiter2 = RateLimiter(max_calls=2, time_seconds=60)
 
@@ -32,18 +29,22 @@ async def test_rate_limiter_shared_state():
     request.client.host = "127.0.0.1"
     request.url.path = "/test-endpoint"
 
-    # Call 1: Success
+    # Call 1: Success for limiter1
     await limiter1(request)
 
-    # Call 2: Success
-    await limiter2(request)
+    # Call 2: Success for limiter1
+    await limiter1(request)
 
-    # Call 3: Should fail (shared limit reached)
+    # Call 3: Should fail for limiter1 (limit reached)
     with pytest.raises(HTTPException) as excinfo:
         await limiter1(request)
     assert excinfo.value.status_code == 429
 
-    # Ensure limiter2 is also blocked
+    # Limiter2 should NOT be blocked (state is isolated)
+    await limiter2(request)  # 1
+    await limiter2(request)  # 2
+
+    # Call 3 for limiter2 should fail
     with pytest.raises(HTTPException) as excinfo:
         await limiter2(request)
     assert excinfo.value.status_code == 429
@@ -54,8 +55,6 @@ async def test_rate_limiter_distinct_params():
     """
     Verify that RateLimiter keeps state distinct for different parameters.
     """
-    _limiters.clear()
-
     limiter1 = RateLimiter(max_calls=2, time_seconds=60)
     limiter2 = RateLimiter(max_calls=5, time_seconds=60)
 
