@@ -692,24 +692,38 @@
                 showToast('Copy failed. Please copy manually.', 'error');
             }
 
-            if (navigator.clipboard) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(cmdText).then(onCopySuccess).catch(err => {
                     console.error('Failed to copy: ', err);
                     onCopyError();
                 });
             } else {
-                // Fallback
-                const textArea = document.createElement("textarea");
-                textArea.value = cmdText;
-                document.body.appendChild(textArea);
-                textArea.select();
+                // Fallback for older browsers
                 try {
-                    document.execCommand('copy');
-                    onCopySuccess();
+                    const textArea = document.createElement("textarea");
+                    textArea.value = cmdText;
+
+                    // Ensure the textarea is not visible but part of the DOM
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-9999px";
+                    textArea.style.top = "0";
+
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+
+                    if (successful) {
+                        onCopySuccess();
+                    } else {
+                        onCopyError();
+                    }
                 } catch (err) {
+                    console.error('Fallback copy failed: ', err);
                     onCopyError();
                 }
-                document.body.removeChild(textArea);
             }
         }
 
