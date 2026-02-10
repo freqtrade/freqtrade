@@ -6,7 +6,7 @@ import logging
 
 import numpy as np
 import pandas as pd
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame
 
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, Config
 from freqtrade.enums import CandleType, TradingMode
@@ -38,20 +38,30 @@ def ohlcv_to_dataframe(
     :return: DataFrame
     """
     logger.debug(f"Converting candle (OHLCV) data to dataframe for pair {pair}.")
-    cols = DEFAULT_DATAFRAME_COLUMNS
-    # Optimization: Let pandas infer types (int for timestamp), then convert.
-    df = DataFrame(ohlcv, columns=cols)
+    if not ohlcv:
+        df = DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS)
+        df["date"] = df["date"].astype("datetime64[ns, UTC]")
+    else:
+        # Use numpy for faster processing
+        ohlcv_np = np.array(ohlcv)
 
-    # Floor date to seconds to account for exchange imprecisions
-    # Optimization: Integer arithmetic is faster than datetime conversion
-    df["date"] = to_datetime(df["date"] // 1000 * 1000, unit="ms", utc=True).astype(
-        "datetime64[ns, UTC]"
-    )
+        # Floor date to seconds to account for exchange imprecisions
+        # Optimization: Integer arithmetic is faster than datetime conversion
+        # We use np.int64 to ensure we don't overflow on 32bit systems/timestamps
+        dates = pd.to_datetime(
+            ohlcv_np[:, 0].astype(np.int64) // 1000 * 1000, unit="ms", utc=True
+        ).astype("datetime64[ns, UTC]")
 
-    # Ensure other columns are float
-    # cols[1:] are ["open", "high", "low", "close", "volume"]
-    float_cols = {col: "float" for col in cols if col != "date"}
-    df = df.astype(float_cols, copy=False)
+        df = DataFrame(
+            {
+                "date": dates,
+                "open": ohlcv_np[:, 1],
+                "high": ohlcv_np[:, 2],
+                "low": ohlcv_np[:, 3],
+                "close": ohlcv_np[:, 4],
+                "volume": ohlcv_np[:, 5],
+            }
+        )
 
     return clean_ohlcv_dataframe(
         df, timeframe, pair, fill_missing=fill_missing, drop_incomplete=drop_incomplete
@@ -87,7 +97,10 @@ def clean_ohlcv_dataframe(
             }
         )
     else:
-        data.sort_values(by="date", inplace=True)
+        # Optimization: Skip sort if already sorted (monotonic increasing)
+        if not data["date"].is_monotonic_increasing:
+            data.sort_values(by="date", inplace=True)
+
         data.reset_index(drop=True, inplace=True)
         data = data[["date", "open", "high", "low", "close", "volume"]]
 
