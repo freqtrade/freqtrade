@@ -5,7 +5,6 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pandas as pd
 import pytest
 from pandas import DataFrame, concat
 

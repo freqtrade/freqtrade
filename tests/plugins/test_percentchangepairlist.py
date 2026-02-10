@@ -1,18 +1,16 @@
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
-from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.plugins.pairlist.PercentChangePairList import PercentChangePairList
 from freqtrade.plugins.pairlistmanager import PairListManager
 from tests.conftest import (
     EXMS,
-    generate_test_data_raw,
     get_patched_exchange,
     get_patched_freqtradebot,
 )
