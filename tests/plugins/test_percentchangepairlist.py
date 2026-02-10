@@ -151,17 +151,23 @@ def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tic
     # XRP: +2 (100 -> 102)
 
     def generate_pair_data(start_price, end_price):
-        return pd.DataFrame({
-            "timestamp": [
-                "2024-07-01 00:00:00", "2024-07-01 01:00:00", "2024-07-01 02:00:00",
-                "2024-07-01 03:00:00", "2024-07-01 04:00:00", "2024-07-01 05:00:00"
-            ],
-            "open": [start_price] * 6,
-            "high": [end_price] * 6,
-            "low": [start_price] * 6,
-            "close": [start_price + (end_price - start_price) * i / 5 for i in range(6)],
-            "volume": [1000] * 6,
-        })
+        return pd.DataFrame(
+            {
+                "timestamp": [
+                    "2024-07-01 00:00:00",
+                    "2024-07-01 01:00:00",
+                    "2024-07-01 02:00:00",
+                    "2024-07-01 03:00:00",
+                    "2024-07-01 04:00:00",
+                    "2024-07-01 05:00:00",
+                ],
+                "open": [start_price] * 6,
+                "high": [end_price] * 6,
+                "low": [start_price] * 6,
+                "close": [start_price + (end_price - start_price) * i / 5 for i in range(6)],
+                "volume": [1000] * 6,
+            }
+        )
 
     mock_ohlcv_data = {
         ("TKN/USDT", "1d", CandleType.SPOT): generate_pair_data(100, 106),
