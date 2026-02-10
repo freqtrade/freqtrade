@@ -1213,6 +1213,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         # always run if process_only_new_candles is set to false
         if not self.process_only_new_candles or new_candle:
             # Defs that only make change on new candle data.
+            # Copy dataframe since we're modifying it.
+            dataframe = dataframe.copy()
             dataframe = self.analyze_ticker(dataframe, metadata)
 
             self.__last_candle_seen_per_pair[pair] = dataframe.iloc[-1]["date"]
@@ -1236,7 +1238,10 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param pair: Pair to analyze.
         """
         dataframe = self.dp.ohlcv(
-            pair, self.timeframe, candle_type=self.config.get("candle_type_def", CandleType.SPOT)
+            pair,
+            self.timeframe,
+            candle_type=self.config.get("candle_type_def", CandleType.SPOT),
+            copy=False,
         )
         if not isinstance(dataframe, DataFrame) or dataframe.empty:
             logger.warning("Empty candle (OHLCV) data for pair %s", pair)
