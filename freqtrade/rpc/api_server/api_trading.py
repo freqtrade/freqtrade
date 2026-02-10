@@ -159,6 +159,8 @@ def trades(
     ),
     rpc: RPC = Depends(get_rpc),
 ):
+    if offset > 100000:
+        raise HTTPException(status_code=400, detail="Offset too large.")
     return rpc._rpc_trade_history(limit, offset=offset, order_by_id=order_by_id)
 
 

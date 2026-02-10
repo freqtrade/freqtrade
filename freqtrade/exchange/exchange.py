@@ -318,6 +318,7 @@ class Exchange:
             self._exchange_ws.cleanup()
         logger.debug("Exchange object destroyed, closing async loop")
 
+        # Guard against partially initialized objects
         if not hasattr(self, "loop") or self.loop is None:
             return
 

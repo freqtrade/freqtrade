@@ -674,6 +674,16 @@ class PairHistoryRequest(PairCandlesRequest, ExchangeModePayloadMixin):
     freqaimodel: str | None = None
     live_mode: bool = False
 
+    @field_validator("timerange")
+    @classmethod
+    def validate_timerange(cls, v):
+        if v and v != "None":
+            try:
+                TimeRange.parse_timerange(v)
+            except ConfigurationError as e:
+                raise ValueError(str(e)) from e
+        return v
+
 
 class PairHistory(BaseModel):
     strategy: str
