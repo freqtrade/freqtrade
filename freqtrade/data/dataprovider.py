@@ -20,6 +20,7 @@ from freqtrade.constants import (
     PairWithTimeframe,
 )
 from freqtrade.data.history import get_datahandler, load_pair_history
+from freqtrade.data.sentiment import SentimentProvider
 from freqtrade.enums import CandleType, RPCMessageType, RunMode, TradingMode
 from freqtrade.exceptions import ExchangeError, OperationalException
 from freqtrade.exchange import Exchange, timeframe_to_prev_date, timeframe_to_seconds
@@ -68,6 +69,8 @@ class DataProvider:
 
         self.producers = self._config.get("external_message_consumer", {}).get("producers", [])
         self.external_data_enabled = len(self.producers) > 0
+
+        self._sentiment = SentimentProvider(config)
 
     def _set_dataframe_max_index(self, pair: str, limit_index: int):
         """
@@ -646,3 +649,12 @@ class DataProvider:
         if self._exchange is None:
             raise OperationalException(NO_EXCHANGE_EXCEPTION)
         return self._exchange.get_option("funding_fee_timeframe")
+
+    def sentiment(self, pair: str) -> float:
+        """
+        Get sentiment for a pair.
+        Returns a float between -1.0 (very negative) and 1.0 (very positive).
+        :param pair: Pair to get sentiment for.
+        :return: Sentiment score.
+        """
+        return self._sentiment.get_sentiment(pair)
