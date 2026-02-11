@@ -201,10 +201,15 @@
         justify-content: center;
         gap: 10px;
         flex-wrap: wrap;
-        background: rgba(0, 255, 255, 0.05);
+        background: rgba(0, 255, 255, 0.1);
         padding: 1rem;
         border-radius: 8px;
-        border: 1px solid rgba(0, 255, 255, 0.2);
+        border: 1px solid var(--accent-secondary);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .docker-hint:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 255, 255, 0.2);
     }
     .docker-hint code {
         font-size: 0.9rem;
@@ -606,7 +611,7 @@
           <p>The UI is currently hiding. Install it with this command:</p>
 
           <div class="copy-container">
-             <div class="terminal-wrapper">
+             <div class="terminal-wrapper" tabindex="0" aria-label="Terminal command output">
                  <div class="terminal-header">
                      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
                  </div>
@@ -649,7 +654,8 @@
 
             const toast = document.createElement('div');
             toast.className = `toast-notification ${type}`;
-            if (type !== 'success') toast.setAttribute('role', 'alert');
+            // Set appropriate role for screen readers
+            toast.setAttribute('role', type === 'success' ? 'status' : 'alert');
 
             const icon = type === 'success' ? '✅' : '❌';
             toast.innerHTML = `<span aria-hidden="true">${icon}</span><span>${message}</span>`;
@@ -756,13 +762,31 @@
             }
         }
 
-        function refreshPage(btn) {
+        async function refreshPage(btn) {
             btn.disabled = true;
             btn.classList.add('loading');
-            // Small delay to show the spinner before reload (mostly for UX feel)
-            setTimeout(() => {
+
+            try {
+                // Smart Refresh: Check if UI is installed before reloading
+                const response = await fetch('/ui_version');
+                const data = await response.json();
+
+                if (data.version && data.version !== 'not_installed') {
+                    showToast('UI found! Reloading...', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('UI still not installed. Please run the command above.', 'error');
+                    // Reset button state so user can try again
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.classList.remove('loading');
+                    }, 2000);
+                }
+            } catch (e) {
+                console.error("Failed to check UI version:", e);
+                // Fallback to reload if fetch fails (e.g. network error)
                 location.reload();
-            }, 500);
+            }
         }
 
         function spinLogo(btn) {
@@ -771,6 +795,22 @@
             void img.offsetWidth; // Trigger reflow
             img.classList.add('spinning');
         }
+
+        // Auto-check for UI installation (Magic Refresh ✨)
+        // Poll every 5 seconds to see if the UI has appeared
+        let checkInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/ui_version');
+                const data = await response.json();
+                if (data.version && data.version !== 'not_installed') {
+                    clearInterval(checkInterval);
+                    showToast('UI Installed! Redirecting...', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                }
+            } catch (e) {
+                // Ignore errors during polling (e.g. server restarting)
+            }
+        }, 5000);
     </script>
 </body>
 </html>
