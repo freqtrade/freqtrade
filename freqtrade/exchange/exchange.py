@@ -207,7 +207,7 @@ class Exchange:
             self._config.get("trading_mode", self._supported_trading_mode_margin_pairs[0][0])
         )
         self.margin_mode: MarginMode = MarginMode(
-            MarginMode(self._config.get("margin_mode"))
+            self._config["margin_mode"]
             if self._config.get("margin_mode")
             else self._supported_trading_mode_margin_pairs[0][1]
         )

@@ -5,7 +5,7 @@ PairList Handler base class
 import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Literal, TypedDict
 
 from freqtrade.constants import Config
@@ -58,7 +58,7 @@ PairlistParameter = (
 )
 
 
-class SupportsBacktesting(str, Enum):
+class SupportsBacktesting(StrEnum):
     """
     Enum to indicate if a Pairlist Handler supports backtesting.
     """

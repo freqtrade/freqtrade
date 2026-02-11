@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class PriceType(str, Enum):
+class PriceType(StrEnum):
     """Enum to distinguish possible trigger prices for stoplosses"""
 
     LAST = "last"

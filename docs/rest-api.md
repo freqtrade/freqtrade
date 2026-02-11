@@ -17,7 +17,7 @@ Sample configuration:
         "listen_port": 8080,
         "verbosity": "error",
         "enable_openapi": false,
-        "jwt_secret_key": "somethingrandom",
+        "jwt_secret_key": "somethingRandomSomethingRandom123",
         "CORS_origins": [],
         "username": "Freqtrader",
         "password": "SuperSecret1!",
@@ -56,7 +56,7 @@ secrets.token_hex()
 
 !!! Danger "Password selection"
     Please make sure to select a very strong, unique password to protect your bot from unauthorized access.
-    Also change `jwt_secret_key` to something random (no need to remember this, but it'll be used to encrypt your session, so it better be something unique!).
+    Also change `jwt_secret_key` to something random (no need to remember this, but it'll be used to encrypt your session, so it better be something unique!). This value should also be 32 characters or longer to be safe.
 
 ### Configuration with docker
 
@@ -245,7 +245,7 @@ You would then add that token under `ws_token` in your `api_server` config. Like
     "listen_port": 8080,
     "verbosity": "error",
     "enable_openapi": false,
-    "jwt_secret_key": "somethingrandom",
+    "jwt_secret_key": "somethingRandomSomethingRandom123",
     "CORS_origins": [],
     "username": "Freqtrader",
     "password": "SuperSecret1!",

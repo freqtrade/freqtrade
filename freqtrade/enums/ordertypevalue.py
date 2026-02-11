@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class OrderTypeValues(str, Enum):
+class OrderTypeValues(StrEnum):
     limit = "limit"
     market = "market"

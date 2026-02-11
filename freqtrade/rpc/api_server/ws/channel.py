@@ -43,7 +43,7 @@ class WebSocketChannel:
         self._channel_tasks: list[asyncio.Task] = []
 
         # Deque for average send times
-        self._send_times: deque[float] = deque([], maxlen=10)
+        self._send_times: deque[float] = deque(maxlen=10)
         # High limit defaults to 3 to start
         self._send_high_limit = 3
         self._send_throttle = send_throttle

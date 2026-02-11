@@ -16,6 +16,7 @@ from freqtrade.rpc.api_server.deps import get_api_config
 logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
+__DEFAULT_JWT = "somethingRandomSomethingRandom123"
 
 router_login = APIRouter()
 # Rate limiter: 1000 IPs, 60 seconds block

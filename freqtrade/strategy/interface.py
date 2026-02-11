@@ -1333,13 +1333,13 @@ class IStrategy(ABC, HyperStrategyMixin):
             return False, False, None
 
         if is_short:
-            enter = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
-            exit_ = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
+            enter = latest.get(SignalType.ENTER_SHORT, 0) == 1
+            exit_ = latest.get(SignalType.EXIT_SHORT, 0) == 1
 
         else:
-            enter = latest.get(SignalType.ENTER_LONG.value, 0) == 1
-            exit_ = latest.get(SignalType.EXIT_LONG.value, 0) == 1
-        exit_tag = latest.get(SignalTagType.EXIT_TAG.value, None)
+            enter = latest.get(SignalType.ENTER_LONG, 0) == 1
+            exit_ = latest.get(SignalType.EXIT_LONG, 0) == 1
+        exit_tag = latest.get(SignalTagType.EXIT_TAG, None)
         # Tags can be None, which does not resolve to False.
         exit_tag = exit_tag if isinstance(exit_tag, str) and exit_tag != "nan" else None
 
@@ -1366,16 +1366,16 @@ class IStrategy(ABC, HyperStrategyMixin):
         if latest is None or latest_date is None:
             return None, None
 
-        enter_long = latest.get(SignalType.ENTER_LONG.value, 0) == 1
-        exit_long = latest.get(SignalType.EXIT_LONG.value, 0) == 1
-        enter_short = latest.get(SignalType.ENTER_SHORT.value, 0) == 1
-        exit_short = latest.get(SignalType.EXIT_SHORT.value, 0) == 1
+        enter_long = latest.get(SignalType.ENTER_LONG, 0) == 1
+        exit_long = latest.get(SignalType.EXIT_LONG, 0) == 1
+        enter_short = latest.get(SignalType.ENTER_SHORT, 0) == 1
+        exit_short = latest.get(SignalType.EXIT_SHORT, 0) == 1
 
         enter_signal: SignalDirection | None = None
         enter_tag: str | None = None
         if enter_long == 1 and not any([exit_long, enter_short]):
             enter_signal = SignalDirection.LONG
-            enter_tag = latest.get(SignalTagType.ENTER_TAG.value, None)
+            enter_tag = latest.get(SignalTagType.ENTER_TAG, None)
         if (
             self.config.get("trading_mode", TradingMode.SPOT) != TradingMode.SPOT
             and self.can_short
@@ -1383,7 +1383,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             and not any([exit_short, enter_long])
         ):
             enter_signal = SignalDirection.SHORT
-            enter_tag = latest.get(SignalTagType.ENTER_TAG.value, None)
+            enter_tag = latest.get(SignalTagType.ENTER_TAG, None)
 
         enter_tag = enter_tag if isinstance(enter_tag, str) and enter_tag != "nan" else None
 

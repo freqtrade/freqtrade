@@ -223,7 +223,7 @@ def start_list_trades_data(args: dict[str, Any]) -> None:
                     end.strftime(DATETIME_PRINT_FORMAT),
                     str(length),
                 )
-                for pair, start, end, length in sorted(paircombs1, key=lambda x: (x[0]))
+                for pair, start, end, length in sorted(paircombs1, key=lambda x: x[0])
             ],
             ("Pair", "Type", "From", "To", "Trades"),
             summary=title,

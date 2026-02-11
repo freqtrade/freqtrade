@@ -182,5 +182,4 @@ def stoploss_from_absolute(
 
     # negative stoploss values indicate the requested stop price is higher/lower
     # (long/short) than the current price
-    # shorts can yield stoploss values higher than 1, so limit that as well
-    return max(min(stoploss, 1.0), 0.0) * leverage
+    return max(stoploss, 0.0) * leverage

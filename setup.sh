@@ -7,6 +7,9 @@ function echo_block() {
     echo "----------------------------"
 }
 UV=false
+# Supported Python minor versions (order matters for detection)
+SUPPORTED_MINOR_VERS=(13 12 11)
+SUPPORTED_PY_VERSIONS="3.11, 3.12 and 3.13"
 
 function check_installed_pip() {
    ${PYTHON} -m pip > /dev/null
@@ -33,7 +36,7 @@ function check_installed_python() {
         return
     fi
 
-    for v in 13 12 11
+    for v in "${SUPPORTED_MINOR_VERS[@]}"
     do
         PYTHON="python3.${v}"
         which $PYTHON
@@ -45,7 +48,7 @@ function check_installed_python() {
         fi
     done
 
-    echo "No usable python found. Please make sure to have python3.11 or newer installed."
+    echo "No usable python found. Supported versions are: ${SUPPORTED_PY_VERSIONS}. Please install one of these."
     exit 1
 }
 

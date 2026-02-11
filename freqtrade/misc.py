@@ -220,12 +220,12 @@ def remove_entry_exit_signals(dataframe: pd.DataFrame):
 
     :param dataframe: The DataFrame to remove signals from
     """
-    dataframe[SignalType.ENTER_LONG.value] = 0
-    dataframe[SignalType.EXIT_LONG.value] = 0
-    dataframe[SignalType.ENTER_SHORT.value] = 0
-    dataframe[SignalType.EXIT_SHORT.value] = 0
-    dataframe[SignalTagType.ENTER_TAG.value] = None
-    dataframe[SignalTagType.EXIT_TAG.value] = None
+    dataframe[SignalType.ENTER_LONG] = 0
+    dataframe[SignalType.EXIT_LONG] = 0
+    dataframe[SignalType.ENTER_SHORT] = 0
+    dataframe[SignalType.EXIT_SHORT] = 0
+    dataframe[SignalTagType.ENTER_TAG] = None
+    dataframe[SignalTagType.EXIT_TAG] = None
 
     return dataframe
 

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class SignalType(Enum):
+class SignalType(StrEnum):
     """
     Enum to distinguish between enter and exit signals
     """
@@ -11,11 +11,8 @@ class SignalType(Enum):
     ENTER_SHORT = "enter_short"
     EXIT_SHORT = "exit_short"
 
-    def __str__(self):
-        return f"{self.name.lower()}"
 
-
-class SignalTagType(Enum):
+class SignalTagType(StrEnum):
     """
     Enum for signal columns
     """
@@ -23,13 +20,7 @@ class SignalTagType(Enum):
     ENTER_TAG = "enter_tag"
     EXIT_TAG = "exit_tag"
 
-    def __str__(self):
-        return f"{self.name.lower()}"
 
-
-class SignalDirection(str, Enum):
+class SignalDirection(StrEnum):
     LONG = "long"
     SHORT = "short"
-
-    def __str__(self):
-        return f"{self.name.lower()}"

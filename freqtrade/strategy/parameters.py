@@ -70,6 +70,10 @@ class BaseParameter(ABC):
     def __repr__(self):
         return f"{self.__class__.__name__}({self.value})"
 
+    @property
+    def param_type(self) -> str:
+        return self.__class__.__name__
+
     @abstractmethod
     def get_space(self, name: str) -> Union["Integer", "Real", "SKDecimal", "Categorical"]:
         """
@@ -255,8 +259,8 @@ class DecimalParameter(NumericParameter):
         :param load: Load parameter value from {space}_params.
         :param kwargs: Extra parameters to optuna's NumericParameter.
         """
-        self._decimals = decimals
-        default = round(default, self._decimals)
+        self.decimals = decimals
+        default = round(default, self.decimals)
 
         super().__init__(
             low=low, high=high, default=default, space=space, optimize=optimize, load=load, **kwargs
@@ -268,7 +272,7 @@ class DecimalParameter(NumericParameter):
 
     @value.setter
     def value(self, new_value: float):
-        self._value = round(new_value, self._decimals)
+        self._value = round(new_value, self.decimals)
 
     def get_space(self, name: str) -> "SKDecimal":
         """
@@ -276,7 +280,7 @@ class DecimalParameter(NumericParameter):
         :param name: A name of parameter field.
         """
         return SKDecimal(
-            low=self.low, high=self.high, decimals=self._decimals, name=name, **self._space_params
+            low=self.low, high=self.high, decimals=self.decimals, name=name, **self._space_params
         )
 
     @property
@@ -288,9 +292,9 @@ class DecimalParameter(NumericParameter):
         calculating 100ds of indicators.
         """
         if self.can_optimize():
-            low = int(self.low * pow(10, self._decimals))
-            high = int(self.high * pow(10, self._decimals)) + 1
-            return [round(n * pow(0.1, self._decimals), self._decimals) for n in range(low, high)]
+            low = int(self.low * pow(10, self.decimals))
+            high = int(self.high * pow(10, self.decimals)) + 1
+            return [round(n * pow(0.1, self.decimals), self.decimals) for n in range(low, high)]
         else:
             return [self.value]
 

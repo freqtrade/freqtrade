@@ -6652,7 +6652,7 @@ def test_verify_candle_type_support(default_conf, mocker):
 
     with pytest.raises(
         OperationalException,
-        match=r"Exchange .* does not support fetching premiumindex candles\.",
+        match=r"Exchange .* does not support fetching premiumIndex candles\.",
     ):
         exchange.verify_candle_type_support(CandleType.PREMIUMINDEX)
 

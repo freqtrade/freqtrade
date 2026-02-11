@@ -348,8 +348,11 @@ def test_stoploss_from_absolute():
     assert pytest.approx(stoploss_from_absolute(105, 100, True, 5)) == 0.05 * 5
     assert pytest.approx(stoploss_from_absolute(100, 0, True)) == 1
     assert pytest.approx(stoploss_from_absolute(0, 100, True)) == 0
-    assert pytest.approx(stoploss_from_absolute(100, 1, is_short=True)) == 1
-    assert pytest.approx(stoploss_from_absolute(100, 1, is_short=True, leverage=5)) == 5
+    assert pytest.approx(stoploss_from_absolute(100, 99, is_short=True)) == 0.01010101
+    assert pytest.approx(stoploss_from_absolute(100, 90, is_short=True)) == 0.1111111
+    assert pytest.approx(stoploss_from_absolute(100, 1, is_short=True)) == 99.0
+    assert pytest.approx(stoploss_from_absolute(100, 1, is_short=True, leverage=5)) == 495.0
+    assert pytest.approx(stoploss_from_absolute(100, 90, is_short=True, leverage=5)) == 0.55555555
 
 
 @pytest.mark.parametrize("trading_mode", ["futures", "spot"])

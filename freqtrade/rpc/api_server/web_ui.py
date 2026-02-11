@@ -5,10 +5,10 @@ from fastapi.exceptions import HTTPException
 from starlette.responses import FileResponse
 
 
-router_ui = APIRouter()
+router_ui = APIRouter(include_in_schema=False, tags=["Web UI"])
 
 
-@router_ui.get("/favicon.ico", include_in_schema=False)
+@router_ui.get("/favicon.ico")
 async def favicon():
     return FileResponse(str(Path(__file__).parent / "ui/favicon.ico"))
 
@@ -23,7 +23,7 @@ async def fallback():
     return FileResponse(str(Path(__file__).parent / "ui/fallback_file.html"))
 
 
-@router_ui.get("/ui_version", include_in_schema=False)
+@router_ui.get("/ui_version")
 async def ui_version():
     from freqtrade.commands.deploy_ui import read_ui_version
 
@@ -35,7 +35,7 @@ async def ui_version():
     }
 
 
-@router_ui.get("/{rest_of_path:path}", include_in_schema=False)
+@router_ui.get("/{rest_of_path:path}")
 async def index_html(rest_of_path: str):
     """
     Emulate path fallback to index.html.

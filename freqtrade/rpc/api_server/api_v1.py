@@ -7,6 +7,7 @@ from fastapi.exceptions import HTTPException
 
 from freqtrade import __version__
 from freqtrade.enums import RunMode, State
+from freqtrade.exceptions import OperationalException
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server.api_pairlists import handleExchangePayload
 from freqtrade.rpc.api_server.api_schemas import (
@@ -17,6 +18,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     Ping,
     PlotConfig,
     ShowConfig,
+    StrategyResponse,
     SysInfo,
     Version,
 )
@@ -60,7 +62,8 @@ logger = logging.getLogger(__name__)
 # 2.44: Add candle_types parameter to download-data endpoint
 # 2.45: Add price to forceexit endpoint
 # 2.46: Add prepend_data to download-data endpoint
-API_VERSION = 2.46
+# 2.47: Add Strategy parameters
+API_VERSION = 2.47
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -136,6 +139,47 @@ def markets(
             quote_currencies=[query.quote] if query.quote else None,
         ),
         "exchange_id": exchange.id,
+    }
+
+
+@router.get("/strategy/{strategy}", response_model=StrategyResponse, tags=["Strategy"])
+def get_strategy(
+    strategy: str, config=Depends(get_config), rpc: RPC | None = Depends(get_rpc_optional)
+):
+    if ":" in strategy:
+        raise HTTPException(status_code=422, detail="base64 encoded strategies are not allowed.")
+
+    if not rpc or config["runmode"] == RunMode.WEBSERVER:
+        # webserver mode
+        config_ = deepcopy(config)
+        from freqtrade.resolvers.strategy_resolver import StrategyResolver
+
+        try:
+            strategy_obj = StrategyResolver._load_strategy(
+                strategy, config_, extra_dir=config_.get("strategy_path")
+            )
+            strategy_obj.ft_load_hyper_params()
+        except OperationalException:
+            raise HTTPException(status_code=404, detail="Strategy not found")
+        except Exception:
+            logger.exception("Unexpected error while loading strategy '%s'.", strategy)
+            raise HTTPException(
+                status_code=502,
+                detail="Unexpected error while loading strategy.",
+            )
+    else:
+        # trade mode
+        strategy_obj = rpc._freqtrade.strategy
+        if strategy_obj.get_strategy_name() != strategy:
+            raise HTTPException(
+                status_code=404,
+                detail="Only the currently active strategy is available in trade mode",
+            )
+    return {
+        "strategy": strategy_obj.get_strategy_name(),
+        "timeframe": getattr(strategy_obj, "timeframe", None),
+        "code": strategy_obj.__source__,
+        "params": [p for _, p in strategy_obj.enumerate_parameters()],
     }
 
 

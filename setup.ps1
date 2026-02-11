@@ -1,11 +1,28 @@
 Clear-Host
 
 $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$Global:LogFilePath = Join-Path $env:TEMP "script_log_$Timestamp.txt"
+
+$Global:LogFilePath = Join-Path ([System.IO.Path]::GetTempPath()) "script_log_$Timestamp.txt"
 
 $RequirementFiles = @("requirements.txt", "requirements-dev.txt", "requirements-hyperopt.txt", "requirements-freqai.txt", "requirements-freqai-rl.txt", "requirements-plot.txt")
 $VenvName = ".venv"
 $VenvDir = Join-Path $PSScriptRoot $VenvName
+
+# Supported Python minor versions (detection order: prefer newest first)
+$SupportedMinorVersions = @(13,12,11)
+# Build a human-readable supported versions string like "3.11, 3.12 and 3.13"
+$asc = $SupportedMinorVersions | Sort-Object
+if ($asc.Count -eq 1) {
+  $SupportedPythonVersions = "3.$($asc[0])"
+}
+elseif ($asc.Count -eq 2) {
+  $SupportedPythonVersions = "3.$($asc[0]) and 3.$($asc[1])"
+}
+else {
+  $allButLast = ($asc[0..($asc.Count - 2)] | ForEach-Object { "3.$_" }) -join ", "
+  $last = "3.$($asc[-1])"
+  $SupportedPythonVersions = "$allButLast and $last"
+}
 
 function Write-Log {
   param (
@@ -148,20 +165,21 @@ function Test-PythonExecutable {
 }
 
 function Find-PythonExecutable {
-  $PythonExecutables = @(
-    "python",
-    "python3.13",
-    "python3.12",
-    "python3.11",
-    "python3",
-    "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python313\python.exe",
-    "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python312\python.exe",
-    "C:\Users\$env:USERNAME\AppData\Local\Programs\Python\Python311\python.exe",
-    "C:\Python313\python.exe",
-    "C:\Python312\python.exe",
-    "C:\Python311\python.exe"
-  )
+  # Build a list of candidate executables dynamically from supported versions
+  $PythonExecutables = @()
+  $PythonExecutables += "python"
+  foreach ($v in $SupportedMinorVersions) {
+    $PythonExecutables += "python3.$v"
+  }
+  $PythonExecutables += "python3"
 
+  # Add common Windows installation paths for each supported minor version
+  foreach ($v in $SupportedMinorVersions) {
+    $PythonExecutables += "C:\\Users\\$env:USERNAME\\AppData\\Local\\Programs\\Python\\Python3$v\\python.exe"
+  }
+  foreach ($v in $SupportedMinorVersions) {
+    $PythonExecutables += "C:\\Python3$v\\python.exe"
+  }
 
   foreach ($Executable in $PythonExecutables) {
     if (Test-PythonExecutable -PythonExecutable $Executable) {
@@ -178,7 +196,7 @@ function Main {
   # Exit on lower versions than Python 3.11 or when Python executable not found
   $PythonExecutable = Find-PythonExecutable
   if ($null -eq $PythonExecutable) {
-    Write-Log "No suitable Python executable found. Please ensure that Python 3.11 or higher is installed and available in the system PATH." -Level 'ERROR'
+    Write-Log "No suitable Python executable found. Supported versions are: $SupportedPythonVersions. Please install one of these and ensure it's available in the system PATH." -Level 'ERROR'
     Exit 1
   }
 

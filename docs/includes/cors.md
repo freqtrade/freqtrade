@@ -15,7 +15,7 @@ Assuming your application is deployed as `https://frequi.freqtrade.io/home/` - t
 ```jsonc
 {
     //...
-    "jwt_secret_key": "somethingrandom",
+    "jwt_secret_key": "somethingRandomSomethingRandom123",
     "CORS_origins": ["https://frequi.freqtrade.io"],
     //...
 }
@@ -29,7 +29,7 @@ The correct configuration for this case is `http://localhost:8080` - the main pa
 ```jsonc
 {
     //...
-    "jwt_secret_key": "somethingrandom",
+    "jwt_secret_key": "somethingRandomSomethingRandom123",
     "CORS_origins": ["http://localhost:8080"],
     //...
 }

@@ -752,6 +752,7 @@ CONF_SCHEMA = {
                 "jwt_secret_key": {
                     "description": "Secret key for JWT authentication.",
                     "type": "string",
+                    "default": "somethingRandomSomethingRandom123",
                 },
                 "CORS_origins": {
                     "description": "List of allowed CORS origins.",
@@ -764,7 +765,14 @@ CONF_SCHEMA = {
                     "enum": ["error", "info"],
                 },
             },
-            "required": ["enabled", "listen_ip_address", "listen_port", "username", "password"],
+            "required": [
+                "enabled",
+                "listen_ip_address",
+                "listen_port",
+                "username",
+                "password",
+                "jwt_secret_key",
+            ],
         },
         # end of RPC section
         "db_url": {

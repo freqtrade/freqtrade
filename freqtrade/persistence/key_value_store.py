@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import ClassVar, Literal
 
 from sqlalchemy import String
@@ -11,7 +11,7 @@ from freqtrade.persistence.base import ModelBase, SessionType
 ValueTypes = str | datetime | float | int
 
 
-class ValueTypesEnum(str, Enum):
+class ValueTypesEnum(StrEnum):
     STRING = "str"
     DATETIME = "datetime"
     FLOAT = "float"
