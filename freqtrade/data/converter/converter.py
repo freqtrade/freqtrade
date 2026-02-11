@@ -50,7 +50,7 @@ def ohlcv_to_dataframe(
         # We use np.int64 to ensure we don't overflow on 32bit systems/timestamps
         dates = pd.to_datetime(
             ohlcv_np[:, 0].astype(np.int64) // 1000 * 1000, unit="ms", utc=True
-        ).astype("datetime64[ns, UTC]")
+        )
 
         df = DataFrame(
             {
@@ -60,7 +60,8 @@ def ohlcv_to_dataframe(
                 "low": ohlcv_np[:, 3],
                 "close": ohlcv_np[:, 4],
                 "volume": ohlcv_np[:, 5],
-            }
+            },
+            copy=False,
         )
 
     return clean_ohlcv_dataframe(
@@ -106,7 +107,7 @@ def clean_ohlcv_dataframe(
 
     # eliminate partial candle
     if drop_incomplete:
-        data.drop(data.tail(1).index, inplace=True)
+        data = data.iloc[:-1]
         logger.debug("Dropping last candle")
 
     if fill_missing:
