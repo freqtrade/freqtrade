@@ -1049,7 +1049,8 @@ def test_pandas_warning_direct(ohlcv_history, function, raises, recwarn):
         # Fixed in 2.2.x
         getattr(_STRATEGY, function)(df, {"pair": "ETH/BTC"})
     else:
-        assert len(recwarn) == 0, f"warnings: {', '.join(recwarn.list)}"
+        warnings = [str(w.message) for w in recwarn if "unclosed event loop" not in str(w.message)]
+        assert len(warnings) == 0, f"warnings: {', '.join(warnings)}"
 
         getattr(_STRATEGY, function)(df, {"pair": "ETH/BTC"})
 
