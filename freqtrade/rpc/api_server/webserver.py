@@ -132,6 +132,14 @@ class ApiServer(RPCHandler):
 
         api_config = self._config["api_server"]
 
+        cors_origins = api_config.get("CORS_origins", [])
+        if "*" in cors_origins:
+            logger.warning(
+                "SECURITY WARNING - `CORS_origins` contains a wildcard ('*'). "
+                "This allows any website to access your API. "
+                "Please restrict this to your actual domain(s)."
+            )
+
         if api_config.get("jwt_secret_key", "super-secret") in ("super-secret", "somethingrandom"):
             api_config["jwt_secret_key"] = secrets.token_urlsafe(32)
             logger.warning(
@@ -283,12 +291,13 @@ class ApiServer(RPCHandler):
                 "default-src 'self'; base-uri 'self'; form-action 'self'; "
                 "style-src 'self' 'unsafe-inline'; "
                 "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; "
-                "frame-ancestors 'none'"
+                "frame-ancestors 'none'; upgrade-insecure-requests; block-all-mixed-content"
             )
             response.headers["X-Content-Type-Options"] = "nosniff"
             response.headers["X-Frame-Options"] = "DENY"
             response.headers["X-XSS-Protection"] = "1; mode=block"
             response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+            response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
             response.headers["Permissions-Policy"] = (
                 "geolocation=(), microphone=(), camera=(), payment=(), "
                 "usb=(), vr=(), display-capture=(), serial=(), autoplay=(), "

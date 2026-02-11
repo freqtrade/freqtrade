@@ -54,6 +54,10 @@ _TEST_WS_TOKEN = "secret_Ws_t0ken"
 
 @pytest.fixture
 def botclient(default_conf, mocker):
+    # Disable RateLimiter for tests
+    mocker.patch("cachetools.TTLCache.get", return_value=0)
+    mocker.patch("cachetools.TTLCache.__setitem__")
+
     setup_logging_pre()
     setup_logging(default_conf)
     default_conf["runmode"] = RunMode.DRY_RUN
@@ -3473,12 +3477,15 @@ def test_security_headers(botclient):
     _ftbot, client = botclient
     rc = client_get(client, f"{BASE_URI}/ping")
     assert rc.headers["Content-Security-Policy"]
+    assert "upgrade-insecure-requests" in rc.headers["Content-Security-Policy"]
+    assert "block-all-mixed-content" in rc.headers["Content-Security-Policy"]
     assert rc.headers["X-Content-Type-Options"] == "nosniff"
     assert rc.headers["X-Frame-Options"] == "DENY"
     assert "Permissions-Policy" in rc.headers
     assert "Referrer-Policy" in rc.headers
     assert rc.headers["Referrer-Policy"] == "same-origin"
     assert rc.headers["Cache-Control"] == "no-store, no-cache, must-revalidate"
+    assert rc.headers["X-Permitted-Cross-Domain-Policies"] == "none"
 
 
 def test_api_logs_validation(botclient):
