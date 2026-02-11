@@ -58,7 +58,7 @@ def test_security_headers(botclient_security):
         == "default-src 'self'; base-uri 'self'; form-action 'self'; "
         "style-src 'self' 'unsafe-inline'; "
         "script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; "
-        "frame-ancestors 'none'"
+        "frame-ancestors 'none'; upgrade-insecure-requests; block-all-mixed-content"
     )
     assert headers["X-Content-Type-Options"] == "nosniff"
     assert headers["X-Frame-Options"] == "DENY"

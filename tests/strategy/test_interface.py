@@ -1066,7 +1066,6 @@ def test_pandas_warning_through_analyze_pair(ohlcv_history, mocker, recwarn):
     warnings = [
         str(w.message)
         for w in recwarn.list
-        if "unclosed event loop" not in str(w.message)
-        and "unclosed database" not in str(w.message)
+        if "unclosed event loop" not in str(w.message) and "unclosed database" not in str(w.message)
     ]
     assert len(warnings) == 0, f"warnings: {', '.join(warnings)}"

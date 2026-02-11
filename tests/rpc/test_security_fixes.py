@@ -1,11 +1,14 @@
+import random
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
 from fastapi import HTTPException, Request
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from freqtrade.configuration.config_secrets import sanitize_config
+from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_schemas import (
     DownloadDataPayload,
     ForceEnterPayload,
@@ -13,8 +16,6 @@ from freqtrade.rpc.api_server.api_schemas import (
     PairCandlesRequest,
 )
 from freqtrade.rpc.api_server.deps import RateLimiter
-from fastapi.testclient import TestClient
-from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.rpc import RPC
 from tests.conftest import get_patched_freqtradebot
 
@@ -182,16 +183,18 @@ def test_locks_payload_validation():
 @pytest.fixture
 def integration_botclient(default_conf, mocker):
     default_conf["runmode"] = "dry_run"
-    default_conf.update({
-        "api_server": {
-            "enabled": True,
-            "listen_ip_address": "127.0.0.1",
-            "listen_port": 8080,
-            "username": "test",
-            "password": "password",
-            "jwt_secret_key": "super-secret-key-that-is-long-enough-32chars"
+    default_conf.update(
+        {
+            "api_server": {
+                "enabled": True,
+                "listen_ip_address": "127.0.0.1",
+                "listen_port": 8080,
+                "username": "test",
+                "password": "password",
+                "jwt_secret_key": "super-secret-key-that-is-long-enough-32chars",
+            }
         }
-    })
+    )
 
     ftbot = get_patched_freqtradebot(mocker, default_conf)
     rpc = RPC(ftbot)
@@ -205,9 +208,14 @@ def integration_botclient(default_conf, mocker):
     apiserver = ApiServer(default_conf)
     apiserver.add_rpc_handler(rpc)
 
+    # Generate random IP to avoid rate limit collisions between tests/workers
+    client_ip = f"127.0.{random.randint(0, 255)}.{random.randint(1, 255)}"
+
     # Login to get token
-    with TestClient(apiserver.app) as client:
+    with TestClient(apiserver.app, client=(client_ip, 50000)) as client:
         login_res = client.post("/api/v1/token/login", auth=("test", "password"))
+        assert login_res.status_code == 200, f"Login failed: {login_res.text}"
+
         token = login_res.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         client.headers.update(headers)
@@ -235,11 +243,11 @@ def test_rate_limit_trades_integration(integration_botclient):
         assert res.status_code == 200, f"Request {i} failed with {res.status_code}"
 
     res = integration_botclient.get("/api/v1/trades")
-    assert res.status_code == 429
+    assert res.status_code == 429  # Should fail
 
 
 def test_csp_headers_integration(integration_botclient):
-    res = integration_botclient.get("/api/v1/ping") # Public endpoint
+    res = integration_botclient.get("/api/v1/ping")  # Public endpoint
     csp = res.headers["Content-Security-Policy"]
     assert "upgrade-insecure-requests" in csp
     assert "block-all-mixed-content" in csp
