@@ -480,6 +480,25 @@ class ForceExitPayload(BaseModel):
     price: float | None = Field(None, gt=0)
 
 
+class WebhookPayload(BaseModel):
+    token: str = Field(..., max_length=255)
+    pair: str = Field(..., max_length=50)
+    action: str = Field(..., max_length=20)
+    price: float | None = Field(None, gt=0)
+    ordertype: OrderTypeValues | None = None
+    stake_amount: float | None = Field(None, gt=0)
+    leverage: float | None = None
+    entry_tag: str | None = Field(None, max_length=255)
+    side: SignalDirection | None = None
+
+    @field_validator("pair")
+    @classmethod
+    def validate_pair(cls, v):
+        if not re.match(PAIR_REGEX, v):
+            raise ValueError(f"Invalid pair name: {v}")
+        return v
+
+
 BLACKLIST_PAIR_REGEX = r"^[a-zA-Z0-9/_:?*.-]+$"
 
 
