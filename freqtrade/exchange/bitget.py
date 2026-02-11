@@ -43,7 +43,7 @@ class Bitget(Exchange):
     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
         (TradingMode.SPOT, MarginMode.NONE),
         (TradingMode.FUTURES, MarginMode.ISOLATED),
-        # (TradingMode.FUTURES, MarginMode.CROSS),
+        (TradingMode.FUTURES, MarginMode.CROSS),
     ]
 
     def ohlcv_candle_limit(
@@ -224,16 +224,14 @@ class Bitget(Exchange):
         ).get("taker", 0.001)
         mm_ratio, _ = self.get_maintenance_ratio_and_amt(pair, stake_amount)
 
-        if self.trading_mode == TradingMode.FUTURES and self.margin_mode == MarginMode.ISOLATED:
+        if self.trading_mode == TradingMode.FUTURES:
             position_direction = -1 if is_short else 1
 
             return (wallet_balance - (amount * open_rate * position_direction)) / (
                 amount * (mm_ratio + taker_fee_rate - position_direction)
             )
         else:
-            raise OperationalException(
-                "Freqtrade currently only supports isolated futures for bitget"
-            )
+            raise OperationalException("Freqtrade only supports futures for bitget")
 
     def check_delisting_time(self, pair: str) -> datetime | None:
         """
