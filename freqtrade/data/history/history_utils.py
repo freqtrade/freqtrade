@@ -656,8 +656,9 @@ def get_timerange(data: dict[str, DataFrame]) -> tuple[datetime, datetime]:
     :return: tuple containing min_date, max_date
     """
     timeranges = [
-        (frame["date"].min().to_pydatetime(), frame["date"].max().to_pydatetime())
+        (frame["date"].iloc[0].to_pydatetime(), frame["date"].iloc[-1].to_pydatetime())
         for frame in data.values()
+        if not frame.empty
     ]
     return (
         min(timeranges, key=operator.itemgetter(0))[0],

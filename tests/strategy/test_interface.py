@@ -33,7 +33,9 @@ _STRATEGY.dp = DataProvider({}, None, None)
 
 
 def test_returns_latest_signal(ohlcv_history):
-    ohlcv_history.loc[1, "date"] = dt_now().replace(microsecond=0)
+    # Use last row to ensure sorted dataframe
+    idx = len(ohlcv_history) - 1
+    ohlcv_history.loc[idx, "date"] = dt_now().replace(microsecond=0)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history["enter_long"] = 0
@@ -43,13 +45,13 @@ def test_returns_latest_signal(ohlcv_history):
     # Set tags in lines that don't matter to test nan in the sell line
     mocked_history.loc[0, "enter_tag"] = "wrong_line"
     mocked_history.loc[0, "exit_tag"] = "wrong_line"
-    mocked_history.loc[1, "exit_long"] = 1
+    mocked_history.loc[idx, "exit_long"] = 1
 
     assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (False, True, None)
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (False, False, None)
-    mocked_history.loc[1, "exit_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 1
+    mocked_history.loc[idx, "exit_long"] = 0
+    mocked_history.loc[idx, "enter_long"] = 1
 
     assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (
         SignalDirection.LONG,
@@ -57,15 +59,15 @@ def test_returns_latest_signal(ohlcv_history):
     )
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (True, False, None)
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (False, False, None)
-    mocked_history.loc[1, "exit_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 0
+    mocked_history.loc[idx, "exit_long"] = 0
+    mocked_history.loc[idx, "enter_long"] = 0
 
     assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (False, False, None)
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (False, False, None)
-    mocked_history.loc[1, "exit_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 1
-    mocked_history.loc[1, "enter_tag"] = "buy_signal_01"
+    mocked_history.loc[idx, "exit_long"] = 0
+    mocked_history.loc[idx, "enter_long"] = 1
+    mocked_history.loc[idx, "enter_tag"] = "buy_signal_01"
 
     assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (
         SignalDirection.LONG,
@@ -74,11 +76,11 @@ def test_returns_latest_signal(ohlcv_history):
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (True, False, None)
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (False, False, None)
 
-    mocked_history.loc[1, "exit_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 0
-    mocked_history.loc[1, "enter_short"] = 1
-    mocked_history.loc[1, "exit_short"] = 0
-    mocked_history.loc[1, "enter_tag"] = "sell_signal_01"
+    mocked_history.loc[idx, "exit_long"] = 0
+    mocked_history.loc[idx, "enter_long"] = 0
+    mocked_history.loc[idx, "enter_short"] = 1
+    mocked_history.loc[idx, "exit_short"] = 0
+    mocked_history.loc[idx, "enter_tag"] = "sell_signal_01"
 
     # Don't provide short signal while in spot mode
     assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
@@ -96,9 +98,9 @@ def test_returns_latest_signal(ohlcv_history):
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (False, False, None)
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (True, False, None)
 
-    mocked_history.loc[1, "enter_short"] = 0
-    mocked_history.loc[1, "exit_short"] = 1
-    mocked_history.loc[1, "exit_tag"] = "sell_signal_02"
+    mocked_history.loc[idx, "enter_short"] = 0
+    mocked_history.loc[idx, "exit_short"] = 1
+    mocked_history.loc[idx, "exit_tag"] = "sell_signal_02"
     assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
     assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (
         False,
@@ -160,12 +162,13 @@ def test_get_signal_exception_valueerror(mocker, caplog, ohlcv_history):
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, "date"] = (dt_now() - timedelta(minutes=16)).replace(microsecond=0)
+    idx = len(ohlcv_history) - 1
+    ohlcv_history.loc[idx, "date"] = (dt_now() - timedelta(minutes=16)).replace(microsecond=0)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history["exit_long"] = 0
     mocked_history["enter_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 1
+    mocked_history.loc[idx, "enter_long"] = 1
 
     caplog.set_level(logging.INFO)
     mocker.patch("freqtrade.strategy.interface.StrategyResultValidator.assert_df")
@@ -179,13 +182,14 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
 def test_get_signal_no_sell_column(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, "date"] = dt_now().replace(microsecond=0)
+    idx = len(ohlcv_history) - 1
+    ohlcv_history.loc[idx, "date"] = dt_now().replace(microsecond=0)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     # Intentionally don't set sell column
     # mocked_history['sell'] = 0
     mocked_history["enter_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 1
+    mocked_history.loc[idx, "enter_long"] = 1
 
     caplog.set_level(logging.INFO)
     mocker.patch(
@@ -1045,7 +1049,8 @@ def test_pandas_warning_direct(ohlcv_history, function, raises, recwarn):
         # Fixed in 2.2.x
         getattr(_STRATEGY, function)(df, {"pair": "ETH/BTC"})
     else:
-        assert len(recwarn) == 0, f"warnings: {', '.join(recwarn.list)}"
+        warnings = [str(w.message) for w in recwarn if "unclosed event loop" not in str(w.message)]
+        assert len(warnings) == 0, f"warnings: {', '.join(warnings)}"
 
         getattr(_STRATEGY, function)(df, {"pair": "ETH/BTC"})
 

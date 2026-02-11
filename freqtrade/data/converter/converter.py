@@ -48,19 +48,18 @@ def ohlcv_to_dataframe(
         # Floor date to seconds to account for exchange imprecisions
         # Optimization: Integer arithmetic is faster than datetime conversion
         # We use np.int64 to ensure we don't overflow on 32bit systems/timestamps
-        dates = pd.to_datetime(
-            ohlcv_np[:, 0].astype(np.int64) // 1000 * 1000, unit="ms", utc=True
-        ).astype("datetime64[ns, UTC]")
+        dates = pd.to_datetime(ohlcv_np[:, 0].astype(np.int64) // 1000 * 1000, unit="ms", utc=True)
 
         df = DataFrame(
             {
-                "date": dates,
+                "date": dates.astype("datetime64[ns, UTC]"),
                 "open": ohlcv_np[:, 1],
                 "high": ohlcv_np[:, 2],
                 "low": ohlcv_np[:, 3],
                 "close": ohlcv_np[:, 4],
                 "volume": ohlcv_np[:, 5],
-            }
+            },
+            copy=False,
         )
 
     return clean_ohlcv_dataframe(
@@ -106,7 +105,7 @@ def clean_ohlcv_dataframe(
 
     # eliminate partial candle
     if drop_incomplete:
-        data.drop(data.tail(1).index, inplace=True)
+        data = data.iloc[:-1]
         logger.debug("Dropping last candle")
 
     if fill_missing:

@@ -1293,13 +1293,14 @@ class IStrategy(ABC, HyperStrategyMixin):
             return None, None
 
         try:
-            latest_date_pd = dataframe["date"].max()
-            latest = dataframe.loc[dataframe["date"] == latest_date_pd].iloc[-1]
+            # Optimization: accessing last row directly is much faster than finding max date
+            # as dataframe is guaranteed to be sorted by date.
+            latest = dataframe.iloc[-1]
         except Exception as e:
             logger.warning(f"Unable to get latest candle (OHLCV) data for pair {pair} - {e}")
             return None, None
         # Explicitly convert to datetime object to ensure the below comparison does not fail
-        latest_date: datetime = latest_date_pd.to_pydatetime()
+        latest_date: datetime = latest["date"].to_pydatetime()
 
         # Check if dataframe is out of date
         timeframe_minutes = timeframe_to_minutes(timeframe)
