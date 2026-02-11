@@ -10,7 +10,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import FtNoDBContext
 from freqtrade.rpc.api_server.api_pairlists import handleExchangePayload
 from freqtrade.rpc.api_server.api_schemas import BgJobStarted, DownloadDataPayload
-from freqtrade.rpc.api_server.deps import get_config, get_exchange
+from freqtrade.rpc.api_server.deps import RateLimiter, get_config, get_exchange
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.util.progress_tracker import get_progress_tracker
 
@@ -56,7 +56,11 @@ def __run_download(job_id: str, config_loc: Config):
         ApiBG.download_data_running = False
 
 
-@router.post("/download_data", response_model=BgJobStarted)
+@router.post(
+    "/download_data",
+    response_model=BgJobStarted,
+    dependencies=[Depends(RateLimiter(max_calls=2, time_seconds=600))],
+)
 def pairlists_evaluate(
     payload: DownloadDataPayload, background_tasks: BackgroundTasks, config=Depends(get_config)
 ):

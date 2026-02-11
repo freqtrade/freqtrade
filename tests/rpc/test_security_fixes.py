@@ -1,11 +1,14 @@
+import random
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
 from fastapi import HTTPException, Request
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from freqtrade.configuration.config_secrets import sanitize_config
+from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_schemas import (
     DownloadDataPayload,
     ForceEnterPayload,
@@ -13,6 +16,8 @@ from freqtrade.rpc.api_server.api_schemas import (
     PairCandlesRequest,
 )
 from freqtrade.rpc.api_server.deps import RateLimiter
+from freqtrade.rpc.rpc import RPC
+from tests.conftest import get_patched_freqtradebot
 
 
 # --- RateLimiter Tests ---
@@ -172,3 +177,78 @@ def test_locks_payload_validation():
     # Invalid side (too long)
     with pytest.raises(ValidationError):
         LocksPayload(pair="BTC/USDT", until=now, side="long" * 10)
+
+
+# --- Integration Tests ---
+@pytest.fixture
+def integration_botclient(default_conf, mocker):
+    default_conf["runmode"] = "dry_run"
+    default_conf.update(
+        {
+            "api_server": {
+                "enabled": True,
+                "listen_ip_address": "127.0.0.1",
+                "listen_port": 8080,
+                "username": "test",
+                "password": "password",
+                "jwt_secret_key": "super-secret-key-that-is-long-enough-32chars",
+            }
+        }
+    )
+
+    ftbot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(ftbot)
+    mocker.patch("freqtrade.rpc.api_server.webserver.ApiServer.start_api")
+    mocker.patch("freqtrade.rpc.telegram.Telegram._init")
+
+    # Need to clear singleton
+    ApiServer._instance = None
+    ApiServer._initialized = False
+
+    apiserver = ApiServer(default_conf)
+    apiserver.add_rpc_handler(rpc)
+
+    # Generate random IP to avoid rate limit collisions between tests/workers
+    client_ip = f"127.0.{random.randint(0, 255)}.{random.randint(1, 255)}"
+
+    # Login to get token
+    with TestClient(apiserver.app, client=(client_ip, 50000)) as client:
+        login_res = client.post("/api/v1/token/login", auth=("test", "password"))
+        assert login_res.status_code == 200, f"Login failed: {login_res.text}"
+
+        token = login_res.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        client.headers.update(headers)
+        yield client
+
+    apiserver.cleanup()
+    ApiServer.shutdown()
+
+
+def test_pair_candles_limit_validation_integration(integration_botclient):
+    # Valid limit
+    res = integration_botclient.get("/api/v1/pair_candles?pair=ETH/BTC&timeframe=5m&limit=100")
+    assert res.status_code == 200
+
+    # Invalid limit > 1500
+    res = integration_botclient.get("/api/v1/pair_candles?pair=ETH/BTC&timeframe=5m&limit=1501")
+    assert res.status_code == 422
+
+
+def test_rate_limit_trades_integration(integration_botclient):
+    # /trades limit is 10 calls / 60s
+    # We make 10 calls, they should succeed
+    for i in range(10):
+        res = integration_botclient.get("/api/v1/trades")
+        assert res.status_code == 200, f"Request {i} failed with {res.status_code}"
+
+    res = integration_botclient.get("/api/v1/trades")
+    assert res.status_code == 429  # Should fail
+
+
+def test_csp_headers_integration(integration_botclient):
+    res = integration_botclient.get("/api/v1/ping")  # Public endpoint
+    csp = res.headers["Content-Security-Policy"]
+    assert "upgrade-insecure-requests" in csp
+    assert "block-all-mixed-content" in csp
+    assert res.headers["X-Permitted-Cross-Domain-Policies"] == "none"

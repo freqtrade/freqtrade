@@ -52,37 +52,72 @@ def balance(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
     )
 
 
-@router.get("/count", response_model=Count, tags=["Trading-info"])
+@router.get(
+    "/count",
+    response_model=Count,
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def count(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_count()
 
 
-@router.get("/entries", response_model=list[Entry], tags=["Trading-info"])
+@router.get(
+    "/entries",
+    response_model=list[Entry],
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def entries(pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_enter_tag_performance(pair)
 
 
-@router.get("/exits", response_model=list[Exit], tags=["Trading-info"])
+@router.get(
+    "/exits",
+    response_model=list[Exit],
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def exits(pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_exit_reason_performance(pair)
 
 
-@router.get("/mix_tags", response_model=list[MixTag], tags=["Trading-info"])
+@router.get(
+    "/mix_tags",
+    response_model=list[MixTag],
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def mix_tags(pair: str | None = Query(None, pattern=PAIR_REGEX), rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_mix_tag_performance(pair)
 
 
-@router.get("/performance", response_model=list[PerformanceEntry], tags=["Trading-info"])
+@router.get(
+    "/performance",
+    response_model=list[PerformanceEntry],
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def performance(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_performance()
 
 
-@router.get("/profit", response_model=Profit, tags=["Trading-info"])
+@router.get(
+    "/profit",
+    response_model=Profit,
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def profit(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
     return rpc._rpc_trade_statistics(config["stake_currency"], config.get("fiat_display_currency"))
 
 
-@router.get("/profit_all", response_model=ProfitAll, tags=["Trading-info"])
+@router.get(
+    "/profit_all",
+    response_model=ProfitAll,
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def profit_all(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
     response = {
         "all": rpc._rpc_trade_statistics(
@@ -100,12 +135,22 @@ def profit_all(rpc: RPC = Depends(get_rpc), config=Depends(get_config)):
     return response
 
 
-@router.get("/stats", response_model=Stats, tags=["Trading-info"])
+@router.get(
+    "/stats",
+    response_model=Stats,
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def stats(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_stats()
 
 
-@router.get("/daily", response_model=DailyWeeklyMonthly, tags=["Trading-info"])
+@router.get(
+    "/daily",
+    response_model=DailyWeeklyMonthly,
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def daily(
     timescale: int = Query(7, ge=1, description="Number of days to fetch data for"),
     rpc: RPC = Depends(get_rpc),
@@ -116,7 +161,12 @@ def daily(
     )
 
 
-@router.get("/weekly", response_model=DailyWeeklyMonthly, tags=["Trading-info"])
+@router.get(
+    "/weekly",
+    response_model=DailyWeeklyMonthly,
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def weekly(
     timescale: int = Query(4, ge=1, description="Number of weeks to fetch data for"),
     rpc: RPC = Depends(get_rpc),
@@ -127,7 +177,12 @@ def weekly(
     )
 
 
-@router.get("/monthly", response_model=DailyWeeklyMonthly, tags=["Trading-info"])
+@router.get(
+    "/monthly",
+    response_model=DailyWeeklyMonthly,
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=5, time_seconds=60))],
+)
 def monthly(
     timescale: int = Query(3, ge=1, description="Number of months to fetch data for"),
     rpc: RPC = Depends(get_rpc),
@@ -138,7 +193,12 @@ def monthly(
     )
 
 
-@router.get("/status", response_model=list[OpenTradeSchema], tags=["Trading-info"])
+@router.get(
+    "/status",
+    response_model=list[OpenTradeSchema],
+    tags=["Trading-info"],
+    dependencies=[Depends(RateLimiter(max_calls=20, time_seconds=60))],
+)
 def status(rpc: RPC = Depends(get_rpc)):
     try:
         return rpc._rpc_trade_status()
@@ -148,7 +208,11 @@ def status(rpc: RPC = Depends(get_rpc)):
 
 # Using the responsemodel here will cause a ~100% increase in response time (from 1s to 2s)
 # on big databases. Correct response model: response_model=TradeResponse,
-@router.get("/trades", tags=["Trading-info", "Trades"])
+@router.get(
+    "/trades",
+    tags=["Trading-info", "Trades"],
+    dependencies=[Depends(RateLimiter(max_calls=10, time_seconds=60))],
+)
 def trades(
     limit: int = Query(
         500, ge=1, le=1000, description="Maximum number of different trades to return data"
@@ -383,17 +447,27 @@ def reload_config(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_reload_config()
 
 
-@router.get("/pair_candles", response_model=PairHistory, tags=["Candle data"])
+@router.get(
+    "/pair_candles",
+    response_model=PairHistory,
+    tags=["Candle data"],
+    dependencies=[Depends(RateLimiter(max_calls=10, time_seconds=60))],
+)
 def pair_candles(
     pair: str = Query(..., pattern=PAIR_REGEX),
     timeframe: str = Query(...),
-    limit: int | None = None,
+    limit: int | None = Query(None, gt=0, le=1500),
     rpc: RPC = Depends(get_rpc),
 ):
     return rpc._rpc_analysed_dataframe(pair, timeframe, limit, None)
 
 
-@router.post("/pair_candles", response_model=PairHistory, tags=["Candle data"])
+@router.post(
+    "/pair_candles",
+    response_model=PairHistory,
+    tags=["Candle data"],
+    dependencies=[Depends(RateLimiter(max_calls=10, time_seconds=60))],
+)
 def pair_candles_filtered(payload: PairCandlesRequest, rpc: RPC = Depends(get_rpc)):
     # Advanced pair_candles endpoint with column filtering
     return rpc._rpc_analysed_dataframe(

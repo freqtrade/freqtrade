@@ -30,7 +30,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     BacktestRequest,
     BacktestResponse,
 )
-from freqtrade.rpc.api_server.deps import get_config
+from freqtrade.rpc.api_server.deps import RateLimiter, get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
 
@@ -125,7 +125,11 @@ def __run_backtest_bg(btconfig: Config):
         ApiBG.bgtask_running = False
 
 
-@router.post("/backtest", response_model=BacktestResponse)
+@router.post(
+    "/backtest",
+    response_model=BacktestResponse,
+    dependencies=[Depends(RateLimiter(max_calls=2, time_seconds=600))],
+)
 async def api_start_backtest(
     bt_settings: BacktestRequest, background_tasks: BackgroundTasks, config=Depends(get_config)
 ):
