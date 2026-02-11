@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
-from freqtrade.exceptions import OperationalException, RetryableOrderError
+from freqtrade.exceptions import RetryableOrderError
 from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.util import dt_now, dt_ts, dt_utc
 from tests.conftest import EXMS, get_patched_exchange
@@ -146,13 +146,10 @@ def test_dry_run_liquidation_price_cross_bitget(default_conf, mocker):
     mocker.patch(f"{EXMS}.get_maintenance_ratio_and_amt", MagicMock(return_value=(0.005, 0.0)))
 
     # Mock market for Cross Margin (required for dry_run calculation access)
-    markets = {
-        "ETH/USDT:USDT": {
-            "taker": 0.001,
-            "inverse": False
-        }
-    }
-    mocker.patch('freqtrade.exchange.bitget.Bitget.markets', new_callable=PropertyMock).return_value = markets
+    markets = {"ETH/USDT:USDT": {"taker": 0.001, "inverse": False}}
+    mocker.patch(
+        "freqtrade.exchange.bitget.Bitget.markets", new_callable=PropertyMock
+    ).return_value = markets
 
     exchange = get_patched_exchange(mocker, default_conf, exchange="bitget", api_mock=api_mock)
 
