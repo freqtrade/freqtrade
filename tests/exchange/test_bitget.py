@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
-from freqtrade.exceptions import OperationalException, RetryableOrderError
+from freqtrade.exceptions import RetryableOrderError
 from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.util import dt_now, dt_ts, dt_utc
 from tests.conftest import EXMS, get_patched_exchange
@@ -144,21 +144,27 @@ def test_dry_run_liquidation_price_cross_bitget(default_conf, mocker):
     default_conf["margin_mode"] = MarginMode.CROSS
     api_mock = MagicMock()
     mocker.patch(f"{EXMS}.get_maintenance_ratio_and_amt", MagicMock(return_value=(0.005, 0.0)))
+
+    # Mock market for Cross Margin (required for dry_run calculation access)
+    markets = {"ETH/USDT:USDT": {"taker": 0.001, "inverse": False}}
+    mocker.patch(
+        "freqtrade.exchange.bitget.Bitget.markets", new_callable=PropertyMock
+    ).return_value = markets
+
     exchange = get_patched_exchange(mocker, default_conf, exchange="bitget", api_mock=api_mock)
 
-    with pytest.raises(
-        OperationalException, match="Freqtrade currently only supports isolated futures for bitget"
-    ):
-        exchange.dry_run_liquidation_price(
-            "ETH/USDT:USDT",
-            100_000,
-            False,
-            0.1,
-            100,
-            10,
-            100,
-            [],
-        )
+    # Should NOT raise OperationalException now
+    price = exchange.dry_run_liquidation_price(
+        "ETH/USDT:USDT",
+        100_000,
+        False,
+        0.1,
+        100,
+        10,
+        100,
+        [],
+    )
+    assert price is not None
 
 
 def test__lev_prep_bitget(default_conf, mocker):
@@ -234,3 +240,26 @@ def test__check_delisting_futures_bitget(default_conf_usdt, mocker, markets):
     # Has a delisting date
     resp_ada = exchange._check_delisting_futures("ADA/USDT:USDT")
     assert resp_ada == dt_utc(2025, 10, 18)
+
+
+def test_bitget_get_params(default_conf, mocker):
+    default_conf["trading_mode"] = TradingMode.FUTURES
+    default_conf["margin_mode"] = MarginMode.ISOLATED
+    exchange = get_patched_exchange(mocker, default_conf, exchange="bitget")
+
+    params = exchange._get_params("buy", "limit", 1.0, False)
+    assert params["marginMode"] == "isolated"
+
+    # Test Cross Margin
+    default_conf["margin_mode"] = MarginMode.CROSS
+    exchange = get_patched_exchange(mocker, default_conf, exchange="bitget")
+    params = exchange._get_params("buy", "limit", 1.0, False)
+    # MarginMode.CROSS.value is "cross"
+    assert params["marginMode"] == "cross"
+
+    # Test Spot (no margin mode)
+    default_conf["trading_mode"] = TradingMode.SPOT
+    default_conf["margin_mode"] = MarginMode.NONE
+    exchange = get_patched_exchange(mocker, default_conf, exchange="bitget")
+    params = exchange._get_params("buy", "limit", 1.0, False)
+    assert "marginMode" not in params
