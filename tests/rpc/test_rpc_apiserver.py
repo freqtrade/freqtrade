@@ -4,6 +4,7 @@ Unit test file for rpc/api_server.py
 
 import asyncio
 import logging
+import sys
 import time
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
@@ -14,7 +15,7 @@ import pandas as pd
 import pytest
 import rapidjson
 import uvicorn
-from fastapi import FastAPI, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocketDisconnect
 from fastapi.exceptions import HTTPException
 from fastapi.testclient import TestClient
 from requests.auth import _basic_auth_str
@@ -55,8 +56,10 @@ _TEST_WS_TOKEN = "secret_Ws_t0ken"
 @pytest.fixture
 def botclient(default_conf, mocker):
     # Disable RateLimiter for tests
-    mocker.patch("cachetools.TTLCache.get", return_value=0)
-    mocker.patch("cachetools.TTLCache.__setitem__")
+    async def no_rate_limit(self, request: Request):
+        return None
+
+    mocker.patch("freqtrade.rpc.api_server.deps.RateLimiter.__call__", no_rate_limit)
 
     setup_logging_pre()
     setup_logging(default_conf)
@@ -2649,7 +2652,24 @@ def test_api_exchanges(botclient):
     }
 
 
-def test_list_hyperoptloss(botclient, tmp_path):
+def test_list_hyperoptloss(botclient, tmp_path, mocker):
+    # Mock search_all_objects to avoid scanning file system and importing missing dependencies
+    mocker.patch(
+        "freqtrade.resolvers.hyperopt_resolver.HyperOptLossResolver.search_all_objects",
+        return_value=[
+            {
+                "name": "SharpeHyperOptLoss",
+                "class": MagicMock(__doc__="Sharpe Ratio calculation"),
+                "location": Path("loc"),
+            },
+            {
+                "name": "SortinoHyperOptLoss",
+                "class": MagicMock(__doc__="Sortino Ratio calculation"),
+                "location": Path("loc"),
+            },
+        ],
+    )
+
     ftbot, client = botclient
     ftbot.config["user_data_dir"] = tmp_path
     ftbot.config["runmode"] = RunMode.WEBSERVER
@@ -2667,6 +2687,24 @@ def test_list_hyperoptloss(botclient, tmp_path):
 
 
 def test_api_freqaimodels(botclient, tmp_path, mocker):
+    # Mock datasieve and sklearn to avoid ImportError if they are not installed
+    mocker.patch.dict(
+        sys.modules,
+        {
+            "datasieve": MagicMock(),
+            "datasieve.transforms": MagicMock(),
+            "datasieve.pipeline": MagicMock(),
+            "sklearn": MagicMock(),
+            "sklearn.preprocessing": MagicMock(),
+            "sklearn.model_selection": MagicMock(),
+            "sklearn.metrics": MagicMock(),
+            "sklearn.linear_model": MagicMock(),
+        },
+    )
+
+    # Ensure module is loaded for patching
+    import freqtrade.resolvers.freqaimodel_resolver  # noqa: F401
+
     ftbot, client = botclient
     ftbot.config["user_data_dir"] = tmp_path
     ftbot.config["runmode"] = RunMode.WEBSERVER
