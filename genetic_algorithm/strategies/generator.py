@@ -135,19 +135,46 @@ class StrategyGenerator:
         """Generate random entry or exit conditions."""
         conditions = []
         
+        # Filter indicators that can generate conditions
+        valid_indicators = [ind for ind in indicators 
+                          if ind.type in ['RSI', 'MACD', 'STOCH', 'CCI', 'ADX']]
+        
+        if not valid_indicators:
+            # If no valid indicators, use first available indicator and create a basic condition
+            indicator = indicators[0]
+            conditions.append(ConditionGene(
+                indicator=indicator.type,
+                operator='>' if is_entry else '<',
+                threshold=50,
+                logic='AND'
+            ))
+            return conditions
+        
         # Generate 1-3 conditions
-        num_conditions = random.randint(1, min(3, len(indicators)))
+        num_conditions = random.randint(1, min(3, len(valid_indicators)))
         
         for _ in range(num_conditions):
             # Pick a random indicator
-            indicator = random.choice(indicators)
+            indicator = random.choice(valid_indicators)
             
             # Generate condition based on indicator type
             condition = self._generate_condition_for_indicator(indicator, is_entry)
             if condition:
                 conditions.append(condition)
         
-        return conditions
+        # Ensure at least one condition
+        if not conditions and valid_indicators:
+            indicator = valid_indicators[0]
+            condition = self._generate_condition_for_indicator(indicator, is_entry)
+            if condition:
+                conditions.append(condition)
+        
+        return conditions if conditions else [ConditionGene(
+            indicator=indicators[0].type,
+            operator='>' if is_entry else '<',
+            threshold=50,
+            logic='AND'
+        )]
     
     def _generate_condition_for_indicator(self, indicator: IndicatorGene, 
                                          is_entry: bool) -> ConditionGene:
@@ -177,9 +204,52 @@ class StrategyGenerator:
                 logic=random.choice(['AND', 'OR'])
             )
         
-        # TODO: Add conditions for other indicators
+        elif indicator.type == 'STOCH':
+            if is_entry:
+                threshold_range = ind_config.get('k_threshold', [20, 40])
+                operator = '<'
+            else:
+                threshold_range = ind_config.get('d_threshold', [60, 80])
+                operator = '>'
+            
+            return ConditionGene(
+                indicator='STOCH',
+                operator=operator,
+                threshold=random.randint(*threshold_range),
+                logic=random.choice(['AND', 'OR'])
+            )
         
-        return None
+        elif indicator.type == 'CCI':
+            if is_entry:
+                threshold_range = ind_config.get('buy_threshold', [-200, -100])
+                operator = '<'
+            else:
+                threshold_range = ind_config.get('sell_threshold', [100, 200])
+                operator = '>'
+            
+            return ConditionGene(
+                indicator='CCI',
+                operator=operator,
+                threshold=random.randint(*threshold_range),
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type == 'ADX':
+            threshold_range = ind_config.get('threshold', [20, 40])
+            return ConditionGene(
+                indicator='ADX',
+                operator='>',
+                threshold=random.randint(*threshold_range),
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        # For other indicators, return a generic condition
+        return ConditionGene(
+            indicator=indicator.type,
+            operator='>' if is_entry else '<',
+            threshold=50,
+            logic='AND'
+        )
     
     def generate_strategy_code(self, strategy_gene: StrategyGene) -> str:
         """
