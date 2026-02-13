@@ -18,7 +18,7 @@ Dies wird:
 - Strategien nach `genetic_algorithm/output/` speichern
 - Einen Zusammenfassungsbericht erstellen
 
-### Quick Demo (5 Minuten)
+### Schnelle Demo (5 Minuten)
 
 ```bash
 python genetic_algorithm/demo_ga_runner.py

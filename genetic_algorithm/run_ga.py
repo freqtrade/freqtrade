@@ -64,16 +64,18 @@ def setup_logging():
     )
 
 
-def load_and_update_config(config_path: str) -> dict:
+def load_and_update_config(config_path) -> dict:
     """
     Load configuration from YAML file and update with user parameters.
     
     Args:
-        config_path: Path to configuration file
+        config_path: Path to configuration file (string or Path object)
         
     Returns:
         Updated configuration dictionary
     """
+    config_path = Path(config_path) if not isinstance(config_path, Path) else config_path
+    
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     
@@ -294,7 +296,7 @@ def main():
     try:
         config = load_and_update_config(CONFIG_FILE)
     except FileNotFoundError:
-        print(f"❌ Error: Configuration file not found at {CONFIG_FILE}")
+        print(f"❌ Error: Configuration file not found at {CONFIG_FILE.absolute()}")
         print("Please ensure you're running this from the correct directory.")
         return 1
     
@@ -353,8 +355,10 @@ def main():
     print("EVOLUTION COMPLETE")
     print("=" * 80)
     print()
-    print(f"✓ Completed {ga.current_generation + 1} generations")
-    print(f"✓ Evaluated {ga.population_size * (ga.current_generation + 1)} strategies")
+    
+    total_generations = ga.current_generation + 1
+    print(f"✓ Completed {total_generations} generations")
+    print(f"✓ Evaluated {ga.population_size * total_generations} strategies")
     print()
     
     # Display top strategies
