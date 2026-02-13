@@ -191,10 +191,24 @@ class StrategyGenerator:
         Returns:
             Python code as string
         """
-        # TODO: Implement code generation
-        # This will convert the genetic representation to a valid FreqTrade strategy file
-        
         strategy_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
+        
+        # Generate indicator code
+        indicator_code = self._generate_indicator_code(strategy_gene.indicators)
+        
+        # Generate entry condition code
+        entry_code = self._generate_condition_code(strategy_gene.entry_conditions, is_entry=True)
+        
+        # Generate exit condition code
+        exit_code = self._generate_condition_code(strategy_gene.exit_conditions, is_entry=False)
+        
+        # Generate trailing stop parameters
+        trailing_stop_params = ""
+        if strategy_gene.trailing_stop:
+            if strategy_gene.trailing_stop_positive is not None:
+                trailing_stop_params = f"""
+    trailing_stop_positive = {strategy_gene.trailing_stop_positive}
+    trailing_stop_positive_offset = {strategy_gene.trailing_stop_positive_offset}"""
         
         code = f'''"""
 Auto-generated strategy by Genetic Algorithm
@@ -205,6 +219,7 @@ Individual: {strategy_gene.individual_id}
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
 import talib.abstract as ta
+import numpy as np
 
 class {strategy_name}(IStrategy):
     """Auto-generated GA strategy"""
@@ -215,22 +230,153 @@ class {strategy_name}(IStrategy):
     timeframe = '{strategy_gene.timeframe}'
     stoploss = {strategy_gene.stoploss}
     minimal_roi = {strategy_gene.minimal_roi}
-    trailing_stop = {strategy_gene.trailing_stop}
+    trailing_stop = {strategy_gene.trailing_stop}{trailing_stop_params}
     
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Add indicators"""
-        # TODO: Generate indicator code
+{indicator_code}
         return dataframe
     
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Entry signals"""
-        # TODO: Generate entry condition code
+{entry_code}
         return dataframe
     
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Exit signals"""
-        # TODO: Generate exit condition code
+{exit_code}
         return dataframe
 '''
         
         return code
+    
+    def _generate_indicator_code(self, indicators: List[IndicatorGene]) -> str:
+        """Generate Python code for indicators."""
+        lines = []
+        
+        for ind in indicators:
+            if ind.type == 'RSI':
+                period = ind.parameters.get('period', 14)
+                lines.append(f"        dataframe['rsi_{period}'] = ta.RSI(dataframe, timeperiod={period})")
+            
+            elif ind.type == 'MACD':
+                fast = ind.parameters.get('fast_period', 12)
+                slow = ind.parameters.get('slow_period', 26)
+                signal = ind.parameters.get('signal_period', 9)
+                lines.append(f"        macd = ta.MACD(dataframe, fastperiod={fast}, slowperiod={slow}, signalperiod={signal})")
+                lines.append(f"        dataframe['macd'] = macd['macd']")
+                lines.append(f"        dataframe['macdsignal'] = macd['macdsignal']")
+                lines.append(f"        dataframe['macdhist'] = macd['macdhist']")
+            
+            elif ind.type == 'BBANDS':
+                period = ind.parameters.get('period', 20)
+                std_dev = ind.parameters.get('std_dev', 2.0)
+                lines.append(f"        bollinger = ta.BBANDS(dataframe, timeperiod={period}, nbdevup={std_dev}, nbdevdn={std_dev})")
+                lines.append(f"        dataframe['bb_upperband'] = bollinger['upperband']")
+                lines.append(f"        dataframe['bb_middleband'] = bollinger['middleband']")
+                lines.append(f"        dataframe['bb_lowerband'] = bollinger['lowerband']")
+            
+            elif ind.type == 'EMA':
+                period = ind.parameters.get('period', 20)
+                lines.append(f"        dataframe['ema_{period}'] = ta.EMA(dataframe, timeperiod={period})")
+            
+            elif ind.type == 'SMA':
+                period = ind.parameters.get('period', 20)
+                lines.append(f"        dataframe['sma_{period}'] = ta.SMA(dataframe, timeperiod={period})")
+            
+            elif ind.type == 'STOCH':
+                k_period = ind.parameters.get('k_period', 14)
+                d_period = ind.parameters.get('d_period', 3)
+                lines.append(f"        stoch = ta.STOCH(dataframe, fastk_period={k_period}, slowk_period={d_period}, slowd_period={d_period})")
+                lines.append(f"        dataframe['slowk'] = stoch['slowk']")
+                lines.append(f"        dataframe['slowd'] = stoch['slowd']")
+            
+            elif ind.type == 'ATR':
+                period = ind.parameters.get('period', 14)
+                lines.append(f"        dataframe['atr_{period}'] = ta.ATR(dataframe, timeperiod={period})")
+            
+            elif ind.type == 'ADX':
+                period = ind.parameters.get('period', 14)
+                lines.append(f"        dataframe['adx_{period}'] = ta.ADX(dataframe, timeperiod={period})")
+            
+            elif ind.type == 'CCI':
+                period = ind.parameters.get('period', 20)
+                lines.append(f"        dataframe['cci_{period}'] = ta.CCI(dataframe, timeperiod={period})")
+        
+        return '\n'.join(lines) if lines else "        # No indicators"
+    
+    def _generate_condition_code(self, conditions: List[ConditionGene], is_entry: bool) -> str:
+        """Generate Python code for entry/exit conditions."""
+        if not conditions:
+            signal_col = 'enter_long' if is_entry else 'exit_long'
+            return f"        dataframe['{signal_col}'] = 0\n"
+        
+        signal_col = 'enter_long' if is_entry else 'exit_long'
+        
+        # Build condition expressions
+        condition_exprs = []
+        
+        for i, cond in enumerate(conditions):
+            expr = self._generate_single_condition(cond)
+            if expr:
+                condition_exprs.append(expr)
+        
+        if not condition_exprs:
+            return f"        dataframe['{signal_col}'] = 0\n"
+        
+        # Combine conditions based on logic operators
+        # For simplicity, we'll combine with AND by default
+        # In a more advanced version, we'd parse the logic field properly
+        combined_condition = ' &\n            '.join(f"({expr})" for expr in condition_exprs)
+        
+        code = f"""        conditions = (
+            {combined_condition}
+        )
+        dataframe.loc[conditions, '{signal_col}'] = 1
+"""
+        
+        return code
+    
+    def _generate_single_condition(self, condition: ConditionGene) -> str:
+        """Generate a single condition expression."""
+        if condition.indicator == 'RSI':
+            # Find the RSI column (may have different periods)
+            if condition.operator == 'cross_below':
+                return f"(dataframe['rsi_14'] < {condition.threshold})"
+            elif condition.operator == 'cross_above':
+                return f"(dataframe['rsi_14'] > {condition.threshold})"
+            elif condition.operator == '<':
+                return f"(dataframe['rsi_14'] < {condition.threshold})"
+            elif condition.operator == '>':
+                return f"(dataframe['rsi_14'] > {condition.threshold})"
+        
+        elif condition.indicator == 'MACD':
+            if condition.operator == 'cross_above':
+                return "(dataframe['macd'] > dataframe['macdsignal'])"
+            elif condition.operator == 'cross_below':
+                return "(dataframe['macd'] < dataframe['macdsignal'])"
+        
+        elif condition.indicator == 'STOCH':
+            if condition.operator == '<':
+                return f"(dataframe['slowk'] < {condition.threshold})"
+            elif condition.operator == '>':
+                return f"(dataframe['slowk'] > {condition.threshold})"
+            elif condition.operator == 'cross_above':
+                return f"(dataframe['slowk'] > dataframe['slowd'])"
+            elif condition.operator == 'cross_below':
+                return f"(dataframe['slowk'] < dataframe['slowd'])"
+        
+        elif condition.indicator == 'CCI':
+            if condition.operator == '<':
+                return f"(dataframe['cci_20'] < {condition.threshold})"
+            elif condition.operator == '>':
+                return f"(dataframe['cci_20'] > {condition.threshold})"
+        
+        elif condition.indicator == 'ADX':
+            if condition.operator == '>':
+                return f"(dataframe['adx_14'] > {condition.threshold})"
+            elif condition.operator == '<':
+                return f"(dataframe['adx_14'] < {condition.threshold})"
+        
+        # Default fallback
+        return "True"
