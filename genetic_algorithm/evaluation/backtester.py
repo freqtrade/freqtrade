@@ -316,7 +316,7 @@ class FreqTradeBacktester:
             "dry_run_wallet": 1000,
             "max_open_trades": max_open_trades,
             "exchange": {
-                "name": "binance",
+                "name": "gate",  # Use gate like test config
                 "pair_whitelist": pairs,
                 "ccxt_config": {},
                 "ccxt_async_config": {},
