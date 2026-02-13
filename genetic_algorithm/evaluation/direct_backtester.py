@@ -8,14 +8,158 @@ import json
 import logging
 import tempfile
 import time
+import hashlib
 from pathlib import Path
 from typing import Dict, Any, Optional
 from unittest.mock import MagicMock, PropertyMock, patch
 from dataclasses import dataclass
 
-from genetic_algorithm.evaluation.backtester import BacktestResult, BacktestCache
-
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class BacktestResult:
+    """
+    Container for backtest results.
+    """
+    success: bool
+    strategy_name: str
+    
+    # Performance metrics
+    total_profit: float = 0.0
+    profit_percent: float = 0.0
+    total_trades: int = 0
+    wins: int = 0
+    losses: int = 0
+    win_rate: float = 0.0
+    
+    # Risk metrics
+    max_drawdown: float = 0.0
+    max_drawdown_abs: float = 0.0
+    sharpe_ratio: float = 0.0
+    sortino_ratio: float = 0.0
+    profit_factor: float = 0.0
+    
+    # Trade metrics
+    avg_profit: float = 0.0
+    median_profit: float = 0.0
+    avg_duration: str = ""
+    
+    # Additional info
+    error_message: Optional[str] = None
+    execution_time: float = 0.0
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            'success': self.success,
+            'strategy_name': self.strategy_name,
+            'total_profit': self.total_profit,
+            'profit_percent': self.profit_percent,
+            'total_trades': self.total_trades,
+            'wins': self.wins,
+            'losses': self.losses,
+            'win_rate': self.win_rate,
+            'max_drawdown': self.max_drawdown,
+            'max_drawdown_abs': self.max_drawdown_abs,
+            'sharpe_ratio': self.sharpe_ratio,
+            'sortino_ratio': self.sortino_ratio,
+            'profit_factor': self.profit_factor,
+            'avg_profit': self.avg_profit,
+            'median_profit': self.median_profit,
+            'avg_duration': self.avg_duration,
+            'error_message': self.error_message,
+            'execution_time': self.execution_time,
+        }
+
+
+class BacktestCache:
+    """
+    Simple cache for backtest results to avoid re-testing identical strategies.
+    """
+    
+    def __init__(self, cache_dir: Optional[Path] = None):
+        """
+        Initialize cache.
+        
+        Args:
+            cache_dir: Directory to store cache files
+        """
+        self.cache_dir = cache_dir or Path("genetic_algorithm/data/cache")
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.cache: Dict[str, BacktestResult] = {}
+        
+    def _get_cache_key(self, strategy_code: str, config: Dict[str, Any]) -> str:
+        """
+        Generate cache key from strategy code and config.
+        
+        Args:
+            strategy_code: Strategy Python code
+            config: Backtest configuration
+            
+        Returns:
+            Cache key (hash)
+        """
+        # Create deterministic string from strategy and config
+        cache_input = f"{strategy_code}_{json.dumps(config, sort_keys=True)}"
+        return hashlib.sha256(cache_input.encode()).hexdigest()
+    
+    def get(self, strategy_code: str, config: Dict[str, Any]) -> Optional[BacktestResult]:
+        """
+        Get cached result if available.
+        
+        Args:
+            strategy_code: Strategy code
+            config: Backtest configuration
+            
+        Returns:
+            Cached result or None
+        """
+        cache_key = self._get_cache_key(strategy_code, config)
+        
+        # Check memory cache
+        if cache_key in self.cache:
+            logger.debug(f"Cache hit (memory): {cache_key[:8]}...")
+            return self.cache[cache_key]
+        
+        # Check disk cache
+        cache_file = self.cache_dir / f"{cache_key}.json"
+        if cache_file.exists():
+            try:
+                with open(cache_file, 'r') as f:
+                    data = json.load(f)
+                    result = BacktestResult(**data)
+                    self.cache[cache_key] = result
+                    logger.debug(f"Cache hit (disk): {cache_key[:8]}...")
+                    return result
+            except Exception as e:
+                logger.warning(f"Failed to load cache file: {e}")
+        
+        return None
+    
+    def put(self, strategy_code: str, config: Dict[str, Any], result: BacktestResult):
+        """
+        Store result in cache.
+        
+        Args:
+            strategy_code: Strategy code
+            config: Backtest configuration
+            result: Backtest result
+        """
+        cache_key = self._get_cache_key(strategy_code, config)
+        
+        # Store in memory cache
+        self.cache[cache_key] = result
+        
+        # Store in disk cache
+        cache_file = self.cache_dir / f"{cache_key}.json"
+        try:
+            with open(cache_file, 'w') as f:
+                json.dump(result.to_dict(), f)
+            logger.debug(f"Cached result: {cache_key[:8]}...")
+        except Exception as e:
+            logger.warning(f"Failed to save cache file: {e}")
+
 
 
 class DirectBacktester:

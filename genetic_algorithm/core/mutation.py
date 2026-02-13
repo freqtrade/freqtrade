@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional
 
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
+from genetic_algorithm.utils.indicator_factory import create_random_indicator
 
 
 def mutate_parameters(individual: Individual, mutation_rate: float,
@@ -239,37 +240,7 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
 
 def _create_random_indicator(indicator_type: str, indicator_config: Dict[str, Any]) -> IndicatorGene:
     """Helper function to create a random indicator of given type."""
-    ind_config = indicator_config.get(indicator_type, {})
-    parameters = {}
-    
-    if indicator_type == 'RSI':
-        period_range = ind_config.get('period', [7, 21])
-        parameters['period'] = random.randint(*period_range)
-    
-    elif indicator_type == 'MACD':
-        parameters['fast_period'] = random.randint(*ind_config.get('fast_period', [8, 21]))
-        parameters['slow_period'] = random.randint(*ind_config.get('slow_period', [21, 50]))
-        parameters['signal_period'] = random.randint(*ind_config.get('signal_period', [5, 14]))
-    
-    elif indicator_type == 'BBANDS':
-        parameters['period'] = random.randint(*ind_config.get('period', [15, 30]))
-        parameters['std_dev'] = random.uniform(*ind_config.get('std_dev', [1.5, 3.0]))
-    
-    elif indicator_type in ['EMA', 'SMA']:
-        parameters['period'] = random.randint(*ind_config.get('period', [10, 50]))
-    
-    elif indicator_type == 'STOCH':
-        parameters['k_period'] = random.randint(*ind_config.get('k_period', [5, 21]))
-        parameters['d_period'] = random.randint(*ind_config.get('d_period', [3, 14]))
-    
-    elif indicator_type in ['ATR', 'ADX', 'CCI']:
-        parameters['period'] = random.randint(*ind_config.get('period', [10, 20]))
-    
-    return IndicatorGene(
-        type=indicator_type,
-        parameters=parameters,
-        weight=random.uniform(0.3, 1.0)
-    )
+    return create_random_indicator(indicator_type, indicator_config)
 
 
 def mutate_conditions(individual: Individual, mutation_rate: float,
