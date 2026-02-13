@@ -43,7 +43,31 @@ mkdir -p user_data/strategies/ga_generated
 
 ## Quick Start
 
-### 1. Download Historical Data
+### 1. Try the Example Scripts
+
+Before running the full evolution, try the provided examples:
+
+**Test the components:**
+```bash
+python genetic_algorithm/test_generation.py
+```
+
+This will verify that strategy generation, population management, and code generation work correctly.
+
+**Generate example strategies:**
+```bash
+python genetic_algorithm/example_usage.py
+```
+
+This will:
+- Initialize the GA with your configuration
+- Create a population of 100 random strategies
+- Show details of the first 3 strategies
+- Generate a complete FreqTrade strategy file
+
+The generated example will be saved to `genetic_algorithm/examples/example_strategy.py`.
+
+### 2. Download Historical Data
 
 Before running the GA, you need historical data for backtesting:
 
@@ -55,7 +79,7 @@ freqtrade download-data \
   --timerange 20230101-20231231
 ```
 
-### 2. Configure the GA
+### 2. Download Historical Data
 
 Edit `genetic_algorithm/config/ga_config.yaml` to customize:
 
@@ -74,7 +98,7 @@ backtesting:
     - "BNB/USDT"
 ```
 
-### 3. Run Your First Evolution
+### 3. Configure the GA
 
 ```python
 from genetic_algorithm.core.evolution import GeneticAlgorithm
@@ -99,7 +123,7 @@ Or use the command-line interface:
 python -m genetic_algorithm.main --config genetic_algorithm/config/ga_config.yaml
 ```
 
-### 4. View Results
+### 4. Run Your First Evolution (When Backtesting is Integrated)
 
 After evolution completes, you'll find:
 - Generated strategies in `user_data/strategies/ga_generated/`
@@ -107,7 +131,14 @@ After evolution completes, you'll find:
 - Detailed logs in `genetic_algorithm/logs/ga.log`
 - Strategy database in `genetic_algorithm/data/strategies.db`
 
-### 5. Test a Generated Strategy
+**Note**: Full evolution with backtesting integration is not yet complete. Currently you can:
+- Generate random strategies
+- Test the genetic operators
+- Inspect generated strategy code
+
+To complete the integration, see Phase 4.2 in TODO.md.
+
+### 5. View Results
 
 Test one of the top strategies with FreqTrade:
 
@@ -118,7 +149,7 @@ freqtrade backtesting \
   --timerange 20230101-20231231
 ```
 
-### 6. Run in Dry-Run Mode
+### 6. Test a Generated Strategy
 
 Once you're satisfied with a strategy, test it in dry-run (paper trading):
 
@@ -129,7 +160,7 @@ freqtrade trade \
   --dry-run
 ```
 
-## Understanding the Output
+### 7. Run in Dry-Run Mode
 
 ### Strategy Files
 
