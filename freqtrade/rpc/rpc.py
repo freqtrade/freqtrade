@@ -850,10 +850,10 @@ class RPC:
                 coin, stake_currency, trade_amount, balance
             )
 
-            total += est_stake
+            total += est_stake or 0
 
             if is_bot_managed:
-                total_bot += est_stake_bot
+                total_bot += est_stake_bot or 0
             currencies.append(
                 {
                     "currency": coin,

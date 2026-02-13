@@ -299,6 +299,8 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     if final_balance < 0:
         # With leveraged trades, final_balance can become negative.
         return 0
+    if days_passed == 0 or starting_balance == 0:
+        return 0
     return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
 
 
