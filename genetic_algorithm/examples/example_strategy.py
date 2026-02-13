@@ -15,26 +15,24 @@ class GAStrategy_Gen0_Ind0(IStrategy):
     INTERFACE_VERSION = 3
     
     # Strategy parameters
-    timeframe = '15m'
-    stoploss = -0.06045211161528827
-    minimal_roi = {0: 0.09799530973163299, 30: 0.0262573210437368, 60: 0.0489443994048185}
-    trailing_stop = False
+    timeframe = '1h'
+    stoploss = -0.07518603821081395
+    minimal_roi = {'0': 0.09384811654257705, '30': 0.03588395946778237, '60': 0.042410791445870163}
+    trailing_stop = True
     
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Add indicators"""
-        dataframe['sma_98'] = ta.SMA(dataframe, timeperiod=98)
-        dataframe['atr_10'] = ta.ATR(dataframe, timeperiod=10)
-        dataframe['ema_26'] = ta.EMA(dataframe, timeperiod=26)
-        macd = ta.MACD(dataframe, fastperiod=8, slowperiod=23, signalperiod=5)
-        dataframe['macd'] = macd['macd']
-        dataframe['macdsignal'] = macd['macdsignal']
-        dataframe['macdhist'] = macd['macdhist']
+        dataframe['rsi_19'] = ta.RSI(dataframe, timeperiod=19)
+        bollinger = ta.BBANDS(dataframe, timeperiod=20, nbdevup=2.0878650025789773, nbdevdn=2.0878650025789773)
+        dataframe['bb_upperband'] = bollinger['upperband']
+        dataframe['bb_middleband'] = bollinger['middleband']
+        dataframe['bb_lowerband'] = bollinger['lowerband']
         return dataframe
     
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Entry signals"""
         conditions = (
-            ((dataframe['macd'] > dataframe['macdsignal']))
+            ((dataframe['rsi_19'] < 30))
         )
         dataframe.loc[conditions, 'enter_long'] = 1
 
@@ -43,7 +41,7 @@ class GAStrategy_Gen0_Ind0(IStrategy):
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Exit signals"""
         conditions = (
-            ((dataframe['macd'] < dataframe['macdsignal']))
+            ((dataframe['rsi_19'] > 61))
         )
         dataframe.loc[conditions, 'exit_long'] = 1
 
