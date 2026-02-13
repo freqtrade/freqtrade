@@ -1,0 +1,229 @@
+# Genetic Algorithm Configuration for FreqTrade Strategy Evolution
+
+# === Genetic Algorithm Parameters ===
+genetic_algorithm:
+  # Population size - number of strategies per generation
+  population_size: 100
+  
+  # Number of generations to evolve
+  generations: 50
+  
+  # Mutation rate - probability of mutating an individual
+  mutation_rate: 0.15
+  
+  # Crossover rate - probability of crossing over two parents
+  crossover_rate: 0.7
+  
+  # Elite size - number of top strategies to preserve unchanged
+  elite_size: 10
+  
+  # Tournament size for tournament selection
+  tournament_size: 3
+  
+  # Selection method: 'tournament', 'roulette', 'rank'
+  selection_method: 'tournament'
+  
+  # Convergence threshold - stop if no improvement after N generations
+  convergence_patience: 10
+
+# === Fitness Function Weights ===
+# These weights determine how different metrics contribute to overall fitness
+# All weights should sum to 1.0
+fitness_weights:
+  profit: 0.30        # Total profit/return
+  sharpe_ratio: 0.25  # Risk-adjusted returns
+  drawdown: 0.20      # Maximum drawdown (penalty)
+  win_rate: 0.15      # Percentage of winning trades
+  trade_frequency: 0.10  # Number of trades (too few or too many is bad)
+
+# Fitness penalties
+fitness_penalties:
+  min_trades: 10           # Penalize if fewer trades
+  max_drawdown: 0.25       # Penalize if drawdown exceeds this
+  min_win_rate: 0.35       # Penalize if win rate below this
+
+# === Backtesting Configuration ===
+backtesting:
+  # Time range for backtesting (YYYYMMDD-YYYYMMDD)
+  timerange: "20230101-20231231"
+  
+  # Stake amount per trade
+  stake_amount: 100
+  
+  # Trading pairs to test strategies on
+  pairs:
+    - "BTC/USDT"
+    - "ETH/USDT"
+    - "BNB/USDT"
+  
+  # Maximum number of open trades
+  max_open_trades: 3
+  
+  # Fee for trades (0.1%)
+  fee: 0.001
+  
+  # Enable caching of backtest results
+  enable_cache: true
+  
+  # Timeout for single backtest (seconds)
+  timeout: 300
+
+# === Strategy Constraints ===
+strategy_constraints:
+  # Minimum number of trades for valid strategy
+  min_trades: 10
+  
+  # Maximum allowed drawdown
+  max_drawdown: 0.25
+  
+  # Minimum win rate
+  min_win_rate: 0.35
+  
+  # Allowed timeframes
+  timeframes: ["5m", "15m", "1h"]
+  
+  # Stop loss range
+  stoploss_range: [-0.20, -0.05]
+  
+  # ROI range
+  roi_range: [0.01, 0.10]
+
+# === Indicator Configuration ===
+indicators:
+  # Available indicators for strategy generation
+  available:
+    - "RSI"
+    - "MACD"
+    - "BBANDS"
+    - "EMA"
+    - "SMA"
+    - "STOCH"
+    - "ATR"
+    - "ADX"
+    - "CCI"
+  
+  # Maximum indicators per strategy
+  max_per_strategy: 5
+  
+  # Minimum indicators per strategy
+  min_per_strategy: 2
+  
+  # Indicator-specific parameter ranges
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 40]
+    sell_threshold: [60, 80]
+  
+  MACD:
+    fast_period: [8, 21]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  
+  BBANDS:
+    period: [15, 30]
+    std_dev: [1.5, 3.0]
+  
+  EMA:
+    period: [5, 50]
+  
+  SMA:
+    period: [10, 100]
+  
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [20, 40]
+    d_threshold: [60, 80]
+  
+  ATR:
+    period: [10, 20]
+  
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+  
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-200, -100]
+    sell_threshold: [100, 200]
+
+# === Storage Configuration ===
+storage:
+  # Database file for storing strategies and results
+  database: "genetic_algorithm/data/strategies.db"
+  
+  # Directory for generated strategy files
+  strategy_dir: "user_data/strategies/ga_generated"
+  
+  # Directory for checkpoints
+  checkpoint_dir: "genetic_algorithm/data/checkpoints"
+  
+  # Save checkpoint every N generations
+  checkpoint_interval: 5
+  
+  # Keep history of all generations
+  keep_history: true
+
+# === Logging Configuration ===
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+  
+  # Log file location
+  file: "genetic_algorithm/logs/ga.log"
+  
+  # Enable console output
+  console: true
+  
+  # Log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# === Visualization Configuration ===
+visualization:
+  # Enable real-time plotting
+  enabled: true
+  
+  # Update plot every N generations
+  update_interval: 1
+  
+  # Plot types to generate
+  plots:
+    - "fitness_evolution"
+    - "diversity"
+    - "top_strategies"
+  
+  # Save plots to directory
+  output_dir: "genetic_algorithm/plots"
+
+# === Advanced Features (Optional) ===
+advanced:
+  # Enable parallel evaluation of strategies
+  parallel_evaluation: false
+  
+  # Number of parallel workers
+  num_workers: 4
+  
+  # Enable dry-run testing for top strategies
+  enable_dry_run: false
+  
+  # Dry-run duration (days)
+  dry_run_duration: 7
+  
+  # Enable ML-based fitness prediction (FreqAI)
+  enable_ml_fitness: false
+  
+  # Enable LLM-based strategy generation
+  enable_llm: false
+  
+  # LLM API configuration
+  llm:
+    provider: "grok"  # grok, openai, local
+    api_key: ""
+    model: "grok-1"
+  
+  # Island model configuration
+  island_model:
+    enabled: false
+    num_islands: 4
+    migration_interval: 5  # generations between migrations
+    migration_size: 5      # individuals to migrate
