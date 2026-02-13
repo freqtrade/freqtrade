@@ -267,10 +267,10 @@ class StrategyGenerator:
         indicator_code = self._generate_indicator_code(strategy_gene.indicators)
         
         # Generate entry condition code
-        entry_code = self._generate_condition_code(strategy_gene.entry_conditions, is_entry=True)
+        entry_code = self._generate_condition_code(strategy_gene.entry_conditions, strategy_gene.indicators, is_entry=True)
         
         # Generate exit condition code
-        exit_code = self._generate_condition_code(strategy_gene.exit_conditions, is_entry=False)
+        exit_code = self._generate_condition_code(strategy_gene.exit_conditions, strategy_gene.indicators, is_entry=False)
         
         # Generate trailing stop parameters
         trailing_stop_params = ""
@@ -375,7 +375,7 @@ class {strategy_name}(IStrategy):
         
         return '\n'.join(lines) if lines else "        # No indicators"
     
-    def _generate_condition_code(self, conditions: List[ConditionGene], is_entry: bool) -> str:
+    def _generate_condition_code(self, conditions: List[ConditionGene], indicators: List[IndicatorGene], is_entry: bool) -> str:
         """Generate Python code for entry/exit conditions."""
         if not conditions:
             signal_col = 'enter_long' if is_entry else 'exit_long'
@@ -387,7 +387,7 @@ class {strategy_name}(IStrategy):
         condition_exprs = []
         
         for i, cond in enumerate(conditions):
-            expr = self._generate_single_condition(cond)
+            expr = self._generate_single_condition(cond, indicators)
             if expr:
                 condition_exprs.append(expr)
         
@@ -407,18 +407,29 @@ class {strategy_name}(IStrategy):
         
         return code
     
-    def _generate_single_condition(self, condition: ConditionGene) -> str:
+    def _generate_single_condition(self, condition: ConditionGene, indicators: List[IndicatorGene]) -> str:
         """Generate a single condition expression."""
+        # Find the indicator with matching type to get the actual period
+        indicator_periods = {}
+        for ind in indicators:
+            if ind.type not in indicator_periods:
+                # Get the period from parameters
+                if ind.type in ['RSI', 'EMA', 'SMA', 'ATR', 'ADX', 'CCI']:
+                    indicator_periods[ind.type] = ind.parameters.get('period', 14)
+                elif ind.type == 'STOCH':
+                    indicator_periods[ind.type] = ind.parameters.get('k_period', 14)
+        
         if condition.indicator == 'RSI':
-            # Find the RSI column (may have different periods)
+            # Use actual RSI period if available
+            period = indicator_periods.get('RSI', 14)
             if condition.operator == 'cross_below':
-                return f"(dataframe['rsi_14'] < {condition.threshold})"
+                return f"(dataframe['rsi_{period}'] < {condition.threshold})"
             elif condition.operator == 'cross_above':
-                return f"(dataframe['rsi_14'] > {condition.threshold})"
+                return f"(dataframe['rsi_{period}'] > {condition.threshold})"
             elif condition.operator == '<':
-                return f"(dataframe['rsi_14'] < {condition.threshold})"
+                return f"(dataframe['rsi_{period}'] < {condition.threshold})"
             elif condition.operator == '>':
-                return f"(dataframe['rsi_14'] > {condition.threshold})"
+                return f"(dataframe['rsi_{period}'] > {condition.threshold})"
         
         elif condition.indicator == 'MACD':
             if condition.operator == 'cross_above':
@@ -437,16 +448,20 @@ class {strategy_name}(IStrategy):
                 return f"(dataframe['slowk'] < dataframe['slowd'])"
         
         elif condition.indicator == 'CCI':
+            # Use actual CCI period if available
+            period = indicator_periods.get('CCI', 20)
             if condition.operator == '<':
-                return f"(dataframe['cci_20'] < {condition.threshold})"
+                return f"(dataframe['cci_{period}'] < {condition.threshold})"
             elif condition.operator == '>':
-                return f"(dataframe['cci_20'] > {condition.threshold})"
+                return f"(dataframe['cci_{period}'] > {condition.threshold})"
         
         elif condition.indicator == 'ADX':
+            # Use actual ADX period if available
+            period = indicator_periods.get('ADX', 14)
             if condition.operator == '>':
-                return f"(dataframe['adx_14'] > {condition.threshold})"
+                return f"(dataframe['adx_{period}'] > {condition.threshold})"
             elif condition.operator == '<':
-                return f"(dataframe['adx_14'] < {condition.threshold})"
+                return f"(dataframe['adx_{period}'] < {condition.threshold})"
         
         # Default fallback
         return "True"
