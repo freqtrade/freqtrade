@@ -44,6 +44,9 @@ LOG_DIR = Path("genetic_algorithm/logs")       # Directory for log files
 # Configuration file path
 CONFIG_FILE = Path("genetic_algorithm/config/ga_config.yaml")
 
+# Timestamp format for files and logs
+TIMESTAMP_FORMAT = "%Y%m%d_%H%M%S"
+
 # ============================================================================
 
 
@@ -52,7 +55,7 @@ def setup_logging():
     # Ensure log directory exists
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     
-    log_file = LOG_DIR / f'ga_run_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+    log_file = LOG_DIR / f'ga_run_{datetime.now().strftime(TIMESTAMP_FORMAT)}.log'
     
     logging.basicConfig(
         level=logging.INFO,
@@ -74,7 +77,7 @@ def load_and_update_config(config_path) -> dict:
     Returns:
         Updated configuration dictionary
     """
-    config_path = Path(config_path) if not isinstance(config_path, Path) else config_path
+    config_path = Path(config_path)
     
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
@@ -213,7 +216,7 @@ def save_top_strategies(top_strategies: list, strategy_generator: StrategyGenera
     print("=" * 80)
     print()
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
     
     for rank, individual in enumerate(top_strategies, 1):
         gene = individual.strategy_gene
@@ -248,7 +251,7 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict):
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
     report_path = output_dir / f"ga_summary_{timestamp}.txt"
     
     with open(report_path, 'w') as f:
@@ -357,8 +360,9 @@ def main():
     print()
     
     total_generations = ga.current_generation + 1
+    total_strategies = ga.population_size * total_generations
     print(f"✓ Completed {total_generations} generations")
-    print(f"✓ Evaluated {ga.population_size * total_generations} strategies")
+    print(f"✓ Created {total_strategies} strategies")
     print()
     
     # Display top strategies
