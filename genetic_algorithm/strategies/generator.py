@@ -70,12 +70,12 @@ class StrategyGenerator:
         stoploss_range = self.strategy_constraints.get('stoploss_range', [-0.20, -0.05])
         stoploss = random.uniform(*stoploss_range)
         
-        # Generate ROI
+        # Generate ROI (keys must be strings for FreqTrade config validation)
         roi_range = self.strategy_constraints.get('roi_range', [0.01, 0.10])
         minimal_roi = {
-            0: random.uniform(roi_range[0] * 2, roi_range[1]),
-            30: random.uniform(roi_range[0] * 1.5, roi_range[1] * 0.7),
-            60: random.uniform(roi_range[0], roi_range[1] * 0.5),
+            "0": random.uniform(roi_range[0] * 2, roi_range[1]),
+            "30": random.uniform(roi_range[0] * 1.5, roi_range[1] * 0.7),
+            "60": random.uniform(roi_range[0], roi_range[1] * 0.5),
         }
         
         # Random timeframe

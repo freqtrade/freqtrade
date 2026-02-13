@@ -9,7 +9,8 @@ import logging
 from typing import Tuple, Dict, Any
 
 from genetic_algorithm.core.strategy_gene import StrategyGene
-from genetic_algorithm.evaluation.backtester import FreqTradeBacktester, BacktestResult
+from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
+from genetic_algorithm.evaluation.backtester import BacktestResult
 from genetic_algorithm.strategies.generator import StrategyGenerator
 
 logger = logging.getLogger(__name__)
@@ -38,8 +39,8 @@ class FitnessEvaluator:
         self.fitness_penalties = config.get('fitness_penalties', {})
         self.backtest_config = config.get('backtesting', {})
         
-        # Initialize backtester and strategy generator
-        self.backtester = FreqTradeBacktester(config)
+        # Initialize direct backtester and strategy generator
+        self.backtester = DirectBacktester(config)
         self.strategy_generator = StrategyGenerator(config)
     
     def evaluate(self, strategy_gene: StrategyGene, strategy_name: str = None) -> Tuple[float, Dict[str, float]]:
@@ -59,11 +60,16 @@ class FitnessEvaluator:
             strategy_name = f"GA_Strategy_{uuid.uuid4().hex[:8]}"
         
         try:
-            # Generate strategy code
-            strategy_code = self.strategy_generator.generate_strategy_code(strategy_gene, strategy_name)
+            # Generate strategy code (strategy name is auto-generated from gene info)
+            strategy_code = self.strategy_generator.generate_strategy_code(strategy_gene)
+            
+            # Extract the generated strategy name from the gene
+            generated_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
+            if strategy_name is None:
+                strategy_name = generated_name
             
             # Run backtest
-            backtest_result = self.backtester.backtest_strategy(strategy_code, strategy_name)
+            backtest_result = self.backtester.backtest_strategy(strategy_code, generated_name)
             
             # Check if backtest was successful
             if not backtest_result.success:
