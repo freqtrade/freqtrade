@@ -8,8 +8,34 @@
 
 ## 🎉 Quick Start
 
+### Option 1: Run the Full GA (Recommended)
+
 ```bash
-# Run the example to see it in action
+# Run the complete Genetic Algorithm evolution
+python genetic_algorithm/run_ga.py
+
+# This will:
+# - Evolve 50 strategies over 20 generations
+# - Display the top 5 best strategies
+# - Save strategies to genetic_algorithm/output/
+# - Create a summary report
+```
+
+**See [RUN_GA_GUIDE.md](RUN_GA_GUIDE.md) for detailed configuration options!**
+
+### Option 2: Quick Demo (5 minutes)
+
+```bash
+# Run a quick demonstration
+python genetic_algorithm/demo_ga_runner.py
+
+# This runs a minimal version with just 5 strategies and 2 generations
+```
+
+### Option 3: See Example Generation
+
+```bash
+# Just see strategy generation without evolution
 python genetic_algorithm/example_usage.py
 
 # Output: Generates 100 strategies and saves an example to genetic_algorithm/examples/
@@ -36,10 +62,11 @@ This module implements a Genetic Algorithm (GA) system for autonomously developi
 ## 📚 Documentation
 
 ### Essential Reading
-1. **STATUS_REPORT.md** - ⭐ **START HERE!** Current status and capabilities
-2. **TUTORIAL.md** - Complete usage guide with examples
-3. **QUICK_REFERENCE.md** - Quick commands and examples
-4. **ACCOMPLISHMENTS.md** - Detailed list of what's been implemented
+1. **RUN_GA_GUIDE.md** - 🚀 **Complete guide for run_ga.py** - configuration and usage
+2. **STATUS_REPORT.md** - ⭐ Current status and capabilities
+3. **TUTORIAL.md** - Complete usage guide with examples
+4. **QUICK_REFERENCE.md** - Quick commands and examples
+5. **ACCOMPLISHMENTS.md** - Detailed list of what's been implemented
 
 ### Additional Resources
 - **DEVELOPMENT_PLAN.md** - Original architecture and design plan

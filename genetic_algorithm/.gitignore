@@ -1,0 +1,29 @@
+# Output files from GA runs
+output/*.py
+output/*.txt
+output/*.json
+
+# Log files
+logs/*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data files
+data/*.db
+data/checkpoints/
+
+# Plots
+plots/*.png
+plots/*.jpg
+plots/*.pdf
+
+# Example output
+examples/example_strategy.py
