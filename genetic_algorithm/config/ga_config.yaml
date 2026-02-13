@@ -45,16 +45,16 @@ fitness_penalties:
 # === Backtesting Configuration ===
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
-  timerange: "20230101-20231231"
+  timerange: ""  # Empty for all available data
   
   # Stake amount per trade
-  stake_amount: 100
+  stake_amount: 0.05
   
-  # Trading pairs to test strategies on
+  # Trading pairs to test strategies on (use test data pairs)
   pairs:
-    - "BTC/USDT"
-    - "ETH/USDT"
-    - "BNB/USDT"
+    - "UNITTEST/BTC"
+    - "ETH/BTC"
+    - "LTC/BTC"
   
   # Maximum number of open trades
   max_open_trades: 3

@@ -117,7 +117,7 @@ def test_strategy_generation_and_backtest():
     
     # Generate code
     strategy_name = "RandomStrategy_Test"
-    strategy_code = generator.generate_strategy_code(strategy_gene, strategy_name)
+    strategy_code = generator.generate_strategy_code(strategy_gene)
     print(f"\nGenerated {len(strategy_code)} characters of strategy code")
     
     # Run backtest

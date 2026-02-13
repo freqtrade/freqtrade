@@ -130,7 +130,7 @@ def test_generated_strategy():
     print(f"   Timeframe: {strategy_gene.timeframe}")
     
     print("\n2. Converting to code...")
-    strategy_code = generator.generate_strategy_code(strategy_gene, "GeneratedTestStrategy")
+    strategy_code = generator.generate_strategy_code(strategy_gene)
     print(f"   Code length: {len(strategy_code)} chars")
     
     print("\n3. Running backtest...")
