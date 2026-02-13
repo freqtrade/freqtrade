@@ -321,9 +321,11 @@ class FreqTradeBacktester:
                 "ccxt_config": {},
                 "ccxt_async_config": {},
             },
+            "pairlists": [{"method": "StaticPairList"}],  # Required by FreqTrade
             "fee": fee,
             "trading_mode": "spot",
             "margin_mode": "",
+            "dry_run": True,  # Ensure we don't try to connect to exchange
         }
         
         return config
@@ -349,6 +351,7 @@ class FreqTradeBacktester:
             '--strategy', strategy_name,
             '--export', 'trades',
             '--export-filename', f'backtest_{strategy_name}.json',
+            '--breakdown', 'day',  # Add breakdown for more detail
         ]
         
         if timerange:
@@ -368,7 +371,8 @@ class FreqTradeBacktester:
                 cwd=str(self.freqtrade_root),
                 capture_output=True,
                 text=True,
-                timeout=timeout
+                timeout=timeout,
+                env={**subprocess.os.environ, 'FREQTRADE_NO_EXCHANGE_CHECK': '1'}  # Disable exchange check
             )
             
             if process.returncode != 0:
