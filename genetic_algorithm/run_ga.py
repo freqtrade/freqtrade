@@ -39,18 +39,27 @@ TOP_STRATEGIES_COUNT = 5
 # Output configuration
 SAVE_STRATEGIES = True        # Save top strategies to files
 OUTPUT_DIR = Path("genetic_algorithm/output")  # Directory for output files
+LOG_DIR = Path("genetic_algorithm/logs")       # Directory for log files
+
+# Configuration file path
+CONFIG_FILE = Path("genetic_algorithm/config/ga_config.yaml")
 
 # ============================================================================
 
 
 def setup_logging():
     """Set up logging for the GA run."""
+    # Ensure log directory exists
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    
+    log_file = LOG_DIR / f'ga_run_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+    
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(),
-            logging.FileHandler(f'genetic_algorithm/logs/ga_run_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+            logging.FileHandler(log_file)
         ]
     )
 
@@ -282,12 +291,10 @@ def main():
     logger = logging.getLogger(__name__)
     
     # Load configuration
-    config_path = Path(__file__).parent / "config" / "ga_config.yaml"
-    
     try:
-        config = load_and_update_config(config_path)
+        config = load_and_update_config(CONFIG_FILE)
     except FileNotFoundError:
-        print(f"❌ Error: Configuration file not found at {config_path}")
+        print(f"❌ Error: Configuration file not found at {CONFIG_FILE}")
         print("Please ensure you're running this from the correct directory.")
         return 1
     

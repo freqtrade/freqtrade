@@ -24,6 +24,9 @@ from genetic_algorithm.strategies.generator import StrategyGenerator
 import yaml
 import tempfile
 
+# Configuration
+CONFIG_FILE = Path(__file__).parent / "config" / "ga_config.yaml"
+
 
 def main():
     """Run quick demo."""
@@ -41,8 +44,7 @@ def main():
     print()
     
     # Load and modify config
-    config_path = Path(__file__).parent / "config" / "ga_config.yaml"
-    with open(config_path, 'r') as f:
+    with open(CONFIG_FILE, 'r') as f:
         config = yaml.safe_load(f)
     
     # Set minimal parameters
