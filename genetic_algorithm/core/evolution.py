@@ -115,13 +115,31 @@ class GeneticAlgorithm:
         self.logger.info(f"Evaluating {len(unevaluated)} individuals...")
         
         for i, individual in enumerate(unevaluated):
-            self.logger.debug(f"Evaluating individual {i+1}/{len(unevaluated)}: {individual.id}")
+            strategy_name = f"Gen{self.current_generation}_Ind{individual.id}"
+            self.logger.debug(f"Evaluating individual {i+1}/{len(unevaluated)}: {strategy_name}")
             
-            # Evaluate fitness
-            fitness, metrics = self.fitness_evaluator.evaluate(individual.strategy_gene)
-            individual.set_fitness(fitness, metrics)
-            
-            self.logger.debug(f"  Fitness: {fitness:.4f}, Profit: {metrics.get('profit', 0):.2f}%")
+            try:
+                # Evaluate fitness
+                fitness, metrics = self.fitness_evaluator.evaluate(
+                    individual.strategy_gene,
+                    strategy_name=strategy_name
+                )
+                individual.set_fitness(fitness, metrics)
+                
+                self.logger.debug(f"  Fitness: {fitness:.4f}, Profit: {metrics.get('profit', 0):.2f}%")
+                
+            except Exception as e:
+                # Handle evaluation errors gracefully
+                self.logger.error(f"Failed to evaluate {strategy_name}: {e}")
+                # Set zero fitness for failed evaluation
+                individual.set_fitness(0.0, {
+                    'profit': 0.0,
+                    'sharpe_ratio': 0.0,
+                    'max_drawdown': 1.0,
+                    'win_rate': 0.0,
+                    'num_trades': 0,
+                    'error': str(e)
+                })
     
     def create_next_generation(self, population: Population) -> Population:
         """

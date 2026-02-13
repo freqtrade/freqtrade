@@ -5,12 +5,14 @@ Evaluates the fitness of trading strategies through backtesting
 and calculating performance metrics.
 """
 
-import subprocess
-import json
+import logging
 from typing import Tuple, Dict, Any
-from pathlib import Path
 
 from genetic_algorithm.core.strategy_gene import StrategyGene
+from genetic_algorithm.evaluation.backtester import FreqTradeBacktester, BacktestResult
+from genetic_algorithm.strategies.generator import StrategyGenerator
+
+logger = logging.getLogger(__name__)
 
 
 class FitnessEvaluator:
@@ -35,33 +37,89 @@ class FitnessEvaluator:
         self.fitness_weights = config.get('fitness_weights', {})
         self.fitness_penalties = config.get('fitness_penalties', {})
         self.backtest_config = config.get('backtesting', {})
+        
+        # Initialize backtester and strategy generator
+        self.backtester = FreqTradeBacktester(config)
+        self.strategy_generator = StrategyGenerator(config)
     
-    def evaluate(self, strategy_gene: StrategyGene) -> Tuple[float, Dict[str, float]]:
+    def evaluate(self, strategy_gene: StrategyGene, strategy_name: str = None) -> Tuple[float, Dict[str, float]]:
         """
-        Evaluate a strategy's fitness.
+        Evaluate a strategy's fitness through backtesting.
         
         Args:
             strategy_gene: Strategy to evaluate
+            strategy_name: Optional name for the strategy (auto-generated if not provided)
             
         Returns:
             Tuple of (fitness_score, metrics_dict)
         """
-        # For now, return dummy values
-        # TODO: Implement actual backtesting
+        # Generate strategy name if not provided
+        if strategy_name is None:
+            import uuid
+            strategy_name = f"GA_Strategy_{uuid.uuid4().hex[:8]}"
         
-        # Simulate backtest metrics
-        metrics = {
-            'profit': 5.0,  # 5% profit
-            'sharpe_ratio': 1.2,
-            'max_drawdown': 0.08,
-            'win_rate': 0.55,
-            'num_trades': 25,
+        try:
+            # Generate strategy code
+            strategy_code = self.strategy_generator.generate_strategy_code(strategy_gene, strategy_name)
+            
+            # Run backtest
+            backtest_result = self.backtester.backtest_strategy(strategy_code, strategy_name)
+            
+            # Check if backtest was successful
+            if not backtest_result.success:
+                logger.warning(f"Backtest failed for {strategy_name}: {backtest_result.error_message}")
+                # Return very low fitness for failed strategies
+                return 0.0, {
+                    'profit': 0.0,
+                    'sharpe_ratio': 0.0,
+                    'max_drawdown': 1.0,
+                    'win_rate': 0.0,
+                    'num_trades': 0,
+                    'error': backtest_result.error_message
+                }
+            
+            # Convert backtest result to metrics dictionary
+            metrics = self._backtest_result_to_metrics(backtest_result)
+            
+            # Calculate fitness
+            fitness = self.calculate_fitness(metrics)
+            
+            logger.info(f"Strategy {strategy_name}: fitness={fitness:.4f}, "
+                       f"profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}")
+            
+            return fitness, metrics
+            
+        except Exception as e:
+            logger.error(f"Error evaluating strategy {strategy_name}: {e}", exc_info=True)
+            # Return zero fitness on error
+            return 0.0, {
+                'profit': 0.0,
+                'sharpe_ratio': 0.0,
+                'max_drawdown': 1.0,
+                'win_rate': 0.0,
+                'num_trades': 0,
+                'error': str(e)
+            }
+    
+    def _backtest_result_to_metrics(self, result: BacktestResult) -> Dict[str, float]:
+        """
+        Convert BacktestResult to metrics dictionary for fitness calculation.
+        
+        Args:
+            result: BacktestResult object
+            
+        Returns:
+            Dictionary of metrics
+        """
+        return {
+            'profit': result.profit_percent,
+            'sharpe_ratio': result.sharpe_ratio,
+            'max_drawdown': result.max_drawdown,
+            'win_rate': result.win_rate,
+            'num_trades': result.total_trades,
+            'profit_factor': result.profit_factor,
+            'sortino_ratio': result.sortino_ratio,
         }
-        
-        # Calculate fitness
-        fitness = self.calculate_fitness(metrics)
-        
-        return fitness, metrics
     
     def calculate_fitness(self, metrics: Dict[str, float]) -> float:
         """
@@ -155,32 +213,4 @@ class FitnessEvaluator:
         
         return fitness
     
-    def run_backtest(self, strategy_gene: StrategyGene) -> Dict[str, Any]:
-        """
-        Run FreqTrade backtest for a strategy.
-        
-        Args:
-            strategy_gene: Strategy to backtest
-            
-        Returns:
-            Backtest results dictionary
-        """
-        # TODO: Implement actual backtesting
-        # 1. Generate strategy file
-        # 2. Run freqtrade backtesting command
-        # 3. Parse results
-        # 4. Return metrics
-        pass
-    
-    def parse_backtest_results(self, output: str) -> Dict[str, float]:
-        """
-        Parse FreqTrade backtest output.
-        
-        Args:
-            output: Backtest command output
-            
-        Returns:
-            Dictionary of metrics
-        """
-        # TODO: Parse FreqTrade backtest JSON output
-        pass
+
