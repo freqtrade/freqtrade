@@ -857,9 +857,9 @@ class RPC:
             currencies.append(
                 {
                     "currency": coin,
-                    "free": balance.free,
-                    "balance": balance.total,
-                    "used": balance.used,
+                    "free": balance.free or 0,
+                    "balance": balance.total or 0,
+                    "used": balance.used or 0,
                     "bot_owned": trade_amount,
                     "est_stake": est_stake or 0,
                     "est_stake_bot": est_stake_bot if is_bot_managed else 0,
