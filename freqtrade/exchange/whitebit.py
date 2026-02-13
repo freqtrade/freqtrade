@@ -36,6 +36,20 @@ class Whitebit(Exchange):
         else:
             return 1.0
 
+    async def _fetch_funding_rate_history(
+        self,
+        pair: str,
+        timeframe: str,
+        limit: int,
+        since_ms: int | None = None,
+    ) -> list[list]:
+        """
+        WhiteBit does not support fetchFundingRateHistory.
+        Return empty list so the data downloader skips funding rate candles
+        gracefully instead of raising ccxt.NotSupported for every pair.
+        """
+        return []
+
     def get_funding_fees(
         self, pair: str, amount: float, is_short: bool, open_date: datetime
     ) -> float:
