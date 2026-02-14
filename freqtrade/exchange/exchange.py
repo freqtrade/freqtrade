@@ -1824,9 +1824,12 @@ class Exchange:
         :param amount: Amount to use for fake response
         :return: Result from either cancel_order if usable, or fetch_order
         """
-        corder = self.cancel_stoploss_order(order_id, pair)
-        if self.is_cancel_order_result_suitable(corder):
-            return corder
+        try:
+            corder = self.cancel_stoploss_order(order_id, pair)
+            if self.is_cancel_order_result_suitable(corder):
+                return corder
+        except InvalidOrderException:
+            logger.warning(f"Could not cancel stoploss order {order_id} for {pair}.")
         try:
             order = self.fetch_stoploss_order(order_id, pair)
         except InvalidOrderException:
