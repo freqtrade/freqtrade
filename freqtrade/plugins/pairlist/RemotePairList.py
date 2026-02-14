@@ -236,7 +236,15 @@ class RemotePairList(IPairList):
         else:
             if self._pairlist_url.startswith("file:///"):
                 filename = self._pairlist_url.split("file:///", 1)[1]
-                file_path = Path(filename)
+                file_path = Path(filename).resolve()
+
+                user_data_dir = self._config["user_data_dir"].resolve()
+                if not file_path.is_relative_to(user_data_dir):
+                    raise OperationalException(
+                        f"File path '{file_path}' is outside the allowed directory "
+                        f"'{user_data_dir}'. For security reasons, file:// URLs must "
+                        f"reference files within the user data directory."
+                    )
 
                 if file_path.exists():
                     with file_path.open() as json_file:
