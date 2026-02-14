@@ -3,6 +3,7 @@ This module manages webhook communication
 """
 
 import logging
+import string
 import time
 from typing import Any
 
@@ -15,6 +16,22 @@ from freqtrade.rpc.rpc_types import RPCSendMsg
 
 
 logger = logging.getLogger(__name__)
+
+
+class _SafeFormatter(string.Formatter):
+
+    def get_field(self, field_name: str, args: Any, kwargs: Any) -> Any:
+        first, rest = string._string.formatter_field_name_split(field_name)
+        obj = self.get_value(first, args, kwargs)
+
+        for is_attr, key in rest:
+            if is_attr:
+                raise ValueError(
+                    f"Attribute access is not allowed in webhook templates: '.{key}'"
+                )
+            obj = obj[key]
+
+        return obj, first
 
 logger.debug("Included module rpc.webhook ...")
 
@@ -91,9 +108,18 @@ class Webhook(RPCHandler):
             case list():
                 return [self.recursive_format(item, msg) for item in obj]
             case str():
-                return obj.format(**msg)
+                return self._safe_format(obj, msg)
             case _:
                 return obj
+
+    @staticmethod
+    def _safe_format(template: str, msg: RPCSendMsg) -> str:
+        formatter = _SafeFormatter()
+        try:
+            return formatter.format(template, **msg)
+        except (KeyError, ValueError, IndexError) as exc:
+            logger.warning("Failed to format webhook template: %s", exc)
+            return template
 
     def send_msg(self, msg: RPCSendMsg) -> None:
         """Send a message to telegram channel"""
