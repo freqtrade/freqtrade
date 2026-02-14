@@ -213,10 +213,19 @@ class FreqtradeBot(LoggingMixin):
         finally:
             self.strategy.ft_bot_cleanup()
 
-        self.rpc.cleanup()
-        if self.emc:
-            self.emc.shutdown()
-        self.exchange.close()
+        try:
+            self.rpc.cleanup()
+        except Exception as e:
+            logger.warning(f"Exception during RPC cleanup: {e.__class__.__name__} {e}")
+        try:
+            if self.emc:
+                self.emc.shutdown()
+        except Exception as e:
+            logger.warning(f"Exception during EMC shutdown: {e.__class__.__name__} {e}")
+        try:
+            self.exchange.close()
+        except Exception as e:
+            logger.warning(f"Exception during exchange close: {e.__class__.__name__} {e}")
         try:
             Trade.commit()
         except Exception:
@@ -423,7 +432,7 @@ class FreqtradeBot(LoggingMixin):
 
             except InvalidOrderException as e:
                 logger.warning(f"Error updating Order {order.order_id} due to {e}.")
-                if order.order_date_utc - timedelta(days=5) < datetime.now(UTC):
+                if order.order_date_utc is not None and order.order_date_utc < datetime.now(UTC) - timedelta(days=5):
                     logger.warning(
                         "Order is older than 5 days. Assuming order was fully cancelled."
                     )
