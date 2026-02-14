@@ -25,7 +25,6 @@ def tournament_selection(population: Population, tournament_size: int = 3) -> In
     Returns:
         Selected individual
     """
-    # TODO: Implement tournament selection
     tournament = random.sample(population.individuals, min(tournament_size, len(population)))
     return max(tournament, key=lambda x: x.fitness if x.fitness is not None else float('-inf'))
 

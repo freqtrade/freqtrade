@@ -9,6 +9,7 @@ import random
 from typing import Dict, Any, List
 
 from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
+from genetic_algorithm.utils.indicator_factory import create_random_indicator
 
 
 class StrategyGenerator:
@@ -95,40 +96,7 @@ class StrategyGenerator:
     
     def _generate_random_indicator(self, indicator_type: str) -> IndicatorGene:
         """Generate a random indicator with appropriate parameters."""
-        # Get parameter ranges for this indicator type
-        ind_config = self.indicator_config.get(indicator_type, {})
-        
-        parameters = {}
-        
-        # Generate parameters based on indicator type
-        if indicator_type == 'RSI':
-            period_range = ind_config.get('period', [7, 21])
-            parameters['period'] = random.randint(*period_range)
-        
-        elif indicator_type == 'MACD':
-            parameters['fast_period'] = random.randint(*ind_config.get('fast_period', [8, 21]))
-            parameters['slow_period'] = random.randint(*ind_config.get('slow_period', [21, 50]))
-            parameters['signal_period'] = random.randint(*ind_config.get('signal_period', [5, 14]))
-        
-        elif indicator_type == 'BBANDS':
-            parameters['period'] = random.randint(*ind_config.get('period', [15, 30]))
-            parameters['std_dev'] = random.uniform(*ind_config.get('std_dev', [1.5, 3.0]))
-        
-        elif indicator_type in ['EMA', 'SMA']:
-            parameters['period'] = random.randint(*ind_config.get('period', [10, 50]))
-        
-        elif indicator_type == 'STOCH':
-            parameters['k_period'] = random.randint(*ind_config.get('k_period', [5, 21]))
-            parameters['d_period'] = random.randint(*ind_config.get('d_period', [3, 14]))
-        
-        elif indicator_type in ['ATR', 'ADX', 'CCI']:
-            parameters['period'] = random.randint(*ind_config.get('period', [10, 20]))
-        
-        return IndicatorGene(
-            type=indicator_type,
-            parameters=parameters,
-            weight=random.uniform(0.3, 1.0)
-        )
+        return create_random_indicator(indicator_type, self.indicator_config)
     
     def _generate_random_conditions(self, indicators: List[IndicatorGene], 
                                    is_entry: bool) -> List[ConditionGene]:

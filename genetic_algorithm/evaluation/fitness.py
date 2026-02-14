@@ -9,8 +9,7 @@ import logging
 from typing import Tuple, Dict, Any
 
 from genetic_algorithm.core.strategy_gene import StrategyGene
-from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
-from genetic_algorithm.evaluation.backtester import BacktestResult
+from genetic_algorithm.evaluation.direct_backtester import DirectBacktester, BacktestResult
 from genetic_algorithm.strategies.generator import StrategyGenerator
 
 logger = logging.getLogger(__name__)

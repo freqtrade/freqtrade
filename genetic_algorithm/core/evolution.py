@@ -292,19 +292,6 @@ class GeneticAlgorithm:
         # Return top strategies
         population.sort_by_fitness(reverse=True)
         return population.get_best(10)
-    
-    def get_top_strategies(self, n: int = 5) -> List[Individual]:
-        """
-        Get top N strategies from current/final population.
-        
-        Args:
-            n: Number of top strategies to return
-            
-        Returns:
-            List of top N individuals
-        """
-        # TODO: Implement method to retrieve top strategies
-        pass
 
 
 # Import random at module level
