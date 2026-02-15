@@ -48,6 +48,8 @@ class Binance(Exchange):
         "has_delisting": True,
     }
     _ft_has_futures: FtHas = {
+        # Keep Binance futures OHLCV requests below the expensive weight tiers by default.
+        "ohlcv_candle_limit": 499,
         "funding_fee_candle_limit": 1000,
         "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
         "stoploss_blocks_assets": False,  # Stoploss orders do not block assets

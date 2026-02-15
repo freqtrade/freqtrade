@@ -177,6 +177,15 @@ def test_stoploss_adjust_binance(mocker, default_conf, sl1, sl2, sl3, side):
     assert not exchange.stoploss_adjust(sl2, order, side=side)
 
 
+def test_binance_futures_ohlcv_candle_limit(default_conf_usdt, mocker):
+    default_conf_usdt["trading_mode"] = "futures"
+    default_conf_usdt["margin_mode"] = "isolated"
+    exchange = get_patched_exchange(mocker, default_conf_usdt, exchange="binance")
+
+    for timeframe in ("1m", "5m", "1h"):
+        assert exchange.ohlcv_candle_limit(timeframe, CandleType.FUTURES) == 499
+
+
 @pytest.mark.parametrize(
     "pair, is_short, trading_mode, margin_mode, wallet_balance, "
     "maintenance_amt, amount, open_rate, open_trades,"
