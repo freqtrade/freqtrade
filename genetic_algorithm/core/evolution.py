@@ -4,6 +4,7 @@ Main Evolution Engine
 Coordinates the genetic algorithm evolution process.
 """
 
+import random
 import yaml
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -287,7 +288,3 @@ class GeneticAlgorithm:
         # Return top strategies
         population.sort_by_fitness(reverse=True)
         return population.get_best(10)
-
-
-# Import random at module level
-import random
