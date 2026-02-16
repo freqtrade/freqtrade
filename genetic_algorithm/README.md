@@ -4,12 +4,19 @@
 **Last Updated**: February 16, 2026  
 **Latest Improvements**: Live visualization, profit calculation fixes, adaptive mutation ✅
 
+> 📊 **Want live plotting of generation scores?** → See [QUICKSTART_VISUALIZATION.md](QUICKSTART_VISUALIZATION.md)  
+> 📖 **Complete visualization guide** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)
+
 ---
 
 ## 🆕 Recent Improvements (February 2026)
 
 ### Major Enhancements:
 - ✅ **Live Visualization**: Real-time plots during evolution with `--visualize` flag
+  - 📊 **Generation scores plotted live** as the GA runs
+  - 📈 See fitness evolution, diversity, metrics, and distribution in real-time
+  - 🚀 **Easy setup**: Run `./genetic_algorithm/setup_ga.sh` to install dependencies
+  - 📖 **Quick start**: See [QUICKSTART_VISUALIZATION.md](QUICKSTART_VISUALIZATION.md)
 - ✅ **Fixed Profit Calculation**: Strategies now show accurate profit percentages
 - ✅ **Improved Strategy Generation**: More lenient conditions generate 5-50 trades
 - ✅ **Adaptive Mutation**: Automatically adjusts when evolution stagnates
@@ -56,6 +63,12 @@ python genetic_algorithm/run_ga.py --visualize
 # - Save strategies to genetic_algorithm/output/
 # - Create a summary report and save plots
 ```
+
+**Example visualization output:**
+
+![Genetic Algorithm Evolution Progress](https://github.com/user-attachments/assets/2f4ac899-04fd-4b42-8721-ced24fdff431)
+
+*Live plotting shows generation scores, fitness evolution, population diversity, performance metrics, and fitness distribution in real-time.*
 
 ### Option 1b: Run Without Visualization
 
