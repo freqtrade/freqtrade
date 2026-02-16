@@ -2,6 +2,9 @@
 output/*.py
 output/*.txt
 output/*.json
+output/plots/*.png
+output/plots/*.jpg
+output/plots/*.pdf
 
 # Log files
 logs/*.log
