@@ -22,21 +22,52 @@
 
 ## 🎉 Quick Start
 
-### Option 1: Run the Full GA (Recommended)
+### Step 0: Setup (First Time Only)
+
+**Install the required dependencies for visualization:**
 
 ```bash
-# Run the complete Genetic Algorithm evolution
-python genetic_algorithm/run_ga.py
+# Linux/macOS
+./genetic_algorithm/setup_ga.sh
 
-# Run with live visualization
+# Windows (PowerShell)
+.\genetic_algorithm\setup_ga.ps1
+
+# Or manually
+pip install -r genetic_algorithm/requirements.txt
+```
+
+This installs matplotlib, numpy, and other dependencies needed for **live plotting of generation scores**.
+
+### Option 1: Run with Live Visualization (Recommended)
+
+```bash
+# Easiest way (auto-checks dependencies)
+./genetic_algorithm/run_with_visualization.sh  # Linux/macOS
+.\genetic_algorithm\run_with_visualization.ps1  # Windows
+
+# Or directly
 python genetic_algorithm/run_ga.py --visualize
+
+# This will:
+# - Evolve 50 strategies over 20 generations
+# - Show LIVE plots of fitness evolution, diversity, and metrics
+# - Display the top 5 best strategies
+# - Save strategies to genetic_algorithm/output/
+# - Create a summary report and save plots
+```
+
+### Option 1b: Run Without Visualization
+
+```bash
+# Run the complete Genetic Algorithm evolution (no plots)
+python genetic_algorithm/run_ga.py
 
 # This will:
 # - Evolve 50 strategies over 20 generations
 # - Display the top 5 best strategies
 # - Save strategies to genetic_algorithm/output/
 # - Create a summary report
-# - (with --visualize) Show live plots of evolution progress
 ```
 
 **See [RUN_GA_GUIDE.md](RUN_GA_GUIDE.md) for detailed configuration options!**
@@ -81,16 +112,18 @@ This module implements a Genetic Algorithm (GA) system for autonomously developi
 ## 📚 Documentation
 
 ### Essential Reading
-1. **RUN_GA_GUIDE.md** - 🚀 **Complete guide for run_ga.py** - configuration and usage
-2. **STATUS_REPORT.md** - ⭐ Current status and capabilities
-3. **TUTORIAL.md** - Complete usage guide with examples
-4. **QUICK_REFERENCE.md** - Quick commands and examples
-5. **ACCOMPLISHMENTS.md** - Detailed list of what's been implemented
+1. **VISUALIZATION_GUIDE.md** - 📊 **Complete guide for live plotting** - setup, usage, troubleshooting
+2. **RUN_GA_GUIDE.md** - 🚀 **Complete guide for run_ga.py** - configuration and usage
+3. **STATUS_REPORT.md** - ⭐ Current status and capabilities
+4. **TUTORIAL.md** - Complete usage guide with examples
+5. **QUICK_REFERENCE.md** - Quick commands and examples
+6. **ACCOMPLISHMENTS.md** - Detailed list of what's been implemented
 
 ### Additional Resources
 - **DEVELOPMENT_PLAN.md** - Original architecture and design plan
 - **TODO.md** - Task list showing what's complete vs. planned
 - **NEXT_STEPS.md** - Future features and enhancements
+- **IMPROVEMENTS.md** - Recent improvements and bug fixes
 
 ---
 
@@ -121,13 +154,29 @@ This module implements a Genetic Algorithm (GA) system for autonomously developi
 
 ## 📊 Live Visualization
 
-The GA now supports **live visualization** of the evolution progress! This feature allows you to see in real-time how your strategies are evolving.
+The GA now supports **live plotting of generation scores** with real-time visualization of the evolution progress!
+
+### Quick Setup
+
+```bash
+# 1. Install dependencies
+./genetic_algorithm/setup_ga.sh  # Linux/macOS
+.\genetic_algorithm\setup_ga.ps1  # Windows
+
+# 2. Run with visualization
+python genetic_algorithm/run_ga.py --visualize
+```
+
+**📖 See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md) for complete setup and troubleshooting guide!**
 
 ### How to Use
 
 ```bash
-# Enable visualization
+# Run with live interactive plotting (recommended)
 python genetic_algorithm/run_ga.py --visualize
+
+# Run with plotting but save-only mode (for servers)
+python genetic_algorithm/run_ga.py --visualize --no-interactive
 ```
 
 ### What You'll See
