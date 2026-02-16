@@ -105,7 +105,7 @@ class StrategyGenerator:
         
         # Filter indicators that can generate conditions
         valid_indicators = [ind for ind in indicators 
-                          if ind.type in ['RSI', 'MACD', 'STOCH', 'CCI', 'ADX']]
+                          if ind.type in ['RSI', 'MACD', 'STOCH', 'CCI', 'ADX', 'BBANDS', 'EMA', 'SMA']]
         
         if not valid_indicators:
             # If no valid indicators, use first available indicator and create a basic condition
@@ -114,12 +114,15 @@ class StrategyGenerator:
                 indicator=indicator.type,
                 operator='>' if is_entry else '<',
                 threshold=50,
-                logic='AND'
+                logic='OR'  # Use OR for more lenient conditions
             ))
             return conditions
         
-        # Generate 1-3 conditions
-        num_conditions = random.randint(1, min(3, len(valid_indicators)))
+        # Generate 1-2 conditions (reduced from 1-3 to make strategies less restrictive)
+        num_conditions = random.randint(1, min(2, len(valid_indicators)))
+        
+        # Use OR logic more often to make strategies less restrictive
+        primary_logic = random.choice(['OR', 'OR', 'AND'])  # 2/3 chance of OR
         
         for _ in range(num_conditions):
             # Pick a random indicator
@@ -128,6 +131,8 @@ class StrategyGenerator:
             # Generate condition based on indicator type
             condition = self._generate_condition_for_indicator(indicator, is_entry)
             if condition:
+                # Override logic with primary logic for consistency
+                condition.logic = primary_logic
                 conditions.append(condition)
         
         # Ensure at least one condition
@@ -135,13 +140,14 @@ class StrategyGenerator:
             indicator = valid_indicators[0]
             condition = self._generate_condition_for_indicator(indicator, is_entry)
             if condition:
+                condition.logic = 'OR'
                 conditions.append(condition)
         
         return conditions if conditions else [ConditionGene(
             indicator=indicators[0].type,
             operator='>' if is_entry else '<',
             threshold=50,
-            logic='AND'
+            logic='OR'
         )]
     
     def _generate_condition_for_indicator(self, indicator: IndicatorGene, 
@@ -208,6 +214,36 @@ class StrategyGenerator:
                 indicator='ADX',
                 operator='>',
                 threshold=random.randint(*threshold_range),
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type == 'BBANDS':
+            # Bollinger Bands entry/exit conditions
+            if is_entry:
+                # Buy when price crosses below lower band
+                operator = 'cross_below'
+            else:
+                # Sell when price crosses above upper band
+                operator = 'cross_above'
+            
+            return ConditionGene(
+                indicator='BBANDS',
+                operator=operator,
+                threshold=0,  # Not used for BBANDS
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type in ['EMA', 'SMA']:
+            # Moving average crossover conditions
+            if is_entry:
+                operator = 'cross_above'  # Price crosses above MA (bullish)
+            else:
+                operator = 'cross_below'  # Price crosses below MA (bearish)
+            
+            return ConditionGene(
+                indicator=indicator.type,
+                operator=operator,
+                threshold=0,  # Not used for MA crossovers
                 logic=random.choice(['AND', 'OR'])
             )
         
@@ -363,9 +399,15 @@ class {strategy_name}(IStrategy):
             return f"        dataframe['{signal_col}'] = 0\n"
         
         # Combine conditions based on logic operators
-        # For simplicity, we'll combine with AND by default
-        # In a more advanced version, we'd parse the logic field properly
-        combined_condition = ' &\n            '.join(f"({expr})" for expr in condition_exprs)
+        # Check if all conditions use the same logic
+        logics = [cond.logic for cond in conditions if hasattr(cond, 'logic')]
+        use_or = logics and logics[0] == 'OR'
+        
+        # Combine with OR or AND
+        if use_or:
+            combined_condition = ' |\n            '.join(f"({expr})" for expr in condition_exprs)
+        else:
+            combined_condition = ' &\n            '.join(f"({expr})" for expr in condition_exprs)
         
         code = f"""        conditions = (
             {combined_condition}
@@ -382,8 +424,8 @@ class {strategy_name}(IStrategy):
         for ind in indicators:
             if ind.type not in indicator_periods:
                 # Get the period from parameters
-                if ind.type in ['RSI', 'EMA', 'SMA', 'ATR', 'ADX', 'CCI']:
-                    indicator_periods[ind.type] = ind.parameters.get('period', 14)
+                if ind.type in ['RSI', 'EMA', 'SMA', 'ATR', 'ADX', 'CCI', 'BBANDS']:
+                    indicator_periods[ind.type] = ind.parameters.get('period', 14 if ind.type != 'BBANDS' else 20)
                 elif ind.type == 'STOCH':
                     indicator_periods[ind.type] = ind.parameters.get('k_period', 14)
         
@@ -430,6 +472,30 @@ class {strategy_name}(IStrategy):
                 return f"(dataframe['adx_{period}'] > {condition.threshold})"
             elif condition.operator == '<':
                 return f"(dataframe['adx_{period}'] < {condition.threshold})"
+        
+        elif condition.indicator == 'BBANDS':
+            # Bollinger Bands conditions
+            if condition.operator == 'cross_below':
+                return "(dataframe['close'] < dataframe['bb_lowerband'])"
+            elif condition.operator == 'cross_above':
+                return "(dataframe['close'] > dataframe['bb_upperband'])"
+            elif condition.operator == '<':
+                return "(dataframe['close'] < dataframe['bb_middleband'])"
+            elif condition.operator == '>':
+                return "(dataframe['close'] > dataframe['bb_middleband'])"
+        
+        elif condition.indicator in ['EMA', 'SMA']:
+            # Moving average conditions
+            period = indicator_periods.get(condition.indicator, 20)
+            col_name = f"{condition.indicator.lower()}_{period}"
+            if condition.operator == 'cross_above':
+                return f"(dataframe['close'] > dataframe['{col_name}'])"
+            elif condition.operator == 'cross_below':
+                return f"(dataframe['close'] < dataframe['{col_name}'])"
+            elif condition.operator == '>':
+                return f"(dataframe['close'] > dataframe['{col_name}'])"
+            elif condition.operator == '<':
+                return f"(dataframe['close'] < dataframe['{col_name}'])"
         
         # Default fallback
         return "True"
