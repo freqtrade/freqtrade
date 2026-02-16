@@ -11,6 +11,7 @@ Configuration can be adjusted in the USER CONFIGURATION section below.
 
 import sys
 import logging
+import argparse
 from pathlib import Path
 from datetime import datetime
 
@@ -287,8 +288,38 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict):
     print(f"Summary report saved to: {report_path.absolute()}")
 
 
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Run Genetic Algorithm for trading strategy evolution',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python run_ga.py                    # Run without visualization
+  python run_ga.py --visualize        # Run with live visualization
+  python run_ga.py --visualize --no-interactive  # Run with visualization saved to file only
+        """
+    )
+    
+    parser.add_argument(
+        '--visualize', '-v',
+        action='store_true',
+        help='Enable live visualization of evolution progress'
+    )
+    
+    parser.add_argument(
+        '--no-interactive',
+        action='store_true',
+        help='Disable interactive plotting (save plots only, no live display)'
+    )
+    
+    return parser.parse_args()
+
+
 def main():
     """Main entry point for GA runner."""
+    # Parse arguments
+    args = parse_arguments()
     # Print banner
     print_banner()
     
@@ -306,6 +337,19 @@ def main():
     
     # Print configuration
     print_configuration(config)
+    
+    # Print visualization info
+    if args.visualize:
+        print("Visualization: ENABLED")
+        if args.no_interactive:
+            print("  Mode: Static (plots saved to file)")
+        else:
+            print("  Mode: Live Interactive")
+        print()
+    else:
+        print("Visualization: DISABLED")
+        print("  (Use --visualize flag to enable)")
+        print()
     
     # Confirm start
     print("Press Enter to start evolution, or Ctrl+C to cancel...")
@@ -329,7 +373,7 @@ def main():
             tmp_config_path = tmp_config.name
         
         # Initialize GA with updated config
-        ga = GeneticAlgorithm(tmp_config_path)
+        ga = GeneticAlgorithm(tmp_config_path, visualize=args.visualize)
         
         # Run evolution
         logger.info("Starting evolution process...")

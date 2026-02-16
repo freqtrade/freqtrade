@@ -17,6 +17,7 @@ from genetic_algorithm.core.crossover import crossover
 from genetic_algorithm.core.mutation import mutate
 from genetic_algorithm.strategies.generator import StrategyGenerator
 from genetic_algorithm.evaluation.fitness import FitnessEvaluator
+from genetic_algorithm.visualization import GAVisualizer
 
 
 class GeneticAlgorithm:
@@ -32,12 +33,14 @@ class GeneticAlgorithm:
     6. Repeat
     """
     
-    def __init__(self, config_path: str = "genetic_algorithm/config/ga_config.yaml"):
+    def __init__(self, config_path: str = "genetic_algorithm/config/ga_config.yaml", 
+                 visualize: bool = False):
         """
         Initialize the genetic algorithm.
         
         Args:
             config_path: Path to configuration file
+            visualize: Whether to enable live visualization
         """
         self.config = self._load_config(config_path)
         self.logger = self._setup_logging()
@@ -56,6 +59,13 @@ class GeneticAlgorithm:
         # Initialize components
         self.strategy_generator = StrategyGenerator(self.config)
         self.fitness_evaluator = FitnessEvaluator(self.config)
+        
+        # Initialize visualizer
+        self.visualizer = GAVisualizer(
+            enabled=visualize,
+            interactive=True,
+            save_plots=True
+        )
         
         # Track evolution
         self.current_generation = 0
@@ -265,6 +275,9 @@ class GeneticAlgorithm:
             self.logger.info(f"Avg fitness: {stats.avg_fitness:.4f}")
             self.logger.info(f"Diversity: {stats.diversity_score:.4f}")
             
+            # Update visualization
+            self.visualizer.update(gen, stats, population)
+            
             # Update best individual
             best = population.get_best(1)[0]
             if self.best_individual is None or best.fitness > self.best_individual.fitness:
@@ -284,6 +297,9 @@ class GeneticAlgorithm:
         self.logger.info(f"Best individual: {self.best_individual.id}")
         self.logger.info(f"Best fitness: {self.best_individual.fitness:.4f}")
         self.logger.info("="*60)
+        
+        # Close visualization
+        self.visualizer.close()
         
         # Return top strategies
         population.sort_by_fitness(reverse=True)
