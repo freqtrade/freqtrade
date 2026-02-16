@@ -373,7 +373,11 @@ def main():
             tmp_config_path = tmp_config.name
         
         # Initialize GA with updated config
-        ga = GeneticAlgorithm(tmp_config_path, visualize=args.visualize)
+        ga = GeneticAlgorithm(
+            tmp_config_path, 
+            visualize=args.visualize,
+            interactive=not args.no_interactive
+        )
         
         # Run evolution
         logger.info("Starting evolution process...")

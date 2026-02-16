@@ -34,13 +34,14 @@ class GeneticAlgorithm:
     """
     
     def __init__(self, config_path: str = "genetic_algorithm/config/ga_config.yaml", 
-                 visualize: bool = False):
+                 visualize: bool = False, interactive: bool = True):
         """
         Initialize the genetic algorithm.
         
         Args:
             config_path: Path to configuration file
             visualize: Whether to enable live visualization
+            interactive: Whether to use interactive plotting (only applies if visualize=True)
         """
         self.config = self._load_config(config_path)
         self.logger = self._setup_logging()
@@ -63,7 +64,7 @@ class GeneticAlgorithm:
         # Initialize visualizer
         self.visualizer = GAVisualizer(
             enabled=visualize,
-            interactive=True,
+            interactive=interactive,
             save_plots=True
         )
         

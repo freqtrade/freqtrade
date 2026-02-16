@@ -51,8 +51,14 @@ class GAVisualizer:
         
         # Set up matplotlib for interactive or non-interactive mode
         if self.interactive:
-            matplotlib.use('TkAgg')  # Use interactive backend
-            plt.ion()  # Enable interactive mode
+            try:
+                matplotlib.use('TkAgg')  # Use interactive backend
+                plt.ion()  # Enable interactive mode
+            except (ImportError, ModuleNotFoundError):
+                # TkAgg not available (headless environment), fall back to non-interactive
+                logger.warning("Interactive backend (TkAgg) not available. Falling back to non-interactive mode.")
+                self.interactive = False
+                matplotlib.use('Agg')  # Use non-interactive backend
         else:
             matplotlib.use('Agg')  # Use non-interactive backend
         
