@@ -13,7 +13,7 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 from datetime import datetime
 
-from genetic_algorithm.core.population import PopulationStats
+from genetic_algorithm.core.population import PopulationStats, Population
 from genetic_algorithm.core.individual import Individual
 
 logger = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ class GAVisualizer:
         
         logger.info("Plots initialized")
     
-    def update(self, generation: int, stats: PopulationStats, population: 'Population'):
+    def update(self, generation: int, stats: PopulationStats, population: Population):
         """
         Update visualization with new generation data.
         
@@ -249,7 +249,7 @@ class GAVisualizer:
                    transform=ax.transAxes, verticalalignment='bottom', horizontalalignment='right',
                    bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.7))
     
-    def _plot_fitness_distribution(self, population: 'Population'):
+    def _plot_fitness_distribution(self, population: Population):
         """Plot histogram of current population fitness distribution."""
         ax = self.axes[1, 1]
         ax.clear()
@@ -311,7 +311,7 @@ class GAVisualizer:
         
         if self.fig:
             self.fig.savefig(filepath, dpi=150, bbox_inches='tight')
-            logger.info(f"Final plot saved to: {filepath}")
+            logger.info("Final plot saved to: %s", filepath)
             print(f"\n✓ Visualization saved to: {filepath}")
     
     def close(self):
