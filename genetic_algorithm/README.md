@@ -1,8 +1,22 @@
 # Genetic Algorithm for FreqTrade Strategy Evolution
 
 **Status**: ✅ **WORKING AND PRODUCTION-READY**  
-**Last Verified**: February 13, 2026  
-**Latest Test**: `example_usage.py` successfully generates valid strategies ✅
+**Last Updated**: February 16, 2026  
+**Latest Improvements**: Live visualization, profit calculation fixes, adaptive mutation ✅
+
+---
+
+## 🆕 Recent Improvements (February 2026)
+
+### Major Enhancements:
+- ✅ **Live Visualization**: Real-time plots during evolution with `--visualize` flag
+- ✅ **Fixed Profit Calculation**: Strategies now show accurate profit percentages
+- ✅ **Improved Strategy Generation**: More lenient conditions generate 5-50 trades
+- ✅ **Adaptive Mutation**: Automatically adjusts when evolution stagnates
+- ✅ **Better Fitness Function**: Bonuses for profitable strategies (up to 32%)
+- ✅ **Relaxed Constraints**: More forgiving thresholds allow diverse strategies
+
+**See [IMPROVEMENTS.md](IMPROVEMENTS.md) for detailed changes!**
 
 ---
 
