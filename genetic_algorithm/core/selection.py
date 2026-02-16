@@ -41,38 +41,28 @@ def roulette_wheel_selection(population: Population) -> Individual:
     Returns:
         Selected individual
     """
-    # Get all evaluated individuals
     evaluated = [ind for ind in population.individuals if ind.fitness is not None]
     
     if not evaluated:
         raise ValueError("No evaluated individuals in population")
     
-    # Shift fitness values to be non-negative
+    # Shift fitness to be non-negative and calculate total
     min_fitness = min(ind.fitness for ind in evaluated)
-    if min_fitness < 0:
-        # Shift all fitness values to be positive
-        adjusted_fitnesses = [ind.fitness - min_fitness + 1 for ind in evaluated]
-    else:
-        adjusted_fitnesses = [ind.fitness for ind in evaluated]
-    
-    # Calculate total fitness
+    adjusted_fitnesses = [ind.fitness - min_fitness + 1 if min_fitness < 0 else ind.fitness 
+                         for ind in evaluated]
     total_fitness = sum(adjusted_fitnesses)
     
     if total_fitness == 0:
-        # If all fitnesses are 0, return random individual
         return random.choice(evaluated)
     
-    # Generate random number between 0 and total_fitness
+    # Select based on fitness proportion
     spin = random.uniform(0, total_fitness)
-    
-    # Find the individual corresponding to this spin
     cumulative = 0
     for ind, fitness in zip(evaluated, adjusted_fitnesses):
         cumulative += fitness
         if cumulative >= spin:
             return ind
     
-    # Fallback (shouldn't reach here, but return last individual)
     return evaluated[-1]
 
 
@@ -94,27 +84,18 @@ def rank_based_selection(population: Population) -> Individual:
     if not evaluated:
         raise ValueError("No evaluated individuals in population")
     
-    # Sort by fitness (worst to best)
+    # Sort by fitness (worst to best) and select based on linear rank
     sorted_individuals = sorted(evaluated, key=lambda x: x.fitness)
-    
-    # Assign ranks: rank 1 for worst, rank N for best
     n = len(sorted_individuals)
-    
-    # Linear ranking: probability proportional to rank
-    # Sum of ranks = n*(n+1)/2
     total_rank = n * (n + 1) // 2
-    
-    # Generate random number between 0 and total_rank
     spin = random.uniform(0, total_rank)
     
-    # Find the individual corresponding to this spin
     cumulative = 0
     for rank, ind in enumerate(sorted_individuals, start=1):
         cumulative += rank
         if cumulative >= spin:
             return ind
     
-    # Fallback (shouldn't reach here, but return best individual)
     return sorted_individuals[-1]
 
 
