@@ -101,18 +101,19 @@ class Population:
         if not evaluated:
             return PopulationStats(generation=self.generation, size=len(self.individuals))
         
+        # Create sorted copy of fitnesses for median/min/max calculations
         fitnesses = [ind.fitness for ind in evaluated]
-        fitnesses.sort()
-        n = len(fitnesses)
+        fitnesses_sorted = sorted(fitnesses)
+        n = len(fitnesses_sorted)
         
         avg_fitness = sum(fitnesses) / n
         stats = PopulationStats(
             generation=self.generation,
             size=len(self.individuals),
-            best_fitness=fitnesses[-1],
-            worst_fitness=fitnesses[0],
+            best_fitness=fitnesses_sorted[-1],
+            worst_fitness=fitnesses_sorted[0],
             avg_fitness=avg_fitness,
-            median_fitness=fitnesses[n // 2],
+            median_fitness=fitnesses_sorted[n // 2],
         )
         
         # Calculate diversity (standard deviation of fitness)

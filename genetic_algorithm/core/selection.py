@@ -46,10 +46,13 @@ def roulette_wheel_selection(population: Population) -> Individual:
     if not evaluated:
         raise ValueError("No evaluated individuals in population")
     
-    # Shift fitness to be non-negative and calculate total
+    # Adjust fitness to be non-negative for proportionate selection
     min_fitness = min(ind.fitness for ind in evaluated)
-    adjusted_fitnesses = [ind.fitness - min_fitness + 1 if min_fitness < 0 else ind.fitness 
-                         for ind in evaluated]
+    if min_fitness < 0:
+        adjusted_fitnesses = [ind.fitness - min_fitness + 1 for ind in evaluated]
+    else:
+        adjusted_fitnesses = [ind.fitness for ind in evaluated]
+    
     total_fitness = sum(adjusted_fitnesses)
     
     if total_fitness == 0:

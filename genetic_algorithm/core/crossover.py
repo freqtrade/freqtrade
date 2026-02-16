@@ -143,10 +143,16 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
         parent1.strategy_gene.exit_conditions, parent2.strategy_gene.exit_conditions, swap_prob)
     
     # Randomly inherit scalar parameters
-    for attr in ['timeframe', 'stoploss', 'trailing_stop']:
+    for attr in ['timeframe', 'stoploss']:
         if random.random() < swap_prob:
-            setattr(child1_gene, attr, getattr(parent2.strategy_gene, attr))
-            setattr(child2_gene, attr, getattr(parent1.strategy_gene, attr))
+            val1 = getattr(parent2.strategy_gene, attr)
+            val2 = getattr(parent1.strategy_gene, attr)
+            setattr(child1_gene, attr, val1)
+            setattr(child2_gene, attr, val2)
+    
+    if random.random() < swap_prob:
+        child1_gene.trailing_stop = parent2.strategy_gene.trailing_stop
+        child2_gene.trailing_stop = parent1.strategy_gene.trailing_stop
     
     if random.random() < swap_prob:
         child1_gene.minimal_roi = parent2.strategy_gene.minimal_roi.copy()

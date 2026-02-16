@@ -152,7 +152,7 @@ def print_top_strategies(top_strategies: list, strategy_generator: StrategyGener
     
     for rank, individual in enumerate(top_strategies, 1):
         gene = individual.strategy_gene
-        m = individual.metrics  # Shorter variable name
+        metrics = individual.metrics
         
         # Header and fitness
         print(f"RANK {rank}: Strategy Gen{gene.generation}_Ind{gene.individual_id}")
@@ -160,12 +160,12 @@ def print_top_strategies(top_strategies: list, strategy_generator: StrategyGener
         
         # Performance metrics (consolidated print statements)
         print(f"  Performance Metrics:\n"
-              f"    Profit:           {m.get('profit', 0):.2f}%\n"
-              f"    Sharpe Ratio:     {m.get('sharpe_ratio', 0):.2f}\n"
-              f"    Max Drawdown:     {m.get('max_drawdown', 0):.2%}\n"
-              f"    Win Rate:         {m.get('win_rate', 0):.2%}\n"
-              f"    Total Trades:     {m.get('num_trades', 0)}\n"
-              f"    Profit Factor:    {m.get('profit_factor', 0):.2f}\n")
+              f"    Profit:           {metrics.get('profit', 0):.2f}%\n"
+              f"    Sharpe Ratio:     {metrics.get('sharpe_ratio', 0):.2f}\n"
+              f"    Max Drawdown:     {metrics.get('max_drawdown', 0):.2%}\n"
+              f"    Win Rate:         {metrics.get('win_rate', 0):.2%}\n"
+              f"    Total Trades:     {metrics.get('num_trades', 0)}\n"
+              f"    Profit Factor:    {metrics.get('profit_factor', 0):.2f}\n")
         
         # Strategy parameters (consolidated)
         print(f"  Strategy Parameters:\n"
