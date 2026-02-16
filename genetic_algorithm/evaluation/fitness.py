@@ -139,27 +139,31 @@ class FitnessEvaluator:
             Fitness score (higher is better)
         """
         # Extract and normalize metrics
-        normalizers = {
-            'profit': lambda x: (x + 50) / 150,  # -50% to +100%
-            'sharpe_ratio': lambda x: (x + 3) / 6,  # -3 to 3
-            'max_drawdown': lambda x: 1 - min(x, 1.0),  # Lower is better
-            'win_rate': lambda x: x,  # Already 0-1
-            'num_trades': self._normalize_trade_frequency,
-        }
+        profit = metrics.get('profit', 0)
+        sharpe = metrics.get('sharpe_ratio', 0)
+        drawdown = metrics.get('max_drawdown', 0)
+        win_rate = metrics.get('win_rate', 0)
+        trades = metrics.get('num_trades', 0)
         
-        norm_values = {
-            key: normalizers[key](metrics.get(key if key != 'num_trades' else key, 0))
-            for key in ['profit', 'sharpe_ratio', 'max_drawdown', 'win_rate', 'num_trades']
-        }
+        # Normalize to 0-1 range
+        norm_profit = (profit + 50) / 150  # -50% to +100%
+        norm_sharpe = (sharpe + 3) / 6  # -3 to 3
+        norm_drawdown = 1 - min(drawdown, 1.0)  # Lower is better
+        norm_win_rate = win_rate  # Already 0-1
+        norm_trades = self._normalize_trade_frequency(trades)
         
         # Get weights with defaults
-        w = {k: self.fitness_weights.get(k, v) for k, v in {
-            'profit': 0.3, 'sharpe_ratio': 0.25, 'drawdown': 0.2, 'win_rate': 0.15, 'trade_frequency': 0.1
-        }.items()}
+        w = self.fitness_weights
+        w_profit = w.get('profit', 0.3)
+        w_sharpe = w.get('sharpe_ratio', 0.25)
+        w_drawdown = w.get('drawdown', 0.2)
+        w_win_rate = w.get('win_rate', 0.15)
+        w_trades = w.get('trade_frequency', 0.1)
         
         # Calculate weighted fitness
-        fitness = sum(w[k] * norm_values[k.replace('drawdown', 'max_drawdown').replace('trade_frequency', 'num_trades')]
-                     for k in w.keys())
+        fitness = (w_profit * norm_profit + w_sharpe * norm_sharpe + 
+                  w_drawdown * norm_drawdown + w_win_rate * norm_win_rate + 
+                  w_trades * norm_trades)
         
         # Apply penalties and return
         return max(0, self._apply_penalties(fitness, metrics))

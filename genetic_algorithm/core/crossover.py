@@ -12,14 +12,6 @@ from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.strategy_gene import StrategyGene
 
 
-def _swap_gene_lists(parent1_list, parent2_list, child1_list, child2_list, crossover_point):
-    """Helper to perform crossover on gene lists."""
-    child1_list.extend(parent1_list[:crossover_point])
-    child1_list.extend(parent2_list[crossover_point:])
-    child2_list.extend(parent2_list[:crossover_point])
-    child2_list.extend(parent1_list[crossover_point:])
-
-
 def single_point_crossover(parent1: Individual, parent2: Individual, 
                           generation: int, ind_id: int) -> Tuple[Individual, Individual]:
     """
@@ -208,11 +200,14 @@ def component_crossover(parent1: Individual, parent2: Individual,
         child1_gene.exit_conditions, child2_gene.exit_conditions = parent2.strategy_gene.exit_conditions[:], parent1.strategy_gene.exit_conditions[:]
     
     if swaps['risk']:
-        # Swap all risk parameters
-        for attr in ['stoploss', 'minimal_roi', 'trailing_stop']:
-            val1, val2 = getattr(parent2.strategy_gene, attr), getattr(parent1.strategy_gene, attr)
-            setattr(child1_gene, attr, val1.copy() if isinstance(val1, dict) else val1)
-            setattr(child2_gene, attr, val2.copy() if isinstance(val2, dict) else val2)
+        # Swap all risk parameters (stoploss, ROI, trailing stop)
+        child1_gene.stoploss = parent2.strategy_gene.stoploss
+        child1_gene.minimal_roi = parent2.strategy_gene.minimal_roi.copy()
+        child1_gene.trailing_stop = parent2.strategy_gene.trailing_stop
+        
+        child2_gene.stoploss = parent1.strategy_gene.stoploss
+        child2_gene.minimal_roi = parent1.strategy_gene.minimal_roi.copy()
+        child2_gene.trailing_stop = parent1.strategy_gene.trailing_stop
     
     # Update generation and IDs
     child1_gene.generation = generation
