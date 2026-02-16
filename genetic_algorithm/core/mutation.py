@@ -13,6 +13,55 @@ from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, Co
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
 
 
+def _mutate_indicator_params(indicator, ind_config, i, mutations_applied):
+    """Helper to mutate indicator parameters based on type."""
+    # Period-based indicators (simple case)
+    if 'period' in indicator.parameters and indicator.type in ['RSI', 'EMA', 'SMA', 'ATR', 'ADX', 'CCI']:
+        period_range = ind_config.get('period', [7, 21] if indicator.type == 'RSI' else [10, 50])
+        indicator.parameters['period'] = random.randint(*period_range)
+        mutations_applied.append(f"{indicator.type}_period_{i}")
+    
+    # Multi-parameter indicators
+    elif indicator.type == 'MACD':
+        for param, default in [('fast_period', [8, 21]), ('slow_period', [21, 50]), ('signal_period', [5, 14])]:
+            if param in indicator.parameters and random.random() < 0.5:
+                indicator.parameters[param] = random.randint(*ind_config.get(param, default))
+                mutations_applied.append(f"MACD_{param.split('_')[0]}_{i}")
+    
+    elif indicator.type == 'BBANDS':
+        if 'period' in indicator.parameters and random.random() < 0.5:
+            indicator.parameters['period'] = random.randint(*ind_config.get('period', [15, 30]))
+            mutations_applied.append(f"BBANDS_period_{i}")
+        if 'std_dev' in indicator.parameters and random.random() < 0.5:
+            indicator.parameters['std_dev'] = random.uniform(*ind_config.get('std_dev', [1.5, 3.0]))
+            mutations_applied.append(f"BBANDS_std_{i}")
+    
+    elif indicator.type == 'STOCH':
+        for param, default in [('k_period', [5, 21]), ('d_period', [3, 14])]:
+            if param in indicator.parameters and random.random() < 0.5:
+                indicator.parameters[param] = random.randint(*ind_config.get(param, default))
+                mutations_applied.append(f"STOCH_{param[0]}_{i}")
+    
+    # Mutate weight
+    if random.random() < 0.3:
+        indicator.weight = random.uniform(0.3, 1.0)
+        mutations_applied.append(f"weight_{i}")
+
+
+def _mutate_condition_threshold(condition, ind_config, is_entry, i, mutations_applied):
+    """Helper to mutate condition thresholds."""
+    threshold_key = 'buy_threshold' if is_entry else 'sell_threshold'
+    if condition.indicator == 'RSI':
+        threshold_range = ind_config.get(threshold_key, [20, 40] if is_entry else [60, 80])
+    elif condition.indicator == 'CCI':
+        threshold_range = ind_config.get(threshold_key, [-200, -100] if is_entry else [100, 200])
+    else:
+        return
+    
+    condition.threshold = random.randint(*threshold_range)
+    mutations_applied.append(f"{'entry' if is_entry else 'exit'}_{condition.indicator}_threshold_{i}")
+
+
 def mutate_parameters(individual: Individual, mutation_rate: float,
                      config: Dict[str, Any]) -> Individual:
     """
@@ -29,100 +78,28 @@ def mutate_parameters(individual: Individual, mutation_rate: float,
     mutated_gene = individual.strategy_gene.copy()
     indicator_config = config.get('indicators', {})
     strategy_constraints = config.get('strategy_constraints', {})
-    
     mutations_applied = []
     
     # Mutate indicator parameters
     for i, indicator in enumerate(mutated_gene.indicators):
         if random.random() < mutation_rate:
             ind_config = indicator_config.get(indicator.type, {})
-            
-            # Mutate based on indicator type
-            if indicator.type == 'RSI' and 'period' in indicator.parameters:
-                period_range = ind_config.get('period', [7, 21])
-                indicator.parameters['period'] = random.randint(*period_range)
-                mutations_applied.append(f"RSI_period_{i}")
-            
-            elif indicator.type == 'MACD':
-                if 'fast_period' in indicator.parameters and random.random() < 0.5:
-                    indicator.parameters['fast_period'] = random.randint(
-                        *ind_config.get('fast_period', [8, 21]))
-                    mutations_applied.append(f"MACD_fast_{i}")
-                if 'slow_period' in indicator.parameters and random.random() < 0.5:
-                    indicator.parameters['slow_period'] = random.randint(
-                        *ind_config.get('slow_period', [21, 50]))
-                    mutations_applied.append(f"MACD_slow_{i}")
-                if 'signal_period' in indicator.parameters and random.random() < 0.5:
-                    indicator.parameters['signal_period'] = random.randint(
-                        *ind_config.get('signal_period', [5, 14]))
-                    mutations_applied.append(f"MACD_signal_{i}")
-            
-            elif indicator.type == 'BBANDS':
-                if 'period' in indicator.parameters and random.random() < 0.5:
-                    indicator.parameters['period'] = random.randint(
-                        *ind_config.get('period', [15, 30]))
-                    mutations_applied.append(f"BBANDS_period_{i}")
-                if 'std_dev' in indicator.parameters and random.random() < 0.5:
-                    indicator.parameters['std_dev'] = random.uniform(
-                        *ind_config.get('std_dev', [1.5, 3.0]))
-                    mutations_applied.append(f"BBANDS_std_{i}")
-            
-            elif indicator.type in ['EMA', 'SMA'] and 'period' in indicator.parameters:
-                period_range = ind_config.get('period', [10, 50])
-                indicator.parameters['period'] = random.randint(*period_range)
-                mutations_applied.append(f"{indicator.type}_period_{i}")
-            
-            elif indicator.type == 'STOCH':
-                if 'k_period' in indicator.parameters and random.random() < 0.5:
-                    indicator.parameters['k_period'] = random.randint(
-                        *ind_config.get('k_period', [5, 21]))
-                    mutations_applied.append(f"STOCH_k_{i}")
-                if 'd_period' in indicator.parameters and random.random() < 0.5:
-                    indicator.parameters['d_period'] = random.randint(
-                        *ind_config.get('d_period', [3, 14]))
-                    mutations_applied.append(f"STOCH_d_{i}")
-            
-            elif indicator.type in ['ATR', 'ADX', 'CCI'] and 'period' in indicator.parameters:
-                period_range = ind_config.get('period', [10, 20])
-                indicator.parameters['period'] = random.randint(*period_range)
-                mutations_applied.append(f"{indicator.type}_period_{i}")
-            
-            # Mutate weight
-            if random.random() < 0.3:
-                indicator.weight = random.uniform(0.3, 1.0)
-                mutations_applied.append(f"weight_{i}")
+            _mutate_indicator_params(indicator, ind_config, i, mutations_applied)
     
     # Mutate condition thresholds
     for i, condition in enumerate(mutated_gene.entry_conditions):
         if random.random() < mutation_rate:
             ind_config = indicator_config.get(condition.indicator, {})
-            
-            if condition.indicator == 'RSI':
-                threshold_range = ind_config.get('buy_threshold', [20, 40])
-                condition.threshold = random.randint(*threshold_range)
-                mutations_applied.append(f"entry_RSI_threshold_{i}")
-            elif condition.indicator == 'CCI':
-                threshold_range = ind_config.get('buy_threshold', [-200, -100])
-                condition.threshold = random.randint(*threshold_range)
-                mutations_applied.append(f"entry_CCI_threshold_{i}")
+            _mutate_condition_threshold(condition, ind_config, True, i, mutations_applied)
     
     for i, condition in enumerate(mutated_gene.exit_conditions):
         if random.random() < mutation_rate:
             ind_config = indicator_config.get(condition.indicator, {})
-            
-            if condition.indicator == 'RSI':
-                threshold_range = ind_config.get('sell_threshold', [60, 80])
-                condition.threshold = random.randint(*threshold_range)
-                mutations_applied.append(f"exit_RSI_threshold_{i}")
-            elif condition.indicator == 'CCI':
-                threshold_range = ind_config.get('sell_threshold', [100, 200])
-                condition.threshold = random.randint(*threshold_range)
-                mutations_applied.append(f"exit_CCI_threshold_{i}")
+            _mutate_condition_threshold(condition, ind_config, False, i, mutations_applied)
     
     # Mutate stoploss
     if random.random() < mutation_rate:
-        stoploss_range = strategy_constraints.get('stoploss_range', [-0.20, -0.05])
-        mutated_gene.stoploss = random.uniform(*stoploss_range)
+        mutated_gene.stoploss = random.uniform(*strategy_constraints.get('stoploss_range', [-0.20, -0.05]))
         mutations_applied.append("stoploss")
     
     # Mutate ROI values
@@ -258,77 +235,49 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
     """
     mutated_gene = individual.strategy_gene.copy()
     indicator_config = config.get('indicators', {})
-    
     mutations_applied = []
     
-    # Mutate entry conditions
-    if mutated_gene.entry_conditions and random.random() < mutation_rate:
-        idx = random.randrange(len(mutated_gene.entry_conditions))
-        condition = mutated_gene.entry_conditions[idx]
+    # Helper to mutate a single condition list
+    def mutate_condition_list(conditions, is_entry, label):
+        if not conditions or random.random() >= mutation_rate:
+            return
         
-        # Choose what to mutate
+        idx = random.randrange(len(conditions))
+        condition = conditions[idx]
         mutation_type = random.choice(['operator', 'logic', 'threshold'])
         
         if mutation_type == 'operator':
-            # Change comparison operator
-            operators = ['<', '>', 'cross_above', 'cross_below']
-            condition.operator = random.choice(operators)
-            mutations_applied.append(f"entry_operator_{idx}")
-        
-        elif mutation_type == 'logic':
-            # Toggle logic operator
-            condition.logic = 'OR' if condition.logic == 'AND' else 'AND'
-            mutations_applied.append(f"entry_logic_{idx}")
-        
-        elif mutation_type == 'threshold':
-            # Mutate threshold based on indicator type
-            ind_config = indicator_config.get(condition.indicator, {})
-            if condition.indicator == 'RSI':
-                threshold_range = ind_config.get('buy_threshold', [20, 40])
-                condition.threshold = random.randint(*threshold_range)
-            elif condition.indicator == 'STOCH':
-                threshold_range = ind_config.get('k_threshold', [20, 40])
-                condition.threshold = random.randint(*threshold_range)
-            elif condition.indicator == 'CCI':
-                threshold_range = ind_config.get('buy_threshold', [-200, -100])
-                condition.threshold = random.randint(*threshold_range)
-            mutations_applied.append(f"entry_threshold_{idx}")
-    
-    # Mutate exit conditions
-    if mutated_gene.exit_conditions and random.random() < mutation_rate:
-        idx = random.randrange(len(mutated_gene.exit_conditions))
-        condition = mutated_gene.exit_conditions[idx]
-        
-        # Choose what to mutate
-        mutation_type = random.choice(['operator', 'logic', 'threshold'])
-        
-        if mutation_type == 'operator':
-            operators = ['<', '>', 'cross_above', 'cross_below']
-            condition.operator = random.choice(operators)
-            mutations_applied.append(f"exit_operator_{idx}")
-        
+            condition.operator = random.choice(['<', '>', 'cross_above', 'cross_below'])
+            mutations_applied.append(f"{label}_operator_{idx}")
         elif mutation_type == 'logic':
             condition.logic = 'OR' if condition.logic == 'AND' else 'AND'
-            mutations_applied.append(f"exit_logic_{idx}")
-        
+            mutations_applied.append(f"{label}_logic_{idx}")
         elif mutation_type == 'threshold':
             ind_config = indicator_config.get(condition.indicator, {})
-            if condition.indicator == 'RSI':
-                threshold_range = ind_config.get('sell_threshold', [60, 80])
+            threshold_key = 'buy_threshold' if is_entry else 'sell_threshold'
+            
+            # Set default ranges based on indicator type
+            defaults = {
+                'RSI': ([20, 40], [60, 80]),
+                'STOCH': ([20, 40], [60, 80]),
+                'CCI': ([-200, -100], [100, 200])
+            }
+            
+            if condition.indicator in defaults:
+                default_range = defaults[condition.indicator][0 if is_entry else 1]
+                threshold_range = ind_config.get(threshold_key, default_range)
                 condition.threshold = random.randint(*threshold_range)
-            elif condition.indicator == 'STOCH':
-                threshold_range = ind_config.get('d_threshold', [60, 80])
-                condition.threshold = random.randint(*threshold_range)
-            elif condition.indicator == 'CCI':
-                threshold_range = ind_config.get('sell_threshold', [100, 200])
-                condition.threshold = random.randint(*threshold_range)
-            mutations_applied.append(f"exit_threshold_{idx}")
+                mutations_applied.append(f"{label}_threshold_{idx}")
     
-    # Possibly add a new condition
+    # Mutate entry and exit conditions
+    mutate_condition_list(mutated_gene.entry_conditions, True, 'entry')
+    mutate_condition_list(mutated_gene.exit_conditions, False, 'exit')
+    
+    # Possibly add new conditions
     if random.random() < mutation_rate * 0.5:
         available_indicators = [ind.type for ind in mutated_gene.indicators]
         if available_indicators:
-            # Add new entry condition
+            # Add entry condition if needed
             if len(mutated_gene.entry_conditions) < 3:
                 indicator = random.choice(available_indicators)
                 new_condition = _create_random_condition(indicator, True, indicator_config)
@@ -336,7 +285,7 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
                     mutated_gene.entry_conditions.append(new_condition)
                     mutations_applied.append(f"add_entry_condition_{indicator}")
             
-            # Add new exit condition
+            # Add exit condition if needed
             if len(mutated_gene.exit_conditions) < 3:
                 indicator = random.choice(available_indicators)
                 new_condition = _create_random_condition(indicator, False, indicator_config)
@@ -344,7 +293,7 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
                     mutated_gene.exit_conditions.append(new_condition)
                     mutations_applied.append(f"add_exit_condition_{indicator}")
     
-    # Possibly remove a condition
+    # Possibly remove conditions
     if random.random() < mutation_rate * 0.3:
         if len(mutated_gene.entry_conditions) > 1:
             removed = mutated_gene.entry_conditions.pop(random.randrange(len(mutated_gene.entry_conditions)))
@@ -369,60 +318,35 @@ def _create_random_condition(indicator_type: str, is_entry: bool,
     """Helper function to create a random condition for an indicator."""
     ind_config = indicator_config.get(indicator_type, {})
     
-    if indicator_type == 'RSI':
-        if is_entry:
-            threshold_range = ind_config.get('buy_threshold', [20, 40])
-            operator = 'cross_below'
-        else:
-            threshold_range = ind_config.get('sell_threshold', [60, 80])
-            operator = 'cross_above'
-        
-        return ConditionGene(
-            indicator='RSI',
-            operator=operator,
-            threshold=random.randint(*threshold_range),
-            logic=random.choice(['AND', 'OR'])
-        )
+    # Configuration map: indicator -> (entry_op, exit_op, entry_threshold_key, exit_threshold_key, default_entry, default_exit)
+    config_map = {
+        'RSI': ('cross_below', 'cross_above', 'buy_threshold', 'sell_threshold', [20, 40], [60, 80]),
+        'MACD': ('cross_above', 'cross_below', None, None, None, None),
+        'STOCH': ('<', '>', 'k_threshold', 'd_threshold', [20, 40], [60, 80]),
+        'CCI': ('<', '>', 'buy_threshold', 'sell_threshold', [-200, -100], [100, 200]),
+    }
     
-    elif indicator_type == 'MACD':
-        return ConditionGene(
-            indicator='MACD',
-            operator='cross_above' if is_entry else 'cross_below',
-            threshold=0,
-            logic=random.choice(['AND', 'OR'])
-        )
+    if indicator_type not in config_map:
+        return None
     
-    elif indicator_type == 'STOCH':
-        if is_entry:
-            threshold_range = ind_config.get('k_threshold', [20, 40])
-            operator = '<'
-        else:
-            threshold_range = ind_config.get('d_threshold', [60, 80])
-            operator = '>'
-        
-        return ConditionGene(
-            indicator='STOCH',
-            operator=operator,
-            threshold=random.randint(*threshold_range),
-            logic=random.choice(['AND', 'OR'])
-        )
+    entry_op, exit_op, entry_key, exit_key, entry_default, exit_default = config_map[indicator_type]
+    operator = entry_op if is_entry else exit_op
     
-    elif indicator_type == 'CCI':
-        if is_entry:
-            threshold_range = ind_config.get('buy_threshold', [-200, -100])
-            operator = '<'
-        else:
-            threshold_range = ind_config.get('sell_threshold', [100, 200])
-            operator = '>'
-        
-        return ConditionGene(
-            indicator='CCI',
-            operator=operator,
-            threshold=random.randint(*threshold_range),
-            logic=random.choice(['AND', 'OR'])
-        )
+    # MACD uses threshold 0
+    if indicator_type == 'MACD':
+        threshold = 0
+    else:
+        threshold_key = entry_key if is_entry else exit_key
+        default_range = entry_default if is_entry else exit_default
+        threshold_range = ind_config.get(threshold_key, default_range)
+        threshold = random.randint(*threshold_range)
     
-    return None
+    return ConditionGene(
+        indicator=indicator_type,
+        operator=operator,
+        threshold=threshold,
+        logic=random.choice(['AND', 'OR'])
+    )
 
 
 def mutate_structure(individual: Individual, mutation_rate: float,
