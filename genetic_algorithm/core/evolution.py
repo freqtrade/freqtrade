@@ -4,6 +4,7 @@ Main Evolution Engine
 Coordinates the genetic algorithm evolution process.
 """
 
+import random
 import yaml
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -160,25 +161,29 @@ class GeneticAlgorithm:
         next_gen = Population(size=self.population_size, generation=self.current_generation + 1)
         
         # Elitism: keep top performers
-        elite = population.get_best(self.elite_size)
-        for individual in elite:
-            # Create copy with new generation number
+        for individual in population.get_best(self.elite_size):
             gene_copy = individual.strategy_gene.copy()
             gene_copy.generation = self.current_generation + 1
             next_gen.add_individual(Individual(strategy_gene=gene_copy))
+        
+        # Helper to create child from parent gene
+        def create_child(parent_gene, ind_id):
+            gene = parent_gene.copy()
+            gene.generation = self.current_generation + 1
+            gene.individual_id = ind_id
+            return Individual(strategy_gene=gene)
         
         # Fill rest with offspring
         offspring_count = 0
         while len(next_gen) < self.population_size:
             # Select parents
             parent1, parent2 = select_parents(
-                population,
-                num_parents=2,
+                population, num_parents=2,
                 method=self.selection_method,
                 tournament_size=self.tournament_size
             )
             
-            # Crossover
+            # Crossover or copy
             if random.random() < self.crossover_rate:
                 child1, child2 = crossover(
                     parent1, parent2,
@@ -186,25 +191,16 @@ class GeneticAlgorithm:
                     ind_id=self.elite_size + offspring_count
                 )
             else:
-                # No crossover, just copy
-                gene1 = parent1.strategy_gene.copy()
-                gene2 = parent2.strategy_gene.copy()
-                gene1.generation = self.current_generation + 1
-                gene2.generation = self.current_generation + 1
-                gene1.individual_id = self.elite_size + offspring_count
-                gene2.individual_id = self.elite_size + offspring_count + 1
-                child1 = Individual(strategy_gene=gene1)
-                child2 = Individual(strategy_gene=gene2)
+                child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
+                child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
             
             # Mutation
-            if random.random() < self.mutation_rate:
-                child1 = mutate(child1, self.mutation_rate, self.config)
-            if random.random() < self.mutation_rate:
-                child2 = mutate(child2, self.mutation_rate, self.config)
-            
-            next_gen.add_individual(child1)
-            if len(next_gen) < self.population_size:
-                next_gen.add_individual(child2)
+            for child in [child1, child2]:
+                if random.random() < self.mutation_rate:
+                    child = mutate(child, self.mutation_rate, self.config)
+                next_gen.add_individual(child)
+                if len(next_gen) >= self.population_size:
+                    break
             
             offspring_count += 2
         
@@ -292,7 +288,3 @@ class GeneticAlgorithm:
         # Return top strategies
         population.sort_by_fitness(reverse=True)
         return population.get_best(10)
-
-
-# Import random at module level
-import random

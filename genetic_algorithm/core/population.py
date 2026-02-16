@@ -99,26 +99,26 @@ class Population:
         evaluated = [ind for ind in self.individuals if ind.fitness is not None]
         
         if not evaluated:
-            return PopulationStats(
-                generation=self.generation,
-                size=len(self.individuals)
-            )
+            return PopulationStats(generation=self.generation, size=len(self.individuals))
         
+        # Create sorted copy of fitnesses for median/min/max calculations
         fitnesses = [ind.fitness for ind in evaluated]
         fitnesses_sorted = sorted(fitnesses)
+        n = len(fitnesses_sorted)
         
+        avg_fitness = sum(fitnesses) / n
         stats = PopulationStats(
             generation=self.generation,
             size=len(self.individuals),
-            best_fitness=max(fitnesses),
-            worst_fitness=min(fitnesses),
-            avg_fitness=sum(fitnesses) / len(fitnesses),
-            median_fitness=fitnesses_sorted[len(fitnesses_sorted) // 2],
+            best_fitness=fitnesses_sorted[-1],
+            worst_fitness=fitnesses_sorted[0],
+            avg_fitness=avg_fitness,
+            median_fitness=fitnesses_sorted[n // 2],
         )
         
         # Calculate diversity (standard deviation of fitness)
-        if len(fitnesses) > 1:
-            variance = sum((f - stats.avg_fitness) ** 2 for f in fitnesses) / len(fitnesses)
+        if n > 1:
+            variance = sum((f - avg_fitness) ** 2 for f in fitnesses) / n
             stats.diversity_score = variance ** 0.5
         
         return stats

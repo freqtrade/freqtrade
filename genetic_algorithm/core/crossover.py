@@ -32,48 +32,39 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
     child1_gene = parent1.strategy_gene.copy()
     child2_gene = parent2.strategy_gene.copy()
     
-    # Crossover indicators: split at random point
+    # Crossover indicators
     if len(parent1.strategy_gene.indicators) > 1 and len(parent2.strategy_gene.indicators) > 1:
-        crossover_point = random.randint(1, min(len(parent1.strategy_gene.indicators),
-                                                len(parent2.strategy_gene.indicators)) - 1)
-        
-        # Swap indicator tails
-        child1_gene.indicators = (parent1.strategy_gene.indicators[:crossover_point] + 
-                                 parent2.strategy_gene.indicators[crossover_point:])
-        child2_gene.indicators = (parent2.strategy_gene.indicators[:crossover_point] + 
-                                 parent1.strategy_gene.indicators[crossover_point:])
+        point = random.randint(1, min(len(parent1.strategy_gene.indicators),
+                                     len(parent2.strategy_gene.indicators)) - 1)
+        child1_gene.indicators = (parent1.strategy_gene.indicators[:point] + 
+                                 parent2.strategy_gene.indicators[point:])
+        child2_gene.indicators = (parent2.strategy_gene.indicators[:point] + 
+                                 parent1.strategy_gene.indicators[point:])
     
     # Crossover entry conditions
     if len(parent1.strategy_gene.entry_conditions) > 1 and len(parent2.strategy_gene.entry_conditions) > 1:
-        crossover_point = random.randint(1, min(len(parent1.strategy_gene.entry_conditions),
-                                                len(parent2.strategy_gene.entry_conditions)) - 1)
-        
-        # Swap condition tails
-        child1_gene.entry_conditions = (parent1.strategy_gene.entry_conditions[:crossover_point] + 
-                                       parent2.strategy_gene.entry_conditions[crossover_point:])
-        child2_gene.entry_conditions = (parent2.strategy_gene.entry_conditions[:crossover_point] + 
-                                       parent1.strategy_gene.entry_conditions[crossover_point:])
+        point = random.randint(1, min(len(parent1.strategy_gene.entry_conditions),
+                                     len(parent2.strategy_gene.entry_conditions)) - 1)
+        child1_gene.entry_conditions = (parent1.strategy_gene.entry_conditions[:point] + 
+                                       parent2.strategy_gene.entry_conditions[point:])
+        child2_gene.entry_conditions = (parent2.strategy_gene.entry_conditions[:point] + 
+                                       parent1.strategy_gene.entry_conditions[point:])
     
     # Crossover exit conditions
     if (len(parent1.strategy_gene.exit_conditions) > 1 and 
         len(parent2.strategy_gene.exit_conditions) > 1):
-        crossover_point = random.randint(1, min(len(parent1.strategy_gene.exit_conditions),
-                                                len(parent2.strategy_gene.exit_conditions)) - 1)
-        
-        # Swap exit condition tails
-        child1_gene.exit_conditions = (parent1.strategy_gene.exit_conditions[:crossover_point] + 
-                                      parent2.strategy_gene.exit_conditions[crossover_point:])
-        child2_gene.exit_conditions = (parent2.strategy_gene.exit_conditions[:crossover_point] + 
-                                      parent1.strategy_gene.exit_conditions[crossover_point:])
+        point = random.randint(1, min(len(parent1.strategy_gene.exit_conditions),
+                                     len(parent2.strategy_gene.exit_conditions)) - 1)
+        child1_gene.exit_conditions = (parent1.strategy_gene.exit_conditions[:point] + 
+                                      parent2.strategy_gene.exit_conditions[point:])
+        child2_gene.exit_conditions = (parent2.strategy_gene.exit_conditions[:point] + 
+                                      parent1.strategy_gene.exit_conditions[point:])
     
-    # Randomly inherit other parameters
-    if random.random() < 0.5:
-        child1_gene.timeframe = parent2.strategy_gene.timeframe
-        child2_gene.timeframe = parent1.strategy_gene.timeframe
-    
-    if random.random() < 0.5:
-        child1_gene.stoploss = parent2.strategy_gene.stoploss
-        child2_gene.stoploss = parent1.strategy_gene.stoploss
+    # Randomly inherit scalar parameters
+    for attr in ['timeframe', 'stoploss']:
+        if random.random() < 0.5:
+            setattr(child1_gene, attr, getattr(parent2.strategy_gene, attr))
+            setattr(child2_gene, attr, getattr(parent1.strategy_gene, attr))
     
     if random.random() < 0.5:
         child1_gene.minimal_roi = parent2.strategy_gene.minimal_roi.copy()
@@ -85,10 +76,28 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
     child2_gene.generation = generation
     child2_gene.individual_id = ind_id + 1
     
-    child1 = Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id])
-    child2 = Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id])
+    return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
+            Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
+
+
+def _uniform_crossover_lists(parent1_list, parent2_list, swap_prob):
+    """Helper for uniform crossover on lists."""
+    child1_list, child2_list = [], []
+    max_len = max(len(parent1_list), len(parent2_list))
     
-    return child1, child2
+    for i in range(max_len):
+        if random.random() < swap_prob:
+            if i < len(parent2_list):
+                child1_list.append(parent2_list[i])
+            if i < len(parent1_list):
+                child2_list.append(parent1_list[i])
+        else:
+            if i < len(parent1_list):
+                child1_list.append(parent1_list[i])
+            if i < len(parent2_list):
+                child2_list.append(parent2_list[i])
+    
+    return child1_list, child2_list
 
 
 def uniform_crossover(parent1: Individual, parent2: Individual,
@@ -114,95 +123,40 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
     child2_gene = parent2.strategy_gene.copy()
     
     # Uniform crossover for indicators
-    child1_indicators = []
-    child2_indicators = []
-    max_len = max(len(parent1.strategy_gene.indicators), len(parent2.strategy_gene.indicators))
-    
-    for i in range(max_len):
-        if random.random() < swap_prob:
-            # Swap: child1 gets from parent2, child2 gets from parent1
-            if i < len(parent2.strategy_gene.indicators):
-                child1_indicators.append(parent2.strategy_gene.indicators[i])
-            if i < len(parent1.strategy_gene.indicators):
-                child2_indicators.append(parent1.strategy_gene.indicators[i])
-        else:
-            # No swap: child1 gets from parent1, child2 gets from parent2
-            if i < len(parent1.strategy_gene.indicators):
-                child1_indicators.append(parent1.strategy_gene.indicators[i])
-            if i < len(parent2.strategy_gene.indicators):
-                child2_indicators.append(parent2.strategy_gene.indicators[i])
+    child1_indicators, child2_indicators = _uniform_crossover_lists(
+        parent1.strategy_gene.indicators, parent2.strategy_gene.indicators, swap_prob)
     
     # Ensure at least one indicator in each child
-    if not child1_indicators:
-        child1_indicators = [parent1.strategy_gene.indicators[0]]
-    if not child2_indicators:
-        child2_indicators = [parent2.strategy_gene.indicators[0]]
-    
-    child1_gene.indicators = child1_indicators
-    child2_gene.indicators = child2_indicators
+    child1_gene.indicators = child1_indicators if child1_indicators else [parent1.strategy_gene.indicators[0]]
+    child2_gene.indicators = child2_indicators if child2_indicators else [parent2.strategy_gene.indicators[0]]
     
     # Uniform crossover for entry conditions
-    child1_entry = []
-    child2_entry = []
-    max_len = max(len(parent1.strategy_gene.entry_conditions), len(parent2.strategy_gene.entry_conditions))
-    
-    for i in range(max_len):
-        if random.random() < swap_prob:
-            if i < len(parent2.strategy_gene.entry_conditions):
-                child1_entry.append(parent2.strategy_gene.entry_conditions[i])
-            if i < len(parent1.strategy_gene.entry_conditions):
-                child2_entry.append(parent1.strategy_gene.entry_conditions[i])
-        else:
-            if i < len(parent1.strategy_gene.entry_conditions):
-                child1_entry.append(parent1.strategy_gene.entry_conditions[i])
-            if i < len(parent2.strategy_gene.entry_conditions):
-                child2_entry.append(parent2.strategy_gene.entry_conditions[i])
+    child1_entry, child2_entry = _uniform_crossover_lists(
+        parent1.strategy_gene.entry_conditions, parent2.strategy_gene.entry_conditions, swap_prob)
     
     # Ensure at least one entry condition in each child
-    if not child1_entry:
-        child1_entry = [parent1.strategy_gene.entry_conditions[0]]
-    if not child2_entry:
-        child2_entry = [parent2.strategy_gene.entry_conditions[0]]
-    
-    child1_gene.entry_conditions = child1_entry
-    child2_gene.entry_conditions = child2_entry
+    child1_gene.entry_conditions = child1_entry if child1_entry else [parent1.strategy_gene.entry_conditions[0]]
+    child2_gene.entry_conditions = child2_entry if child2_entry else [parent2.strategy_gene.entry_conditions[0]]
     
     # Uniform crossover for exit conditions
-    child1_exit = []
-    child2_exit = []
-    max_len = max(len(parent1.strategy_gene.exit_conditions), len(parent2.strategy_gene.exit_conditions))
-    
-    for i in range(max_len):
-        if random.random() < swap_prob:
-            if i < len(parent2.strategy_gene.exit_conditions):
-                child1_exit.append(parent2.strategy_gene.exit_conditions[i])
-            if i < len(parent1.strategy_gene.exit_conditions):
-                child2_exit.append(parent1.strategy_gene.exit_conditions[i])
-        else:
-            if i < len(parent1.strategy_gene.exit_conditions):
-                child1_exit.append(parent1.strategy_gene.exit_conditions[i])
-            if i < len(parent2.strategy_gene.exit_conditions):
-                child2_exit.append(parent2.strategy_gene.exit_conditions[i])
-    
-    child1_gene.exit_conditions = child1_exit
-    child2_gene.exit_conditions = child2_exit
+    child1_gene.exit_conditions, child2_gene.exit_conditions = _uniform_crossover_lists(
+        parent1.strategy_gene.exit_conditions, parent2.strategy_gene.exit_conditions, swap_prob)
     
     # Randomly inherit scalar parameters
-    if random.random() < swap_prob:
-        child1_gene.timeframe = parent2.strategy_gene.timeframe
-        child2_gene.timeframe = parent1.strategy_gene.timeframe
-    
-    if random.random() < swap_prob:
-        child1_gene.stoploss = parent2.strategy_gene.stoploss
-        child2_gene.stoploss = parent1.strategy_gene.stoploss
-    
-    if random.random() < swap_prob:
-        child1_gene.minimal_roi = parent2.strategy_gene.minimal_roi.copy()
-        child2_gene.minimal_roi = parent1.strategy_gene.minimal_roi.copy()
+    for attr in ['timeframe', 'stoploss']:
+        if random.random() < swap_prob:
+            val1 = getattr(parent2.strategy_gene, attr)
+            val2 = getattr(parent1.strategy_gene, attr)
+            setattr(child1_gene, attr, val1)
+            setattr(child2_gene, attr, val2)
     
     if random.random() < swap_prob:
         child1_gene.trailing_stop = parent2.strategy_gene.trailing_stop
         child2_gene.trailing_stop = parent1.strategy_gene.trailing_stop
+    
+    if random.random() < swap_prob:
+        child1_gene.minimal_roi = parent2.strategy_gene.minimal_roi.copy()
+        child2_gene.minimal_roi = parent1.strategy_gene.minimal_roi.copy()
     
     # Update generation and IDs
     child1_gene.generation = generation
@@ -210,10 +164,8 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
     child2_gene.generation = generation
     child2_gene.individual_id = ind_id + 1
     
-    child1 = Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id])
-    child2 = Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id])
-    
-    return child1, child2
+    return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
+            Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
 
 def component_crossover(parent1: Individual, parent2: Individual,
@@ -236,29 +188,25 @@ def component_crossover(parent1: Individual, parent2: Individual,
     child1_gene = parent1.strategy_gene.copy()
     child2_gene = parent2.strategy_gene.copy()
     
-    # Randomly decide which components to swap
-    swap_indicators = random.random() < 0.5
-    swap_entry = random.random() < 0.5
-    swap_exit = random.random() < 0.5
-    swap_risk = random.random() < 0.5
+    # Swap components based on random decisions
+    swaps = {
+        'indicators': random.random() < 0.5,
+        'entry': random.random() < 0.5,
+        'exit': random.random() < 0.5,
+        'risk': random.random() < 0.5,
+    }
     
-    # Swap indicator sets
-    if swap_indicators:
-        child1_gene.indicators = parent2.strategy_gene.indicators[:]
-        child2_gene.indicators = parent1.strategy_gene.indicators[:]
+    if swaps['indicators']:
+        child1_gene.indicators, child2_gene.indicators = parent2.strategy_gene.indicators[:], parent1.strategy_gene.indicators[:]
     
-    # Swap entry condition sets
-    if swap_entry:
-        child1_gene.entry_conditions = parent2.strategy_gene.entry_conditions[:]
-        child2_gene.entry_conditions = parent1.strategy_gene.entry_conditions[:]
+    if swaps['entry']:
+        child1_gene.entry_conditions, child2_gene.entry_conditions = parent2.strategy_gene.entry_conditions[:], parent1.strategy_gene.entry_conditions[:]
     
-    # Swap exit condition sets
-    if swap_exit:
-        child1_gene.exit_conditions = parent2.strategy_gene.exit_conditions[:]
-        child2_gene.exit_conditions = parent1.strategy_gene.exit_conditions[:]
+    if swaps['exit']:
+        child1_gene.exit_conditions, child2_gene.exit_conditions = parent2.strategy_gene.exit_conditions[:], parent1.strategy_gene.exit_conditions[:]
     
-    # Swap risk management parameters
-    if swap_risk:
+    if swaps['risk']:
+        # Swap all risk parameters (stoploss, ROI, trailing stop)
         child1_gene.stoploss = parent2.strategy_gene.stoploss
         child1_gene.minimal_roi = parent2.strategy_gene.minimal_roi.copy()
         child1_gene.trailing_stop = parent2.strategy_gene.trailing_stop
@@ -273,10 +221,8 @@ def component_crossover(parent1: Individual, parent2: Individual,
     child2_gene.generation = generation
     child2_gene.individual_id = ind_id + 1
     
-    child1 = Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id])
-    child2 = Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id])
-    
-    return child1, child2
+    return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
+            Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
 
 def crossover(parent1: Individual, parent2: Individual,

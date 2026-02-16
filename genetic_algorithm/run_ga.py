@@ -148,50 +148,51 @@ def print_top_strategies(top_strategies: list, strategy_generator: StrategyGener
         top_strategies: List of top Individual objects
         strategy_generator: StrategyGenerator instance for code generation
     """
-    print("\n" + "=" * 80)
-    print(f"TOP {len(top_strategies)} STRATEGIES")
-    print("=" * 80)
-    print()
+    print(f"\n{'='*80}\nTOP {len(top_strategies)} STRATEGIES\n{'='*80}\n")
     
     for rank, individual in enumerate(top_strategies, 1):
         gene = individual.strategy_gene
         metrics = individual.metrics
         
+        # Header and fitness
         print(f"RANK {rank}: Strategy Gen{gene.generation}_Ind{gene.individual_id}")
-        print("-" * 80)
-        print(f"  Fitness Score:      {individual.fitness:.4f}")
-        print()
-        print("  Performance Metrics:")
-        print(f"    Profit:           {metrics.get('profit', 0):.2f}%")
-        print(f"    Sharpe Ratio:     {metrics.get('sharpe_ratio', 0):.2f}")
-        print(f"    Max Drawdown:     {metrics.get('max_drawdown', 0):.2%}")
-        print(f"    Win Rate:         {metrics.get('win_rate', 0):.2%}")
-        print(f"    Total Trades:     {metrics.get('num_trades', 0)}")
-        print(f"    Profit Factor:    {metrics.get('profit_factor', 0):.2f}")
-        print()
-        print("  Strategy Parameters:")
-        print(f"    Timeframe:        {gene.timeframe}")
-        print(f"    Stop Loss:        {gene.stoploss:.2%}")
-        print(f"    Trailing Stop:    {gene.trailing_stop}")
-        print(f"    ROI:              {gene.minimal_roi}")
-        print()
+        print(f"{'-'*80}\n  Fitness Score:      {individual.fitness:.4f}\n")
+        
+        # Performance metrics (consolidated print statements)
+        print(f"  Performance Metrics:\n"
+              f"    Profit:           {metrics.get('profit', 0):.2f}%\n"
+              f"    Sharpe Ratio:     {metrics.get('sharpe_ratio', 0):.2f}\n"
+              f"    Max Drawdown:     {metrics.get('max_drawdown', 0):.2%}\n"
+              f"    Win Rate:         {metrics.get('win_rate', 0):.2%}\n"
+              f"    Total Trades:     {metrics.get('num_trades', 0)}\n"
+              f"    Profit Factor:    {metrics.get('profit_factor', 0):.2f}\n")
+        
+        # Strategy parameters (consolidated)
+        print(f"  Strategy Parameters:\n"
+              f"    Timeframe:        {gene.timeframe}\n"
+              f"    Stop Loss:        {gene.stoploss:.2%}\n"
+              f"    Trailing Stop:    {gene.trailing_stop}\n"
+              f"    ROI:              {gene.minimal_roi}\n")
+        
+        # Indicators
         print(f"  Indicators ({len(gene.indicators)}):")
         for ind in gene.indicators:
             params = ', '.join(f"{k}={v}" for k, v in ind.parameters.items())
             print(f"    • {ind.type}: {params} (weight={ind.weight:.2f})")
-        print()
-        print(f"  Entry Conditions ({len(gene.entry_conditions)}):")
+        
+        # Entry conditions
+        print(f"\n  Entry Conditions ({len(gene.entry_conditions)}):")
         for cond in gene.entry_conditions:
             print(f"    • {cond.indicator} {cond.operator} {cond.threshold} ({cond.logic})")
-        print()
         
+        # Exit conditions
+        print()
         if gene.exit_conditions:
             print(f"  Exit Conditions ({len(gene.exit_conditions)}):")
             for cond in gene.exit_conditions:
                 print(f"    • {cond.indicator} {cond.operator} {cond.threshold} ({cond.logic})")
         else:
             print("  Exit Conditions: Using default ROI/stoploss")
-        print()
         
         if rank < len(top_strategies):
             print()
