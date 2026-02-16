@@ -78,6 +78,8 @@ class GeneticAlgorithm:
         # Adaptive parameters
         self.base_mutation_rate = self.mutation_rate
         self.adaptive_mutation = ga_config.get('adaptive_mutation', True)
+        self.max_adaptation_factor = ga_config.get('max_adaptation_factor', 2.0)
+        self.adaptation_step = ga_config.get('adaptation_step', 0.1)
     
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file."""
@@ -247,9 +249,17 @@ class GeneticAlgorithm:
         # Adaptive mutation: increase mutation rate if stuck
         if self.adaptive_mutation and self.no_improvement_count > 0:
             # Gradually increase mutation rate when stuck
-            adaptation_factor = min(2.0, 1.0 + (self.no_improvement_count * 0.1))
+            # adaptation_factor = 1.0 + (generations_stuck * adaptation_step)
+            # Capped at max_adaptation_factor (default 2.0 = double the rate)
+            adaptation_factor = min(
+                self.max_adaptation_factor, 
+                1.0 + (self.no_improvement_count * self.adaptation_step)
+            )
             self.mutation_rate = min(0.5, self.base_mutation_rate * adaptation_factor)
-            self.logger.info(f"Adaptive mutation: rate increased to {self.mutation_rate:.3f} (no improvement for {self.no_improvement_count} gens)")
+            self.logger.info(
+                f"Adaptive mutation: rate increased to {self.mutation_rate:.3f} "
+                f"(factor={adaptation_factor:.2f}, no improvement for {self.no_improvement_count} gens)"
+            )
         else:
             # Reset to base rate when improving
             self.mutation_rate = self.base_mutation_rate

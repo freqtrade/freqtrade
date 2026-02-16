@@ -486,7 +486,9 @@ class {strategy_name}(IStrategy):
         
         elif condition.indicator in ['EMA', 'SMA']:
             # Moving average conditions
-            period = indicator_periods.get(condition.indicator, 20)
+            # Use actual period from indicator_periods, default to 20 for MAs
+            default_ma_period = 20
+            period = indicator_periods.get(condition.indicator, default_ma_period)
             col_name = f"{condition.indicator.lower()}_{period}"
             if condition.operator == 'cross_above':
                 return f"(dataframe['close'] > dataframe['{col_name}'])"

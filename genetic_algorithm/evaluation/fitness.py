@@ -178,11 +178,12 @@ class FitnessEvaluator:
         
         # Bonus for positive profit (encourage profitable strategies)
         if profit > 0:
-            fitness *= 1.1  # 10% bonus
+            fitness *= 1.1  # 10% bonus for any positive profit
         
         # Extra bonus for significantly profitable strategies
+        # Note: This is cumulative with above, so total bonus is 32% (1.1 * 1.2) for >10% profit
         if profit > 10:
-            fitness *= 1.2  # Additional 20% bonus
+            fitness *= 1.2  # Additional 20% bonus (32% total with previous bonus)
         
         # Apply penalties and return
         penalized_fitness = self._apply_penalties(fitness, metrics)
@@ -235,6 +236,8 @@ class FitnessEvaluator:
                 fitness *= 0.1  # Very low fitness for no trades
             else:
                 # Gradual penalty: 50% at 1 trade, increasing to full at min_trades
+                # Formula: 0.5 + (num_trades / min_trades) * 0.5
+                # E.g., with min_trades=5: 1 trade=60%, 2=70%, 3=80%, 4=90%, 5+=100%
                 trade_penalty = 0.5 + (num_trades / min_trades) * 0.5
                 fitness *= trade_penalty
         

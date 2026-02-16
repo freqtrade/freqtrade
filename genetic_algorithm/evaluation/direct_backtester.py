@@ -448,7 +448,10 @@ class DirectBacktester:
         
         # Convert profit_total to percentage if it's not already
         # FreqTrade typically returns profit_total as a ratio (e.g., 0.05 for 5%)
-        profit_percent = profit_total * 100 if abs(profit_total) < 10 else profit_total
+        # Heuristic: if absolute value < 10, assume it's a ratio; otherwise it's already a percentage
+        # Note: This assumes profits won't exceed 1000% (ratio of 10), which is reasonable for backtests
+        RATIO_TO_PERCENT_THRESHOLD = 10
+        profit_percent = profit_total * 100 if abs(profit_total) < RATIO_TO_PERCENT_THRESHOLD else profit_total
         
         total_trades = stats.get('total_trades', 0)
         wins = stats.get('wins', 0)

@@ -28,6 +28,10 @@ genetic_algorithm:
   
   # Adaptive mutation - increase mutation rate when stuck
   adaptive_mutation: true
+  
+  # Adaptive mutation parameters
+  max_adaptation_factor: 2.0   # Maximum multiplier for mutation rate (2x base rate)
+  adaptation_step: 0.1          # Increase factor per generation with no improvement
 
 # === Fitness Function Weights ===
 # These weights determine how different metrics contribute to overall fitness
