@@ -73,6 +73,11 @@ class GeneticAlgorithm:
         self.best_individual: Optional[Individual] = None
         self.generation_stats: List[PopulationStats] = []
         self.no_improvement_count = 0
+        self.best_fitness_ever = 0.0
+        
+        # Adaptive parameters
+        self.base_mutation_rate = self.mutation_rate
+        self.adaptive_mutation = ga_config.get('adaptive_mutation', True)
     
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file."""
@@ -230,10 +235,24 @@ class GeneticAlgorithm:
         if self.best_individual is None:
             return False
         
-        if stats.best_fitness <= self.best_individual.fitness:
+        current_best = stats.best_fitness
+        
+        # Check for improvement
+        if current_best <= self.best_fitness_ever:
             self.no_improvement_count += 1
         else:
             self.no_improvement_count = 0
+            self.best_fitness_ever = current_best
+        
+        # Adaptive mutation: increase mutation rate if stuck
+        if self.adaptive_mutation and self.no_improvement_count > 0:
+            # Gradually increase mutation rate when stuck
+            adaptation_factor = min(2.0, 1.0 + (self.no_improvement_count * 0.1))
+            self.mutation_rate = min(0.5, self.base_mutation_rate * adaptation_factor)
+            self.logger.info(f"Adaptive mutation: rate increased to {self.mutation_rate:.3f} (no improvement for {self.no_improvement_count} gens)")
+        else:
+            # Reset to base rate when improving
+            self.mutation_rate = self.base_mutation_rate
         
         if self.no_improvement_count >= self.convergence_patience:
             self.logger.info(f"Converged: No improvement for {self.convergence_patience} generations")
