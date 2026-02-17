@@ -299,17 +299,30 @@ class DirectBacktester:
                 
                 # Get results from the backtest results
                 # The results are stored in backtesting.results which is a dictionary
+                logger.debug(f"Backtest results structure: {backtesting.results.keys() if backtesting.results else 'None'}")
+                
                 if not backtesting.results or 'strategy' not in backtesting.results:
-                    logger.warning("No results available from backtest")
+                    logger.warning(f"No results available from backtest for {strategy_name}")
                     return BacktestResult(
                         success=True,
                         strategy_name=strategy_name,
                         total_trades=0,
-                        error_message="No trades generated"
+                        error_message="No trades generated - strategy may be too restrictive"
                     )
                 
                 # Parse results from the strategy results
                 strategy_results = backtesting.results['strategy'].get(strategy_name, {})
+                logger.debug(f"Strategy results keys: {strategy_results.keys() if strategy_results else 'None'}")
+                
+                if not strategy_results:
+                    logger.warning(f"Empty strategy results for {strategy_name}")
+                    return BacktestResult(
+                        success=True,
+                        strategy_name=strategy_name,
+                        total_trades=0,
+                        error_message="No trades generated - check strategy conditions"
+                    )
+                
                 result = self._parse_stats(strategy_results, strategy_name)
                 return result
                 
@@ -426,16 +439,41 @@ class DirectBacktester:
         Returns:
             BacktestResult object
         """
+        # Log the raw stats for debugging profit issues
+        logger.debug(f"Raw backtest stats for {strategy_name}: {stats}")
+        
+        # Extract metrics from stats - handle both percentage and absolute values
+        profit_total = stats.get('profit_total', 0.0)
+        profit_total_abs = stats.get('profit_total_abs', 0.0)
+        
+        # Convert profit_total to percentage if it's not already
+        # FreqTrade typically returns profit_total as a ratio (e.g., 0.05 for 5%)
+        # Heuristic: if absolute value < 10, assume it's a ratio; otherwise it's already a percentage
+        # Note: This assumes profits won't exceed 1000% (ratio of 10), which is reasonable for backtests
+        RATIO_TO_PERCENT_THRESHOLD = 10
+        profit_percent = profit_total * 100 if abs(profit_total) < RATIO_TO_PERCENT_THRESHOLD else profit_total
+        
+        total_trades = stats.get('total_trades', 0)
+        wins = stats.get('wins', 0)
+        losses = stats.get('losses', 0)
+        
+        # Calculate win rate if not provided
+        win_rate = stats.get('winrate', 0.0)
+        if win_rate == 0.0 and total_trades > 0:
+            win_rate = wins / total_trades
+        
+        logger.info(f"Parsed {strategy_name}: profit={profit_percent:.2f}%, trades={total_trades}, win_rate={win_rate:.2%}")
+        
         # Extract metrics from stats
         return BacktestResult(
             success=True,
             strategy_name=strategy_name,
-            total_profit=stats.get('profit_total_abs', 0.0),
-            profit_percent=stats.get('profit_total', 0.0),
-            total_trades=stats.get('total_trades', 0),
-            wins=stats.get('wins', 0),
-            losses=stats.get('losses', 0),
-            win_rate=stats.get('winrate', 0.0),
+            total_profit=profit_total_abs,
+            profit_percent=profit_percent,
+            total_trades=total_trades,
+            wins=wins,
+            losses=losses,
+            win_rate=win_rate,
             max_drawdown=stats.get('max_drawdown', 0.0),
             max_drawdown_abs=stats.get('max_drawdown_abs', 0.0),
             sharpe_ratio=stats.get('sharpe', 0.0),

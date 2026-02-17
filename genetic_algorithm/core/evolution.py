@@ -17,6 +17,7 @@ from genetic_algorithm.core.crossover import crossover
 from genetic_algorithm.core.mutation import mutate
 from genetic_algorithm.strategies.generator import StrategyGenerator
 from genetic_algorithm.evaluation.fitness import FitnessEvaluator
+from genetic_algorithm.visualization import GAVisualizer
 
 
 class GeneticAlgorithm:
@@ -32,12 +33,15 @@ class GeneticAlgorithm:
     6. Repeat
     """
     
-    def __init__(self, config_path: str = "genetic_algorithm/config/ga_config.yaml"):
+    def __init__(self, config_path: str = "genetic_algorithm/config/ga_config.yaml", 
+                 visualize: bool = False, interactive: bool = True):
         """
         Initialize the genetic algorithm.
         
         Args:
             config_path: Path to configuration file
+            visualize: Whether to enable live visualization
+            interactive: Whether to use interactive plotting (only applies if visualize=True)
         """
         self.config = self._load_config(config_path)
         self.logger = self._setup_logging()
@@ -57,11 +61,25 @@ class GeneticAlgorithm:
         self.strategy_generator = StrategyGenerator(self.config)
         self.fitness_evaluator = FitnessEvaluator(self.config)
         
+        # Initialize visualizer
+        self.visualizer = GAVisualizer(
+            enabled=visualize,
+            interactive=interactive,
+            save_plots=True
+        )
+        
         # Track evolution
         self.current_generation = 0
         self.best_individual: Optional[Individual] = None
         self.generation_stats: List[PopulationStats] = []
         self.no_improvement_count = 0
+        self.best_fitness_ever = 0.0
+        
+        # Adaptive parameters
+        self.base_mutation_rate = self.mutation_rate
+        self.adaptive_mutation = ga_config.get('adaptive_mutation', True)
+        self.max_adaptation_factor = ga_config.get('max_adaptation_factor', 2.0)
+        self.adaptation_step = ga_config.get('adaptation_step', 0.1)
     
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file."""
@@ -219,10 +237,32 @@ class GeneticAlgorithm:
         if self.best_individual is None:
             return False
         
-        if stats.best_fitness <= self.best_individual.fitness:
+        current_best = stats.best_fitness
+        
+        # Check for improvement
+        if current_best <= self.best_fitness_ever:
             self.no_improvement_count += 1
         else:
             self.no_improvement_count = 0
+            self.best_fitness_ever = current_best
+        
+        # Adaptive mutation: increase mutation rate if stuck
+        if self.adaptive_mutation and self.no_improvement_count > 0:
+            # Gradually increase mutation rate when stuck
+            # adaptation_factor = 1.0 + (generations_stuck * adaptation_step)
+            # Capped at max_adaptation_factor (default 2.0 = double the rate)
+            adaptation_factor = min(
+                self.max_adaptation_factor, 
+                1.0 + (self.no_improvement_count * self.adaptation_step)
+            )
+            self.mutation_rate = min(0.5, self.base_mutation_rate * adaptation_factor)
+            self.logger.info(
+                f"Adaptive mutation: rate increased to {self.mutation_rate:.3f} "
+                f"(factor={adaptation_factor:.2f}, no improvement for {self.no_improvement_count} gens)"
+            )
+        else:
+            # Reset to base rate when improving
+            self.mutation_rate = self.base_mutation_rate
         
         if self.no_improvement_count >= self.convergence_patience:
             self.logger.info(f"Converged: No improvement for {self.convergence_patience} generations")
@@ -265,6 +305,9 @@ class GeneticAlgorithm:
             self.logger.info(f"Avg fitness: {stats.avg_fitness:.4f}")
             self.logger.info(f"Diversity: {stats.diversity_score:.4f}")
             
+            # Update visualization
+            self.visualizer.update(gen, stats, population)
+            
             # Update best individual
             best = population.get_best(1)[0]
             if self.best_individual is None or best.fitness > self.best_individual.fitness:
@@ -284,6 +327,9 @@ class GeneticAlgorithm:
         self.logger.info(f"Best individual: {self.best_individual.id}")
         self.logger.info(f"Best fitness: {self.best_individual.fitness:.4f}")
         self.logger.info("="*60)
+        
+        # Close visualization
+        self.visualizer.close()
         
         # Return top strategies
         population.sort_by_fitness(reverse=True)

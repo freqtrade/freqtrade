@@ -1,17 +1,79 @@
 # Genetic Algorithm for FreqTrade Strategy Evolution
 
 **Status**: ✅ **WORKING AND PRODUCTION-READY**  
-**Last Verified**: February 13, 2026  
-**Latest Test**: `example_usage.py` successfully generates valid strategies ✅
+**Last Updated**: February 16, 2026  
+**Latest Improvements**: Live visualization, profit calculation fixes, adaptive mutation ✅
+
+> 📊 **Want live plotting of generation scores?** → See [QUICKSTART_VISUALIZATION.md](QUICKSTART_VISUALIZATION.md)  
+> 📖 **Complete visualization guide** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)
+
+---
+
+## 🆕 Recent Improvements (February 2026)
+
+### Major Enhancements:
+- ✅ **Live Visualization**: Real-time plots during evolution with `--visualize` flag
+  - 📊 **Generation scores plotted live** as the GA runs
+  - 📈 See fitness evolution, diversity, metrics, and distribution in real-time
+  - 🚀 **Easy setup**: Run `./genetic_algorithm/setup_ga.sh` to install dependencies
+  - 📖 **Quick start**: See [QUICKSTART_VISUALIZATION.md](QUICKSTART_VISUALIZATION.md)
+- ✅ **Fixed Profit Calculation**: Strategies now show accurate profit percentages
+- ✅ **Improved Strategy Generation**: More lenient conditions generate 5-50 trades
+- ✅ **Adaptive Mutation**: Automatically adjusts when evolution stagnates
+- ✅ **Better Fitness Function**: Bonuses for profitable strategies (up to 32%)
+- ✅ **Relaxed Constraints**: More forgiving thresholds allow diverse strategies
+
+**See [IMPROVEMENTS.md](IMPROVEMENTS.md) for detailed changes!**
 
 ---
 
 ## 🎉 Quick Start
 
-### Option 1: Run the Full GA (Recommended)
+### Step 0: Setup (First Time Only)
+
+**Install the required dependencies for visualization:**
 
 ```bash
-# Run the complete Genetic Algorithm evolution
+# Linux/macOS
+./genetic_algorithm/setup_ga.sh
+
+# Windows (PowerShell)
+.\genetic_algorithm\setup_ga.ps1
+
+# Or manually
+pip install -r genetic_algorithm/requirements.txt
+```
+
+This installs matplotlib, numpy, and other dependencies needed for **live plotting of generation scores**.
+
+### Option 1: Run with Live Visualization (Recommended)
+
+```bash
+# Easiest way (auto-checks dependencies)
+./genetic_algorithm/run_with_visualization.sh  # Linux/macOS
+.\genetic_algorithm\run_with_visualization.ps1  # Windows
+
+# Or directly
+python genetic_algorithm/run_ga.py --visualize
+
+# This will:
+# - Evolve 50 strategies over 20 generations
+# - Show LIVE plots of fitness evolution, diversity, and metrics
+# - Display the top 5 best strategies
+# - Save strategies to genetic_algorithm/output/
+# - Create a summary report and save plots
+```
+
+**Example visualization output:**
+
+![Genetic Algorithm Evolution Progress](https://github.com/user-attachments/assets/2f4ac899-04fd-4b42-8721-ced24fdff431)
+
+*Live plotting shows generation scores, fitness evolution, population diversity, performance metrics, and fitness distribution in real-time.*
+
+### Option 1b: Run Without Visualization
+
+```bash
+# Run the complete Genetic Algorithm evolution (no plots)
 python genetic_algorithm/run_ga.py
 
 # This will:
@@ -55,6 +117,7 @@ This module implements a Genetic Algorithm (GA) system for autonomously developi
 ✅ **Uses real FreqTrade backtesting** engine (not mocked!)  
 ✅ **Produces production-ready** strategies for live trading  
 ✅ **Evolves strategies** over multiple generations  
+✅ **Live visualization** of evolution progress with `--visualize` flag  
 ✅ **Fully configurable** through YAML configuration
 
 ---
@@ -62,16 +125,18 @@ This module implements a Genetic Algorithm (GA) system for autonomously developi
 ## 📚 Documentation
 
 ### Essential Reading
-1. **RUN_GA_GUIDE.md** - 🚀 **Complete guide for run_ga.py** - configuration and usage
-2. **STATUS_REPORT.md** - ⭐ Current status and capabilities
-3. **TUTORIAL.md** - Complete usage guide with examples
-4. **QUICK_REFERENCE.md** - Quick commands and examples
-5. **ACCOMPLISHMENTS.md** - Detailed list of what's been implemented
+1. **VISUALIZATION_GUIDE.md** - 📊 **Complete guide for live plotting** - setup, usage, troubleshooting
+2. **RUN_GA_GUIDE.md** - 🚀 **Complete guide for run_ga.py** - configuration and usage
+3. **STATUS_REPORT.md** - ⭐ Current status and capabilities
+4. **TUTORIAL.md** - Complete usage guide with examples
+5. **QUICK_REFERENCE.md** - Quick commands and examples
+6. **ACCOMPLISHMENTS.md** - Detailed list of what's been implemented
 
 ### Additional Resources
 - **DEVELOPMENT_PLAN.md** - Original architecture and design plan
 - **TODO.md** - Task list showing what's complete vs. planned
 - **NEXT_STEPS.md** - Future features and enhancements
+- **IMPROVEMENTS.md** - Recent improvements and bug fixes
 
 ---
 
@@ -96,6 +161,76 @@ This module implements a Genetic Algorithm (GA) system for autonomously developi
 3. Deploy to live trading bot ✅
 4. Customize all parameters ✅
 5. Evolve strategies over generations ✅
+6. Visualize evolution progress in real-time ✅
+
+---
+
+## 📊 Live Visualization
+
+The GA now supports **live plotting of generation scores** with real-time visualization of the evolution progress!
+
+### Quick Setup
+
+```bash
+# 1. Install dependencies
+./genetic_algorithm/setup_ga.sh  # Linux/macOS
+.\genetic_algorithm\setup_ga.ps1  # Windows
+
+# 2. Run with visualization
+python genetic_algorithm/run_ga.py --visualize
+```
+
+**📖 See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md) for complete setup and troubleshooting guide!**
+
+### How to Use
+
+```bash
+# Run with live interactive plotting (recommended)
+python genetic_algorithm/run_ga.py --visualize
+
+# Run with plotting but save-only mode (for servers)
+python genetic_algorithm/run_ga.py --visualize --no-interactive
+```
+
+### What You'll See
+
+The visualization displays **4 interactive plots** that update after each generation:
+
+1. **Fitness Evolution** (Top-Left)
+   - Best, average, and worst fitness scores over generations
+   - Shows improvement trends and convergence
+   - Shaded area between best and worst fitness
+
+2. **Population Diversity** (Top-Right)
+   - Standard deviation of fitness values
+   - Helps monitor genetic diversity
+   - Prevents premature convergence
+
+3. **Performance Metrics** (Bottom-Left)
+   - Best strategy's key metrics over time:
+     - Profit percentage
+     - Sharpe ratio
+     - Win rate
+     - Maximum drawdown
+
+4. **Fitness Distribution** (Bottom-Right)
+   - Histogram of current population fitness
+   - Color-coded from red (low) to green (high)
+   - Shows population spread and clusters
+
+### Testing Visualization
+
+Test the visualization without running a full GA:
+
+```bash
+# Quick test with mock data (interactive)
+python genetic_algorithm/test_visualization.py
+
+# Non-interactive test (saves plot only)
+python genetic_algorithm/test_visualization.py --non-interactive
+```
+
+All plots are automatically saved to `genetic_algorithm/output/plots/`
 
 ---
 
@@ -131,10 +266,11 @@ genetic_algorithm/
 │   ├── backtest.py         # Backtesting integration
 │   ├── metrics.py          # Performance metrics
 │   └── live_test.py        # Dry-run testing
+├── visualization/          # Live visualization
+│   └── visualizer.py       # Real-time plotting
 ├── utils/                  # Utility functions
 │   ├── logging.py          # Logging utilities
-│   ├── storage.py          # Strategy storage
-│   └── visualization.py    # Results visualization
+│   └── storage.py          # Strategy storage
 ├── config/                 # Configuration files
 │   └── ga_config.yaml      # GA parameters
 └── tests/                  # Unit tests
