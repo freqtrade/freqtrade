@@ -78,7 +78,6 @@ def load_and_update_config(config_path) -> dict:
     
     # All configuration is now read from the config file
     # No more hardcoded overrides - edit the config file to change parameters
-    logger.info(f"✓ Configuration loaded from {config_path}")
     
     return config
 
@@ -291,9 +290,12 @@ def validate_config(config: dict) -> bool:
     backtest_cfg = config.get('backtesting', {})
     pairs = backtest_cfg.get('pairs', [])
     timerange = backtest_cfg.get('timerange', '')
+    auto_download = backtest_cfg.get('auto_download_data', True)
+    exchange = backtest_cfg.get('exchange', 'binance')
     
     issues = []
     warnings = []
+    info = []
     
     # Critical issues
     if not pairs:
@@ -303,15 +305,32 @@ def validate_config(config: dict) -> bool:
     if any('UNITTEST' in p for p in pairs):
         warnings.append("⚠️  WARNING: Using UNITTEST pairs (test data from 2018)")
         warnings.append("   For real strategy development:")
-        warnings.append("   1. Download data: freqtrade download-data --pairs BTC/USDT --timeframes 1h --days 30")
-        warnings.append("   2. Update config: backtesting.pairs = ['BTC/USDT']")
-        warnings.append("   3. Set timerange: backtesting.timerange = '20250120-20250219'")
+        warnings.append("   1. Edit config file and set: backtesting.pairs = ['BTC/USDT']")
+        warnings.append("   2. Set timerange: backtesting.timerange = '20250120-20250219'")
+        if auto_download:
+            warnings.append("   3. GA will auto-download data when it starts (auto_download_data: true)")
+        else:
+            warnings.append("   3. Download data: freqtrade download-data --pairs BTC/USDT --timeframes 1h --days 90")
     
-    if not timerange:
+    if not timerange and not any('UNITTEST' in p for p in pairs):
         warnings.append("⚠️  WARNING: No timerange specified - will use all available data")
         warnings.append("   Consider setting: backtesting.timerange = '20250120-20250219'")
     
+    # Info about auto-download
+    if auto_download:
+        info.append("ℹ️  Auto-download enabled: Missing data will be downloaded automatically")
+        info.append(f"   Exchange: {exchange}")
+    else:
+        info.append("ℹ️  Auto-download disabled: You must manually download data before running")
+        info.append(f"   Use: freqtrade download-data --exchange {exchange} --pairs {' '.join(pairs)} --timeframes 1h --days 90")
+    
     # Display results
+    if info:
+        print("\n" + "="*80)
+        for msg in info:
+            print(msg)
+        print("="*80)
+    
     if warnings:
         print("\n" + "="*80)
         for warning in warnings:
