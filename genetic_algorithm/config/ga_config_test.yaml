@@ -1,0 +1,94 @@
+# Quick Test Configuration
+# Fast test run with minimal population for debugging/testing
+
+genetic_algorithm:
+  population_size: 3    # Very small for quick test
+  generations: 2        # Just 2 generations
+  mutation_rate: 0.15
+  crossover_rate: 0.7
+  elite_size: 1
+  tournament_size: 2
+  selection_method: 'tournament'
+  convergence_patience: 10
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.1
+
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.25
+  drawdown: 0.20
+  win_rate: 0.15
+  trade_frequency: 0.10
+
+fitness_penalties:
+  min_trades: 3
+  max_drawdown: 0.50
+  min_win_rate: 0.20
+
+backtesting:
+  timerange: ""  # Use all available test data
+  stake_amount: 0.05
+  pairs:
+    - "UNITTEST/BTC"  # Test data is fine for quick tests
+  max_open_trades: 1
+  fee: 0.001
+  enable_cache: false  # Disable for testing
+  timeout: 60
+
+strategy_constraints:
+  min_trades: 3
+  max_drawdown: 0.50
+  min_win_rate: 0.20
+  timeframes: ["5m"]
+  stoploss_range: [-0.20, -0.05]
+  roi_range: [0.01, 0.10]
+
+indicators:
+  available:
+    - "RSI"
+  max_per_strategy: 1
+  min_per_strategy: 1
+  
+  RSI:
+    period: [14, 14]
+    buy_threshold: [30, 30]
+    sell_threshold: [70, 70]
+
+storage:
+  database: "genetic_algorithm/data/strategies_test.db"
+  strategy_dir: "user_data/strategies/ga_test"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_test"
+  checkpoint_interval: 1
+  keep_history: false
+
+logging:
+  level: "DEBUG"
+  file: "genetic_algorithm/logs/ga_test.log"
+  console: true
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+visualization:
+  enabled: false
+  update_interval: 1
+  plots:
+    - "fitness_evolution"
+  output_dir: "genetic_algorithm/plots"
+
+advanced:
+  parallel_evaluation: false
+  num_workers: 1
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: false
+  
+  llm:
+    provider: "grok"
+    api_key: ""
+    model: "grok-1"
+  
+  island_model:
+    enabled: false
+    num_islands: 2
+    migration_interval: 5
+    migration_size: 1

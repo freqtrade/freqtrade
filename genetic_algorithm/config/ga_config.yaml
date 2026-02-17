@@ -1,3 +1,15 @@
+# Default GA Configuration
+# 
+# ⚠️  WARNING: This config uses test data (UNITTEST/BTC from 2018)
+# 
+# For real strategy development:
+# 1. Copy ga_config_example.yaml to create your own config
+# 2. Download real data: freqtrade download-data --pairs BTC/USDT --timeframes 1h --days 90
+# 3. Update pairs and timerange in your config
+# 4. Run: python genetic_algorithm/run_ga.py --config your_config.yaml
+# 
+# Or use the quick test: python genetic_algorithm/run_ga.py --config genetic_algorithm/config/ga_config_test.yaml
+
 # Genetic Algorithm Configuration for FreqTrade Strategy Evolution
 
 # === Genetic Algorithm Parameters ===

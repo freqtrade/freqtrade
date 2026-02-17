@@ -1,0 +1,135 @@
+# Example GA Configuration for Real Market Data
+# 
+# SETUP INSTRUCTIONS:
+# 1. Copy this file: cp ga_config_example.yaml my_config.yaml
+# 2. Download data: freqtrade download-data --exchange binance --pairs BTC/USDT --timeframes 1h --days 90
+# 3. Check date range: freqtrade list-data --show-timerange
+# 4. Update timerange and pairs below to match your data
+# 5. Run: python genetic_algorithm/run_ga.py --config genetic_algorithm/config/my_config.yaml
+
+# === Genetic Algorithm Parameters ===
+genetic_algorithm:
+  population_size: 20     # Start small for testing
+  generations: 10         # Start small for testing
+  mutation_rate: 0.15
+  crossover_rate: 0.7
+  elite_size: 2
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 10
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.1
+
+# === Fitness Function Weights ===
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.25
+  drawdown: 0.20
+  win_rate: 0.15
+  trade_frequency: 0.10
+
+fitness_penalties:
+  min_trades: 5
+  max_drawdown: 0.30
+  min_win_rate: 0.30
+
+# === Backtesting Configuration ===
+backtesting:
+  # IMPORTANT: Set this to match your downloaded data!
+  # Run 'freqtrade list-data --show-timerange' to see available dates
+  timerange: "20250120-20250219"  # ← UPDATE THIS!
+  
+  # Stake amount per trade (in quote currency)
+  stake_amount: 0.1  # 0.1 USDT or 0.1 BTC depending on pair
+  
+  # IMPORTANT: Set pairs you have downloaded data for!
+  # Download: freqtrade download-data --pairs BTC/USDT --timeframes 1h --days 90
+  pairs:
+    - "BTC/USDT"  # ← UPDATE THIS to match your data!
+  
+  # Maximum number of open trades
+  max_open_trades: 1
+  
+  # Fee for trades (0.1%)
+  fee: 0.001
+  
+  # Enable caching of backtest results
+  enable_cache: true
+  
+  # Timeout for single backtest (seconds)
+  timeout: 120
+
+# === Strategy Constraints ===
+strategy_constraints:
+  min_trades: 5
+  max_drawdown: 0.30
+  min_win_rate: 0.30
+  timeframes: ["1h"]  # Match your downloaded data timeframe
+  stoploss_range: [-0.20, -0.05]
+  roi_range: [0.01, 0.10]
+
+# === Indicator Configuration ===
+indicators:
+  available:
+    - "RSI"
+    - "MACD"
+    - "BBANDS"
+  max_per_strategy: 3
+  min_per_strategy: 2
+  
+  RSI:
+    period: [10, 20]
+    buy_threshold: [20, 35]
+    sell_threshold: [65, 80]
+  
+  MACD:
+    fast_period: [8, 21]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  
+  BBANDS:
+    period: [15, 30]
+    std_dev: [1.5, 3.0]
+
+# === Storage Configuration ===
+storage:
+  database: "genetic_algorithm/data/strategies.db"
+  strategy_dir: "user_data/strategies/ga_generated"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints"
+  checkpoint_interval: 5
+  keep_history: true
+
+# === Logging Configuration ===
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/ga.log"
+  console: true
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# === Visualization Configuration ===
+visualization:
+  enabled: false  # Set true if you have matplotlib installed
+  update_interval: 1
+  plots:
+    - "fitness_evolution"
+  output_dir: "genetic_algorithm/plots"
+
+# === Advanced Features ===
+advanced:
+  parallel_evaluation: false
+  num_workers: 1
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: false
+  
+  llm:
+    provider: "grok"
+    api_key: ""
+    model: "grok-1"
+  
+  island_model:
+    enabled: false
+    num_islands: 2
+    migration_interval: 5
+    migration_size: 1

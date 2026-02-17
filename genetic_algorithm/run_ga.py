@@ -288,17 +288,101 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict):
     print(f"Summary report saved to: {report_path.absolute()}")
 
 
+def validate_config(config: dict) -> bool:
+    """
+    Validate GA configuration and warn about issues.
+    
+    Args:
+        config: Configuration dictionary
+        
+    Returns:
+        bool: True if config is valid, False otherwise
+    """
+    backtest_cfg = config.get('backtesting', {})
+    pairs = backtest_cfg.get('pairs', [])
+    timerange = backtest_cfg.get('timerange', '')
+    
+    issues = []
+    warnings = []
+    
+    # Critical issues
+    if not pairs:
+        issues.append("❌ No pairs configured in 'backtesting.pairs'")
+    
+    # Warnings for test data
+    if any('UNITTEST' in p for p in pairs):
+        warnings.append("⚠️  WARNING: Using UNITTEST pairs (test data from 2018)")
+        warnings.append("   For real strategy development:")
+        warnings.append("   1. Download data: freqtrade download-data --pairs BTC/USDT --timeframes 1h --days 30")
+        warnings.append("   2. Update config: backtesting.pairs = ['BTC/USDT']")
+        warnings.append("   3. Set timerange: backtesting.timerange = '20250120-20250219'")
+    
+    if not timerange:
+        warnings.append("⚠️  WARNING: No timerange specified - will use all available data")
+        warnings.append("   Consider setting: backtesting.timerange = '20250120-20250219'")
+    
+    # Display results
+    if warnings:
+        print("\n" + "="*80)
+        for warning in warnings:
+            print(warning)
+        print("="*80 + "\n")
+    
+    if issues:
+        print("\n" + "="*80)
+        print("❌ CONFIG VALIDATION FAILED:")
+        for issue in issues:
+            print(issue)
+        print("="*80 + "\n")
+        return False
+    
+    # Summary
+    print("✓ Config validation passed")
+    print(f"  Pairs: {pairs}")
+    print(f"  Timerange: {timerange if timerange else 'ALL AVAILABLE DATA'}")
+    print(f"  Population: {config.get('genetic_algorithm', {}).get('population_size')}")
+    print(f"  Generations: {config.get('genetic_algorithm', {}).get('generations')}")
+    print()
+    
+    return True
+
+
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description='Run Genetic Algorithm for trading strategy evolution',
+        description='FreqTrade Genetic Algorithm - Strategy Evolution System',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python run_ga.py                    # Run without visualization
-  python run_ga.py --visualize        # Run with live visualization
-  python run_ga.py --visualize --no-interactive  # Run with visualization saved to file only
+  # Use default config
+  python genetic_algorithm/run_ga.py
+  
+  # Use custom config
+  python genetic_algorithm/run_ga.py --config my_config.yaml
+  
+  # Use example config for real data
+  python genetic_algorithm/run_ga.py --config genetic_algorithm/config/ga_config_example.yaml
+  
+  # Validate config without running
+  python genetic_algorithm/run_ga.py --config my_config.yaml --validate-only
+  
+  # Run with visualization
+  python genetic_algorithm/run_ga.py --visualize
+  python genetic_algorithm/run_ga.py --visualize --no-interactive
         """
+    )
+    
+    parser.add_argument(
+        '--config', '-c',
+        type=str,
+        default='genetic_algorithm/config/ga_config.yaml',
+        help='Path to GA configuration file (default: genetic_algorithm/config/ga_config.yaml)'
+    )
+    
+    parser.add_argument(
+        '--validate-only',
+        action='store_true',
+        help='Only validate config and exit (useful for checking before long runs)'
     )
     
     parser.add_argument(
@@ -320,6 +404,23 @@ def main():
     """Main entry point for GA runner."""
     # Parse arguments
     args = parse_arguments()
+    
+    # Load config from specified file
+    config_file = Path(args.config)
+    
+    # Check if config file exists
+    if not config_file.exists():
+        print(f"❌ Error: Config file not found: {config_file}")
+        print(f"\n📁 Available config files:")
+        config_dir = Path("genetic_algorithm/config")
+        if config_dir.exists():
+            for cfg_file in sorted(config_dir.glob("*.yaml")):
+                print(f"   - {cfg_file}")
+        print(f"\n💡 Tip: Create your own config by copying ga_config_example.yaml")
+        return 1
+    
+    print(f"📂 Loading configuration from: {config_file}")
+    
     # Print banner
     print_banner()
     
@@ -329,11 +430,20 @@ def main():
     
     # Load configuration
     try:
-        config = load_and_update_config(CONFIG_FILE)
+        config = load_and_update_config(config_file)
     except FileNotFoundError:
-        print(f"❌ Error: Configuration file not found at {CONFIG_FILE.absolute()}")
+        print(f"❌ Error: Configuration file not found at {config_file.absolute()}")
         print("Please ensure you're running this from the correct directory.")
         return 1
+    
+    # Validate config
+    if not validate_config(config):
+        print("❌ Config validation failed. Please fix the issues above.")
+        return 1
+    
+    if args.validate_only:
+        print("✅ Config validation passed!")
+        return 0
     
     # Print configuration
     print_configuration(config)
