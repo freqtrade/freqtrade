@@ -169,6 +169,11 @@ class DirectBacktester:
     This avoids network calls and allows offline backtesting.
     """
     
+    # Default starting balances by stake currency type
+    DEFAULT_BTC_BALANCE = 10  # 10 BTC (reasonable starting balance for BTC-denominated strategies)
+    DEFAULT_STABLECOIN_BALANCE = 10000  # $10k for stablecoin-denominated strategies
+    DEFAULT_EXCHANGE = 'binance'  # Default exchange for real pairs
+    
     def __init__(self, config: Dict[str, Any]):
         """
         Initialize direct backtester.
@@ -187,8 +192,16 @@ class DirectBacktester:
         if self.backtest_config.get('enable_cache', True):
             self.cache = BacktestCache()
         
-        logger.info(f"Initialized DirectBacktester")
-        logger.info(f"Strategy directory: {self.strategy_dir}")
+        # DEBUG: Log what we loaded
+        logger.info("=" * 80)
+        logger.info("DirectBacktester initialized with config:")
+        logger.info(f"  Pairs: {self.backtest_config.get('pairs')}")
+        logger.info(f"  Timerange: {self.backtest_config.get('timerange')}")
+        logger.info(f"  Stake amount: {self.backtest_config.get('stake_amount')}")
+        logger.info(f"  Max open trades: {self.backtest_config.get('max_open_trades')}")
+        logger.info(f"  Fee: {self.backtest_config.get('fee')}")
+        logger.info(f"  Strategy directory: {self.strategy_dir}")
+        logger.info("=" * 80)
     
     def backtest_strategy(self, 
                          strategy_code: str, 
@@ -338,7 +351,9 @@ class DirectBacktester:
     
     def _create_backtest_config(self, strategy_name: str) -> Dict[str, Any]:
         """
-        Create FreqTrade config for backtesting.
+        Create FreqTrade config for backtesting from GA config.
+        
+        This is called automatically for each strategy backtest.
         
         Args:
             strategy_name: Name of the strategy
@@ -346,46 +361,95 @@ class DirectBacktester:
         Returns:
             Configuration dictionary
         """
-        # Use test data pairs that exist in tests/testdata
-        pairs = self.backtest_config.get('pairs', ['UNITTEST/BTC'])
-        stake_amount = self.backtest_config.get('stake_amount', 0.05)  # Match test config
-        max_open_trades = self.backtest_config.get('max_open_trades', 3)
-        fee = self.backtest_config.get('fee', 0.0025)  # Match test default
-        timerange = self.backtest_config.get('timerange', '')
+        # Read from GA config (stored in self.backtest_config)
+        ga_cfg = self.backtest_config
         
-        # Use test data directory
-        datadir = self.freqtrade_root / "tests" / "testdata"
+        # Extract values from GA config
+        pairs = ga_cfg.get('pairs', ['UNITTEST/BTC'])
+        timerange = ga_cfg.get('timerange', '')
+        stake_amount = ga_cfg.get('stake_amount', 0.05)
+        max_open_trades = ga_cfg.get('max_open_trades', 3)
+        fee = ga_cfg.get('fee', 0.001)
+        
+        # Determine stake currency from pairs
+        # Extract quote currency from pairs (format: BASE/QUOTE)
+        stake_currency = 'BTC'  # Default
+        if pairs:
+            # Use the quote currency from the first pair
+            # All pairs should use the same quote currency for consistent backtesting
+            first_pair = pairs[0]
+            if '/' in first_pair:
+                stake_currency = first_pair.split('/')[1]
+        
+        # Set reasonable starting balance based on stake currency
+        if stake_currency == 'BTC':
+            starting_balance = self.DEFAULT_BTC_BALANCE
+        elif stake_currency in ('USDT', 'USD', 'USDC', 'BUSD'):
+            starting_balance = self.DEFAULT_STABLECOIN_BALANCE
+        else:
+            starting_balance = self.DEFAULT_STABLECOIN_BALANCE  # Default to stablecoin balance for other currencies
+            logger.warning(f"Unknown stake currency '{stake_currency}', using default balance of {self.DEFAULT_STABLECOIN_BALANCE}")
+        
+        # Determine exchange and data directory from pairs
+        # Check if exchange is specified in GA config, otherwise use default
+        exchange_name = self.backtest_config.get('exchange', self.DEFAULT_EXCHANGE)
+        
+        # For test pairs (UNITTEST/BTC), use test data directory
+        if any('UNITTEST' in p for p in pairs):
+            datadir = self.freqtrade_root / "tests" / "testdata"
+        else:
+            # Use user_data directory for real pairs
+            datadir = self.freqtrade_root / "user_data" / "data" / exchange_name
+        
         exportdir = self.freqtrade_root / "user_data" / "backtest_results"
         exportdir.mkdir(parents=True, exist_ok=True)
         
+        # Build FreqTrade config
         config = {
             "strategy": strategy_name,
             "strategy_path": str(self.strategy_dir),
             "user_data_dir": self.freqtrade_root / "user_data",  # Path object
-            "datadir": datadir,  # Path object
+            "datadir": datadir,  # Path object - uses calculated directory based on pairs/exchange
             "exportdirectory": exportdir,  # Path object for storing results
             "runmode": "backtest",  # Required for FreqTrade
-            "stake_currency": "BTC",
-            "stake_amount": stake_amount,
-            "dry_run_wallet": 1000,
-            "max_open_trades": max_open_trades,
+            
+            # Critical config values from GA config
+            "stake_currency": stake_currency,  # Calculated from pairs
+            "stake_amount": stake_amount,  # From GA config
+            "dry_run_wallet": starting_balance,  # Calculated based on stake currency
+            "max_open_trades": max_open_trades,  # From GA config
+            "fee": fee,  # From GA config
+            
+            # Timeframe will be overridden by strategy
             "timeframe": "5m",
+            "timerange": timerange if timerange else None,  # From GA config
+            
+            # Exchange configuration
             "exchange": {
-                "name": "gate",
-                "pair_whitelist": pairs,
+                "name": exchange_name,
+                "pair_whitelist": pairs,  # From GA config
                 "ccxt_config": {},
                 "ccxt_async_config": {},
             },
             "pairlists": [{"method": "StaticPairList"}],
-            "fee": fee,
+            
             "trading_mode": "spot",
             "margin_mode": "",
             "dry_run": True,
-            "timerange": timerange if timerange else None,
         }
         
         # Store original config reference (required for backtest storage)
         config["original_config"] = config.copy()
+        
+        # Log what we're using for debugging
+        logger.info(f"Auto-generated backtest config for {strategy_name}:")
+        logger.info(f"  Pairs: {pairs}")
+        logger.info(f"  Timerange: {timerange}")
+        logger.info(f"  Starting balance: {starting_balance} {stake_currency}")
+        logger.info(f"  Stake amount: {stake_amount} {stake_currency}")
+        logger.info(f"  Data directory: {datadir}")
+        logger.info(f"  Max open trades: {max_open_trades}")
+        logger.info(f"  Fee: {fee}")
         
         return config
     
@@ -462,7 +526,8 @@ class DirectBacktester:
         if win_rate == 0.0 and total_trades > 0:
             win_rate = wins / total_trades
         
-        logger.info(f"Parsed {strategy_name}: profit={profit_percent:.2f}%, trades={total_trades}, win_rate={win_rate:.2%}")
+        # Log with 4 decimal places to see small profits
+        logger.info(f"Parsed {strategy_name}: profit={profit_percent:.4f}%, trades={total_trades}, win_rate={win_rate:.2%}")
         
         # Extract metrics from stats
         return BacktestResult(
