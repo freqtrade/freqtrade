@@ -388,6 +388,7 @@ class DirectBacktester:
             starting_balance = self.DEFAULT_STABLECOIN_BALANCE
         else:
             starting_balance = self.DEFAULT_STABLECOIN_BALANCE  # Default to stablecoin balance for other currencies
+            logger.warning(f"Unknown stake currency '{stake_currency}', using default balance of {self.DEFAULT_STABLECOIN_BALANCE}")
         
         # Determine exchange and data directory from pairs
         # Check if exchange is specified in GA config, otherwise use default
@@ -408,25 +409,25 @@ class DirectBacktester:
             "strategy": strategy_name,
             "strategy_path": str(self.strategy_dir),
             "user_data_dir": self.freqtrade_root / "user_data",  # Path object
-            "datadir": datadir,  # Path object - FIX: Use calculated directory
+            "datadir": datadir,  # Path object - uses calculated directory based on pairs/exchange
             "exportdirectory": exportdir,  # Path object for storing results
             "runmode": "backtest",  # Required for FreqTrade
             
             # Critical config values from GA config
-            "stake_currency": stake_currency,  # FIX: Use calculated currency
-            "stake_amount": stake_amount,  # FIX: Use GA config value
-            "dry_run_wallet": starting_balance,  # FIX: Use calculated balance
-            "max_open_trades": max_open_trades,  # FIX: Use GA config value
-            "fee": fee,  # FIX: Use GA config value
+            "stake_currency": stake_currency,  # Calculated from pairs
+            "stake_amount": stake_amount,  # From GA config
+            "dry_run_wallet": starting_balance,  # Calculated based on stake currency
+            "max_open_trades": max_open_trades,  # From GA config
+            "fee": fee,  # From GA config
             
             # Timeframe will be overridden by strategy
             "timeframe": "5m",
-            "timerange": timerange if timerange else None,  # FIX: Use GA config value
+            "timerange": timerange if timerange else None,  # From GA config
             
             # Exchange configuration
             "exchange": {
                 "name": exchange_name,
-                "pair_whitelist": pairs,  # FIX: Use GA config pairs
+                "pair_whitelist": pairs,  # From GA config
                 "ccxt_config": {},
                 "ccxt_async_config": {},
             },
