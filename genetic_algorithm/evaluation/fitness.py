@@ -145,12 +145,23 @@ class FitnessEvaluator:
         win_rate = metrics.get('win_rate', 0)
         trades = metrics.get('num_trades', 0)
         
-        # Normalize to 0-1 range
-        norm_profit = (profit + 50) / 150  # -50% to +100%
-        norm_sharpe = (sharpe + 3) / 6  # -3 to 3
-        norm_drawdown = 1 - min(drawdown, 1.0)  # Lower is better
+        # Clamp values to reasonable ranges to avoid extreme outliers
+        profit = max(-50, min(profit, 200))  # -50% to +200%
+        sharpe = max(-5, min(sharpe, 10))  # -5 to 10
+        drawdown = min(drawdown, 1.0)  # 0 to 100%
+        win_rate = max(0, min(win_rate, 1.0))  # 0 to 100%
+        
+        # Normalize to 0-1 range with better scaling
+        norm_profit = (profit + 50) / 250  # -50% to +200%
+        norm_sharpe = (sharpe + 5) / 15  # -5 to 10
+        norm_drawdown = 1 - drawdown  # Lower drawdown is better
         norm_win_rate = win_rate  # Already 0-1
         norm_trades = self._normalize_trade_frequency(trades)
+        
+        # Clamp normalized values
+        norm_profit = max(0, min(norm_profit, 1))
+        norm_sharpe = max(0, min(norm_sharpe, 1))
+        norm_drawdown = max(0, min(norm_drawdown, 1))
         
         # Get weights with defaults
         w = self.fitness_weights
@@ -165,31 +176,85 @@ class FitnessEvaluator:
                   w_drawdown * norm_drawdown + w_win_rate * norm_win_rate + 
                   w_trades * norm_trades)
         
+        # Bonus for positive profit (encourage profitable strategies)
+        if profit > 0:
+            fitness *= 1.1  # 10% bonus for any positive profit
+        
+        # Extra bonus for significantly profitable strategies
+        # Note: This is cumulative with above, so total bonus is 32% (1.1 * 1.2) for >10% profit
+        if profit > 10:
+            fitness *= 1.2  # Additional 20% bonus (32% total with previous bonus)
+        
         # Apply penalties and return
-        return max(0, self._apply_penalties(fitness, metrics))
+        penalized_fitness = self._apply_penalties(fitness, metrics)
+        
+        # Ensure non-negative
+        return max(0, penalized_fitness)
     
     def _normalize_trade_frequency(self, num_trades: int) -> float:
-        """Normalize trade frequency to 0-1 range."""
-        # Prefer 20-50 trades
-        return (1.0 if 20 <= num_trades <= 50 
-                else num_trades / 20 if num_trades < 20 
-                else max(0, 1 - (num_trades - 50) / 100))
+        """
+        Normalize trade frequency to 0-1 range.
+        
+        Prefers 10-50 trades for most strategies. Too few trades = unreliable,
+        too many trades = overtrading and high fees.
+        """
+        if num_trades == 0:
+            return 0.0
+        elif num_trades < 5:
+            # Very few trades - heavily penalized
+            return num_trades / 10
+        elif 5 <= num_trades < 10:
+            # Few trades - some penalty
+            return 0.5 + (num_trades - 5) / 10
+        elif 10 <= num_trades <= 50:
+            # Ideal range - full score
+            return 1.0
+        elif 50 < num_trades <= 100:
+            # Moderate overtrading - slight penalty
+            return 1.0 - (num_trades - 50) / 100
+        else:
+            # Excessive trading - significant penalty
+            return max(0.3, 1.0 - (num_trades - 50) / 200)
     
     def _apply_penalties(self, fitness: float, metrics: Dict[str, float]) -> float:
-        """Apply penalties for constraint violations."""
+        """
+        Apply penalties for constraint violations.
+        
+        Penalties are applied multiplicatively to reduce fitness for strategies
+        that violate important constraints.
+        """
         penalties = self.fitness_penalties
         
-        # Define penalty rules: (metric_key, threshold, comparison, penalty_multiplier)
-        rules = [
-            ('num_trades', penalties.get('min_trades', 10), '<', 0.5),
-            ('max_drawdown', penalties.get('max_drawdown', 0.25), '>', 0.7),
-            ('win_rate', penalties.get('min_win_rate', 0.35), '<', 0.8),
-        ]
+        num_trades = metrics.get('num_trades', 0)
+        max_drawdown = metrics.get('max_drawdown', 0)
+        win_rate = metrics.get('win_rate', 0)
         
-        for metric, threshold, op, penalty in rules:
-            value = metrics.get(metric, 0)
-            if (op == '<' and value < threshold) or (op == '>' and value > threshold):
-                fitness *= penalty
+        # Soft penalty for low trade count (gradual instead of harsh)
+        min_trades = penalties.get('min_trades', 5)
+        if num_trades < min_trades:
+            if num_trades == 0:
+                fitness *= 0.1  # Very low fitness for no trades
+            else:
+                # Gradual penalty: 50% at 1 trade, increasing to full at min_trades
+                # Formula: 0.5 + (num_trades / min_trades) * 0.5
+                # E.g., with min_trades=5: 1 trade=60%, 2=70%, 3=80%, 4=90%, 5+=100%
+                trade_penalty = 0.5 + (num_trades / min_trades) * 0.5
+                fitness *= trade_penalty
+        
+        # Penalty for excessive drawdown
+        max_dd_threshold = penalties.get('max_drawdown', 0.30)
+        if max_drawdown > max_dd_threshold:
+            # Progressive penalty: worse drawdown = worse penalty
+            dd_excess = max_drawdown - max_dd_threshold
+            dd_penalty = max(0.3, 1.0 - dd_excess * 2)
+            fitness *= dd_penalty
+        
+        # Penalty for low win rate (but not too harsh)
+        min_win_rate = penalties.get('min_win_rate', 0.30)
+        if win_rate < min_win_rate and num_trades >= 5:  # Only penalize if enough trades
+            # Gradual penalty for low win rate
+            wr_penalty = max(0.6, win_rate / min_win_rate)
+            fitness *= wr_penalty
         
         return fitness
     

@@ -149,8 +149,16 @@ class GAVisualizer:
         
         # Refresh the display
         if self.interactive:
-            plt.draw()
-            plt.pause(0.01)  # Small pause to update display
+            self.fig.canvas.draw()
+            self.fig.canvas.flush_events()
+            plt.pause(0.1)  # Longer pause to ensure update is visible
+        
+        # Always save intermediate plot for non-interactive mode
+        if not self.interactive and self.save_plots:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            intermediate_file = self.output_dir / f"ga_evolution_gen{generation}_{timestamp}.png"
+            self.fig.savefig(intermediate_file, dpi=100, bbox_inches='tight')
+            logger.debug(f"Saved intermediate plot for generation {generation}")
         
         logger.debug("Visualization updated for generation %d", generation)
     

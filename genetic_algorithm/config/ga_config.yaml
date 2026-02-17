@@ -25,6 +25,13 @@ genetic_algorithm:
   
   # Convergence threshold - stop if no improvement after N generations
   convergence_patience: 10
+  
+  # Adaptive mutation - increase mutation rate when stuck
+  adaptive_mutation: true
+  
+  # Adaptive mutation parameters
+  max_adaptation_factor: 2.0   # Maximum multiplier for mutation rate (2x base rate)
+  adaptation_step: 0.1          # Increase factor per generation with no improvement
 
 # === Fitness Function Weights ===
 # These weights determine how different metrics contribute to overall fitness
@@ -38,9 +45,9 @@ fitness_weights:
 
 # Fitness penalties
 fitness_penalties:
-  min_trades: 10           # Penalize if fewer trades
-  max_drawdown: 0.25       # Penalize if drawdown exceeds this
-  min_win_rate: 0.35       # Penalize if win rate below this
+  min_trades: 5            # Penalize if fewer trades (reduced from 10)
+  max_drawdown: 0.30       # Penalize if drawdown exceeds this (increased from 0.25)
+  min_win_rate: 0.30       # Penalize if win rate below this (reduced from 0.35)
 
 # === Backtesting Configuration ===
 backtesting:
