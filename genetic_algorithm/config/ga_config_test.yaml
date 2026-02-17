@@ -33,6 +33,8 @@ backtesting:
     - "UNITTEST/BTC"  # Test data is fine for quick tests
   max_open_trades: 1
   fee: 0.001
+  exchange: "binance"
+  auto_download_data: false  # Test data already exists
   enable_cache: false  # Disable for testing
   timeout: 60
 

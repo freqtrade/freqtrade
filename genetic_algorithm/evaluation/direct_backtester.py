@@ -202,6 +202,159 @@ class DirectBacktester:
         logger.info(f"  Fee: {self.backtest_config.get('fee')}")
         logger.info(f"  Strategy directory: {self.strategy_dir}")
         logger.info("=" * 80)
+        
+        # Validate and auto-download data if enabled
+        self._validate_and_download_data()
+    
+    def _validate_data_exists(self) -> Dict[str, list]:
+        """
+        Check if required data files exist for backtesting.
+        
+        Returns:
+            Dictionary with 'missing' list of (pair, timeframe) tuples that are missing
+        """
+        pairs = self.backtest_config.get('pairs', [])
+        timeframes = self.config.get('strategy_constraints', {}).get('timeframes', ['5m'])
+        
+        # Skip validation for test pairs
+        if any('UNITTEST' in p for p in pairs):
+            logger.debug("Using test pairs (UNITTEST), skipping data validation")
+            return {'missing': []}
+        
+        # Determine exchange and data directory
+        exchange = self.backtest_config.get('exchange', self.DEFAULT_EXCHANGE)
+        datadir = self.freqtrade_root / "user_data" / "data" / exchange
+        
+        missing = []
+        
+        for pair in pairs:
+            for timeframe in timeframes:
+                # Convert pair format for filename (BTC/USDT -> BTC_USDT)
+                pair_filename = pair.replace('/', '_')
+                
+                # Check for data file in various formats FreqTrade uses
+                data_file_json = datadir / f"{pair_filename}-{timeframe}.json"
+                data_file_feather = datadir / f"{pair_filename}-{timeframe}.feather"
+                data_file_parquet = datadir / f"{pair_filename}-{timeframe}.parquet"
+                
+                if not (data_file_json.exists() or data_file_feather.exists() or data_file_parquet.exists()):
+                    missing.append((pair, timeframe))
+                    logger.debug(f"Missing data: {pair} {timeframe}")
+        
+        if missing:
+            logger.info(f"Found {len(missing)} missing data file(s)")
+        else:
+            logger.info("All required data files exist")
+        
+        return {'missing': missing}
+    
+    def _auto_download_data(self, missing_data: list) -> bool:
+        """
+        Automatically download missing data files.
+        
+        Args:
+            missing_data: List of (pair, timeframe) tuples to download
+            
+        Returns:
+            True if download successful, False otherwise
+        """
+        if not missing_data:
+            return True
+        
+        try:
+            from freqtrade.resolvers import ExchangeResolver
+            from freqtrade.data.history import refresh_backtest_ohlcv_data
+            
+            # Get unique pairs and timeframes
+            pairs = list(set(p for p, _ in missing_data))
+            timeframes = list(set(tf for _, tf in missing_data))
+            
+            exchange_name = self.backtest_config.get('exchange', self.DEFAULT_EXCHANGE)
+            datadir = self.freqtrade_root / "user_data" / "data" / exchange_name
+            datadir.mkdir(parents=True, exist_ok=True)
+            
+            logger.info(f"Auto-downloading missing data for {len(pairs)} pair(s) and {len(timeframes)} timeframe(s)...")
+            logger.info(f"  Pairs: {pairs}")
+            logger.info(f"  Timeframes: {timeframes}")
+            logger.info(f"  Exchange: {exchange_name}")
+            
+            # Create exchange configuration
+            exchange_config = {
+                'exchange': {
+                    'name': exchange_name,
+                    'key': '',
+                    'secret': '',
+                    'ccxt_config': {},
+                    'ccxt_async_config': {},
+                },
+                'datadir': datadir,
+                'user_data_dir': self.freqtrade_root / "user_data",
+                'trading_mode': 'spot',
+                'margin_mode': '',
+                'stake_currency': 'USDT',
+                'dry_run': True,
+            }
+            
+            # Initialize exchange
+            exchange = ExchangeResolver.load_exchange(exchange_config)
+            
+            # Download data
+            refresh_backtest_ohlcv_data(
+                exchange=exchange,
+                pairs=pairs,
+                timeframes=timeframes,
+                datadir=datadir,
+                timerange=None,  # Download all available
+                erase=False
+            )
+            
+            logger.info("✓ Data download completed successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to auto-download data: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def _validate_and_download_data(self):
+        """
+        Validate data exists and auto-download if enabled and missing.
+        """
+        # Check if auto-download is enabled
+        auto_download = self.backtest_config.get('auto_download_data', True)
+        
+        # Validate data exists
+        validation_result = self._validate_data_exists()
+        missing = validation_result['missing']
+        
+        if not missing:
+            logger.debug("Data validation passed - all required files exist")
+            return
+        
+        # If data is missing
+        if auto_download:
+            logger.info(f"Missing {len(missing)} data file(s), attempting auto-download...")
+            success = self._auto_download_data(missing)
+            
+            if not success:
+                logger.warning("Auto-download failed, but continuing with existing data")
+        else:
+            # Auto-download disabled, show helpful error
+            pairs = list(set(p for p, _ in missing))
+            timeframes = list(set(tf for _, tf in missing))
+            
+            logger.warning("=" * 80)
+            logger.warning("❌ Missing data files detected:")
+            for pair, timeframe in missing:
+                logger.warning(f"   • {pair} {timeframe}")
+            logger.warning("")
+            logger.warning("To fix this:")
+            logger.warning("1. Enable auto-download in config: set 'backtesting.auto_download_data: true'")
+            logger.warning("2. Or manually download:")
+            logger.warning(f"   freqtrade download-data --pairs {' '.join(pairs)} "
+                         f"--timeframes {' '.join(timeframes)} --days 90")
+            logger.warning("=" * 80)
     
     def backtest_strategy(self, 
                          strategy_code: str, 

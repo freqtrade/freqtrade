@@ -27,13 +27,6 @@ import yaml
 # USER CONFIGURATION
 # ============================================================================
 
-# Basic GA Parameters (override config file)
-POPULATION_SIZE = 50          # Number of strategies per generation (default: 100)
-GENERATIONS = 20              # Number of generations to evolve (default: 50)
-MUTATION_RATE = 0.15          # Probability of mutation (0.0-1.0, default: 0.15)
-CROSSOVER_RATE = 0.7          # Probability of crossover (0.0-1.0, default: 0.7)
-ELITE_SIZE = 5                # Number of top strategies to preserve (default: 10)
-
 # Number of top strategies to display and save at the end
 TOP_STRATEGIES_COUNT = 5
 
@@ -70,25 +63,22 @@ def setup_logging():
 
 def load_and_update_config(config_path) -> dict:
     """
-    Load configuration from YAML file and update with user parameters.
+    Load configuration from YAML file.
     
     Args:
         config_path: Path to configuration file (string or Path object)
         
     Returns:
-        Updated configuration dictionary
+        Configuration dictionary loaded from file
     """
     config_path = Path(config_path)
     
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Update GA parameters with user configuration
-    config['genetic_algorithm']['population_size'] = POPULATION_SIZE
-    config['genetic_algorithm']['generations'] = GENERATIONS
-    config['genetic_algorithm']['mutation_rate'] = MUTATION_RATE
-    config['genetic_algorithm']['crossover_rate'] = CROSSOVER_RATE
-    config['genetic_algorithm']['elite_size'] = ELITE_SIZE
+    # All configuration is now read from the config file
+    # No more hardcoded overrides - edit the config file to change parameters
+    logger.info(f"✓ Configuration loaded from {config_path}")
     
     return config
 
