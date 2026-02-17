@@ -1,8 +1,8 @@
 # Genetic Algorithm for FreqTrade Strategy Evolution
 
 **Status**: ✅ **WORKING AND PRODUCTION-READY**  
-**Last Updated**: February 16, 2026  
-**Latest Improvements**: Live visualization, profit calculation fixes, adaptive mutation ✅
+**Last Updated**: February 17, 2026  
+**Latest Improvements**: Auto-download data, simplified configuration, live visualization ✅
 
 > 📊 **Want live plotting of generation scores?** → See [QUICKSTART_VISUALIZATION.md](QUICKSTART_VISUALIZATION.md)  
 > 📖 **Complete visualization guide** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)
@@ -12,6 +12,15 @@
 ## 🆕 Recent Improvements (February 2026)
 
 ### Major Enhancements:
+- ✅ **Auto-Download Data**: Missing data automatically downloads when GA starts
+  - 🎯 **No manual setup required** - just configure and run
+  - 📁 **Smart validation** - detects missing files and downloads only what's needed
+  - ⚙️ **Configurable** - enable/disable via `backtesting.auto_download_data` setting
+  - 📖 **Helpful errors** - clear messages if data is missing and auto-download is off
+- ✅ **Simplified Configuration**: All settings in one file (no more hardcoded overrides)
+  - 🔧 **Single source of truth** - edit `ga_config.yaml` for all parameters
+  - 🚀 **Easier to use** - no need to edit Python code to change population size, generations, etc.
+  - 📝 **Better validation** - helpful messages guide you to correct configuration
 - ✅ **Live Visualization**: Real-time plots during evolution with `--visualize` flag
   - 📊 **Generation scores plotted live** as the GA runs
   - 📈 See fitness evolution, diversity, metrics, and distribution in real-time
