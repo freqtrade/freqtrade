@@ -367,18 +367,25 @@ class DirectBacktester:
         fee = ga_cfg.get('fee', 0.001)
         
         # Determine stake currency from pairs
-        # Check if any pair uses BTC as quote currency
-        stake_currency = 'BTC'
-        if pairs and any('/USDT' in p for p in pairs):
-            stake_currency = 'USDT'
-        elif pairs and any('/USD' in p for p in pairs):
-            stake_currency = 'USD'
+        # Extract quote currency from pairs (format: BASE/QUOTE)
+        stake_currency = 'BTC'  # Default
+        if pairs:
+            # Get quote currencies from all pairs
+            quote_currencies = set()
+            for pair in pairs:
+                if '/' in pair:
+                    quote = pair.split('/')[1]
+                    quote_currencies.add(quote)
+            
+            # Use the first quote currency found (all pairs should use same quote)
+            if quote_currencies:
+                stake_currency = quote_currencies.pop()
         
-        # Set reasonable starting balance (not 1000 BTC!)
+        # Set reasonable starting balance based on stake currency
         if stake_currency == 'BTC':
-            starting_balance = 10  # 10 BTC = ~$400k at $40k/BTC
+            starting_balance = 10  # 10 BTC (reasonable starting balance for BTC-denominated strategies)
         elif stake_currency in ('USDT', 'USD', 'USDC', 'BUSD'):
-            starting_balance = 10000  # $10k USDT
+            starting_balance = 10000  # $10k for stablecoin-denominated strategies
         else:
             starting_balance = 10000  # Default to 10k for other currencies
         
