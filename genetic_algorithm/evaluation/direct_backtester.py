@@ -169,6 +169,11 @@ class DirectBacktester:
     This avoids network calls and allows offline backtesting.
     """
     
+    # Default starting balances by stake currency type
+    DEFAULT_BTC_BALANCE = 10  # 10 BTC (reasonable starting balance for BTC-denominated strategies)
+    DEFAULT_STABLECOIN_BALANCE = 10000  # $10k for stablecoin-denominated strategies
+    DEFAULT_EXCHANGE = 'binance'  # Default exchange for real pairs
+    
     def __init__(self, config: Dict[str, Any]):
         """
         Initialize direct backtester.
@@ -370,28 +375,23 @@ class DirectBacktester:
         # Extract quote currency from pairs (format: BASE/QUOTE)
         stake_currency = 'BTC'  # Default
         if pairs:
-            # Get quote currencies from all pairs
-            quote_currencies = set()
-            for pair in pairs:
-                if '/' in pair:
-                    quote = pair.split('/')[1]
-                    quote_currencies.add(quote)
-            
-            # Use the first quote currency found (all pairs should use same quote)
-            if quote_currencies:
-                stake_currency = quote_currencies.pop()
+            # Use the quote currency from the first pair
+            # All pairs should use the same quote currency for consistent backtesting
+            first_pair = pairs[0]
+            if '/' in first_pair:
+                stake_currency = first_pair.split('/')[1]
         
         # Set reasonable starting balance based on stake currency
         if stake_currency == 'BTC':
-            starting_balance = 10  # 10 BTC (reasonable starting balance for BTC-denominated strategies)
+            starting_balance = self.DEFAULT_BTC_BALANCE
         elif stake_currency in ('USDT', 'USD', 'USDC', 'BUSD'):
-            starting_balance = 10000  # $10k for stablecoin-denominated strategies
+            starting_balance = self.DEFAULT_STABLECOIN_BALANCE
         else:
-            starting_balance = 10000  # Default to 10k for other currencies
+            starting_balance = self.DEFAULT_STABLECOIN_BALANCE  # Default to stablecoin balance for other currencies
         
         # Determine exchange and data directory from pairs
-        # Check if pairs contain known exchange-specific patterns
-        exchange_name = 'binance'  # Default to binance
+        # Check if exchange is specified in GA config, otherwise use default
+        exchange_name = self.backtest_config.get('exchange', self.DEFAULT_EXCHANGE)
         
         # For test pairs (UNITTEST/BTC), use test data directory
         if any('UNITTEST' in p for p in pairs):
