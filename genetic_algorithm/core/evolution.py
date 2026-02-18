@@ -336,7 +336,10 @@ class GeneticAlgorithm:
             
             # Update best individual
             best = population.get_best(1)[0]
-            if self.best_individual is None or best.fitness > self.best_individual.fitness:
+            # Only update if best has a valid fitness and is better than current best
+            if best.fitness is not None and (self.best_individual is None or 
+                                              (self.best_individual.fitness is not None and 
+                                               best.fitness > self.best_individual.fitness)):
                 self.best_individual = best
                 self.logger.info(f"New best individual: {best.id} with fitness {best.fitness:.4f}")
             

@@ -191,11 +191,18 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
                 # Add a condition using one of the remaining indicators
                 available_indicators = [ind.type for ind in mutated_gene.indicators]
                 if available_indicators:
-                    indicator = random.choice(available_indicators)
-                    new_condition = _create_random_condition(indicator, True, indicator_config)
-                    if new_condition:
-                        mutated_gene.entry_conditions.append(new_condition)
-                        mutations_applied.append(f"add_entry_condition_{indicator}")
+                    # Try to create a condition, try multiple indicators if needed
+                    for indicator in available_indicators:
+                        new_condition = _create_random_condition(indicator, True, indicator_config)
+                        if new_condition:
+                            mutated_gene.entry_conditions.append(new_condition)
+                            mutations_applied.append(f"add_entry_condition_{indicator}")
+                            break
+                    
+                    # If still no entry condition, this mutation failed validation
+                    # The try-catch in the mutate() function will catch this
+                    if not mutated_gene.entry_conditions:
+                        raise ValueError("Failed to create entry condition after indicator removal")
 
     
     elif operation == 'replace':
