@@ -48,20 +48,16 @@ Created convenience scripts that enable visualization by default:
 
 ### 3. Comprehensive Documentation (New)
 
-#### QUICKSTART_VISUALIZATION.md
-- 3-step quick start guide
+#### VISUALIZATION_GUIDE.md
+- Complete visualization guide with quick start and detailed instructions
+- 3-step quick start section
 - Common troubleshooting issues
 - Examples for different modes (interactive, non-interactive)
-- Output file locations
-- Clear visual examples
-
-#### VISUALIZATION_GUIDE.md
-- Complete 9,800+ character guide
 - Detailed setup instructions for all platforms
 - Explanation of all 4 visualization panels
 - Advanced usage and customization
 - Performance considerations
-- Multiple examples and use cases
+- Output file locations and multiple examples
 
 #### Updated README.md
 - Added prominent link to visualization guides at the top
@@ -133,14 +129,13 @@ python genetic_algorithm/run_ga.py
 
 ## Files Added/Modified
 
-### New Files (7):
+### New Files (6):
 1. `genetic_algorithm/setup_ga.sh` - Setup script (Linux/macOS)
 2. `genetic_algorithm/setup_ga.ps1` - Setup script (Windows)
 3. `genetic_algorithm/run_with_visualization.sh` - Run script (Linux/macOS)
 4. `genetic_algorithm/run_with_visualization.ps1` - Run script (Windows)
-5. `genetic_algorithm/QUICKSTART_VISUALIZATION.md` - Quick start guide
-6. `genetic_algorithm/VISUALIZATION_GUIDE.md` - Complete guide
-7. `genetic_algorithm/output/plots/` - Directory for saved plots (auto-created)
+5. `genetic_algorithm/VISUALIZATION_GUIDE.md` - Complete visualization guide
+6. `genetic_algorithm/output/plots/` - Directory for saved plots (auto-created)
 
 ### Modified Files (1):
 1. `genetic_algorithm/README.md` - Enhanced with setup instructions and screenshot
@@ -190,8 +185,7 @@ python genetic_algorithm/run_ga.py --visualize --no-interactive
 ```
 genetic_algorithm/
 ├── README.md                          # Main documentation (updated)
-├── QUICKSTART_VISUALIZATION.md        # Quick 3-step setup (NEW)
-├── VISUALIZATION_GUIDE.md             # Complete guide (NEW)
+├── VISUALIZATION_GUIDE.md             # Complete visualization guide (NEW)
 ├── setup_ga.sh                        # Setup script Linux/macOS (NEW)
 ├── setup_ga.ps1                       # Setup script Windows (NEW)
 ├── run_with_visualization.sh          # Run script Linux/macOS (NEW)
