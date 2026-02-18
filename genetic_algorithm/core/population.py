@@ -4,7 +4,7 @@ Population Management
 Manages a collection of individuals representing trading strategies.
 """
 
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional
 import random
 from dataclasses import dataclass, field
 import math
