@@ -1,15 +1,48 @@
 # Genetic Algorithm for FreqTrade Strategy Evolution
 
 **Status**: ✅ **WORKING AND PRODUCTION-READY**  
-**Last Updated**: February 17, 2026  
-**Latest Improvements**: Auto-download data, simplified configuration, live visualization ✅
+**Last Updated**: February 18, 2026  
+**Latest Improvements**: Advanced mutations, improved fitness, diversity preservation, richer grammar ✅
 
 > 📊 **Want live plotting of generation scores?** → See [QUICKSTART_VISUALIZATION.md](QUICKSTART_VISUALIZATION.md)  
-> 📖 **Complete visualization guide** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)
+> 📖 **Complete visualization guide** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)  
+> 🚀 **Recent GA algorithm improvements** → See [../docs/GA_IMPROVEMENTS_SUMMARY.md](../docs/GA_IMPROVEMENTS_SUMMARY.md)  
+> 📋 **Future improvement roadmap** → See [../docs/TODO_ga_improvements.md](../docs/TODO_ga_improvements.md)
 
 ---
 
-## 🆕 Recent Improvements (February 2026)
+## 🆕 Latest Improvements (February 18, 2026)
+
+### Algorithm Quality Enhancements:
+- ✅ **Advanced Mutation Operators**
+  - 🎲 **Gaussian mutation** for smooth parameter tuning
+  - 🔄 **Swap mutation** for component reordering
+  - 🧠 **Adaptive per-gene mutation** based on fitness
+  - Better exploration/exploitation balance
+  
+- ✅ **Improved Fitness Function**
+  - 📊 **Sortino ratio** added (downside risk focus)
+  - 💰 **Profit factor** added (win/loss ratio)
+  - 🎯 **Robustness bonuses** for consistent performers
+  - 🏆 **Risk-adjusted excellence** bonuses
+  
+- ✅ **Diversity Preservation**
+  - 🌈 **Fitness sharing** prevents premature convergence
+  - 📏 **Genetic diversity tracking** per generation
+  - 🔍 **Strategy distance metrics** for population analysis
+  - Configurable sharing radius
+  
+- ✅ **Richer Strategy Grammar**
+  - 📈 Added **7 new indicators**: MFI, WILLR, ROC, TEMA, KAMA, SAR, AROON
+  - 🎨 More sophisticated indicator combinations possible
+  - 💹 Volume-based strategies (MFI)
+  - 🔄 Adaptive trend-following (KAMA, SAR)
+
+**See [../docs/GA_IMPROVEMENTS_SUMMARY.md](../docs/GA_IMPROVEMENTS_SUMMARY.md) for complete details!**
+
+---
+
+## 🆕 Previous Improvements (February 2026)
 
 ### Major Enhancements:
 - ✅ **Auto-Download Data**: Missing data automatically downloads when GA starts
