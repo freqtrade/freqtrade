@@ -55,6 +55,8 @@ class StrategyGenerator:
         
         # Generate random indicators
         indicators = []
+        # Guard against num_indicators > len(available_indicators)
+        num_indicators = min(num_indicators, len(self.available_indicators))
         selected_types = random.sample(self.available_indicators, num_indicators)
         
         for ind_type in selected_types:
@@ -499,5 +501,5 @@ class {strategy_name}(IStrategy):
             elif condition.operator == '<':
                 return f"(dataframe['close'] < dataframe['{col_name}'])"
         
-        # Default fallback
-        return "True"
+        # Default fallback - use vectorized condition, not scalar
+        return "(dataframe['volume'] > 0)"

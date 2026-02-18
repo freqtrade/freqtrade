@@ -110,9 +110,9 @@ def mutate_parameters(individual: Individual, mutation_rate: float,
     if random.random() < mutation_rate:
         roi_range = strategy_constraints.get('roi_range', [0.01, 0.10])
         mutated_gene.minimal_roi = {
-            0: random.uniform(roi_range[0] * 2, roi_range[1]),
-            30: random.uniform(roi_range[0] * 1.5, roi_range[1] * 0.7),
-            60: random.uniform(roi_range[0], roi_range[1] * 0.5),
+            "0": random.uniform(roi_range[0] * 2, roi_range[1]),
+            "30": random.uniform(roi_range[0] * 1.5, roi_range[1] * 0.7),
+            "60": random.uniform(roi_range[0], roi_range[1] * 0.5),
         }
         mutations_applied.append("roi")
     
@@ -425,9 +425,9 @@ def mutate_structure(individual: Individual, mutation_rate: float,
     if random.random() < mutation_rate:
         roi_range = strategy_constraints.get('roi_range', [0.01, 0.10])
         mutated_gene.minimal_roi = {
-            0: random.uniform(roi_range[0] * 2, roi_range[1]),
-            30: random.uniform(roi_range[0] * 1.5, roi_range[1] * 0.7),
-            60: random.uniform(roi_range[0], roi_range[1] * 0.5),
+            "0": random.uniform(roi_range[0] * 2, roi_range[1]),
+            "30": random.uniform(roi_range[0] * 1.5, roi_range[1] * 0.7),
+            "60": random.uniform(roi_range[0], roi_range[1] * 0.5),
         }
         mutations_applied.append("roi")
     
