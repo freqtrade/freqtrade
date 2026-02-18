@@ -22,7 +22,8 @@ class Individual:
     """
     
     strategy_gene: StrategyGene
-    fitness: Optional[float] = None
+    fitness: Optional[float] = None  # This is the shared_fitness used for selection
+    raw_fitness: Optional[float] = None  # Original fitness before fitness sharing
     
     # Performance metrics
     metrics: Dict[str, float] = field(default_factory=dict)
@@ -61,12 +62,22 @@ class Individual:
         Set fitness and metrics for this individual.
         
         Args:
-            fitness: Overall fitness score
+            fitness: Overall fitness score (raw fitness before sharing)
             metrics: Dictionary of performance metrics
         """
-        self.fitness = fitness
+        self.raw_fitness = fitness
+        self.fitness = fitness  # Initially same as raw_fitness, may be adjusted by fitness sharing
         self.metrics = metrics
         self.evaluated = True
+    
+    def set_shared_fitness(self, shared_fitness: float):
+        """
+        Set shared fitness (after fitness sharing applied).
+        
+        Args:
+            shared_fitness: Fitness after diversity-based sharing adjustment
+        """
+        self.fitness = shared_fitness
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert individual to dictionary for storage."""
@@ -74,6 +85,7 @@ class Individual:
             'id': self.id,
             'strategy_gene': self.strategy_gene.to_dict(),
             'fitness': self.fitness,
+            'raw_fitness': self.raw_fitness,
             'metrics': self.metrics,
             'created_at': self.created_at.isoformat(),
             'evaluated': self.evaluated,
@@ -89,6 +101,7 @@ class Individual:
         individual = cls(
             strategy_gene=strategy_gene,
             fitness=data.get('fitness'),
+            raw_fitness=data.get('raw_fitness', data.get('fitness')),  # Fall back to fitness if raw_fitness not available
             metrics=data.get('metrics', {}),
             evaluated=data.get('evaluated', False),
             parent_ids=data.get('parent_ids', []),

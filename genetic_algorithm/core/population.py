@@ -19,12 +19,14 @@ class PopulationStats:
     
     generation: int
     size: int
-    best_fitness: Optional[float] = None
+    best_fitness: Optional[float] = None  # Best shared fitness (after fitness sharing)
     worst_fitness: Optional[float] = None
     avg_fitness: Optional[float] = None
     median_fitness: Optional[float] = None
     diversity_score: Optional[float] = None
     genetic_diversity: Optional[float] = None  # New: structural diversity
+    best_raw_fitness: Optional[float] = None  # Best raw fitness (before fitness sharing)
+    avg_raw_fitness: Optional[float] = None  # Average raw fitness
 
 
 def calculate_strategy_distance(ind1: Individual, ind2: Individual) -> float:
@@ -82,6 +84,7 @@ def apply_fitness_sharing(population: 'Population', sigma_share: float = 0.3,
     
     Reduces fitness of individuals in crowded regions of the solution space,
     encouraging exploration of diverse strategies.
+    Uses raw_fitness for calculation and stores result in fitness (shared_fitness).
     
     Args:
         population: Population to apply sharing to
@@ -104,7 +107,7 @@ def apply_fitness_sharing(population: 'Population', sigma_share: float = 0.3,
     
     # Calculate niche counts for each individual
     for i, individual in enumerate(individuals):
-        if individual.fitness is None or individual.fitness <= 0:
+        if individual.raw_fitness is None or individual.raw_fitness <= 0:
             continue
         
         # Calculate sharing function
@@ -118,7 +121,8 @@ def apply_fitness_sharing(population: 'Population', sigma_share: float = 0.3,
         
         # Adjust fitness by niche count (shared fitness)
         if niche_count > 0:
-            individual.fitness = individual.fitness / niche_count
+            shared_fitness = individual.raw_fitness / niche_count
+            individual.set_shared_fitness(shared_fitness)
 
 
 def calculate_genetic_diversity(population: 'Population') -> float:
@@ -241,6 +245,12 @@ class Population:
         n = len(fitnesses_sorted)
         
         avg_fitness = sum(fitnesses) / n
+        
+        # Calculate raw fitness stats (before fitness sharing)
+        raw_fitnesses = [ind.raw_fitness for ind in evaluated if ind.raw_fitness is not None]
+        best_raw_fitness = max(raw_fitnesses) if raw_fitnesses else None
+        avg_raw_fitness = sum(raw_fitnesses) / len(raw_fitnesses) if raw_fitnesses else None
+        
         stats = PopulationStats(
             generation=self.generation,
             size=len(self.individuals),
@@ -248,6 +258,8 @@ class Population:
             worst_fitness=fitnesses_sorted[0],
             avg_fitness=avg_fitness,
             median_fitness=fitnesses_sorted[n // 2],
+            best_raw_fitness=best_raw_fitness,
+            avg_raw_fitness=avg_raw_fitness,
         )
         
         # Calculate diversity (standard deviation of fitness)

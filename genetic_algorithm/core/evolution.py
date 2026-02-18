@@ -47,6 +47,18 @@ class GeneticAlgorithm:
         
         # Extract configuration
         ga_config = self.config['genetic_algorithm']
+        
+        # Set random seed for reproducibility if specified
+        self.random_seed = ga_config.get('random_seed')
+        if self.random_seed is not None:
+            random.seed(self.random_seed)
+            try:
+                import numpy as np
+                np.random.seed(self.random_seed)
+            except ImportError:
+                pass  # NumPy not available, skip
+            self.logger.info(f"Random seed set to {self.random_seed} for reproducibility")
+        
         self.population_size = ga_config['population_size']
         self.generations = ga_config['generations']
         self.mutation_rate = ga_config['mutation_rate']
@@ -60,6 +72,7 @@ class GeneticAlgorithm:
         self.fitness_sharing = ga_config.get('fitness_sharing', True)
         self.sharing_radius = ga_config.get('sharing_radius', 0.3)
         self.diversity_threshold = ga_config.get('diversity_threshold', 0.15)
+        self.allow_self_crossover = ga_config.get('allow_self_crossover', True)
         
         # Initialize components
         self.strategy_generator = StrategyGenerator(self.config)
@@ -104,7 +117,24 @@ class GeneticAlgorithm:
         logger = logging.getLogger('GeneticAlgorithm')
         logger.setLevel(getattr(logging, log_config.get('level', 'INFO')))
         
-        # TODO: Add file handler and formatter
+        # Create formatter
+        log_format = log_config.get('format', '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(log_format)
+        
+        # Add console handler if enabled
+        if log_config.get('console', True):
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(formatter)
+            logger.addHandler(console_handler)
+        
+        # Add file handler if log file path is specified
+        log_file = log_config.get('file')
+        if log_file:
+            log_path = Path(log_file)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
         
         return logger
     
@@ -146,7 +176,7 @@ class GeneticAlgorithm:
         self.logger.info(f"Evaluating {len(unevaluated)} individuals...")
         
         for i, individual in enumerate(unevaluated):
-            strategy_name = f"Gen{self.current_generation}_Ind{individual.id}"
+            strategy_name = individual.id
             self.logger.debug(f"Evaluating individual {i+1}/{len(unevaluated)}: {strategy_name}")
             
             try:
@@ -176,11 +206,13 @@ class GeneticAlgorithm:
         """
         Determine if candidate should replace current best individual.
         
+        Uses raw_fitness (not shared_fitness) for true best strategy comparison.
+        
         Handles None fitness values correctly:
-        - Candidate must have valid (non-None) fitness
+        - Candidate must have valid (non-None) raw_fitness
         - Updates if no best individual exists yet
-        - Updates if current best has None fitness
-        - Updates if candidate fitness is higher than current best
+        - Updates if current best has None raw_fitness
+        - Updates if candidate raw_fitness is higher than current best
         
         Args:
             candidate: Individual to consider as new best
@@ -188,20 +220,20 @@ class GeneticAlgorithm:
         Returns:
             True if candidate should become new best individual
         """
-        # Candidate must have valid fitness
-        if candidate.fitness is None:
+        # Candidate must have valid raw_fitness
+        if candidate.raw_fitness is None:
             return False
         
         # Update if no best exists yet
         if self.best_individual is None:
             return True
         
-        # Update if current best has invalid fitness
-        if self.best_individual.fitness is None:
+        # Update if current best has invalid raw_fitness
+        if self.best_individual.raw_fitness is None:
             return True
         
-        # Update if candidate is better
-        return candidate.fitness > self.best_individual.fitness
+        # Update if candidate is better (based on raw_fitness)
+        return candidate.raw_fitness > self.best_individual.raw_fitness
     
     def create_next_generation(self, population: Population) -> Population:
         """
@@ -241,7 +273,8 @@ class GeneticAlgorithm:
             parent1, parent2 = select_parents(
                 population, num_parents=2,
                 method=self.selection_method,
-                tournament_size=self.tournament_size
+                tournament_size=self.tournament_size,
+                allow_duplicates=self.allow_self_crossover
             )
             
             # Crossover or copy
@@ -294,7 +327,8 @@ class GeneticAlgorithm:
         if self.best_individual is None:
             return False
         
-        current_best = stats.best_fitness
+        # Use raw fitness (not shared fitness) for convergence detection
+        current_best = stats.best_raw_fitness if stats.best_raw_fitness is not None else stats.best_fitness
         
         # Check for improvement
         if current_best <= self.best_fitness_ever:

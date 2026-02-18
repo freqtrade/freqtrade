@@ -105,6 +105,7 @@ def rank_based_selection(population: Population) -> Individual:
 def select_parents(population: Population, 
                    num_parents: int,
                    method: str = 'tournament',
+                   allow_duplicates: bool = True,
                    **kwargs) -> List[Individual]:
     """
     Select multiple parents using specified method.
@@ -113,6 +114,7 @@ def select_parents(population: Population,
         population: Population to select from
         num_parents: Number of parents to select
         method: Selection method ('tournament', 'roulette', 'rank')
+        allow_duplicates: Whether to allow selecting the same parent multiple times
         **kwargs: Additional arguments for selection method
         
     Returns:
@@ -131,10 +133,24 @@ def select_parents(population: Population,
     parents = []
     
     for _ in range(num_parents):
-        if method == 'tournament':
-            parent = selector(population, kwargs.get('tournament_size', 3))
-        else:
-            parent = selector(population)
-        parents.append(parent)
+        max_attempts = 100  # Prevent infinite loop
+        attempt = 0
+        
+        while attempt < max_attempts:
+            if method == 'tournament':
+                parent = selector(population, kwargs.get('tournament_size', 3))
+            else:
+                parent = selector(population)
+            
+            # Check if we should accept this parent
+            if allow_duplicates or parent not in parents:
+                parents.append(parent)
+                break
+            
+            attempt += 1
+        
+        # If we couldn't find a unique parent after max attempts, accept duplicate
+        if attempt == max_attempts and len(parents) < num_parents:
+            parents.append(parent)
     
     return parents
