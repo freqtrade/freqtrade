@@ -258,7 +258,13 @@ class GeneticAlgorithm:
         for individual in population.get_best(self.elite_size):
             gene_copy = individual.strategy_gene.copy()
             gene_copy.generation = self.current_generation + 1
-            next_gen.add_individual(Individual(strategy_gene=gene_copy))
+            elite_copy = Individual(strategy_gene=gene_copy)
+            # Carry over fitness and metrics to avoid re-evaluation
+            elite_copy.raw_fitness = individual.raw_fitness
+            elite_copy.fitness = individual.fitness
+            elite_copy.metrics = individual.metrics.copy() if individual.metrics else {}
+            elite_copy.evaluated = True
+            next_gen.add_individual(elite_copy)
         
         # Helper to calculate next available individual ID
         def calculate_next_id():
@@ -332,6 +338,9 @@ class GeneticAlgorithm:
             # Mutation - call unconditionally, mutate() handles internal probability checks
             # Previously had double-gating: outer random.random() + internal mutation sampling
             for child in [child1, child2]:
+                # Check if we've reached population size before adding each child
+                if len(next_gen) >= self.population_size:
+                    break
                 try:
                     child = mutate(child, self.mutation_rate, self.config)
                     next_gen.add_individual(child)

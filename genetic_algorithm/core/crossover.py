@@ -5,6 +5,7 @@ Implements various crossover strategies for combining two parent
 strategies to create offspring.
 """
 
+import copy
 import random
 from typing import Tuple
 
@@ -37,29 +38,29 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
     if len(parent1.strategy_gene.indicators) > 1 and len(parent2.strategy_gene.indicators) > 1:
         point = random.randint(1, min(len(parent1.strategy_gene.indicators),
                                      len(parent2.strategy_gene.indicators)) - 1)
-        child1_gene.indicators = (parent1.strategy_gene.indicators[:point] + 
-                                 parent2.strategy_gene.indicators[point:])
-        child2_gene.indicators = (parent2.strategy_gene.indicators[:point] + 
-                                 parent1.strategy_gene.indicators[point:])
+        child1_gene.indicators = ([copy.deepcopy(ind) for ind in parent1.strategy_gene.indicators[:point]] + 
+                                 [copy.deepcopy(ind) for ind in parent2.strategy_gene.indicators[point:]])
+        child2_gene.indicators = ([copy.deepcopy(ind) for ind in parent2.strategy_gene.indicators[:point]] + 
+                                 [copy.deepcopy(ind) for ind in parent1.strategy_gene.indicators[point:]])
     
     # Crossover entry conditions
     if len(parent1.strategy_gene.entry_conditions) > 1 and len(parent2.strategy_gene.entry_conditions) > 1:
         point = random.randint(1, min(len(parent1.strategy_gene.entry_conditions),
                                      len(parent2.strategy_gene.entry_conditions)) - 1)
-        child1_gene.entry_conditions = (parent1.strategy_gene.entry_conditions[:point] + 
-                                       parent2.strategy_gene.entry_conditions[point:])
-        child2_gene.entry_conditions = (parent2.strategy_gene.entry_conditions[:point] + 
-                                       parent1.strategy_gene.entry_conditions[point:])
+        child1_gene.entry_conditions = ([copy.deepcopy(cond) for cond in parent1.strategy_gene.entry_conditions[:point]] + 
+                                       [copy.deepcopy(cond) for cond in parent2.strategy_gene.entry_conditions[point:]])
+        child2_gene.entry_conditions = ([copy.deepcopy(cond) for cond in parent2.strategy_gene.entry_conditions[:point]] + 
+                                       [copy.deepcopy(cond) for cond in parent1.strategy_gene.entry_conditions[point:]])
     
     # Crossover exit conditions
     if (len(parent1.strategy_gene.exit_conditions) > 1 and 
         len(parent2.strategy_gene.exit_conditions) > 1):
         point = random.randint(1, min(len(parent1.strategy_gene.exit_conditions),
                                      len(parent2.strategy_gene.exit_conditions)) - 1)
-        child1_gene.exit_conditions = (parent1.strategy_gene.exit_conditions[:point] + 
-                                      parent2.strategy_gene.exit_conditions[point:])
-        child2_gene.exit_conditions = (parent2.strategy_gene.exit_conditions[:point] + 
-                                      parent1.strategy_gene.exit_conditions[point:])
+        child1_gene.exit_conditions = ([copy.deepcopy(cond) for cond in parent1.strategy_gene.exit_conditions[:point]] + 
+                                      [copy.deepcopy(cond) for cond in parent2.strategy_gene.exit_conditions[point:]])
+        child2_gene.exit_conditions = ([copy.deepcopy(cond) for cond in parent2.strategy_gene.exit_conditions[:point]] + 
+                                      [copy.deepcopy(cond) for cond in parent1.strategy_gene.exit_conditions[point:]])
     
     # Randomly inherit scalar parameters
     for attr in ['timeframe', 'stoploss']:
@@ -95,14 +96,14 @@ def _uniform_crossover_lists(parent1_list, parent2_list, swap_prob):
     for i in range(max_len):
         if random.random() < swap_prob:
             if i < len(parent2_list):
-                child1_list.append(parent2_list[i])
+                child1_list.append(copy.deepcopy(parent2_list[i]))
             if i < len(parent1_list):
-                child2_list.append(parent1_list[i])
+                child2_list.append(copy.deepcopy(parent1_list[i]))
         else:
             if i < len(parent1_list):
-                child1_list.append(parent1_list[i])
+                child1_list.append(copy.deepcopy(parent1_list[i]))
             if i < len(parent2_list):
-                child2_list.append(parent2_list[i])
+                child2_list.append(copy.deepcopy(parent2_list[i]))
     
     return child1_list, child2_list
 
@@ -212,13 +213,13 @@ def component_crossover(parent1: Individual, parent2: Individual,
     }
     
     if swaps['indicators']:
-        child1_gene.indicators, child2_gene.indicators = parent2.strategy_gene.indicators[:], parent1.strategy_gene.indicators[:]
+        child1_gene.indicators, child2_gene.indicators = [copy.deepcopy(ind) for ind in parent2.strategy_gene.indicators], [copy.deepcopy(ind) for ind in parent1.strategy_gene.indicators]
     
     if swaps['entry']:
-        child1_gene.entry_conditions, child2_gene.entry_conditions = parent2.strategy_gene.entry_conditions[:], parent1.strategy_gene.entry_conditions[:]
+        child1_gene.entry_conditions, child2_gene.entry_conditions = [copy.deepcopy(cond) for cond in parent2.strategy_gene.entry_conditions], [copy.deepcopy(cond) for cond in parent1.strategy_gene.entry_conditions]
     
     if swaps['exit']:
-        child1_gene.exit_conditions, child2_gene.exit_conditions = parent2.strategy_gene.exit_conditions[:], parent1.strategy_gene.exit_conditions[:]
+        child1_gene.exit_conditions, child2_gene.exit_conditions = [copy.deepcopy(cond) for cond in parent2.strategy_gene.exit_conditions], [copy.deepcopy(cond) for cond in parent1.strategy_gene.exit_conditions]
     
     if swaps['risk']:
         # Swap all risk parameters (stoploss, ROI, trailing stop)
