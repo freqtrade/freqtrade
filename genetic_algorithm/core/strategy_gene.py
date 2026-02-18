@@ -240,8 +240,10 @@ class StrategyGene:
             # Assign instance ID if not already set
             if not ind.instance_id:
                 ind.instance_id = f"{ind.type}_{type_counts[ind.type]}"
-            
-            type_counts[ind.type] += 1
+                type_counts[ind.type] += 1
+            else:
+                # If instance_id already set, still count it for gap-free numbering
+                type_counts[ind.type] += 1
         
         # Create mapping from type to instance IDs
         type_to_instances: Dict[str, List[str]] = {}
@@ -260,7 +262,11 @@ class StrategyGene:
                 if len(instances) == 1:
                     cond.indicator = instances[0]
                 # If there are multiple instances and we're using type reference,
-                # default to the first instance (could be improved with better heuristics)
+                # default to the first instance for backward compatibility.
+                # Note: This is a pragmatic choice. In the future, we could:
+                # - Keep type references as-is and let strategy code handle them
+                # - Use heuristics to pick the "best" instance based on parameters
+                # - Require explicit instance references in all conditions
                 elif len(instances) > 1:
                     cond.indicator = instances[0]
     
