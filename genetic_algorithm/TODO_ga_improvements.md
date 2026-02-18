@@ -134,13 +134,6 @@ These bugs can crash evolution or corrupt strategy output. **Fix before any othe
   - Tests: Population init, fitness evaluation, selection, crossover, mutation, caching, statistics
   - Status: **COMPLETED** - See `test_integration.py`
   - Commit: c59483d
-  
-- [ ] **Add CI/CD pipeline**
-  - pytest + coverage
-  - ruff/flake8 + black
-  - mypy (GA package only initially)
-  - Optional: scheduled weekly smoke run
-  - Effort: 1 day
 
 ---
 
@@ -285,12 +278,12 @@ These bugs can crash evolution or corrupt strategy output. **Fix before any othe
 **Last Audit Date**: 2026-02-18  
 **Critical Bugs Fixed**: 6/6 ✅  
 **Quick Wins Completed**: 6/6 ✅  
-**Medium Features Completed**: 3/4 (unit tests, complexity penalty, integration test) ✅  
+**Medium Features Completed**: 3/3 (unit tests, complexity penalty, integration test) ✅  
 **Major Features Completed**: 0/3  
 
-**Note:** MEDIUM SCOPE has 4 completable tasks: (1) unit tests ✅, (2) complexity penalty ✅, (3) integration test ✅, (4) CI/CD pipeline (remaining). Instance-based encoding is listed separately as it's a larger refactoring effort.
+**Note:** MEDIUM SCOPE completable tasks are done. Instance-based encoding is listed separately as it's a larger refactoring effort.
 
-**Next Sprint Focus**: CI/CD pipeline, then instance-based indicator encoding
+**Next Sprint Focus**: Instance-based indicator encoding
 
 ---
 
@@ -362,21 +355,6 @@ See commits: 9f6375c, f6f9be0
 ### 🚧 Remaining MEDIUM SCOPE Tasks:
 
 1. **Instance-based Indicator Encoding** (2-3 days)
-   - Replace ambiguous type names with unique instance IDs
-   - Example: `RSI(period=7)` → `RSI_0(period=7)`, `RSI(period=21)` → `RSI_1(period=21)`
-   - **Complexity**: Requires updates to:
-     - Condition references
-     - Crossover logic
-     - Mutation logic
-     - Strategy code generation
-   - **Benefits**: Clear crossover semantics, better genetic distance metrics
-
-2. **CI/CD Pipeline** (1 day)
-   - GitHub Actions workflow
-   - Automated testing (pytest + coverage)
-   - Code quality checks (ruff/flake8 + black)
-   - Optional: Type checking (mypy), scheduled smoke runs
-   - **Benefits**: Catches bugs early, ensures code quality
 
 ### ⚠️ Known Issues/Complications:
 
@@ -386,26 +364,10 @@ See commits: 9f6375c, f6f9be0
    - **Workaround**: Tests validate pipeline logic; real backtesting requires proper setup
 
 2. **Instance-based Encoding Challenges**
-   - Will require careful refactoring to avoid breaking existing functionality
-   - Need to ensure backward compatibility with existing saved strategies
-   - Crossover between strategies with different indicator instances needs special handling
-
-3. **CI/CD Considerations**
-   - Need to mock or provide test data for backtest-dependent tests
-   - Consider separating unit tests (fast) from integration tests (slower)
-   - May need to cache dependencies for faster CI runs
 
 ### 📝 Next Steps:
 
 **Priority 1: Instance-based Indicator Encoding**
-- High impact on code quality and evolution performance
-- Should be done before major feature additions
-- Estimated effort: 2-3 days
-
-**Priority 2: CI/CD Pipeline**
-- Protects code quality going forward
-- Makes future development safer and faster
-- Estimated effort: 1 day
 
 **Future Work: Major Features**
 - Multi-timeframe strategies (HIGH PRIORITY)

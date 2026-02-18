@@ -73,6 +73,7 @@ class GeneticAlgorithm:
         self.sharing_radius = ga_config.get('sharing_radius', 0.3)
         self.diversity_threshold = ga_config.get('diversity_threshold', 0.15)
         self.allow_self_crossover = ga_config.get('allow_self_crossover', True)
+        self.random_immigrants = ga_config.get('random_immigrants', 3)
         
         # Initialize components
         self.strategy_generator = StrategyGenerator(self.config)
@@ -258,6 +259,29 @@ class GeneticAlgorithm:
             gene_copy = individual.strategy_gene.copy()
             gene_copy.generation = self.current_generation + 1
             next_gen.add_individual(Individual(strategy_gene=gene_copy))
+        
+        # Inject random immigrants to maintain diversity
+        # Get current generation stats to check diversity
+        stats = population.get_stats()
+        immigrant_count = self.random_immigrants
+        
+        # Double immigrant count if diversity is low
+        if stats.genetic_diversity is not None and stats.genetic_diversity < self.diversity_threshold:
+            immigrant_count = self.random_immigrants * 2
+            self.logger.info(f"Low diversity ({stats.genetic_diversity:.4f} < {self.diversity_threshold:.4f}), doubling immigrant count")
+        
+        # Inject random immigrants
+        immigrant_id_start = self.elite_size
+        for i in range(immigrant_count):
+            if len(next_gen) >= self.population_size:
+                break
+            immigrant_gene = self.strategy_generator.generate_random_strategy(
+                generation=self.current_generation + 1,
+                individual_id=immigrant_id_start + i
+            )
+            next_gen.add_individual(Individual(strategy_gene=immigrant_gene))
+        
+        self.logger.info(f"Injected {min(immigrant_count, self.population_size - self.elite_size)} random immigrants")
         
         # Helper to create child from parent gene
         def create_child(parent_gene, ind_id):
