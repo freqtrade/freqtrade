@@ -202,6 +202,7 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
                     # If still no entry condition, this mutation failed validation
                     # The try-catch in the mutate() function will catch this
                     if not mutated_gene.entry_conditions:
+                        logger.warning("Failed to create entry condition after indicator removal - all indicators failed")
                         raise ValueError("Failed to create entry condition after indicator removal")
 
     
