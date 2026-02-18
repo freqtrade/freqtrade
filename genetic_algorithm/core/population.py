@@ -77,8 +77,34 @@ def calculate_strategy_distance(ind1: Individual, ind2: Individual) -> float:
     return distance
 
 
+def calculate_pairwise_distances(individuals: List[Individual]) -> List[List[float]]:
+    """
+    Calculate pairwise distances between all individuals.
+    
+    This is a helper function to avoid recomputing distances multiple times.
+    Can be used by both fitness sharing and diversity calculations.
+    
+    Args:
+        individuals: List of individuals to compute distances for
+        
+    Returns:
+        n×n distance matrix where distances[i][j] is the distance between
+        individuals[i] and individuals[j]
+    """
+    n = len(individuals)
+    distances = [[0.0] * n for _ in range(n)]
+    
+    for i in range(n):
+        for j in range(i + 1, n):
+            dist = calculate_strategy_distance(individuals[i], individuals[j])
+            distances[i][j] = dist
+            distances[j][i] = dist
+    
+    return distances
+
+
 def apply_fitness_sharing(population: 'Population', sigma_share: float = 0.3, 
-                         alpha: float = 1.0) -> None:
+                         alpha: float = 1.0, distance_matrix: Optional[List[List[float]]] = None) -> None:
     """
     Apply fitness sharing to preserve diversity.
     
@@ -90,6 +116,8 @@ def apply_fitness_sharing(population: 'Population', sigma_share: float = 0.3,
         population: Population to apply sharing to
         sigma_share: Sharing radius (how similar strategies must be to share)
         alpha: Sharing function exponent
+        distance_matrix: Optional pre-computed distance matrix (n×n). 
+                        If None, distances will be computed.
     """
     individuals = list(population.individuals)
     n = len(individuals)
@@ -97,13 +125,11 @@ def apply_fitness_sharing(population: 'Population', sigma_share: float = 0.3,
     if n < 2:
         return
     
-    # Calculate pairwise distances
-    distances = [[0.0] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(i + 1, n):
-            dist = calculate_strategy_distance(individuals[i], individuals[j])
-            distances[i][j] = dist
-            distances[j][i] = dist
+    # Use provided distance matrix or compute it
+    if distance_matrix is None:
+        distances = calculate_pairwise_distances(individuals)
+    else:
+        distances = distance_matrix
     
     # Calculate niche counts for each individual
     for i, individual in enumerate(individuals):
@@ -125,7 +151,8 @@ def apply_fitness_sharing(population: 'Population', sigma_share: float = 0.3,
             individual.set_shared_fitness(shared_fitness)
 
 
-def calculate_genetic_diversity(population: 'Population') -> float:
+def calculate_genetic_diversity(population: 'Population', 
+                               distance_matrix: Optional[List[List[float]]] = None) -> float:
     """
     Calculate overall genetic diversity of the population.
     
@@ -133,6 +160,8 @@ def calculate_genetic_diversity(population: 'Population') -> float:
     
     Args:
         population: Population to measure
+        distance_matrix: Optional pre-computed distance matrix (n×n).
+                        If None, distances will be computed.
         
     Returns:
         Diversity score (0 = no diversity, 1 = maximum diversity)
@@ -143,13 +172,19 @@ def calculate_genetic_diversity(population: 'Population') -> float:
     if n < 2:
         return 0.0
     
+    # Use provided distance matrix or compute it
+    if distance_matrix is None:
+        distances = calculate_pairwise_distances(individuals)
+    else:
+        distances = distance_matrix
+    
     # Calculate average pairwise distance
     total_distance = 0.0
     num_pairs = 0
     
     for i in range(n):
         for j in range(i + 1, n):
-            total_distance += calculate_strategy_distance(individuals[i], individuals[j])
+            total_distance += distances[i][j]
             num_pairs += 1
     
     if num_pairs == 0:
@@ -227,9 +262,12 @@ class Population:
         self.sort_by_fitness(reverse=False)
         return self.individuals[:n]
     
-    def get_stats(self) -> PopulationStats:
+    def get_stats(self, distance_matrix: Optional[List[List[float]]] = None) -> PopulationStats:
         """
         Calculate population statistics.
+        
+        Args:
+            distance_matrix: Optional pre-computed distance matrix for genetic diversity calculation
         
         Returns:
             PopulationStats object with current statistics
@@ -268,7 +306,7 @@ class Population:
             stats.diversity_score = variance ** 0.5
         
         # Calculate genetic diversity (structural differences)
-        stats.genetic_diversity = calculate_genetic_diversity(self)
+        stats.genetic_diversity = calculate_genetic_diversity(self, distance_matrix=distance_matrix)
         
         return stats
     
