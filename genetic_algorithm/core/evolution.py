@@ -271,17 +271,18 @@ class GeneticAlgorithm:
             self.logger.info(f"Low diversity ({stats.genetic_diversity:.4f} < {self.diversity_threshold:.4f}), doubling immigrant count")
         
         # Inject random immigrants
-        immigrant_id_start = self.elite_size
+        actual_immigrants_added = 0
         for i in range(immigrant_count):
             if len(next_gen) >= self.population_size:
                 break
             immigrant_gene = self.strategy_generator.generate_random_strategy(
                 generation=self.current_generation + 1,
-                individual_id=immigrant_id_start + i
+                individual_id=len(next_gen)  # Use current length for unique ID
             )
             next_gen.add_individual(Individual(strategy_gene=immigrant_gene))
+            actual_immigrants_added += 1
         
-        self.logger.info(f"Injected {min(immigrant_count, self.population_size - self.elite_size)} random immigrants")
+        self.logger.info(f"Injected {actual_immigrants_added} random immigrants")
         
         # Helper to create child from parent gene
         def create_child(parent_gene, ind_id):
@@ -307,17 +308,17 @@ class GeneticAlgorithm:
                     child1, child2 = crossover(
                         parent1, parent2,
                         generation=self.current_generation + 1,
-                        ind_id=self.elite_size + offspring_count,
+                        ind_id=len(next_gen),  # Use current length for unique ID
                         config=self.config
                     )
                 else:
-                    child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
-                    child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
+                    child1 = create_child(parent1.strategy_gene, len(next_gen))
+                    child2 = create_child(parent2.strategy_gene, len(next_gen) + 1)
             except (ValueError, KeyError, AttributeError, TypeError) as e:
                 # If crossover fails, use clones of parents instead
                 self.logger.warning(f"Crossover failed: {e}. Using parent clones instead.")
-                child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
-                child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
+                child1 = create_child(parent1.strategy_gene, len(next_gen))
+                child2 = create_child(parent2.strategy_gene, len(next_gen) + 1)
             
             # Mutation - call unconditionally, mutate() handles internal probability checks
             # Previously had double-gating: outer random.random() + internal mutation sampling
