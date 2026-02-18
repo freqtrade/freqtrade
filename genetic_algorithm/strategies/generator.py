@@ -84,7 +84,7 @@ class StrategyGenerator:
         # Random timeframe
         timeframe = random.choice(self.available_timeframes)
         
-        return StrategyGene(
+        strategy = StrategyGene(
             generation=generation,
             individual_id=individual_id,
             indicators=indicators,
@@ -95,6 +95,11 @@ class StrategyGenerator:
             minimal_roi=minimal_roi,
             trailing_stop=random.choice([True, False]),
         )
+        
+        # Assign unique instance IDs to all indicators
+        strategy.assign_instance_ids()
+        
+        return strategy
     
     def _generate_random_indicator(self, indicator_type: str) -> IndicatorGene:
         """Generate a random indicator with appropriate parameters."""

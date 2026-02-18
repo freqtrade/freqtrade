@@ -242,6 +242,9 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
     indicator_config = config.get('indicators', {})
     new_individual.strategy_gene.ensure_indicators_for_conditions(indicator_config)
     
+    # Reassign instance IDs after mutation to maintain unique IDs
+    new_individual.strategy_gene.assign_instance_ids()
+    
     return new_individual
 
 
@@ -345,6 +348,9 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
     # Ensure all indicators referenced in conditions are calculated
     indicator_config = config.get('indicators', {})
     new_individual.strategy_gene.ensure_indicators_for_conditions(indicator_config)
+    
+    # Reassign instance IDs to maintain unique references
+    new_individual.strategy_gene.assign_instance_ids()
     
     return new_individual
 
