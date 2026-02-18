@@ -260,8 +260,8 @@ class GeneticAlgorithm:
             gene_copy.generation = self.current_generation + 1
             next_gen.add_individual(Individual(strategy_gene=gene_copy))
         
-        # Helper to get next unique individual ID
-        def get_next_individual_id():
+        # Helper to calculate next available individual ID
+        def calculate_next_id():
             return len(next_gen)
         
         # Inject random immigrants to maintain diversity
@@ -276,17 +276,17 @@ class GeneticAlgorithm:
             self.logger.info(f"Low diversity ({stats.genetic_diversity:.4f} < {self.diversity_threshold:.4f}), doubling immigrant count")
         
         # Inject random immigrants
-        actual_immigrants_added = 0
+        immigrants_before = len(next_gen)
         for _ in range(immigrant_count):
             if len(next_gen) >= self.population_size:
                 break
             immigrant_gene = self.strategy_generator.generate_random_strategy(
                 generation=self.current_generation + 1,
-                individual_id=get_next_individual_id()
+                individual_id=calculate_next_id()
             )
             next_gen.add_individual(Individual(strategy_gene=immigrant_gene))
-            actual_immigrants_added += 1
         
+        actual_immigrants_added = len(next_gen) - immigrants_before
         self.logger.info(f"Injected {actual_immigrants_added} random immigrants")
         
         # Helper to create child from parent gene
