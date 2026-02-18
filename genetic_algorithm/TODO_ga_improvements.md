@@ -56,35 +56,41 @@ These bugs can crash evolution or corrupt strategy output. **Fix before any othe
 
 **Target: Complete within 1-2 hours each**
 
-- [ ] **Separate raw_fitness from shared_fitness**
+- [x] **Separate raw_fitness from shared_fitness**
   - Store both in Individual class
   - Use raw_fitness for reporting/convergence, shared_fitness for selection only
   - Benefits: Accurate best strategy reporting, proper convergence detection
+  - Status: **COMPLETED** - Added raw_fitness field, updated fitness sharing and statistics
   
-- [ ] **Restrict indicators.available to fully-supported indicators only**
+- [x] **Restrict indicators.available to fully-supported indicators only**
   - Audit which indicators have full codegen + condition support
   - Remove unsupported indicators from config
   - Benefits: No wasted genes, more meaningful variation
+  - Status: **COMPLETED** - Removed MFI, WILLR, ROC, TEMA, KAMA, SAR, AROON (lack codegen support)
   
-- [ ] **Add deterministic seeding support**
+- [x] **Add deterministic seeding support**
   - Add `random_seed: int` to config
   - Seed Python random, NumPy, strategy generation
   - Benefits: Reproducible experiments, easier debugging
+  - Status: **COMPLETED** - Added random_seed config option, seeds both random and numpy.random
   
-- [ ] **Fix strategy_name duplication**
+- [x] **Fix strategy_name duplication**
   - Location: `evolution.py:142`
   - Change `f"Gen{gen}_Ind{individual.id}"` to just `individual.id`
   - Benefits: Cleaner logging, better caching keys
+  - Status: **COMPLETED** - Fixed duplicate generation prefix
   
-- [ ] **Add parent uniqueness check**
+- [x] **Add parent uniqueness check**
   - Config option: `allow_self_crossover: false`
   - Ensure parent1 != parent2 in selection
   - Benefits: More diverse offspring
+  - Status: **COMPLETED** - Added allow_duplicates parameter to select_parents, config option added
   
-- [ ] **Complete logging configuration**
+- [x] **Complete logging configuration**
   - Location: `evolution.py:_setup_logging()`
   - Add file handler with configured format/path
   - Benefits: Better diagnosability for long runs
+  - Status: **COMPLETED** - Added file handler with directory creation and formatter
 
 ---
 
@@ -274,7 +280,7 @@ These bugs can crash evolution or corrupt strategy output. **Fix before any othe
 
 **Last Audit Date**: 2026-02-18  
 **Critical Bugs Fixed**: 6/6 ✅  
-**Quick Wins Completed**: 0/6  
+**Quick Wins Completed**: 6/6 ✅  
 **Medium Features Completed**: 1/4 (unit tests)  
 **Major Features Completed**: 0/3  
 
