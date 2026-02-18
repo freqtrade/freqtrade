@@ -14,6 +14,9 @@
 
 # === Genetic Algorithm Parameters ===
 genetic_algorithm:
+  # Random seed for reproducibility (set to null for random behavior)
+  random_seed: null  # Set to an integer (e.g., 42) for reproducible experiments
+  
   # Population size - number of strategies per generation
   population_size: 20
   
@@ -49,6 +52,7 @@ genetic_algorithm:
   fitness_sharing: true         # Enable fitness sharing for diversity
   sharing_radius: 0.3           # How similar strategies must be to share fitness (0-1)
   diversity_threshold: 0.15     # Minimum genetic diversity to maintain
+  allow_self_crossover: false   # Allow same parent to be selected twice (set false for more diversity)
 
 # === Fitness Function Weights ===
 # These weights determine how different metrics contribute to overall fitness
@@ -124,6 +128,7 @@ strategy_constraints:
 # === Indicator Configuration ===
 indicators:
   # Available indicators for strategy generation
+  # Only fully-supported indicators with complete codegen and condition support
   available:
     - "RSI"
     - "MACD"
@@ -134,13 +139,6 @@ indicators:
     - "ATR"
     - "ADX"
     - "CCI"
-    - "MFI"      # Money Flow Index (volume-weighted RSI)
-    - "WILLR"    # Williams %R
-    - "ROC"      # Rate of Change
-    - "TEMA"     # Triple EMA
-    - "KAMA"     # Kaufman Adaptive MA
-    - "SAR"      # Parabolic SAR
-    - "AROON"    # Aroon indicator
   
   # Maximum indicators per strategy
   max_per_strategy: 5
@@ -186,33 +184,6 @@ indicators:
     period: [10, 30]
     buy_threshold: [-200, -100]
     sell_threshold: [100, 200]
-  
-  # New indicators
-  MFI:
-    period: [10, 20]
-    buy_threshold: [20, 40]
-    sell_threshold: [60, 80]
-  
-  WILLR:
-    period: [10, 20]
-    buy_threshold: [-80, -60]
-    sell_threshold: [-40, -20]
-  
-  ROC:
-    period: [5, 20]
-  
-  TEMA:
-    period: [10, 30]
-  
-  KAMA:
-    period: [10, 30]
-  
-  SAR:
-    acceleration: [0.01, 0.05]
-    maximum: [0.1, 0.3]
-  
-  AROON:
-    period: [10, 25]
 
 # === Storage Configuration ===
 storage:
