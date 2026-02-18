@@ -17,7 +17,6 @@ from genetic_algorithm.core.crossover import crossover
 from genetic_algorithm.core.mutation import mutate
 from genetic_algorithm.strategies.generator import StrategyGenerator
 from genetic_algorithm.evaluation.fitness import FitnessEvaluator
-from genetic_algorithm.visualization import GAVisualizer
 
 
 class GeneticAlgorithm:
@@ -66,12 +65,20 @@ class GeneticAlgorithm:
         self.strategy_generator = StrategyGenerator(self.config)
         self.fitness_evaluator = FitnessEvaluator(self.config)
         
-        # Initialize visualizer
-        self.visualizer = GAVisualizer(
-            enabled=visualize,
-            interactive=interactive,
-            save_plots=True
-        )
+        # Initialize visualizer (only if enabled and matplotlib is available)
+        self.visualizer = None
+        if visualize:
+            try:
+                from genetic_algorithm.visualization import GAVisualizer
+                self.visualizer = GAVisualizer(
+                    enabled=True,
+                    interactive=interactive,
+                    save_plots=True
+                )
+            except ImportError as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Visualization disabled: {e}. Install matplotlib to enable visualization.")
         
         # Track evolution
         self.current_generation = 0
@@ -362,8 +369,9 @@ class GeneticAlgorithm:
             if stats.genetic_diversity is not None:
                 self.logger.info(f"Genetic diversity: {stats.genetic_diversity:.4f}")
             
-            # Update visualization
-            self.visualizer.update(gen, stats, population)
+            # Update visualization if enabled
+            if self.visualizer:
+                self.visualizer.update(gen, stats, population)
             
             # Update best individual
             best = population.get_best(1)[0]
@@ -385,8 +393,9 @@ class GeneticAlgorithm:
         self.logger.info(f"Best fitness: {self.best_individual.fitness:.4f}")
         self.logger.info("="*60)
         
-        # Close visualization
-        self.visualizer.close()
+        # Close visualization if enabled
+        if self.visualizer:
+            self.visualizer.close()
         
         # Return top strategies
         population.sort_by_fitness(reverse=True)
