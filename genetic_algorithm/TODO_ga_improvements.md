@@ -281,9 +281,24 @@ These bugs can crash evolution or corrupt strategy output. **Fix before any othe
 **Medium Features Completed**: 3/3 (unit tests, complexity penalty, integration test) ✅  
 **Major Features Completed**: 0/3  
 
+**Latest Session (2026-02-18)**:
+- ✅ **Fixed GA Elitism Ratio**: Reduced elite_size from 10 (50%) to 3 (~15% of population)
+- ✅ **Implemented Random Immigrants Feature**:
+  - Added `random_immigrants` config parameter (default: 3)
+  - Injects fresh random strategies after elitism in each generation
+  - Adaptive: doubles immigrant count when genetic_diversity < diversity_threshold
+  - Added logging to track immigrant count per generation
+- ✅ **Updated Documentation**:
+  - Added Random Immigrants to README.md as diversity mechanism
+  - Removed CI/CD pipeline sections from TODO (no longer desired)
+- ✅ **Tested Implementation**: All features work correctly
+  - Basic configuration loads properly (elite_size=3, random_immigrants=3)
+  - Random immigrants inject successfully (3 per generation)
+  - Diversity-based doubling works (6 immigrants when diversity < 0.15)
+
 **Note:** MEDIUM SCOPE completable tasks are done. Instance-based encoding is listed separately as it's a larger refactoring effort.
 
-**Next Sprint Focus**: Instance-based indicator encoding
+**Next Sprint Focus**: Instance-based indicator encoding (detailed implementation plan added)
 
 ---
 
@@ -352,9 +367,29 @@ See commits: 9f6375c, f6f9be0
    - **Benefits**: Validates entire system works correctly, catches integration issues early
    - **Status**: All tests pass successfully
 
-### 🚧 Remaining MEDIUM SCOPE Tasks:
+### ### 🚧 Remaining MEDIUM SCOPE Tasks:
 
 1. **Instance-based Indicator Encoding** (2-3 days)
+   - Replace ambiguous type names with unique instance IDs
+   - Example: `RSI(period=7)` → `RSI_0(period=7)`, `RSI(period=21)` → `RSI_1(period=21)`
+   - **Current Status**: Not started
+   - **Implementation Plan**:
+     1. Add `instance_id` field to `IndicatorGene` dataclass (strategy_gene.py:14-38)
+     2. Update `ConditionGene.indicator` to store instance_id instead of type (strategy_gene.py:42-53)
+     3. Update `StrategyGenerator._generate_random_conditions()` to use instance_ids (generator.py:103-153)
+     4. Update all `_generate_condition_for_indicator()` calls to use instance references (generator.py:155+)
+     5. Update strategy code generation to emit unique indicator names (codegen methods)
+     6. Update crossover logic to handle instance-based references (crossover.py)
+     7. Update mutation logic to preserve instance references (mutation.py)
+     8. Update `calculate_strategy_distance()` to use instance-based comparison (population.py:32-77)
+     9. Add tests for instance-based encoding
+   - **Complexity**: Requires updates to:
+     - Condition references (generator.py, mutation.py)
+     - Crossover logic (crossover.py)
+     - Mutation logic (mutation.py)
+     - Strategy code generation (codegen methods)
+     - Distance metrics (population.py)
+   - **Benefits**: Clear crossover semantics, better genetic distance metrics, no ambiguity
 
 ### ⚠️ Known Issues/Complications:
 
