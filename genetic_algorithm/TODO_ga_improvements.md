@@ -399,6 +399,9 @@ See commits: 9f6375c, f6f9be0
    - **Workaround**: Tests validate pipeline logic; real backtesting requires proper setup
 
 2. **Instance-based Encoding Challenges**
+   - Will require careful refactoring to avoid breaking existing functionality
+   - Need to ensure backward compatibility with existing saved strategies
+   - Crossover between strategies with different indicator instances needs special handling
 
 ### 📝 Next Steps:
 
