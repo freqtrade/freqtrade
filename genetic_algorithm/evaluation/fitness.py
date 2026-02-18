@@ -297,14 +297,17 @@ class FitnessEvaluator:
             fitness *= wr_penalty
         
         # Complexity penalty: penalize overly complex strategies
-        # Formula: fitness -= complexity_weight * complexity
-        # This helps reduce overfitting and promotes simpler strategies
+        # Applied additively (after multiplicative penalties) to allow fine-tuning
+        # Additive approach chosen because:
+        # - Complexity is a count (discrete), not a rate
+        # - Easier to interpret and tune (linear relationship)
+        # - Avoids compound effects with other multiplicative penalties
         if strategy_gene is not None:
             complexity_weight = penalties.get('complexity_weight', 0.01)
             if complexity_weight > 0:
                 complexity = strategy_gene.calculate_complexity()
                 complexity_penalty = complexity_weight * complexity
-                # Subtract penalty from fitness (multiplicative penalties above, additive here)
+                # Subtract penalty from fitness
                 fitness = max(0, fitness - complexity_penalty)
                 logger.debug(f"Applied complexity penalty: {complexity_penalty:.4f} "
                            f"(complexity={complexity}, weight={complexity_weight})")

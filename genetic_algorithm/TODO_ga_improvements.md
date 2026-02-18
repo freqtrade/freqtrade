@@ -285,10 +285,12 @@ These bugs can crash evolution or corrupt strategy output. **Fix before any othe
 **Last Audit Date**: 2026-02-18  
 **Critical Bugs Fixed**: 6/6 ✅  
 **Quick Wins Completed**: 6/6 ✅  
-**Medium Features Completed**: 3/5 (unit tests, complexity penalty, integration test) ✅  
+**Medium Features Completed**: 3/4 (unit tests, complexity penalty, integration test) ✅  
 **Major Features Completed**: 0/3  
 
-**Next Sprint Focus**: Instance-based indicator encoding, then CI/CD pipeline
+**Note:** MEDIUM SCOPE has 4 completable tasks: (1) unit tests ✅, (2) complexity penalty ✅, (3) integration test ✅, (4) CI/CD pipeline (remaining). Instance-based encoding is listed separately as it's a larger refactoring effort.
+
+**Next Sprint Focus**: CI/CD pipeline, then instance-based indicator encoding
 
 ---
 
