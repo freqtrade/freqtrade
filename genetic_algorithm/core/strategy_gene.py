@@ -77,7 +77,7 @@ class StrategyGene:
     # Risk management
     timeframe: str = '5m'
     stoploss: float = -0.10
-    minimal_roi: Dict[int, float] = field(default_factory=lambda: {0: 0.04, 30: 0.02, 60: 0.01})
+    minimal_roi: Dict[str, float] = field(default_factory=lambda: {"0": 0.04, "30": 0.02, "60": 0.01})
     
     # Optional parameters
     trailing_stop: bool = False
@@ -122,6 +122,8 @@ class StrategyGene:
             'stoploss': self.stoploss,
             'minimal_roi': self.minimal_roi,
             'trailing_stop': self.trailing_stop,
+            'trailing_stop_positive': self.trailing_stop_positive,
+            'trailing_stop_positive_offset': self.trailing_stop_positive_offset,
         }
     
     @classmethod
@@ -164,8 +166,10 @@ class StrategyGene:
             exit_conditions=exit_conditions,
             timeframe=data.get('timeframe', '5m'),
             stoploss=data.get('stoploss', -0.10),
-            minimal_roi=data.get('minimal_roi', {0: 0.04, 30: 0.02, 60: 0.01}),
+            minimal_roi=data.get('minimal_roi', {"0": 0.04, "30": 0.02, "60": 0.01}),
             trailing_stop=data.get('trailing_stop', False),
+            trailing_stop_positive=data.get('trailing_stop_positive'),
+            trailing_stop_positive_offset=data.get('trailing_stop_positive_offset'),
         )
     
     def copy(self) -> 'StrategyGene':

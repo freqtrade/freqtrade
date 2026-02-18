@@ -262,11 +262,11 @@ class GeneticAlgorithm:
                 child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
                 child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
             
-            # Mutation
+            # Mutation - call unconditionally, mutate() handles internal probability checks
+            # Previously had double-gating: outer random.random() + internal mutation sampling
             for child in [child1, child2]:
                 try:
-                    if random.random() < self.mutation_rate:
-                        child = mutate(child, self.mutation_rate, self.config)
+                    child = mutate(child, self.mutation_rate, self.config)
                     next_gen.add_individual(child)
                 except (ValueError, KeyError, AttributeError, TypeError) as e:
                     # If mutation or adding fails, log and skip this child
