@@ -97,7 +97,7 @@ class StrategyGene:
             'generation': self.generation,
             'individual_id': self.individual_id,
             'indicators': [
-                {'type': ind.type, 'parameters': ind.parameters, 'weight': ind.weight}
+                {'type': ind.type, 'parameters': dict(ind.parameters), 'weight': ind.weight}
                 for ind in self.indicators
             ],
             'entry_conditions': [
