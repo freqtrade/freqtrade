@@ -130,7 +130,7 @@ class FitnessEvaluator:
         """
         Calculate overall fitness score from metrics.
         
-        Uses weighted combination of metrics with penalties.
+        Uses weighted combination of metrics with penalties and robustness scoring.
         
         Args:
             metrics: Dictionary of performance metrics
@@ -141,6 +141,8 @@ class FitnessEvaluator:
         # Extract and normalize metrics
         profit = metrics.get('profit', 0)
         sharpe = metrics.get('sharpe_ratio', 0)
+        sortino = metrics.get('sortino_ratio', 0)  # New: downside risk focus
+        profit_factor = metrics.get('profit_factor', 0)  # New: win/loss ratio
         drawdown = metrics.get('max_drawdown', 0)
         win_rate = metrics.get('win_rate', 0)
         trades = metrics.get('num_trades', 0)
@@ -148,12 +150,16 @@ class FitnessEvaluator:
         # Clamp values to reasonable ranges to avoid extreme outliers
         profit = max(-50, min(profit, 200))  # -50% to +200%
         sharpe = max(-5, min(sharpe, 10))  # -5 to 10
+        sortino = max(-5, min(sortino, 12))  # Sortino often higher than Sharpe
+        profit_factor = max(0, min(profit_factor, 10))  # 0 to 10
         drawdown = min(drawdown, 1.0)  # 0 to 100%
         win_rate = max(0, min(win_rate, 1.0))  # 0 to 100%
         
         # Normalize to 0-1 range with better scaling
         norm_profit = (profit + 50) / 250  # -50% to +200%
         norm_sharpe = (sharpe + 5) / 15  # -5 to 10
+        norm_sortino = (sortino + 5) / 17  # -5 to 12
+        norm_profit_factor = min(1.0, profit_factor / 3.0)  # >3.0 is excellent
         norm_drawdown = 1 - drawdown  # Lower drawdown is better
         norm_win_rate = win_rate  # Already 0-1
         norm_trades = self._normalize_trade_frequency(trades)
@@ -161,20 +167,35 @@ class FitnessEvaluator:
         # Clamp normalized values
         norm_profit = max(0, min(norm_profit, 1))
         norm_sharpe = max(0, min(norm_sharpe, 1))
+        norm_sortino = max(0, min(norm_sortino, 1))
+        norm_profit_factor = max(0, min(norm_profit_factor, 1))
         norm_drawdown = max(0, min(norm_drawdown, 1))
         
-        # Get weights with defaults
+        # Get weights with defaults (adjusted to include new metrics)
         w = self.fitness_weights
-        w_profit = w.get('profit', 0.3)
-        w_sharpe = w.get('sharpe_ratio', 0.25)
-        w_drawdown = w.get('drawdown', 0.2)
-        w_win_rate = w.get('win_rate', 0.15)
-        w_trades = w.get('trade_frequency', 0.1)
+        w_profit = w.get('profit', 0.25)
+        w_sharpe = w.get('sharpe_ratio', 0.15)
+        w_sortino = w.get('sortino_ratio', 0.15)  # New weight
+        w_profit_factor = w.get('profit_factor', 0.10)  # New weight
+        w_drawdown = w.get('drawdown', 0.15)
+        w_win_rate = w.get('win_rate', 0.10)
+        w_trades = w.get('trade_frequency', 0.10)
         
         # Calculate weighted fitness
-        fitness = (w_profit * norm_profit + w_sharpe * norm_sharpe + 
-                  w_drawdown * norm_drawdown + w_win_rate * norm_win_rate + 
-                  w_trades * norm_trades)
+        fitness = (
+            w_profit * norm_profit + 
+            w_sharpe * norm_sharpe + 
+            w_sortino * norm_sortino +
+            w_profit_factor * norm_profit_factor +
+            w_drawdown * norm_drawdown + 
+            w_win_rate * norm_win_rate + 
+            w_trades * norm_trades
+        )
+        
+        # Robustness bonus: reward consistency (good Sortino and profit factor together)
+        if sortino > 1.0 and profit_factor > 1.5:
+            robustness_bonus = 1.0 + (0.05 * min(sortino, 3.0))  # Up to 15% bonus
+            fitness *= robustness_bonus
         
         # Bonus for positive profit (encourage profitable strategies)
         if profit > 0:
@@ -184,6 +205,10 @@ class FitnessEvaluator:
         # Note: This is cumulative with above, so total bonus is 32% (1.1 * 1.2) for >10% profit
         if profit > 10:
             fitness *= 1.2  # Additional 20% bonus (32% total with previous bonus)
+        
+        # Risk-adjusted excellence bonus: reward exceptional risk-adjusted returns
+        if sharpe > 2.0 and drawdown < 0.15:
+            fitness *= 1.15  # 15% bonus for excellent risk management
         
         # Apply penalties and return
         penalized_fitness = self._apply_penalties(fitness, metrics)

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import logging
 
-from genetic_algorithm.core.population import Population, PopulationStats
+from genetic_algorithm.core.population import Population, PopulationStats, apply_fitness_sharing
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.selection import select_parents
 from genetic_algorithm.core.crossover import crossover
@@ -56,6 +56,11 @@ class GeneticAlgorithm:
         self.tournament_size = ga_config.get('tournament_size', 3)
         self.selection_method = ga_config.get('selection_method', 'tournament')
         self.convergence_patience = ga_config.get('convergence_patience', 10)
+        
+        # Diversity preservation settings
+        self.fitness_sharing = ga_config.get('fitness_sharing', True)
+        self.sharing_radius = ga_config.get('sharing_radius', 0.3)
+        self.diversity_threshold = ga_config.get('diversity_threshold', 0.15)
         
         # Initialize components
         self.strategy_generator = StrategyGenerator(self.config)
@@ -297,6 +302,11 @@ class GeneticAlgorithm:
             # Evaluate fitness
             self.evaluate_population(population)
             
+            # Apply fitness sharing to preserve diversity
+            if self.fitness_sharing:
+                apply_fitness_sharing(population, sigma_share=self.sharing_radius)
+                self.logger.info("Applied fitness sharing for diversity preservation")
+            
             # Get statistics
             stats = population.get_stats()
             self.generation_stats.append(stats)
@@ -304,7 +314,9 @@ class GeneticAlgorithm:
             # Log statistics
             self.logger.info(f"Best fitness: {stats.best_fitness:.4f}")
             self.logger.info(f"Avg fitness: {stats.avg_fitness:.4f}")
-            self.logger.info(f"Diversity: {stats.diversity_score:.4f}")
+            self.logger.info(f"Fitness diversity: {stats.diversity_score:.4f}")
+            if stats.genetic_diversity is not None:
+                self.logger.info(f"Genetic diversity: {stats.genetic_diversity:.4f}")
             
             # Update visualization
             self.visualizer.update(gen, stats, population)

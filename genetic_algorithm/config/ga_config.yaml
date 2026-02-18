@@ -44,16 +44,23 @@ genetic_algorithm:
   # Adaptive mutation parameters
   max_adaptation_factor: 2.0   # Maximum multiplier for mutation rate (2x base rate)
   adaptation_step: 0.1          # Increase factor per generation with no improvement
+  
+  # Diversity preservation
+  fitness_sharing: true         # Enable fitness sharing for diversity
+  sharing_radius: 0.3           # How similar strategies must be to share fitness (0-1)
+  diversity_threshold: 0.15     # Minimum genetic diversity to maintain
 
 # === Fitness Function Weights ===
 # These weights determine how different metrics contribute to overall fitness
 # All weights should sum to 1.0
 fitness_weights:
-  profit: 0.30        # Total profit/return
-  sharpe_ratio: 0.25  # Risk-adjusted returns
-  drawdown: 0.20      # Maximum drawdown (penalty)
-  win_rate: 0.15      # Percentage of winning trades
-  trade_frequency: 0.10  # Number of trades (too few or too many is bad)
+  profit: 0.25            # Total profit/return
+  sharpe_ratio: 0.15      # Risk-adjusted returns (volatility)
+  sortino_ratio: 0.15     # Downside risk-adjusted returns
+  profit_factor: 0.10     # Win/loss ratio
+  drawdown: 0.15          # Maximum drawdown (penalty)
+  win_rate: 0.10          # Percentage of winning trades
+  trade_frequency: 0.10   # Number of trades (too few or too many is bad)
 
 # Fitness penalties
 fitness_penalties:
@@ -127,6 +134,13 @@ indicators:
     - "ATR"
     - "ADX"
     - "CCI"
+    - "MFI"      # Money Flow Index (volume-weighted RSI)
+    - "WILLR"    # Williams %R
+    - "ROC"      # Rate of Change
+    - "TEMA"     # Triple EMA
+    - "KAMA"     # Kaufman Adaptive MA
+    - "SAR"      # Parabolic SAR
+    - "AROON"    # Aroon indicator
   
   # Maximum indicators per strategy
   max_per_strategy: 5
@@ -172,6 +186,33 @@ indicators:
     period: [10, 30]
     buy_threshold: [-200, -100]
     sell_threshold: [100, 200]
+  
+  # New indicators
+  MFI:
+    period: [10, 20]
+    buy_threshold: [20, 40]
+    sell_threshold: [60, 80]
+  
+  WILLR:
+    period: [10, 20]
+    buy_threshold: [-80, -60]
+    sell_threshold: [-40, -20]
+  
+  ROC:
+    period: [5, 20]
+  
+  TEMA:
+    period: [10, 30]
+  
+  KAMA:
+    period: [10, 30]
+  
+  SAR:
+    acceleration: [0.01, 0.05]
+    maximum: [0.1, 0.3]
+  
+  AROON:
+    period: [10, 25]
 
 # === Storage Configuration ===
 storage:

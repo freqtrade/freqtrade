@@ -439,6 +439,203 @@ def mutate_structure(individual: Individual, mutation_rate: float,
     return new_individual
 
 
+def mutate_gaussian(individual: Individual, mutation_rate: float,
+                   config: Dict[str, Any], sigma: float = 0.1) -> Individual:
+    """
+    Gaussian mutation - adds normally distributed noise to numeric parameters.
+    
+    This provides smooth, incremental adjustments rather than discrete jumps,
+    allowing fine-tuning of promising strategies.
+    
+    Args:
+        individual: Individual to mutate
+        mutation_rate: Probability of mutation
+        config: Configuration with parameter ranges
+        sigma: Standard deviation of Gaussian noise (relative to parameter range)
+        
+    Returns:
+        Mutated individual
+    """
+    mutated_gene = individual.strategy_gene.copy()
+    indicator_config = config.get('indicators', {})
+    strategy_constraints = config.get('strategy_constraints', {})
+    mutations_applied = []
+    
+    # Gaussian mutation for indicator parameters
+    for i, indicator in enumerate(mutated_gene.indicators):
+        if random.random() < mutation_rate:
+            ind_config = indicator_config.get(indicator.type, {})
+            
+            # Period-based indicators
+            if 'period' in indicator.parameters:
+                period_range = ind_config.get('period', [7, 50])
+                current = indicator.parameters['period']
+                range_size = period_range[1] - period_range[0]
+                noise = random.gauss(0, sigma * range_size)
+                new_period = int(max(period_range[0], min(period_range[1], current + noise)))
+                indicator.parameters['period'] = new_period
+                mutations_applied.append(f"gaussian_{indicator.type}_period_{i}")
+            
+            # Continuous parameters (e.g., BBANDS std_dev)
+            if 'std_dev' in indicator.parameters and indicator.type == 'BBANDS':
+                std_range = ind_config.get('std_dev', [1.5, 3.0])
+                current = indicator.parameters['std_dev']
+                range_size = std_range[1] - std_range[0]
+                noise = random.gauss(0, sigma * range_size)
+                new_std = max(std_range[0], min(std_range[1], current + noise))
+                indicator.parameters['std_dev'] = new_std
+                mutations_applied.append(f"gaussian_BBANDS_std_{i}")
+    
+    # Gaussian mutation for stoploss
+    if random.random() < mutation_rate:
+        stoploss_range = strategy_constraints.get('stoploss_range', [-0.20, -0.05])
+        current = mutated_gene.stoploss
+        range_size = stoploss_range[1] - stoploss_range[0]
+        noise = random.gauss(0, sigma * range_size)
+        mutated_gene.stoploss = max(stoploss_range[0], min(stoploss_range[1], current + noise))
+        mutations_applied.append("gaussian_stoploss")
+    
+    # Gaussian mutation for ROI values
+    if random.random() < mutation_rate:
+        roi_range = strategy_constraints.get('roi_range', [0.01, 0.10])
+        range_size = roi_range[1] - roi_range[0]
+        
+        # Mutate each ROI level
+        new_roi = {}
+        for time_key, current_val in mutated_gene.minimal_roi.items():
+            noise = random.gauss(0, sigma * range_size)
+            new_val = max(roi_range[0], min(roi_range[1], current_val + noise))
+            new_roi[time_key] = new_val
+        
+        # Ensure ROI decreases over time
+        sorted_keys = sorted([int(k) for k in new_roi.keys()])
+        for i in range(len(sorted_keys) - 1):
+            if new_roi[str(sorted_keys[i])] < new_roi[str(sorted_keys[i + 1])]:
+                new_roi[str(sorted_keys[i + 1])] = new_roi[str(sorted_keys[i])] * 0.9
+        
+        mutated_gene.minimal_roi = {str(k): new_roi[str(k)] for k in sorted_keys}
+        mutations_applied.append("gaussian_roi")
+    
+    # Create new individual with mutation record
+    new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
+    new_individual.mutations = individual.mutations + [{
+        'type': 'gaussian',
+        'sigma': sigma,
+        'applied': mutations_applied
+    }]
+    
+    return new_individual
+
+
+def mutate_swap(individual: Individual, mutation_rate: float,
+               config: Dict[str, Any]) -> Individual:
+    """
+    Swap mutation - swaps positions of indicators or conditions.
+    
+    Can discover better orderings and combinations by rearranging
+    existing components rather than modifying them.
+    
+    Args:
+        individual: Individual to mutate
+        mutation_rate: Probability of mutation
+        config: Configuration
+        
+    Returns:
+        Mutated individual
+    """
+    mutated_gene = individual.strategy_gene.copy()
+    mutations_applied = []
+    
+    # Swap indicators
+    if len(mutated_gene.indicators) >= 2 and random.random() < mutation_rate:
+        i, j = random.sample(range(len(mutated_gene.indicators)), 2)
+        mutated_gene.indicators[i], mutated_gene.indicators[j] = \
+            mutated_gene.indicators[j], mutated_gene.indicators[i]
+        mutations_applied.append(f"swap_indicators_{i}_{j}")
+    
+    # Swap entry conditions
+    if len(mutated_gene.entry_conditions) >= 2 and random.random() < mutation_rate:
+        i, j = random.sample(range(len(mutated_gene.entry_conditions)), 2)
+        mutated_gene.entry_conditions[i], mutated_gene.entry_conditions[j] = \
+            mutated_gene.entry_conditions[j], mutated_gene.entry_conditions[i]
+        mutations_applied.append(f"swap_entry_conditions_{i}_{j}")
+    
+    # Swap exit conditions
+    if len(mutated_gene.exit_conditions) >= 2 and random.random() < mutation_rate:
+        i, j = random.sample(range(len(mutated_gene.exit_conditions)), 2)
+        mutated_gene.exit_conditions[i], mutated_gene.exit_conditions[j] = \
+            mutated_gene.exit_conditions[j], mutated_gene.exit_conditions[i]
+        mutations_applied.append(f"swap_exit_conditions_{i}_{j}")
+    
+    # Create new individual with mutation record
+    new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
+    new_individual.mutations = individual.mutations + [{
+        'type': 'swap',
+        'applied': mutations_applied
+    }]
+    
+    return new_individual
+
+
+def mutate_adaptive_per_gene(individual: Individual, base_mutation_rate: float,
+                             config: Dict[str, Any]) -> Individual:
+    """
+    Adaptive per-gene mutation - adjusts mutation rate based on gene fitness history.
+    
+    Genes that contributed to high fitness mutate less (exploitation),
+    while poorly performing genes mutate more (exploration).
+    
+    Args:
+        individual: Individual to mutate
+        base_mutation_rate: Base mutation rate
+        config: Configuration
+        
+    Returns:
+        Mutated individual
+    """
+    mutated_gene = individual.strategy_gene.copy()
+    mutations_applied = []
+    
+    # Calculate adaptive rates for different gene components
+    # If individual has high fitness, reduce mutation of good components
+    fitness_factor = min(1.0, individual.fitness) if individual.fitness > 0 else 1.0
+    
+    # Indicators: lower mutation rate for high fitness (preserve good indicators)
+    indicator_rate = base_mutation_rate * (1.5 - fitness_factor)
+    
+    # Conditions: moderate mutation rate
+    condition_rate = base_mutation_rate * (1.3 - 0.5 * fitness_factor)
+    
+    # Structure: higher mutation for low fitness (try different approaches)
+    structure_rate = base_mutation_rate * (1.0 + 0.5 * (1.0 - fitness_factor))
+    
+    # Apply mutations with adaptive rates
+    if random.random() < indicator_rate:
+        mutated = mutate_indicators(individual, indicator_rate, config)
+        mutations_applied.append(f"adaptive_indicators_{indicator_rate:.3f}")
+        individual = mutated
+    
+    if random.random() < condition_rate:
+        mutated = mutate_conditions(individual, condition_rate, config)
+        mutations_applied.append(f"adaptive_conditions_{condition_rate:.3f}")
+        individual = mutated
+    
+    if random.random() < structure_rate:
+        mutated = mutate_structure(individual, structure_rate, config)
+        mutations_applied.append(f"adaptive_structure_{structure_rate:.3f}")
+        individual = mutated
+    
+    # Record adaptive mutation
+    individual.mutations = individual.mutations + [{
+        'type': 'adaptive_per_gene',
+        'base_rate': base_mutation_rate,
+        'fitness_factor': fitness_factor,
+        'applied': mutations_applied
+    }]
+    
+    return individual
+
+
 def mutate(individual: Individual, mutation_rate: float,
           config: Dict[str, Any],
           methods: list = None) -> Individual:
@@ -449,13 +646,22 @@ def mutate(individual: Individual, mutation_rate: float,
         individual: Individual to mutate
         mutation_rate: Base probability of mutation
         config: Configuration with mutation parameters
-        methods: List of mutation methods to apply
+        methods: List of mutation methods to apply (if None, uses default set)
         
     Returns:
         Mutated individual
     """
     if methods is None:
+        # Default: include new advanced mutation operators with lower probability
         methods = ['parameters', 'indicators', 'conditions', 'structure']
+        
+        # Add advanced operators based on random selection
+        if random.random() < 0.2:  # 20% chance to use Gaussian mutation
+            methods.append('gaussian')
+        if random.random() < 0.1:  # 10% chance to use swap mutation
+            methods.append('swap')
+        if random.random() < 0.15:  # 15% chance to use adaptive mutation
+            methods.append('adaptive')
     
     mutated = individual
     
@@ -469,5 +675,11 @@ def mutate(individual: Individual, mutation_rate: float,
                 mutated = mutate_conditions(mutated, mutation_rate, config)
             elif method == 'structure':
                 mutated = mutate_structure(mutated, mutation_rate, config)
+            elif method == 'gaussian':
+                mutated = mutate_gaussian(mutated, mutation_rate, config, sigma=0.1)
+            elif method == 'swap':
+                mutated = mutate_swap(mutated, mutation_rate, config)
+            elif method == 'adaptive':
+                mutated = mutate_adaptive_per_gene(mutated, mutation_rate, config)
     
     return mutated
