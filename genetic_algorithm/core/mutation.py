@@ -181,6 +181,18 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
                 c for c in mutated_gene.exit_conditions 
                 if c.indicator != removed.type
             ]
+            
+            # Ensure at least one entry condition remains
+            if not mutated_gene.entry_conditions:
+                # Add a condition using one of the remaining indicators
+                available_indicators = [ind.type for ind in mutated_gene.indicators]
+                if available_indicators:
+                    indicator = random.choice(available_indicators)
+                    new_condition = _create_random_condition(indicator, True, indicator_config)
+                    if new_condition:
+                        mutated_gene.entry_conditions.append(new_condition)
+                        mutations_applied.append(f"add_entry_condition_{indicator}")
+
     
     elif operation == 'replace':
         # Replace an indicator with a different type
