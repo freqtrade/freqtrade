@@ -265,14 +265,14 @@ class GeneticAlgorithm:
         stats = population.get_stats()
         immigrant_count = self.random_immigrants
         
-        # Double immigrant count if diversity is low
+        # Double immigrant count if diversity is low (2x is a standard multiplier for diversity crises)
         if stats.genetic_diversity is not None and stats.genetic_diversity < self.diversity_threshold:
             immigrant_count = self.random_immigrants * 2
             self.logger.info(f"Low diversity ({stats.genetic_diversity:.4f} < {self.diversity_threshold:.4f}), doubling immigrant count")
         
         # Inject random immigrants
         actual_immigrants_added = 0
-        for i in range(immigrant_count):
+        for _ in range(immigrant_count):
             if len(next_gen) >= self.population_size:
                 break
             immigrant_gene = self.strategy_generator.generate_random_strategy(
