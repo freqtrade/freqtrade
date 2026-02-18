@@ -260,12 +260,17 @@ class GeneticAlgorithm:
             gene_copy.generation = self.current_generation + 1
             next_gen.add_individual(Individual(strategy_gene=gene_copy))
         
+        # Helper to get next unique individual ID
+        def get_next_individual_id():
+            return len(next_gen)
+        
         # Inject random immigrants to maintain diversity
         # Get current generation stats to check diversity
         stats = population.get_stats()
         immigrant_count = self.random_immigrants
         
-        # Double immigrant count if diversity is low (2x is a standard multiplier for diversity crises)
+        # Double immigrant count if diversity is low
+        # (2x multiplier is a common heuristic for handling diversity crises in GAs)
         if stats.genetic_diversity is not None and stats.genetic_diversity < self.diversity_threshold:
             immigrant_count = self.random_immigrants * 2
             self.logger.info(f"Low diversity ({stats.genetic_diversity:.4f} < {self.diversity_threshold:.4f}), doubling immigrant count")
@@ -277,7 +282,7 @@ class GeneticAlgorithm:
                 break
             immigrant_gene = self.strategy_generator.generate_random_strategy(
                 generation=self.current_generation + 1,
-                individual_id=len(next_gen)  # Use current length for unique ID
+                individual_id=get_next_individual_id()
             )
             next_gen.add_individual(Individual(strategy_gene=immigrant_gene))
             actual_immigrants_added += 1
@@ -303,22 +308,26 @@ class GeneticAlgorithm:
             )
             
             # Crossover or copy
+            # Pre-calculate IDs for both children before adding them
+            child1_id = len(next_gen)
+            child2_id = len(next_gen) + 1
+            
             try:
                 if random.random() < self.crossover_rate:
                     child1, child2 = crossover(
                         parent1, parent2,
                         generation=self.current_generation + 1,
-                        ind_id=len(next_gen),  # Use current length for unique ID
+                        ind_id=child1_id,
                         config=self.config
                     )
                 else:
-                    child1 = create_child(parent1.strategy_gene, len(next_gen))
-                    child2 = create_child(parent2.strategy_gene, len(next_gen) + 1)
+                    child1 = create_child(parent1.strategy_gene, child1_id)
+                    child2 = create_child(parent2.strategy_gene, child2_id)
             except (ValueError, KeyError, AttributeError, TypeError) as e:
                 # If crossover fails, use clones of parents instead
                 self.logger.warning(f"Crossover failed: {e}. Using parent clones instead.")
-                child1 = create_child(parent1.strategy_gene, len(next_gen))
-                child2 = create_child(parent2.strategy_gene, len(next_gen) + 1)
+                child1 = create_child(parent1.strategy_gene, child1_id)
+                child2 = create_child(parent2.strategy_gene, child2_id)
             
             # Mutation - call unconditionally, mutate() handles internal probability checks
             # Previously had double-gating: outer random.random() + internal mutation sampling
