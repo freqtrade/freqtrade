@@ -171,3 +171,39 @@ class StrategyGene:
     def copy(self) -> 'StrategyGene':
         """Create a deep copy of this strategy gene."""
         return StrategyGene.from_dict(self.to_dict())
+    
+    def get_missing_indicators(self) -> List[str]:
+        """
+        Find indicator types referenced in conditions but not in indicators list.
+        
+        Returns:
+            List of missing indicator types
+        """
+        # Get all indicator types present
+        present_types = {ind.type for ind in self.indicators}
+        
+        # Get all indicator types referenced in conditions
+        referenced_types = set()
+        for cond in self.entry_conditions + self.exit_conditions:
+            referenced_types.add(cond.indicator)
+        
+        # Find missing types
+        missing_types = referenced_types - present_types
+        return list(missing_types)
+    
+    def ensure_indicators_for_conditions(self, indicator_config: Dict[str, Any]) -> None:
+        """
+        Ensure all indicators referenced in conditions are present in indicators list.
+        Adds missing indicators with default parameters.
+        
+        Args:
+            indicator_config: Configuration with indicator parameters
+        """
+        from genetic_algorithm.utils.indicator_factory import create_random_indicator
+        
+        missing_types = self.get_missing_indicators()
+        
+        for ind_type in missing_types:
+            # Create a new indicator of this type
+            new_indicator = create_random_indicator(ind_type, indicator_config)
+            self.indicators.append(new_indicator)

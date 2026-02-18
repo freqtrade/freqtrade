@@ -206,7 +206,8 @@ class GeneticAlgorithm:
                 child1, child2 = crossover(
                     parent1, parent2,
                     generation=self.current_generation + 1,
-                    ind_id=self.elite_size + offspring_count
+                    ind_id=self.elite_size + offspring_count,
+                    config=self.config
                 )
             else:
                 child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
