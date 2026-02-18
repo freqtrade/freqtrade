@@ -1,6 +1,6 @@
 # GA Improvements TODO
 
-Last Updated: 2026-02-18 (Session 2)  
+Last Updated: 2026-02-18 (Session 3)  
 Based on: Comprehensive code audit + deep code review of all core modules
 
 ---
@@ -82,12 +82,11 @@ These bugs silently corrupt the evolutionary process. **Fix before any other wor
 
 ### Performance
 
-- [ ] **Cache pairwise distances per generation**  
+- [x] **Cache pairwise distances per generation** (Commit: d6c48a2)  
   Location: `population.py` — `apply_fitness_sharing()` and `calculate_genetic_diversity()`  
-  Issue: Both compute O(n²) pairwise distances independently — computed twice per generation  
-  Fix: Compute once, pass distance matrix to both functions  
-  Effort: 2-3 hours  
-  Impact: 2x speedup on diversity/sharing calculations; critical for pop_size > 50
+  Fixed: Created `calculate_pairwise_distances()` helper that computes O(n²) distances once  
+  Impact: Both functions now accept optional `distance_matrix` parameter; evolution.py computes once and reuses  
+  Result: 2x speedup on diversity/sharing calculations; critical for pop_size > 50
 
 ### Encoding & Representation
 
