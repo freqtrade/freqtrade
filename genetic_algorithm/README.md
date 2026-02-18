@@ -4,7 +4,7 @@
 **Last Updated**: February 18, 2026  
 **Latest Improvements**: Advanced mutations, improved fitness, diversity preservation, richer grammar ✅
 
-> 📊 **Want live plotting of generation scores?** → See [QUICKSTART_VISUALIZATION.md](QUICKSTART_VISUALIZATION.md)  
+> 📊 **Want live plotting of generation scores?** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)  
 > 📖 **Complete visualization guide** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)  
 > 🚀 **Recent GA algorithm improvements** → See [../docs/GA_IMPROVEMENTS_SUMMARY.md](../docs/GA_IMPROVEMENTS_SUMMARY.md)  
 > 📋 **Future improvement roadmap** → See [../docs/TODO_ga_improvements.md](../docs/TODO_ga_improvements.md)
@@ -58,7 +58,7 @@
   - 📊 **Generation scores plotted live** as the GA runs
   - 📈 See fitness evolution, diversity, metrics, and distribution in real-time
   - 🚀 **Easy setup**: Run `./genetic_algorithm/setup_ga.sh` to install dependencies
-  - 📖 **Quick start**: See [QUICKSTART_VISUALIZATION.md](QUICKSTART_VISUALIZATION.md)
+  - 📖 **Quick start**: See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)
 - ✅ **Fixed Profit Calculation**: Strategies now show accurate profit percentages
 - ✅ **Improved Strategy Generation**: More lenient conditions generate 5-50 trades
 - ✅ **Adaptive Mutation**: Automatically adjusts when evolution stagnates
