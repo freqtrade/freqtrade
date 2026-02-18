@@ -53,26 +53,19 @@ class FitnessEvaluator:
         Returns:
             Tuple of (fitness_score, metrics_dict)
         """
-        # Generate strategy name if not provided
-        if strategy_name is None:
-            import uuid
-            strategy_name = f"GA_Strategy_{uuid.uuid4().hex[:8]}"
-        
         try:
             # Generate strategy code (strategy name is auto-generated from gene info)
             strategy_code = self.strategy_generator.generate_strategy_code(strategy_gene)
             
-            # Extract the generated strategy name from the gene
+            # Use generated name from the gene for consistency
             generated_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
-            if strategy_name is None:
-                strategy_name = generated_name
             
             # Run backtest
             backtest_result = self.backtester.backtest_strategy(strategy_code, generated_name)
             
             # Check if backtest was successful
             if not backtest_result.success:
-                logger.warning(f"Backtest failed for {strategy_name}: {backtest_result.error_message}")
+                logger.warning(f"Backtest failed for {generated_name}: {backtest_result.error_message}")
                 # Return very low fitness for failed strategies
                 return 0.0, {
                     'profit': 0.0,
@@ -93,14 +86,15 @@ class FitnessEvaluator:
             # Calculate fitness (includes complexity penalty)
             fitness = self.calculate_fitness(metrics, strategy_gene)
             
-            logger.info(f"Strategy {strategy_name}: fitness={fitness:.4f}, "
+            logger.info(f"Strategy {generated_name}: fitness={fitness:.4f}, "
                        f"profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}, "
                        f"complexity={metrics['complexity']}")
             
             return fitness, metrics
             
         except Exception as e:
-            logger.error(f"Error evaluating strategy {strategy_name}: {e}", exc_info=True)
+            generated_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
+            logger.error(f"Error evaluating strategy {generated_name}: {e}", exc_info=True)
             # Return zero fitness on error
             return 0.0, {
                 'profit': 0.0,
@@ -187,6 +181,26 @@ class FitnessEvaluator:
         w_drawdown = w.get('drawdown', 0.15)
         w_win_rate = w.get('win_rate', 0.10)
         w_trades = w.get('trade_frequency', 0.10)
+        
+        # Normalize weights to sum to 1.0 (handles missing or extra weights in configs)
+        weights_dict = {
+            'profit': w_profit,
+            'sharpe_ratio': w_sharpe,
+            'sortino_ratio': w_sortino,
+            'profit_factor': w_profit_factor,
+            'drawdown': w_drawdown,
+            'win_rate': w_win_rate,
+            'trade_frequency': w_trades
+        }
+        total_weight = sum(weights_dict.values())
+        if total_weight > 0:
+            w_profit = weights_dict['profit'] / total_weight
+            w_sharpe = weights_dict['sharpe_ratio'] / total_weight
+            w_sortino = weights_dict['sortino_ratio'] / total_weight
+            w_profit_factor = weights_dict['profit_factor'] / total_weight
+            w_drawdown = weights_dict['drawdown'] / total_weight
+            w_win_rate = weights_dict['win_rate'] / total_weight
+            w_trades = weights_dict['trade_frequency'] / total_weight
         
         # Calculate weighted fitness
         fitness = (
