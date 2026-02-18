@@ -51,6 +51,40 @@ def create_random_indicator(indicator_type: str, indicator_config: Dict[str, Any
     elif indicator_type in ['ATR', 'ADX', 'CCI']:
         parameters['period'] = random.randint(*ind_config.get('period', [10, 20]))
     
+    # New indicators for richer grammar
+    elif indicator_type == 'MFI':
+        # Money Flow Index (volume-weighted RSI)
+        parameters['period'] = random.randint(*ind_config.get('period', [10, 20]))
+    
+    elif indicator_type == 'OBV':
+        # On-Balance Volume (no parameters, uses volume)
+        parameters = {}
+    
+    elif indicator_type == 'WILLR':
+        # Williams %R
+        parameters['period'] = random.randint(*ind_config.get('period', [10, 20]))
+    
+    elif indicator_type == 'ROC':
+        # Rate of Change
+        parameters['period'] = random.randint(*ind_config.get('period', [5, 20]))
+    
+    elif indicator_type == 'TEMA':
+        # Triple Exponential Moving Average
+        parameters['period'] = random.randint(*ind_config.get('period', [10, 30]))
+    
+    elif indicator_type == 'KAMA':
+        # Kaufman Adaptive Moving Average
+        parameters['period'] = random.randint(*ind_config.get('period', [10, 30]))
+    
+    elif indicator_type == 'SAR':
+        # Parabolic SAR
+        parameters['acceleration'] = random.uniform(*ind_config.get('acceleration', [0.01, 0.05]))
+        parameters['maximum'] = random.uniform(*ind_config.get('maximum', [0.1, 0.3]))
+    
+    elif indicator_type == 'AROON':
+        # Aroon indicator (trend strength)
+        parameters['period'] = random.randint(*ind_config.get('period', [10, 25]))
+    
     return IndicatorGene(
         type=indicator_type,
         parameters=parameters,
