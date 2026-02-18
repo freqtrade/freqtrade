@@ -212,6 +212,10 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
         'applied': mutations_applied
     }]
     
+    # Ensure all indicators referenced in conditions are calculated
+    indicator_config = config.get('indicators', {})
+    new_individual.strategy_gene.ensure_indicators_for_conditions(indicator_config)
+    
     return new_individual
 
 
@@ -310,6 +314,10 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
         'applied': mutations_applied
     }]
     
+    # Ensure all indicators referenced in conditions are calculated
+    indicator_config = config.get('indicators', {})
+    new_individual.strategy_gene.ensure_indicators_for_conditions(indicator_config)
+    
     return new_individual
 
 
@@ -324,6 +332,11 @@ def _create_random_condition(indicator_type: str, is_entry: bool,
         'MACD': ('cross_above', 'cross_below', None, None, None, None),
         'STOCH': ('<', '>', 'k_threshold', 'd_threshold', [20, 40], [60, 80]),
         'CCI': ('<', '>', 'buy_threshold', 'sell_threshold', [-200, -100], [100, 200]),
+        'ADX': ('>', '>', 'threshold', 'threshold', [20, 40], [20, 40]),
+        'BBANDS': ('cross_below', 'cross_above', None, None, None, None),
+        'EMA': ('cross_above', 'cross_below', None, None, None, None),
+        'SMA': ('cross_above', 'cross_below', None, None, None, None),
+        'ATR': ('>', '<', None, None, None, None),
     }
     
     if indicator_type not in config_map:
@@ -332,8 +345,8 @@ def _create_random_condition(indicator_type: str, is_entry: bool,
     entry_op, exit_op, entry_key, exit_key, entry_default, exit_default = config_map[indicator_type]
     operator = entry_op if is_entry else exit_op
     
-    # MACD uses threshold 0
-    if indicator_type == 'MACD':
+    # MACD, BBANDS, EMA, SMA, ATR use threshold 0 (not used in comparison)
+    if indicator_type in ['MACD', 'BBANDS', 'EMA', 'SMA', 'ATR']:
         threshold = 0
     else:
         threshold_key = entry_key if is_entry else exit_key

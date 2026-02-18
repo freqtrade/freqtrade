@@ -13,7 +13,8 @@ from genetic_algorithm.core.strategy_gene import StrategyGene
 
 
 def single_point_crossover(parent1: Individual, parent2: Individual, 
-                          generation: int, ind_id: int) -> Tuple[Individual, Individual]:
+                          generation: int, ind_id: int,
+                          config: dict = None) -> Tuple[Individual, Individual]:
     """
     Single-point crossover.
     
@@ -76,6 +77,12 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
     child2_gene.generation = generation
     child2_gene.individual_id = ind_id + 1
     
+    # Ensure all indicators referenced in conditions are calculated
+    if config:
+        indicator_config = config.get('indicators', {})
+        child1_gene.ensure_indicators_for_conditions(indicator_config)
+        child2_gene.ensure_indicators_for_conditions(indicator_config)
+    
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
@@ -102,7 +109,8 @@ def _uniform_crossover_lists(parent1_list, parent2_list, swap_prob):
 
 def uniform_crossover(parent1: Individual, parent2: Individual,
                      generation: int, ind_id: int,
-                     swap_prob: float = 0.5) -> Tuple[Individual, Individual]:
+                     swap_prob: float = 0.5,
+                     config: dict = None) -> Tuple[Individual, Individual]:
     """
     Uniform crossover.
     
@@ -164,12 +172,19 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
     child2_gene.generation = generation
     child2_gene.individual_id = ind_id + 1
     
+    # Ensure all indicators referenced in conditions are calculated
+    if config:
+        indicator_config = config.get('indicators', {})
+        child1_gene.ensure_indicators_for_conditions(indicator_config)
+        child2_gene.ensure_indicators_for_conditions(indicator_config)
+    
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
 
 def component_crossover(parent1: Individual, parent2: Individual,
-                       generation: int, ind_id: int) -> Tuple[Individual, Individual]:
+                       generation: int, ind_id: int,
+                       config: dict = None) -> Tuple[Individual, Individual]:
     """
     Component-based crossover.
     
@@ -221,6 +236,12 @@ def component_crossover(parent1: Individual, parent2: Individual,
     child2_gene.generation = generation
     child2_gene.individual_id = ind_id + 1
     
+    # Ensure all indicators referenced in conditions are calculated
+    if config:
+        indicator_config = config.get('indicators', {})
+        child1_gene.ensure_indicators_for_conditions(indicator_config)
+        child2_gene.ensure_indicators_for_conditions(indicator_config)
+    
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
@@ -228,6 +249,7 @@ def component_crossover(parent1: Individual, parent2: Individual,
 def crossover(parent1: Individual, parent2: Individual,
              generation: int, ind_id: int,
              method: str = 'single_point',
+             config: dict = None,
              **kwargs) -> Tuple[Individual, Individual]:
     """
     Perform crossover using specified method.
@@ -238,6 +260,7 @@ def crossover(parent1: Individual, parent2: Individual,
         generation: Generation number for offspring
         ind_id: Starting individual ID
         method: Crossover method ('single_point', 'uniform', 'component')
+        config: Configuration dictionary with indicator settings
         **kwargs: Additional arguments for crossover method
         
     Returns:
@@ -252,4 +275,6 @@ def crossover(parent1: Individual, parent2: Individual,
     if method not in crossover_methods:
         raise ValueError(f"Unknown crossover method: {method}")
     
+    # Pass config to crossover methods
+    kwargs['config'] = config
     return crossover_methods[method](parent1, parent2, generation, ind_id, **kwargs)
