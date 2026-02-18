@@ -264,6 +264,7 @@ class DirectBacktester:
         try:
             from freqtrade.resolvers import ExchangeResolver
             from freqtrade.data.history import refresh_backtest_ohlcv_data
+            from freqtrade.enums import CandleType, TradingMode
             
             # Get unique pairs and timeframes
             pairs = list(set(p for p, _ in missing_data))
@@ -293,6 +294,17 @@ class DirectBacktester:
                 'margin_mode': '',
                 'stake_currency': 'USDT',
                 'dry_run': True,
+                'runmode': 'other',
+                'entry_pricing': {
+                'price_side': 'same',
+                'use_order_book': False,
+                'order_book_top': 1,
+                },
+                'exit_pricing': {
+                    'price_side': 'same',
+                    'use_order_book': False,
+                    'order_book_top': 1,
+                },
             }
             
             # Initialize exchange
@@ -305,7 +317,9 @@ class DirectBacktester:
                 timeframes=timeframes,
                 datadir=datadir,
                 timerange=None,  # Download all available
-                erase=False
+                erase=False,
+                trading_mode=TradingMode.SPOT,  # ← ADD THIS
+                candle_types=[CandleType.SPOT],
             )
             
             logger.info("✓ Data download completed successfully")
