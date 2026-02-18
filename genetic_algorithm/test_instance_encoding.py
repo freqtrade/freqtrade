@@ -227,8 +227,14 @@ def test_mutation_maintains_instance_ids():
         assert condition.indicator in all_refs
 
 
-def test_instance_id_numbering_no_gaps():
-    """Test that instance ID numbering doesn't have gaps when some IDs are pre-assigned."""
+def test_instance_id_numbering_with_pre_assigned():
+    """Test instance ID numbering behavior when some IDs are pre-assigned.
+    
+    Note: The current implementation increments the counter for pre-assigned IDs,
+    which can create gaps in numbering. This is intentional to maintain a simple
+    implementation that preserves pre-assigned IDs while still assigning unique IDs
+    to unassigned indicators.
+    """
     # Create strategy where one indicator already has an instance_id
     strategy = StrategyGene(
         generation=0,
@@ -236,7 +242,7 @@ def test_instance_id_numbering_no_gaps():
         indicators=[
             IndicatorGene(type='RSI', parameters={'period': 7}),  # Will get RSI_0
             IndicatorGene(type='RSI', parameters={'period': 14}, instance_id='RSI_custom'),  # Pre-assigned
-            IndicatorGene(type='RSI', parameters={'period': 21}),  # Will get RSI_2 (not RSI_1, to avoid gaps)
+            IndicatorGene(type='RSI', parameters={'period': 21}),  # Will get RSI_2 (RSI_1 is skipped)
         ],
         entry_conditions=[
             ConditionGene(indicator='RSI', operator='<', threshold=30),
@@ -246,11 +252,10 @@ def test_instance_id_numbering_no_gaps():
     # Assign instance IDs
     strategy.assign_instance_ids()
     
-    # Check that we have no gaps in numbering (even though one was pre-assigned)
-    # First unassigned should get RSI_0, third should get RSI_2
+    # Counter increments for both assigned and unassigned, creating a gap at RSI_1
     assert strategy.indicators[0].instance_id == 'RSI_0'
-    assert strategy.indicators[1].instance_id == 'RSI_custom'  # Unchanged
-    assert strategy.indicators[2].instance_id == 'RSI_2'
+    assert strategy.indicators[1].instance_id == 'RSI_custom'  # Pre-assigned, unchanged
+    assert strategy.indicators[2].instance_id == 'RSI_2'  # RSI_1 is skipped
     
     # All instance IDs should be unique
     instance_ids = [ind.instance_id for ind in strategy.indicators]
@@ -258,7 +263,6 @@ def test_instance_id_numbering_no_gaps():
 
 
 def test_get_missing_indicators_with_instance_ids():
-
     """Test get_missing_indicators works with instance IDs."""
     strategy = StrategyGene(
         generation=0,
@@ -287,7 +291,7 @@ if __name__ == '__main__':
         test_strategy_generator_assigns_instance_ids,
         test_crossover_reassigns_instance_ids,
         test_mutation_maintains_instance_ids,
-        test_instance_id_numbering_no_gaps,
+        test_instance_id_numbering_with_pre_assigned,
         test_get_missing_indicators_with_instance_ids,
     ]
     

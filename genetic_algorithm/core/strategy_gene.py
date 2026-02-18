@@ -242,7 +242,8 @@ class StrategyGene:
                 ind.instance_id = f"{ind.type}_{type_counts[ind.type]}"
                 type_counts[ind.type] += 1
             else:
-                # If instance_id already set, still count it for gap-free numbering
+                # If instance_id already set, still increment counter to maintain
+                # consistent numbering sequence (may create gaps if pre-assigned IDs don't match)
                 type_counts[ind.type] += 1
         
         # Create mapping from type to instance IDs
