@@ -165,6 +165,37 @@ class GeneticAlgorithm:
                     'error': str(e)
                 })
     
+    def _should_update_best_individual(self, candidate: Individual) -> bool:
+        """
+        Determine if candidate should replace current best individual.
+        
+        Handles None fitness values correctly:
+        - Candidate must have valid (non-None) fitness
+        - Updates if no best individual exists yet
+        - Updates if current best has None fitness
+        - Updates if candidate fitness is higher than current best
+        
+        Args:
+            candidate: Individual to consider as new best
+            
+        Returns:
+            True if candidate should become new best individual
+        """
+        # Candidate must have valid fitness
+        if candidate.fitness is None:
+            return False
+        
+        # Update if no best exists yet
+        if self.best_individual is None:
+            return True
+        
+        # Update if current best has invalid fitness
+        if self.best_individual.fitness is None:
+            return True
+        
+        # Update if candidate is better
+        return candidate.fitness > self.best_individual.fitness
+    
     def create_next_generation(self, population: Population) -> Population:
         """
         Create next generation through selection, crossover, and mutation.
@@ -336,11 +367,7 @@ class GeneticAlgorithm:
             
             # Update best individual
             best = population.get_best(1)[0]
-            # Only update if best has a valid fitness and is better than current best
-            # Handle case where either fitness could be None
-            if best.fitness is not None and (self.best_individual is None or 
-                                              self.best_individual.fitness is None or 
-                                              best.fitness > self.best_individual.fitness):
+            if self._should_update_best_individual(best):
                 self.best_individual = best
                 self.logger.info(f"New best individual: {best.id} with fitness {best.fitness:.4f}")
             

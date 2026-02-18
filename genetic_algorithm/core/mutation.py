@@ -192,18 +192,20 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
                 available_indicators = [ind.type for ind in mutated_gene.indicators]
                 if available_indicators:
                     # Try to create a condition, try multiple indicators if needed
+                    condition_created = False
                     for indicator in available_indicators:
                         new_condition = _create_random_condition(indicator, True, indicator_config)
                         if new_condition:
                             mutated_gene.entry_conditions.append(new_condition)
                             mutations_applied.append(f"add_entry_condition_{indicator}")
+                            condition_created = True
                             break
                     
                     # If still no entry condition, this mutation failed validation
                     # The try-catch in the mutate() function will catch this
-                    if not mutated_gene.entry_conditions:
-                        logger.warning("Failed to create entry condition after indicator removal - all indicators failed")
-                        raise ValueError("Failed to create entry condition after indicator removal")
+                    if not condition_created:
+                        logger.warning("Failed to create entry condition - all available indicators failed to generate valid conditions")
+                        raise ValueError("Failed to create entry condition - all available indicators failed to generate valid conditions")
 
     
     elif operation == 'replace':
@@ -705,7 +707,7 @@ def mutate(individual: Individual, mutation_rate: float,
                 # This ensures that a failed mutation doesn't crash the evolution
                 logger.warning(f"Mutation method '{method}' failed: {e}. Continuing with current state.")
                 # If this is the first mutation attempt, return the original individual
-                if mutated == individual:
+                if mutated is individual:
                     logger.debug(f"Returning original individual due to failed mutation")
     
     return mutated
