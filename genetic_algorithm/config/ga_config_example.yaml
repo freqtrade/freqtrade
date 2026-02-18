@@ -54,6 +54,14 @@ backtesting:
   # Fee for trades (0.1%)
   fee: 0.001
   
+  # Exchange name (default: binance)
+  exchange: "binance"
+  
+  # Auto-download missing data
+  # When enabled, GA will automatically download missing data files
+  # Set to false if you prefer manual data management
+  auto_download_data: true
+  
   # Enable caching of backtest results
   enable_cache: true
   

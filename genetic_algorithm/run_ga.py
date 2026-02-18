@@ -27,13 +27,6 @@ import yaml
 # USER CONFIGURATION
 # ============================================================================
 
-# Basic GA Parameters (override config file)
-POPULATION_SIZE = 50          # Number of strategies per generation (default: 100)
-GENERATIONS = 20              # Number of generations to evolve (default: 50)
-MUTATION_RATE = 0.15          # Probability of mutation (0.0-1.0, default: 0.15)
-CROSSOVER_RATE = 0.7          # Probability of crossover (0.0-1.0, default: 0.7)
-ELITE_SIZE = 5                # Number of top strategies to preserve (default: 10)
-
 # Number of top strategies to display and save at the end
 TOP_STRATEGIES_COUNT = 5
 
@@ -70,25 +63,21 @@ def setup_logging():
 
 def load_and_update_config(config_path) -> dict:
     """
-    Load configuration from YAML file and update with user parameters.
+    Load configuration from YAML file.
     
     Args:
         config_path: Path to configuration file (string or Path object)
         
     Returns:
-        Updated configuration dictionary
+        Configuration dictionary loaded from file
     """
     config_path = Path(config_path)
     
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Update GA parameters with user configuration
-    config['genetic_algorithm']['population_size'] = POPULATION_SIZE
-    config['genetic_algorithm']['generations'] = GENERATIONS
-    config['genetic_algorithm']['mutation_rate'] = MUTATION_RATE
-    config['genetic_algorithm']['crossover_rate'] = CROSSOVER_RATE
-    config['genetic_algorithm']['elite_size'] = ELITE_SIZE
+    # All configuration is now read from the config file
+    # No more hardcoded overrides - edit the config file to change parameters
     
     return config
 
@@ -301,9 +290,12 @@ def validate_config(config: dict) -> bool:
     backtest_cfg = config.get('backtesting', {})
     pairs = backtest_cfg.get('pairs', [])
     timerange = backtest_cfg.get('timerange', '')
+    auto_download = backtest_cfg.get('auto_download_data', True)
+    exchange = backtest_cfg.get('exchange', 'binance')
     
     issues = []
     warnings = []
+    info = []
     
     # Critical issues
     if not pairs:
@@ -313,15 +305,32 @@ def validate_config(config: dict) -> bool:
     if any('UNITTEST' in p for p in pairs):
         warnings.append("⚠️  WARNING: Using UNITTEST pairs (test data from 2018)")
         warnings.append("   For real strategy development:")
-        warnings.append("   1. Download data: freqtrade download-data --pairs BTC/USDT --timeframes 1h --days 30")
-        warnings.append("   2. Update config: backtesting.pairs = ['BTC/USDT']")
-        warnings.append("   3. Set timerange: backtesting.timerange = '20250120-20250219'")
+        warnings.append("   1. Edit config file and set: backtesting.pairs = ['BTC/USDT']")
+        warnings.append("   2. Set timerange: backtesting.timerange = '20250120-20250219'")
+        if auto_download:
+            warnings.append("   3. GA will auto-download data when it starts (auto_download_data: true)")
+        else:
+            warnings.append("   3. Download data: freqtrade download-data --pairs BTC/USDT --timeframes 1h --days 90")
     
-    if not timerange:
+    if not timerange and not any('UNITTEST' in p for p in pairs):
         warnings.append("⚠️  WARNING: No timerange specified - will use all available data")
         warnings.append("   Consider setting: backtesting.timerange = '20250120-20250219'")
     
+    # Info about auto-download
+    if auto_download:
+        info.append("ℹ️  Auto-download enabled: Missing data will be downloaded automatically")
+        info.append(f"   Exchange: {exchange}")
+    else:
+        info.append("ℹ️  Auto-download disabled: You must manually download data before running")
+        info.append(f"   Use: freqtrade download-data --exchange {exchange} --pairs {' '.join(pairs)} --timeframes 1h --days 90")
+    
     # Display results
+    if info:
+        print("\n" + "="*80)
+        for msg in info:
+            print(msg)
+        print("="*80)
+    
     if warnings:
         print("\n" + "="*80)
         for warning in warnings:
