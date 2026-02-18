@@ -1,393 +1,325 @@
-# Genetic Algorithm Improvements TODO
+# GA Improvements TODO
 
-This document outlines larger, more complex improvements to the GA system that require significant implementation effort. These are organized by priority and estimated complexity.
+Last Updated: 2026-02-18  
+Based on: Comprehensive code audit + current implementation analysis
 
-## Completed Quick Wins ✅
+---
 
-1. **Advanced Mutation Operators** ✅
-   - Gaussian mutation for smooth parameter tuning
-   - Swap mutation for component reordering
-   - Adaptive per-gene mutation based on fitness
+## ⚠️ CRITICAL BUGS (Fix Immediately)
+
+These bugs can crash evolution or corrupt strategy output. **Fix before any other work.**
+
+- [x] **Fix mutate_adaptive_per_gene() crash when Individual.fitness is None**
+  - Location: `genetic_algorithm/core/mutation.py:~618`
+  - Error: `TypeError: '>' not supported between instances of 'NoneType' and 'int'`
+  - Status: **ALREADY FIXED** - Code properly handles None with `if individual.fitness is None or individual.fitness <= 0`
+  - No patch needed
+  
+- [x] **Normalize minimal_roi keys to strings everywhere**
+  - Locations: `generator.py:66-72`, `mutation.py:108-112, 411-415, 511-516`
+  - Error: KeyError and inconsistent strategy attributes
+  - Fix: Use `Dict[str, float]` for minimal_roi, normalize in from_dict()
+  - Status: **FIXED** - All locations now use string keys consistently
+  - Commit: 9f6375c
+  
+- [x] **Preserve trailing_stop parameters in StrategyGene serialization**
+  - Locations: `strategy_gene.py:124` (to_dict), `:168` (from_dict)
+  - Issue: `trailing_stop_positive` and `_offset` silently lost on copy/mutation
+  - Fix: Add both fields to to_dict() and from_dict()
+  - Status: **FIXED** - Both parameters now serialized/deserialized correctly
+  - Commit: 9f6375c
+  
+- [x] **Replace unsafe generator fallback condition**
+  - Location: `generator.py:503`
+  - Issue: Returns literal "True" causing scalar mask behavior
+  - Fix: Return `"(dataframe['volume'] > 0)"`
+  - Status: **FIXED** - Now returns vectorized condition
+  - Commit: 9f6375c
+  
+- [x] **Remove mutation double-gating**
+  - Location: `evolution.py:223`
+  - Issue: Outer random.random() gate + internal mutation sampling = very low effective rate
+  - Fix: Call mutate() unconditionally or ensure at least one operator fires
+  - Status: **FIXED** - Removed outer gating, mutate() now handles all probability checks internally
+  - Commit: 9f6375c
+  
+- [x] **Guard random.sample() in indicator selection**
+  - Location: `generator.py:58`
+  - Issue: ValueError if num_indicators > len(available_indicators)
+  - Fix: `num_indicators = min(num_indicators, len(self.available_indicators))`
+  - Status: **FIXED** - Guard added before random.sample()
+  - Commit: 9f6375c
+
+---
+
+## 🎯 QUICK WINS (High Impact, Low Effort)
+
+**Target: Complete within 1-2 hours each**
+
+- [ ] **Separate raw_fitness from shared_fitness**
+  - Store both in Individual class
+  - Use raw_fitness for reporting/convergence, shared_fitness for selection only
+  - Benefits: Accurate best strategy reporting, proper convergence detection
+  
+- [ ] **Restrict indicators.available to fully-supported indicators only**
+  - Audit which indicators have full codegen + condition support
+  - Remove unsupported indicators from config
+  - Benefits: No wasted genes, more meaningful variation
+  
+- [ ] **Add deterministic seeding support**
+  - Add `random_seed: int` to config
+  - Seed Python random, NumPy, strategy generation
+  - Benefits: Reproducible experiments, easier debugging
+  
+- [ ] **Fix strategy_name duplication**
+  - Location: `evolution.py:142`
+  - Change `f"Gen{gen}_Ind{individual.id}"` to just `individual.id`
+  - Benefits: Cleaner logging, better caching keys
+  
+- [ ] **Add parent uniqueness check**
+  - Config option: `allow_self_crossover: false`
+  - Ensure parent1 != parent2 in selection
+  - Benefits: More diverse offspring
+  
+- [ ] **Complete logging configuration**
+  - Location: `evolution.py:_setup_logging()`
+  - Add file handler with configured format/path
+  - Benefits: Better diagnosability for long runs
+
+---
+
+## 🏗️ MEDIUM SCOPE (2-5 days each)
+
+### Encoding & Representation
+
+- [ ] **Upgrade to instance-based indicator encoding**
+  - Current: Indicators referenced by type name (ambiguous)
+  - New: Unique instance IDs: `RSI_0(period=7)`, `RSI_1(period=21)`
+  - Benefits:
+    - Clear crossover semantics
+    - Better genetic distance metrics
+    - No ambiguity in condition references
+  - Effort: 2-3 days
+
+### Fitness & Robustness
+
+- [ ] **Add complexity penalty to fitness**
+  - Formula: `fitness -= complexity_weight * (num_indicators + num_conditions)`
+  - Config: `fitness_penalties.complexity_weight: 0.01`
+  - Benefits: Reduces overfitting, promotes simpler strategies
+  - Effort: 2-3 hours
+
+### Testing & Validation
+
+- [x] **Unit tests for mutation operators**
+  - Test: `test_roi_keys_are_strings_after_mutations` ✅
+  - Test: `test_mutate_adaptive_per_gene_handles_none_fitness` ✅ (already fixed)
+  - Test: `test_generator_fallback_condition_is_vectorized` ✅
+  - Test: `test_strategy_gene_roundtrip_preserves_trailing_stop` ✅
+  - Status: **COMPLETED** - See `test_critical_fixes.py`
+  - Commit: f6f9be0
+  
+- [ ] **Integration test: run 1 generation on test data**
+  - Validate full pipeline completes
+  - Check result parsing
+  - Verify caching doesn't break
+  - Effort: 4-6 hours
+  
+- [ ] **Add CI/CD pipeline**
+  - pytest + coverage
+  - ruff/flake8 + black
+  - mypy (GA package only initially)
+  - Optional: scheduled weekly smoke run
+  - Effort: 1 day
+
+---
+
+## 🚀 MAJOR FEATURES (1-2 weeks each)
+
+### 🏆 TOP PRIORITY: Multi-Timeframe Strategies
+
+**Why**: Industry standard for robust strategies; huge quality improvement  
+**Effort**: 3-5 days  
+**Impact**: ⭐⭐⭐⭐⭐
+
+- [ ] **Implement multi-timeframe genome + codegen**
+  - Extend `StrategyGene` with `informative_timeframes: List[str]`
+  - Generate `@informative()` decorators in strategy code
+  - Use Freqtrade's `merge_informative_pair()` for higher-TF data
+  - Allow conditions to reference informative columns: `close_1h`, `rsi_1h`
+  - **Example**: Trade 5m, confirm trend on 1h, filter market regime on 4h
+  - **Freqtrade docs**: Already has native support via `@informative()` decorator
+  - **Reference**: https://www.freqtrade.io/en/stable/strategy-customization/#informative-pairs
+
+**Implementation steps**:
+1. Add `informative_timeframes` field to StrategyGene
+2. Mutation operator to add/remove/change informative timeframes
+3. Condition generator to create cross-timeframe conditions
+4. Strategy codegen to emit `@informative()` decorated methods
+5. Test with 5m base + 1h informative
+
+---
+
+### 🛡️ HIGH PRIORITY: Walk-Forward Optimization
+
+**Why**: Critical anti-overfitting measure; dramatically improves real-world performance  
+**Effort**: 4-7 days  
+**Impact**: ⭐⭐⭐⭐⭐
+
+- [ ] **Implement walk-forward validation**
+  - Split backtest timerange into rolling windows
+  - Train on N days, validate on next M days, slide forward
+  - Fitness = average/min validation score across all windows
+  - Config options:
+    - `walk_forward.enabled: true`
+    - `walk_forward.train_days: 60`
+    - `walk_forward.validation_days: 15`
+    - `walk_forward.step_days: 15`
+    - `walk_forward.aggregation: 'mean' | 'min' | 'harmonic_mean'`
+  - **Variants**:
+    - Anchored: Expanding training window
+    - Rolling: Fixed training window size
+  - **Reference**: https://www.freqtrade.io/en/stable/hyperopt/
+
+**Implementation steps**:
+1. Add timerange splitting logic
+2. Modify fitness evaluator to run multiple backtests per strategy
+3. Aggregate results across validation windows
+4. Add progress tracking (current window X/Y)
+5. Cache train-window results for efficiency
+
+---
+
+### 🎨 HIGH PRIORITY: Multiobjective Evolution (NSGA-II)
+
+**Why**: Retain Pareto front of diverse optimal strategies; no fitness weight tuning needed  
+**Effort**: 5-10 days  
+**Impact**: ⭐⭐⭐⭐
+
+- [ ] **Implement NSGA-II for multiobjective optimization**
+  - Replace single fitness scalar with multiple objectives:
+    - Objective 1: Total profit %
+    - Objective 2: Max drawdown (minimize)
+    - Objective 3: Sharpe ratio
+    - Objective 4: Number of trades (Goldilocks: not too few, not too many)
+  - Implement non-dominated sorting (Pareto fronts)
+  - Implement crowding distance for diversity
+  - Return Pareto front (10-20 strategies) instead of single best
+  - **Benefits**:
+    - User chooses from diverse optimal strategies
+    - Natural diversity preservation
+    - No need to tune fitness weights
+  - **Libraries**: Consider `pymoo` or implement NSGA-II directly
+  - **Reference**: https://ieeexplore.ieee.org/document/996017
+
+**Implementation steps**:
+1. Refactor Individual to store `objectives: List[float]`
+2. Implement fast non-dominated sort
+3. Implement crowding distance calculation
+4. Modify selection to use Pareto rank + crowding distance
+5. Update visualization to show Pareto front
+6. Save all Pareto-optimal strategies, not just top-1
+
+---
+
+### Other Major Features
+
+- [ ] **Island model with migration** (3-6 days)
+  - Run N islands (populations) in parallel
+  - Migrate top K individuals every M generations
+  - Config already has `island_model` placeholder
+  - Benefits: Better diversity, natural parallelism, escape local optima
+  
+- [ ] **Parallel evaluation** (2-4 days)
+  - Multiprocessing worker pool for backtest evaluation
+  - Careful with Freqtrade backtesting global state
+  - Each worker gets own DirectBacktester instance
+  - Benefits: 4-8x speedup on multi-core systems
+  
+- [ ] **Strategy grammar / strongly-typed conditions** (5-10 days)
+  - Grammar-based genetic programming (GGP)
+  - Prevent semantically invalid rules: `(RSI > 70) AND (RSI < 30)`
+  - Type system: `Indicator → Comparison → Condition`
+  - Benefits: Higher quality strategies, faster convergence
+
+---
+
+## 🔬 RESEARCH & EXPERIMENTAL
+
+**Low priority; explore after core features stable**
+
+- [ ] Multi-exchange evolution (evolve across Binance + Kraken + Coinbase)
+- [ ] Portfolio-aware evolution (optimize portfolio Sharpe, not individual profit)
+- [ ] Meta-learning (evolve on multiple timeranges, extract generalizable meta-strategy)
+- [ ] Transfer learning (seed population with known good strategies)
+- [ ] Ensemble strategies (voting/stacking from multiple evolved strategies)
+- [ ] Adaptive mutation scheduling (start high, decay over generations)
+- [ ] Lexicase selection (instead of tournament/roulette)
+- [ ] Archive of high-quality strategies (novelty search + quality)
+
+---
+
+## 📚 References
+
+- [Freqtrade Informative Pairs](https://www.freqtrade.io/en/stable/strategy-customization/#informative-pairs)
+- [Freqtrade Hyperopt](https://www.freqtrade.io/en/stable/hyperopt/)
+- [Freqtrade Backtesting](https://www.freqtrade.io/en/stable/backtesting/)
+- [Freqtrade Data Downloading](https://www.freqtrade.io/en/stable/data-download/)
+- [NSGA-II Paper (IEEE)](https://ieeexplore.ieee.org/document/996017)
+- [pymoo - Multi-objective Optimization](https://pymoo.org/)
+
+---
+
+## 📊 Progress Tracking
+
+**Last Audit Date**: 2026-02-18  
+**Critical Bugs Fixed**: 6/6 ✅  
+**Quick Wins Completed**: 0/6  
+**Medium Features Completed**: 1/4 (unit tests)  
+**Major Features Completed**: 0/3  
+
+**Next Sprint Focus**: Implement quick wins, then multi-timeframe strategies
+
+---
+
+## ✅ Completed Features
+
+### Advanced Mutation Operators ✅
+- Gaussian mutation for smooth parameter tuning
+- Swap mutation for component reordering
+- Adaptive per-gene mutation based on fitness
    
-2. **Enhanced Fitness Function** ✅
-   - Added Sortino ratio (downside risk focus)
-   - Added profit factor (win/loss ratio)
-   - Robustness bonuses for consistent performers
-   - Risk-adjusted excellence bonuses
+### Enhanced Fitness Function ✅
+- Added Sortino ratio (downside risk focus)
+- Added profit factor (win/loss ratio)
+- Robustness bonuses for consistent performers
+- Risk-adjusted excellence bonuses
 
-3. **Diversity Preservation** ✅
-   - Fitness sharing/niching implementation
-   - Genetic diversity tracking
-   - Configurable sharing radius
+### Diversity Preservation ✅
+- Fitness sharing/niching implementation
+- Genetic diversity tracking
+- Configurable sharing radius
 
-4. **Richer Strategy Grammar** ✅
-   - Added 7 new indicators: MFI, WILLR, ROC, TEMA, KAMA, SAR, AROON
-   - Expanded indicator parameter ranges
-
----
-
-## High Priority (High Impact, Medium Effort)
-
-### 1. Walk-Forward Optimization (WFO)
-
-**Rationale:**
-Walk-forward optimization is critical for preventing overfitting. It validates strategies on out-of-sample data by training on one period and testing on the next, mimicking real-world deployment.
-
-**Implementation Approach:**
-1. Split timerange into multiple windows (e.g., 3-month train, 1-month test)
-2. For each generation:
-   - Train strategies on current window
-   - Validate on next window
-   - Calculate combined fitness (weighted: 70% in-sample, 30% out-of-sample)
-3. Roll window forward after N generations
-4. Track consistency across windows
-
-**Files to Modify:**
-- `genetic_algorithm/evaluation/fitness.py` - Add WFO evaluation mode
-- `genetic_algorithm/core/evolution.py` - Integrate WFO into evolution loop
-- `genetic_algorithm/config/ga_config.yaml` - Add WFO configuration
-
-**Estimated Complexity:** Medium (2-3 days)
-- Need to handle data splitting
-- Manage multiple backtest windows
-- Balance in-sample vs out-of-sample scores
-
-**Benefits:**
-- Dramatically reduces overfitting
-- Produces more robust, deployable strategies
-- Better reflects real-world performance
+### Richer Strategy Grammar ✅
+- Added 7 new indicators: MFI, WILLR, ROC, TEMA, KAMA, SAR, AROON
+- Expanded indicator parameter ranges
 
 ---
 
-### 2. Multi-Timeframe Strategy Support
+## 🐛 Bug Fixes Applied (2026-02-18)
 
-**Rationale:**
-Professional traders use multiple timeframes for confirmation. A strategy that considers both 1h and 4h charts is often more robust than single-timeframe strategies.
+All critical bugs from the audit have been fixed:
 
-**Implementation Approach:**
-1. Extend `StrategyGene` to support multiple timeframe indicators:
-   ```python
-   indicators_1h: List[IndicatorGene]
-   indicators_4h: List[IndicatorGene]
-   ```
-2. Modify `StrategyGenerator` to:
-   - Generate indicators for each timeframe
-   - Create cross-timeframe conditions (e.g., "1h RSI < 30 AND 4h trend up")
-3. Update code generation to:
-   - Call `resample()` in FreqTrade for higher timeframes
-   - Combine multi-timeframe conditions properly
-4. Add timeframe alignment logic
+1. ✅ **ROI Key Consistency** - All minimal_roi dictionaries now use string keys
+2. ✅ **Trailing Stop Serialization** - trailing_stop_positive and _offset now preserved
+3. ✅ **Generator Fallback** - Returns vectorized condition instead of scalar "True"
+4. ✅ **Mutation Double-Gating** - Removed outer probability check
+5. ✅ **Random.sample Guard** - Protected against requesting more indicators than available
+6. ✅ **Comprehensive Tests** - Added test_critical_fixes.py with 5 passing tests
 
-**Files to Modify:**
-- `genetic_algorithm/core/strategy_gene.py` - Add multi-timeframe fields
-- `genetic_algorithm/strategies/generator.py` - Multi-timeframe generation
-- `genetic_algorithm/strategies/template.py` - Code generation for MTF
-- `genetic_algorithm/core/mutation.py` - Mutate across timeframes
-- `genetic_algorithm/core/crossover.py` - Cross timeframes properly
-
-**Estimated Complexity:** Medium-High (3-5 days)
-- Need to handle timeframe synchronization
-- More complex strategy representation
-- Increased strategy space (more indicators/conditions)
-
-**Benefits:**
-- More sophisticated strategies
-- Better trend/momentum confirmation
-- Reduced false signals
-- Professional-grade strategies
-
----
-
-### 3. Strategy Complexity Penalty
-
-**Rationale:**
-Simpler strategies generalize better. Overly complex strategies with many indicators and conditions often overfit to historical data.
-
-**Implementation Approach:**
-1. Define complexity metric:
-   ```python
-   complexity = (
-       num_indicators * 0.3 +
-       num_entry_conditions * 0.4 +
-       num_exit_conditions * 0.3
-   )
-   ```
-2. Add penalty to fitness:
-   ```python
-   if complexity > threshold:
-       fitness *= (1.0 - penalty_factor * (complexity - threshold))
-   ```
-3. Make configurable via config:
-   ```yaml
-   fitness_penalties:
-     complexity_threshold: 8
-     complexity_penalty: 0.05  # 5% penalty per unit over threshold
-   ```
-
-**Files to Modify:**
-- `genetic_algorithm/evaluation/fitness.py` - Add complexity calculation and penalty
-- `genetic_algorithm/config/ga_config.yaml` - Add complexity settings
-
-**Estimated Complexity:** Low (0.5-1 day)
-- Simple calculation
-- Easy to integrate into existing fitness function
-
-**Benefits:**
-- Encourages simpler, more robust strategies
-- Reduces overfitting risk
-- Faster backtesting (fewer indicators to calculate)
-- Easier to understand and maintain strategies
-
----
-
-## Medium Priority (Good Impact, High Effort)
-
-### 4. Island Model / Speciation
-
-**Rationale:**
-Island models maintain multiple sub-populations (islands) that evolve independently with occasional migration. This preserves diversity and explores different regions of the solution space simultaneously.
-
-**Implementation Approach:**
-1. Split population into N islands (e.g., 4 islands of 25 individuals each)
-2. Each island evolves independently:
-   - Different selection pressures (aggressive vs conservative)
-   - Different mutation rates
-   - Different fitness weight profiles
-3. Periodic migration:
-   - Every K generations, migrate top M individuals between islands
-   - Migration topology: ring, fully-connected, or random
-4. Final integration: Combine all islands for final ranking
-
-**Architecture:**
-```python
-class IslandModel:
-    def __init__(self, num_islands, population_per_island):
-        self.islands = [
-            GeneticAlgorithm(config_variant) 
-            for _ in range(num_islands)
-        ]
-    
-    def evolve_generation(self):
-        # Evolve each island in parallel (could use multiprocessing)
-        for island in self.islands:
-            island.evolve_one_generation()
-        
-        # Migrate if needed
-        if self.generation % migration_interval == 0:
-            self.migrate()
-```
-
-**Files to Create:**
-- `genetic_algorithm/core/island_model.py` - Island management
-- `genetic_algorithm/core/migration.py` - Migration strategies
-
-**Files to Modify:**
-- `genetic_algorithm/core/evolution.py` - Extract single generation logic
-- `genetic_algorithm/run_ga.py` - Support island mode flag
-- `genetic_algorithm/config/ga_config.yaml` - Island configuration
-
-**Estimated Complexity:** High (5-7 days)
-- Significant refactoring of evolution loop
-- Parallel execution challenges
-- Migration logic complexity
-- Visualization updates for multi-island view
-
-**Benefits:**
-- Massive diversity improvement
-- Explores multiple solution strategies simultaneously
-- Natural parallelization opportunity
-- Often finds better solutions than single population
-
----
-
-### 5. NSGA-II Multi-Objective Optimization
-
-**Rationale:**
-Trading has inherently conflicting objectives (maximize profit vs minimize risk). NSGA-II finds the Pareto front of non-dominated solutions, giving users a range of strategies with different risk/reward profiles.
-
-**Implementation Approach:**
-1. Define multiple objectives (not combined into single fitness):
-   - Maximize: Profit, Sharpe ratio, Win rate
-   - Minimize: Drawdown, Volatility
-2. Implement NSGA-II selection:
-   - Fast non-dominated sorting
-   - Crowding distance for diversity
-   - Tournament selection based on rank + distance
-3. Report Pareto front instead of single "best" strategy
-
-**Key Algorithm Components:**
-```python
-def fast_non_dominated_sort(population):
-    """Assign rank to each individual based on domination."""
-    fronts = [[]]
-    for individual in population:
-        individual.domination_count = 0
-        individual.dominated_solutions = []
-        for other in population:
-            if dominates(individual, other):
-                individual.dominated_solutions.append(other)
-            elif dominates(other, individual):
-                individual.domination_count += 1
-        
-        if individual.domination_count == 0:
-            individual.rank = 0
-            fronts[0].append(individual)
-    # ... continue for other ranks
-    return fronts
-
-def crowding_distance(front):
-    """Calculate crowding distance for diversity."""
-    # Distance based on neighbors in objective space
-    # Higher distance = more isolated = preserve for diversity
-```
-
-**Files to Create:**
-- `genetic_algorithm/core/nsga2.py` - NSGA-II implementation
-- `genetic_algorithm/core/pareto.py` - Pareto front utilities
-
-**Files to Modify:**
-- `genetic_algorithm/core/selection.py` - Add NSGA-II selection
-- `genetic_algorithm/evaluation/fitness.py` - Return multi-objective scores
-- `genetic_algorithm/core/individual.py` - Add rank, crowding distance fields
-- `genetic_algorithm/visualization/` - Visualize Pareto front
-
-**Estimated Complexity:** High (7-10 days)
-- Complex algorithm implementation
-- Careful handling of multi-objective space
-- Significant changes to selection logic
-- New visualization requirements
-
-**Benefits:**
-- No need to manually tune fitness weights
-- Presents range of solutions (aggressive to conservative)
-- User can choose risk/reward profile
-- More scientifically rigorous approach
-- Better for production deployment (multiple strategies for different market conditions)
-
----
-
-### 6. Meta-Learning for Hyperparameter Optimization
-
-**Rationale:**
-GA hyperparameters (mutation rate, population size, elite size, etc.) significantly affect performance. Meta-learning automatically tunes these based on evolution dynamics.
-
-**Implementation Approach:**
-1. Track meta-metrics during evolution:
-   - Convergence speed
-   - Diversity trends
-   - Improvement rate
-2. Adjust hyperparameters dynamically:
-   ```python
-   if diversity < threshold:
-       mutation_rate *= 1.2  # Increase exploration
-   if no_improvement > 5 and diversity > threshold:
-       elite_size *= 1.1  # Increase exploitation
-   ```
-3. Or use external optimizer (Optuna, Bayesian optimization) to tune:
-   - Run short GA experiments with different hyperparameters
-   - Learn which settings work best for this problem
-   - Apply learned settings to full run
-
-**Levels of Implementation:**
-1. **Simple** (adaptive rules): Hard-coded rules based on metrics
-2. **Medium** (Bayesian optimization): Use Optuna to tune hyperparameters
-3. **Advanced** (Reinforcement learning): RL agent learns to adjust hyperparameters
-
-**Files to Modify:**
-- `genetic_algorithm/core/evolution.py` - Add adaptive logic
-- Create `genetic_algorithm/meta/` directory for meta-learning
-  - `meta_optimizer.py` - Hyperparameter tuning
-  - `meta_rules.py` - Adaptive rule engine
-
-**Estimated Complexity:** Medium-High (4-6 days)
-- Simple adaptive rules: 1-2 days
-- Bayesian optimization: 3-4 days
-- RL-based: 6+ days
-
-**Benefits:**
-- Removes manual hyperparameter tuning burden
-- Adapts to problem characteristics automatically
-- Better performance with less expert knowledge required
-- Can discover non-obvious parameter combinations
-
----
-
-## Lower Priority (Nice to Have)
-
-### 7. Ensemble Strategies
-
-Combine multiple evolved strategies into an ensemble that votes on trades. Implementation: evolve strategies normally, then create a meta-strategy that combines top N strategies with weighted voting.
-
-**Estimated Complexity:** Medium (2-3 days)
-
----
-
-### 8. Transfer Learning from Previous Runs
-
-Save and reuse good strategy "building blocks" from previous evolution runs. Seeds new populations with proven components.
-
-**Estimated Complexity:** Medium (2-3 days)
-
----
-
-### 9. Coevolution of Strategy and Market Regime Detector
-
-Evolve both strategies AND the logic to detect when each strategy should be active (bull/bear/sideways market detection).
-
-**Estimated Complexity:** High (7+ days)
-
----
-
-### 10. GPU-Accelerated Backtesting
-
-Offload backtest calculations to GPU for massive parallelization. Requires rewriting backtest engine in CUDA/OpenCL or using existing GPU libraries.
-
-**Estimated Complexity:** Very High (14+ days)
-
----
-
-## Implementation Priority Recommendation
-
-Based on impact vs effort, suggested implementation order:
-
-1. **Walk-Forward Optimization** - Critical for production readiness
-2. **Strategy Complexity Penalty** - Quick win with good impact
-3. **Multi-Timeframe Support** - Professional-grade feature
-4. **Island Model** - Significant quality improvement
-5. **Meta-Learning** - Automation and optimization
-6. **NSGA-II** - Advanced users, research applications
-
----
-
-## Testing Strategy
-
-For each improvement:
-
-1. **Unit Tests**: Test individual components in isolation
-2. **Integration Tests**: Run small GA (10 individuals, 5 generations) to verify end-to-end
-3. **Benchmark Tests**: Compare results with and without the feature
-4. **Performance Tests**: Measure execution time and memory impact
-
----
-
-## Documentation Requirements
-
-Each implemented feature should include:
-
-1. **Code comments**: Inline documentation of complex logic
-2. **Config documentation**: Update `config/README.md` with new parameters
-3. **User guide**: Add section to main README or separate guide
-4. **Research notes**: Document assumptions, limitations, and future improvements
-
----
-
-## Notes
-
-- All improvements should be configurable (enable/disable via config)
-- Maintain backward compatibility with existing configs
-- Consider computational cost vs benefit for each feature
-- Prioritize features that reduce overfitting and improve robustness
+See commits: 9f6375c, f6f9be0
 
 ---
 
 Last Updated: 2026-02-18
+
