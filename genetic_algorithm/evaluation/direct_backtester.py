@@ -636,7 +636,7 @@ class DirectBacktester:
                 logger.warning(f"Invalid pair format: {pair} (expected BASE/QUOTE)")
                 continue
                 
-            base, quote = pair.split("/", 1)  # Split only on first '/' to handle edge cases
+            base, quote = pair.split("/", 1)  # maxsplit=1 to handle pairs like 'BTC/USDT'
             mock_markets[pair] = {
                 "id": pair.replace("/", "_"),
                 "symbol": pair,

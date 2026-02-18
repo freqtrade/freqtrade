@@ -60,8 +60,8 @@ def test_mock_markets_with_test_pairs():
         assert market['symbol'] == 'UNITTEST/BTC'
         assert market['base'] == 'UNITTEST'
         assert market['quote'] == 'BTC'
-        assert market['active'] == True
-        assert market['spot'] == True
+        assert market['active'] is True
+        assert market['spot'] is True
         
         print(f"✅ Test 1 PASSED: Mock markets created for {len(mock_markets)} pairs")
         print(f"   Includes: {list(mock_markets.keys())[:5]}...")
@@ -110,8 +110,8 @@ def test_mock_markets_with_real_pairs():
         assert market['symbol'] == 'BTC/USDT'
         assert market['base'] == 'BTC'
         assert market['quote'] == 'USDT'
-        assert market['active'] == True
-        assert market['spot'] == True
+        assert market['active'] is True
+        assert market['spot'] is True
         
         # Verify test pairs are still included for backward compatibility
         assert 'UNITTEST/BTC' in mock_markets, "Test pairs should still be included"
