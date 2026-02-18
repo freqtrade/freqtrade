@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import logging
 
-from genetic_algorithm.core.population import Population, PopulationStats, apply_fitness_sharing
+from genetic_algorithm.core.population import (
+    Population, PopulationStats, apply_fitness_sharing, calculate_pairwise_distances
+)
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.selection import select_parents
 from genetic_algorithm.core.crossover import crossover
@@ -430,13 +432,20 @@ class GeneticAlgorithm:
             # Evaluate fitness
             self.evaluate_population(population)
             
+            # Compute pairwise distances once for efficiency
+            # (used by both fitness sharing and genetic diversity calculation)
+            distance_matrix = None
+            if self.fitness_sharing or len(population.individuals) >= 2:
+                distance_matrix = calculate_pairwise_distances(list(population.individuals))
+            
             # Apply fitness sharing to preserve diversity
             if self.fitness_sharing:
-                apply_fitness_sharing(population, sigma_share=self.sharing_radius)
+                apply_fitness_sharing(population, sigma_share=self.sharing_radius, 
+                                    distance_matrix=distance_matrix)
                 self.logger.info("Applied fitness sharing for diversity preservation")
             
-            # Get statistics
-            stats = population.get_stats()
+            # Get statistics (reuses distance matrix for genetic diversity)
+            stats = population.get_stats(distance_matrix=distance_matrix)
             self.generation_stats.append(stats)
             
             # Log statistics
