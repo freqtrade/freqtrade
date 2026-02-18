@@ -6,11 +6,15 @@ variation into strategies.
 """
 
 import random
+import logging
 from typing import Dict, Any, Optional
 
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
+
+# Set up logger for mutation operations
+logger = logging.getLogger(__name__)
 
 
 def _mutate_indicator_params(indicator, ind_config, i, mutations_applied):
@@ -310,11 +314,13 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
                     mutations_applied.append(f"add_exit_condition_{indicator}")
     
     # Possibly remove conditions
+    # IMPORTANT: Must maintain at least 1 entry condition to satisfy validation
     if random.random() < mutation_rate * 0.3:
         if len(mutated_gene.entry_conditions) > 1:
             removed = mutated_gene.entry_conditions.pop(random.randrange(len(mutated_gene.entry_conditions)))
             mutations_applied.append(f"remove_entry_condition_{removed.indicator}")
         
+        # Exit conditions can be empty, so we can remove them freely
         if len(mutated_gene.exit_conditions) > 0:
             removed = mutated_gene.exit_conditions.pop(random.randrange(len(mutated_gene.exit_conditions)))
             mutations_applied.append(f"remove_exit_condition_{removed.indicator}")
@@ -598,7 +604,11 @@ def mutate_adaptive_per_gene(individual: Individual, base_mutation_rate: float,
     
     # Calculate adaptive rates for different gene components
     # If individual has high fitness, reduce mutation of good components
-    fitness_factor = min(1.0, individual.fitness) if individual.fitness > 0 else 1.0
+    # Handle None fitness (unevaluated individuals)
+    if individual.fitness is None or individual.fitness <= 0:
+        fitness_factor = 1.0
+    else:
+        fitness_factor = min(1.0, individual.fitness)
     
     # Indicators: lower mutation rate for high fitness (preserve good indicators)
     indicator_rate = base_mutation_rate * (1.5 - fitness_factor)
@@ -649,7 +659,7 @@ def mutate(individual: Individual, mutation_rate: float,
         methods: List of mutation methods to apply (if None, uses default set)
         
     Returns:
-        Mutated individual
+        Mutated individual (original if mutation fails)
     """
     if methods is None:
         # Default: include new advanced mutation operators with lower probability
@@ -667,19 +677,27 @@ def mutate(individual: Individual, mutation_rate: float,
     
     for method in methods:
         if random.random() < mutation_rate:
-            if method == 'parameters':
-                mutated = mutate_parameters(mutated, mutation_rate, config)
-            elif method == 'indicators':
-                mutated = mutate_indicators(mutated, mutation_rate, config)
-            elif method == 'conditions':
-                mutated = mutate_conditions(mutated, mutation_rate, config)
-            elif method == 'structure':
-                mutated = mutate_structure(mutated, mutation_rate, config)
-            elif method == 'gaussian':
-                mutated = mutate_gaussian(mutated, mutation_rate, config, sigma=0.1)
-            elif method == 'swap':
-                mutated = mutate_swap(mutated, mutation_rate, config)
-            elif method == 'adaptive':
-                mutated = mutate_adaptive_per_gene(mutated, mutation_rate, config)
+            try:
+                if method == 'parameters':
+                    mutated = mutate_parameters(mutated, mutation_rate, config)
+                elif method == 'indicators':
+                    mutated = mutate_indicators(mutated, mutation_rate, config)
+                elif method == 'conditions':
+                    mutated = mutate_conditions(mutated, mutation_rate, config)
+                elif method == 'structure':
+                    mutated = mutate_structure(mutated, mutation_rate, config)
+                elif method == 'gaussian':
+                    mutated = mutate_gaussian(mutated, mutation_rate, config, sigma=0.1)
+                elif method == 'swap':
+                    mutated = mutate_swap(mutated, mutation_rate, config)
+                elif method == 'adaptive':
+                    mutated = mutate_adaptive_per_gene(mutated, mutation_rate, config)
+            except (ValueError, KeyError, AttributeError, TypeError) as e:
+                # Log the error but continue with the current mutated state
+                # This ensures that a failed mutation doesn't crash the evolution
+                logger.warning(f"Mutation method '{method}' failed: {e}. Continuing with current state.")
+                # If this is the first mutation attempt, return the original individual
+                if mutated == individual:
+                    logger.debug(f"Returning original individual due to failed mutation")
     
     return mutated

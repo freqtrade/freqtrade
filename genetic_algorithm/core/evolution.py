@@ -207,22 +207,35 @@ class GeneticAlgorithm:
             )
             
             # Crossover or copy
-            if random.random() < self.crossover_rate:
-                child1, child2 = crossover(
-                    parent1, parent2,
-                    generation=self.current_generation + 1,
-                    ind_id=self.elite_size + offspring_count,
-                    config=self.config
-                )
-            else:
+            try:
+                if random.random() < self.crossover_rate:
+                    child1, child2 = crossover(
+                        parent1, parent2,
+                        generation=self.current_generation + 1,
+                        ind_id=self.elite_size + offspring_count,
+                        config=self.config
+                    )
+                else:
+                    child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
+                    child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
+            except (ValueError, KeyError, AttributeError, TypeError) as e:
+                # If crossover fails, use clones of parents instead
+                self.logger.warning(f"Crossover failed: {e}. Using parent clones instead.")
                 child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
                 child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
             
             # Mutation
             for child in [child1, child2]:
-                if random.random() < self.mutation_rate:
-                    child = mutate(child, self.mutation_rate, self.config)
-                next_gen.add_individual(child)
+                try:
+                    if random.random() < self.mutation_rate:
+                        child = mutate(child, self.mutation_rate, self.config)
+                    next_gen.add_individual(child)
+                except (ValueError, KeyError, AttributeError, TypeError) as e:
+                    # If mutation or adding fails, log and skip this child
+                    self.logger.warning(f"Failed to mutate/add child: {e}. Skipping this individual.")
+                    # Continue with the next child
+                    continue
+                
                 if len(next_gen) >= self.population_size:
                     break
             
