@@ -1,0 +1,26 @@
+Strategy must have at least one entry condition
+2026-02-18 16:14:09,638 - __main__ - ERROR - Evolution failed
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/run_ga.py", line 503, in main
+    top_individuals = ga.evolve()
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/evolution.py", line 336, in evolve
+    population = self.create_next_generation(population)
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/evolution.py", line 224, in create_next_generation
+    child = mutate(child, self.mutation_rate, self.config)
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/mutation.py", line 675, in mutate
+    mutated = mutate_conditions(mutated, mutation_rate, config)
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/mutation.py", line 252, in mutate_conditions
+    mutated_gene = individual.strategy_gene.copy()
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/strategy_gene.py", line 173, in copy
+    return StrategyGene.from_dict(self.to_dict())
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/strategy_gene.py", line 159, in from_dict
+    return cls(
+        generation=data['generation'],
+    ...<7 lines>...
+        trailing_stop=data.get('trailing_stop', False),
+    )
+  File "<string>", line 14, in __init__
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/strategy_gene.py", line 92, in __post_init__
+    raise ValueError("Strategy must have at least one entry condition")
+ValueError: Strategy must have at least one entry condition

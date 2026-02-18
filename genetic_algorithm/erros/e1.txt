@@ -1,0 +1,19 @@
+================================================================================
+ERROR DURING EVOLUTION
+================================================================================
+
+'>' not supported between instances of 'NoneType' and 'int'
+2026-02-18 16:22:15,597 - __main__ - ERROR - Evolution failed
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/run_ga.py", line 503, in main
+    top_individuals = ga.evolve()
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/evolution.py", line 336, in evolve
+    population = self.create_next_generation(population)
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/evolution.py", line 224, in create_next_generation
+    child = mutate(child, self.mutation_rate, self.config)
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/mutation.py", line 683, in mutate
+    mutated = mutate_adaptive_per_gene(mutated, mutation_rate, config)
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/core/mutation.py", line 601, in mutate_adaptive_per_gene
+    fitness_factor = min(1.0, individual.fitness) if individual.fitness > 0 else 1.0
+                                                     ^^^^^^^^^^^^^^^^^^^^^^
+TypeError: '>' not supported between instances of 'NoneType' and 'int'
