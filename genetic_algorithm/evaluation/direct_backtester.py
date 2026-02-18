@@ -264,6 +264,7 @@ class DirectBacktester:
         try:
             from freqtrade.resolvers import ExchangeResolver
             from freqtrade.data.history import refresh_backtest_ohlcv_data
+            from freqtrade.enums import CandleType, TradingMode
             
             # Get unique pairs and timeframes
             pairs = list(set(p for p, _ in missing_data))
@@ -293,6 +294,17 @@ class DirectBacktester:
                 'margin_mode': '',
                 'stake_currency': 'USDT',
                 'dry_run': True,
+                'runmode': 'other',
+                'entry_pricing': {
+                'price_side': 'same',
+                'use_order_book': False,
+                'order_book_top': 1,
+                },
+                'exit_pricing': {
+                    'price_side': 'same',
+                    'use_order_book': False,
+                    'order_book_top': 1,
+                },
             }
             
             # Initialize exchange
@@ -305,7 +317,9 @@ class DirectBacktester:
                 timeframes=timeframes,
                 datadir=datadir,
                 timerange=None,  # Download all available
-                erase=False
+                erase=False,
+                trading_mode=TradingMode.SPOT,  # ← ADD THIS
+                candle_types=[CandleType.SPOT],
             )
             
             logger.info("✓ Data download completed successfully")
@@ -610,20 +624,33 @@ class DirectBacktester:
         """
         Get mock markets data for offline backtesting.
         
+        Dynamically builds market definitions from configured pairs to support
+        both test pairs (UNITTEST/BTC) and real pairs (BTC/USDT, ETH/USDT, etc.).
+        
         Returns:
             Mock markets dictionary
         """
-        # Create mock market data for test pairs that exist in testdata
         mock_markets = {}
         
+        # Get pairs from config
+        config_pairs = self.backtest_config.get('pairs', [])
+        
+        # Include common test pairs for backward compatibility
         test_pairs = [
             "UNITTEST/BTC", "ETH/BTC", "LTC/BTC", "XRP/BTC", "ADA/BTC",
             "DASH/BTC", "ETC/BTC", "XLM/BTC", "XMR/BTC", "NXT/BTC",
             "ZEC/BTC", "TRX/BTC"
         ]
         
-        for pair in test_pairs:
-            base, quote = pair.split("/")
+        # Combine config pairs with test pairs (config pairs take precedence)
+        all_pairs = list(set(config_pairs + test_pairs))
+        
+        for pair in all_pairs:
+            if '/' not in pair:
+                logger.warning(f"Invalid pair format: {pair} (expected BASE/QUOTE)")
+                continue
+                
+            base, quote = pair.split("/", 1)  # maxsplit=1 to handle pairs like 'BTC/USDT'
             mock_markets[pair] = {
                 "id": pair.replace("/", "_"),
                 "symbol": pair,
@@ -642,6 +669,8 @@ class DirectBacktester:
                 },
                 "info": {}
             }
+        
+        logger.debug(f"Created mock markets for {len(mock_markets)} pairs: {list(mock_markets.keys())}")
         
         return mock_markets
     

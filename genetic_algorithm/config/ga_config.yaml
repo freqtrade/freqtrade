@@ -15,10 +15,10 @@
 # === Genetic Algorithm Parameters ===
 genetic_algorithm:
   # Population size - number of strategies per generation
-  population_size: 100
+  population_size: 20
   
   # Number of generations to evolve
-  generations: 50
+  generations: 4
   
   # Mutation rate - probability of mutating an individual
   mutation_rate: 0.15
@@ -64,14 +64,13 @@ fitness_penalties:
 # === Backtesting Configuration ===
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
-  timerange: ""  # Empty for all available data
+  timerange: "20241220-20260218"  # Last 60 days
   
   # Stake amount per trade
   stake_amount: 0.05
   
   # Trading pairs to test strategies on (use test data pairs)
   pairs:
-    - "UNITTEST/BTC"
     - "ETH/BTC"
     - "LTC/BTC"
   
