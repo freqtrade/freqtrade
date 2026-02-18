@@ -358,6 +358,7 @@ def _create_random_condition(indicator_type: str, is_entry: bool,
     operator = entry_op if is_entry else exit_op
     
     # MACD, BBANDS, EMA, SMA, ATR use threshold 0 (not used in comparison)
+    # ATR doesn't use threshold because it's compared against price or other values
     if indicator_type in ['MACD', 'BBANDS', 'EMA', 'SMA', 'ATR']:
         threshold = 0
     else:

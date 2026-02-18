@@ -19,11 +19,16 @@ import yaml
 import random
 
 
-def simulate_ga_workflow(config, num_generations=2, population_size=4):
+def simulate_ga_workflow(config, num_generations=3, population_size=6):
     """
     Simulate a simplified GA workflow: generate population, crossover, mutate.
     
     This tests that the fix works in a realistic scenario.
+    
+    Args:
+        config: Configuration dictionary
+        num_generations: Number of generations to simulate (default: 3)
+        population_size: Number of individuals per generation (default: 6)
     """
     print("=" * 70)
     print("Simulating Genetic Algorithm Workflow")
