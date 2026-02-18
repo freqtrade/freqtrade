@@ -165,6 +165,37 @@ class GeneticAlgorithm:
                     'error': str(e)
                 })
     
+    def _should_update_best_individual(self, candidate: Individual) -> bool:
+        """
+        Determine if candidate should replace current best individual.
+        
+        Handles None fitness values correctly:
+        - Candidate must have valid (non-None) fitness
+        - Updates if no best individual exists yet
+        - Updates if current best has None fitness
+        - Updates if candidate fitness is higher than current best
+        
+        Args:
+            candidate: Individual to consider as new best
+            
+        Returns:
+            True if candidate should become new best individual
+        """
+        # Candidate must have valid fitness
+        if candidate.fitness is None:
+            return False
+        
+        # Update if no best exists yet
+        if self.best_individual is None:
+            return True
+        
+        # Update if current best has invalid fitness
+        if self.best_individual.fitness is None:
+            return True
+        
+        # Update if candidate is better
+        return candidate.fitness > self.best_individual.fitness
+    
     def create_next_generation(self, population: Population) -> Population:
         """
         Create next generation through selection, crossover, and mutation.
@@ -207,22 +238,35 @@ class GeneticAlgorithm:
             )
             
             # Crossover or copy
-            if random.random() < self.crossover_rate:
-                child1, child2 = crossover(
-                    parent1, parent2,
-                    generation=self.current_generation + 1,
-                    ind_id=self.elite_size + offspring_count,
-                    config=self.config
-                )
-            else:
+            try:
+                if random.random() < self.crossover_rate:
+                    child1, child2 = crossover(
+                        parent1, parent2,
+                        generation=self.current_generation + 1,
+                        ind_id=self.elite_size + offspring_count,
+                        config=self.config
+                    )
+                else:
+                    child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
+                    child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
+            except (ValueError, KeyError, AttributeError, TypeError) as e:
+                # If crossover fails, use clones of parents instead
+                self.logger.warning(f"Crossover failed: {e}. Using parent clones instead.")
                 child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
                 child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
             
             # Mutation
             for child in [child1, child2]:
-                if random.random() < self.mutation_rate:
-                    child = mutate(child, self.mutation_rate, self.config)
-                next_gen.add_individual(child)
+                try:
+                    if random.random() < self.mutation_rate:
+                        child = mutate(child, self.mutation_rate, self.config)
+                    next_gen.add_individual(child)
+                except (ValueError, KeyError, AttributeError, TypeError) as e:
+                    # If mutation or adding fails, log and skip this child
+                    self.logger.warning(f"Failed to mutate/add child: {e}. Skipping this individual.")
+                    # Continue with the next child
+                    continue
+                
                 if len(next_gen) >= self.population_size:
                     break
             
@@ -323,7 +367,7 @@ class GeneticAlgorithm:
             
             # Update best individual
             best = population.get_best(1)[0]
-            if self.best_individual is None or best.fitness > self.best_individual.fitness:
+            if self._should_update_best_individual(best):
                 self.best_individual = best
                 self.logger.info(f"New best individual: {best.id} with fitness {best.fitness:.4f}")
             
