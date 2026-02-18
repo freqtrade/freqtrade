@@ -68,7 +68,7 @@ try:
         ...
 except (ValueError, KeyError, AttributeError, TypeError) as e:
     logger.warning(f"Mutation method '{method}' failed: {e}. Continuing with current state.")
-    if mutated == individual:
+    if mutated is individual:
         logger.debug(f"Returning original individual due to failed mutation")
 ```
 
@@ -76,6 +76,7 @@ except (ValueError, KeyError, AttributeError, TypeError) as e:
 - Evolution continues even if a specific mutation fails
 - Failed mutations are logged for debugging
 - Falls back to previous state or original individual
+- Uses identity check (`is`) for proper object comparison
 
 ### 2. Error Handling in Evolution Process
 **Location**: `genetic_algorithm/core/evolution.py` lines 210-227
