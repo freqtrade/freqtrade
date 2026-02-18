@@ -211,3 +211,21 @@ class StrategyGene:
             # Create a new indicator of this type
             new_indicator = create_random_indicator(ind_type, indicator_config)
             self.indicators.append(new_indicator)
+    
+    def calculate_complexity(self) -> int:
+        """
+        Calculate the complexity of this strategy.
+        
+        Complexity is measured as the sum of:
+        - Number of indicators
+        - Number of entry conditions
+        - Number of exit conditions
+        
+        Returns:
+            Total complexity score (higher = more complex)
+        """
+        return (
+            len(self.indicators) +
+            len(self.entry_conditions) +
+            len(self.exit_conditions)
+        )

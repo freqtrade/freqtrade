@@ -25,6 +25,7 @@ fitness_penalties:
   min_trades: 3
   max_drawdown: 0.50
   min_win_rate: 0.20
+  complexity_weight: 0.01  # Penalty weight for strategy complexity
 
 backtesting:
   timerange: ""  # Use all available test data

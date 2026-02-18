@@ -80,17 +80,22 @@ class FitnessEvaluator:
                     'max_drawdown': 1.0,
                     'win_rate': 0.0,
                     'num_trades': 0,
+                    'complexity': strategy_gene.calculate_complexity(),
                     'error': backtest_result.error_message
                 }
             
             # Convert backtest result to metrics dictionary
             metrics = self._backtest_result_to_metrics(backtest_result)
             
-            # Calculate fitness
-            fitness = self.calculate_fitness(metrics)
+            # Add complexity to metrics
+            metrics['complexity'] = strategy_gene.calculate_complexity()
+            
+            # Calculate fitness (includes complexity penalty)
+            fitness = self.calculate_fitness(metrics, strategy_gene)
             
             logger.info(f"Strategy {strategy_name}: fitness={fitness:.4f}, "
-                       f"profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}")
+                       f"profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}, "
+                       f"complexity={metrics['complexity']}")
             
             return fitness, metrics
             
@@ -103,6 +108,7 @@ class FitnessEvaluator:
                 'max_drawdown': 1.0,
                 'win_rate': 0.0,
                 'num_trades': 0,
+                'complexity': strategy_gene.calculate_complexity(),
                 'error': str(e)
             }
     
@@ -126,7 +132,7 @@ class FitnessEvaluator:
             'sortino_ratio': result.sortino_ratio,
         }
     
-    def calculate_fitness(self, metrics: Dict[str, float]) -> float:
+    def calculate_fitness(self, metrics: Dict[str, float], strategy_gene: StrategyGene = None) -> float:
         """
         Calculate overall fitness score from metrics.
         
@@ -134,6 +140,7 @@ class FitnessEvaluator:
         
         Args:
             metrics: Dictionary of performance metrics
+            strategy_gene: Optional StrategyGene for complexity penalty calculation
             
         Returns:
             Fitness score (higher is better)
@@ -211,7 +218,7 @@ class FitnessEvaluator:
             fitness *= 1.15  # 15% bonus for excellent risk management
         
         # Apply penalties and return
-        penalized_fitness = self._apply_penalties(fitness, metrics)
+        penalized_fitness = self._apply_penalties(fitness, metrics, strategy_gene)
         
         # Ensure non-negative
         return max(0, penalized_fitness)
@@ -241,12 +248,20 @@ class FitnessEvaluator:
             # Excessive trading - significant penalty
             return max(0.3, 1.0 - (num_trades - 50) / 200)
     
-    def _apply_penalties(self, fitness: float, metrics: Dict[str, float]) -> float:
+    def _apply_penalties(self, fitness: float, metrics: Dict[str, float], strategy_gene: StrategyGene = None) -> float:
         """
         Apply penalties for constraint violations.
         
         Penalties are applied multiplicatively to reduce fitness for strategies
         that violate important constraints.
+        
+        Args:
+            fitness: Base fitness score
+            metrics: Performance metrics
+            strategy_gene: Optional StrategyGene for complexity penalty
+            
+        Returns:
+            Fitness with penalties applied
         """
         penalties = self.fitness_penalties
         
@@ -280,6 +295,19 @@ class FitnessEvaluator:
             # Gradual penalty for low win rate
             wr_penalty = max(0.6, win_rate / min_win_rate)
             fitness *= wr_penalty
+        
+        # Complexity penalty: penalize overly complex strategies
+        # Formula: fitness -= complexity_weight * complexity
+        # This helps reduce overfitting and promotes simpler strategies
+        if strategy_gene is not None:
+            complexity_weight = penalties.get('complexity_weight', 0.01)
+            if complexity_weight > 0:
+                complexity = strategy_gene.calculate_complexity()
+                complexity_penalty = complexity_weight * complexity
+                # Subtract penalty from fitness (multiplicative penalties above, additive here)
+                fitness = max(0, fitness - complexity_penalty)
+                logger.debug(f"Applied complexity penalty: {complexity_penalty:.4f} "
+                           f"(complexity={complexity}, weight={complexity_weight})")
         
         return fitness
     

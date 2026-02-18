@@ -71,6 +71,7 @@ fitness_penalties:
   min_trades: 5            # Penalize if fewer trades (reduced from 10)
   max_drawdown: 0.30       # Penalize if drawdown exceeds this (increased from 0.25)
   min_win_rate: 0.30       # Penalize if win rate below this (reduced from 0.35)
+  complexity_weight: 0.01  # Penalty weight for strategy complexity (num_indicators + num_conditions)
 
 # === Backtesting Configuration ===
 backtesting:
