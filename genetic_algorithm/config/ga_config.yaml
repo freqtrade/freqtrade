@@ -29,8 +29,8 @@ genetic_algorithm:
   # Crossover rate - probability of crossing over two parents
   crossover_rate: 0.7
   
-  # Elite size - number of top strategies to preserve unchanged
-  elite_size: 10
+  # Elite size - number of top strategies to preserve unchanged (~15% of population)
+  elite_size: 3
   
   # Tournament size for tournament selection
   tournament_size: 3
@@ -53,6 +53,10 @@ genetic_algorithm:
   sharing_radius: 0.3           # How similar strategies must be to share fitness (0-1)
   diversity_threshold: 0.15     # Minimum genetic diversity to maintain
   allow_self_crossover: false   # Allow same parent to be selected twice (set false for more diversity)
+  
+  # Random immigrants - inject fresh random strategies each generation to prevent premature convergence
+  # When diversity drops below diversity_threshold, this count is doubled for that generation
+  random_immigrants: 3          # Number of fresh random individuals to inject per generation
 
 # === Fitness Function Weights ===
 # These weights determine how different metrics contribute to overall fitness

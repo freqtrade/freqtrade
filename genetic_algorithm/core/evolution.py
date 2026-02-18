@@ -73,6 +73,7 @@ class GeneticAlgorithm:
         self.sharing_radius = ga_config.get('sharing_radius', 0.3)
         self.diversity_threshold = ga_config.get('diversity_threshold', 0.15)
         self.allow_self_crossover = ga_config.get('allow_self_crossover', True)
+        self.random_immigrants = ga_config.get('random_immigrants', 3)
         
         # Initialize components
         self.strategy_generator = StrategyGenerator(self.config)
@@ -259,6 +260,35 @@ class GeneticAlgorithm:
             gene_copy.generation = self.current_generation + 1
             next_gen.add_individual(Individual(strategy_gene=gene_copy))
         
+        # Helper to calculate next available individual ID
+        def calculate_next_id():
+            return len(next_gen)
+        
+        # Inject random immigrants to maintain diversity
+        # Get current generation stats to check diversity
+        stats = population.get_stats()
+        immigrant_count = self.random_immigrants
+        
+        # Double immigrant count if diversity is low
+        # (2x multiplier is a common heuristic for handling diversity crises in GAs)
+        if stats.genetic_diversity is not None and stats.genetic_diversity < self.diversity_threshold:
+            immigrant_count = self.random_immigrants * 2
+            self.logger.info(f"Low diversity ({stats.genetic_diversity:.4f} < {self.diversity_threshold:.4f}), doubling immigrant count")
+        
+        # Inject random immigrants
+        immigrants_before = len(next_gen)
+        for _ in range(immigrant_count):
+            if len(next_gen) >= self.population_size:
+                break
+            immigrant_gene = self.strategy_generator.generate_random_strategy(
+                generation=self.current_generation + 1,
+                individual_id=calculate_next_id()
+            )
+            next_gen.add_individual(Individual(strategy_gene=immigrant_gene))
+        
+        actual_immigrants_added = len(next_gen) - immigrants_before
+        self.logger.info(f"Injected {actual_immigrants_added} random immigrants")
+        
         # Helper to create child from parent gene
         def create_child(parent_gene, ind_id):
             gene = parent_gene.copy()
@@ -278,22 +308,26 @@ class GeneticAlgorithm:
             )
             
             # Crossover or copy
+            # Pre-calculate IDs for both children before adding them
+            child1_id = len(next_gen)
+            child2_id = len(next_gen) + 1
+            
             try:
                 if random.random() < self.crossover_rate:
                     child1, child2 = crossover(
                         parent1, parent2,
                         generation=self.current_generation + 1,
-                        ind_id=self.elite_size + offspring_count,
+                        ind_id=child1_id,
                         config=self.config
                     )
                 else:
-                    child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
-                    child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
+                    child1 = create_child(parent1.strategy_gene, child1_id)
+                    child2 = create_child(parent2.strategy_gene, child2_id)
             except (ValueError, KeyError, AttributeError, TypeError) as e:
                 # If crossover fails, use clones of parents instead
                 self.logger.warning(f"Crossover failed: {e}. Using parent clones instead.")
-                child1 = create_child(parent1.strategy_gene, self.elite_size + offspring_count)
-                child2 = create_child(parent2.strategy_gene, self.elite_size + offspring_count + 1)
+                child1 = create_child(parent1.strategy_gene, child1_id)
+                child2 = create_child(parent2.strategy_gene, child2_id)
             
             # Mutation - call unconditionally, mutate() handles internal probability checks
             # Previously had double-gating: outer random.random() + internal mutation sampling

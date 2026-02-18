@@ -30,6 +30,7 @@
   - 🌈 **Fitness sharing** prevents premature convergence
   - 📏 **Genetic diversity tracking** per generation
   - 🔍 **Strategy distance metrics** for population analysis
+  - 🔄 **Random immigrants** inject fresh strategies to maintain exploration
   - Configurable sharing radius
   
 - ✅ **Richer Strategy Grammar**
@@ -345,7 +346,18 @@ Multi-objective fitness function considering:
 - **Crossover**: Single-point, multi-point, uniform crossover
 - **Mutation**: Parameter mutation, component replacement, rule modification
 
-### 4. Evolution Process
+### 4. Diversity Preservation
+
+Prevents premature convergence and maintains population exploration:
+- **Fitness Sharing**: Reduces fitness of similar strategies to encourage diversity
+- **Genetic Diversity Tracking**: Monitors structural differences between strategies
+- **Random Immigrants**: Injects fresh random strategies each generation
+  - Default: 3 new random strategies per generation
+  - Adaptive: Doubles when genetic diversity drops below threshold
+  - Helps escape local optima and maintains exploration
+- **Parent Selection**: Configurable to prevent self-crossover for more diverse offspring
+
+### 5. Evolution Process
 
 ```
 1. Initialize population (N strategies)
