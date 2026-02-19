@@ -146,6 +146,79 @@ class FitnessEvaluator:
                 'error': str(e)
             }
     
+    def _auto_adjust_walk_forward_params(
+        self, 
+        timerange: str
+    ) -> Optional[Dict[str, int]]:
+        """
+        Auto-adjust walk-forward parameters to fit available data range.
+        
+        When the available data is shorter than the configured train_days + validation_days,
+        this method reduces the parameters proportionally so that at least one window can
+        be created.
+        
+        Args:
+            timerange: Effective timerange string (YYYYMMDD-YYYYMMDD)
+            
+        Returns:
+            Adjusted parameters dict with 'train_days', 'validation_days', 'step_days',
+            or None if no valid adjustment is possible (data too short).
+        """
+        from genetic_algorithm.utils.timerange import parse_timerange
+        
+        start, end = parse_timerange(timerange)
+        available_days = (end - start).days
+        
+        train_days = self.walk_forward_config['train_days']
+        validation_days = self.walk_forward_config['validation_days']
+        step_days = self.walk_forward_config['step_days']
+        required_days = train_days + validation_days
+        
+        if available_days >= required_days:
+            return {
+                'train_days': train_days,
+                'validation_days': validation_days,
+                'step_days': step_days,
+            }
+        
+        # Need to shrink parameters to fit.
+        # Keep the train/validation ratio the same, but scale down.
+        # Reserve at least 5 days for validation and 7 days for training.
+        MIN_TRAIN_DAYS = 7
+        MIN_VAL_DAYS = 5
+        min_total = MIN_TRAIN_DAYS + MIN_VAL_DAYS
+        
+        if available_days < min_total:
+            logger.warning(
+                f"Available data ({available_days} days) is too short for walk-forward "
+                f"(minimum {min_total} days needed). Cannot auto-adjust.")
+            return None
+        
+        # Scale proportionally
+        ratio = train_days / required_days
+        adjusted_train = max(MIN_TRAIN_DAYS, int(available_days * ratio))
+        adjusted_val = max(MIN_VAL_DAYS, available_days - adjusted_train)
+        
+        # Make sure they actually fit
+        if adjusted_train + adjusted_val > available_days:
+            adjusted_train = available_days - adjusted_val
+        
+        if adjusted_train < MIN_TRAIN_DAYS:
+            return None
+        
+        adjusted_step = max(1, adjusted_val)
+        
+        logger.warning(
+            f"⚠️  Walk-forward auto-adjusted: available data is only {available_days} days "
+            f"(need {required_days} for configured train={train_days}+val={validation_days}). "
+            f"Adjusted to train={adjusted_train}, val={adjusted_val}, step={adjusted_step}.")
+        
+        return {
+            'train_days': adjusted_train,
+            'validation_days': adjusted_val,
+            'step_days': adjusted_step,
+        }
+    
     def evaluate_walk_forward(
         self, 
         strategy_gene: StrategyGene, 
@@ -157,6 +230,10 @@ class FitnessEvaluator:
         
         Trains on multiple windows and validates on out-of-sample data.
         Final fitness is based on aggregated validation performance, not training performance.
+        
+        If the available data is too short for the configured walk-forward parameters,
+        the parameters are auto-adjusted. If even that is not possible, it falls back
+        to standard single-period evaluation with a warning.
         
         Args:
             strategy_gene: Strategy to evaluate
@@ -184,11 +261,24 @@ class FitnessEvaluator:
                            f"to effective data range ({effective_timerange})")
             timerange_for_windows = effective_timerange or original_timerange
             
+            # Auto-adjust walk-forward parameters if data is too short
+            adjusted = self._auto_adjust_walk_forward_params(timerange_for_windows)
+            if adjusted is None:
+                logger.warning(
+                    f"⚠️  Walk-forward optimization disabled for this run: insufficient data. "
+                    f"Falling back to standard single-period evaluation. "
+                    f"To use walk-forward, download more historical data.")
+                return self._evaluate_standard(strategy_gene, strategy_name)
+            
+            wf_train_days = adjusted['train_days']
+            wf_val_days = adjusted['validation_days']
+            wf_step_days = adjusted['step_days']
+            
             windows = create_walk_forward_windows(
                 timerange=timerange_for_windows,
-                train_days=self.walk_forward_config['train_days'],
-                validation_days=self.walk_forward_config['validation_days'],
-                step_days=self.walk_forward_config['step_days'],
+                train_days=wf_train_days,
+                validation_days=wf_val_days,
+                step_days=wf_step_days,
                 mode=self.walk_forward_config.get('mode', 'rolling')
             )
             

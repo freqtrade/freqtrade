@@ -370,6 +370,12 @@ class DirectBacktester:
             logger.info(f"  Timeframes: {timeframes}")
             logger.info(f"  Exchange: {exchange_name}")
             
+            # Determine stake currency from configured pairs
+            stake_currency = 'USDT'
+            config_pairs = self.backtest_config.get('pairs', [])
+            if config_pairs and '/' in config_pairs[0]:
+                stake_currency = config_pairs[0].split('/')[1]
+            
             # Create exchange configuration
             exchange_config = {
                 'exchange': {
@@ -383,7 +389,7 @@ class DirectBacktester:
                 'user_data_dir': self.freqtrade_root / "user_data",
                 'trading_mode': 'spot',
                 'margin_mode': '',
-                'stake_currency': 'USDT',
+                'stake_currency': stake_currency,
                 'dry_run': True,
                 'runmode': 'other',
                 'entry_pricing': {
