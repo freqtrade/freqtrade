@@ -210,15 +210,17 @@ class DirectBacktester:
         """
         Detect the actual available data range from disk for the configured pairs.
         
-        Intersects the configured timerange with the actual data on disk to produce
-        an effective timerange that can be used for walk-forward window creation.
+        Checks all configured timeframes and uses the widest (union) range across
+        them, then intersects with the configured timerange to produce an effective
+        timerange that can be used for walk-forward window creation.
         
         Returns:
             Effective timerange string (YYYYMMDD-YYYYMMDD), or None if no data found.
         """
         pairs = self.backtest_config.get('pairs', [])
         timeframes = list(self.config.get('strategy_constraints', {}).get('timeframes', ['5m']))
-        timeframe = timeframes[0] if timeframes else '5m'
+        if not timeframes:
+            timeframes = ['5m']
         
         # Skip for test pairs
         if any('UNITTEST' in p for p in pairs):
@@ -234,28 +236,48 @@ class DirectBacktester:
             
             data_handler = get_datahandler(datadir)
             
-            # Find the common data range across all pairs (intersection)
+            # Find the widest data range across ALL configured timeframes (union).
+            # For each timeframe, compute the intersection across pairs (common range
+            # that all pairs share), then take the union across timeframes so that
+            # any timeframe with more history contributes to the effective range.
             overall_min = None
             overall_max = None
             
-            for pair in pairs:
-                min_date, max_date, length = data_handler.ohlcv_data_min_max(
-                    pair, timeframe, CandleType.SPOT
-                )
+            for timeframe in timeframes:
+                tf_min = None
+                tf_max = None
                 
-                if length == 0:
-                    logger.warning(f"No data on disk for {pair} {timeframe}")
-                    continue
+                for pair in pairs:
+                    min_date, max_date, length = data_handler.ohlcv_data_min_max(
+                        pair, timeframe, CandleType.SPOT
+                    )
+                    
+                    if length == 0:
+                        logger.debug(f"No data on disk for {pair} {timeframe}")
+                        continue
+                    
+                    # Make datetimes naive for comparison (ohlcv_data_min_max may return tz-aware)
+                    min_dt = min_date.replace(tzinfo=None) if min_date.tzinfo else min_date
+                    max_dt = max_date.replace(tzinfo=None) if max_date.tzinfo else max_date
+                    
+                    # Intersection across pairs for this timeframe
+                    if tf_min is None or min_dt > tf_min:
+                        tf_min = min_dt
+                    if tf_max is None or max_dt < tf_max:
+                        tf_max = max_dt
                 
-                # Make datetimes naive for comparison (ohlcv_data_min_max may return tz-aware)
-                min_dt = min_date.replace(tzinfo=None) if min_date.tzinfo else min_date
-                max_dt = max_date.replace(tzinfo=None) if max_date.tzinfo else max_date
-                
-                # Use latest start and earliest end (intersection across pairs)
-                if overall_min is None or min_dt > overall_min:
-                    overall_min = min_dt
-                if overall_max is None or max_dt < overall_max:
-                    overall_max = max_dt
+                if tf_min is not None and tf_max is not None and tf_min < tf_max:
+                    logger.debug(
+                        f"Data range for timeframe {timeframe}: "
+                        f"{format_date(tf_min)}-{format_date(tf_max)}"
+                    )
+                    # Union across timeframes: keep the earliest start and latest end
+                    if overall_min is None or tf_min < overall_min:
+                        overall_min = tf_min
+                    if overall_max is None or tf_max > overall_max:
+                        overall_max = tf_max
+                else:
+                    logger.warning(f"No data on disk for timeframe {timeframe} across all pairs")
             
             if overall_min is None or overall_max is None:
                 logger.warning("Could not determine data range - no data files found")
@@ -365,10 +387,16 @@ class DirectBacktester:
             datadir = self.freqtrade_root / "user_data" / "data" / exchange_name
             datadir.mkdir(parents=True, exist_ok=True)
             
+            # Use the configured timerange so the download covers the full requested
+            # history instead of only what the exchange provides by default.
+            configured_timerange = self.backtest_config.get('timerange', None)
+            
             logger.info(f"Auto-downloading missing data for {len(pairs)} pair(s) and {len(timeframes)} timeframe(s)...")
             logger.info(f"  Pairs: {pairs}")
             logger.info(f"  Timeframes: {timeframes}")
             logger.info(f"  Exchange: {exchange_name}")
+            if configured_timerange:
+                logger.info(f"  Timerange: {configured_timerange}")
             
             # Determine stake currency from configured pairs
             stake_currency = 'USDT'
@@ -410,15 +438,24 @@ class DirectBacktester:
             # Initialize exchange
             exchange = ExchangeResolver.load_exchange(exchange_config)
             
+            # Convert the configured timerange string to a TimeRange object so the
+            # download covers the full requested history rather than just the default
+            # number of candles the exchange returns without an explicit range.
+            from freqtrade.configuration import TimeRange as FTTimeRange
+            ft_timerange = (
+                FTTimeRange.parse_timerange(configured_timerange)
+                if configured_timerange else None
+            )
+            
             # Download data
             refresh_backtest_ohlcv_data(
                 exchange=exchange,
                 pairs=pairs,
                 timeframes=timeframes,
                 datadir=datadir,
-                timerange=None,  # Download all available
+                timerange=ft_timerange,
                 erase=False,
-                trading_mode=TradingMode.SPOT,  # ← ADD THIS
+                trading_mode=TradingMode.SPOT,
                 candle_types=[CandleType.SPOT],
             )
             
