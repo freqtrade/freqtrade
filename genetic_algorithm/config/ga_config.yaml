@@ -171,6 +171,32 @@ strategy_constraints:
   # ROI range
   roi_range: [0.01, 0.10]
 
+# === Multi-Timeframe Configuration ===
+# Trade on base timeframe but use indicators from higher timeframes for:
+# - Trend confirmation (e.g., only buy on 5m when 1h trend is bullish)
+# - Market regime filtering (e.g., avoid trades during 4h consolidation)
+# - Stronger signals (higher TF = less noise)
+multi_timeframe:
+  # Enable multi-timeframe strategy generation
+  enabled: false  # Set to true to evolve multi-TF strategies
+  
+  # Higher timeframes available for informative indicators
+  # Must be strictly higher than the base strategy timeframe
+  available: ['15m', '1h', '4h']
+  
+  # Maximum number of informative timeframes per strategy
+  max_timeframes: 2
+  
+  # Indicator types preferred on higher timeframes
+  # Trend and volatility indicators tend to be more useful on higher TFs
+  higher_timeframe_preference:
+    - 'EMA'
+    - 'SMA'
+    - 'BBANDS'
+    - 'ATR'
+    - 'ADX'
+    - 'RSI'
+
 # === Indicator Configuration ===
 indicators:
   # Available indicators for strategy generation

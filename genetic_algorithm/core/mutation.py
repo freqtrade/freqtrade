@@ -10,7 +10,7 @@ import logging
 from typing import Dict, Any, Optional
 
 from genetic_algorithm.core.individual import Individual
-from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
+from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene, is_higher_timeframe
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
 
 # Set up logger for mutation operations
@@ -670,6 +670,143 @@ def mutate_adaptive_per_gene(individual: Individual, base_mutation_rate: float,
     return individual
 
 
+def mutate_timeframes(individual: Individual, mutation_rate: float,
+                      config: Dict[str, Any]) -> Individual:
+    """
+    Mutate multi-timeframe aspects of the strategy.
+    
+    Operations:
+    - Add an informative timeframe with a new indicator
+    - Remove an informative timeframe and its indicators
+    - Change an indicator's timeframe (base <-> informative)
+    
+    Args:
+        individual: Individual to mutate
+        mutation_rate: Probability of mutation
+        config: Configuration with multi-TF settings
+        
+    Returns:
+        Mutated individual
+    """
+    multi_tf_config = config.get('multi_timeframe', {})
+    if not multi_tf_config.get('enabled', False):
+        return individual
+    
+    mutated_gene = individual.strategy_gene.copy()
+    indicator_config = config.get('indicators', {})
+    available_itfs = multi_tf_config.get('available', [])
+    max_tfs = multi_tf_config.get('max_timeframes', 2)
+    htf_pref = multi_tf_config.get('higher_timeframe_preference', [])
+    available_indicators = indicator_config.get('available', [])
+    mutations_applied = []
+    
+    # Filter to valid higher timeframes
+    valid_itfs = [tf for tf in available_itfs if is_higher_timeframe(tf, mutated_gene.timeframe)]
+    
+    if not valid_itfs:
+        return individual
+    
+    # Choose operation
+    operations = []
+    current_itfs = list(mutated_gene.informative_timeframes)
+    if len(current_itfs) < max_tfs:
+        operations.append('add_timeframe')
+    if current_itfs:
+        operations.append('remove_timeframe')
+    inf_indicators = mutated_gene.get_informative_indicators()
+    if inf_indicators:
+        operations.append('change_indicator_tf')
+    
+    if not operations:
+        operations = ['add_timeframe']
+    
+    operation = random.choice(operations)
+    
+    if operation == 'add_timeframe':
+        # Add a new informative timeframe
+        unused_tfs = [tf for tf in valid_itfs if tf not in current_itfs]
+        if unused_tfs:
+            new_tf = random.choice(unused_tfs)
+            mutated_gene.informative_timeframes.append(new_tf)
+            # Add an indicator for this timeframe
+            if htf_pref:
+                candidates = [t for t in htf_pref if t in available_indicators]
+                ind_type = random.choice(candidates) if candidates else random.choice(available_indicators)
+            else:
+                ind_type = random.choice(available_indicators)
+            new_ind = create_random_indicator(ind_type, indicator_config)
+            new_ind.timeframe = new_tf
+            mutated_gene.indicators.append(new_ind)
+            mutations_applied.append(f"add_tf_{new_tf}_{ind_type}")
+    
+    elif operation == 'remove_timeframe':
+        # Remove an informative timeframe and its indicators
+        tf_to_remove = random.choice(current_itfs)
+        mutated_gene.informative_timeframes.remove(tf_to_remove)
+        # Remove indicators on that timeframe
+        removed_ids = set()
+        remaining = []
+        for ind in mutated_gene.indicators:
+            if ind.timeframe == tf_to_remove:
+                if ind.instance_id:
+                    removed_ids.add(ind.instance_id)
+                removed_ids.add(ind.type)
+            else:
+                remaining.append(ind)
+        mutated_gene.indicators = remaining
+        # Clean up conditions referencing removed indicators
+        mutated_gene.entry_conditions = [
+            c for c in mutated_gene.entry_conditions
+            if c.indicator not in removed_ids
+        ]
+        mutated_gene.exit_conditions = [
+            c for c in mutated_gene.exit_conditions
+            if c.indicator not in removed_ids
+        ]
+        # Ensure at least one entry condition remains
+        if not mutated_gene.entry_conditions and mutated_gene.indicators:
+            base_inds = [ind.type for ind in mutated_gene.indicators if ind.timeframe is None]
+            if base_inds:
+                new_cond = _create_random_condition(base_inds[0], True, indicator_config)
+                if new_cond:
+                    mutated_gene.entry_conditions.append(new_cond)
+        mutations_applied.append(f"remove_tf_{tf_to_remove}")
+    
+    elif operation == 'change_indicator_tf':
+        # Move an informative indicator to a different valid TF
+        inf_ind = random.choice(inf_indicators)
+        other_tfs = [tf for tf in valid_itfs if tf != inf_ind.timeframe]
+        if other_tfs:
+            old_tf = inf_ind.timeframe
+            new_tf = random.choice(other_tfs)
+            # Find the actual indicator in the list and update
+            for ind in mutated_gene.indicators:
+                if ind.instance_id == inf_ind.instance_id:
+                    ind.timeframe = new_tf
+                    ind.instance_id = None  # Will be reassigned
+                    break
+            # Update informative_timeframes list
+            if new_tf not in mutated_gene.informative_timeframes:
+                mutated_gene.informative_timeframes.append(new_tf)
+            # Remove old TF if no indicators remain on it
+            has_old_tf = any(i.timeframe == old_tf for i in mutated_gene.indicators)
+            if not has_old_tf and old_tf in mutated_gene.informative_timeframes:
+                mutated_gene.informative_timeframes.remove(old_tf)
+            mutations_applied.append(f"change_tf_{old_tf}_to_{new_tf}")
+    
+    # Reassign instance IDs
+    mutated_gene.assign_instance_ids()
+    
+    new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
+    new_individual.mutations = individual.mutations + [{
+        'type': 'timeframe',
+        'operation': operation,
+        'applied': mutations_applied
+    }]
+    
+    return new_individual
+
+
 def mutate(individual: Individual, mutation_rate: float,
           config: Dict[str, Any],
           methods: list = None) -> Individual:
@@ -696,6 +833,10 @@ def mutate(individual: Individual, mutation_rate: float,
             methods.append('swap')
         if random.random() < 0.15:  # 15% chance to use adaptive mutation
             methods.append('adaptive')
+        # Multi-timeframe mutation when enabled
+        multi_tf_config = config.get('multi_timeframe', {})
+        if multi_tf_config.get('enabled', False) and random.random() < 0.2:
+            methods.append('timeframes')
     
     mutated = individual
     
@@ -716,6 +857,8 @@ def mutate(individual: Individual, mutation_rate: float,
                     mutated = mutate_swap(mutated, mutation_rate, config)
                 elif method == 'adaptive':
                     mutated = mutate_adaptive_per_gene(mutated, mutation_rate, config)
+                elif method == 'timeframes':
+                    mutated = mutate_timeframes(mutated, mutation_rate, config)
             except (ValueError, KeyError, AttributeError, TypeError) as e:
                 # Log the error but continue with the current mutated state
                 # This ensures that a failed mutation doesn't crash the evolution
