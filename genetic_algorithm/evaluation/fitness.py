@@ -287,7 +287,9 @@ class FitnessEvaluator:
                 )
             except ValueError as e:
                 logger.warning(
-                    f"⚠️  Walk-forward window creation failed even after auto-adjust: {e}. "
+                    f"⚠️  Walk-forward window creation failed even after auto-adjust "
+                    f"(train={wf_train_days}, val={wf_val_days}, step={wf_step_days}, "
+                    f"timerange={timerange_for_windows}): {e}. "
                     f"Falling back to standard single-period evaluation.")
                 return self._evaluate_standard(strategy_gene, strategy_name)
             
