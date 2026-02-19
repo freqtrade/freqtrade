@@ -194,9 +194,12 @@ class FitnessEvaluator:
                 f"(minimum {min_total} days needed). Cannot auto-adjust.")
             return None
         
-        # Scale proportionally
+        # Scale proportionally, ensuring both minimums are met
         ratio = train_days / required_days
-        adjusted_train = max(MIN_TRAIN_DAYS, int(available_days * ratio))
+        adjusted_train = min(
+            available_days - MIN_VAL_DAYS,
+            max(MIN_TRAIN_DAYS, int(available_days * ratio))
+        )
         adjusted_val = max(MIN_VAL_DAYS, available_days - adjusted_train)
         
         # Make sure they actually fit

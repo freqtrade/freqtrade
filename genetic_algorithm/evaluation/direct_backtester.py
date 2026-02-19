@@ -375,6 +375,9 @@ class DirectBacktester:
             config_pairs = self.backtest_config.get('pairs', [])
             if config_pairs and '/' in config_pairs[0]:
                 stake_currency = config_pairs[0].split('/')[1]
+            else:
+                logger.warning(f"Could not derive stake currency from pairs {config_pairs}, "
+                             f"defaulting to '{stake_currency}'")
             
             # Create exchange configuration
             exchange_config = {
