@@ -222,6 +222,16 @@ class DirectBacktester:
         if not timeframes:
             timeframes = ['5m']
         
+        # Include multi-timeframe timeframes when enabled (consistent with
+        # _validate_data_exists) so that higher-TF data with wider history
+        # contributes to the effective range instead of being ignored.
+        multi_tf_config = self.config.get('multi_timeframe', {})
+        if multi_tf_config.get('enabled', False):
+            multi_tf_available = multi_tf_config.get('available', [])
+            for tf in multi_tf_available:
+                if tf not in timeframes:
+                    timeframes.append(tf)
+        
         # Skip for test pairs
         if any('UNITTEST' in p for p in pairs):
             return self.backtest_config.get('timerange', '')
