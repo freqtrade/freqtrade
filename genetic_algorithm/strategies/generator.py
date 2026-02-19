@@ -6,10 +6,13 @@ representations to FreqTrade strategy code.
 """
 
 import random
+import logging
 from typing import Dict, Any, List
 
 from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
+
+logger = logging.getLogger(__name__)
 
 
 class StrategyGenerator:
@@ -397,6 +400,7 @@ class {strategy_name}(IStrategy):
         # Build condition expressions, filtering out conditions that reference non-existent indicators
         condition_exprs = []
         valid_conditions = []
+        filtered_conditions = []
         
         for i, cond in enumerate(conditions):
             # Validate that the condition's indicator exists in the strategy
@@ -405,9 +409,21 @@ class {strategy_name}(IStrategy):
                 if expr:
                     condition_exprs.append(expr)
                     valid_conditions.append(cond)
+            else:
+                # Log filtered condition for debugging
+                filtered_conditions.append(cond.indicator)
+                logger.debug(f"Filtered out condition referencing non-existent indicator: {cond.indicator}")
+        
+        # Log summary if conditions were filtered
+        if filtered_conditions:
+            indicator_types = [ind.type for ind in indicators]
+            logger.warning(f"Filtered {len(filtered_conditions)} condition(s) referencing missing indicators: {filtered_conditions}. "
+                         f"Available indicators: {indicator_types}")
         
         # If no valid conditions, create a default safe condition
         if not condition_exprs:
+            signal_type = 'entry' if is_entry else 'exit'
+            logger.warning(f"No valid {signal_type} conditions found. Using fallback volume-based condition.")
             # Use a volume-above-average condition as fallback to avoid always-true signal
             return f"""        # Fallback condition: volume above 20-period average
         dataframe['volume_sma'] = dataframe['volume'].rolling(20).mean()
