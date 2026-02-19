@@ -18,25 +18,6 @@ class IndicatorGene:
     parameters: Dict[str, Any]  # indicator-specific parameters
     weight: float = 1.0  # importance weight
     instance_id: Optional[str] = None  # Unique instance identifier (e.g., 'RSI_0', 'RSI_1')
-    
-    def mutate(self, mutation_rate: float, param_ranges: Dict[str, tuple]) -> 'IndicatorGene':
-        """
-        Mutate indicator parameters.
-        
-        Args:
-            mutation_rate: Probability of mutation
-            param_ranges: Valid parameter ranges for this indicator type
-            
-        Returns:
-            Mutated indicator gene
-        """
-        # TODO: Implement parameter mutation
-        pass
-    
-    def to_code(self) -> str:
-        """Generate Python code for this indicator."""
-        # TODO: Convert to FreqTrade indicator code
-        pass
 
 
 @dataclass
@@ -47,11 +28,6 @@ class ConditionGene:
     operator: str  # Comparison operator: '<', '>', 'cross_above', 'cross_below'
     threshold: float  # Threshold value
     logic: str = 'AND'  # Logic operator: 'AND', 'OR'
-    
-    def to_code(self) -> str:
-        """Generate Python code for this condition."""
-        # TODO: Convert to FreqTrade condition code
-        pass
 
 
 @dataclass

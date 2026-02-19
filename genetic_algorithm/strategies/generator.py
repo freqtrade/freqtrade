@@ -6,10 +6,13 @@ representations to FreqTrade strategy code.
 """
 
 import random
+import logging
 from typing import Dict, Any, List
 
 from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
+
+logger = logging.getLogger(__name__)
 
 
 class StrategyGenerator:
@@ -272,6 +275,13 @@ class StrategyGenerator:
         Returns:
             Python code as string
         """
+        # CRITICAL FIX: Ensure all indicators referenced in conditions actually exist
+        # This is a safety net in case mutation/crossover created mismatches
+        strategy_gene.ensure_indicators_for_conditions(self.indicator_config)
+        
+        # Re-assign instance IDs after ensuring indicators exist
+        strategy_gene.assign_instance_ids()
+        
         strategy_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
         
         # Generate indicator code
@@ -394,20 +404,42 @@ class {strategy_name}(IStrategy):
         
         signal_col = 'enter_long' if is_entry else 'exit_long'
         
-        # Build condition expressions
+        # Build condition expressions, filtering out conditions that reference non-existent indicators
         condition_exprs = []
+        valid_conditions = []
+        filtered_conditions = []
         
         for i, cond in enumerate(conditions):
-            expr = self._generate_single_condition(cond, indicators)
-            if expr:
-                condition_exprs.append(expr)
+            # Validate that the condition's indicator exists in the strategy
+            if self._condition_has_valid_indicator(cond, indicators):
+                expr = self._generate_single_condition(cond, indicators)
+                if expr:
+                    condition_exprs.append(expr)
+                    valid_conditions.append(cond)
+            else:
+                # Log filtered condition for debugging
+                filtered_conditions.append(cond.indicator)
+                logger.debug(f"Filtered out condition referencing non-existent indicator: {cond.indicator}")
         
+        # Log summary if conditions were filtered
+        if filtered_conditions:
+            indicator_types = [ind.type for ind in indicators]
+            logger.warning(f"Filtered {len(filtered_conditions)} condition(s) referencing missing indicators: {filtered_conditions}. "
+                         f"Available indicators: {indicator_types}")
+        
+        # If no valid conditions, create a default safe condition
         if not condition_exprs:
-            return f"        dataframe['{signal_col}'] = 0\n"
+            signal_type = 'entry' if is_entry else 'exit'
+            logger.warning(f"No valid {signal_type} conditions found. Using fallback volume-based condition.")
+            # Use a volume-above-average condition as fallback to avoid always-true signal
+            return f"""        # Fallback condition: volume above 20-period average
+        dataframe['volume_sma'] = dataframe['volume'].rolling(20).mean()
+        dataframe.loc[dataframe['volume'] > dataframe['volume_sma'], '{signal_col}'] = 1
+"""
         
         # Combine conditions based on logic operators
-        # Check if all conditions use the same logic
-        logics = [cond.logic for cond in conditions if hasattr(cond, 'logic')]
+        # Check if all valid conditions use the same logic
+        logics = [cond.logic for cond in valid_conditions if hasattr(cond, 'logic')]
         use_or = logics and logics[0] == 'OR'
         
         # Combine with OR or AND
@@ -423,6 +455,31 @@ class {strategy_name}(IStrategy):
 """
         
         return code
+    
+    def _condition_has_valid_indicator(self, condition: ConditionGene, indicators: List[IndicatorGene]) -> bool:
+        """
+        Check if a condition references an indicator that exists in the strategy.
+        
+        Args:
+            condition: Condition to validate
+            indicators: List of indicators in the strategy
+            
+        Returns:
+            True if the condition's indicator exists, False otherwise
+        """
+        # Extract indicator type from condition reference
+        indicator_ref = condition.indicator
+        indicator_type = indicator_ref.split('_')[0] if '_' in indicator_ref else indicator_ref
+        
+        # Check if any indicator in the list matches this type
+        for ind in indicators:
+            # Match by instance_id if available, otherwise by type
+            if ind.instance_id and ind.instance_id == indicator_ref:
+                return True
+            elif ind.type == indicator_type:
+                return True
+        
+        return False
     
     def _generate_single_condition(self, condition: ConditionGene, indicators: List[IndicatorGene]) -> str:
         """Generate a single condition expression.
