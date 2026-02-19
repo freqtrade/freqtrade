@@ -1,0 +1,235 @@
+"2026-02-19 13:39:16,011 - genetic_algorithm.evaluation.direct_backtester - ERROR - Backtest execution error: 'cci_20'
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'cci_20'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/evaluation/direct_backtester.py", line 478, in _run_backtest_direct
+    backtesting.start()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1841, in start
+    min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1769, in backtest_one_strategy
+    results = self.backtest(
+        processed=preprocessed,
+        start_date=min_date,
+        end_date=max_date,
+    )
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1701, in backtest
+    data: dict = self._get_ohlcv_as_lists(processed)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 487, in _get_ohlcv_as_lists
+    df_analyzed = self.strategy.ft_advise_signals(pair_data, {"pair": pair})
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1763, in ft_advise_signals
+    dataframe = self.advise_entry(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1832, in advise_entry
+    df = self.populate_entry_trend(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated/GAStrategy_Gen1_Ind17.py", line 38, in populate_entry_trend
+    ((dataframe['cci_20'] < -179)) |
+      ~~~~~~~~~^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'cci_20'
+2026-02-19 13:39:16,016 - genetic_algorithm.evaluation.fitness - WARNING - Backtest failed for GAStrategy_Gen1_Ind17: Execution error: 'cci_20'"
+
+
+
+
+
+
+
+"Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'sma_20'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/evaluation/direct_backtester.py", line 478, in _run_backtest_direct
+    backtesting.start()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1841, in start
+    min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1769, in backtest_one_strategy
+    results = self.backtest(
+        processed=preprocessed,
+        start_date=min_date,
+        end_date=max_date,
+    )
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1701, in backtest
+    data: dict = self._get_ohlcv_as_lists(processed)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 487, in _get_ohlcv_as_lists
+    df_analyzed = self.strategy.ft_advise_signals(pair_data, {"pair": pair})
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1763, in ft_advise_signals
+    dataframe = self.advise_entry(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1832, in advise_entry
+    df = self.populate_entry_trend(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated/GAStrategy_Gen1_Ind18.py", line 34, in populate_entry_trend
+    ((dataframe['close'] > dataframe['sma_20']))
+                           ~~~~~~~~~^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'sma_20'
+2026-02-19 13:39:16,272 - genetic_algorithm.evaluation.fitness - WARNING - Backtest failed for GAStrategy_Gen1_Ind18: Execution error: 'sma_20'"
+
+
+
+
+"2026-02-19 13:39:16,526 - genetic_algorithm.evaluation.direct_backtester - ERROR - Backtest execution error: 'rsi_14'
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'rsi_14'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/evaluation/direct_backtester.py", line 478, in _run_backtest_direct
+    backtesting.start()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1841, in start
+    min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1769, in backtest_one_strategy
+    results = self.backtest(
+        processed=preprocessed,
+        start_date=min_date,
+        end_date=max_date,
+    )
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1701, in backtest
+    data: dict = self._get_ohlcv_as_lists(processed)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 487, in _get_ohlcv_as_lists
+    df_analyzed = self.strategy.ft_advise_signals(pair_data, {"pair": pair})
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1763, in ft_advise_signals
+    dataframe = self.advise_entry(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1832, in advise_entry
+    df = self.populate_entry_trend(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated/GAStrategy_Gen1_Ind19.py", line 38, in populate_entry_trend
+    ((dataframe['rsi_14'] < 20))
+      ~~~~~~~~~^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'rsi_14'
+2026-02-19 13:39:16,528 - genetic_algorithm.evaluation.fitness - WARNING - Backtest failed for GAStrategy_Gen1_Ind19: Execution error: 'rsi_14'"
+
+
+"Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'bb_upperband'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/evaluation/direct_backtester.py", line 478, in _run_backtest_direct
+    backtesting.start()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1841, in start
+    min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1769, in backtest_one_strategy
+    results = self.backtest(
+        processed=preprocessed,
+        start_date=min_date,
+        end_date=max_date,
+    )
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1701, in backtest
+    data: dict = self._get_ohlcv_as_lists(processed)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 487, in _get_ohlcv_as_lists
+    df_analyzed = self.strategy.ft_advise_signals(pair_data, {"pair": pair})
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1764, in ft_advise_signals
+    dataframe = self.advise_exit(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1850, in advise_exit
+    df = self.populate_exit_trend(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated/GAStrategy_Gen2_Ind6.py", line 51, in populate_exit_trend
+    ((dataframe['close'] > dataframe['bb_upperband']))
+                           ~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'bb_upperband'
+2026-02-19 13:39:20,491 - genetic_algorithm.evaluation.fitness - WARNING - Backtest failed for GAStrategy_Gen2_Ind6: Execution error: 'bb_upperband'"
+
+
+
+
+"2026-02-19 13:39:22,019 - genetic_algorithm.evaluation.direct_backtester - ERROR - Backtest execution error: 'cci_20'
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'cci_20'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/evaluation/direct_backtester.py", line 478, in _run_backtest_direct
+    backtesting.start()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1841, in start
+    min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1769, in backtest_one_strategy
+    results = self.backtest(
+        processed=preprocessed,
+        start_date=min_date,
+        end_date=max_date,
+    )
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1701, in backtest
+    data: dict = self._get_ohlcv_as_lists(processed)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 487, in _get_ohlcv_as_lists
+    df_analyzed = self.strategy.ft_advise_signals(pair_data, {"pair": pair})
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1763, in ft_advise_signals
+    dataframe = self.advise_entry(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1832, in advise_entry
+    df = self.populate_entry_trend(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated/GAStrategy_Gen2_Ind8.py", line 39, in populate_entry_trend
+    ((dataframe['cci_20'] < -189)) &
+      ~~~~~~~~~^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'cci_20'
+2026-02-19 13:39:22,021 - genetic_algorithm.evaluation.fitness - WARNING - Backtest failed for GAStrategy_Gen2_Ind8: Execution error: 'cci_20'"
