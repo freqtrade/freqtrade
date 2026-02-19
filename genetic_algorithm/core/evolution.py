@@ -81,6 +81,21 @@ class GeneticAlgorithm:
         self.strategy_generator = StrategyGenerator(self.config)
         self.fitness_evaluator = FitnessEvaluator(self.config)
         
+        # Log walk-forward status
+        wf_config = self.config.get('walk_forward', {})
+        if wf_config.get('enabled', False):
+            self.logger.info("="*80)
+            self.logger.info("WALK-FORWARD OPTIMIZATION ENABLED")
+            self.logger.info(f"  Train days: {wf_config.get('train_days')}")
+            self.logger.info(f"  Validation days: {wf_config.get('validation_days')}")
+            self.logger.info(f"  Step days: {wf_config.get('step_days')}")
+            self.logger.info(f"  Mode: {wf_config.get('mode', 'rolling')}")
+            self.logger.info(f"  Aggregation: {wf_config.get('aggregation', 'mean')}")
+            self.logger.info("  Fitness = aggregated validation score (NOT training score)")
+            self.logger.info("="*80)
+        else:
+            self.logger.info("Using standard single-period backtesting (walk-forward disabled)")
+        
         # Initialize visualizer (only if enabled and matplotlib is available)
         self.visualizer = None
         if visualize:
