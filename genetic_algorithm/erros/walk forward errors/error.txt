@@ -1,0 +1,21 @@
+2026-02-19 16:42:04,499 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/BTC, spot, 5m, data starts at 2026-01-20 10:10:00
+2026-02-19 16:42:04,503 - freqtrade.data.history.datahandlers.idatahandler - WARNING - No history for ETH/BTC, spot, 5m found. Use `freqtrade download-data` to download the data
+2026-02-19 16:42:04,522 - freqtrade.data.history.datahandlers.idatahandler - WARNING - LTC/BTC, spot, 5m, data starts at 2026-01-20 10:10:00
+2026-02-19 16:42:04,526 - freqtrade.data.history.datahandlers.idatahandler - WARNING - No history for LTC/BTC, spot, 5m found. Use `freqtrade download-data` to download the data
+2026-02-19 16:42:04,526 - genetic_algorithm.evaluation.direct_backtester - ERROR - Backtest execution error: No data found. Terminating.
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/evaluation/direct_backtester.py", line 478, in _run_backtest_direct
+    backtesting.start()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1831, in start
+    data, timerange = self.load_bt_data()
+                      ~~~~~~~~~~~~~~~~~^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 312, in load_bt_data
+    data = history.load_data(
+        datadir=self.config["datadir"],
+    ...<6 lines>...
+        candle_type=self.config.get("candle_type_def", CandleType.SPOT),
+    )
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/data/history/history_utils.py", line 132, in load_data
+    raise OperationalException("No data found. Terminating.")
+freqtrade.exceptions.OperationalException: No data found. Terminating.

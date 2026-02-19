@@ -1,0 +1,51 @@
+2026-02-19 16:27:57,285 - freqtrade.data.dataprovider - WARNING - No data found for (ETH/BTC, 4h, ).
+2026-02-19 16:27:57,292 - freqtrade.data.dataprovider - INFO - Loading data for LTC/BTC 15m from 2024-12-20 00:00:00 to 2026-02-18 00:00:00
+2026-02-19 16:27:57,303 - freqtrade.data.history.datahandlers.idatahandler - WARNING - LTC/BTC, spot, 15m, data starts at 2026-01-20 10:15:00
+2026-02-19 16:27:57,333 - freqtrade.data.dataprovider - INFO - Loading data for LTC/BTC 4h from 2024-12-20 00:00:00 to 2026-02-18 00:00:00
+2026-02-19 16:27:57,334 - freqtrade.data.history.datahandlers.idatahandler - WARNING - No history for LTC/BTC, spot, 4h found. Use `freqtrade download-data` to download the data
+2026-02-19 16:27:57,335 - freqtrade.data.dataprovider - WARNING - No data found for (LTC/BTC, 4h, ).
+2026-02-19 16:27:57,346 - freqtrade.optimize.backtesting - INFO - Backtesting with data from 2026-01-20 10:10:00 up to 2026-02-18 00:00:00 (28 days).
+2026-02-19 16:27:57,349 - genetic_algorithm.evaluation.direct_backtester - ERROR - Backtest execution error: 'close_4h'
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'close_4h'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/kali/trading/freqtradeForkGA/genetic_algorithm/evaluation/direct_backtester.py", line 478, in _run_backtest_direct
+    backtesting.start()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1841, in start
+    min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1769, in backtest_one_strategy
+    results = self.backtest(
+        processed=preprocessed,
+        start_date=min_date,
+        end_date=max_date,
+    )
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 1701, in backtest
+    data: dict = self._get_ohlcv_as_lists(processed)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/optimize/backtesting.py", line 487, in _get_ohlcv_as_lists
+    df_analyzed = self.strategy.ft_advise_signals(pair_data, {"pair": pair})
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1763, in ft_advise_signals
+    dataframe = self.advise_entry(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/freqtrade/strategy/interface.py", line 1832, in advise_entry
+    df = self.populate_entry_trend(dataframe, metadata)
+  File "/home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated/GAStrategy_Gen1_Ind4.py", line 71, in populate_entry_trend
+    ((dataframe['close_4h'] < dataframe['bb_lowerband_4h'])) &
+      ~~~~~~~~~^^^^^^^^^^^^
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/home/kali/trading/freqtradeForkGA/.venv/lib/python3.13/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'close_4h'
+2026-02-19 16:27:57,353 - genetic_algorithm.evaluation.fitness - WARNING - Backtest failed for GAStrategy_Gen1_Ind4: Execution error: 'close_4h
