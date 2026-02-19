@@ -77,11 +77,11 @@ def test_condition_validation():
     print("\nGenerated Strategy Code:")
     print(code)
     
-    print("\n✅ TEST 1 PASSED: Invalid MACD condition was filtered out\n")
+    print("\n✅ TEST 1 PASSED: Missing MACD indicator was automatically added\n")
 
 
 def test_mixed_valid_invalid_conditions():
-    """Test that valid conditions are kept while invalid ones are filtered."""
+    """Test that missing indicators are added when conditions reference them."""
     
     config = {
         'indicators': {
@@ -124,7 +124,7 @@ def test_mixed_valid_invalid_conditions():
                 threshold=30,
                 logic='AND'
             ),
-            # Invalid condition - MACD doesn't exist
+            # Invalid condition - MACD doesn't exist (will be added)
             ConditionGene(
                 indicator='MACD',
                 operator='cross_above',
@@ -161,17 +161,10 @@ def test_mixed_valid_invalid_conditions():
     # Verify RSI condition is present in entry trend
     assert "rsi_14" in code and "< 30" in code, "Valid RSI entry condition should be present"
     
-    # Verify MACD is not referenced in populate_entry_trend or populate_exit_trend sections
-    # Split code into sections
-    sections = code.split('def populate_')
-    entry_section = [s for s in sections if s.startswith('entry_trend')][0] if any(s.startswith('entry_trend') for s in sections) else ""
-    exit_section = [s for s in sections if s.startswith('exit_trend')][0] if any(s.startswith('exit_trend') for s in sections) else ""
+    # Verify MACD was automatically added
+    assert "'macd']" in code or "macd =" in code, "MACD should be automatically added"
     
-    # MACD should not be in the condition sections (except possibly in populate_indicators)
-    assert 'macd' not in entry_section.lower(), "MACD should not be referenced in entry conditions"
-    assert 'macd' not in exit_section.lower(), "MACD should not be referenced in exit conditions"
-    
-    print("\n✅ TEST 2 PASSED: Valid RSI condition kept, invalid MACD condition filtered\n")
+    print("\n✅ TEST 2 PASSED: Missing MACD indicator was automatically added\n")
 
 
 def test_bbands_columns():

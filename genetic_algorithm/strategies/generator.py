@@ -275,6 +275,13 @@ class StrategyGenerator:
         Returns:
             Python code as string
         """
+        # CRITICAL FIX: Ensure all indicators referenced in conditions actually exist
+        # This is a safety net in case mutation/crossover created mismatches
+        strategy_gene.ensure_indicators_for_conditions(self.indicator_config)
+        
+        # Re-assign instance IDs after ensuring indicators exist
+        strategy_gene.assign_instance_ids()
+        
         strategy_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
         
         # Generate indicator code
