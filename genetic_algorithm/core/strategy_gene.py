@@ -190,9 +190,10 @@ class StrategyGene:
         
         missing_types = self.get_missing_indicators()
         
-        for ind_type in missing_types:
-            # Create a new indicator of this type
-            new_indicator = create_random_indicator(ind_type, indicator_config)
+        for ind_ref in missing_types:
+            # Extract base type from instance_id format (e.g., 'RSI_0' -> 'RSI')
+            base_type = ind_ref.split('_')[0] if '_' in ind_ref else ind_ref
+            new_indicator = create_random_indicator(base_type, indicator_config)
             self.indicators.append(new_indicator)
     
     def assign_instance_ids(self) -> None:
