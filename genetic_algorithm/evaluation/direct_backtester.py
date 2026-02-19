@@ -206,6 +206,88 @@ class DirectBacktester:
         # Validate and auto-download data if enabled
         self._validate_and_download_data()
     
+    def get_available_data_range(self) -> Optional[str]:
+        """
+        Detect the actual available data range from disk for the configured pairs.
+        
+        Intersects the configured timerange with the actual data on disk to produce
+        an effective timerange that can be used for walk-forward window creation.
+        
+        Returns:
+            Effective timerange string (YYYYMMDD-YYYYMMDD), or None if no data found.
+        """
+        pairs = self.backtest_config.get('pairs', [])
+        timeframes = list(self.config.get('strategy_constraints', {}).get('timeframes', ['5m']))
+        timeframe = timeframes[0] if timeframes else '5m'
+        
+        # Skip for test pairs
+        if any('UNITTEST' in p for p in pairs):
+            return self.backtest_config.get('timerange', '')
+        
+        exchange_name = self.backtest_config.get('exchange', self.DEFAULT_EXCHANGE)
+        datadir = self.freqtrade_root / "user_data" / "data" / exchange_name
+        
+        try:
+            from freqtrade.data.history.datahandlers import get_datahandler
+            from freqtrade.enums import CandleType
+            from genetic_algorithm.utils.timerange import parse_timerange, format_date
+            
+            data_handler = get_datahandler(datadir)
+            
+            # Find the common data range across all pairs (intersection)
+            overall_min = None
+            overall_max = None
+            
+            for pair in pairs:
+                min_date, max_date, length = data_handler.ohlcv_data_min_max(
+                    pair, timeframe, CandleType.SPOT
+                )
+                
+                if length == 0:
+                    logger.warning(f"No data on disk for {pair} {timeframe}")
+                    continue
+                
+                # Make datetimes naive for comparison (ohlcv_data_min_max may return tz-aware)
+                min_dt = min_date.replace(tzinfo=None) if min_date.tzinfo else min_date
+                max_dt = max_date.replace(tzinfo=None) if max_date.tzinfo else max_date
+                
+                # Use latest start and earliest end (intersection across pairs)
+                if overall_min is None or min_dt > overall_min:
+                    overall_min = min_dt
+                if overall_max is None or max_dt < overall_max:
+                    overall_max = max_dt
+            
+            if overall_min is None or overall_max is None:
+                logger.warning("Could not determine data range - no data files found")
+                return None
+            
+            logger.info(f"Actual data range on disk: {format_date(overall_min)}-{format_date(overall_max)}")
+            
+            # Intersect with configured timerange
+            config_timerange = self.backtest_config.get('timerange', '')
+            if config_timerange:
+                config_start, config_end = parse_timerange(config_timerange)
+                
+                effective_start = max(overall_min, config_start)
+                effective_end = min(overall_max, config_end)
+                
+                if effective_start >= effective_end:
+                    logger.error(
+                        f"No overlap between config timerange ({config_timerange}) and "
+                        f"available data ({format_date(overall_min)}-{format_date(overall_max)})")
+                    return None
+                
+                effective_timerange = f"{format_date(effective_start)}-{format_date(effective_end)}"
+            else:
+                effective_timerange = f"{format_date(overall_min)}-{format_date(overall_max)}"
+            
+            logger.info(f"Effective data range: {effective_timerange}")
+            return effective_timerange
+            
+        except Exception as e:
+            logger.warning(f"Failed to detect data range: {e}. Using config timerange as fallback.")
+            return self.backtest_config.get('timerange', '')
+    
     def _validate_data_exists(self) -> Dict[str, list]:
         """
         Check if required data files exist for backtesting.
@@ -288,6 +370,15 @@ class DirectBacktester:
             logger.info(f"  Timeframes: {timeframes}")
             logger.info(f"  Exchange: {exchange_name}")
             
+            # Determine stake currency from configured pairs
+            stake_currency = 'USDT'
+            config_pairs = self.backtest_config.get('pairs', [])
+            if config_pairs and '/' in config_pairs[0]:
+                stake_currency = config_pairs[0].split('/')[1]
+            else:
+                logger.warning(f"Could not derive stake currency from pairs {config_pairs}, "
+                             f"defaulting to '{stake_currency}'")
+            
             # Create exchange configuration
             exchange_config = {
                 'exchange': {
@@ -301,7 +392,7 @@ class DirectBacktester:
                 'user_data_dir': self.freqtrade_root / "user_data",
                 'trading_mode': 'spot',
                 'margin_mode': '',
-                'stake_currency': 'USDT',
+                'stake_currency': stake_currency,
                 'dry_run': True,
                 'runmode': 'other',
                 'entry_pricing': {
