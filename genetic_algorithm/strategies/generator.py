@@ -84,7 +84,7 @@ class StrategyGenerator:
         # Random timeframe
         timeframe = random.choice(self.available_timeframes)
         
-        return StrategyGene(
+        strategy = StrategyGene(
             generation=generation,
             individual_id=individual_id,
             indicators=indicators,
@@ -95,6 +95,11 @@ class StrategyGenerator:
             minimal_roi=minimal_roi,
             trailing_stop=random.choice([True, False]),
         )
+        
+        # Assign unique instance IDs to all indicators
+        strategy.assign_instance_ids()
+        
+        return strategy
     
     def _generate_random_indicator(self, indicator_type: str) -> IndicatorGene:
         """Generate a random indicator with appropriate parameters."""
@@ -420,20 +425,52 @@ class {strategy_name}(IStrategy):
         return code
     
     def _generate_single_condition(self, condition: ConditionGene, indicators: List[IndicatorGene]) -> str:
-        """Generate a single condition expression."""
-        # Find the indicator with matching type to get the actual period
+        """Generate a single condition expression.
+        
+        Handles both type-based references (e.g., 'RSI') and instance-based references (e.g., 'RSI_0').
+        """
+        # Extract indicator type from condition reference
+        # Handle both 'RSI' and 'RSI_0' formats
+        indicator_ref = condition.indicator
+        indicator_type = indicator_ref.split('_')[0] if '_' in indicator_ref else indicator_ref
+        
+        # Find the specific indicator instance or use first matching type
+        target_indicator = None
+        for ind in indicators:
+            # Match by instance_id if available, otherwise by type
+            if ind.instance_id and ind.instance_id == indicator_ref:
+                target_indicator = ind
+                break
+            elif ind.type == indicator_type and not target_indicator:
+                target_indicator = ind
+        
+        # Build mapping of indicator types/instances to their parameters
         indicator_periods = {}
         for ind in indicators:
-            if ind.type not in indicator_periods:
-                # Get the period from parameters
-                if ind.type in ['RSI', 'EMA', 'SMA', 'ATR', 'ADX', 'CCI', 'BBANDS']:
-                    indicator_periods[ind.type] = ind.parameters.get('period', 14 if ind.type != 'BBANDS' else 20)
-                elif ind.type == 'STOCH':
-                    indicator_periods[ind.type] = ind.parameters.get('k_period', 14)
+            # Map both type and instance_id to parameters
+            if ind.type in ['RSI', 'EMA', 'SMA', 'ATR', 'ADX', 'CCI', 'BBANDS']:
+                period = ind.parameters.get('period', 14 if ind.type != 'BBANDS' else 20)
+                indicator_periods[ind.type] = period
+                if ind.instance_id:
+                    indicator_periods[ind.instance_id] = period
+            elif ind.type == 'STOCH':
+                k_period = ind.parameters.get('k_period', 14)
+                indicator_periods[ind.type] = k_period
+                if ind.instance_id:
+                    indicator_periods[ind.instance_id] = k_period
         
-        if condition.indicator == 'RSI':
-            # Use actual RSI period if available
-            period = indicator_periods.get('RSI', 14)
+        # Use the specific indicator's parameters if found
+        if target_indicator:
+            if target_indicator.type in ['RSI', 'EMA', 'SMA', 'ATR', 'ADX', 'CCI', 'BBANDS']:
+                period = target_indicator.parameters.get('period', 14 if target_indicator.type != 'BBANDS' else 20)
+                indicator_periods[indicator_ref] = period
+            elif target_indicator.type == 'STOCH':
+                k_period = target_indicator.parameters.get('k_period', 14)
+                indicator_periods[indicator_ref] = k_period
+        
+        if indicator_type == 'RSI':
+            # Use actual RSI period if available (try instance_id first, then type)
+            period = indicator_periods.get(indicator_ref, indicator_periods.get('RSI', 14))
             if condition.operator == 'cross_below':
                 return f"(dataframe['rsi_{period}'] < {condition.threshold})"
             elif condition.operator == 'cross_above':
@@ -443,13 +480,13 @@ class {strategy_name}(IStrategy):
             elif condition.operator == '>':
                 return f"(dataframe['rsi_{period}'] > {condition.threshold})"
         
-        elif condition.indicator == 'MACD':
+        elif indicator_type == 'MACD':
             if condition.operator == 'cross_above':
                 return "(dataframe['macd'] > dataframe['macdsignal'])"
             elif condition.operator == 'cross_below':
                 return "(dataframe['macd'] < dataframe['macdsignal'])"
         
-        elif condition.indicator == 'STOCH':
+        elif indicator_type == 'STOCH':
             if condition.operator == '<':
                 return f"(dataframe['slowk'] < {condition.threshold})"
             elif condition.operator == '>':
@@ -459,23 +496,23 @@ class {strategy_name}(IStrategy):
             elif condition.operator == 'cross_below':
                 return f"(dataframe['slowk'] < dataframe['slowd'])"
         
-        elif condition.indicator == 'CCI':
-            # Use actual CCI period if available
-            period = indicator_periods.get('CCI', 20)
+        elif indicator_type == 'CCI':
+            # Use actual CCI period if available (try instance_id first, then type)
+            period = indicator_periods.get(indicator_ref, indicator_periods.get('CCI', 20))
             if condition.operator == '<':
                 return f"(dataframe['cci_{period}'] < {condition.threshold})"
             elif condition.operator == '>':
                 return f"(dataframe['cci_{period}'] > {condition.threshold})"
         
-        elif condition.indicator == 'ADX':
-            # Use actual ADX period if available
-            period = indicator_periods.get('ADX', 14)
+        elif indicator_type == 'ADX':
+            # Use actual ADX period if available (try instance_id first, then type)
+            period = indicator_periods.get(indicator_ref, indicator_periods.get('ADX', 14))
             if condition.operator == '>':
                 return f"(dataframe['adx_{period}'] > {condition.threshold})"
             elif condition.operator == '<':
                 return f"(dataframe['adx_{period}'] < {condition.threshold})"
         
-        elif condition.indicator == 'BBANDS':
+        elif indicator_type == 'BBANDS':
             # Bollinger Bands conditions
             if condition.operator == 'cross_below':
                 return "(dataframe['close'] < dataframe['bb_lowerband'])"
@@ -486,12 +523,12 @@ class {strategy_name}(IStrategy):
             elif condition.operator == '>':
                 return "(dataframe['close'] > dataframe['bb_middleband'])"
         
-        elif condition.indicator in ['EMA', 'SMA']:
+        elif indicator_type in ['EMA', 'SMA']:
             # Moving average conditions
-            # Use actual period from indicator_periods, default to 20 for MAs
+            # Use actual period from indicator_periods (try instance_id first, then type)
             default_ma_period = 20
-            period = indicator_periods.get(condition.indicator, default_ma_period)
-            col_name = f"{condition.indicator.lower()}_{period}"
+            period = indicator_periods.get(indicator_ref, indicator_periods.get(indicator_type, default_ma_period))
+            col_name = f"{indicator_type.lower()}_{period}"
             if condition.operator == 'cross_above':
                 return f"(dataframe['close'] > dataframe['{col_name}'])"
             elif condition.operator == 'cross_below':

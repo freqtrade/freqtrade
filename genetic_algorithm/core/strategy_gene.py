@@ -17,6 +17,7 @@ class IndicatorGene:
     type: str  # e.g., 'RSI', 'MACD', 'BBANDS'
     parameters: Dict[str, Any]  # indicator-specific parameters
     weight: float = 1.0  # importance weight
+    instance_id: Optional[str] = None  # Unique instance identifier (e.g., 'RSI_0', 'RSI_1')
     
     def mutate(self, mutation_rate: float, param_ranges: Dict[str, tuple]) -> 'IndicatorGene':
         """
@@ -42,7 +43,7 @@ class IndicatorGene:
 class ConditionGene:
     """Represents an entry/exit condition."""
     
-    indicator: str  # Which indicator to use
+    indicator: str  # Which indicator to use (can be instance_id like 'RSI_0' or type like 'RSI')
     operator: str  # Comparison operator: '<', '>', 'cross_above', 'cross_below'
     threshold: float  # Threshold value
     logic: str = 'AND'  # Logic operator: 'AND', 'OR'
@@ -97,7 +98,7 @@ class StrategyGene:
             'generation': self.generation,
             'individual_id': self.individual_id,
             'indicators': [
-                {'type': ind.type, 'parameters': dict(ind.parameters), 'weight': ind.weight}
+                {'type': ind.type, 'parameters': dict(ind.parameters), 'weight': ind.weight, 'instance_id': ind.instance_id}
                 for ind in self.indicators
             ],
             'entry_conditions': [
@@ -133,7 +134,8 @@ class StrategyGene:
             IndicatorGene(
                 type=ind['type'],
                 parameters=ind['parameters'],
-                weight=ind.get('weight', 1.0)
+                weight=ind.get('weight', 1.0),
+                instance_id=ind.get('instance_id')
             )
             for ind in data['indicators']
         ]
@@ -178,22 +180,27 @@ class StrategyGene:
     
     def get_missing_indicators(self) -> List[str]:
         """
-        Find indicator types referenced in conditions but not in indicators list.
+        Find indicator references in conditions that are not in indicators list.
+        Now handles both instance_ids (e.g., 'RSI_0') and type names (e.g., 'RSI').
         
         Returns:
-            List of missing indicator types
+            List of missing indicator references
         """
-        # Get all indicator types present
-        present_types = {ind.type for ind in self.indicators}
+        # Get all indicator instance_ids and types present
+        present_refs = set()
+        for ind in self.indicators:
+            if ind.instance_id:
+                present_refs.add(ind.instance_id)
+            present_refs.add(ind.type)
         
-        # Get all indicator types referenced in conditions
-        referenced_types = set()
+        # Get all indicator references in conditions
+        referenced_refs = set()
         for cond in self.entry_conditions + self.exit_conditions:
-            referenced_types.add(cond.indicator)
+            referenced_refs.add(cond.indicator)
         
-        # Find missing types
-        missing_types = referenced_types - present_types
-        return list(missing_types)
+        # Find missing references
+        missing_refs = referenced_refs - present_refs
+        return list(missing_refs)
     
     def ensure_indicators_for_conditions(self, indicator_config: Dict[str, Any]) -> None:
         """
@@ -211,6 +218,59 @@ class StrategyGene:
             # Create a new indicator of this type
             new_indicator = create_random_indicator(ind_type, indicator_config)
             self.indicators.append(new_indicator)
+    
+    def assign_instance_ids(self) -> None:
+        """
+        Assign unique instance IDs to all indicators.
+        
+        Creates IDs in the format: {type}_{index}
+        E.g., RSI_0, RSI_1, MACD_0, etc.
+        
+        Also updates condition references if they currently use type names
+        to use the new instance IDs.
+        """
+        # Count instances of each type
+        type_counts: Dict[str, int] = {}
+        
+        # Assign instance IDs to indicators
+        for ind in self.indicators:
+            if ind.type not in type_counts:
+                type_counts[ind.type] = 0
+            
+            # Assign instance ID if not already set
+            if not ind.instance_id:
+                ind.instance_id = f"{ind.type}_{type_counts[ind.type]}"
+                type_counts[ind.type] += 1
+            else:
+                # If instance_id already set, still increment counter.
+                # This ensures new IDs don't conflict with existing ones,
+                # though it may result in non-consecutive numbering (gaps).
+                type_counts[ind.type] += 1
+        
+        # Create mapping from type to instance IDs
+        type_to_instances: Dict[str, List[str]] = {}
+        for ind in self.indicators:
+            if ind.type not in type_to_instances:
+                type_to_instances[ind.type] = []
+            type_to_instances[ind.type].append(ind.instance_id)
+        
+        # Update condition references: if a condition references a type name
+        # and there's only one instance of that type, update it to use the instance_id
+        for cond in self.entry_conditions + self.exit_conditions:
+            # If condition references a type name directly
+            if cond.indicator in type_to_instances:
+                instances = type_to_instances[cond.indicator]
+                # If there's only one instance, use it; otherwise keep the type reference
+                if len(instances) == 1:
+                    cond.indicator = instances[0]
+                # If there are multiple instances and we're using type reference,
+                # default to the first instance for backward compatibility.
+                # Note: This is a pragmatic choice. In the future, we could:
+                # - Keep type references as-is and let strategy code handle them
+                # - Use heuristics to pick the "best" instance based on parameters
+                # - Require explicit instance references in all conditions
+                elif len(instances) > 1:
+                    cond.indicator = instances[0]
     
     def calculate_complexity(self) -> int:
         """

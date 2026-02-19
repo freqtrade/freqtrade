@@ -1,0 +1,375 @@
+┌──(.venv)(kali㉿DESKTOP-4FC7D3B)-[~/trading/freqtradeForkGA]
+└─$ python genetic_algorithm/run_ga.py
+📂 Loading configuration from: genetic_algorithm/config/ga_config.yaml
+
+================================================================================
+                    GENETIC ALGORITHM - STRATEGY EVOLUTION
+================================================================================
+
+This script will evolve trading strategies using a Genetic Algorithm.
+The best performing strategies will be identified and saved.
+
+
+================================================================================
+ℹ️  Auto-download enabled: Missing data will be downloaded automatically
+   Exchange: binance
+================================================================================
+✓ Config validation passed
+  Pairs: ['ETH/BTC', 'LTC/BTC']
+  Timerange: 20241220-20260218
+  Population: 20
+  Generations: 4
+
+================================================================================
+CONFIGURATION
+================================================================================
+
+Genetic Algorithm Parameters:
+  Population Size:    20
+  Generations:        4
+  Mutation Rate:      15.00%
+  Crossover Rate:     70.00%
+  Elite Size:         3
+  Selection Method:   tournament
+
+Backtesting Configuration:
+  Trading Pairs:      ETH/BTC, LTC/BTC
+  Stake Amount:       0.05
+  Max Open Trades:    3
+  Fee:                0.100%
+
+Fitness Weights:
+  Profit:             25.00%
+  Sharpe Ratio:       15.00%
+  Drawdown:           15.00%
+  Win Rate:           10.00%
+  Trade Frequency:    10.00%
+
+================================================================================
+
+Visualization: DISABLED
+  (Use --visualize flag to enable)
+
+Press Enter to start evolution, or Ctrl+C to cancel...
+
+
+================================================================================
+STARTING EVOLUTION
+================================================================================
+
+2026-02-19 09:19:45,845 - genetic_algorithm.evaluation.direct_backtester - INFO - ================================================================================
+2026-02-19 09:19:45,845 - genetic_algorithm.evaluation.direct_backtester - INFO - DirectBacktester initialized with config:
+2026-02-19 09:19:45,845 - genetic_algorithm.evaluation.direct_backtester - INFO -   Pairs: ['ETH/BTC', 'LTC/BTC']
+2026-02-19 09:19:45,846 - genetic_algorithm.evaluation.direct_backtester - INFO -   Timerange: 20241220-20260218
+2026-02-19 09:19:45,846 - genetic_algorithm.evaluation.direct_backtester - INFO -   Stake amount: 0.05
+2026-02-19 09:19:45,846 - genetic_algorithm.evaluation.direct_backtester - INFO -   Max open trades: 3
+2026-02-19 09:19:45,846 - genetic_algorithm.evaluation.direct_backtester - INFO -   Fee: 0.001
+2026-02-19 09:19:45,846 - genetic_algorithm.evaluation.direct_backtester - INFO -   Strategy directory: /home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated
+2026-02-19 09:19:45,846 - genetic_algorithm.evaluation.direct_backtester - INFO - ================================================================================
+2026-02-19 09:19:45,846 - genetic_algorithm.evaluation.direct_backtester - INFO - All required data files exist
+2026-02-19 09:19:45,846 - __main__ - INFO - Starting evolution process...
+2026-02-19 09:19:45,846 - GeneticAlgorithm - INFO - Starting evolution...
+2026-02-19 09:19:45,846 - GeneticAlgorithm - INFO - Starting evolution...
+2026-02-19 09:19:45,846 - GeneticAlgorithm - INFO - Population size: 20
+2026-02-19 09:19:45,846 - GeneticAlgorithm - INFO - Population size: 20
+2026-02-19 09:19:45,846 - GeneticAlgorithm - INFO - Generations: 4
+2026-02-19 09:19:45,846 - GeneticAlgorithm - INFO - Generations: 4
+2026-02-19 09:19:45,846 - GeneticAlgorithm - INFO - Mutation rate: 0.15
+2026-02-19 09:19:45,846 - GeneticAlgorithm - INFO - Mutation rate: 0.15
+2026-02-19 09:19:45,847 - GeneticAlgorithm - INFO - Crossover rate: 0.7
+2026-02-19 09:19:45,847 - GeneticAlgorithm - INFO - Crossover rate: 0.7
+2026-02-19 09:19:45,847 - GeneticAlgorithm - INFO - Initializing population with 20 individuals
+2026-02-19 09:19:45,847 - GeneticAlgorithm - INFO - Initializing population with 20 individuals
+2026-02-19 09:19:45,847 - GeneticAlgorithm - INFO - Population initialized successfully
+2026-02-19 09:19:45,847 - GeneticAlgorithm - INFO - Population initialized successfully
+2026-02-19 09:19:45,847 - GeneticAlgorithm - INFO -
+============================================================
+2026-02-19 09:19:45,847 - GeneticAlgorithm - INFO -
+============================================================
+2026-02-19 09:19:45,848 - GeneticAlgorithm - INFO - Generation 1/4
+2026-02-19 09:19:45,848 - GeneticAlgorithm - INFO - Generation 1/4
+2026-02-19 09:19:45,848 - GeneticAlgorithm - INFO - ============================================================
+2026-02-19 09:19:45,848 - GeneticAlgorithm - INFO - ============================================================
+2026-02-19 09:19:45,848 - GeneticAlgorithm - INFO - Evaluating 20 individuals...
+2026-02-19 09:19:45,848 - GeneticAlgorithm - INFO - Evaluating 20 individuals...
+2026-02-19 09:19:46,104 - numexpr.utils - INFO - NumExpr defaulting to 12 threads.
+2026-02-19 09:19:47,268 - genetic_algorithm.evaluation.direct_backtester - INFO - Auto-generated backtest config for GAStrategy_Gen0_Ind0:
+2026-02-19 09:19:47,268 - genetic_algorithm.evaluation.direct_backtester - INFO -   Pairs: ['ETH/BTC', 'LTC/BTC']
+2026-02-19 09:19:47,268 - genetic_algorithm.evaluation.direct_backtester - INFO -   Timerange: 20241220-20260218
+2026-02-19 09:19:47,268 - genetic_algorithm.evaluation.direct_backtester - INFO -   Starting balance: 10 BTC
+2026-02-19 09:19:47,268 - genetic_algorithm.evaluation.direct_backtester - INFO -   Stake amount: 0.05 BTC
+2026-02-19 09:19:47,268 - genetic_algorithm.evaluation.direct_backtester - INFO -   Data directory: /home/kali/trading/freqtradeForkGA/user_data/data/binance
+2026-02-19 09:19:47,269 - genetic_algorithm.evaluation.direct_backtester - INFO -   Max open trades: 3
+2026-02-19 09:19:47,269 - genetic_algorithm.evaluation.direct_backtester - INFO -   Fee: 0.001
+2026-02-19 09:19:47,270 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2026-02-19 09:19:47,278 - freqtrade.exchange.exchange - INFO - Using CCXT 4.5.36
+2026-02-19 09:19:47,279 - freqtrade.exchange.exchange - INFO - Using Exchange "<MagicMock name='mock().name' id='140161482475568'>"
+2026-02-19 09:19:47,279 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Binance'...
+2026-02-19 09:19:47,305 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy GAStrategy_Gen0_Ind0 from '/home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated/GAStrategy_Gen0_Ind0.py'...
+2026-02-19 09:19:47,305 - freqtrade.strategy.hyper - INFO - Found no parameter file.
+2026-02-19 09:19:47,305 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'timeframe' with value from the configuration: 5m.
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value from the configuration: BTC.
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value from the configuration: 0.05.
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'max_open_trades' with value from the configuration: 3.
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {'0': 0.049998429796764575, '30': 0.036458375249055444, '60': 0.013478052408423067}
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 5m
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.1374534711841453
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: False
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.0
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: False
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: False
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: True
+2026-02-19 09:19:47,306 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'limit', 'exit': 'limit', 'stoploss': 'limit', 'stoploss_on_exchange': False, 'stoploss_on_exchange_interval': 60}
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'GTC', 'exit': 'GTC'}
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: BTC
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: 0.05
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 0
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: True
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: False
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: False
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2026-02-19 09:19:47,307 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_open_trades: 3
+2026-02-19 09:19:47,308 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-02-19 09:19:47,311 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from '/home/kali/trading/freqtradeForkGA/freqtrade/plugins/pairlist/StaticPairList.py'...
+2026-02-19 09:19:47,312 - freqtrade.optimize.backtesting - INFO - Using fee 0.1000% from config.
+2026-02-19 09:19:47,339 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/BTC, spot, 5m, data starts at 2026-01-20 08:20:00
+2026-02-19 09:19:47,360 - freqtrade.data.history.datahandlers.idatahandler - WARNING - LTC/BTC, spot, 5m, data starts at 2026-01-20 08:20:00
+2026-02-19 09:19:47,370 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-20 08:20:00 up to 2026-02-18 00:00:00 (28 days).
+2026-02-19 09:19:47,546 - freqtrade.optimize.backtesting - INFO - Dataload complete. Calculating indicators
+2026-02-19 09:19:47,657 - freqtrade.optimize.backtesting - INFO - Running backtesting for Strategy GAStrategy_Gen0_Ind0
+2026-02-19 09:19:47,667 - freqtrade.optimize.backtesting - INFO - Backtesting with data from 2026-01-20 08:20:00 up to 2026-02-18 00:00:00 (28 days).
+2026-02-19 09:19:47,780 - freqtrade.misc - INFO - dumping json to "/home/kali/trading/freqtradeForkGA/user_data/backtest_results/backtest-result-2026-02-19_09-19-47.meta.json"
+Result for strategy GAStrategy_Gen0_Ind0
+                                            BACKTESTING REPORT
+┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃    Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ ETH/BTC │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+│ LTC/BTC │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+│   TOTAL │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└─────────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                         LEFT OPEN TRADES REPORT
+┏━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ TOTAL │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└───────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                               ENTER TAG STATS
+┏━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Enter Tag ┃ Entries ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│     TOTAL │       0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└───────────┴─────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                              EXIT REASON STATS
+┏━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Exit Reason ┃ Exits ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│       TOTAL │     0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└─────────────┴───────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                                      MIXED TAG STATS
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Enter Tag ┃ Exit Reason ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│     TOTAL │             │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└───────────┴─────────────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+No trades made. Your starting balance was 10 BTC, and your stake was 0.05 BTC.
+
+Backtested 2026-01-20 08:20:00 -> 2026-02-18 00:00:00 | Max open trades : 2
+                                                           STRATEGY SUMMARY
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+┃             Strategy ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃     Drawdown ┃
+┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+│ GAStrategy_Gen0_Ind0 │      0 │         0.00 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │ 0 BTC  0.00% │
+└──────────────────────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┴──────────────┘
+2026-02-19 09:19:47,805 - genetic_algorithm.evaluation.direct_backtester - INFO - Parsed GAStrategy_Gen0_Ind0: profit=0.0000%, trades=0, win_rate=0.00%
+2026-02-19 09:19:47,805 - genetic_algorithm.evaluation.fitness - INFO - Strategy GAStrategy_Gen0_Ind0: fitness=0.0000, profit=0.00%, trades=0, complexity=5
+2026-02-19 09:19:47,806 - genetic_algorithm.evaluation.direct_backtester - INFO - Auto-generated backtest config for GAStrategy_Gen0_Ind1:
+2026-02-19 09:19:47,806 - genetic_algorithm.evaluation.direct_backtester - INFO -   Pairs: ['ETH/BTC', 'LTC/BTC']
+2026-02-19 09:19:47,806 - genetic_algorithm.evaluation.direct_backtester - INFO -   Timerange: 20241220-20260218
+2026-02-19 09:19:47,806 - genetic_algorithm.evaluation.direct_backtester - INFO -   Starting balance: 10 BTC
+2026-02-19 09:19:47,806 - genetic_algorithm.evaluation.direct_backtester - INFO -   Stake amount: 0.05 BTC
+2026-02-19 09:19:47,806 - genetic_algorithm.evaluation.direct_backtester - INFO -   Data directory: /home/kali/trading/freqtradeForkGA/user_data/data/binance
+2026-02-19 09:19:47,806 - genetic_algorithm.evaluation.direct_backtester - INFO -   Max open trades: 3
+2026-02-19 09:19:47,806 - genetic_algorithm.evaluation.direct_backtester - INFO -   Fee: 0.001
+2026-02-19 09:19:47,807 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2026-02-19 09:19:47,807 - freqtrade.exchange.exchange - INFO - Using CCXT 4.5.36
+2026-02-19 09:19:47,808 - freqtrade.exchange.exchange - INFO - Using Exchange "<MagicMock name='mock().name' id='140161482783248'>"
+2026-02-19 09:19:47,808 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Binance'...
+2026-02-19 09:19:47,820 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy GAStrategy_Gen0_Ind1 from '/home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated/GAStrategy_Gen0_Ind1.py'...
+2026-02-19 09:19:47,820 - freqtrade.strategy.hyper - INFO - Found no parameter file.
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'timeframe' with value from the configuration: 5m.
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value from the configuration: BTC.
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value from the configuration: 0.05.
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'max_open_trades' with value from the configuration: 3.
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {'0': 0.04564428546526847, '30': 0.02264014708494132, '60': 0.0337356398694778}
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 5m
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.16214669981686924
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: False
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.0
+2026-02-19 09:19:47,820 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: False
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: False
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: True
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'limit', 'exit': 'limit', 'stoploss': 'limit', 'stoploss_on_exchange': False, 'stoploss_on_exchange_interval': 60, 'emergency_exit': 'market'}
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'GTC', 'exit': 'GTC'}
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: BTC
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: 0.05
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 0
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: True
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: False
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: False
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2026-02-19 09:19:47,821 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_open_trades: 3
+2026-02-19 09:19:47,821 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-02-19 09:19:47,824 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from '/home/kali/trading/freqtradeForkGA/freqtrade/plugins/pairlist/StaticPairList.py'...
+2026-02-19 09:19:47,825 - freqtrade.optimize.backtesting - INFO - Using fee 0.1000% from config.
+2026-02-19 09:19:47,834 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/BTC, spot, 5m, data starts at 2026-01-20 08:20:00
+2026-02-19 09:19:47,850 - freqtrade.data.history.datahandlers.idatahandler - WARNING - LTC/BTC, spot, 5m, data starts at 2026-01-20 08:20:00
+2026-02-19 09:19:47,861 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-20 08:20:00 up to 2026-02-18 00:00:00 (28 days).
+2026-02-19 09:19:47,944 - freqtrade.optimize.backtesting - INFO - Dataload complete. Calculating indicators
+2026-02-19 09:19:48,048 - freqtrade.optimize.backtesting - INFO - Running backtesting for Strategy GAStrategy_Gen0_Ind1
+2026-02-19 09:19:48,060 - freqtrade.optimize.backtesting - INFO - Backtesting with data from 2026-01-20 08:20:00 up to 2026-02-18 00:00:00 (28 days).
+2026-02-19 09:19:48,167 - freqtrade.misc - INFO - dumping json to "/home/kali/trading/freqtradeForkGA/user_data/backtest_results/backtest-result-2026-02-19_09-19-48.meta.json"
+Result for strategy GAStrategy_Gen0_Ind1
+                                            BACKTESTING REPORT
+┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃    Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ ETH/BTC │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+│ LTC/BTC │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+│   TOTAL │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└─────────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                         LEFT OPEN TRADES REPORT
+┏━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ TOTAL │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└───────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                               ENTER TAG STATS
+┏━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Enter Tag ┃ Entries ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│     TOTAL │       0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└───────────┴─────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                              EXIT REASON STATS
+┏━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Exit Reason ┃ Exits ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│       TOTAL │     0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└─────────────┴───────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                                      MIXED TAG STATS
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Enter Tag ┃ Exit Reason ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│     TOTAL │             │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└───────────┴─────────────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+No trades made. Your starting balance was 10 BTC, and your stake was 0.05 BTC.
+
+Backtested 2026-01-20 08:20:00 -> 2026-02-18 00:00:00 | Max open trades : 2
+                                                           STRATEGY SUMMARY
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+┃             Strategy ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃     Drawdown ┃
+┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+│ GAStrategy_Gen0_Ind1 │      0 │         0.00 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │ 0 BTC  0.00% │
+└──────────────────────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┴──────────────┘
+2026-02-19 09:19:48,191 - genetic_algorithm.evaluation.direct_backtester - INFO - Parsed GAStrategy_Gen0_Ind1: profit=0.0000%, trades=0, win_rate=0.00%
+2026-02-19 09:19:48,192 - genetic_algorithm.evaluation.fitness - INFO - Strategy GAStrategy_Gen0_Ind1: fitness=0.0000, profit=0.00%, trades=0, complexity=6
+2026-02-19 09:19:48,192 - genetic_algorithm.evaluation.direct_backtester - INFO - Auto-generated backtest config for GAStrategy_Gen0_Ind2:
+2026-02-19 09:19:48,192 - genetic_algorithm.evaluation.direct_backtester - INFO -   Pairs: ['ETH/BTC', 'LTC/BTC']
+2026-02-19 09:19:48,192 - genetic_algorithm.evaluation.direct_backtester - INFO -   Timerange: 20241220-20260218
+2026-02-19 09:19:48,192 - genetic_algorithm.evaluation.direct_backtester - INFO -   Starting balance: 10 BTC
+2026-02-19 09:19:48,192 - genetic_algorithm.evaluation.direct_backtester - INFO -   Stake amount: 0.05 BTC
+2026-02-19 09:19:48,192 - genetic_algorithm.evaluation.direct_backtester - INFO -   Data directory: /home/kali/trading/freqtradeForkGA/user_data/data/binance
+2026-02-19 09:19:48,192 - genetic_algorithm.evaluation.direct_backtester - INFO -   Max open trades: 3
+2026-02-19 09:19:48,192 - genetic_algorithm.evaluation.direct_backtester - INFO -   Fee: 0.001
+2026-02-19 09:19:48,193 - freqtrade.exchange.exchange - INFO - Instance is running with dry_run enabled
+2026-02-19 09:19:48,193 - freqtrade.exchange.exchange - INFO - Using CCXT 4.5.36
+2026-02-19 09:19:48,194 - freqtrade.exchange.exchange - INFO - Using Exchange "<MagicMock name='mock().name' id='140160355671008'>"
+2026-02-19 09:19:48,194 - freqtrade.resolvers.exchange_resolver - INFO - Using resolved exchange 'Binance'...
+2026-02-19 09:19:48,205 - freqtrade.resolvers.iresolver - INFO - Using resolved strategy GAStrategy_Gen0_Ind2 from '/home/kali/trading/freqtradeForkGA/user_data/strategies/ga_generated/GAStrategy_Gen0_Ind2.py'...
+2026-02-19 09:19:48,205 - freqtrade.strategy.hyper - INFO - Found no parameter file.
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'timeframe' with value from the configuration: 5m.
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_currency' with value from the configuration: BTC.
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'stake_amount' with value from the configuration: 0.05.
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Override strategy 'max_open_trades' with value from the configuration: 3.
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using minimal_roi: {'0': 0.07828539293563001, '30': 0.01836352508624209, '60': 0.014655217523561546}
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using timeframe: 5m
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stoploss: -0.16506652179715792
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop: True
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_stop_positive_offset: 0.0
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using trailing_only_offset_is_reached: False
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_custom_stoploss: False
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using process_only_new_candles: True
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_types: {'entry': 'limit', 'exit': 'limit', 'stoploss': 'limit', 'stoploss_on_exchange': False, 'stoploss_on_exchange_interval': 60, 'emergency_exit': 'market'}
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using order_time_in_force: {'entry': 'GTC', 'exit': 'GTC'}
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_currency: BTC
+2026-02-19 09:19:48,206 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using stake_amount: 0.05
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using startup_candle_count: 0
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using use_exit_signal: True
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_only: False
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_roi_if_entry_signal: False
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using exit_profit_offset: 0.0
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using disable_dataframe_checks: False
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using ignore_buying_expired_candle_after: 0
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using position_adjustment_enable: False
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_entry_position_adjustment: -1
+2026-02-19 09:19:48,207 - freqtrade.resolvers.strategy_resolver - INFO - Strategy using max_open_trades: 3
+2026-02-19 09:19:48,207 - freqtrade.configuration.config_validation - INFO - Validating configuration ...
+2026-02-19 09:19:48,210 - freqtrade.resolvers.iresolver - INFO - Using resolved pairlist StaticPairList from '/home/kali/trading/freqtradeForkGA/freqtrade/plugins/pairlist/StaticPairList.py'...
+2026-02-19 09:19:48,210 - freqtrade.optimize.backtesting - INFO - Using fee 0.1000% from config.
+2026-02-19 09:19:48,218 - freqtrade.data.history.datahandlers.idatahandler - WARNING - ETH/BTC, spot, 5m, data starts at 2026-01-20 08:20:00
+2026-02-19 09:19:48,234 - freqtrade.data.history.datahandlers.idatahandler - WARNING - LTC/BTC, spot, 5m, data starts at 2026-01-20 08:20:00
+2026-02-19 09:19:48,243 - freqtrade.optimize.backtesting - INFO - Loading data from 2026-01-20 08:20:00 up to 2026-02-18 00:00:00 (28 days).
+2026-02-19 09:19:48,405 - freqtrade.optimize.backtesting - INFO - Dataload complete. Calculating indicators
+2026-02-19 09:19:48,502 - freqtrade.optimize.backtesting - INFO - Running backtesting for Strategy GAStrategy_Gen0_Ind2
+2026-02-19 09:19:48,511 - freqtrade.optimize.backtesting - INFO - Backtesting with data from 2026-01-20 08:20:00 up to 2026-02-18 00:00:00 (28 days).
+2026-02-19 09:19:48,617 - freqtrade.misc - INFO - dumping json to "/home/kali/trading/freqtradeForkGA/user_data/backtest_results/backtest-result-2026-02-19_09-19-48.meta.json"
+Result for strategy GAStrategy_Gen0_Ind2
+                                            BACKTESTING REPORT
+┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃    Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ ETH/BTC │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+│ LTC/BTC │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+│   TOTAL │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└─────────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                         LEFT OPEN TRADES REPORT
+┏━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ TOTAL │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└───────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                               ENTER TAG STATS
+┏━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Enter Tag ┃ Entries ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│     TOTAL │       0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└───────────┴─────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                              EXIT REASON STATS
+┏━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Exit Reason ┃ Exits ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│       TOTAL │     0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└─────────────┴───────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+                                                      MIXED TAG STATS
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Enter Tag ┃ Exit Reason ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│     TOTAL │             │      0 │          0.0 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │
+└───────────┴─────────────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┘
+No trades made. Your starting balance was 10 BTC, and your stake was 0.05 BTC.
+
+Backtested 2026-01-20 08:20:00 -> 2026-02-18 00:00:00 | Max open trades : 2
+                                                           STRATEGY SUMMARY
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+┃             Strategy ┃ Trades ┃ Avg Profit % ┃ Tot Profit BTC ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃     Drawdown ┃
+┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+│ GAStrategy_Gen0_Ind2 │      0 │         0.00 │     0.00000000 │          0.0 │         0:00 │    0     0     0     0 │ 0 BTC  0.00% │
+└──────────────────────┴────────┴──────────────┴────────────────┴──────────────┴──────────────┴────────────────────────┴──────────────┘

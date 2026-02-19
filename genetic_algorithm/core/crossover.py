@@ -84,6 +84,10 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
         child1_gene.ensure_indicators_for_conditions(indicator_config)
         child2_gene.ensure_indicators_for_conditions(indicator_config)
     
+    # Reassign instance IDs after crossover to avoid ID conflicts
+    child1_gene.assign_instance_ids()
+    child2_gene.assign_instance_ids()
+    
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
@@ -179,6 +183,10 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
         child1_gene.ensure_indicators_for_conditions(indicator_config)
         child2_gene.ensure_indicators_for_conditions(indicator_config)
     
+    # Reassign instance IDs after crossover to avoid ID conflicts
+    child1_gene.assign_instance_ids()
+    child2_gene.assign_instance_ids()
+    
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
@@ -242,6 +250,10 @@ def component_crossover(parent1: Individual, parent2: Individual,
         indicator_config = config.get('indicators', {})
         child1_gene.ensure_indicators_for_conditions(indicator_config)
         child2_gene.ensure_indicators_for_conditions(indicator_config)
+    
+    # Reassign instance IDs after crossover to avoid ID conflicts
+    child1_gene.assign_instance_ids()
+    child2_gene.assign_instance_ids()
     
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))

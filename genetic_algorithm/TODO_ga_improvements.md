@@ -1,6 +1,6 @@
 # GA Improvements TODO
 
-Last Updated: 2026-02-18 (Session 3)  
+Last Updated: 2026-02-18 (Session 4 - Instance-Based Encoding Completed)  
 Based on: Comprehensive code audit + deep code review of all core modules
 
 ---
@@ -36,9 +36,21 @@ These bugs silently corrupt the evolutionary process. **Fix before any other wor
 
 ---
 
-## 🎯 NEXT STEP: Medium-Scope Improvements
+## 🎯 NEXT STEP: Major Features
 
-> **All critical bugs and quick wins completed!** The genetic algorithm now has a solid foundation. Next priorities are performance improvements and enhanced representation.
+> **All critical bugs, quick wins, and medium-scope improvements completed!** 
+> 
+> The genetic algorithm now has:
+> - ✅ No critical bugs
+> - ✅ Solid performance with distance caching and complexity penalties
+> - ✅ Clear instance-based indicator encoding
+> 
+> **Next priority:** Implement major features to improve strategy quality and prevent overfitting.
+> 
+> **Recommended next steps (in order of priority):**
+> 1. **Walk-Forward Optimization** (⭐⭐⭐⭐⭐) - Critical anti-overfitting measure
+> 2. **Multi-Timeframe Strategies** (⭐⭐⭐⭐⭐) - Industry standard for robust strategies
+> 3. **NSGA-II Multiobjective Evolution** (⭐⭐⭐⭐) - No fitness weight tuning needed
 
 ---
 
@@ -90,11 +102,35 @@ These bugs silently corrupt the evolutionary process. **Fix before any other wor
 
 ### Encoding & Representation
 
-- [ ] **Upgrade to instance-based indicator encoding**  
-  Current: Indicators referenced by type name (ambiguous if same type used twice)  
-  New: Unique instance IDs: `RSI_0(period=7)`, `RSI_1(period=21)`  
-  Benefits: Clear crossover semantics, better genetic distance metrics, no ambiguity in condition references  
-  Effort: 2-3 days
+- [x] **Upgrade to instance-based indicator encoding** (Commit: cbee8d3)  
+  Status: ✅ COMPLETED  
+  Implementation:
+  - Added `instance_id` field to `IndicatorGene` (e.g., 'RSI_0', 'RSI_1')
+  - Added `assign_instance_ids()` method to `StrategyGene` that assigns unique IDs
+  - Updated `ConditionGene` to reference instance IDs instead of just type names
+  - Modified strategy generator to call `assign_instance_ids()` after creation
+  - Updated all crossover operators (single_point, uniform, component) to reassign IDs
+  - Updated mutation operators (mutate_indicators, mutate_conditions) to reassign IDs
+  - Updated `get_missing_indicators()` to handle both instance IDs and type references
+  - Added comprehensive test suite (`test_instance_encoding.py`) with 7 tests
+  - Verified backward compatibility with existing tests
+  
+  Benefits Achieved:
+  - ✅ Clear crossover semantics when mixing indicators of same type
+  - ✅ No ambiguity in condition references
+  - ✅ Better foundation for future genetic distance metrics
+  - ✅ Supports multiple instances of same indicator type (e.g., EMA_0, EMA_1, EMA_2)
+  
+  Files Modified:
+  - `core/strategy_gene.py`: Added instance_id field and assign_instance_ids() method
+  - `core/crossover.py`: Added instance ID reassignment in all crossover functions
+  - `core/mutation.py`: Added instance ID reassignment in mutation functions
+  - `strategies/generator.py`: Call assign_instance_ids() after strategy generation
+  - `test_instance_encoding.py`: Comprehensive test coverage
+  
+  Next Steps:
+  - Consider using instance IDs in genetic distance calculation for better diversity metrics
+  - Consider updating strategy code generation to use instance IDs in comments for clarity
 
 ### Previously Completed ✅
 
