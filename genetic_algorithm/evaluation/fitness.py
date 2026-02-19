@@ -174,10 +174,18 @@ class FitnessEvaluator:
             # Create a hash for caching (using SHA-256 for robustness)
             strategy_hash = hashlib.sha256(strategy_code.encode()).hexdigest()[:16]
             
-            # Create walk-forward windows
+            # Create walk-forward windows using actual data range
             original_timerange = self.backtest_config.get('timerange', '')
+            
+            # Detect actual data range to avoid creating windows outside available data
+            effective_timerange = self.backtester.get_available_data_range()
+            if effective_timerange and effective_timerange != original_timerange:
+                logger.info(f"Adjusted timerange from config ({original_timerange}) "
+                           f"to effective data range ({effective_timerange})")
+            timerange_for_windows = effective_timerange or original_timerange
+            
             windows = create_walk_forward_windows(
-                timerange=original_timerange,
+                timerange=timerange_for_windows,
                 train_days=self.walk_forward_config['train_days'],
                 validation_days=self.walk_forward_config['validation_days'],
                 step_days=self.walk_forward_config['step_days'],
