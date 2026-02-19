@@ -213,6 +213,13 @@ class FitnessEvaluator:
             w_trades * norm_trades
         )
         
+        # ==================================================================================
+        # BONUS STACKING STRATEGY:
+        # Multiple bonuses can stack multiplicatively to reward exceptional strategies.
+        # Maximum possible bonus: ~2.01x (1.15 × 1.1 × 1.2 × 1.15 = 1.74x to 2.01x)
+        # This is intentional - truly exceptional strategies deserve strong amplification.
+        # ==================================================================================
+        
         # Robustness bonus: reward consistency (good Sortino and profit factor together)
         if sortino > 1.0 and profit_factor > 1.5:
             robustness_bonus = 1.0 + (0.05 * min(sortino, 3.0))  # Up to 15% bonus
