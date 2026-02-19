@@ -99,7 +99,7 @@ class StrategyGenerator:
             max_tfs = self.multi_tf_config.get('max_timeframes', 2)
             # Filter to only higher TFs than base
             valid_itfs = [tf for tf in available_itfs if is_higher_timeframe(tf, timeframe)]
-            if valid_itfs:
+            if valid_itfs and random.random() < 0.7:  # 70% chance to add informative TFs
                 num_itfs = random.randint(1, min(max_tfs, len(valid_itfs)))
                 informative_timeframes = random.sample(valid_itfs, num_itfs)
                 # Add informative indicators
@@ -361,9 +361,7 @@ class StrategyGenerator:
         
         # Build informative_pairs method body
         if informative_indicators:
-            # Collect unique (pair_placeholder, timeframe) pairs
             inf_tfs = sorted(set(ind.timeframe for ind in informative_indicators))
-            pairs_list = ', '.join(f'("{"{pair}"}", "{tf}")' for tf in inf_tfs)
             informative_pairs_method = f"""
     def informative_pairs(self):
         \"\"\"Define additional informative pair/interval combinations.\"\"\"

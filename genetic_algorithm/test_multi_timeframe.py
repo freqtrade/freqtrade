@@ -273,15 +273,15 @@ def test_generator_with_multi_tf():
 # 7. Code generation with multi-TF
 # ===========================================================================
 def test_code_generation_single_tf():
-    """Single-TF strategy code should not contain merge_informative_pair."""
+    """Single-TF strategy code should not reference informative pair logic."""
     config = _make_config()
     gen = StrategyGenerator(config)
     sg = _make_base_strategy()
     
     code = gen.generate_strategy_code(sg)
-    assert 'merge_informative_pair' in code  # Import is always present
+    assert 'merge_informative_pair' in code  # Import always present in generated code
     assert 'def informative_pairs(self):' in code
-    assert 'return []' in code  # No informative pairs
+    assert 'return []' in code  # No informative pairs for single-TF
 
 
 def test_code_generation_multi_tf():
