@@ -211,20 +211,27 @@ class FitnessEvaluator:
                     # Cache the training result
                     self._wf_cache[cache_key] = train_result
                 
+                # Skip validation if training failed (e.g., no data for this window)
+                # This avoids wasting time on a validation backtest that can't be used
+                min_train_trades = self.walk_forward_config.get('min_train_trades', 10)
+                if not train_result.success:
+                    logger.warning(f"Window {window.window_index}: Training backtest failed "
+                                 f"({train_result.error_message}). Skipping window.")
+                    validation_fitness_scores.append(0.0)
+                    continue
+                
+                if train_result.total_trades < min_train_trades:
+                    logger.warning(f"Window {window.window_index}: Insufficient training trades "
+                                 f"({train_result.total_trades} < {min_train_trades}). Using penalty fitness.")
+                    validation_fitness_scores.append(0.0)
+                    continue
+                
                 # Run backtest on validation window (never cached - validation is key metric)
                 val_result = self._backtest_with_timerange(
                     strategy_code,
                     generated_name,
                     window.val_timerange
                 )
-                
-                # Check minimum trades requirement for training
-                min_train_trades = self.walk_forward_config.get('min_train_trades', 10)
-                if train_result.total_trades < min_train_trades:
-                    logger.warning(f"Window {window.window_index}: Insufficient training trades "
-                                 f"({train_result.total_trades} < {min_train_trades}). Using penalty fitness.")
-                    validation_fitness_scores.append(0.0)
-                    continue
                 
                 # Calculate fitness for validation data
                 if val_result.success and val_result.total_trades > 0:
