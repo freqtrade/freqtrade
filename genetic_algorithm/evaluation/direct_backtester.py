@@ -214,7 +214,16 @@ class DirectBacktester:
             Dictionary with 'missing' list of (pair, timeframe) tuples that are missing
         """
         pairs = self.backtest_config.get('pairs', [])
-        timeframes = self.config.get('strategy_constraints', {}).get('timeframes', ['5m'])
+        timeframes = list(self.config.get('strategy_constraints', {}).get('timeframes', ['5m']))
+        
+        # Include multi-timeframe timeframes when enabled
+        multi_tf_config = self.config.get('multi_timeframe', {})
+        if multi_tf_config.get('enabled', False):
+            multi_tf_available = multi_tf_config.get('available', [])
+            for tf in multi_tf_available:
+                if tf not in timeframes:
+                    timeframes.append(tf)
+            logger.info(f"Multi-timeframe enabled, validating timeframes: {timeframes}")
         
         # Skip validation for test pairs
         if any('UNITTEST' in p for p in pairs):
