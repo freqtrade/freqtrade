@@ -171,8 +171,8 @@ class FitnessEvaluator:
             strategy_code = self.strategy_generator.generate_strategy_code(strategy_gene)
             generated_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
             
-            # Create a hash for caching
-            strategy_hash = hashlib.md5(strategy_code.encode()).hexdigest()[:16]
+            # Create a hash for caching (using SHA-256 for robustness)
+            strategy_hash = hashlib.sha256(strategy_code.encode()).hexdigest()[:16]
             
             # Create walk-forward windows
             original_timerange = self.backtest_config.get('timerange', '')
@@ -277,13 +277,14 @@ class FitnessEvaluator:
             avg_metrics['num_windows'] = len(windows)
             avg_metrics['avg_train_fitness'] = sum(train_fitness_scores) / len(train_fitness_scores) if train_fitness_scores else 0.0
             avg_metrics['avg_val_fitness'] = sum(validation_fitness_scores) / len(validation_fitness_scores) if validation_fitness_scores else 0.0
-            avg_metrics['fitness_degradation'] = avg_metrics['avg_train_fitness'] - avg_metrics['avg_val_fitness']
+            # Train-val gap: Positive = training better (potential overfit), Negative = validation better (rare but good)
+            avg_metrics['train_val_gap'] = avg_metrics['avg_train_fitness'] - avg_metrics['avg_val_fitness']
             
             logger.info(f"Walk-forward complete for {generated_name}: "
                        f"Final fitness={final_fitness:.4f} "
                        f"(train avg={avg_metrics['avg_train_fitness']:.4f}, "
                        f"val avg={avg_metrics['avg_val_fitness']:.4f}, "
-                       f"degradation={avg_metrics['fitness_degradation']:.4f})")
+                       f"gap={avg_metrics['train_val_gap']:.4f})")
             logger.info(f"Walk-forward cache stats: {self._wf_cache_hits} hits, {self._wf_cache_misses} misses")
             
             return final_fitness, avg_metrics

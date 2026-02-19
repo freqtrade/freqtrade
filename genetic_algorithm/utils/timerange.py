@@ -303,11 +303,12 @@ def aggregate_validation_scores(
         if abs(sum(weights) - 1.0) > 1e-6:
             raise ValueError(f"Weights must sum to 1.0, got {sum(weights)}")
         
-        # Use only valid score weights
-        total_weight = 0.0
+        # Calculate weighted sum, only using valid scores
         weighted_sum = 0.0
+        total_weight = 0.0
         for i, score in enumerate(scores):
-            if score in valid_scores:
+            # Check validity criteria directly
+            if isinstance(score, (int, float)) and score >= 0:
                 weighted_sum += weights[i] * score
                 total_weight += weights[i]
         

@@ -202,21 +202,22 @@ The GA logs additional metrics when walk-forward is enabled:
 
 ```
 Walk-forward complete for GAStrategy_Gen2_Ind5:
-  Final fitness=0.6234 (train avg=0.7123, val avg=0.6234, degradation=0.0889)
+  Final fitness=0.6234 (train avg=0.7123, val avg=0.6234, gap=0.0889)
 ```
 
 **Key metrics:**
 - **Final fitness**: Aggregated validation score (what GA optimizes)
 - **Train avg**: Average training fitness across windows
 - **Val avg**: Average validation fitness across windows
-- **Degradation**: Train - Val (lower is better)
+- **Gap**: Train - Val (positive = potential overfit, negative = validation exceeds training)
 
-### Healthy Degradation
+### Interpreting the Gap
 
-- **< 10%**: Excellent! Strategy generalizes well
-- **10-20%**: Good, acceptable overfitting
-- **20-30%**: Moderate overfitting, use cautiously
-- **> 30%**: High overfitting, strategy likely won't work live
+- **< 0** (negative): Validation better than training! Rare but excellent
+- **0-10%**: Excellent! Strategy generalizes well
+- **10-20%**: Good, acceptable level
+- **20-30%**: Moderate concern, use cautiously
+- **> 30%**: High overfitting risk, strategy likely won't work live
 
 ### Cache Performance
 
