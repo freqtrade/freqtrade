@@ -55,9 +55,11 @@ def _mutate_indicator_params(indicator, ind_config, i, mutations_applied):
 def _mutate_condition_threshold(condition, ind_config, is_entry, i, mutations_applied):
     """Helper to mutate condition thresholds."""
     threshold_key = 'buy_threshold' if is_entry else 'sell_threshold'
-    if condition.indicator == 'RSI':
+    # Extract base type from possible instance_id format (e.g., 'RSI_0' -> 'RSI')
+    base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+    if base_indicator == 'RSI':
         threshold_range = ind_config.get(threshold_key, [20, 40] if is_entry else [60, 80])
-    elif condition.indicator == 'CCI':
+    elif base_indicator == 'CCI':
         threshold_range = ind_config.get(threshold_key, [-200, -100] if is_entry else [100, 200])
     else:
         return
@@ -93,12 +95,15 @@ def mutate_parameters(individual: Individual, mutation_rate: float,
     # Mutate condition thresholds
     for i, condition in enumerate(mutated_gene.entry_conditions):
         if random.random() < mutation_rate:
-            ind_config = indicator_config.get(condition.indicator, {})
+            # Extract base type from possible instance_id format (e.g., 'RSI_0' -> 'RSI')
+            base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+            ind_config = indicator_config.get(base_indicator, {})
             _mutate_condition_threshold(condition, ind_config, True, i, mutations_applied)
     
     for i, condition in enumerate(mutated_gene.exit_conditions):
         if random.random() < mutation_rate:
-            ind_config = indicator_config.get(condition.indicator, {})
+            base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+            ind_config = indicator_config.get(base_indicator, {})
             _mutate_condition_threshold(condition, ind_config, False, i, mutations_applied)
     
     # Mutate stoploss
@@ -176,14 +181,14 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
             mutated_gene.indicators.remove(removed)
             mutations_applied.append(f"remove_{removed.type}")
             
-            # Clean up conditions that reference removed indicator
+            # Clean up conditions that reference removed indicator (by type or instance_id)
             mutated_gene.entry_conditions = [
                 c for c in mutated_gene.entry_conditions 
-                if c.indicator != removed.type
+                if c.indicator != removed.type and c.indicator != removed.instance_id
             ]
             mutated_gene.exit_conditions = [
                 c for c in mutated_gene.exit_conditions 
-                if c.indicator != removed.type
+                if c.indicator != removed.type and c.indicator != removed.instance_id
             ]
             
             # Ensure at least one entry condition remains
@@ -213,6 +218,7 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
         if mutated_gene.indicators:
             idx = random.randrange(len(mutated_gene.indicators))
             old_type = mutated_gene.indicators[idx].type
+            old_instance_id = mutated_gene.indicators[idx].instance_id
             
             # Choose a different indicator type
             available_new = [t for t in available_indicators if t != old_type]
@@ -222,12 +228,12 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
                 mutated_gene.indicators[idx] = new_indicator
                 mutations_applied.append(f"replace_{old_type}_with_{new_type}")
                 
-                # Update conditions that referenced the old indicator
+                # Update conditions that referenced the old indicator (by type or instance_id)
                 for condition in mutated_gene.entry_conditions:
-                    if condition.indicator == old_type:
+                    if condition.indicator == old_type or (old_instance_id and condition.indicator == old_instance_id):
                         condition.indicator = new_type
                 for condition in mutated_gene.exit_conditions:
-                    if condition.indicator == old_type:
+                    if condition.indicator == old_type or (old_instance_id and condition.indicator == old_instance_id):
                         condition.indicator = new_type
     
     # Create new individual with mutation record
@@ -286,7 +292,9 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
             condition.logic = 'OR' if condition.logic == 'AND' else 'AND'
             mutations_applied.append(f"{label}_logic_{idx}")
         elif mutation_type == 'threshold':
-            ind_config = indicator_config.get(condition.indicator, {})
+            # Extract base type from possible instance_id format (e.g., 'RSI_0' -> 'RSI')
+            base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+            ind_config = indicator_config.get(base_indicator, {})
             threshold_key = 'buy_threshold' if is_entry else 'sell_threshold'
             
             # Set default ranges based on indicator type
@@ -296,8 +304,8 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
                 'CCI': ([-200, -100], [100, 200])
             }
             
-            if condition.indicator in defaults:
-                default_range = defaults[condition.indicator][0 if is_entry else 1]
+            if base_indicator in defaults:
+                default_range = defaults[base_indicator][0 if is_entry else 1]
                 threshold_range = ind_config.get(threshold_key, default_range)
                 condition.threshold = random.randint(*threshold_range)
                 mutations_applied.append(f"{label}_threshold_{idx}")
