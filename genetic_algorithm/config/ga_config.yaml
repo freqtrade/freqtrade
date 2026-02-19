@@ -110,6 +110,47 @@ backtesting:
   # Timeout for single backtest (seconds)
   timeout: 300
 
+# === Walk-Forward Optimization ===
+# Walk-forward optimization prevents overfitting by training on one period
+# and validating on a separate out-of-sample period. This is repeated across
+# multiple windows to ensure strategy robustness.
+walk_forward:
+  # Enable walk-forward optimization
+  enabled: false  # Set to true to use walk-forward validation
+  
+  # Training window size in days
+  # Strategies are evolved using only this training data
+  train_days: 60
+  
+  # Validation window size in days
+  # Strategy performance is measured on this unseen data
+  validation_days: 15
+  
+  # Step size in days - how far to slide the window forward
+  # Smaller steps = more windows but slower evolution
+  # Larger steps = fewer windows but less validation
+  step_days: 15
+  
+  # Window mode:
+  # - 'rolling': Fixed-size training window that slides forward
+  # - 'anchored': Expanding training window that grows from start date
+  mode: 'rolling'
+  
+  # Aggregation method for combining validation scores across windows:
+  # - 'mean': Average performance (balanced)
+  # - 'min': Worst-case performance (conservative)
+  # - 'harmonic_mean': Penalizes inconsistency
+  # - 'weighted': More weight to recent windows (requires weights config)
+  aggregation: 'mean'
+  
+  # Minimum trades required in training window to be valid
+  # Windows with fewer trades are skipped
+  min_train_trades: 10
+  
+  # Optional: Custom weights for 'weighted' aggregation
+  # Must sum to 1.0, length must match number of windows
+  # weights: [0.1, 0.2, 0.3, 0.4]  # Example: more weight to recent windows
+
 # === Strategy Constraints ===
 strategy_constraints:
   # Minimum number of trades for valid strategy
