@@ -394,20 +394,26 @@ class {strategy_name}(IStrategy):
         
         signal_col = 'enter_long' if is_entry else 'exit_long'
         
-        # Build condition expressions
+        # Build condition expressions, filtering out conditions that reference non-existent indicators
         condition_exprs = []
+        valid_conditions = []
         
         for i, cond in enumerate(conditions):
-            expr = self._generate_single_condition(cond, indicators)
-            if expr:
-                condition_exprs.append(expr)
+            # Validate that the condition's indicator exists in the strategy
+            if self._condition_has_valid_indicator(cond, indicators):
+                expr = self._generate_single_condition(cond, indicators)
+                if expr:
+                    condition_exprs.append(expr)
+                    valid_conditions.append(cond)
         
+        # If no valid conditions, create a default safe condition
         if not condition_exprs:
-            return f"        dataframe['{signal_col}'] = 0\n"
+            # Use a simple volume-based condition as fallback
+            return f"        dataframe.loc[dataframe['volume'] > 0, '{signal_col}'] = 1\n"
         
         # Combine conditions based on logic operators
-        # Check if all conditions use the same logic
-        logics = [cond.logic for cond in conditions if hasattr(cond, 'logic')]
+        # Check if all valid conditions use the same logic
+        logics = [cond.logic for cond in valid_conditions if hasattr(cond, 'logic')]
         use_or = logics and logics[0] == 'OR'
         
         # Combine with OR or AND
@@ -423,6 +429,31 @@ class {strategy_name}(IStrategy):
 """
         
         return code
+    
+    def _condition_has_valid_indicator(self, condition: ConditionGene, indicators: List[IndicatorGene]) -> bool:
+        """
+        Check if a condition references an indicator that exists in the strategy.
+        
+        Args:
+            condition: Condition to validate
+            indicators: List of indicators in the strategy
+            
+        Returns:
+            True if the condition's indicator exists, False otherwise
+        """
+        # Extract indicator type from condition reference
+        indicator_ref = condition.indicator
+        indicator_type = indicator_ref.split('_')[0] if '_' in indicator_ref else indicator_ref
+        
+        # Check if any indicator in the list matches this type
+        for ind in indicators:
+            # Match by instance_id if available, otherwise by type
+            if ind.instance_id and ind.instance_id == indicator_ref:
+                return True
+            elif ind.type == indicator_type:
+                return True
+        
+        return False
     
     def _generate_single_condition(self, condition: ConditionGene, indicators: List[IndicatorGene]) -> str:
         """Generate a single condition expression.
