@@ -408,8 +408,11 @@ class {strategy_name}(IStrategy):
         
         # If no valid conditions, create a default safe condition
         if not condition_exprs:
-            # Use a simple volume-based condition as fallback
-            return f"        dataframe.loc[dataframe['volume'] > 0, '{signal_col}'] = 1\n"
+            # Use a volume-above-average condition as fallback to avoid always-true signal
+            return f"""        # Fallback condition: volume above 20-period average
+        dataframe['volume_sma'] = dataframe['volume'].rolling(20).mean()
+        dataframe.loc[dataframe['volume'] > dataframe['volume_sma'], '{signal_col}'] = 1
+"""
         
         # Combine conditions based on logic operators
         # Check if all valid conditions use the same logic
