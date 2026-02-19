@@ -277,13 +277,19 @@ class FitnessEvaluator:
             wf_val_days = adjusted['validation_days']
             wf_step_days = adjusted['step_days']
             
-            windows = create_walk_forward_windows(
-                timerange=timerange_for_windows,
-                train_days=wf_train_days,
-                validation_days=wf_val_days,
-                step_days=wf_step_days,
-                mode=self.walk_forward_config.get('mode', 'rolling')
-            )
+            try:
+                windows = create_walk_forward_windows(
+                    timerange=timerange_for_windows,
+                    train_days=wf_train_days,
+                    validation_days=wf_val_days,
+                    step_days=wf_step_days,
+                    mode=self.walk_forward_config.get('mode', 'rolling')
+                )
+            except ValueError as e:
+                logger.warning(
+                    f"⚠️  Walk-forward window creation failed even after auto-adjust: {e}. "
+                    f"Falling back to standard single-period evaluation.")
+                return self._evaluate_standard(strategy_gene, strategy_name)
             
             logger.info(f"Evaluating {generated_name} with {len(windows)} walk-forward windows")
             
