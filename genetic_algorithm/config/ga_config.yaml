@@ -18,10 +18,10 @@ genetic_algorithm:
   random_seed: null  # Set to an integer (e.g., 42) for reproducible experiments
   
   # Population size - number of strategies per generation
-  population_size: 20
+  population_size: 50
   
   # Number of generations to evolve
-  generations: 4
+  generations: 10
   
   # Mutation rate - probability of mutating an individual
   mutation_rate: 0.15
@@ -30,10 +30,10 @@ genetic_algorithm:
   crossover_rate: 0.7
   
   # Elite size - number of top strategies to preserve unchanged (~15% of population)
-  elite_size: 3
+  elite_size: 6
   
   # Tournament size for tournament selection
-  tournament_size: 3
+  tournament_size: 1
   
   # Selection method: 'tournament', 'roulette', 'rank'
   selection_method: 'tournament'
@@ -56,15 +56,15 @@ genetic_algorithm:
   
   # Random immigrants - inject fresh random strategies each generation to prevent premature convergence
   # When diversity drops below diversity_threshold, this count is doubled for that generation
-  random_immigrants: 3          # Number of fresh random individuals to inject per generation
+  random_immigrants: 5          # Number of fresh random individuals to inject per generation
 
 # === Fitness Function Weights ===
 # These weights determine how different metrics contribute to overall fitness
 # All weights should sum to 1.0
 fitness_weights:
-  profit: 0.25            # Total profit/return
-  sharpe_ratio: 0.15      # Risk-adjusted returns (volatility)
-  sortino_ratio: 0.15     # Downside risk-adjusted returns
+  profit: 0.29            # Total profit/return
+  sharpe_ratio: 0.13      # Risk-adjusted returns (volatility)
+  sortino_ratio: 0.13     # Downside risk-adjusted returns
   profit_factor: 0.10     # Win/loss ratio
   drawdown: 0.15          # Maximum drawdown (penalty)
   win_rate: 0.10          # Percentage of winning trades
@@ -80,10 +80,10 @@ fitness_penalties:
 # === Backtesting Configuration ===
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
-  timerange: "20241220-20260218"  # Last 60 days
+  timerange: "20250620-20260218"  # Last 60 days
   
   # Stake amount per trade
-  stake_amount: 0.05
+  stake_amount: 0.2
   
   # Trading pairs to test strategies on (use test data pairs)
   pairs:
@@ -91,10 +91,10 @@ backtesting:
     - "LTC/BTC"
   
   # Maximum number of open trades
-  max_open_trades: 3
+  max_open_trades: 4
   
   # Fee for trades (0.1%)
-  fee: 0.001
+  fee: 0.002
   
   # Exchange name (default: binance)
   exchange: "binance"
@@ -116,7 +116,7 @@ backtesting:
 # multiple windows to ensure strategy robustness.
 walk_forward:
   # Enable walk-forward optimization
-  enabled: false  # Set to true to use walk-forward validation
+  enabled: true  # Set to true to use walk-forward validation
   
   # Training window size in days
   # Strategies are evolved using only this training data
@@ -160,7 +160,7 @@ strategy_constraints:
   max_drawdown: 0.25
   
   # Minimum win rate
-  min_win_rate: 0.35
+  min_win_rate: 0.30
   
   # Allowed timeframes
   timeframes: ["5m", "15m", "1h"]
@@ -170,6 +170,11 @@ strategy_constraints:
   
   # ROI range
   roi_range: [0.01, 0.10]
+  
+  # Max open trades range (per strategy)
+  # Allows strategies to evolve their own trade capacity
+  # Note: Still limited by global max_open_trades in backtesting config
+  max_open_trades_range: [1, 10]
 
 # === Multi-Timeframe Configuration ===
 # Trade on base timeframe but use indicators from higher timeframes for:
@@ -178,7 +183,7 @@ strategy_constraints:
 # - Stronger signals (higher TF = less noise)
 multi_timeframe:
   # Enable multi-timeframe strategy generation
-  enabled: false  # Set to true to evolve multi-TF strategies
+  enabled: true  # Set to true to evolve multi-TF strategies
   
   # Higher timeframes available for informative indicators
   # Must be strictly higher than the base strategy timeframe

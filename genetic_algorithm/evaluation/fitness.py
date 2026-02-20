@@ -100,8 +100,12 @@ class FitnessEvaluator:
             # Use generated name from the gene for consistency
             generated_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
             
-            # Run backtest
-            backtest_result = self.backtester.backtest_strategy(strategy_code, generated_name)
+            # Run backtest with strategy-specific max_open_trades
+            backtest_result = self.backtester.backtest_strategy(
+                strategy_code, 
+                generated_name,
+                strategy_max_open_trades=strategy_gene.max_open_trades
+            )
             
             # Check if backtest was successful
             if not backtest_result.success:
@@ -308,14 +312,15 @@ class FitnessEvaluator:
                 if cache_key in self._wf_cache:
                     self._wf_cache_hits += 1
                     train_result = self._wf_cache[cache_key]
-                    logger.debug(f"Cache hit for window {window.window_index}")
+                    logger.debug(f"Cache hit for window {window.window_index + 1}/{len(windows)}")
                 else:
                     self._wf_cache_misses += 1
                     # Run backtest on training window
                     train_result = self._backtest_with_timerange(
                         strategy_code, 
                         generated_name, 
-                        window.train_timerange
+                        window.train_timerange,
+                        strategy_max_open_trades=strategy_gene.max_open_trades
                     )
                     # Cache the training result
                     self._wf_cache[cache_key] = train_result
@@ -324,13 +329,13 @@ class FitnessEvaluator:
                 # This avoids wasting time on a validation backtest that can't be used
                 min_train_trades = self.walk_forward_config.get('min_train_trades', 10)
                 if not train_result.success:
-                    logger.warning(f"Window {window.window_index}: Training backtest failed "
+                    logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Training backtest failed "
                                  f"({train_result.error_message}). Skipping window.")
                     validation_fitness_scores.append(0.0)
                     continue
                 
                 if train_result.total_trades < min_train_trades:
-                    logger.warning(f"Window {window.window_index}: Insufficient training trades "
+                    logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Insufficient training trades "
                                  f"({train_result.total_trades} < {min_train_trades}). Using penalty fitness.")
                     validation_fitness_scores.append(0.0)
                     continue
@@ -339,7 +344,8 @@ class FitnessEvaluator:
                 val_result = self._backtest_with_timerange(
                     strategy_code,
                     generated_name,
-                    window.val_timerange
+                    window.val_timerange,
+                    strategy_max_open_trades=strategy_gene.max_open_trades
                 )
                 
                 # Calculate fitness for validation data
@@ -379,7 +385,7 @@ class FitnessEvaluator:
                     **val_metrics
                 })
                 
-                logger.info(f"Window {window.window_index}/{len(windows)-1}: "
+                logger.info(f"Window {window.window_index + 1}/{len(windows)}: "
                           f"Train fitness={train_fitness:.4f} ({train_result.total_trades} trades), "
                           f"Val fitness={val_fitness:.4f} ({val_result.total_trades} trades)")
             
@@ -423,7 +429,8 @@ class FitnessEvaluator:
         self, 
         strategy_code: str, 
         strategy_name: str, 
-        timerange: str
+        timerange: str,
+        strategy_max_open_trades: Optional[int] = None
     ) -> BacktestResult:
         """
         Run backtest with a specific timerange (helper for walk-forward).
@@ -432,6 +439,7 @@ class FitnessEvaluator:
             strategy_code: Strategy Python code
             strategy_name: Strategy name
             timerange: Timerange string (e.g., '20230101-20230201')
+            strategy_max_open_trades: Optional max open trades for this strategy
             
         Returns:
             BacktestResult
@@ -441,7 +449,11 @@ class FitnessEvaluator:
         self.backtester.backtest_config['timerange'] = timerange
         
         try:
-            result = self.backtester.backtest_strategy(strategy_code, strategy_name)
+            result = self.backtester.backtest_strategy(
+                strategy_code, 
+                strategy_name,
+                strategy_max_open_trades=strategy_max_open_trades
+            )
             return result
         finally:
             # Restore original timerange

@@ -406,6 +406,12 @@ Examples:
         help='Disable interactive plotting (save plots only, no live display)'
     )
     
+    parser.add_argument(
+        '--yes', '-y',
+        action='store_true',
+        help='Skip confirmation prompt and start evolution immediately'
+    )
+    
     return parser.parse_args()
 
 
@@ -471,12 +477,13 @@ def main():
         print()
     
     # Confirm start
-    print("Press Enter to start evolution, or Ctrl+C to cancel...")
-    try:
-        input()
-    except KeyboardInterrupt:
-        print("\n\nCancelled by user.")
-        return 0
+    if not args.yes:
+        print("Press Enter to start evolution, or Ctrl+C to cancel...")
+        try:
+            input()
+        except KeyboardInterrupt:
+            print("\n\nCancelled by user.")
+            return 0
     
     print("\n" + "=" * 80)
     print("STARTING EVOLUTION")

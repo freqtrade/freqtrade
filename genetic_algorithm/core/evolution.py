@@ -466,7 +466,8 @@ class GeneticAlgorithm:
             # Log statistics
             self.logger.info(f"Best fitness: {stats.best_fitness:.4f}")
             self.logger.info(f"Avg fitness: {stats.avg_fitness:.4f}")
-            self.logger.info(f"Fitness diversity: {stats.diversity_score:.4f}")
+            if stats.diversity_score is not None:
+                self.logger.info(f"Fitness diversity: {stats.diversity_score:.4f}")
             if stats.genetic_diversity is not None:
                 self.logger.info(f"Genetic diversity: {stats.genetic_diversity:.4f}")
             

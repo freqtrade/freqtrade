@@ -92,6 +92,10 @@ class StrategyGenerator:
         # Random timeframe
         timeframe = random.choice(self.available_timeframes)
         
+        # Random max_open_trades
+        max_open_trades_range = self.strategy_constraints.get('max_open_trades_range', [1, 10])
+        max_open_trades = random.randint(*max_open_trades_range)
+        
         # Multi-timeframe: optionally add informative timeframes and indicators
         informative_timeframes = []
         if self.multi_tf_config.get('enabled', False):
@@ -122,6 +126,7 @@ class StrategyGenerator:
             timeframe=timeframe,
             stoploss=stoploss,
             minimal_roi=minimal_roi,
+            max_open_trades=max_open_trades,
             informative_timeframes=informative_timeframes,
             trailing_stop=random.choice([True, False]),
         )
@@ -407,6 +412,7 @@ class {strategy_name}(IStrategy):
     stoploss = {strategy_gene.stoploss}
     minimal_roi = {strategy_gene.minimal_roi}
     trailing_stop = {strategy_gene.trailing_stop}{trailing_stop_params}
+    max_open_trades = {strategy_gene.max_open_trades}
 {informative_pairs_method}
     
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

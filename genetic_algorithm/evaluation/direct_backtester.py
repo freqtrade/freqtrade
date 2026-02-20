@@ -520,7 +520,8 @@ class DirectBacktester:
     def backtest_strategy(self, 
                          strategy_code: str, 
                          strategy_name: str,
-                         max_retries: int = 2) -> BacktestResult:
+                         max_retries: int = 2,
+                         strategy_max_open_trades: Optional[int] = None) -> BacktestResult:
         """
         Run backtest for a strategy using direct Python API.
         
@@ -549,7 +550,7 @@ class DirectBacktester:
                     logger.info(f"Retry {attempt}/{max_retries} for {strategy_name}")
                     time.sleep(1)
                 
-                result = self._run_backtest_direct(strategy_code, strategy_name)
+                result = self._run_backtest_direct(strategy_code, strategy_name, strategy_max_open_trades)
                 result.execution_time = time.time() - start_time
                 
                 # Cache successful result
@@ -573,7 +574,7 @@ class DirectBacktester:
             execution_time=execution_time
         )
     
-    def _run_backtest_direct(self, strategy_code: str, strategy_name: str) -> BacktestResult:
+    def _run_backtest_direct(self, strategy_code: str, strategy_name: str, strategy_max_open_trades: Optional[int] = None) -> BacktestResult:
         """
         Run backtest using FreqTrade Python API with mocked exchange.
         
@@ -605,7 +606,7 @@ class DirectBacktester:
             from freqtrade.exchange.exchange import Exchange
             
             # Create configuration
-            config_dict = self._create_backtest_config(strategy_name)
+            config_dict = self._create_backtest_config(strategy_name, strategy_max_open_trades)
             
             # Mock the exchange to avoid network calls
             with patch.object(Exchange, '_load_async_markets', return_value={}), \
@@ -663,7 +664,7 @@ class DirectBacktester:
                 error_message=f"Execution error: {str(e)}"
             )
     
-    def _create_backtest_config(self, strategy_name: str) -> Dict[str, Any]:
+    def _create_backtest_config(self, strategy_name: str, strategy_max_open_trades: Optional[int] = None) -> Dict[str, Any]:
         """
         Create FreqTrade config for backtesting from GA config.
         
@@ -682,7 +683,11 @@ class DirectBacktester:
         pairs = ga_cfg.get('pairs', ['UNITTEST/BTC'])
         timerange = ga_cfg.get('timerange', '')
         stake_amount = ga_cfg.get('stake_amount', 0.05)
-        max_open_trades = ga_cfg.get('max_open_trades', 3)
+        # Use strategy-specific max_open_trades if provided, otherwise use global config
+        if strategy_max_open_trades is not None:
+            max_open_trades = strategy_max_open_trades
+        else:
+            max_open_trades = ga_cfg.get('max_open_trades', 3)
         fee = ga_cfg.get('fee', 0.001)
         
         # Determine stake currency from pairs
@@ -734,8 +739,11 @@ class DirectBacktester:
             "max_open_trades": max_open_trades,  # From GA config
             "fee": fee,  # From GA config
             
-            # Timeframe will be overridden by strategy
-            "timeframe": "5m",
+            # Allow multiple trades per pair (enables true max_open_trades)
+            "position_stacking": True,  # Required to open more than 1 trade per pair
+            
+            # Don't set timeframe here - let the strategy define it
+            # "timeframe": "5m",  # Removed - strategy's timeframe will be used
             "timerange": timerange if timerange else None,  # From GA config
             
             # Exchange configuration
@@ -763,6 +771,7 @@ class DirectBacktester:
         logger.info(f"  Stake amount: {stake_amount} {stake_currency}")
         logger.info(f"  Data directory: {datadir}")
         logger.info(f"  Max open trades: {max_open_trades}")
+        logger.info(f"  Position stacking: {config.get('position_stacking', False)}")
         logger.info(f"  Fee: {fee}")
         
         return config
