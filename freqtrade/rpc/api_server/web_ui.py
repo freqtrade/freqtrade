@@ -38,14 +38,14 @@ async def index_html(rest_of_path: str):
     if rest_of_path.startswith("api") or rest_of_path.startswith("."):
         raise HTTPException(status_code=404, detail="Not Found")
     uibase = Path(__file__).parent / "ui/installed/"
-    filename = uibase / rest_of_path
+    filename = (uibase / rest_of_path).resolve()
     # It's security relevant to check "relative_to".
     # Without this, Directory-traversal is possible.
     media_type: str | None = None
     if filename.suffix == ".js":
         # Force text/javascript for .js files - Circumvent faulty system configuration
         media_type = "application/javascript"
-    if filename.is_file() and filename.is_relative_to(uibase):
+    if filename.is_file() and filename.is_relative_to(uibase.resolve()):
         return FileResponse(str(filename), media_type=media_type)
 
     index_file = uibase / "index.html"

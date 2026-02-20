@@ -186,6 +186,11 @@ def test_api_ui_fallback(botclient, mocker):
 
     assert "`freqtrade install-ui`" in rc.text
 
+    # Test that ../ path traversal is blocked after resolve()
+    rc = client_get(client, "/assets/../../web_ui.py")
+    assert rc.status_code == 200
+    assert "rest_of_path" not in rc.text
+
 
 def test_api_ui_version(botclient, mocker):
     _ftbot, client = botclient
