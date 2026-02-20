@@ -121,6 +121,12 @@ def mutate_parameters(individual: Individual, mutation_rate: float,
         }
         mutations_applied.append("roi")
     
+    # Mutate max_open_trades
+    if random.random() < mutation_rate:
+        max_open_trades_range = strategy_constraints.get('max_open_trades_range', [1, 10])
+        mutated_gene.max_open_trades = random.randint(*max_open_trades_range)
+        mutations_applied.append("max_open_trades")
+    
     # Create new individual with mutation record
     new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
     new_individual.mutations = individual.mutations + [{

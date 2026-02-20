@@ -75,6 +75,7 @@ class StrategyGene:
     timeframe: str = '5m'
     stoploss: float = -0.10
     minimal_roi: Dict[str, float] = field(default_factory=lambda: {"0": 0.04, "30": 0.02, "60": 0.01})
+    max_open_trades: int = 3  # Maximum number of concurrent open trades
     
     # Multi-timeframe
     informative_timeframes: List[str] = field(default_factory=list)  # e.g. ['1h', '4h']
