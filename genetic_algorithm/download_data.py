@@ -96,8 +96,14 @@ def download_data(
         
         # Note: We'll use a simpler approach with the exchange directly
         from freqtrade.exchange import Exchange
+        from freqtrade.configuration import TimeRange as FTTimeRange
         
         exchange_obj = ExchangeResolver.load_exchange(config)
+        
+        # Convert the calculated timerange string to a TimeRange object so the
+        # download covers the full requested history rather than only the default
+        # number of candles the exchange returns without an explicit range.
+        ft_timerange = FTTimeRange.parse_timerange(timerange)
         
         for timeframe in timeframes:
             logger.info(f"Downloading {timeframe} data...")
@@ -113,7 +119,7 @@ def download_data(
                         pairs=[pair],
                         timeframes=[timeframe],
                         datadir=datadir,
-                        timerange=None,  # Download all available
+                        timerange=ft_timerange,
                         erase=False
                     )
                     

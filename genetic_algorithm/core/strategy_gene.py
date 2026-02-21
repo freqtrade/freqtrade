@@ -10,6 +10,25 @@ from typing import List, Dict, Any, Optional
 import random
 
 
+# Timeframe ordering for comparison (lower index = shorter timeframe)
+TIMEFRAME_ORDER = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M']
+
+
+def timeframe_to_minutes(tf: str) -> int:
+    """Convert a timeframe string to minutes for comparison."""
+    _tf_map = {
+        '1m': 1, '3m': 3, '5m': 5, '15m': 15, '30m': 30,
+        '1h': 60, '2h': 120, '4h': 240, '6h': 360, '8h': 480,
+        '12h': 720, '1d': 1440, '3d': 4320, '1w': 10080, '1M': 43200,
+    }
+    return _tf_map.get(tf, 0)
+
+
+def is_higher_timeframe(candidate: str, base: str) -> bool:
+    """Check if candidate timeframe is strictly higher than base timeframe."""
+    return timeframe_to_minutes(candidate) > timeframe_to_minutes(base)
+
+
 @dataclass
 class IndicatorGene:
     """Represents a single technical indicator with its parameters."""
@@ -18,25 +37,7 @@ class IndicatorGene:
     parameters: Dict[str, Any]  # indicator-specific parameters
     weight: float = 1.0  # importance weight
     instance_id: Optional[str] = None  # Unique instance identifier (e.g., 'RSI_0', 'RSI_1')
-    
-    def mutate(self, mutation_rate: float, param_ranges: Dict[str, tuple]) -> 'IndicatorGene':
-        """
-        Mutate indicator parameters.
-        
-        Args:
-            mutation_rate: Probability of mutation
-            param_ranges: Valid parameter ranges for this indicator type
-            
-        Returns:
-            Mutated indicator gene
-        """
-        # TODO: Implement parameter mutation
-        pass
-    
-    def to_code(self) -> str:
-        """Generate Python code for this indicator."""
-        # TODO: Convert to FreqTrade indicator code
-        pass
+    timeframe: Optional[str] = None  # None = base timeframe, e.g. '1h', '4h' for informative
 
 
 @dataclass
@@ -47,11 +48,6 @@ class ConditionGene:
     operator: str  # Comparison operator: '<', '>', 'cross_above', 'cross_below'
     threshold: float  # Threshold value
     logic: str = 'AND'  # Logic operator: 'AND', 'OR'
-    
-    def to_code(self) -> str:
-        """Generate Python code for this condition."""
-        # TODO: Convert to FreqTrade condition code
-        pass
 
 
 @dataclass
@@ -79,6 +75,10 @@ class StrategyGene:
     timeframe: str = '5m'
     stoploss: float = -0.10
     minimal_roi: Dict[str, float] = field(default_factory=lambda: {"0": 0.04, "30": 0.02, "60": 0.01})
+    max_open_trades: int = 3  # Maximum number of concurrent open trades
+    
+    # Multi-timeframe
+    informative_timeframes: List[str] = field(default_factory=list)  # e.g. ['1h', '4h']
     
     # Optional parameters
     trailing_stop: bool = False
@@ -98,7 +98,8 @@ class StrategyGene:
             'generation': self.generation,
             'individual_id': self.individual_id,
             'indicators': [
-                {'type': ind.type, 'parameters': dict(ind.parameters), 'weight': ind.weight, 'instance_id': ind.instance_id}
+                {'type': ind.type, 'parameters': dict(ind.parameters), 'weight': ind.weight,
+                 'instance_id': ind.instance_id, 'timeframe': ind.timeframe}
                 for ind in self.indicators
             ],
             'entry_conditions': [
@@ -120,6 +121,7 @@ class StrategyGene:
                 for cond in self.exit_conditions
             ],
             'timeframe': self.timeframe,
+            'informative_timeframes': self.informative_timeframes,
             'stoploss': self.stoploss,
             'minimal_roi': self.minimal_roi,
             'trailing_stop': self.trailing_stop,
@@ -135,7 +137,8 @@ class StrategyGene:
                 type=ind['type'],
                 parameters=ind['parameters'],
                 weight=ind.get('weight', 1.0),
-                instance_id=ind.get('instance_id')
+                instance_id=ind.get('instance_id'),
+                timeframe=ind.get('timeframe')
             )
             for ind in data['indicators']
         ]
@@ -167,6 +170,7 @@ class StrategyGene:
             entry_conditions=entry_conditions,
             exit_conditions=exit_conditions,
             timeframe=data.get('timeframe', '5m'),
+            informative_timeframes=data.get('informative_timeframes', []),
             stoploss=data.get('stoploss', -0.10),
             minimal_roi=data.get('minimal_roi', {"0": 0.04, "30": 0.02, "60": 0.01}),
             trailing_stop=data.get('trailing_stop', False),
@@ -214,38 +218,44 @@ class StrategyGene:
         
         missing_types = self.get_missing_indicators()
         
-        for ind_type in missing_types:
-            # Create a new indicator of this type
-            new_indicator = create_random_indicator(ind_type, indicator_config)
+        for ind_ref in missing_types:
+            # Extract base type from instance_id format (e.g., 'RSI_0' -> 'RSI')
+            base_type = ind_ref.split('_')[0] if '_' in ind_ref else ind_ref
+            new_indicator = create_random_indicator(base_type, indicator_config)
             self.indicators.append(new_indicator)
     
     def assign_instance_ids(self) -> None:
         """
         Assign unique instance IDs to all indicators.
         
-        Creates IDs in the format: {type}_{index}
-        E.g., RSI_0, RSI_1, MACD_0, etc.
+        Creates IDs in the format: {type}_{index} for base timeframe indicators
+        or {type}_{timeframe}_{index} for informative timeframe indicators.
+        E.g., RSI_0, RSI_1, RSI_1h_0, EMA_4h_0, etc.
         
         Also updates condition references if they currently use type names
         to use the new instance IDs.
         """
-        # Count instances of each type
-        type_counts: Dict[str, int] = {}
+        # Count instances of each (type, timeframe) combination
+        type_tf_counts: Dict[str, int] = {}
+        
+        def _make_key(ind_type: str, tf: Optional[str]) -> str:
+            return f"{ind_type}_{tf}" if tf else ind_type
         
         # Assign instance IDs to indicators
         for ind in self.indicators:
-            if ind.type not in type_counts:
-                type_counts[ind.type] = 0
+            key = _make_key(ind.type, ind.timeframe)
+            if key not in type_tf_counts:
+                type_tf_counts[key] = 0
             
             # Assign instance ID if not already set
             if not ind.instance_id:
-                ind.instance_id = f"{ind.type}_{type_counts[ind.type]}"
-                type_counts[ind.type] += 1
+                if ind.timeframe:
+                    ind.instance_id = f"{ind.type}_{ind.timeframe}_{type_tf_counts[key]}"
+                else:
+                    ind.instance_id = f"{ind.type}_{type_tf_counts[key]}"
+                type_tf_counts[key] += 1
             else:
-                # If instance_id already set, still increment counter.
-                # This ensures new IDs don't conflict with existing ones,
-                # though it may result in non-consecutive numbering (gaps).
-                type_counts[ind.type] += 1
+                type_tf_counts[key] += 1
         
         # Create mapping from type to instance IDs
         type_to_instances: Dict[str, List[str]] = {}
@@ -289,3 +299,15 @@ class StrategyGene:
             len(self.entry_conditions) +
             len(self.exit_conditions)
         )
+    
+    def get_base_indicators(self) -> List['IndicatorGene']:
+        """Return indicators on the base timeframe (timeframe is None)."""
+        return [ind for ind in self.indicators if ind.timeframe is None]
+    
+    def get_informative_indicators(self) -> List['IndicatorGene']:
+        """Return indicators on informative (higher) timeframes."""
+        return [ind for ind in self.indicators if ind.timeframe is not None]
+    
+    def get_indicators_by_timeframe(self, tf: Optional[str] = None) -> List['IndicatorGene']:
+        """Return indicators for a specific timeframe (None = base)."""
+        return [ind for ind in self.indicators if ind.timeframe == tf]

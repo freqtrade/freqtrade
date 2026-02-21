@@ -2,15 +2,23 @@
 Fitness Evaluator
 
 Evaluates the fitness of trading strategies through backtesting
-and calculating performance metrics.
+and calculating performance metrics. Supports both standard backtesting
+and walk-forward optimization for preventing overfitting.
 """
 
 import logging
-from typing import Tuple, Dict, Any
+import hashlib
+from typing import Tuple, Dict, Any, List, Optional
 
 from genetic_algorithm.core.strategy_gene import StrategyGene
 from genetic_algorithm.evaluation.direct_backtester import DirectBacktester, BacktestResult
 from genetic_algorithm.strategies.generator import StrategyGenerator
+from genetic_algorithm.utils.timerange import (
+    create_walk_forward_windows,
+    validate_walk_forward_config,
+    aggregate_validation_scores,
+    TimeWindow
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,18 +45,50 @@ class FitnessEvaluator:
         self.fitness_weights = config.get('fitness_weights', {})
         self.fitness_penalties = config.get('fitness_penalties', {})
         self.backtest_config = config.get('backtesting', {})
+        self.walk_forward_config = config.get('walk_forward', {})
+        
+        # Validate walk-forward config if enabled
+        if self.walk_forward_config.get('enabled', False):
+            validate_walk_forward_config(self.walk_forward_config)
+            logger.info("Walk-forward optimization enabled")
         
         # Initialize direct backtester and strategy generator
         self.backtester = DirectBacktester(config)
         self.strategy_generator = StrategyGenerator(config)
+        
+        # Walk-forward cache: (strategy_hash, window_index) -> BacktestResult
+        self._wf_cache: Dict[Tuple[str, int], BacktestResult] = {}
+        self._wf_cache_hits = 0
+        self._wf_cache_misses = 0
     
     def evaluate(self, strategy_gene: StrategyGene, strategy_name: str = None) -> Tuple[float, Dict[str, float]]:
         """
         Evaluate a strategy's fitness through backtesting.
         
+        If walk-forward optimization is enabled in config, uses walk-forward validation.
+        Otherwise, uses standard single-period backtesting.
+        
         Args:
             strategy_gene: Strategy to evaluate
             strategy_name: Optional name for the strategy (auto-generated if not provided)
+            
+        Returns:
+            Tuple of (fitness_score, metrics_dict)
+        """
+        # Check if walk-forward is enabled
+        if self.walk_forward_config.get('enabled', False):
+            return self.evaluate_walk_forward(strategy_gene, strategy_name)
+        
+        # Standard single-period evaluation
+        return self._evaluate_standard(strategy_gene, strategy_name)
+    
+    def _evaluate_standard(self, strategy_gene: StrategyGene, strategy_name: str = None) -> Tuple[float, Dict[str, float]]:
+        """
+        Standard single-period evaluation (original evaluate logic).
+        
+        Args:
+            strategy_gene: Strategy to evaluate
+            strategy_name: Optional name for the strategy
             
         Returns:
             Tuple of (fitness_score, metrics_dict)
@@ -60,8 +100,12 @@ class FitnessEvaluator:
             # Use generated name from the gene for consistency
             generated_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
             
-            # Run backtest
-            backtest_result = self.backtester.backtest_strategy(strategy_code, generated_name)
+            # Run backtest with strategy-specific max_open_trades
+            backtest_result = self.backtester.backtest_strategy(
+                strategy_code, 
+                generated_name,
+                strategy_max_open_trades=strategy_gene.max_open_trades
+            )
             
             # Check if backtest was successful
             if not backtest_result.success:
@@ -86,9 +130,8 @@ class FitnessEvaluator:
             # Calculate fitness (includes complexity penalty)
             fitness = self.calculate_fitness(metrics, strategy_gene)
             
-            logger.info(f"Strategy {generated_name}: fitness={fitness:.4f}, "
-                       f"profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}, "
-                       f"complexity={metrics['complexity']}")
+            # Log at debug level - summary is logged by evolution.py
+            logger.debug(f"{generated_name}: fitness={fitness:.4f}, profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}")
             
             return fitness, metrics
             
@@ -105,6 +148,354 @@ class FitnessEvaluator:
                 'complexity': strategy_gene.calculate_complexity(),
                 'error': str(e)
             }
+    
+    def _auto_adjust_walk_forward_params(
+        self, 
+        timerange: str
+    ) -> Optional[Dict[str, int]]:
+        """
+        Auto-adjust walk-forward parameters to fit available data range.
+        
+        When the available data is shorter than the configured train_days + validation_days,
+        this method reduces the parameters proportionally so that at least one window can
+        be created.
+        
+        Args:
+            timerange: Effective timerange string (YYYYMMDD-YYYYMMDD)
+            
+        Returns:
+            Adjusted parameters dict with 'train_days', 'validation_days', 'step_days',
+            or None if no valid adjustment is possible (data too short).
+        """
+        from genetic_algorithm.utils.timerange import parse_timerange
+        
+        start, end = parse_timerange(timerange)
+        available_days = (end - start).days
+        
+        train_days = self.walk_forward_config['train_days']
+        validation_days = self.walk_forward_config['validation_days']
+        step_days = self.walk_forward_config['step_days']
+        required_days = train_days + validation_days
+        
+        if available_days >= required_days:
+            return {
+                'train_days': train_days,
+                'validation_days': validation_days,
+                'step_days': step_days,
+            }
+        
+        # Need to shrink parameters to fit.
+        # Keep the train/validation ratio the same, but scale down.
+        # Reserve at least 5 days for validation and 7 days for training.
+        MIN_TRAIN_DAYS = 7
+        MIN_VAL_DAYS = 5
+        min_total = MIN_TRAIN_DAYS + MIN_VAL_DAYS
+        
+        if available_days < min_total:
+            logger.warning(
+                f"Available data ({available_days} days) is too short for walk-forward "
+                f"(minimum {min_total} days needed). Cannot auto-adjust.")
+            return None
+        
+        # Scale proportionally, ensuring both minimums are met
+        ratio = train_days / required_days
+        adjusted_train = min(
+            available_days - MIN_VAL_DAYS,
+            max(MIN_TRAIN_DAYS, int(available_days * ratio))
+        )
+        adjusted_val = max(MIN_VAL_DAYS, available_days - adjusted_train)
+        
+        # Make sure they actually fit
+        if adjusted_train + adjusted_val > available_days:
+            adjusted_train = available_days - adjusted_val
+        
+        if adjusted_train < MIN_TRAIN_DAYS:
+            return None
+        
+        adjusted_step = max(1, adjusted_val)
+        
+        logger.warning(
+            f"⚠️  Walk-forward auto-adjusted: available data is only {available_days} days "
+            f"(need {required_days} for configured train={train_days}+val={validation_days}). "
+            f"Adjusted to train={adjusted_train}, val={adjusted_val}, step={adjusted_step}.")
+        
+        return {
+            'train_days': adjusted_train,
+            'validation_days': adjusted_val,
+            'step_days': adjusted_step,
+        }
+    
+    def evaluate_walk_forward(
+        self, 
+        strategy_gene: StrategyGene, 
+        strategy_name: str = None,
+        progress_callback: Optional[callable] = None
+    ) -> Tuple[float, Dict[str, float]]:
+        """
+        Evaluate strategy using walk-forward optimization.
+        
+        Trains on multiple windows and validates on out-of-sample data.
+        Final fitness is based on aggregated validation performance, not training performance.
+        
+        If the available data is too short for the configured walk-forward parameters,
+        the parameters are auto-adjusted. If even that is not possible, it falls back
+        to standard single-period evaluation with a warning.
+        
+        Args:
+            strategy_gene: Strategy to evaluate
+            strategy_name: Optional name for the strategy
+            progress_callback: Optional callback(window_idx, total_windows) for progress tracking
+            
+        Returns:
+            Tuple of (aggregated_validation_fitness, aggregated_metrics)
+        """
+        try:
+            # Generate strategy code once (reused for all windows)
+            strategy_code = self.strategy_generator.generate_strategy_code(strategy_gene)
+            generated_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
+            
+            # Create a hash for caching (using SHA-256 for robustness)
+            strategy_hash = hashlib.sha256(strategy_code.encode()).hexdigest()[:16]
+            
+            # Create walk-forward windows using actual data range
+            original_timerange = self.backtest_config.get('timerange', '')
+            
+            # Detect actual data range to avoid creating windows outside available data
+            effective_timerange = self.backtester.get_available_data_range()
+            if effective_timerange and effective_timerange != original_timerange:
+                logger.info(f"Adjusted timerange from config ({original_timerange}) "
+                           f"to effective data range ({effective_timerange})")
+            timerange_for_windows = effective_timerange or original_timerange
+            
+            # Auto-adjust walk-forward parameters if data is too short
+            adjusted = self._auto_adjust_walk_forward_params(timerange_for_windows)
+            if adjusted is None:
+                logger.warning(
+                    f"⚠️  Walk-forward optimization disabled for this run: insufficient data. "
+                    f"Falling back to standard single-period evaluation. "
+                    f"To use walk-forward, download more historical data.")
+                return self._evaluate_standard(strategy_gene, strategy_name)
+            
+            wf_train_days = adjusted['train_days']
+            wf_val_days = adjusted['validation_days']
+            wf_step_days = adjusted['step_days']
+            
+            try:
+                windows = create_walk_forward_windows(
+                    timerange=timerange_for_windows,
+                    train_days=wf_train_days,
+                    validation_days=wf_val_days,
+                    step_days=wf_step_days,
+                    mode=self.walk_forward_config.get('mode', 'rolling')
+                )
+            except ValueError as e:
+                logger.warning(
+                    f"⚠️  Walk-forward window creation failed even after auto-adjust "
+                    f"(train={wf_train_days}, val={wf_val_days}, step={wf_step_days}, "
+                    f"timerange={timerange_for_windows}): {e}. "
+                    f"Falling back to standard single-period evaluation.")
+                return self._evaluate_standard(strategy_gene, strategy_name)
+            
+            logger.info(f"Evaluating {generated_name} with {len(windows)} walk-forward windows")
+            
+            validation_fitness_scores = []
+            train_fitness_scores = []  # For comparison/debugging
+            all_window_metrics = []
+            
+            for window in windows:
+                if progress_callback:
+                    progress_callback(window.window_index, len(windows))
+                
+                # Check cache first
+                cache_key = (strategy_hash, window.window_index)
+                if cache_key in self._wf_cache:
+                    self._wf_cache_hits += 1
+                    train_result = self._wf_cache[cache_key]
+                    logger.debug(f"Cache hit for window {window.window_index + 1}/{len(windows)}")
+                else:
+                    self._wf_cache_misses += 1
+                    # Run backtest on training window
+                    train_result = self._backtest_with_timerange(
+                        strategy_code, 
+                        generated_name, 
+                        window.train_timerange,
+                        strategy_max_open_trades=strategy_gene.max_open_trades
+                    )
+                    # Cache the training result
+                    self._wf_cache[cache_key] = train_result
+                
+                # Skip validation if training failed (e.g., no data for this window)
+                # This avoids wasting time on a validation backtest that can't be used
+                min_train_trades = self.walk_forward_config.get('min_train_trades', 10)
+                if not train_result.success:
+                    logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Training backtest failed "
+                                 f"({train_result.error_message}). Skipping window.")
+                    validation_fitness_scores.append(0.0)
+                    continue
+                
+                if train_result.total_trades < min_train_trades:
+                    logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Insufficient training trades "
+                                 f"({train_result.total_trades} < {min_train_trades}). Using penalty fitness.")
+                    validation_fitness_scores.append(0.0)
+                    continue
+                
+                # Run backtest on validation window (never cached - validation is key metric)
+                val_result = self._backtest_with_timerange(
+                    strategy_code,
+                    generated_name,
+                    window.val_timerange,
+                    strategy_max_open_trades=strategy_gene.max_open_trades
+                )
+                
+                # Calculate fitness for validation data
+                if val_result.success and val_result.total_trades > 0:
+                    val_metrics = self._backtest_result_to_metrics(val_result)
+                    val_metrics['complexity'] = strategy_gene.calculate_complexity()
+                    val_fitness = self.calculate_fitness(val_metrics, strategy_gene)
+                else:
+                    val_fitness = 0.0
+                    val_metrics = {
+                        'profit': 0.0,
+                        'sharpe_ratio': 0.0,
+                        'max_drawdown': 1.0,
+                        'win_rate': 0.0,
+                        'num_trades': 0,
+                        'complexity': strategy_gene.calculate_complexity()
+                    }
+                
+                validation_fitness_scores.append(val_fitness)
+                
+                # Calculate training fitness for logging
+                if train_result.success:
+                    train_metrics = self._backtest_result_to_metrics(train_result)
+                    train_fitness = self.calculate_fitness(train_metrics, strategy_gene)
+                else:
+                    train_fitness = 0.0
+                
+                train_fitness_scores.append(train_fitness)
+                
+                # Store metrics for this window
+                all_window_metrics.append({
+                    'window_index': window.window_index,
+                    'train_fitness': train_fitness,
+                    'val_fitness': val_fitness,
+                    'train_trades': train_result.total_trades,
+                    'val_trades': val_result.total_trades,
+                    **val_metrics
+                })
+                
+                logger.debug(f"Window {window.window_index + 1}/{len(windows)}: "
+                          f"Train fitness={train_fitness:.4f} ({train_result.total_trades} trades), "
+                          f"Val fitness={val_fitness:.4f} ({val_result.total_trades} trades)")
+            
+            # Aggregate validation scores
+            aggregation_method = self.walk_forward_config.get('aggregation', 'mean')
+            
+            # For weighted aggregation, auto-generate recency weights (later windows weighted more)
+            if aggregation_method == 'weighted' and validation_fitness_scores:
+                n = len(validation_fitness_scores)
+                # Linear recency weights: [1, 2, 3, ..., n] normalized to sum to 1
+                weights = [i / sum(range(1, n + 1)) for i in range(1, n + 1)]
+                final_fitness = aggregate_validation_scores(validation_fitness_scores, method=aggregation_method, weights=weights)
+            else:
+                final_fitness = aggregate_validation_scores(validation_fitness_scores, method=aggregation_method)
+            
+            # Calculate average metrics across validation windows
+            avg_metrics = self._aggregate_window_metrics(all_window_metrics)
+            avg_metrics['walk_forward'] = True
+            avg_metrics['num_windows'] = len(windows)
+            avg_metrics['avg_train_fitness'] = sum(train_fitness_scores) / len(train_fitness_scores) if train_fitness_scores else 0.0
+            avg_metrics['avg_val_fitness'] = sum(validation_fitness_scores) / len(validation_fitness_scores) if validation_fitness_scores else 0.0
+            # Train-val gap: Positive = training better (potential overfit), Negative = validation better (rare but good)
+            avg_metrics['train_val_gap'] = avg_metrics['avg_train_fitness'] - avg_metrics['avg_val_fitness']
+            
+            # Log summary only
+            logger.debug(f"Walk-forward {generated_name}: fitness={final_fitness:.4f}, gap={avg_metrics['train_val_gap']:.4f}")
+            
+            return final_fitness, avg_metrics
+            
+        except Exception as e:
+            generated_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
+            logger.error(f"Error in walk-forward evaluation for {generated_name}: {e}", exc_info=True)
+            return 0.0, {
+                'profit': 0.0,
+                'sharpe_ratio': 0.0,
+                'max_drawdown': 1.0,
+                'win_rate': 0.0,
+                'num_trades': 0,
+                'complexity': strategy_gene.calculate_complexity(),
+                'error': str(e),
+                'walk_forward': True
+            }
+    
+    def _backtest_with_timerange(
+        self, 
+        strategy_code: str, 
+        strategy_name: str, 
+        timerange: str,
+        strategy_max_open_trades: Optional[int] = None
+    ) -> BacktestResult:
+        """
+        Run backtest with a specific timerange (helper for walk-forward).
+        
+        Args:
+            strategy_code: Strategy Python code
+            strategy_name: Strategy name
+            timerange: Timerange string (e.g., '20230101-20230201')
+            strategy_max_open_trades: Optional max open trades for this strategy
+            
+        Returns:
+            BacktestResult
+        """
+        # Temporarily modify backtester config
+        original_timerange = self.backtester.backtest_config.get('timerange', '')
+        self.backtester.backtest_config['timerange'] = timerange
+        
+        try:
+            result = self.backtester.backtest_strategy(
+                strategy_code, 
+                strategy_name,
+                strategy_max_open_trades=strategy_max_open_trades
+            )
+            return result
+        finally:
+            # Restore original timerange
+            self.backtester.backtest_config['timerange'] = original_timerange
+    
+    def _aggregate_window_metrics(self, window_metrics: List[Dict[str, Any]]) -> Dict[str, float]:
+        """
+        Aggregate metrics across all validation windows.
+        
+        Args:
+            window_metrics: List of metric dictionaries, one per window
+            
+        Returns:
+            Aggregated metrics dictionary
+        """
+        if not window_metrics:
+            return {
+                'profit': 0.0,
+                'sharpe_ratio': 0.0,
+                'max_drawdown': 1.0,
+                'win_rate': 0.0,
+                'num_trades': 0,
+                'complexity': 0
+            }
+        
+        # Average most metrics
+        avg_metrics = {}
+        numeric_keys = ['profit', 'sharpe_ratio', 'win_rate', 'num_trades', 
+                       'complexity', 'val_trades', 'train_trades']
+        
+        for key in numeric_keys:
+            values = [m.get(key, 0) for m in window_metrics if key in m]
+            avg_metrics[key] = sum(values) / len(values) if values else 0.0
+        
+        # Max drawdown: take the worst (highest) across windows
+        drawdowns = [m.get('max_drawdown', 0) for m in window_metrics if 'max_drawdown' in m]
+        avg_metrics['max_drawdown'] = max(drawdowns) if drawdowns else 1.0
+        
+        return avg_metrics
     
     def _backtest_result_to_metrics(self, result: BacktestResult) -> Dict[str, float]:
         """
@@ -212,6 +603,13 @@ class FitnessEvaluator:
             w_win_rate * norm_win_rate + 
             w_trades * norm_trades
         )
+        
+        # ==================================================================================
+        # BONUS STACKING STRATEGY:
+        # Multiple bonuses can stack multiplicatively to reward exceptional strategies.
+        # Maximum possible bonus: ~2.01x (1.15 × 1.1 × 1.2 × 1.15 = 1.74x to 2.01x)
+        # This is intentional - truly exceptional strategies deserve strong amplification.
+        # ==================================================================================
         
         # Robustness bonus: reward consistency (good Sortino and profit factor together)
         if sortino > 1.0 and profit_factor > 1.5:

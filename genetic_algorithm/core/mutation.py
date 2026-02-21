@@ -10,7 +10,7 @@ import logging
 from typing import Dict, Any, Optional
 
 from genetic_algorithm.core.individual import Individual
-from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
+from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene, is_higher_timeframe
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
 
 # Set up logger for mutation operations
@@ -55,9 +55,11 @@ def _mutate_indicator_params(indicator, ind_config, i, mutations_applied):
 def _mutate_condition_threshold(condition, ind_config, is_entry, i, mutations_applied):
     """Helper to mutate condition thresholds."""
     threshold_key = 'buy_threshold' if is_entry else 'sell_threshold'
-    if condition.indicator == 'RSI':
+    # Extract base type from possible instance_id format (e.g., 'RSI_0' -> 'RSI')
+    base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+    if base_indicator == 'RSI':
         threshold_range = ind_config.get(threshold_key, [20, 40] if is_entry else [60, 80])
-    elif condition.indicator == 'CCI':
+    elif base_indicator == 'CCI':
         threshold_range = ind_config.get(threshold_key, [-200, -100] if is_entry else [100, 200])
     else:
         return
@@ -93,12 +95,15 @@ def mutate_parameters(individual: Individual, mutation_rate: float,
     # Mutate condition thresholds
     for i, condition in enumerate(mutated_gene.entry_conditions):
         if random.random() < mutation_rate:
-            ind_config = indicator_config.get(condition.indicator, {})
+            # Extract base type from possible instance_id format (e.g., 'RSI_0' -> 'RSI')
+            base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+            ind_config = indicator_config.get(base_indicator, {})
             _mutate_condition_threshold(condition, ind_config, True, i, mutations_applied)
     
     for i, condition in enumerate(mutated_gene.exit_conditions):
         if random.random() < mutation_rate:
-            ind_config = indicator_config.get(condition.indicator, {})
+            base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+            ind_config = indicator_config.get(base_indicator, {})
             _mutate_condition_threshold(condition, ind_config, False, i, mutations_applied)
     
     # Mutate stoploss
@@ -115,6 +120,12 @@ def mutate_parameters(individual: Individual, mutation_rate: float,
             "60": random.uniform(roi_range[0], roi_range[1] * 0.5),
         }
         mutations_applied.append("roi")
+    
+    # Mutate max_open_trades
+    if random.random() < mutation_rate:
+        max_open_trades_range = strategy_constraints.get('max_open_trades_range', [1, 10])
+        mutated_gene.max_open_trades = random.randint(*max_open_trades_range)
+        mutations_applied.append("max_open_trades")
     
     # Create new individual with mutation record
     new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
@@ -176,14 +187,14 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
             mutated_gene.indicators.remove(removed)
             mutations_applied.append(f"remove_{removed.type}")
             
-            # Clean up conditions that reference removed indicator
+            # Clean up conditions that reference removed indicator (by type or instance_id)
             mutated_gene.entry_conditions = [
                 c for c in mutated_gene.entry_conditions 
-                if c.indicator != removed.type
+                if c.indicator != removed.type and c.indicator != removed.instance_id
             ]
             mutated_gene.exit_conditions = [
                 c for c in mutated_gene.exit_conditions 
-                if c.indicator != removed.type
+                if c.indicator != removed.type and c.indicator != removed.instance_id
             ]
             
             # Ensure at least one entry condition remains
@@ -213,6 +224,7 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
         if mutated_gene.indicators:
             idx = random.randrange(len(mutated_gene.indicators))
             old_type = mutated_gene.indicators[idx].type
+            old_instance_id = mutated_gene.indicators[idx].instance_id
             
             # Choose a different indicator type
             available_new = [t for t in available_indicators if t != old_type]
@@ -222,12 +234,12 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
                 mutated_gene.indicators[idx] = new_indicator
                 mutations_applied.append(f"replace_{old_type}_with_{new_type}")
                 
-                # Update conditions that referenced the old indicator
+                # Update conditions that referenced the old indicator (by type or instance_id)
                 for condition in mutated_gene.entry_conditions:
-                    if condition.indicator == old_type:
+                    if condition.indicator == old_type or (old_instance_id and condition.indicator == old_instance_id):
                         condition.indicator = new_type
                 for condition in mutated_gene.exit_conditions:
-                    if condition.indicator == old_type:
+                    if condition.indicator == old_type or (old_instance_id and condition.indicator == old_instance_id):
                         condition.indicator = new_type
     
     # Create new individual with mutation record
@@ -286,7 +298,9 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
             condition.logic = 'OR' if condition.logic == 'AND' else 'AND'
             mutations_applied.append(f"{label}_logic_{idx}")
         elif mutation_type == 'threshold':
-            ind_config = indicator_config.get(condition.indicator, {})
+            # Extract base type from possible instance_id format (e.g., 'RSI_0' -> 'RSI')
+            base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+            ind_config = indicator_config.get(base_indicator, {})
             threshold_key = 'buy_threshold' if is_entry else 'sell_threshold'
             
             # Set default ranges based on indicator type
@@ -296,8 +310,8 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
                 'CCI': ([-200, -100], [100, 200])
             }
             
-            if condition.indicator in defaults:
-                default_range = defaults[condition.indicator][0 if is_entry else 1]
+            if base_indicator in defaults:
+                default_range = defaults[base_indicator][0 if is_entry else 1]
                 threshold_range = ind_config.get(threshold_key, default_range)
                 condition.threshold = random.randint(*threshold_range)
                 mutations_applied.append(f"{label}_threshold_{idx}")
@@ -662,6 +676,143 @@ def mutate_adaptive_per_gene(individual: Individual, base_mutation_rate: float,
     return individual
 
 
+def mutate_timeframes(individual: Individual, mutation_rate: float,
+                      config: Dict[str, Any]) -> Individual:
+    """
+    Mutate multi-timeframe aspects of the strategy.
+    
+    Operations:
+    - Add an informative timeframe with a new indicator
+    - Remove an informative timeframe and its indicators
+    - Change an indicator's timeframe (base <-> informative)
+    
+    Args:
+        individual: Individual to mutate
+        mutation_rate: Probability of mutation
+        config: Configuration with multi-TF settings
+        
+    Returns:
+        Mutated individual
+    """
+    multi_tf_config = config.get('multi_timeframe', {})
+    if not multi_tf_config.get('enabled', False):
+        return individual
+    
+    mutated_gene = individual.strategy_gene.copy()
+    indicator_config = config.get('indicators', {})
+    available_itfs = multi_tf_config.get('available', [])
+    max_tfs = multi_tf_config.get('max_timeframes', 2)
+    htf_pref = multi_tf_config.get('higher_timeframe_preference', [])
+    available_indicators = indicator_config.get('available', [])
+    mutations_applied = []
+    
+    # Filter to valid higher timeframes
+    valid_itfs = [tf for tf in available_itfs if is_higher_timeframe(tf, mutated_gene.timeframe)]
+    
+    if not valid_itfs:
+        return individual
+    
+    # Choose operation
+    operations = []
+    current_itfs = list(mutated_gene.informative_timeframes)
+    if len(current_itfs) < max_tfs:
+        operations.append('add_timeframe')
+    if current_itfs:
+        operations.append('remove_timeframe')
+    inf_indicators = mutated_gene.get_informative_indicators()
+    if inf_indicators:
+        operations.append('change_indicator_tf')
+    
+    if not operations:
+        operations = ['add_timeframe']
+    
+    operation = random.choice(operations)
+    
+    if operation == 'add_timeframe':
+        # Add a new informative timeframe
+        unused_tfs = [tf for tf in valid_itfs if tf not in current_itfs]
+        if unused_tfs:
+            new_tf = random.choice(unused_tfs)
+            mutated_gene.informative_timeframes.append(new_tf)
+            # Add an indicator for this timeframe
+            if htf_pref:
+                candidates = [t for t in htf_pref if t in available_indicators]
+                ind_type = random.choice(candidates) if candidates else random.choice(available_indicators)
+            else:
+                ind_type = random.choice(available_indicators)
+            new_ind = create_random_indicator(ind_type, indicator_config)
+            new_ind.timeframe = new_tf
+            mutated_gene.indicators.append(new_ind)
+            mutations_applied.append(f"add_tf_{new_tf}_{ind_type}")
+    
+    elif operation == 'remove_timeframe':
+        # Remove an informative timeframe and its indicators
+        tf_to_remove = random.choice(current_itfs)
+        mutated_gene.informative_timeframes.remove(tf_to_remove)
+        # Remove indicators on that timeframe
+        removed_ids = set()
+        remaining = []
+        for ind in mutated_gene.indicators:
+            if ind.timeframe == tf_to_remove:
+                if ind.instance_id:
+                    removed_ids.add(ind.instance_id)
+                removed_ids.add(ind.type)
+            else:
+                remaining.append(ind)
+        mutated_gene.indicators = remaining
+        # Clean up conditions referencing removed indicators
+        mutated_gene.entry_conditions = [
+            c for c in mutated_gene.entry_conditions
+            if c.indicator not in removed_ids
+        ]
+        mutated_gene.exit_conditions = [
+            c for c in mutated_gene.exit_conditions
+            if c.indicator not in removed_ids
+        ]
+        # Ensure at least one entry condition remains
+        if not mutated_gene.entry_conditions and mutated_gene.indicators:
+            base_inds = [ind.type for ind in mutated_gene.indicators if ind.timeframe is None]
+            if base_inds:
+                new_cond = _create_random_condition(base_inds[0], True, indicator_config)
+                if new_cond:
+                    mutated_gene.entry_conditions.append(new_cond)
+        mutations_applied.append(f"remove_tf_{tf_to_remove}")
+    
+    elif operation == 'change_indicator_tf':
+        # Move an informative indicator to a different valid TF
+        inf_ind = random.choice(inf_indicators)
+        other_tfs = [tf for tf in valid_itfs if tf != inf_ind.timeframe]
+        if other_tfs:
+            old_tf = inf_ind.timeframe
+            new_tf = random.choice(other_tfs)
+            # Find the actual indicator in the list and update
+            for ind in mutated_gene.indicators:
+                if ind.instance_id == inf_ind.instance_id:
+                    ind.timeframe = new_tf
+                    ind.instance_id = None  # Will be reassigned
+                    break
+            # Update informative_timeframes list
+            if new_tf not in mutated_gene.informative_timeframes:
+                mutated_gene.informative_timeframes.append(new_tf)
+            # Remove old TF if no indicators remain on it
+            has_old_tf = any(i.timeframe == old_tf for i in mutated_gene.indicators)
+            if not has_old_tf and old_tf in mutated_gene.informative_timeframes:
+                mutated_gene.informative_timeframes.remove(old_tf)
+            mutations_applied.append(f"change_tf_{old_tf}_to_{new_tf}")
+    
+    # Reassign instance IDs
+    mutated_gene.assign_instance_ids()
+    
+    new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
+    new_individual.mutations = individual.mutations + [{
+        'type': 'timeframe',
+        'operation': operation,
+        'applied': mutations_applied
+    }]
+    
+    return new_individual
+
+
 def mutate(individual: Individual, mutation_rate: float,
           config: Dict[str, Any],
           methods: list = None) -> Individual:
@@ -688,6 +839,10 @@ def mutate(individual: Individual, mutation_rate: float,
             methods.append('swap')
         if random.random() < 0.15:  # 15% chance to use adaptive mutation
             methods.append('adaptive')
+        # Multi-timeframe mutation when enabled
+        multi_tf_config = config.get('multi_timeframe', {})
+        if multi_tf_config.get('enabled', False) and random.random() < 0.2:
+            methods.append('timeframes')
     
     mutated = individual
     
@@ -708,6 +863,8 @@ def mutate(individual: Individual, mutation_rate: float,
                     mutated = mutate_swap(mutated, mutation_rate, config)
                 elif method == 'adaptive':
                     mutated = mutate_adaptive_per_gene(mutated, mutation_rate, config)
+                elif method == 'timeframes':
+                    mutated = mutate_timeframes(mutated, mutation_rate, config)
             except (ValueError, KeyError, AttributeError, TypeError) as e:
                 # Log the error but continue with the current mutated state
                 # This ensures that a failed mutation doesn't crash the evolution

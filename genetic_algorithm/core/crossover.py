@@ -68,6 +68,11 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
             setattr(child1_gene, attr, getattr(parent2.strategy_gene, attr))
             setattr(child2_gene, attr, getattr(parent1.strategy_gene, attr))
     
+    # Swap informative_timeframes along with timeframe for consistency
+    if random.random() < 0.5:
+        child1_gene.informative_timeframes = list(parent2.strategy_gene.informative_timeframes)
+        child2_gene.informative_timeframes = list(parent1.strategy_gene.informative_timeframes)
+    
     if random.random() < 0.5:
         child1_gene.minimal_roi = parent2.strategy_gene.minimal_roi.copy()
         child2_gene.minimal_roi = parent1.strategy_gene.minimal_roi.copy()
@@ -164,6 +169,10 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
             setattr(child2_gene, attr, val2)
     
     if random.random() < swap_prob:
+        child1_gene.informative_timeframes = list(parent2.strategy_gene.informative_timeframes)
+        child2_gene.informative_timeframes = list(parent1.strategy_gene.informative_timeframes)
+    
+    if random.random() < swap_prob:
         child1_gene.trailing_stop = parent2.strategy_gene.trailing_stop
         child2_gene.trailing_stop = parent1.strategy_gene.trailing_stop
     
@@ -222,6 +231,9 @@ def component_crossover(parent1: Individual, parent2: Individual,
     
     if swaps['indicators']:
         child1_gene.indicators, child2_gene.indicators = [copy.deepcopy(ind) for ind in parent2.strategy_gene.indicators], [copy.deepcopy(ind) for ind in parent1.strategy_gene.indicators]
+        # Swap informative_timeframes with indicators for consistency
+        child1_gene.informative_timeframes = list(parent2.strategy_gene.informative_timeframes)
+        child2_gene.informative_timeframes = list(parent1.strategy_gene.informative_timeframes)
     
     if swaps['entry']:
         child1_gene.entry_conditions, child2_gene.entry_conditions = [copy.deepcopy(cond) for cond in parent2.strategy_gene.entry_conditions], [copy.deepcopy(cond) for cond in parent1.strategy_gene.entry_conditions]

@@ -192,19 +192,130 @@ class DirectBacktester:
         if self.backtest_config.get('enable_cache', True):
             self.cache = BacktestCache()
         
-        # DEBUG: Log what we loaded
-        logger.info("=" * 80)
-        logger.info("DirectBacktester initialized with config:")
+        # Log backtester initialization summary
+        logger.info("[INIT] DirectBacktester initialized")
         logger.info(f"  Pairs: {self.backtest_config.get('pairs')}")
         logger.info(f"  Timerange: {self.backtest_config.get('timerange')}")
         logger.info(f"  Stake amount: {self.backtest_config.get('stake_amount')}")
         logger.info(f"  Max open trades: {self.backtest_config.get('max_open_trades')}")
         logger.info(f"  Fee: {self.backtest_config.get('fee')}")
-        logger.info(f"  Strategy directory: {self.strategy_dir}")
-        logger.info("=" * 80)
         
         # Validate and auto-download data if enabled
         self._validate_and_download_data()
+    
+    def get_available_data_range(self) -> Optional[str]:
+        """
+        Detect the actual available data range from disk for the configured pairs.
+        
+        Checks all configured timeframes and uses the widest (union) range across
+        them, then intersects with the configured timerange to produce an effective
+        timerange that can be used for walk-forward window creation.
+        
+        Returns:
+            Effective timerange string (YYYYMMDD-YYYYMMDD), or None if no data found.
+        """
+        pairs = self.backtest_config.get('pairs', [])
+        timeframes = list(self.config.get('strategy_constraints', {}).get('timeframes', ['5m']))
+        if not timeframes:
+            timeframes = ['5m']
+        
+        # Include multi-timeframe timeframes when enabled (consistent with
+        # _validate_data_exists) so that higher-TF data with wider history
+        # contributes to the effective range instead of being ignored.
+        multi_tf_config = self.config.get('multi_timeframe', {})
+        if multi_tf_config.get('enabled', False):
+            multi_tf_available = multi_tf_config.get('available', [])
+            for tf in multi_tf_available:
+                if tf not in timeframes:
+                    timeframes.append(tf)
+        
+        # Skip for test pairs
+        if any('UNITTEST' in p for p in pairs):
+            return self.backtest_config.get('timerange', '')
+        
+        exchange_name = self.backtest_config.get('exchange', self.DEFAULT_EXCHANGE)
+        datadir = self.freqtrade_root / "user_data" / "data" / exchange_name
+        
+        try:
+            from freqtrade.data.history.datahandlers import get_datahandler
+            from freqtrade.enums import CandleType
+            from genetic_algorithm.utils.timerange import parse_timerange, format_date
+            
+            data_handler = get_datahandler(datadir)
+            
+            # Find the widest data range across ALL configured timeframes (union).
+            # For each timeframe, compute the intersection across pairs (common range
+            # that all pairs share), then take the union across timeframes so that
+            # any timeframe with more history contributes to the effective range.
+            overall_min = None
+            overall_max = None
+            
+            for timeframe in timeframes:
+                tf_min = None
+                tf_max = None
+                
+                for pair in pairs:
+                    min_date, max_date, length = data_handler.ohlcv_data_min_max(
+                        pair, timeframe, CandleType.SPOT
+                    )
+                    
+                    if length == 0:
+                        logger.debug(f"No data on disk for {pair} {timeframe}")
+                        continue
+                    
+                    # Make datetimes naive for comparison (ohlcv_data_min_max may return tz-aware)
+                    min_dt = min_date.replace(tzinfo=None) if min_date.tzinfo else min_date
+                    max_dt = max_date.replace(tzinfo=None) if max_date.tzinfo else max_date
+                    
+                    # Intersection across pairs for this timeframe
+                    if tf_min is None or min_dt > tf_min:
+                        tf_min = min_dt
+                    if tf_max is None or max_dt < tf_max:
+                        tf_max = max_dt
+                
+                if tf_min is not None and tf_max is not None and tf_min < tf_max:
+                    logger.debug(
+                        f"Data range for timeframe {timeframe}: "
+                        f"{format_date(tf_min)}-{format_date(tf_max)}"
+                    )
+                    # Union across timeframes: keep the earliest start and latest end
+                    if overall_min is None or tf_min < overall_min:
+                        overall_min = tf_min
+                    if overall_max is None or tf_max > overall_max:
+                        overall_max = tf_max
+                else:
+                    logger.warning(f"No data on disk for timeframe {timeframe} across all pairs")
+            
+            if overall_min is None or overall_max is None:
+                logger.warning("Could not determine data range - no data files found")
+                return None
+            
+            logger.info(f"Actual data range on disk: {format_date(overall_min)}-{format_date(overall_max)}")
+            
+            # Intersect with configured timerange
+            config_timerange = self.backtest_config.get('timerange', '')
+            if config_timerange:
+                config_start, config_end = parse_timerange(config_timerange)
+                
+                effective_start = max(overall_min, config_start)
+                effective_end = min(overall_max, config_end)
+                
+                if effective_start >= effective_end:
+                    logger.error(
+                        f"No overlap between config timerange ({config_timerange}) and "
+                        f"available data ({format_date(overall_min)}-{format_date(overall_max)})")
+                    return None
+                
+                effective_timerange = f"{format_date(effective_start)}-{format_date(effective_end)}"
+            else:
+                effective_timerange = f"{format_date(overall_min)}-{format_date(overall_max)}"
+            
+            logger.info(f"Effective data range: {effective_timerange}")
+            return effective_timerange
+            
+        except Exception as e:
+            logger.warning(f"Failed to detect data range: {e}. Using config timerange as fallback.")
+            return self.backtest_config.get('timerange', '')
     
     def _validate_data_exists(self) -> Dict[str, list]:
         """
@@ -214,7 +325,18 @@ class DirectBacktester:
             Dictionary with 'missing' list of (pair, timeframe) tuples that are missing
         """
         pairs = self.backtest_config.get('pairs', [])
-        timeframes = self.config.get('strategy_constraints', {}).get('timeframes', ['5m'])
+        # Use same config path as StrategyGenerator to ensure we check all timeframes
+        # that might be used by generated strategies
+        timeframes = list(self.config.get('strategy', {}).get('timeframes', ['5m', '15m', '1h']))
+        
+        # Include multi-timeframe timeframes when enabled
+        multi_tf_config = self.config.get('multi_timeframe', {})
+        if multi_tf_config.get('enabled', False):
+            multi_tf_available = multi_tf_config.get('available', [])
+            for tf in multi_tf_available:
+                if tf not in timeframes:
+                    timeframes.append(tf)
+            logger.info(f"Multi-timeframe enabled, validating timeframes: {timeframes}")
         
         # Skip validation for test pairs
         if any('UNITTEST' in p for p in pairs):
@@ -274,10 +396,25 @@ class DirectBacktester:
             datadir = self.freqtrade_root / "user_data" / "data" / exchange_name
             datadir.mkdir(parents=True, exist_ok=True)
             
+            # Use the configured timerange so the download covers the full requested
+            # history instead of only what the exchange provides by default.
+            configured_timerange = self.backtest_config.get('timerange', None)
+            
             logger.info(f"Auto-downloading missing data for {len(pairs)} pair(s) and {len(timeframes)} timeframe(s)...")
             logger.info(f"  Pairs: {pairs}")
             logger.info(f"  Timeframes: {timeframes}")
             logger.info(f"  Exchange: {exchange_name}")
+            if configured_timerange:
+                logger.info(f"  Timerange: {configured_timerange}")
+            
+            # Determine stake currency from configured pairs
+            stake_currency = 'USDT'
+            config_pairs = self.backtest_config.get('pairs', [])
+            if config_pairs and '/' in config_pairs[0]:
+                stake_currency = config_pairs[0].split('/')[1]
+            else:
+                logger.warning(f"Could not derive stake currency from pairs {config_pairs}, "
+                             f"defaulting to '{stake_currency}'")
             
             # Create exchange configuration
             exchange_config = {
@@ -292,7 +429,7 @@ class DirectBacktester:
                 'user_data_dir': self.freqtrade_root / "user_data",
                 'trading_mode': 'spot',
                 'margin_mode': '',
-                'stake_currency': 'USDT',
+                'stake_currency': stake_currency,
                 'dry_run': True,
                 'runmode': 'other',
                 'entry_pricing': {
@@ -310,15 +447,24 @@ class DirectBacktester:
             # Initialize exchange
             exchange = ExchangeResolver.load_exchange(exchange_config)
             
+            # Convert the configured timerange string to a TimeRange object so the
+            # download covers the full requested history rather than just the default
+            # number of candles the exchange returns without an explicit range.
+            from freqtrade.configuration import TimeRange as FTTimeRange
+            ft_timerange = (
+                FTTimeRange.parse_timerange(configured_timerange)
+                if configured_timerange else None
+            )
+            
             # Download data
             refresh_backtest_ohlcv_data(
                 exchange=exchange,
                 pairs=pairs,
                 timeframes=timeframes,
                 datadir=datadir,
-                timerange=None,  # Download all available
+                timerange=ft_timerange,
                 erase=False,
-                trading_mode=TradingMode.SPOT,  # ← ADD THIS
+                trading_mode=TradingMode.SPOT,
                 candle_types=[CandleType.SPOT],
             )
             
@@ -373,7 +519,8 @@ class DirectBacktester:
     def backtest_strategy(self, 
                          strategy_code: str, 
                          strategy_name: str,
-                         max_retries: int = 2) -> BacktestResult:
+                         max_retries: int = 2,
+                         strategy_max_open_trades: Optional[int] = None) -> BacktestResult:
         """
         Run backtest for a strategy using direct Python API.
         
@@ -402,7 +549,7 @@ class DirectBacktester:
                     logger.info(f"Retry {attempt}/{max_retries} for {strategy_name}")
                     time.sleep(1)
                 
-                result = self._run_backtest_direct(strategy_code, strategy_name)
+                result = self._run_backtest_direct(strategy_code, strategy_name, strategy_max_open_trades)
                 result.execution_time = time.time() - start_time
                 
                 # Cache successful result
@@ -426,7 +573,7 @@ class DirectBacktester:
             execution_time=execution_time
         )
     
-    def _run_backtest_direct(self, strategy_code: str, strategy_name: str) -> BacktestResult:
+    def _run_backtest_direct(self, strategy_code: str, strategy_name: str, strategy_max_open_trades: Optional[int] = None) -> BacktestResult:
         """
         Run backtest using FreqTrade Python API with mocked exchange.
         
@@ -456,55 +603,91 @@ class DirectBacktester:
             from freqtrade.configuration import Configuration
             from freqtrade.optimize.backtesting import Backtesting
             from freqtrade.exchange.exchange import Exchange
+            import io
+            import sys
             
             # Create configuration
-            config_dict = self._create_backtest_config(strategy_name)
+            config_dict = self._create_backtest_config(strategy_name, strategy_max_open_trades)
             
-            # Mock the exchange to avoid network calls
-            with patch.object(Exchange, '_load_async_markets', return_value={}), \
-                 patch.object(Exchange, 'markets', PropertyMock(return_value=self._get_mock_markets())), \
-                 patch.object(Exchange, 'validate_config', MagicMock()), \
-                 patch.object(Exchange, 'validate_timeframes', MagicMock()), \
-                 patch.object(Exchange, '_init_ccxt', MagicMock()), \
-                 patch.object(Exchange, 'get_fee', return_value=0.001), \
-                 patch.object(Exchange, 'precisionMode', PropertyMock(return_value=2)), \
-                 patch.object(Exchange, 'precision_mode_price', PropertyMock(return_value=2)), \
-                 patch.object(Exchange, 'timeframes', PropertyMock(return_value=["1m", "5m", "15m", "1h", "1d"])):
-                
-                # Initialize backtesting
-                backtesting = Backtesting(config_dict)
-                
-                # Run backtest
-                backtesting.start()
-                
-                # Get results from the backtest results
-                # The results are stored in backtesting.results which is a dictionary
-                logger.debug(f"Backtest results structure: {backtesting.results.keys() if backtesting.results else 'None'}")
-                
-                if not backtesting.results or 'strategy' not in backtesting.results:
-                    logger.warning(f"No results available from backtest for {strategy_name}")
-                    return BacktestResult(
-                        success=True,
-                        strategy_name=strategy_name,
-                        total_trades=0,
-                        error_message="No trades generated - strategy may be too restrictive"
-                    )
-                
-                # Parse results from the strategy results
-                strategy_results = backtesting.results['strategy'].get(strategy_name, {})
-                logger.debug(f"Strategy results keys: {strategy_results.keys() if strategy_results else 'None'}")
-                
-                if not strategy_results:
-                    logger.warning(f"Empty strategy results for {strategy_name}")
-                    return BacktestResult(
-                        success=True,
-                        strategy_name=strategy_name,
-                        total_trades=0,
-                        error_message="No trades generated - check strategy conditions"
-                    )
-                
-                result = self._parse_stats(strategy_results, strategy_name)
-                return result
+            # Suppress FreqTrade's verbose output by redirecting stdout
+            old_stdout = sys.stdout
+            sys.stdout = io.StringIO()
+            
+            # Also suppress FreqTrade's verbose logging during backtesting
+            freqtrade_loggers = [
+                'freqtrade.exchange.exchange',
+                'freqtrade.resolvers',
+                'freqtrade.resolvers.strategy_resolver',
+                'freqtrade.resolvers.exchange_resolver',
+                'freqtrade.resolvers.iresolver',
+                'freqtrade.configuration',
+                'freqtrade.configuration.config_validation',
+                'freqtrade.optimize.backtesting',
+                'freqtrade.data.dataprovider',
+                'freqtrade.data.history',
+                'freqtrade.strategy',
+                'freqtrade.strategy.hyper',
+                'freqtrade.misc',
+            ]
+            old_log_levels = {}
+            for logger_name in freqtrade_loggers:
+                ft_logger = logging.getLogger(logger_name)
+                old_log_levels[logger_name] = ft_logger.level
+                ft_logger.setLevel(logging.WARNING)
+            
+            try:
+                # Mock the exchange to avoid network calls
+                with patch.object(Exchange, '_load_async_markets', return_value={}), \
+                     patch.object(Exchange, 'markets', PropertyMock(return_value=self._get_mock_markets())), \
+                     patch.object(Exchange, 'validate_config', MagicMock()), \
+                     patch.object(Exchange, 'validate_timeframes', MagicMock()), \
+                     patch.object(Exchange, '_init_ccxt', MagicMock()), \
+                     patch.object(Exchange, 'get_fee', return_value=0.001), \
+                     patch.object(Exchange, 'precisionMode', PropertyMock(return_value=2)), \
+                     patch.object(Exchange, 'precision_mode_price', PropertyMock(return_value=2)), \
+                     patch.object(Exchange, 'timeframes', PropertyMock(return_value=["1m", "5m", "15m", "1h", "1d"])), \
+                     patch.object(Exchange, 'get_min_pair_stake_amount', return_value=0.0), \
+                     patch.object(Exchange, 'get_max_pair_stake_amount', return_value=float('inf')):
+                    
+                    # Initialize backtesting
+                    backtesting = Backtesting(config_dict)
+                    
+                    # Run backtest
+                    backtesting.start()
+                    
+                    # Get results from the backtest results
+                    logger.debug(f"Backtest results structure: {backtesting.results.keys() if backtesting.results else 'None'}")
+                    
+                    if not backtesting.results or 'strategy' not in backtesting.results:
+                        logger.warning(f"No results available from backtest for {strategy_name}")
+                        return BacktestResult(
+                            success=True,
+                            strategy_name=strategy_name,
+                            total_trades=0,
+                            error_message="No trades generated - strategy may be too restrictive"
+                        )
+                    
+                    # Parse results from the strategy results
+                    strategy_results = backtesting.results['strategy'].get(strategy_name, {})
+                    logger.debug(f"Strategy results keys: {strategy_results.keys() if strategy_results else 'None'}")
+                    
+                    if not strategy_results:
+                        logger.warning(f"Empty strategy results for {strategy_name}")
+                        return BacktestResult(
+                            success=True,
+                            strategy_name=strategy_name,
+                            total_trades=0,
+                            error_message="No trades generated - check strategy conditions"
+                        )
+                    
+                    result = self._parse_stats(strategy_results, strategy_name)
+                    return result
+            finally:
+                # Restore stdout
+                sys.stdout = old_stdout
+                # Restore logging levels
+                for logger_name, level in old_log_levels.items():
+                    logging.getLogger(logger_name).setLevel(level)
                 
         except Exception as e:
             logger.error(f"Backtest execution error: {e}")
@@ -516,7 +699,7 @@ class DirectBacktester:
                 error_message=f"Execution error: {str(e)}"
             )
     
-    def _create_backtest_config(self, strategy_name: str) -> Dict[str, Any]:
+    def _create_backtest_config(self, strategy_name: str, strategy_max_open_trades: Optional[int] = None) -> Dict[str, Any]:
         """
         Create FreqTrade config for backtesting from GA config.
         
@@ -535,7 +718,11 @@ class DirectBacktester:
         pairs = ga_cfg.get('pairs', ['UNITTEST/BTC'])
         timerange = ga_cfg.get('timerange', '')
         stake_amount = ga_cfg.get('stake_amount', 0.05)
-        max_open_trades = ga_cfg.get('max_open_trades', 3)
+        # Use strategy-specific max_open_trades if provided, otherwise use global config
+        if strategy_max_open_trades is not None:
+            max_open_trades = strategy_max_open_trades
+        else:
+            max_open_trades = ga_cfg.get('max_open_trades', 3)
         fee = ga_cfg.get('fee', 0.001)
         
         # Determine stake currency from pairs
@@ -580,6 +767,10 @@ class DirectBacktester:
             "exportdirectory": exportdir,  # Path object for storing results
             "runmode": "backtest",  # Required for FreqTrade
             
+            # Data format - CRITICAL: must match the format of data files on disk
+            "dataformat_ohlcv": "feather",  # Use feather format for faster data loading
+            "dataformat_trades": "feather",
+            
             # Critical config values from GA config
             "stake_currency": stake_currency,  # Calculated from pairs
             "stake_amount": stake_amount,  # From GA config
@@ -587,8 +778,11 @@ class DirectBacktester:
             "max_open_trades": max_open_trades,  # From GA config
             "fee": fee,  # From GA config
             
-            # Timeframe will be overridden by strategy
-            "timeframe": "5m",
+            # Allow multiple trades per pair (enables true max_open_trades)
+            "position_stacking": True,  # Required to open more than 1 trade per pair
+            
+            # Don't set timeframe here - let the strategy define it
+            # "timeframe": "5m",  # Removed - strategy's timeframe will be used
             "timerange": timerange if timerange else None,  # From GA config
             
             # Exchange configuration
@@ -608,15 +802,8 @@ class DirectBacktester:
         # Store original config reference (required for backtest storage)
         config["original_config"] = config.copy()
         
-        # Log what we're using for debugging
-        logger.info(f"Auto-generated backtest config for {strategy_name}:")
-        logger.info(f"  Pairs: {pairs}")
-        logger.info(f"  Timerange: {timerange}")
-        logger.info(f"  Starting balance: {starting_balance} {stake_currency}")
-        logger.info(f"  Stake amount: {stake_amount} {stake_currency}")
-        logger.info(f"  Data directory: {datadir}")
-        logger.info(f"  Max open trades: {max_open_trades}")
-        logger.info(f"  Fee: {fee}")
+        # Log at debug level to avoid spam - full config is shown at initialization
+        logger.debug(f"Backtest config for {strategy_name}: pairs={pairs}, timerange={timerange}, max_open_trades={max_open_trades}")
         
         return config
     
@@ -708,8 +895,8 @@ class DirectBacktester:
         if win_rate == 0.0 and total_trades > 0:
             win_rate = wins / total_trades
         
-        # Log with 4 decimal places to see small profits
-        logger.info(f"Parsed {strategy_name}: profit={profit_percent:.4f}%, trades={total_trades}, win_rate={win_rate:.2%}")
+        # Log key results at debug level (summary logged elsewhere)
+        logger.debug(f"Parsed {strategy_name}: profit={profit_percent:.4f}%, trades={total_trades}, win_rate={win_rate:.2%}")
         
         # Extract metrics from stats
         return BacktestResult(

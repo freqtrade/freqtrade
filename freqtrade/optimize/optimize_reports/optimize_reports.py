@@ -484,7 +484,12 @@ def generate_strategy_stats(
     if not isinstance(results, DataFrame):
         return {}
     config = content["config"]
-    max_open_trades = min(config["max_open_trades"], len(pairlist))
+    # With position_stacking, we can have more trades than pairs
+    # Only limit by pair count when position_stacking is disabled
+    if config.get("position_stacking", False):
+        max_open_trades = config["max_open_trades"]
+    else:
+        max_open_trades = min(config["max_open_trades"], len(pairlist))
     start_balance = get_dry_run_wallet(config)
     stake_currency = config["stake_currency"]
 

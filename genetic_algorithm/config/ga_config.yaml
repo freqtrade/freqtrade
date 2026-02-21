@@ -18,10 +18,10 @@ genetic_algorithm:
   random_seed: null  # Set to an integer (e.g., 42) for reproducible experiments
   
   # Population size - number of strategies per generation
-  population_size: 20
+  population_size: 50
   
   # Number of generations to evolve
-  generations: 4
+  generations: 10
   
   # Mutation rate - probability of mutating an individual
   mutation_rate: 0.15
@@ -30,10 +30,10 @@ genetic_algorithm:
   crossover_rate: 0.7
   
   # Elite size - number of top strategies to preserve unchanged (~15% of population)
-  elite_size: 3
+  elite_size: 6
   
   # Tournament size for tournament selection
-  tournament_size: 3
+  tournament_size: 1
   
   # Selection method: 'tournament', 'roulette', 'rank'
   selection_method: 'tournament'
@@ -56,15 +56,41 @@ genetic_algorithm:
   
   # Random immigrants - inject fresh random strategies each generation to prevent premature convergence
   # When diversity drops below diversity_threshold, this count is doubled for that generation
-  random_immigrants: 3          # Number of fresh random individuals to inject per generation
+  random_immigrants: 5          # Number of fresh random individuals to inject per generation
+  
+  # Evolution mode: 'single_objective' (default) or 'nsga2' (multi-objective)
+  # Single-objective uses weighted fitness function, NSGA-II returns Pareto front
+  mode: 'single_objective'
+
+# === NSGA-II Multi-Objective Configuration ===
+# Only used when genetic_algorithm.mode = 'nsga2'
+nsga2:
+  # Objectives to optimize (all converted to maximization internally)
+  # Each objective has: name (metric key), type (maximize/minimize/goldilocks)
+  objectives:
+    - name: 'profit'          # Total profit percentage
+      type: 'maximize'
+      scale: 100.0            # Normalize to ~0-1 range
+    - name: 'max_drawdown'    # Maximum drawdown (risk)
+      type: 'minimize'        # Converted to -drawdown for maximization
+      scale: 1.0
+    - name: 'sharpe_ratio'    # Risk-adjusted return
+      type: 'maximize'
+      scale: 3.0              # Normalize to ~0-1 range
+  
+  # Number of Pareto-optimal strategies to return
+  pareto_front_size: 20
+  
+  # Crowding distance percentile for diversity (not currently used, for future)
+  crowding_distance_percentile: 0.1
 
 # === Fitness Function Weights ===
 # These weights determine how different metrics contribute to overall fitness
 # All weights should sum to 1.0
 fitness_weights:
-  profit: 0.25            # Total profit/return
-  sharpe_ratio: 0.15      # Risk-adjusted returns (volatility)
-  sortino_ratio: 0.15     # Downside risk-adjusted returns
+  profit: 0.29            # Total profit/return
+  sharpe_ratio: 0.13      # Risk-adjusted returns (volatility)
+  sortino_ratio: 0.13     # Downside risk-adjusted returns
   profit_factor: 0.10     # Win/loss ratio
   drawdown: 0.15          # Maximum drawdown (penalty)
   win_rate: 0.10          # Percentage of winning trades
@@ -80,10 +106,10 @@ fitness_penalties:
 # === Backtesting Configuration ===
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
-  timerange: "20241220-20260218"  # Last 60 days
+  timerange: "20250620-20260218"  # Last 60 days
   
   # Stake amount per trade
-  stake_amount: 0.05
+  stake_amount: 0.2
   
   # Trading pairs to test strategies on (use test data pairs)
   pairs:
@@ -91,10 +117,10 @@ backtesting:
     - "LTC/BTC"
   
   # Maximum number of open trades
-  max_open_trades: 3
+  max_open_trades: 4
   
   # Fee for trades (0.1%)
-  fee: 0.001
+  fee: 0.002
   
   # Exchange name (default: binance)
   exchange: "binance"
@@ -110,6 +136,47 @@ backtesting:
   # Timeout for single backtest (seconds)
   timeout: 300
 
+# === Walk-Forward Optimization ===
+# Walk-forward optimization prevents overfitting by training on one period
+# and validating on a separate out-of-sample period. This is repeated across
+# multiple windows to ensure strategy robustness.
+walk_forward:
+  # Enable walk-forward optimization
+  enabled: true  # Set to true to use walk-forward validation
+  
+  # Training window size in days
+  # Strategies are evolved using only this training data
+  train_days: 60
+  
+  # Validation window size in days
+  # Strategy performance is measured on this unseen data
+  validation_days: 15
+  
+  # Step size in days - how far to slide the window forward
+  # Smaller steps = more windows but slower evolution
+  # Larger steps = fewer windows but less validation
+  step_days: 15
+  
+  # Window mode:
+  # - 'rolling': Fixed-size training window that slides forward
+  # - 'anchored': Expanding training window that grows from start date
+  mode: 'rolling'
+  
+  # Aggregation method for combining validation scores across windows:
+  # - 'mean': Average performance (balanced)
+  # - 'min': Worst-case performance (conservative)
+  # - 'harmonic_mean': Penalizes inconsistency
+  # - 'weighted': More weight to recent windows (requires weights config)
+  aggregation: 'mean'
+  
+  # Minimum trades required in training window to be valid
+  # Windows with fewer trades are skipped
+  min_train_trades: 10
+  
+  # Optional: Custom weights for 'weighted' aggregation
+  # Must sum to 1.0, length must match number of windows
+  # weights: [0.1, 0.2, 0.3, 0.4]  # Example: more weight to recent windows
+
 # === Strategy Constraints ===
 strategy_constraints:
   # Minimum number of trades for valid strategy
@@ -119,7 +186,7 @@ strategy_constraints:
   max_drawdown: 0.25
   
   # Minimum win rate
-  min_win_rate: 0.35
+  min_win_rate: 0.30
   
   # Allowed timeframes
   timeframes: ["5m", "15m", "1h"]
@@ -129,6 +196,37 @@ strategy_constraints:
   
   # ROI range
   roi_range: [0.01, 0.10]
+  
+  # Max open trades range (per strategy)
+  # Allows strategies to evolve their own trade capacity
+  # Note: Still limited by global max_open_trades in backtesting config
+  max_open_trades_range: [1, 10]
+
+# === Multi-Timeframe Configuration ===
+# Trade on base timeframe but use indicators from higher timeframes for:
+# - Trend confirmation (e.g., only buy on 5m when 1h trend is bullish)
+# - Market regime filtering (e.g., avoid trades during 4h consolidation)
+# - Stronger signals (higher TF = less noise)
+multi_timeframe:
+  # Enable multi-timeframe strategy generation
+  enabled: true  # Set to true to evolve multi-TF strategies
+  
+  # Higher timeframes available for informative indicators
+  # Must be strictly higher than the base strategy timeframe
+  available: ['15m', '1h', '4h']
+  
+  # Maximum number of informative timeframes per strategy
+  max_timeframes: 2
+  
+  # Indicator types preferred on higher timeframes
+  # Trend and volatility indicators tend to be more useful on higher TFs
+  higher_timeframe_preference:
+    - 'EMA'
+    - 'SMA'
+    - 'BBANDS'
+    - 'ATR'
+    - 'ADX'
+    - 'RSI'
 
 # === Indicator Configuration ===
 indicators:
