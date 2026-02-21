@@ -2,6 +2,7 @@
 Main Evolution Engine
 
 Coordinates the genetic algorithm evolution process.
+Supports both single-objective and multi-objective (NSGA-II) optimization.
 """
 
 import random
@@ -9,6 +10,12 @@ import yaml
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import logging
+
+try:
+    from tqdm import tqdm
+    TQDM_AVAILABLE = True
+except ImportError:
+    TQDM_AVAILABLE = False
 
 from genetic_algorithm.core.population import (
     Population, PopulationStats, apply_fitness_sharing, calculate_pairwise_distances
@@ -19,6 +26,14 @@ from genetic_algorithm.core.crossover import crossover
 from genetic_algorithm.core.mutation import mutate
 from genetic_algorithm.strategies.generator import StrategyGenerator
 from genetic_algorithm.evaluation.fitness import FitnessEvaluator
+from genetic_algorithm.core.nsga2 import (
+    fast_non_dominated_sort,
+    crowding_distance_assignment,
+    extract_objectives_from_metrics,
+    get_pareto_front,
+    nsga2_crowded_comparison_sort,
+    DEFAULT_OBJECTIVES
+)
 
 
 class GeneticAlgorithm:
@@ -70,6 +85,12 @@ class GeneticAlgorithm:
         self.selection_method = ga_config.get('selection_method', 'tournament')
         self.convergence_patience = ga_config.get('convergence_patience', 10)
         
+        # NSGA-II multi-objective settings
+        self.mode = ga_config.get('mode', 'single_objective')  # 'single_objective' or 'nsga2'
+        self.nsga2_config = self.config.get('nsga2', {})
+        self.objectives_config = self.nsga2_config.get('objectives', DEFAULT_OBJECTIVES)
+        self.pareto_front_size = self.nsga2_config.get('pareto_front_size', 20)
+        
         # Diversity preservation settings
         self.fitness_sharing = ga_config.get('fitness_sharing', True)
         self.sharing_radius = ga_config.get('sharing_radius', 0.3)
@@ -95,6 +116,17 @@ class GeneticAlgorithm:
             self.logger.info("="*80)
         else:
             self.logger.info("Using standard single-period backtesting (walk-forward disabled)")
+        
+        # Log NSGA-II mode status
+        if self.mode == 'nsga2':
+            self.logger.info("=" * 70)
+            self.logger.info("NSGA-II MULTI-OBJECTIVE OPTIMIZATION ENABLED")
+            self.logger.info(f"  Objectives: {[obj['name'] for obj in self.objectives_config]}")
+            self.logger.info(f"  Pareto front size: {self.pareto_front_size}")
+            self.logger.info("  Selection method will be overridden to 'nsga2'")
+            self.logger.info("=" * 70)
+            # Override selection method for NSGA-II
+            self.selection_method = 'nsga2'
         
         # Initialize visualizer (only if enabled and matplotlib is available)
         self.visualizer = None
@@ -123,6 +155,18 @@ class GeneticAlgorithm:
         self.adaptive_mutation = ga_config.get('adaptive_mutation', True)
         self.max_adaptation_factor = ga_config.get('max_adaptation_factor', 2.0)
         self.adaptation_step = ga_config.get('adaptation_step', 0.1)
+        
+        # Progress bar settings
+        progress_config = self.config.get('progress', {})
+        self.progress_enabled = progress_config.get('enabled', False) and TQDM_AVAILABLE
+        self.progress_show_fitness = progress_config.get('show_fitness', True)
+        self.progress_show_profit = progress_config.get('show_profit', True)
+        self.progress_update_every = progress_config.get('update_every', 1)
+        
+        if self.progress_enabled:
+            self.logger.info("Progress bar enabled")
+        elif progress_config.get('enabled', False) and not TQDM_AVAILABLE:
+            self.logger.warning("Progress bar requested but tqdm not installed. Run: pip install tqdm")
     
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file."""
@@ -135,24 +179,30 @@ class GeneticAlgorithm:
         logger = logging.getLogger('GeneticAlgorithm')
         logger.setLevel(getattr(logging, log_config.get('level', 'INFO')))
         
-        # Create formatter
-        log_format = log_config.get('format', '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        formatter = logging.Formatter(log_format)
+        # Prevent duplicate logs by not propagating to root logger
+        # The root logger is configured by run_ga.py setup_logging()
+        logger.propagate = False
         
-        # Add console handler if enabled
-        if log_config.get('console', True):
-            console_handler = logging.StreamHandler()
-            console_handler.setFormatter(formatter)
-            logger.addHandler(console_handler)
-        
-        # Add file handler if log file path is specified
-        log_file = log_config.get('file')
-        if log_file:
-            log_path = Path(log_file)
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            file_handler = logging.FileHandler(log_file)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
+        # Only add handlers if not already added (avoid duplicate handlers on re-init)
+        if not logger.handlers:
+            # Create formatter
+            log_format = log_config.get('format', '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter(log_format)
+            
+            # Add console handler if enabled
+            if log_config.get('console', True):
+                console_handler = logging.StreamHandler()
+                console_handler.setFormatter(formatter)
+                logger.addHandler(console_handler)
+            
+            # Add file handler if log file path is specified
+            log_file = log_config.get('file')
+            if log_file:
+                log_path = Path(log_file)
+                log_path.parent.mkdir(parents=True, exist_ok=True)
+                file_handler = logging.FileHandler(log_file)
+                file_handler.setFormatter(formatter)
+                logger.addHandler(file_handler)
         
         return logger
     
@@ -189,13 +239,39 @@ class GeneticAlgorithm:
         unevaluated = [ind for ind in population if not ind.evaluated]
         
         if not unevaluated:
+            self.logger.info("[EVAL] All individuals already evaluated (using cache)")
             return
         
-        self.logger.info(f"Evaluating {len(unevaluated)} individuals...")
+        self.logger.info(f"[EVAL] Evaluating {len(unevaluated)} individuals...")
         
-        for i, individual in enumerate(unevaluated):
+        successful = 0
+        failed = 0
+        total_profit = 0.0
+        best_fitness = 0.0
+        best_profit = 0.0
+        
+        # Create progress bar if enabled
+        if self.progress_enabled:
+            pbar = tqdm(
+                enumerate(unevaluated),
+                total=len(unevaluated),
+                desc=f"Gen {self.current_generation + 1}",
+                unit="strategy",
+                ncols=100,
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {postfix}"
+            )
+            iterator = pbar
+        else:
+            iterator = enumerate(unevaluated)
+            pbar = None
+        
+        for i, individual in iterator:
             strategy_name = individual.id
-            self.logger.debug(f"Evaluating individual {i+1}/{len(unevaluated)}: {strategy_name}")
+            
+            # Show progress every 5 individuals or at start/end (when no progress bar)
+            if not self.progress_enabled:
+                if i == 0 or (i + 1) % 5 == 0 or i == len(unevaluated) - 1:
+                    self.logger.info(f"[EVAL] Progress: {i+1}/{len(unevaluated)} ({((i+1)/len(unevaluated)*100):.0f}%)")
             
             try:
                 # Evaluate fitness
@@ -205,11 +281,35 @@ class GeneticAlgorithm:
                 )
                 individual.set_fitness(fitness, metrics)
                 
-                self.logger.debug(f"  Fitness: {fitness:.4f}, Profit: {metrics.get('profit', 0):.2f}%")
+                # For NSGA-II: also set objectives
+                if self.mode == 'nsga2':
+                    objectives = extract_objectives_from_metrics(metrics, self.objectives_config)
+                    individual.set_objectives(objectives, metrics)
+                
+                successful += 1
+                profit = metrics.get('profit', 0)
+                total_profit += profit
+                
+                # Track best for progress bar
+                if fitness > best_fitness:
+                    best_fitness = fitness
+                    best_profit = profit
+                
+                # Update progress bar postfix
+                if pbar and (i + 1) % self.progress_update_every == 0:
+                    postfix = {}
+                    if self.progress_show_fitness:
+                        postfix['best_fit'] = f"{best_fitness:.3f}"
+                    if self.progress_show_profit:
+                        postfix['best_pft'] = f"{best_profit:.1f}%"
+                    pbar.set_postfix(postfix)
+                
+                self.logger.debug(f"  {strategy_name}: fitness={fitness:.4f}, profit={metrics.get('profit', 0):.2f}%")
                 
             except Exception as e:
                 # Handle evaluation errors gracefully
-                self.logger.error(f"Failed to evaluate {strategy_name}: {e}")
+                self.logger.warning(f"[EVAL] Failed {strategy_name}: {e}")
+                failed += 1
                 # Set zero fitness for failed evaluation
                 individual.set_fitness(0.0, {
                     'profit': 0.0,
@@ -219,6 +319,14 @@ class GeneticAlgorithm:
                     'num_trades': 0,
                     'error': str(e)
                 })
+        
+        # Close progress bar
+        if pbar:
+            pbar.close()
+        
+        # Summary
+        avg_profit = total_profit / successful if successful > 0 else 0
+        self.logger.info(f"[EVAL] Complete: {successful} succeeded, {failed} failed, avg profit: {avg_profit:.2f}%")
     
     def _should_update_best_individual(self, candidate: Individual) -> bool:
         """
@@ -263,7 +371,13 @@ class GeneticAlgorithm:
         Returns:
             Next generation population
         """
-        self.logger.info(f"Creating generation {self.current_generation + 1}")
+        self.logger.info(f"[STEP] Creating generation {self.current_generation + 1}")
+        
+        # Track GA operator usage
+        crossover_count = 0
+        mutation_count = 0
+        crossover_failures = 0
+        mutation_failures = 0
         
         # Sort by fitness
         population.sort_by_fitness(reverse=True)
@@ -271,7 +385,8 @@ class GeneticAlgorithm:
         # Create next generation
         next_gen = Population(size=self.population_size, generation=self.current_generation + 1)
         
-        # Elitism: keep top performers
+        # Step 1: Elitism - keep top performers
+        self.logger.debug(f"[ELITISM] Preserving top {self.elite_size} individuals")
         for individual in population.get_best(self.elite_size):
             gene_copy = individual.strategy_gene.copy()
             gene_copy.generation = self.current_generation + 1
@@ -282,21 +397,21 @@ class GeneticAlgorithm:
             elite_copy.metrics = individual.metrics.copy() if individual.metrics else {}
             elite_copy.evaluated = True
             next_gen.add_individual(elite_copy)
+        self.logger.info(f"[ELITISM] Preserved {self.elite_size} elite individuals")
         
         # Helper to calculate next available individual ID
         def calculate_next_id():
             return len(next_gen)
         
-        # Inject random immigrants to maintain diversity
+        # Step 2: Inject random immigrants to maintain diversity
         # Get current generation stats to check diversity
         stats = population.get_stats()
         immigrant_count = self.random_immigrants
         
         # Double immigrant count if diversity is low
-        # (2x multiplier is a common heuristic for handling diversity crises in GAs)
         if stats.genetic_diversity is not None and stats.genetic_diversity < self.diversity_threshold:
             immigrant_count = self.random_immigrants * 2
-            self.logger.info(f"Low diversity ({stats.genetic_diversity:.4f} < {self.diversity_threshold:.4f}), doubling immigrant count")
+            self.logger.warning(f"[DIVERSITY] Low diversity ({stats.genetic_diversity:.4f}), doubling immigrants to {immigrant_count}")
         
         # Inject random immigrants
         immigrants_before = len(next_gen)
@@ -310,7 +425,7 @@ class GeneticAlgorithm:
             next_gen.add_individual(Individual(strategy_gene=immigrant_gene))
         
         actual_immigrants_added = len(next_gen) - immigrants_before
-        self.logger.info(f"Injected {actual_immigrants_added} random immigrants")
+        self.logger.info(f"[IMMIGRANTS] Added {actual_immigrants_added} random immigrants")
         
         # Helper to create child from parent gene
         def create_child(parent_gene, ind_id):
@@ -319,10 +434,13 @@ class GeneticAlgorithm:
             gene.individual_id = ind_id
             return Individual(strategy_gene=gene)
         
-        # Fill rest with offspring
+        # Step 3: Create offspring through selection, crossover, and mutation
+        self.logger.debug(f"[OFFSPRING] Creating offspring to fill remaining {self.population_size - len(next_gen)} slots")
         offspring_count = 0
+        offspring_added = 0
+        
         while len(next_gen) < self.population_size:
-            # Select parents
+            # Select parents using configured method
             parent1, parent2 = select_parents(
                 population, num_parents=2,
                 method=self.selection_method,
@@ -330,11 +448,11 @@ class GeneticAlgorithm:
                 allow_duplicates=self.allow_self_crossover
             )
             
-            # Crossover or copy
             # Pre-calculate IDs for both children before adding them
             child1_id = len(next_gen)
             child2_id = len(next_gen) + 1
             
+            # Crossover or copy
             try:
                 if random.random() < self.crossover_rate:
                     child1, child2 = crossover(
@@ -343,34 +461,37 @@ class GeneticAlgorithm:
                         ind_id=child1_id,
                         config=self.config
                     )
+                    crossover_count += 1
                 else:
                     child1 = create_child(parent1.strategy_gene, child1_id)
                     child2 = create_child(parent2.strategy_gene, child2_id)
             except (ValueError, KeyError, AttributeError, TypeError) as e:
                 # If crossover fails, use clones of parents instead
-                self.logger.warning(f"Crossover failed: {e}. Using parent clones instead.")
+                self.logger.debug(f"[CROSSOVER] Failed: {e}")
+                crossover_failures += 1
                 child1 = create_child(parent1.strategy_gene, child1_id)
                 child2 = create_child(parent2.strategy_gene, child2_id)
             
             # Mutation - call unconditionally, mutate() handles internal probability checks
-            # Previously had double-gating: outer random.random() + internal mutation sampling
             for child in [child1, child2]:
-                # Check if we've reached population size before adding each child
                 if len(next_gen) >= self.population_size:
                     break
                 try:
                     child = mutate(child, self.mutation_rate, self.config)
+                    mutation_count += 1
                     next_gen.add_individual(child)
+                    offspring_added += 1
                 except (ValueError, KeyError, AttributeError, TypeError) as e:
-                    # If mutation or adding fails, log and skip this child
-                    self.logger.warning(f"Failed to mutate/add child: {e}. Skipping this individual.")
-                    # Continue with the next child
+                    self.logger.debug(f"[MUTATION] Failed: {e}")
+                    mutation_failures += 1
                     continue
-                
-                if len(next_gen) >= self.population_size:
-                    break
             
             offspring_count += 2
+        
+        # Log generation summary
+        self.logger.info(f"[OFFSPRING] Added {offspring_added} offspring (crossovers: {crossover_count}, mutations: {mutation_count})")
+        if crossover_failures > 0 or mutation_failures > 0:
+            self.logger.warning(f"[FAILURES] Crossover: {crossover_failures}, Mutation: {mutation_failures}")
         
         return next_gen
     
@@ -428,11 +549,13 @@ class GeneticAlgorithm:
         Returns:
             List of best individuals
         """
-        self.logger.info("Starting evolution...")
-        self.logger.info(f"Population size: {self.population_size}")
-        self.logger.info(f"Generations: {self.generations}")
-        self.logger.info(f"Mutation rate: {self.mutation_rate}")
-        self.logger.info(f"Crossover rate: {self.crossover_rate}")
+        self.logger.info("=" * 70)
+        self.logger.info("GENETIC ALGORITHM STARTING")
+        self.logger.info("=" * 70)
+        self.logger.info(f"  Population: {self.population_size} | Generations: {self.generations}")
+        self.logger.info(f"  Mutation: {self.mutation_rate:.2%} | Crossover: {self.crossover_rate:.2%}")
+        self.logger.info(f"  Selection: {self.selection_method} | Elite size: {self.elite_size}")
+        self.logger.info("=" * 70)
         
         # Initialize population
         population = self.initialize_population()
@@ -440,36 +563,44 @@ class GeneticAlgorithm:
         # Evolution loop
         for gen in range(self.generations):
             self.current_generation = gen
-            self.logger.info(f"\n{'='*60}")
-            self.logger.info(f"Generation {gen + 1}/{self.generations}")
-            self.logger.info(f"{'='*60}")
+            self.logger.info("")
+            self.logger.info(f"{'─'*70}")
+            self.logger.info(f"GENERATION {gen + 1}/{self.generations}")
+            self.logger.info(f"{'─'*70}")
             
-            # Evaluate fitness
+            # Step 1: Evaluate fitness
             self.evaluate_population(population)
             
-            # Compute pairwise distances once for efficiency
-            # (used by both fitness sharing and genetic diversity calculation)
+            # Step 2: Apply ranking based on mode
             distance_matrix = None
-            if self.fitness_sharing or len(population.individuals) >= 2:
-                distance_matrix = calculate_pairwise_distances(list(population.individuals))
             
-            # Apply fitness sharing to preserve diversity
-            if self.fitness_sharing:
-                apply_fitness_sharing(population, sigma_share=self.sharing_radius, 
-                                    distance_matrix=distance_matrix)
-                self.logger.info("Applied fitness sharing for diversity preservation")
+            if self.mode == 'nsga2':
+                # NSGA-II: Non-dominated sorting + crowding distance
+                fronts = fast_non_dominated_sort(list(population.individuals))
+                for front in fronts:
+                    crowding_distance_assignment(front)
+                pareto_front = fronts[0] if fronts else []
+                self.logger.info(f"[NSGA-II] {len(fronts)} Pareto fronts, front 1 has {len(pareto_front)} individuals")
+            else:
+                # Single-objective: Compute pairwise distances once for efficiency
+                if self.fitness_sharing or len(population.individuals) >= 2:
+                    distance_matrix = calculate_pairwise_distances(list(population.individuals))
+                
+                # Apply fitness sharing to preserve diversity
+                if self.fitness_sharing:
+                    apply_fitness_sharing(population, sigma_share=self.sharing_radius, 
+                                        distance_matrix=distance_matrix)
+                    self.logger.debug("[FITNESS SHARING] Applied successfully")
             
             # Get statistics (reuses distance matrix for genetic diversity)
             stats = population.get_stats(distance_matrix=distance_matrix)
             self.generation_stats.append(stats)
             
-            # Log statistics
-            self.logger.info(f"Best fitness: {stats.best_fitness:.4f}")
-            self.logger.info(f"Avg fitness: {stats.avg_fitness:.4f}")
-            if stats.diversity_score is not None:
-                self.logger.info(f"Fitness diversity: {stats.diversity_score:.4f}")
+            # Log generation summary
+            summary_parts = [f"Best: {stats.best_fitness:.4f}", f"Avg: {stats.avg_fitness:.4f}"]
             if stats.genetic_diversity is not None:
-                self.logger.info(f"Genetic diversity: {stats.genetic_diversity:.4f}")
+                summary_parts.append(f"Diversity: {stats.genetic_diversity:.4f}")
+            self.logger.info(f"[STATS] {' | '.join(summary_parts)}")
             
             # Update visualization if enabled
             if self.visualizer:
@@ -479,26 +610,56 @@ class GeneticAlgorithm:
             best = population.get_best(1)[0]
             if self._should_update_best_individual(best):
                 self.best_individual = best
-                self.logger.info(f"New best individual: {best.id} with fitness {best.fitness:.4f}")
+                self.logger.info(f"[NEW BEST] {best.id} with fitness {best.fitness:.4f}")
             
             # Check convergence
             if self.check_convergence(stats):
+                self.logger.info("[CONVERGENCE] Evolution converged early")
                 break
             
             # Create next generation
             if gen < self.generations - 1:  # Don't create next gen on last iteration
                 population = self.create_next_generation(population)
         
-        self.logger.info("\n" + "="*60)
-        self.logger.info("Evolution complete!")
-        self.logger.info(f"Best individual: {self.best_individual.id}")
-        self.logger.info(f"Best fitness: {self.best_individual.fitness:.4f}")
-        self.logger.info("="*60)
+        # Final summary
+        self.logger.info("")
+        self.logger.info("=" * 70)
+        self.logger.info("EVOLUTION COMPLETE")
+        self.logger.info("=" * 70)
+        self.logger.info(f"  Total generations: {self.current_generation + 1}")
+        
+        if self.mode == 'nsga2':
+            # NSGA-II: Show Pareto front summary
+            pareto_front = get_pareto_front(list(population.individuals))
+            self.logger.info(f"  Pareto front size: {len(pareto_front)}")
+            self.logger.info("  Top Pareto-optimal strategies:")
+            sorted_front = sorted(pareto_front, key=lambda x: x.objectives[0] if x.objectives else 0, reverse=True)
+            for i, ind in enumerate(sorted_front[:5]):
+                if ind.objectives and ind.metrics:
+                    m = ind.metrics
+                    obj_str = ", ".join([f"{self.objectives_config[j]['name']}={ind.objectives[j]:.3f}" 
+                                        for j in range(min(len(ind.objectives), len(self.objectives_config)))])
+                    self.logger.info(f"    {i+1}. {ind.id}: profit={m.get('profit', 0):.2f}%, drawdown={m.get('max_drawdown', 0):.1%}, sharpe={m.get('sharpe_ratio', 0):.2f}")
+        else:
+            # Single-objective: Show best individual
+            self.logger.info(f"  Best individual: {self.best_individual.id}")
+            self.logger.info(f"  Best fitness: {self.best_individual.fitness:.4f}")
+            if self.best_individual.metrics:
+                m = self.best_individual.metrics
+                self.logger.info(f"  Best profit: {m.get('profit', 0):.2f}% | Win rate: {m.get('win_rate', 0):.1%}")
+        
+        self.logger.info("=" * 70)
         
         # Close visualization if enabled
         if self.visualizer:
             self.visualizer.close()
         
-        # Return top strategies
-        population.sort_by_fitness(reverse=True)
-        return population.get_best(10)
+        # Return top strategies based on mode
+        if self.mode == 'nsga2':
+            # Return entire Pareto front sorted by crowded comparison
+            pareto_front = get_pareto_front(list(population.individuals))
+            return nsga2_crowded_comparison_sort(pareto_front)[:self.pareto_front_size]
+        else:
+            # Return top by fitness
+            population.sort_by_fitness(reverse=True)
+            return population.get_best(10)

@@ -130,9 +130,8 @@ class FitnessEvaluator:
             # Calculate fitness (includes complexity penalty)
             fitness = self.calculate_fitness(metrics, strategy_gene)
             
-            logger.info(f"Strategy {generated_name}: fitness={fitness:.4f}, "
-                       f"profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}, "
-                       f"complexity={metrics['complexity']}")
+            # Log at debug level - summary is logged by evolution.py
+            logger.debug(f"{generated_name}: fitness={fitness:.4f}, profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}")
             
             return fitness, metrics
             
@@ -385,13 +384,21 @@ class FitnessEvaluator:
                     **val_metrics
                 })
                 
-                logger.info(f"Window {window.window_index + 1}/{len(windows)}: "
+                logger.debug(f"Window {window.window_index + 1}/{len(windows)}: "
                           f"Train fitness={train_fitness:.4f} ({train_result.total_trades} trades), "
                           f"Val fitness={val_fitness:.4f} ({val_result.total_trades} trades)")
             
             # Aggregate validation scores
             aggregation_method = self.walk_forward_config.get('aggregation', 'mean')
-            final_fitness = aggregate_validation_scores(validation_fitness_scores, method=aggregation_method)
+            
+            # For weighted aggregation, auto-generate recency weights (later windows weighted more)
+            if aggregation_method == 'weighted' and validation_fitness_scores:
+                n = len(validation_fitness_scores)
+                # Linear recency weights: [1, 2, 3, ..., n] normalized to sum to 1
+                weights = [i / sum(range(1, n + 1)) for i in range(1, n + 1)]
+                final_fitness = aggregate_validation_scores(validation_fitness_scores, method=aggregation_method, weights=weights)
+            else:
+                final_fitness = aggregate_validation_scores(validation_fitness_scores, method=aggregation_method)
             
             # Calculate average metrics across validation windows
             avg_metrics = self._aggregate_window_metrics(all_window_metrics)
@@ -402,12 +409,8 @@ class FitnessEvaluator:
             # Train-val gap: Positive = training better (potential overfit), Negative = validation better (rare but good)
             avg_metrics['train_val_gap'] = avg_metrics['avg_train_fitness'] - avg_metrics['avg_val_fitness']
             
-            logger.info(f"Walk-forward complete for {generated_name}: "
-                       f"Final fitness={final_fitness:.4f} "
-                       f"(train avg={avg_metrics['avg_train_fitness']:.4f}, "
-                       f"val avg={avg_metrics['avg_val_fitness']:.4f}, "
-                       f"gap={avg_metrics['train_val_gap']:.4f})")
-            logger.info(f"Walk-forward cache stats: {self._wf_cache_hits} hits, {self._wf_cache_misses} misses")
+            # Log summary only
+            logger.debug(f"Walk-forward {generated_name}: fitness={final_fitness:.4f}, gap={avg_metrics['train_val_gap']:.4f}")
             
             return final_fitness, avg_metrics
             

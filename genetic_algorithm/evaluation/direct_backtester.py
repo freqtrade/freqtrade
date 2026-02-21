@@ -192,16 +192,13 @@ class DirectBacktester:
         if self.backtest_config.get('enable_cache', True):
             self.cache = BacktestCache()
         
-        # DEBUG: Log what we loaded
-        logger.info("=" * 80)
-        logger.info("DirectBacktester initialized with config:")
+        # Log backtester initialization summary
+        logger.info("[INIT] DirectBacktester initialized")
         logger.info(f"  Pairs: {self.backtest_config.get('pairs')}")
         logger.info(f"  Timerange: {self.backtest_config.get('timerange')}")
         logger.info(f"  Stake amount: {self.backtest_config.get('stake_amount')}")
         logger.info(f"  Max open trades: {self.backtest_config.get('max_open_trades')}")
         logger.info(f"  Fee: {self.backtest_config.get('fee')}")
-        logger.info(f"  Strategy directory: {self.strategy_dir}")
-        logger.info("=" * 80)
         
         # Validate and auto-download data if enabled
         self._validate_and_download_data()
@@ -328,7 +325,9 @@ class DirectBacktester:
             Dictionary with 'missing' list of (pair, timeframe) tuples that are missing
         """
         pairs = self.backtest_config.get('pairs', [])
-        timeframes = list(self.config.get('strategy_constraints', {}).get('timeframes', ['5m']))
+        # Use same config path as StrategyGenerator to ensure we check all timeframes
+        # that might be used by generated strategies
+        timeframes = list(self.config.get('strategy', {}).get('timeframes', ['5m', '15m', '1h']))
         
         # Include multi-timeframe timeframes when enabled
         multi_tf_config = self.config.get('multi_timeframe', {})
@@ -604,55 +603,91 @@ class DirectBacktester:
             from freqtrade.configuration import Configuration
             from freqtrade.optimize.backtesting import Backtesting
             from freqtrade.exchange.exchange import Exchange
+            import io
+            import sys
             
             # Create configuration
             config_dict = self._create_backtest_config(strategy_name, strategy_max_open_trades)
             
-            # Mock the exchange to avoid network calls
-            with patch.object(Exchange, '_load_async_markets', return_value={}), \
-                 patch.object(Exchange, 'markets', PropertyMock(return_value=self._get_mock_markets())), \
-                 patch.object(Exchange, 'validate_config', MagicMock()), \
-                 patch.object(Exchange, 'validate_timeframes', MagicMock()), \
-                 patch.object(Exchange, '_init_ccxt', MagicMock()), \
-                 patch.object(Exchange, 'get_fee', return_value=0.001), \
-                 patch.object(Exchange, 'precisionMode', PropertyMock(return_value=2)), \
-                 patch.object(Exchange, 'precision_mode_price', PropertyMock(return_value=2)), \
-                 patch.object(Exchange, 'timeframes', PropertyMock(return_value=["1m", "5m", "15m", "1h", "1d"])):
-                
-                # Initialize backtesting
-                backtesting = Backtesting(config_dict)
-                
-                # Run backtest
-                backtesting.start()
-                
-                # Get results from the backtest results
-                # The results are stored in backtesting.results which is a dictionary
-                logger.debug(f"Backtest results structure: {backtesting.results.keys() if backtesting.results else 'None'}")
-                
-                if not backtesting.results or 'strategy' not in backtesting.results:
-                    logger.warning(f"No results available from backtest for {strategy_name}")
-                    return BacktestResult(
-                        success=True,
-                        strategy_name=strategy_name,
-                        total_trades=0,
-                        error_message="No trades generated - strategy may be too restrictive"
-                    )
-                
-                # Parse results from the strategy results
-                strategy_results = backtesting.results['strategy'].get(strategy_name, {})
-                logger.debug(f"Strategy results keys: {strategy_results.keys() if strategy_results else 'None'}")
-                
-                if not strategy_results:
-                    logger.warning(f"Empty strategy results for {strategy_name}")
-                    return BacktestResult(
-                        success=True,
-                        strategy_name=strategy_name,
-                        total_trades=0,
-                        error_message="No trades generated - check strategy conditions"
-                    )
-                
-                result = self._parse_stats(strategy_results, strategy_name)
-                return result
+            # Suppress FreqTrade's verbose output by redirecting stdout
+            old_stdout = sys.stdout
+            sys.stdout = io.StringIO()
+            
+            # Also suppress FreqTrade's verbose logging during backtesting
+            freqtrade_loggers = [
+                'freqtrade.exchange.exchange',
+                'freqtrade.resolvers',
+                'freqtrade.resolvers.strategy_resolver',
+                'freqtrade.resolvers.exchange_resolver',
+                'freqtrade.resolvers.iresolver',
+                'freqtrade.configuration',
+                'freqtrade.configuration.config_validation',
+                'freqtrade.optimize.backtesting',
+                'freqtrade.data.dataprovider',
+                'freqtrade.data.history',
+                'freqtrade.strategy',
+                'freqtrade.strategy.hyper',
+                'freqtrade.misc',
+            ]
+            old_log_levels = {}
+            for logger_name in freqtrade_loggers:
+                ft_logger = logging.getLogger(logger_name)
+                old_log_levels[logger_name] = ft_logger.level
+                ft_logger.setLevel(logging.WARNING)
+            
+            try:
+                # Mock the exchange to avoid network calls
+                with patch.object(Exchange, '_load_async_markets', return_value={}), \
+                     patch.object(Exchange, 'markets', PropertyMock(return_value=self._get_mock_markets())), \
+                     patch.object(Exchange, 'validate_config', MagicMock()), \
+                     patch.object(Exchange, 'validate_timeframes', MagicMock()), \
+                     patch.object(Exchange, '_init_ccxt', MagicMock()), \
+                     patch.object(Exchange, 'get_fee', return_value=0.001), \
+                     patch.object(Exchange, 'precisionMode', PropertyMock(return_value=2)), \
+                     patch.object(Exchange, 'precision_mode_price', PropertyMock(return_value=2)), \
+                     patch.object(Exchange, 'timeframes', PropertyMock(return_value=["1m", "5m", "15m", "1h", "1d"])), \
+                     patch.object(Exchange, 'get_min_pair_stake_amount', return_value=0.0), \
+                     patch.object(Exchange, 'get_max_pair_stake_amount', return_value=float('inf')):
+                    
+                    # Initialize backtesting
+                    backtesting = Backtesting(config_dict)
+                    
+                    # Run backtest
+                    backtesting.start()
+                    
+                    # Get results from the backtest results
+                    logger.debug(f"Backtest results structure: {backtesting.results.keys() if backtesting.results else 'None'}")
+                    
+                    if not backtesting.results or 'strategy' not in backtesting.results:
+                        logger.warning(f"No results available from backtest for {strategy_name}")
+                        return BacktestResult(
+                            success=True,
+                            strategy_name=strategy_name,
+                            total_trades=0,
+                            error_message="No trades generated - strategy may be too restrictive"
+                        )
+                    
+                    # Parse results from the strategy results
+                    strategy_results = backtesting.results['strategy'].get(strategy_name, {})
+                    logger.debug(f"Strategy results keys: {strategy_results.keys() if strategy_results else 'None'}")
+                    
+                    if not strategy_results:
+                        logger.warning(f"Empty strategy results for {strategy_name}")
+                        return BacktestResult(
+                            success=True,
+                            strategy_name=strategy_name,
+                            total_trades=0,
+                            error_message="No trades generated - check strategy conditions"
+                        )
+                    
+                    result = self._parse_stats(strategy_results, strategy_name)
+                    return result
+            finally:
+                # Restore stdout
+                sys.stdout = old_stdout
+                # Restore logging levels
+                for logger_name, level in old_log_levels.items():
+                    logging.getLogger(logger_name).setLevel(level)
                 
         except Exception as e:
             logger.error(f"Backtest execution error: {e}")
@@ -732,6 +767,10 @@ class DirectBacktester:
             "exportdirectory": exportdir,  # Path object for storing results
             "runmode": "backtest",  # Required for FreqTrade
             
+            # Data format - CRITICAL: must match the format of data files on disk
+            "dataformat_ohlcv": "feather",  # Use feather format for faster data loading
+            "dataformat_trades": "feather",
+            
             # Critical config values from GA config
             "stake_currency": stake_currency,  # Calculated from pairs
             "stake_amount": stake_amount,  # From GA config
@@ -763,16 +802,8 @@ class DirectBacktester:
         # Store original config reference (required for backtest storage)
         config["original_config"] = config.copy()
         
-        # Log what we're using for debugging
-        logger.info(f"Auto-generated backtest config for {strategy_name}:")
-        logger.info(f"  Pairs: {pairs}")
-        logger.info(f"  Timerange: {timerange}")
-        logger.info(f"  Starting balance: {starting_balance} {stake_currency}")
-        logger.info(f"  Stake amount: {stake_amount} {stake_currency}")
-        logger.info(f"  Data directory: {datadir}")
-        logger.info(f"  Max open trades: {max_open_trades}")
-        logger.info(f"  Position stacking: {config.get('position_stacking', False)}")
-        logger.info(f"  Fee: {fee}")
+        # Log at debug level to avoid spam - full config is shown at initialization
+        logger.debug(f"Backtest config for {strategy_name}: pairs={pairs}, timerange={timerange}, max_open_trades={max_open_trades}")
         
         return config
     
@@ -864,8 +895,8 @@ class DirectBacktester:
         if win_rate == 0.0 and total_trades > 0:
             win_rate = wins / total_trades
         
-        # Log with 4 decimal places to see small profits
-        logger.info(f"Parsed {strategy_name}: profit={profit_percent:.4f}%, trades={total_trades}, win_rate={win_rate:.2%}")
+        # Log key results at debug level (summary logged elsewhere)
+        logger.debug(f"Parsed {strategy_name}: profit={profit_percent:.4f}%, trades={total_trades}, win_rate={win_rate:.2%}")
         
         # Extract metrics from stats
         return BacktestResult(

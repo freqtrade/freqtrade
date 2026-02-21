@@ -57,6 +57,32 @@ genetic_algorithm:
   # Random immigrants - inject fresh random strategies each generation to prevent premature convergence
   # When diversity drops below diversity_threshold, this count is doubled for that generation
   random_immigrants: 5          # Number of fresh random individuals to inject per generation
+  
+  # Evolution mode: 'single_objective' (default) or 'nsga2' (multi-objective)
+  # Single-objective uses weighted fitness function, NSGA-II returns Pareto front
+  mode: 'single_objective'
+
+# === NSGA-II Multi-Objective Configuration ===
+# Only used when genetic_algorithm.mode = 'nsga2'
+nsga2:
+  # Objectives to optimize (all converted to maximization internally)
+  # Each objective has: name (metric key), type (maximize/minimize/goldilocks)
+  objectives:
+    - name: 'profit'          # Total profit percentage
+      type: 'maximize'
+      scale: 100.0            # Normalize to ~0-1 range
+    - name: 'max_drawdown'    # Maximum drawdown (risk)
+      type: 'minimize'        # Converted to -drawdown for maximization
+      scale: 1.0
+    - name: 'sharpe_ratio'    # Risk-adjusted return
+      type: 'maximize'
+      scale: 3.0              # Normalize to ~0-1 range
+  
+  # Number of Pareto-optimal strategies to return
+  pareto_front_size: 20
+  
+  # Crowding distance percentile for diversity (not currently used, for future)
+  crowding_distance_percentile: 0.1
 
 # === Fitness Function Weights ===
 # These weights determine how different metrics contribute to overall fitness

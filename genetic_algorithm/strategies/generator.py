@@ -180,8 +180,9 @@ class StrategyGenerator:
         # Generate 1-2 conditions (reduced from 1-3 to make strategies less restrictive)
         num_conditions = random.randint(1, min(2, len(valid_indicators)))
         
-        # Use OR logic more often to make strategies less restrictive
-        primary_logic = random.choice(['OR', 'OR', 'AND'])  # 2/3 chance of OR
+        # ALWAYS use OR logic to avoid contradictory conditions that produce 0 trades
+        # AND logic often creates impossible combinations (e.g., price > SMA AND price < lower BB)
+        primary_logic = 'OR'
         
         for _ in range(num_conditions):
             # Pick a random indicator
