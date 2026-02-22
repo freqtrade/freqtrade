@@ -49,6 +49,10 @@ class BacktestResult:
     error_message: Optional[str] = None
     execution_time: float = 0.0
     
+    # Trade visualization data (optional, only populated when requested)
+    trades: Optional[list] = None  # List of trade dicts for visualization
+    ohlcv_data: Optional[Dict[str, Any]] = None  # Dict of pair_timeframe -> DataFrame
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -573,13 +577,14 @@ class DirectBacktester:
             execution_time=execution_time
         )
     
-    def _run_backtest_direct(self, strategy_code: str, strategy_name: str, strategy_max_open_trades: Optional[int] = None) -> BacktestResult:
+    def _run_backtest_direct(self, strategy_code: str, strategy_name: str, strategy_max_open_trades: Optional[int] = None, collect_trades: bool = False) -> BacktestResult:
         """
         Run backtest using FreqTrade Python API with mocked exchange.
         
         Args:
             strategy_code: Python code for strategy
             strategy_name: Name of the strategy
+            collect_trades: Whether to collect detailed trade data for visualization
             
         Returns:
             BacktestResult object
@@ -681,6 +686,49 @@ class DirectBacktester:
                         )
                     
                     result = self._parse_stats(strategy_results, strategy_name)
+                    
+                    # Collect detailed trade data for visualization if requested
+                    if collect_trades:
+                        trades_list = []
+                        ohlcv_dict = {}
+                        
+                        try:
+                            # Extract trades from backtest results
+                            # FreqTrade stores trades as a DataFrame in strategy_results
+                            trades_df = strategy_results.get('trades', None)
+                            if trades_df is not None and hasattr(trades_df, 'to_dict'):
+                                # Convert DataFrame to list of dicts
+                                trades_list = trades_df.to_dict('records')
+                                logger.debug(f"Collected {len(trades_list)} trades for visualization")
+                            elif isinstance(strategy_results.get('trades'), list):
+                                trades_list = strategy_results['trades']
+                            
+                            # Try to get OHLCV data from backtesting object
+                            # FreqTrade stores data in different attributes depending on version
+                            ohlcv_data_source = None
+                            if hasattr(backtesting, 'processed') and backtesting.processed:
+                                ohlcv_data_source = backtesting.processed
+                            elif hasattr(backtesting, 'data') and backtesting.data:
+                                ohlcv_data_source = backtesting.data
+                            elif hasattr(backtesting, '_data') and backtesting._data:
+                                ohlcv_data_source = backtesting._data
+                            
+                            if ohlcv_data_source:
+                                for key, df in ohlcv_data_source.items():
+                                    if hasattr(df, 'copy'):
+                                        ohlcv_dict[key] = df.copy()
+                                logger.debug(f"Collected OHLCV data for {len(ohlcv_dict)} pair(s)")
+                            else:
+                                # Fallback: load OHLCV data directly from disk
+                                logger.debug("No OHLCV data in backtesting object, loading from disk...")
+                                ohlcv_dict = self._load_ohlcv_for_pairs(config_dict)
+                            
+                        except Exception as e:
+                            logger.warning(f"Could not extract trade details: {e}")
+                        
+                        result.trades = trades_list
+                        result.ohlcv_data = ohlcv_dict
+                    
                     return result
             finally:
                 # Restore stdout
@@ -917,3 +965,108 @@ class DirectBacktester:
             median_profit=stats.get('profit_median', 0.0),
             avg_duration=stats.get('duration_avg', ""),
         )
+
+    def backtest_strategy_with_trades(
+        self,
+        strategy_code: str,
+        strategy_name: str,
+        max_retries: int = 2,
+        strategy_max_open_trades: Optional[int] = None
+    ) -> BacktestResult:
+        """
+        Run backtest and collect detailed trade data for visualization.
+        
+        This method is similar to backtest_strategy() but also collects
+        the individual trades and OHLCV data needed for trade visualization.
+        
+        Args:
+            strategy_code: Python code for strategy
+            strategy_name: Name of the strategy
+            max_retries: Maximum number of retries on failure
+            strategy_max_open_trades: Optional max open trades override
+            
+        Returns:
+            BacktestResult object with trades and ohlcv_data populated
+        """
+        start_time = time.time()
+        
+        # Note: We don't use cache for trade visualization as we need fresh data
+        
+        last_error = None
+        for attempt in range(max_retries + 1):
+            try:
+                if attempt > 0:
+                    logger.info(f"Retry {attempt}/{max_retries} for {strategy_name}")
+                    time.sleep(1)
+                
+                # Run backtest with trade collection enabled
+                result = self._run_backtest_direct(
+                    strategy_code, 
+                    strategy_name, 
+                    strategy_max_open_trades,
+                    collect_trades=True
+                )
+                result.execution_time = time.time() - start_time
+                
+                return result
+                
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Backtest with trades attempt {attempt + 1} failed: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # All retries failed
+        execution_time = time.time() - start_time
+        return BacktestResult(
+            success=False,
+            strategy_name=strategy_name,
+            error_message=f"Failed after {max_retries + 1} attempts: {str(last_error)}",
+            execution_time=execution_time
+        )
+
+    def _load_ohlcv_for_pairs(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Load OHLCV data from disk for trade visualization.
+        
+        Args:
+            config: Backtest configuration with pairs, datadir, etc.
+            
+        Returns:
+            Dictionary mapping "pair_timeframe" to DataFrame
+        """
+        ohlcv_dict = {}
+        
+        try:
+            from freqtrade.data.history import load_pair_history
+            from freqtrade.enums import CandleType
+            
+            pairs = config.get('exchange', {}).get('pair_whitelist', [])
+            datadir = config.get('datadir')
+            
+            # Get the base timeframe from strategy config
+            # Use 5m as default since it's the most common
+            timeframe = '5m'
+            
+            for pair in pairs:
+                try:
+                    df = load_pair_history(
+                        pair=pair,
+                        timeframe=timeframe,
+                        datadir=datadir,
+                        candle_type=CandleType.SPOT,
+                        timerange=None  # Load all data
+                    )
+                    
+                    if df is not None and len(df) > 0:
+                        key = f"{pair.replace('/', '_')}_{timeframe}"
+                        ohlcv_dict[key] = df
+                        logger.debug(f"Loaded {len(df)} candles for {pair} {timeframe}")
+                        
+                except Exception as e:
+                    logger.warning(f"Could not load OHLCV data for {pair}: {e}")
+                    
+        except Exception as e:
+            logger.warning(f"Failed to load OHLCV data from disk: {e}")
+        
+        return ohlcv_dict
