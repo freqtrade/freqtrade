@@ -80,6 +80,36 @@ Please find the complete documentation on the [freqtrade website](https://www.fr
 - [x] **Display profit/loss in fiat**: Display your profit/loss in fiat currency.
 - [x] **Performance status report**: Provide a performance status of your current trades.
 
+## Genetic Algorithm Fork Features
+
+This fork extends Freqtrade with advanced genetic algorithm capabilities for strategy optimization.
+
+### NSGA-II Multi-Objective Optimization
+- **Multi-objective fitness**: Optimize for profit, Sharpe ratio, win rate, and drawdown simultaneously
+- **Pareto front tracking**: Find trade-off solutions across competing objectives
+- **Non-dominated sorting**: Preserve diverse solutions using crowding distance
+
+### Parallel Strategy Evaluation
+- **Multi-process backtesting**: Evaluate strategies concurrently using all CPU cores
+- **Automatic scaling**: Auto-detects optimal worker count (CPU cores - 1)
+- **Proven speedups**: 
+  - 6 strategies, 4 workers: **3.07x faster**
+  - 12 strategies, 6 workers: **3.62x faster**
+
+Enable in `genetic_algorithm/config/ga_config.yaml`:
+```yaml
+parallel_evaluation:
+  enabled: true
+  num_workers: null  # Auto-detect
+```
+
+### Walk-Forward Analysis
+- Rolling window validation to prevent overfitting
+- Dynamic `max_open_trades` optimization
+- Comprehensive documentation in `WALK_FORWARD_ANALYSIS.md`
+
+See [CHANGELOG.md](CHANGELOG.md) for full details and [genetic_algorithm/](genetic_algorithm/) for implementation.
+
 ## Quick start
 
 Please refer to the [Docker Quickstart documentation](https://www.freqtrade.io/en/stable/docker_quickstart/) on how to get started quickly.

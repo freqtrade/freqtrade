@@ -1,0 +1,73 @@
+# GA Visualization Test Config
+# Tests: visualization feature working
+
+genetic_algorithm:
+  random_seed: 2026
+  population_size: 4
+  generations: 2
+  mutation_rate: 0.18
+  crossover_rate: 0.7
+  elite_size: 1
+  tournament_size: 2
+  selection_method: 'tournament'
+  random_immigrants: 1
+  mode: 'single_objective'
+
+# Progress bar
+progress:
+  enabled: true
+  show_fitness: true
+  show_profit: true
+
+# Backtesting Configuration
+backtesting:
+  pairs: ['BTC/USDT']
+  timerange: "20250601-20260101"
+  stake_amount: 100
+  max_open_trades: 3
+  fee: 0.001
+  exchange: binance
+  auto_download_data: false
+
+# Strategy Configuration
+strategy:
+  timeframes: ['5m']
+  min_buy_conditions: 1
+  max_buy_conditions: 2
+  min_sell_conditions: 1
+  max_sell_conditions: 2
+  base_timeframe: '5m'
+
+# Indicators
+indicators:
+  available:
+    - 'RSI'
+    - 'EMA'
+    - 'MACD'
+  max_indicators: 3
+
+# Fitness Weights
+fitness_weights:
+  profit: 0.4
+  sharpe_ratio: 0.3
+  drawdown: 0.2
+  win_rate: 0.1
+  trade_frequency: 0.0
+
+fitness_penalties:
+  min_trades: 10
+  max_drawdown: 0.30
+  min_win_rate: 0.35
+  complexity_weight: 0.01
+
+# Enable visualization
+visualization:
+  enabled: true
+  update_interval: 1
+  save_plots: true
+  output_dir: "genetic_algorithm/output/visualization_test"
+
+# Output Settings
+output:
+  top_n_strategies: 2
+  save_path: "genetic_algorithm/output"

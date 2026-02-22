@@ -1,0 +1,91 @@
+# Benchmark Test Configuration - No Walk-Forward
+# Used for parallel evaluation benchmarking
+
+genetic_algorithm:
+  population_size: 10
+  generations: 2
+  mutation_rate: 0.15
+  crossover_rate: 0.7
+  elite_size: 2
+  tournament_size: 3
+  selection_method: 'tournament'
+  mode: 'single_objective'
+
+# Parallel evaluation - disabled by default for sequential benchmark
+parallel_evaluation:
+  enabled: false
+  num_workers: 4
+
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.20
+  drawdown: 0.20
+  win_rate: 0.15
+  trade_frequency: 0.15
+
+fitness_penalties:
+  min_trades: 3
+  max_drawdown: 0.35
+  min_win_rate: 0.25
+  complexity_weight: 0.01
+
+# Simpler backtesting for faster benchmark
+backtesting:
+  timerange: "20250620-20250720"  # Only 30 days for fast benchmark
+  stake_amount: 0.1
+  pairs:
+    - "ETH/BTC"
+  max_open_trades: 3
+  fee: 0.001
+  enable_cache: true
+  timeout: 120
+
+# Walk-forward DISABLED for benchmark
+walk_forward:
+  enabled: false
+
+# Multi-timeframe disabled for benchmark
+multi_timeframe:
+  enabled: false
+
+strategy_constraints:
+  min_trades: 3
+  max_drawdown: 0.35
+  min_win_rate: 0.25
+  timeframes: ["5m", "15m"]
+  stoploss_range: [-0.20, -0.05]
+  roi_range: [0.01, 0.10]
+  max_open_trades_range: [1, 5]
+
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "SMA"
+    - "MACD"
+  max_per_strategy: 3
+  min_per_strategy: 2
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 40]
+    sell_threshold: [60, 80]
+  EMA:
+    period: [5, 30]
+  SMA:
+    period: [10, 50]
+  MACD:
+    fast_period: [8, 16]
+    slow_period: [18, 30]
+    signal_period: [5, 12]
+
+strategy:
+  timeframes: ["5m", "15m"]
+
+storage:
+  database: "genetic_algorithm/data/strategies.db"
+  strategy_dir: "user_data/strategies/ga_generated"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints"
+
+logging:
+  level: "WARNING"
+  console: true

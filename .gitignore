@@ -116,3 +116,10 @@ target/
 !config_examples/config_freqai.example.json
 
 docker-compose-*.yml
+# Genetic Algorithm outputs
+genetic_algorithm/output/
+genetic_algorithm/logs/
+genetic_algorithm/data/candle_cache/
+genetic_algorithm/genetic_algorithm/
+benchmark_*.txt
+evolution_*.txt
