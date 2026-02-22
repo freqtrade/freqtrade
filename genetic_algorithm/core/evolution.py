@@ -34,6 +34,7 @@ from genetic_algorithm.core.nsga2 import (
     nsga2_crowded_comparison_sort,
     DEFAULT_OBJECTIVES
 )
+from genetic_algorithm.evaluation.parallel import ParallelEvaluator, is_parallel_available
 
 
 class GeneticAlgorithm:
@@ -127,6 +128,26 @@ class GeneticAlgorithm:
             self.logger.info("=" * 70)
             # Override selection method for NSGA-II
             self.selection_method = 'nsga2'
+        
+        # Initialize parallel evaluator if enabled
+        parallel_config = self.config.get('parallel_evaluation', {})
+        self.parallel_enabled = parallel_config.get('enabled', False)
+        self.parallel_evaluator = None
+        
+        if self.parallel_enabled:
+            if is_parallel_available():
+                self.parallel_evaluator = ParallelEvaluator(
+                    self.config,
+                    num_workers=parallel_config.get('num_workers')
+                )
+                self.logger.info("=" * 70)
+                self.logger.info("PARALLEL EVALUATION ENABLED")
+                self.logger.info(f"  Workers: {self.parallel_evaluator.num_workers}")
+                self.logger.info("  Expect 3-6x speedup on multi-core systems")
+                self.logger.info("=" * 70)
+            else:
+                self.logger.warning("Parallel evaluation requested but multiprocessing not available")
+                self.parallel_enabled = False
         
         # Initialize visualizer (only if enabled and matplotlib is available)
         self.visualizer = None
@@ -233,6 +254,9 @@ class GeneticAlgorithm:
         """
         Evaluate fitness for all unevaluated individuals.
         
+        Uses parallel evaluation if enabled in config, otherwise
+        evaluates sequentially.
+        
         Args:
             population: Population to evaluate
         """
@@ -242,7 +266,63 @@ class GeneticAlgorithm:
             self.logger.info("[EVAL] All individuals already evaluated (using cache)")
             return
         
-        self.logger.info(f"[EVAL] Evaluating {len(unevaluated)} individuals...")
+        # Use parallel evaluation if enabled
+        if self.parallel_enabled and self.parallel_evaluator:
+            self._evaluate_population_parallel(unevaluated)
+        else:
+            self._evaluate_population_sequential(unevaluated)
+    
+    def _evaluate_population_parallel(self, unevaluated: list):
+        """
+        Evaluate population using parallel workers.
+        
+        Args:
+            unevaluated: List of unevaluated individuals
+        """
+        self.logger.info(f"[EVAL] Parallel evaluation of {len(unevaluated)} individuals...")
+        
+        # Create progress callback for tqdm if enabled
+        pbar = None
+        if self.progress_enabled:
+            pbar = tqdm(
+                total=len(unevaluated),
+                desc=f"Gen {self.current_generation + 1}",
+                unit="strategy",
+                ncols=100,
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
+            )
+        
+        def progress_callback(completed, total):
+            if pbar:
+                pbar.n = completed
+                pbar.refresh()
+        
+        # Run parallel evaluation
+        result = self.parallel_evaluator.evaluate_batch(
+            unevaluated,
+            progress_callback=progress_callback if self.progress_enabled else None
+        )
+        
+        if pbar:
+            pbar.close()
+        
+        # Calculate summary stats
+        total_profit = sum(ind.metrics.get('profit', 0) for ind in unevaluated if ind.evaluated)
+        avg_profit = total_profit / result.successful if result.successful > 0 else 0
+        
+        self.logger.info(
+            f"[EVAL] Complete: {result.successful} succeeded, {result.failed} failed, "
+            f"avg profit: {avg_profit:.2f}% ({result.total_time:.1f}s, ~{result.speedup_estimate:.1f}x speedup)"
+        )
+    
+    def _evaluate_population_sequential(self, unevaluated: list):
+        """
+        Evaluate population sequentially (original implementation).
+        
+        Args:
+            unevaluated: List of unevaluated individuals
+        """
+        self.logger.info(f"[EVAL] Sequential evaluation of {len(unevaluated)} individuals...")
         
         successful = 0
         failed = 0

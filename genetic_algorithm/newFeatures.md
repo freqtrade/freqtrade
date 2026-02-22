@@ -1,0 +1,6 @@
+Ideen
+    1. Möglichkeit den verlauf der strategie im backtest vizuel zu sehen. (Wenn eine Strategie gebacktestet wird, dann will ich den graphen mit den entries und exits sehen können, die diese strategie gemacht hat) Und wenn es mehrere Graphen gibt (weil mehrere Currencies, oder mehrere Zeiteinheiten (5m, 1h),) dann will ich die auch alles jeweis sehen. Sie sollen gut beschrifftet sein mit den sachen die diesen Graphen ausmachen wie Zeit, currency und so weiter...  
+    
+    Es gibt 2 optionen, du kannst dir ausuchen welche du lieber implementierst (abhängig davon was du eher hinkrigen wirst, und was einfachen und besser ist.): Die eine ist das Die graphen mit den Trades auf befehl, für eine speziefische strategie erstellt werden. Und eine Andere ist, das sie von anfang an für alle strategien erstellt und in einem eigenen folder gespeichert wird.
+
+    Es hat beides seine vorteile, und wäre cool wenn auch beide optionen möglich sind (die eine per config enable, und dei andere per explizietem befehl) (Es sollen aber auch schon die tatsächlichen backtest aus dem evolutionärem algorythmus angezeigt werden, und nicht aus anderen backtest die spätet mir andere configs gemacht werden, sondern es müssen die gliechen configs sein, wie aus der Evolution)
