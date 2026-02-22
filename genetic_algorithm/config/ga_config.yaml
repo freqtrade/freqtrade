@@ -21,7 +21,7 @@ genetic_algorithm:
   population_size: 50
   
   # Number of generations to evolve
-  generations: 10
+  generations: 2
   
   # Mutation rate - probability of mutating an individual
   mutation_rate: 0.15
@@ -106,7 +106,7 @@ fitness_penalties:
 # === Backtesting Configuration ===
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
-  timerange: "20250620-20260218"  # Last 60 days
+  timerange: "20240620-20260218"  # Last 60 days
   
   # Stake amount per trade
   stake_amount: 0.2

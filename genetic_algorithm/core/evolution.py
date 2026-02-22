@@ -164,6 +164,24 @@ class GeneticAlgorithm:
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Visualization disabled: {e}. Install matplotlib to enable visualization.")
         
+        # Initialize trade visualizer (for trade charts)
+        self.trade_visualizer = None
+        trade_vis_config = self.config.get('trade_visualization', {})
+        if trade_vis_config.get('enabled', False):
+            try:
+                from genetic_algorithm.visualization.trade_visualizer import TradeVisualizer
+                # TradeVisualizer now accepts either a config dict or Path
+                self.trade_visualizer = TradeVisualizer(
+                    self.config,  # Pass full config, it extracts trade_visualization settings
+                    enabled=True
+                )
+                self.trade_vis_mode = trade_vis_config.get('mode', 'final')
+                self.trade_vis_top_n = trade_vis_config.get('top_n_strategies', 3)
+                self.logger.info(f"TradeVisualizer initialized (mode={self.trade_vis_mode}, top_n={self.trade_vis_top_n})")
+            except ImportError as e:
+                self.logger.warning(f"Trade visualization disabled: {e}")
+                self.trade_visualizer = None
+        
         # Track evolution
         self.current_generation = 0
         self.best_individual: Optional[Individual] = None
@@ -441,6 +459,50 @@ class GeneticAlgorithm:
         # Update if candidate is better (based on raw_fitness)
         return candidate.raw_fitness > self.best_individual.raw_fitness
     
+    def _visualize_strategy_trades(self, individual: Individual, generation: int, individual_idx: int):
+        """
+        Generate trade visualization for a specific individual.
+        
+        Args:
+            individual: Individual to visualize
+            generation: Current generation number
+            individual_idx: Index of individual in ranking
+        """
+        if not self.trade_visualizer:
+            return
+        
+        try:
+            from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
+            
+            # Generate strategy code
+            strategy_code = self.strategy_generator.generate_strategy_code(individual.strategy_gene)
+            # Use the full strategy name with GAStrategy_ prefix (same as generator.py)
+            strategy_name = f"GAStrategy_Gen{individual.strategy_gene.generation}_Ind{individual.strategy_gene.individual_id}"
+            
+            # Run backtest with trade collection
+            backtester = DirectBacktester(self.config)
+            result = backtester.backtest_strategy_with_trades(strategy_code, strategy_name)
+            
+            if not result.success:
+                self.logger.warning(f"[TRADE VIS] Backtest failed for {strategy_name}: {result.error_message}")
+                return
+            
+            # Generate trade chart
+            saved_files = self.trade_visualizer.visualize_strategy_from_backtest(
+                strategy_name=strategy_name,
+                backtest_result=result,
+                generation=generation,
+                individual_idx=individual_idx
+            )
+            
+            if saved_files:
+                self.logger.info(f"[TRADE VIS] Generated {len(saved_files)} chart(s) for {strategy_name}")
+            
+        except Exception as e:
+            self.logger.warning(f"[TRADE VIS] Failed to visualize {individual.id}: {e}")
+            import traceback
+            traceback.print_exc()
+    
     def create_next_generation(self, population: Population) -> Population:
         """
         Create next generation through selection, crossover, and mutation.
@@ -691,6 +753,16 @@ class GeneticAlgorithm:
             if self._should_update_best_individual(best):
                 self.best_individual = best
                 self.logger.info(f"[NEW BEST] {best.id} with fitness {best.fitness:.4f}")
+                
+                # Generate trade visualization on improvement
+                if self.trade_visualizer and self.trade_vis_mode == 'improvement':
+                    self._visualize_strategy_trades(best, gen, 0)
+            
+            # Generate trade visualization each generation (for top N)
+            if self.trade_visualizer and self.trade_vis_mode == 'each_generation':
+                top_individuals = population.get_best(self.trade_vis_top_n)
+                for idx, ind in enumerate(top_individuals):
+                    self._visualize_strategy_trades(ind, gen, idx)
             
             # Check convergence
             if self.check_convergence(stats):
@@ -733,6 +805,14 @@ class GeneticAlgorithm:
         # Close visualization if enabled
         if self.visualizer:
             self.visualizer.close()
+        
+        # Generate final trade visualizations for top strategies
+        if self.trade_visualizer and self.trade_vis_mode == 'final':
+            self.logger.info("[TRADE VIS] Generating trade charts for top strategies...")
+            top_individuals = population.get_best(self.trade_vis_top_n)
+            for idx, ind in enumerate(top_individuals):
+                self._visualize_strategy_trades(ind, self.current_generation, idx)
+            self.logger.info(f"[TRADE VIS] Generated charts for {len(top_individuals)} strategies")
         
         # Return top strategies based on mode
         if self.mode == 'nsga2':
