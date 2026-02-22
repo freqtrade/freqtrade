@@ -4,7 +4,16 @@
 
 When a Genetic Algorithm (GA) optimizes trading strategies on a dataset that represents only **one market regime** (e.g., only bullish), the evolved strategies will perform poorly when the live market enters a different regime (bearish or sideways). This is a fundamental **distribution shift** problem — the training data does not represent the full distribution of market conditions.
 
-This document collects, ranks, and proposes implementation plans for solving this problem in the context of a GA-based strategy evolution system built on top of Freqtrade.
+The core issue is **non-stationarity**: market return distributions and microstructure behaviors change over time, often in ways that are well described as *regime shifts* rather than small variations around a stable distribution. Even with rigorous walk-forward validation, evaluation windows can end up clustered in one market phase if not explicitly controlled.
+
+A second, less obvious problem is **selection bias from many trials**. A GA effectively runs *many thousands* of strategy trials and selects winners. This is exactly the setting where "best backtest" results can be inflated by multiple testing and overfitting to the particular evaluation paths — what the academic literature calls the **Probability of Backtest Overfitting (PBO)**.
+
+Therefore, the design target is twofold:
+
+1. **Regime coverage**: ensure selection pressure "sees" bull, bear, and sideways behavior.
+2. **Robustness against overfitting-by-selection**: ensure the evaluation protocol doesn't systematically pick statistical flukes.
+
+This document collects, ranks, and proposes implementation plans for solving these problems in the context of a GA-based strategy evolution system built on top of Freqtrade.
 
 ---
 
@@ -18,10 +27,12 @@ This document collects, ranks, and proposes implementation plans for solving thi
 6. [Approach 5: Ensemble / Meta-Strategy Switching](#approach-5-ensemble--meta-strategy-switching)
 7. [Approach 6: Adversarial Regime Training](#approach-6-adversarial-regime-training)
 8. [Approach 7: Synthetic Regime Augmentation](#approach-7-synthetic-regime-augmentation)
-9. [Approach Comparison & Ranking](#approach-comparison--ranking)
-10. [Combined Implementation Plan](#combined-implementation-plan)
-11. [Regime Detection Methods](#appendix-a-regime-detection-methods)
-12. [Practical Considerations](#appendix-b-practical-considerations)
+9. [Approach 8: Overfitting-Resistant Evaluation Protocol](#approach-8-overfitting-resistant-evaluation-protocol)
+10. [Approach Comparison & Ranking](#approach-comparison--ranking)
+11. [Combined Implementation Plan](#combined-implementation-plan)
+12. [Regime Detection Methods](#appendix-a-regime-detection-methods)
+13. [Dataset Policy & Segment Sampling](#appendix-b-dataset-policy--segment-sampling)
+14. [Practical Considerations](#appendix-c-practical-considerations)
 
 ---
 
@@ -188,6 +199,10 @@ Weighted Mean:  F = w₁·f₁ + w₂·f₂ + ... + wₙ·fₙ
 
 CVaR-style:     F = mean(bottom 30% of regime scores)
    → Focuses on avoiding catastrophic failure
+
+Mean - Variability:  F = mean(scores) - λ · std(scores)
+   → Rewards high average while penalizing inconsistency
+   → λ controls robustness preference (higher λ = more consistent)
 ```
 
 ### Example Configuration
@@ -416,6 +431,106 @@ When historical data doesn't contain enough examples of a certain regime, **gene
 
 ---
 
+## Approach 8: Overfitting-Resistant Evaluation Protocol
+
+### Concept
+Address the **selection bias problem** inherent in GA optimization: when thousands of strategy candidates are evaluated and the best are selected, "winning" strategies may be statistical flukes rather than genuinely robust. This approach adds formal safeguards against overfitting-by-selection using techniques from quantitative finance literature (Bailey, Borwein, López de Prado).
+
+### The Problem: Probability of Backtest Overfitting (PBO)
+A GA running 50 generations × 100 population = 5,000 strategy evaluations is effectively running 5,000 backtest trials. The "best" strategy from 5,000 trials will almost certainly look good by chance alone — this is the **multiple testing problem**. PBO formalizes the probability that the selected strategy is overfit to the evaluation data.
+
+### How It Works
+
+#### 1. Nested Evaluation Sets (Train / Model-Selection / Holdout)
+Instead of evaluating all candidates on the same data, use a three-tier structure:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Historical Data                                          │
+│                                                           │
+│  ┌─────────────────┐  ┌──────────────┐  ┌─────────────┐ │
+│  │ Optimization Set │  │ Model-Select │  │  Holdout    │ │
+│  │ (GA evolution)   │  │ (elite       │  │  (NEVER     │ │
+│  │                  │  │  re-ranking) │  │   seen by   │ │
+│  │ Used for fitness │  │ Every N gens │  │   GA)       │ │
+│  │ during selection │  │ re-rank top  │  │             │ │
+│  │                  │  │ strategies   │  │ Final eval  │ │
+│  │ 60% of segments  │  │ 20%          │  │ 20%         │ │
+│  └─────────────────┘  └──────────────┘  └─────────────┘ │
+│                                                           │
+│  ← Older data ──────────────────────── Newer data →      │
+└──────────────────────────────────────────────────────────┘
+```
+
+- **Optimization set**: Regime-balanced segments used during GA evolution (selection pressure).
+- **Model-selection set**: A smaller set used to re-rank elite strategies every few generations, helping detect overfitting to the optimization set.
+- **Final holdout**: Untouched regime-balanced segments used ONLY at the very end to estimate real-world performance. GA never sees this data.
+
+#### 2. Deflated Sharpe Ratio (DSR)
+Instead of celebrating raw Sharpe ratios from the best of 5,000 trials, apply the **Deflated Sharpe Ratio** which adjusts for:
+- Number of independent trials run
+- Non-normality of returns (skewness and kurtosis)
+- Correlation between strategy returns
+
+```
+DSR = (SR_observed - SR_expected_from_chance) / SE(SR)
+
+Where SR_expected_from_chance increases with:
+  - More trials (larger population × generations)
+  - Higher variance of strategy returns
+  - Fatter tails in return distributions
+```
+
+A strategy that looks great (Sharpe = 2.0) after 5,000 trials might have DSR < 0, meaning it's likely a statistical fluke.
+
+#### 3. Purging and Embargo Buffers
+Prevent **information leakage** between evaluation segments:
+
+- **Warm-up buffer**: Add indicator stabilization period before each segment (compute indicators but don't count trades/metrics).
+- **Embargo gap**: Leave 3-7 days between adjacent segments so they don't share overlapping market conditions.
+- **Purge overlapping trades**: If a trade from one segment would naturally span into the next, exclude it from both.
+
+```
+Segment 1          Gap    Segment 2          Gap    Segment 3
+[=====EVAL=====]--[===]--[=====EVAL=====]--[===]--[=====EVAL=====]
+                  embargo                  embargo
+[warmup][metrics]         [warmup][metrics]        [warmup][metrics]
+```
+
+### Example Configuration
+```yaml
+overfitting_protection:
+  enabled: true
+  nested_evaluation:
+    optimization_ratio: 0.60       # 60% of segments for GA evolution
+    model_selection_ratio: 0.20    # 20% for elite re-ranking
+    holdout_ratio: 0.20            # 20% final holdout (never seen by GA)
+    model_selection_frequency: 5   # Re-rank elites every 5 generations
+  deflated_sharpe:
+    enabled: true
+    min_dsr: 0.0                   # Reject strategies with DSR < 0
+  purging:
+    warmup_bars: 200               # Indicator stabilization period
+    embargo_days: 5                # Gap between segments
+```
+
+### Advantages
+- Directly addresses the multiple-testing problem unique to GA/evolutionary search
+- Provides statistically grounded confidence in strategy quality
+- Holdout prevents the most dangerous form of overfitting
+- DSR gives a single "is this real?" metric for final strategy ranking
+
+### Disadvantages
+- Reduces usable data (20% locked as holdout)
+- DSR computation requires estimating trial independence (approximation needed)
+- Adds evaluation complexity and runtime
+- Model-selection stage adds another evaluation pass
+
+### Implementation Effort: ⭐⭐ (Medium)
+### Impact on Live Performance: ⭐⭐⭐⭐⭐ (Very High — prevents deploying overfit strategies)
+
+---
+
 ## Approach Comparison & Ranking
 
 ### Overall Ranking (Best Balance of Impact vs. Effort)
@@ -424,11 +539,12 @@ When historical data doesn't contain enough examples of a certain regime, **gene
 |------|----------|--------|--------|-----|----------|
 | **1** | **Multi-Regime Fitness Aggregation** | ⭐⭐ | ⭐⭐⭐⭐ | 🏆 Highest | Immediate improvement, least disruption |
 | **2** | **Regime-Balanced Period Selection** | ⭐⭐ | ⭐⭐⭐⭐ | 🥈 Very High | Smart data preprocessing |
-| **3** | **Regime-Aware Walk-Forward** | ⭐ | ⭐⭐⭐ | 🥉 High | Quick enhancement to existing system |
-| **4** | **Adversarial Regime Training** | ⭐⭐⭐ | ⭐⭐⭐⭐ | Good | Automated robustness improvement |
-| **5** | **Island Model + Regime Specialization** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Good | Research, maximum flexibility |
-| **6** | **Ensemble / Meta-Strategy Switching** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Moderate | Production system, live trading |
-| **7** | **Synthetic Regime Augmentation** | ⭐⭐⭐⭐ | ⭐⭐ | Low | Only when data is scarce |
+| **3** | **Overfitting-Resistant Evaluation** | ⭐⭐ | ⭐⭐⭐⭐⭐ | 🥉 Very High | Prevents deploying flukes, essential for GA |
+| **4** | **Regime-Aware Walk-Forward** | ⭐ | ⭐⭐⭐ | High | Quick enhancement to existing system |
+| **5** | **Adversarial Regime Training** | ⭐⭐⭐ | ⭐⭐⭐⭐ | Good | Automated robustness improvement |
+| **6** | **Island Model + Regime Specialization** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Good | Research, maximum flexibility |
+| **7** | **Ensemble / Meta-Strategy Switching** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Moderate | Production system, live trading |
+| **8** | **Synthetic Regime Augmentation** | ⭐⭐⭐⭐ | ⭐⭐ | Low | Only when data is scarce |
 
 ### Combination Synergies
 
@@ -440,7 +556,9 @@ Layer 0 (Foundation):  Regime Detection Algorithm
 
 Layer 1 (Quick Win):   Regime-Balanced Period Selection (Approach 1)
                        + Multi-Regime Fitness Aggregation (Approach 3)
+                       + Overfitting-Resistant Evaluation (Approach 8)
                        └── Immediate improvement with minimal code changes
+                       └── PBO/DSR + holdout prevents deploying statistical flukes
 
 Layer 2 (Enhancement): Regime-Aware Walk-Forward (Approach 4)
                        + Adversarial Regime Training (Approach 6)
@@ -598,6 +716,44 @@ Price relative to Bollinger Bands (20, 2):
 - **Pros**: Adapts to volatility, visual intuition
 - **Cons**: Needs "consistently" definition (lookback)
 
+### Method 6: ℓ1 Trend Filtering (Piecewise Linear Trend)
+```
+Solve: minimize  ‖y - x‖₂² + λ · ‖D²x‖₁
+  Where y = observed prices, x = trend estimate, D² = second-order difference
+
+Result: piecewise linear trend where "knots" (slope changes) mark regime shifts
+  → Rising segments = bullish
+  → Falling segments = bearish
+  → Flat segments = sideways
+```
+- **Pros**: Mathematically principled, explicitly designed for trend extraction with abrupt changes; knot locations naturally align to regime boundaries rather than fixed calendar windows
+- **Cons**: Requires choosing penalty parameter λ (controls smoothness vs. fidelity); labeling knot segments as bull/bear/sideways is a second step
+- **Best for**: Aligning segment boundaries to actual regime shifts rather than arbitrary time-based cuts
+
+### Method 7: Bayesian Online Change Point Detection
+```
+At each time step, compute posterior probability of a change point:
+  P(change at t | data_1..t) using recursive Bayesian updates
+
+Regime boundaries = times where change point probability exceeds threshold
+  → Segments between change points are labeled by their statistical properties
+    (mean return, volatility, trend direction)
+```
+- **Pros**: Probabilistic (provides confidence), detects abrupt changes in the data-generating process, works online (can be used in live trading)
+- **Cons**: Sensitive to prior settings (hazard function), computational cost for long series
+- **Best for**: Detecting structural breaks in market behavior; aligns well with the finance literature on regime shifts
+
+### Benchmark Instrument for Regime Labeling
+
+When trading multiple pairs, **use a single benchmark instrument** (e.g., BTC/USDT) for regime classification across all pairs, rather than labeling regimes independently per pair:
+
+- **Why**: Market regimes are typically "market-wide" conditions (risk-on/risk-off, macro trends) rather than pair-specific micro-moves
+- **How**: Label regimes on BTC/USDT daily or 4h data, then apply those regime labels as evaluation windows for all trading pairs
+- **Benefit**: Consistent regime definitions across the portfolio; avoids contradictory labels ("BTC is bullish but ETH is bearish")
+- **Exception**: For pairs with unique dynamics (e.g., stablecoins, meme coins), consider pair-specific regime overlays
+
+This is consistent with using regime labeling on a higher timeframe (1d/4h) while trading strategies evolve on lower timeframes (5m–1h).
+
 ### Recommended Combination
 For maximum robustness, **combine 2-3 methods with a voting system**:
 ```python
@@ -616,7 +772,80 @@ def detect_regime_ensemble(close_prices):
 
 ---
 
-## Appendix B: Practical Considerations
+## Appendix B: Dataset Policy & Segment Sampling
+
+### The "Dataset Policy" Abstraction
+
+To keep the evaluation logic clean and decoupled from regime detection, introduce a single abstraction that produces evaluation timeranges:
+
+```python
+class DatasetPolicy:
+    """Produces a list of evaluation segments for the GA fitness evaluator."""
+
+    def build_segments(self, config, data_provider) -> List[Segment]:
+        """
+        Returns evaluation segments based on the configured policy.
+
+        Each Segment includes:
+          - segment_id: stable hash for caching
+          - timerange: 'YYYYMMDD-YYYYMMDD'
+          - regime_label: 'bullish' | 'bearish' | 'sideways'
+          - metadata: { volatility, mean_return, slope, confidence }
+          - role: 'optimization' | 'model_selection' | 'holdout'
+        """
+```
+
+**Policy modes** (selectable via config):
+- **Manual**: User supplies regime timeranges directly (fast path for debugging and experimentation)
+- **Auto-regime**: Compute regime labels from data, then sample balanced segments automatically
+- **Auto-regime + holdout**: Same as above, but automatically reserves the newest segments as holdout
+
+This keeps the `FitnessEvaluator` clean: it just consumes a list of timeranges, regardless of how they were selected.
+
+### Segment Sampling Rules to Prevent "Fake Diversity"
+
+When sampling segments from labeled history, enforce these rules to ensure genuine diversity:
+
+| Rule | Purpose | Recommended Value |
+|------|---------|-------------------|
+| **Minimum segment length** | Avoid noisy short periods | 60-180 days (depending on timeframe) |
+| **No overlap** between segments | Prevent double-counting | Zero overlap between any two segments |
+| **Embargo gap** between segments | Prevent information leakage | 3-7 days for 1h strategies, 14+ days for 1d |
+| **Balanced counts per regime** | Ensure all regimes represented | Equal N per regime, or weighted to target distribution |
+| **Minimum trade count per segment** | Avoid "one lucky trade" segments | ≥ 10 trades per segment for metrics to be meaningful |
+
+### Persist Segment Lists for Reproducibility
+
+**Always save the selected segment list to disk** (YAML/JSON) before the GA run:
+
+```yaml
+# segments_run_2026-02-22.yaml
+run_id: 'ga_run_20260222_143000'
+regime_detector: 'sma_adx'
+benchmark_pair: 'BTC/USDT'
+segments:
+  optimization:
+    - { id: 'seg_001', timerange: '20230101-20230401', regime: 'bullish', confidence: 0.92 }
+    - { id: 'seg_002', timerange: '20230601-20230901', regime: 'bearish', confidence: 0.87 }
+    - { id: 'seg_003', timerange: '20231001-20231231', regime: 'sideways', confidence: 0.78 }
+    # ...
+  model_selection:
+    - { id: 'seg_010', timerange: '20240101-20240301', regime: 'bullish', confidence: 0.85 }
+    # ...
+  holdout:
+    - { id: 'seg_015', timerange: '20240701-20241001', regime: 'bearish', confidence: 0.91 }
+    # ...
+```
+
+**Benefits**:
+- GA runs are **reproducible** (same segments → same results)
+- Caching keys remain **stable** across restarts (`strategy_hash × segment_id`)
+- Easy to **compare GA runs** apples-to-apples (same segment set, different GA parameters)
+- **Audit trail** for which market conditions were used for evaluation
+
+---
+
+## Appendix C: Practical Considerations
 
 ### Data Requirements
 | Approach | Minimum Data Needed | Recommended |
@@ -652,6 +881,38 @@ One of the biggest challenges is handling **regime transitions**:
 | Island model: specialists too narrow | Migration between islands, master island validation |
 | Ensemble: switching too frequently | Confirmation periods, cooldown after switches |
 | Synthetic data: fake patterns | Validate synthetic stats match real data, use sparingly |
+| **GA selection bias (PBO)** | **Use nested holdout + DSR scoring (Approach 8)** |
+| **Celebrating raw Sharpe from many trials** | **Apply Deflated Sharpe Ratio; never trust raw Sharpe from 1000+ trials** |
+
+### Lookahead Bias Protection
+
+Backtesting frameworks that compute indicators over full dataframes can introduce inadvertent **lookahead bias** (using future data in current decisions). Freqtrade provides a `lookahead-analysis` command specifically to detect this:
+
+- **Always run `lookahead-analysis`** on the top strategies produced by the GA
+- Consider integrating it as an **automated post-filter** on elite strategies before promotion
+- This is especially important for GA-evolved strategies because the indicator combinations are generated programmatically and may accidentally create lookahead patterns that a human would catch
+
+### Per-Segment Trade Sufficiency
+
+A segment where a strategy makes only 1-2 trades produces **statistically meaningless** metrics (Sharpe, win rate, etc.). Enforce minimum trade counts:
+
+- **Per segment**: Require ≥ 10 trades for the segment's fitness score to count
+- **Per regime**: Require ≥ 30 total trades across all segments of one regime type
+- **Handling insufficient trades**: Either penalize fitness heavily or exclude the segment and flag a warning (but be careful not to bias toward high-frequency strategies)
+
+### Practical Defaults for Crypto
+
+These are good starting priors if you want reasonable values now:
+
+| Parameter | Recommended Value | Rationale |
+|-----------|------------------|-----------|
+| Regime labeling timeframe | 1d (or 4h for intraday) | Filters noise, captures macro trends |
+| Segment length | 90-180 days | Long enough for statistical significance |
+| Segments per regime (evolution) | 3-5 | Balance between coverage and compute cost |
+| Segments per regime (holdout) | 2-3 | Enough for reliable out-of-sample estimate |
+| Fitness aggregation | `harmonic_mean` or `min` | `min` = never blow up; `harmonic_mean` = consistent performers win |
+| Embargo gap | 5-7 days | Prevents boundary leakage for 1h-4h strategies |
+| Indicator warm-up | 200 bars | Ensures all indicators (including SMA 200) are stabilized |
 
 ### Quick-Start Recommendation
 
@@ -660,7 +921,11 @@ For **immediate improvement** with **minimal code changes**:
 1. **Implement regime detection** (SMA crossover + ADX, ~100 lines of code)
 2. **Add regime-balanced period selection** to the existing backtester (~50 lines)
 3. **Change fitness aggregation** to harmonic mean across regime periods (~20 lines)
+4. **Reserve a true holdout** that the GA never sees (~30 lines to split segments)
+5. **Persist segment lists** to YAML for reproducibility (~20 lines)
 
 This gives you **80% of the benefit with 20% of the effort** and requires no structural changes to the GA engine. The existing walk-forward validation, fitness sharing, and NSGA-II infrastructure all continue to work as-is.
+
+**Critical**: Even before implementing regime detection, step 4 (holdout reservation) alone significantly reduces the risk of deploying overfit strategies. If you do only one thing, make it: **reserve a true holdout period that the GA never sees**.
 
 After validating this quick-start approach works, proceed to Phase 4 (Island Model) and Phase 5 (Ensemble) for the full production system.
