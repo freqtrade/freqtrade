@@ -470,9 +470,19 @@ Layer 4 (Optional):    Synthetic Augmentation (Approach 7)
 
 **Recommended Detection Method** (for initial implementation):
 ```python
+# Note: SMA() and ADX() are placeholders for technical indicator functions
+# from libraries like ta-lib or pandas-ta that would need to be imported.
+
 def detect_regime(close_prices, sma_fast=50, sma_slow=200, adx_period=14, adx_threshold=25):
     """
     Classify market regime using SMA crossover + ADX trend strength.
+
+    Args:
+        close_prices: pandas Series of closing prices
+        sma_fast: Fast SMA period (default 50)
+        sma_slow: Slow SMA period (default 200)
+        adx_period: ADX calculation period (default 14)
+        adx_threshold: ADX threshold to distinguish trending vs. sideways (default 25)
 
     Returns: 'bullish' | 'bearish' | 'sideways'
     """
@@ -591,10 +601,10 @@ Price relative to Bollinger Bands (20, 2):
 ### Recommended Combination
 For maximum robustness, **combine 2-3 methods with a voting system**:
 ```python
-def detect_regime_ensemble(data):
-    vote_sma = sma_crossover_regime(data)
-    vote_adx = adx_regime(data)
-    vote_returns = return_distribution_regime(data)
+def detect_regime_ensemble(close_prices):
+    vote_sma = sma_crossover_regime(close_prices)
+    vote_adx = adx_regime(close_prices)
+    vote_returns = return_distribution_regime(close_prices)
 
     votes = [vote_sma, vote_adx, vote_returns]
     # Majority vote, or 'uncertain' if no majority
