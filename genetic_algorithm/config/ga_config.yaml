@@ -21,7 +21,7 @@ genetic_algorithm:
   population_size: 50
   
   # Number of generations to evolve
-  generations: 10
+  generations: 2
   
   # Mutation rate - probability of mutating an individual
   mutation_rate: 0.15
@@ -106,7 +106,7 @@ fitness_penalties:
 # === Backtesting Configuration ===
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
-  timerange: "20250620-20260218"  # Last 60 days
+  timerange: "20240620-20260218"  # Last 60 days
   
   # Stake amount per trade
   stake_amount: 0.2
@@ -335,6 +335,31 @@ visualization:
   
   # Save plots to directory
   output_dir: "genetic_algorithm/plots"
+
+# === Trade Visualization Configuration ===
+# Visualize strategy trades on candlestick charts with entry/exit markers
+trade_visualization:
+  # Enable automatic trade visualization during evolution
+  # When enabled, generates trade charts for top strategies each generation
+  enabled: true
+  
+  # Generate trade charts for top N strategies (per generation or final only)
+  top_n_strategies: 3
+  
+  # When to generate trade charts:
+  # - 'final': Only at the end of evolution (for top strategies)
+  # - 'each_generation': After each generation (slower but useful for debugging)
+  # - 'improvement': When a new best strategy is found
+  mode: 'final'
+  
+  # Output directory for trade charts
+  output_dir: "genetic_algorithm/output/trade_plots"
+  
+  # Include volume subplot in charts
+  show_volume: true
+  
+  # Chart image DPI (higher = better quality but larger files)
+  dpi: 150
 
 # === Advanced Features (Optional) ===
 advanced:

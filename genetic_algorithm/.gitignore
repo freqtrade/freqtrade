@@ -5,6 +5,7 @@ output/*.json
 output/plots/*.png
 output/plots/*.jpg
 output/plots/*.pdf
+output/trade_plots/*.png
 
 # Log files
 logs/*.log

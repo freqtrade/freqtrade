@@ -1,18 +1,57 @@
 # Genetic Algorithm for FreqTrade Strategy Evolution
 
 **Status**: ✅ **WORKING AND PRODUCTION-READY**  
-**Last Updated**: February 19, 2026  
-**Latest Feature**: 🎯 **Walk-Forward Optimization** - Prevents overfitting with out-of-sample validation ✅
+**Last Updated**: February 22, 2026  
+**Latest Feature**: 📈 **Trade Visualization** - Candlestick charts with entry/exit markers for backtested strategies ✅
 
 > 📊 **Want live plotting of generation scores?** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)  
-> 🎯 **Want strategies that work in live trading?** → See [WALK_FORWARD_GUIDE.md](WALK_FORWARD_GUIDE.md) **← NEW!**  
+> 📈 **Want to visualize strategy trades?** → See Trade Visualization section below **← NEW!**  
+> 🎯 **Want strategies that work in live trading?** → See [WALK_FORWARD_GUIDE.md](WALK_FORWARD_GUIDE.md)  
 > 📖 **Complete visualization guide** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)  
 > 🚀 **Recent GA algorithm improvements** → See [../docs/GA_IMPROVEMENTS_SUMMARY.md](../docs/GA_IMPROVEMENTS_SUMMARY.md)  
 > 📋 **Future improvement roadmap** → See [TODO_ga_improvements.md](TODO_ga_improvements.md)
 
 ---
 
-## 🆕 Latest Feature: Walk-Forward Optimization (February 19, 2026)
+## 🆕 Latest Feature: Trade Visualization (February 22, 2026)
+
+### 📈 **See Your Strategy Trades on Charts!**
+
+Visualize strategy performance with candlestick charts showing entry and exit points:
+
+- ✅ **Candlestick charts** with OHLCV data (matplotlib)
+- ✅ **Entry markers** (green ▲) and **exit markers** (red ▼)
+- ✅ **Trade statistics overlay** (win rate, profit, trade count)
+- ✅ **Multi-pair support** - Separate chart for each trading pair
+- ✅ **Automatic generation** for top strategies after GA run
+- ✅ **Manual visualization** via CLI for saved strategy files
+- ✅ **Performance optimized** - Limits candles for fast rendering
+
+### Quick Enable
+
+```yaml
+# In genetic_algorithm/config/ga_config.yaml
+trade_visualization:
+  enabled: true                              # Enable trade charts
+  top_n_strategies: 3                        # Generate charts for top N strategies
+  mode: 'final'                              # 'final' = end of run, 'each_gen' = every generation
+  output_dir: "genetic_algorithm/output/trade_plots"
+```
+
+### Manual Visualization
+
+```bash
+# Visualize a specific saved strategy
+python genetic_algorithm/visualize_strategy.py \
+    --strategy genetic_algorithm/output/strategy_rank1_*.py \
+    --config genetic_algorithm/config/ga_config.yaml
+```
+
+Charts are saved to `genetic_algorithm/output/trade_plots/` as PNG files.
+
+---
+
+## 🆕 Previous Feature: Walk-Forward Optimization (February 19, 2026)
 
 ### 🎯 **Critical for Production Use!**
 
