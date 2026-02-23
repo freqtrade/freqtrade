@@ -3,7 +3,8 @@ import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
-from freqtrade.strategy import IStrategy, DecimalParameter, IntParameter
+from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy
+
 
 # --------------------------------
 
@@ -11,36 +12,32 @@ from freqtrade.strategy import IStrategy, DecimalParameter, IntParameter
 class ProfessionalScalpingStrategy(IStrategy):
     """
     Professional Scalping Strategy
+
+    Fixed stake amount is required. Set stake_amount in config.json.
     """
 
     # Strategy interface version - attribute needed by backtesting tools
     INTERFACE_VERSION = 2
 
     # Minimal ROI designed for the strategy.
-    # This attribute will be overridden if the config file contains "minimal_roi"
-    minimal_roi = {
-        "60": 0.01,
-        "30": 0.02,
-        "0": 0.04
-    }
+    # Fixed ROI at 1.0% (0.010) as per task requirements
+    minimal_roi = {"0": 0.010}
 
-    # Stoploss:
-    stoploss = -0.10
+    # Stoploss: Fixed 1.5% stoploss as per task requirements
+    stoploss = -0.015
 
-    # Trailing stop:
-    trailing_stop = False
-    # trailing_stop_positive = 0.01
-    # trailing_stop_positive_offset = 0.02
-    # trailing_only_offset_is_reached = False
+    # Trailing stop: Activated after +0.6% profit
+    trailing_stop = True
+    trailing_stop_positive = 0.001
+    trailing_stop_positive_offset = 0.006
+    trailing_only_offset_is_reached = True
 
     # Optimal timeframe for the strategy
-    timeframe = '5m'
+    timeframe = "5m"
 
     # Hyperopt parameters
     buy_rsi = IntParameter(20, 40, default=30, space="buy")
     sell_rsi = IntParameter(60, 80, default=70, space="sell")
-    buy_atr_mult = DecimalParameter(0.5, 2.0, default=1.0, space="buy")
-    sell_atr_mult = DecimalParameter(0.5, 2.0, default=1.0, space="sell")
     ema_period = IntParameter(50, 250, default=200, space="buy")
 
     # Bollinger Bands parameters (for future use)
@@ -54,21 +51,25 @@ class ProfessionalScalpingStrategy(IStrategy):
         Performance Note: For the best performance, TA libraries should be used sparingly.
         """
         # RSI
-        dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+        dataframe["rsi"] = ta.RSI(dataframe, timeperiod=14)
 
         # ATR
-        dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
+        dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
 
         # EMA
-        dataframe['ema'] = ta.EMA(dataframe, timeperiod=self.ema_period.value)
+        dataframe["ema"] = ta.EMA(dataframe, timeperiod=self.ema_period.value)
 
         # Bollinger Bands
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe),
-                                            window=self.bb_window.value,
-                                            stds=self.bb_stddev.value)
-        dataframe['bb_lowerband'] = bollinger['lower']
-        dataframe['bb_middleband'] = bollinger['mid']
-        dataframe['bb_upperband'] = bollinger['upper']
+        bollinger = qtpylib.bollinger_bands(
+            qtpylib.typical_price(dataframe), window=self.bb_window.value, stds=self.bb_stddev.value
+        )
+        dataframe["bb_lowerband"] = bollinger["lower"]
+        dataframe["bb_middleband"] = bollinger["mid"]
+        dataframe["bb_upperband"] = bollinger["upper"]
+
+        # Volatility Filter: Bollinger Band Width percentage
+        bb_delta = dataframe["bb_upperband"] - dataframe["bb_lowerband"]
+        dataframe["bb_width"] = bb_delta / dataframe["bb_middleband"]
 
         return dataframe
 
@@ -78,9 +79,20 @@ class ProfessionalScalpingStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                # Placeholder for buy logic
+                # Strong entry trigger: RSI < 30 OR RSI crossing 35 upwards
+                ((dataframe["rsi"] < 30) | (qtpylib.crossed_above(dataframe["rsi"], 35)))
+                &
+                # Trend filter: Price must be above EMA 200
+                (dataframe["close"] > dataframe["ema"])
+                &
+                # Volatility filter: BB width > 1% to avoid flat markets
+                (dataframe["bb_width"] > 0.01)
+                &
+                # Volume filter
+                (dataframe["volume"] > 0)
             ),
-            'buy'] = 1
+            "buy",
+        ] = 1
 
         return dataframe
 
@@ -90,7 +102,10 @@ class ProfessionalScalpingStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                # Placeholder for sell logic
+                # Exit trigger: RSI in 65-75 zone
+                (dataframe["rsi"] >= 65) & (dataframe["rsi"] <= 75) & (dataframe["volume"] > 0)
             ),
-            'sell'] = 1
+            "sell",
+        ] = 1
+
         return dataframe
