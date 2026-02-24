@@ -2327,6 +2327,32 @@ def test_api_pair_history(botclient, tmp_path, mocker):
     )
     assert_response(rc, 502)
 
+    # base64 encoded strategy is rejected (GET) - prevents RCE via strategy parameter
+    import base64
+
+    b64_payload = base64.urlsafe_b64encode(b"import os\nos.system('id')\n").decode()
+    rc = client_get(
+        client,
+        f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+        f"&timerange=20180111-20180112&strategy=EvilStrategy:{b64_payload}",
+    )
+    assert_response(rc, 500)
+    assert rc.json()["detail"] == "base64 encoded strategies are not allowed."
+
+    # base64 encoded strategy is rejected (POST)
+    rc = client_post(
+        client,
+        f"{BASE_URI}/pair_history",
+        data={
+            "pair": "UNITTEST/BTC",
+            "timeframe": timeframe,
+            "timerange": "20180111-20180112",
+            "strategy": f"EvilStrategy:{b64_payload}",
+        },
+    )
+    assert_response(rc, 500)
+    assert rc.json()["detail"] == "base64 encoded strategies are not allowed."
+
     # Working
     for call in ("get", "post"):
         if call == "get":
