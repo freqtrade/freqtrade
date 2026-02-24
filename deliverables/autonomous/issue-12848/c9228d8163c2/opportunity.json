@@ -1,0 +1,18 @@
+{
+  "headline": "GitHub[freqtrade/freqtrade]: OKX futures leverage",
+  "url": "https://github.com/freqtrade/freqtrade/issues/12848",
+  "expected_usd": 225.0,
+  "strategy": "锁定明码 bounty；交付代码+run_log+sample_data，并准备自动交割链接。",
+  "raw_expected": "225.00 USD",
+  "bounty_literal": "225 USDT",
+  "source_line": "## 🚨 发现新商机：GitHub[freqtrade/freqtrade]: OKX futures leverage",
+  "kind": "generic_automation",
+  "difficulty": 1.0,
+  "score": 225.0,
+  "oid": "561abe682988f8794f628deaf1ecaa326887c77575e03223f6536d1b3aaee147",
+  "payout": {
+    "asset": "USDT",
+    "chain": "EVM",
+    "wallet": "0xF57503F99fA20b912200ed90D26d945093136ef5"
+  }
+}
