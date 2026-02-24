@@ -1,0 +1,201 @@
+# Example Configuration: Manual Regime Segments
+# 
+# This config demonstrates how to manually specify market regime segments
+# instead of using automatic detection. This is useful when:
+# - You have expert knowledge about specific market periods
+# - You want reproducible evaluation across different runs
+# - Automatic detection isn't capturing the regimes you care about
+#
+# Manual segments give you full control over which time periods are used
+# for optimization vs holdout validation.
+
+# === Genetic Algorithm Parameters ===
+genetic_algorithm:
+  random_seed: 42
+  population_size: 20
+  generations: 10
+  mutation_rate: 0.15
+  crossover_rate: 0.7
+  elite_size: 3
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 5
+
+# === Fitness Function ===
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.15
+  sortino_ratio: 0.10
+  profit_factor: 0.10
+  drawdown: 0.15
+  win_rate: 0.10
+  trade_frequency: 0.10
+
+fitness_penalties:
+  min_trades: 5
+  max_drawdown: 0.35
+  complexity_weight: 0.01
+
+# === Backtesting Configuration ===
+backtesting:
+  timerange: "20230101-20260101"  # Full data range
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  enable_cache: true
+  timeout: 300
+
+# === Walk-Forward Optimization ===
+walk_forward:
+  enabled: false  # Disable standard walk-forward when using manual segments
+
+# =============================================================================
+# MANUAL REGIME SEGMENTS CONFIGURATION
+# =============================================================================
+# 
+# When `policy_mode: manual`, you specify exact time periods for each regime.
+# The evaluator will use these segments for fitness evaluation.
+#
+# Segment format:
+#   - timerange: "YYYYMMDD-YYYYMMDD"  # Required
+#     regime: bullish|bearish|sideways  # Required
+#     role: optimization|holdout        # Required
+#     confidence: 0.0-1.0               # Optional (default: 1.0)
+#
+# Best practices:
+# - Include segments from different market conditions
+# - Keep ~70-80% for optimization, 20-30% for holdout
+# - Holdout segments should span different regimes than optimization
+# - Use embargo gaps between adjacent segments (embargo_days config)
+#
+regime_aware:
+  enabled: true
+  
+  # Use 'manual' policy mode to specify segments yourself
+  policy_mode: 'manual'
+  
+  # Aggregation method for combining regime fitness scores
+  # Options: 'mean', 'harmonic_mean', 'min', 'weighted'
+  aggregation: 'harmonic_mean'
+  
+  # Weight importance of each regime (all equal by default)
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.0
+    sideways: 1.0
+  
+  # =========================================================================
+  # OPTIMIZATION SEGMENTS
+  # =========================================================================
+  # These segments are used during GA evolution for fitness evaluation.
+  # Include multiple regimes for balanced strategy development.
+  #
+  segments:
+    # --- Bullish periods (uptrends) ---
+    - timerange: "20231001-20231201"
+      regime: bullish
+      role: optimization
+      confidence: 0.85
+      
+    - timerange: "20240301-20240501"
+      regime: bullish
+      role: optimization
+      confidence: 0.90
+      
+    # --- Bearish periods (downtrends) ---
+    - timerange: "20230401-20230601"
+      regime: bearish
+      role: optimization
+      confidence: 0.80
+      
+    - timerange: "20240701-20240901"
+      regime: bearish
+      role: optimization
+      confidence: 0.85
+      
+    # --- Sideways periods (ranging) ---
+    - timerange: "20230701-20230901"
+      regime: sideways
+      role: optimization
+      confidence: 0.75
+      
+    - timerange: "20241001-20241201"
+      regime: sideways
+      role: optimization
+      confidence: 0.80
+    
+    # =========================================================================
+    # HOLDOUT SEGMENTS
+    # =========================================================================
+    # These segments are LOCKED during evolution and only used for final
+    # validation. The GA never sees these until the run is complete.
+    #
+    # Holdout segments should:
+    # - Cover different time periods than optimization
+    # - Include multiple regimes if possible
+    # - Be representative of realistic deployment conditions
+    #
+    - timerange: "20250101-20250301"
+      regime: bullish
+      role: holdout
+      confidence: 0.90
+      
+    - timerange: "20250501-20250701"
+      regime: bearish
+      role: holdout
+      confidence: 0.85
+      
+    - timerange: "20250901-20251101"
+      regime: sideways
+      role: holdout
+      confidence: 0.80
+
+# =============================================================================
+# ALTERNATIVE: Auto Detection Mode
+# =============================================================================
+# If you want automatic regime detection instead of manual segments,
+# use this configuration:
+#
+# regime_aware:
+#   enabled: true
+#   policy_mode: 'auto_holdout'  # or 'auto_regime' for no holdout
+#   method: 'sma_adx'
+#   benchmark_pair: null  # Uses first pair
+#   detection_timeframe: '1h'
+#   period_days: 90
+#   min_period_days: 60
+#   embargo_days: 5
+#   segments_per_regime: 3
+#   holdout_ratio: 0.20
+#   aggregation: 'harmonic_mean'
+
+# === Strategy Constraints ===
+strategy_constraints:
+  allowed_indicator_types:
+    - 'trend'
+    - 'momentum'
+    - 'volatility'
+    - 'volume'
+  
+  max_indicators_per_side: 5
+  min_indicators_per_side: 2
+  
+  roi_settings:
+    min_roi: 0.005
+    max_roi: 0.30
+    decay_periods: [30, 60, 90, 120]
+  
+  stoploss_range:
+    min: -0.20
+    max: -0.02
+
+# === Output Configuration ===
+output:
+  log_level: 'INFO'
+  save_best_strategies: true
+  output_dir: 'user_data/strategies/regime_manual_test'
+  strategy_prefix: 'ManualRegime'
+  visualize_evolution: true
