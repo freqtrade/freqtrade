@@ -1,0 +1,111 @@
+# Test Configuration for GA Tests
+# This is a minimal config for unit tests
+
+genetic_algorithm:
+  random_seed: 42
+  population_size: 10
+  generations: 2
+  mutation_rate: 0.15
+  crossover_rate: 0.7
+  elite_size: 2
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 5
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.1
+  fitness_sharing: true
+  sharing_radius: 0.3
+  diversity_threshold: 0.15
+  allow_self_crossover: false
+  random_immigrants: 2
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.15
+  sortino_ratio: 0.10
+  profit_factor: 0.10
+  drawdown: 0.15
+  win_rate: 0.10
+  trade_frequency: 0.10
+
+fitness_penalties:
+  min_trades: 3
+  max_drawdown: 0.30
+  min_win_rate: 0.30
+  complexity_weight: 0.01
+
+backtesting:
+  timerange: "20230101-20231231"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: false
+  enable_cache: true
+  timeout: 120
+
+walk_forward:
+  enabled: false
+  train_days: 30
+  validation_days: 7
+  step_days: 7
+  mode: 'rolling'
+  aggregation: 'mean'
+  min_train_trades: 5
+
+regime_aware:
+  enabled: false
+  method: 'sma_adx'
+  benchmark_pair: null
+  detection_timeframe: '1h'
+  period_days: 30
+  min_period_days: 15
+  embargo_days: 2
+  segments_per_regime: 2
+  holdout_ratio: 0.20
+  aggregation: 'harmonic_mean'
+
+strategy_constraints:
+  min_trades: 3
+  max_drawdown: 0.30
+  min_win_rate: 0.25
+  timeframes: ["5m", "15m", "1h"]
+  stoploss_range: [-0.20, -0.05]
+  roi_range: [0.01, 0.10]
+  max_open_trades_range: [1, 5]
+
+multi_timeframe:
+  enabled: false
+  available: ['15m', '1h']
+  max_timeframes: 1
+  higher_timeframe_preference:
+    - 'EMA'
+    - 'RSI'
+
+indicators:
+  available:
+    - "RSI"
+    - "MACD"
+    - "BBANDS"
+    - "EMA"
+    - "SMA"
+    - "STOCH"
+    - "ATR"
+    - "ADX"
+    - "CCI"
+  max_per_strategy: 4
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 40]
+    sell_threshold: [60, 80]
+  MACD:
+    fast_period: [8, 16]
+    slow_period: [20, 30]
+    signal_period: [5, 12]
+  BBANDS:
+    period: [15, 30]
+    std_dev: [1.5, 3.0]

@@ -65,7 +65,6 @@ def test_window_creation():
     assert len(windows) > 0, "Should create at least one window"
     
     print("\n✅ Window creation tests passed!")
-    return True
 
 
 def test_fitness_evaluator_config():
@@ -118,7 +117,6 @@ def test_fitness_evaluator_config():
     print("✅ Walk-forward enabled config works")
     
     print("\n✅ FitnessEvaluator config tests passed!")
-    return True
 
 
 def test_mock_strategy_evaluation():
@@ -161,7 +159,7 @@ def test_mock_strategy_evaluation():
         ],
         timeframe='5m',
         stoploss=-0.05,
-        roi={0: 0.10, 60: 0.05, 120: 0.02},
+        minimal_roi={0: 0.10, 60: 0.05, 120: 0.02},
         generation=0,
         individual_id=0
     )
@@ -176,7 +174,6 @@ def test_mock_strategy_evaluation():
     assert len(strategy_gene.indicators) == 2, "Should have 2 indicators"
     
     print("\n✅ Mock strategy creation tests passed!")
-    return True
 
 
 def main():

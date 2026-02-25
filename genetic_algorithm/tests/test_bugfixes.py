@@ -157,7 +157,7 @@ def test_walk_forward_skips_validation_when_training_fails():
     call_count = [0]
     original_backtest = evaluator._backtest_with_timerange
 
-    def mock_backtest_with_timerange(strategy_code, strategy_name, timerange):
+    def mock_backtest_with_timerange(strategy_code, strategy_name, timerange, strategy_max_open_trades=None):
         call_count[0] += 1
         # All backtests fail (simulating "No data found")
         return BacktestResult(
@@ -233,7 +233,7 @@ def test_walk_forward_runs_validation_when_training_succeeds():
 
     call_count = [0]
 
-    def mock_backtest_with_timerange(strategy_code, strategy_name, timerange):
+    def mock_backtest_with_timerange(strategy_code, strategy_name, timerange, strategy_max_open_trades=None):
         call_count[0] += 1
         # Training succeeds with enough trades
         return BacktestResult(
@@ -395,6 +395,82 @@ def test_download_data_passes_timerange():
     assert 'ft_timerange' in source, (
         "download_data should convert the timerange string to a TimeRange object"
     )
+
+
+# ===========================================================================
+# Serialization round-trip test for max_open_trades
+# ===========================================================================
+
+def test_strategy_gene_serialization_roundtrip():
+    """Test that StrategyGene serialization preserves all fields including max_open_trades."""
+    original = StrategyGene(
+        generation=5,
+        individual_id=42,
+        indicators=[
+            IndicatorGene(type='RSI', parameters={'period': 14}, weight=1.0, instance_id='RSI_0'),
+            IndicatorGene(type='SMA', parameters={'period': 20}, weight=0.8, instance_id='SMA_0'),
+        ],
+        entry_conditions=[
+            ConditionGene(indicator='RSI_0', operator='<', threshold=30, logic='AND'),
+        ],
+        exit_conditions=[
+            ConditionGene(indicator='RSI_0', operator='>', threshold=70, logic='OR'),
+        ],
+        timeframe='15m',
+        informative_timeframes=['1h', '4h'],
+        stoploss=-0.08,
+        minimal_roi={"0": 0.05, "60": 0.02},
+        max_open_trades=5,  # Key field being tested
+        trailing_stop=True,
+        trailing_stop_positive=0.01,
+        trailing_stop_positive_offset=0.02,
+    )
+    
+    # Serialize
+    data = original.to_dict()
+    
+    # Verify max_open_trades is in serialized data
+    assert 'max_open_trades' in data, "max_open_trades should be in serialized data"
+    assert data['max_open_trades'] == 5, f"Expected max_open_trades=5, got {data['max_open_trades']}"
+    
+    # Deserialize
+    restored = StrategyGene.from_dict(data)
+    
+    # Verify all fields match
+    assert restored.generation == original.generation, "generation mismatch"
+    assert restored.individual_id == original.individual_id, "individual_id mismatch"
+    assert restored.timeframe == original.timeframe, "timeframe mismatch"
+    assert restored.stoploss == original.stoploss, "stoploss mismatch"
+    assert restored.max_open_trades == original.max_open_trades, \
+        f"max_open_trades mismatch: expected {original.max_open_trades}, got {restored.max_open_trades}"
+    assert restored.trailing_stop == original.trailing_stop, "trailing_stop mismatch"
+    assert restored.trailing_stop_positive == original.trailing_stop_positive, "trailing_stop_positive mismatch"
+    assert restored.trailing_stop_positive_offset == original.trailing_stop_positive_offset, "trailing_stop_positive_offset mismatch"
+    assert len(restored.indicators) == len(original.indicators), "indicators count mismatch"
+    assert len(restored.entry_conditions) == len(original.entry_conditions), "entry_conditions count mismatch"
+    assert len(restored.exit_conditions) == len(original.exit_conditions), "exit_conditions count mismatch"
+
+
+def test_strategy_gene_serialization_defaults():
+    """Test that from_dict uses correct defaults when max_open_trades is missing."""
+    # Simulate old data without max_open_trades
+    old_data = {
+        'generation': 1,
+        'individual_id': 1,
+        'indicators': [
+            {'type': 'RSI', 'parameters': {'period': 14}, 'weight': 1.0}
+        ],
+        'entry_conditions': [
+            {'indicator': 'RSI', 'operator': '<', 'threshold': 30}
+        ],
+        'exit_conditions': [],
+    }
+    
+    restored = StrategyGene.from_dict(old_data)
+    
+    # Should use default value of 3
+    assert restored.max_open_trades == 3, \
+        f"Expected default max_open_trades=3 for old data, got {restored.max_open_trades}"
 
 
 if __name__ == '__main__':

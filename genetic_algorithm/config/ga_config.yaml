@@ -32,9 +32,9 @@ genetic_algorithm:
   # Elite size - number of top strategies to preserve unchanged (~15% of population)
   elite_size: 6
   
-  # Tournament size for tournament selection
-  tournament_size: 1
-  
+  # Tournament size for tournament selection (3-5 recommended for good selection pressure)
+  tournament_size: 3
+
   # Selection method: 'tournament', 'roulette', 'rank'
   selection_method: 'tournament'
   

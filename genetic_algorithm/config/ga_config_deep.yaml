@@ -124,8 +124,8 @@ backtesting:
   # BTC: primary, ETH/LTC: validate cross-pair robustness
   pairs:
     - "BTC/USDT"
-    - "ETH/BTC"
-    - "LTC/BTC"
+    - "ETH/USDT"
+    - "LTC/USDT"
   
   # Standard open trades
   max_open_trades: 5
