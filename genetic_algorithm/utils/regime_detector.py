@@ -111,10 +111,20 @@ class RegimeDetector:
             'adx_threshold': 25,
             'adx_sideways_threshold': 20,
         },
+        'adx_di_hysteresis': {
+            'adx_period': 14,
+            'adx_enter': 25,      # Enter trend mode when ADX > this
+            'adx_exit': 20,       # Exit trend mode when ADX < this
+        },
         'returns': {
             'lookback_period': 20,
             'trend_threshold': 0.001,  # Daily return threshold
             'volatility_cap': 0.03,    # Max volatility for trending classification
+        },
+        'rolling_returns': {
+            'window': 50,              # Rolling window size
+            'threshold': 0.0005,       # Return threshold per bar (0.05%)
+            'hysteresis': 0.3,         # Hysteresis factor for threshold
         },
         'bollinger': {
             'period': 20,
@@ -122,11 +132,16 @@ class RegimeDetector:
             'lookback_bars': 10,  # Bars to assess "consistently above/below"
             'consistency_threshold': 0.7,  # 70% of bars must be in position
         },
+        'hmm': {
+            'n_states': 3,
+            'min_dwell': 1,       # Minimum bars to stay in regime (1=no lag, higher=smoother but lagged)
+            'vol_window': 20,     # Rolling volatility window
+        },
     }
     
     def __init__(
         self,
-        method: str = 'sma_adx',
+        method: str = 'adx_di_hysteresis',  # Changed from 'sma_adx' - best performer
         params: Optional[Dict[str, Any]] = None,
         benchmark_pair: Optional[str] = None  # For consistent regime labeling across pairs
     ):
@@ -134,12 +149,15 @@ class RegimeDetector:
         Initialize regime detector.
         
         Args:
-            method: Detection method ('sma_adx', 'adx_di', 'returns', 'bollinger', 'ensemble')
+            method: Detection method ('sma_adx', 'adx_di', 'adx_di_hysteresis', 
+                    'returns', 'rolling_returns', 'bollinger', 'hmm', 'ensemble')
             params: Custom parameters for the detection method (overrides defaults)
             benchmark_pair: Optional benchmark pair for market-wide regime labeling
         """
-        if method not in ['sma_adx', 'adx_di', 'returns', 'bollinger', 'ensemble']:
-            raise ValueError(f"Unknown detection method: {method}")
+        valid_methods = ['sma_adx', 'adx_di', 'adx_di_hysteresis', 'returns', 
+                         'rolling_returns', 'bollinger', 'hmm', 'ensemble']
+        if method not in valid_methods:
+            raise ValueError(f"Unknown detection method: {method}. Valid: {valid_methods}")
         
         self.method = method
         self.benchmark_pair = benchmark_pair
@@ -171,7 +189,7 @@ class RegimeDetector:
         
         # Validate required columns
         required = ['close']
-        if self.method in ['adx_di', 'sma_adx']:
+        if self.method in ['adx_di', 'adx_di_hysteresis', 'sma_adx']:
             required.extend(['high', 'low'])
         
         missing = [c for c in required if c not in df.columns]
@@ -183,10 +201,16 @@ class RegimeDetector:
             return self._detect_sma_adx(df)
         elif self.method == 'adx_di':
             return self._detect_adx_di(df)
+        elif self.method == 'adx_di_hysteresis':
+            return self._detect_adx_di_hysteresis(df)
         elif self.method == 'returns':
             return self._detect_returns(df)
+        elif self.method == 'rolling_returns':
+            return self._detect_rolling_returns(df)
         elif self.method == 'bollinger':
             return self._detect_bollinger(df)
+        elif self.method == 'hmm':
+            return self._detect_hmm(df)
         elif self.method == 'ensemble':
             return self._detect_ensemble(df)
         else:
@@ -358,6 +382,245 @@ class RegimeDetector:
         
         return regime
     
+    def _detect_rolling_returns(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Detect regime using rolling returns with improved thresholds.
+        
+        This method provides better balance than the basic 'returns' method
+        by using optimized window sizes and thresholds for crypto markets.
+        
+        Rules:
+        - Bullish: mean rolling return > threshold
+        - Bearish: mean rolling return < -threshold
+        - Sideways: |mean return| <= threshold
+        """
+        params = self.params
+        close = df['close']
+        
+        # Calculate returns
+        returns = close.pct_change()
+        
+        # Rolling mean
+        window = params.get('window', 50)
+        threshold = params.get('threshold', 0.0005)  # 0.05% per bar
+        
+        rolling_mean = returns.rolling(window=window, min_periods=window).mean()
+        
+        regime = pd.Series(index=df.index, dtype=object)
+        regime[:] = RegimeType.UNCERTAIN
+        
+        # Classify based on rolling mean returns
+        valid = rolling_mean.notna()
+        regime[valid & (rolling_mean > threshold)] = RegimeType.BULLISH
+        regime[valid & (rolling_mean < -threshold)] = RegimeType.BEARISH
+        regime[valid & (rolling_mean >= -threshold) & (rolling_mean <= threshold)] = RegimeType.SIDEWAYS
+        
+        return regime
+    
+    def _detect_adx_di_hysteresis(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Detect regime using ADX + DI with hysteresis.
+        
+        This is an improved version of adx_di that uses hysteresis to
+        prevent rapid flipping between trend and sideways modes.
+        
+        Rules:
+        - Enter trend mode when ADX > adx_enter
+        - Stay in trend mode until ADX < adx_exit
+        - In trend mode: +DI > -DI = bullish, else bearish
+        - In range mode: sideways
+        """
+        params = self.params
+        adx_enter = params.get('adx_enter', 25)
+        adx_exit = params.get('adx_exit', 20)
+        adx_period = params.get('adx_period', 14)
+        
+        # Calculate ADX and DI
+        adx, plus_di, minus_di = self._calculate_adx(df, adx_period)
+        
+        regime = pd.Series(index=df.index, dtype=object)
+        regime[:] = RegimeType.UNCERTAIN
+        
+        # Track trend mode with hysteresis
+        in_trend_mode = False
+        
+        for i in range(len(df)):
+            if pd.isna(adx.iloc[i]):
+                continue
+                
+            current_adx = adx.iloc[i]
+            
+            # Hysteresis logic: different thresholds for entry/exit
+            if not in_trend_mode and current_adx > adx_enter:
+                in_trend_mode = True
+            elif in_trend_mode and current_adx < adx_exit:
+                in_trend_mode = False
+            
+            # Classify based on mode
+            if in_trend_mode:
+                if plus_di.iloc[i] > minus_di.iloc[i]:
+                    regime.iloc[i] = RegimeType.BULLISH
+                else:
+                    regime.iloc[i] = RegimeType.BEARISH
+            else:
+                regime.iloc[i] = RegimeType.SIDEWAYS
+        
+        return regime
+    
+    def _detect_hmm(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Detect regime using Hidden Markov Model with multiple features.
+        
+        IMPROVED VERSION based on QuantStart research:
+        - Uses both returns AND volatility as features (2D observation)
+        - Maps states by mean return AND variance
+        - Applies smoothing to prevent rapid flipping
+        
+        The HMM identifies volatility regimes first, then we overlay direction.
+        """
+        try:
+            from hmmlearn.hmm import GaussianHMM
+        except ImportError:
+            logger.warning("hmmlearn not installed, falling back to returns method")
+            return self._detect_returns(df)
+        
+        params = self.params
+        n_states = params.get('n_states', 3)
+        min_dwell = params.get('min_dwell', 10)  # Increased from 5
+        vol_window = params.get('vol_window', 20)  # For rolling volatility
+        
+        # Prepare features: returns + rolling volatility
+        close = df['close']
+        returns = close.pct_change()
+        volatility = returns.rolling(window=vol_window).std()
+        
+        # Create feature matrix
+        features_df = pd.DataFrame({
+            'returns': returns,
+            'volatility': volatility
+        }).dropna()
+        
+        if len(features_df) < 250:
+            logger.warning("Insufficient data for HMM, falling back to rolling_returns method")
+            return self._detect_rolling_returns(df)
+        
+        # Standardize features to avoid numerical issues
+        features = features_df.values.copy()
+        feature_means = features.mean(axis=0)
+        feature_stds = features.std(axis=0)
+        feature_stds[feature_stds == 0] = 1  # Prevent division by zero
+        features_normalized = (features - feature_means) / feature_stds
+        
+        # Handle NaN/Inf
+        features_normalized = np.nan_to_num(features_normalized, nan=0.0, posinf=3.0, neginf=-3.0)
+        
+        try:
+            # Fit HMM with diagonal covariance (more stable than full)
+            model = GaussianHMM(
+                n_components=n_states,
+                covariance_type="diag",  # Changed from "full" - more stable
+                n_iter=200,
+                random_state=42,
+                init_params="stmc",
+            )
+            model.fit(features_normalized)
+            
+            # Get predictions using normalized features
+            hidden_states = model.predict(features_normalized)
+            
+            # Analyze each state's characteristics
+            state_stats = []
+            for state in range(n_states):
+                mask = hidden_states == state
+                if mask.sum() > 0:
+                    state_returns = features_df['returns'].values[mask]
+                    state_vol = features_df['volatility'].values[mask]
+                    state_stats.append({
+                        'state': state,
+                        'mean_return': np.mean(state_returns),
+                        'mean_vol': np.mean(state_vol),
+                        'count': mask.sum()
+                    })
+                else:
+                    state_stats.append({
+                        'state': state,
+                        'mean_return': 0,
+                        'mean_vol': 0,
+                        'count': 0
+                    })
+            
+            # Map states to regimes using RELATIVE ranking (adaptive to data)
+            # Since HMM primarily captures volatility regimes, we use:
+            # - Rank states by mean_return relative to overall mean
+            # - Consider volatility levels for volatile/sideways distinction
+            
+            state_map = {}
+            vol_threshold = np.median([s['mean_vol'] for s in state_stats])
+            
+            # Sort states by mean_return for relative ranking
+            sorted_states = sorted(state_stats, key=lambda x: x['mean_return'], reverse=True)
+            
+            # For 3 states: Best=BULLISH, Worst=BEARISH, Middle=SIDEWAYS/VOLATILE
+            # This ensures we always have bullish and bearish in the output
+            
+            for rank, s in enumerate(sorted_states):
+                if rank == 0:  # Highest return
+                    state_map[s['state']] = RegimeType.BULLISH
+                elif rank == len(sorted_states) - 1:  # Lowest return
+                    # Lowest returning state = BEARISH (always)
+                    state_map[s['state']] = RegimeType.BEARISH
+                else:  # Middle state(s)
+                    # Mid return + high volatility = VOLATILE
+                    # Mid return + low volatility = SIDEWAYS
+                    if s['mean_vol'] > vol_threshold * 1.3:
+                        state_map[s['state']] = RegimeType.VOLATILE
+                    else:
+                        state_map[s['state']] = RegimeType.SIDEWAYS
+            
+            # Apply smoothing: require minimum consecutive bars to switch
+            regime_values = []
+            current_regime = RegimeType.UNCERTAIN
+            pending_regime = None
+            pending_count = 0
+            
+            for i in range(len(hidden_states)):
+                predicted_state = hidden_states[i]
+                predicted_regime = state_map.get(predicted_state, RegimeType.SIDEWAYS)
+                
+                if predicted_regime != current_regime:
+                    if pending_regime == predicted_regime:
+                        pending_count += 1
+                    else:
+                        pending_regime = predicted_regime
+                        pending_count = 1
+                    
+                    # Check if we have enough consecutive bars to switch
+                    if pending_count >= min_dwell:
+                        current_regime = predicted_regime
+                        pending_regime = None
+                        pending_count = 0
+                else:
+                    pending_regime = None
+                    pending_count = 0
+                
+                regime_values.append(current_regime)
+            
+            # Create regime series aligned with features index
+            regime = pd.Series(regime_values, index=features_df.index)
+            
+            # Reindex to full dataframe
+            regime = regime.reindex(df.index, fill_value=RegimeType.UNCERTAIN)
+            
+            # Log state statistics for debugging
+            logger.debug(f"HMM State Statistics: {state_stats}")
+            logger.debug(f"HMM State Mapping: {state_map}")
+            
+            return regime
+            
+        except Exception as e:
+            logger.warning(f"HMM fitting failed: {e}, falling back to rolling_returns method")
+            return self._detect_rolling_returns(df)
+
     def _detect_bollinger(self, df: pd.DataFrame) -> pd.Series:
         """
         Detect regime using Bollinger Band position.
@@ -401,52 +664,55 @@ class RegimeDetector:
         """
         Detect regime using ensemble voting of multiple methods.
         
-        Uses majority voting across SMA_ADX, ADX_DI, and Returns methods.
-        """
-        # Create temporary detectors with default params for each method
-        sma_adx_detector = RegimeDetector(method='sma_adx')
-        adx_di_detector = RegimeDetector(method='adx_di')
-        returns_detector = RegimeDetector(method='returns')
+        IMPROVED: Uses weighted voting with the best-performing methods:
+        - ADX+DI Hysteresis (weight=2, most stable)
+        - Rolling Returns (weight=2, best balanced)
+        - HMM (weight=1, captures volatility regimes)
         
-        # Run all detection methods using dedicated detectors
-        methods = {
-            'sma_adx': sma_adx_detector.detect(df),
-            'adx_di': adx_di_detector.detect(df),
-            'returns': returns_detector.detect(df),
+        The ensemble provides robustness by combining:
+        1. Technical indicators (ADX) for trend strength
+        2. Statistical approach (rolling returns) for directional bias
+        3. Machine learning (HMM) for volatility-based regimes
+        """
+        # Create temporary detectors
+        adx_detector = RegimeDetector(method='adx_di_hysteresis')
+        returns_detector = RegimeDetector(method='rolling_returns', 
+                                          params={'window': 50, 'threshold': 0.0005})
+        
+        # Run detection methods
+        methods_weights = {
+            'adx_di_hysteresis': (adx_detector.detect(df), 2),
+            'rolling_returns': (returns_detector.detect(df), 2),
         }
         
-        # Create vote DataFrame
-        votes_df = pd.DataFrame(methods)
+        # Try HMM if available (lower weight due to potential noise)
+        try:
+            hmm_detector = RegimeDetector(method='hmm', params={'n_states': 3, 'min_dwell': 10})
+            methods_weights['hmm'] = (hmm_detector.detect(df), 1)
+        except Exception:
+            pass  # Skip HMM if it fails
         
         regime = pd.Series(index=df.index, dtype=object)
         
-        # Majority voting for each row
+        # Weighted voting for each row
         for idx in df.index:
-            votes = votes_df.loc[idx].tolist()
+            vote_scores = {}
             
-            # Count votes (excluding UNCERTAIN)
-            vote_counts = {}
-            for v in votes:
-                if v != RegimeType.UNCERTAIN:
-                    vote_counts[v] = vote_counts.get(v, 0) + 1
+            for method_name, (method_regimes, weight) in methods_weights.items():
+                vote = method_regimes.get(idx, RegimeType.UNCERTAIN)
+                
+                # Map VOLATILE to SIDEWAYS for voting consistency
+                if vote == RegimeType.VOLATILE:
+                    vote = RegimeType.SIDEWAYS
+                    
+                if vote != RegimeType.UNCERTAIN:
+                    vote_scores[vote] = vote_scores.get(vote, 0) + weight
             
-            if not vote_counts:
+            if not vote_scores:
                 regime[idx] = RegimeType.UNCERTAIN
             else:
-                # Get majority vote
-                max_votes = max(vote_counts.values())
-                winners = [k for k, v in vote_counts.items() if v == max_votes]
-                
-                if len(winners) == 1:
-                    regime[idx] = winners[0]
-                else:
-                    # Tie: prefer SIDEWAYS > BULLISH > BEARISH
-                    if RegimeType.SIDEWAYS in winners:
-                        regime[idx] = RegimeType.SIDEWAYS
-                    elif RegimeType.BULLISH in winners:
-                        regime[idx] = RegimeType.BULLISH
-                    else:
-                        regime[idx] = winners[0]
+                # Get highest weighted vote
+                regime[idx] = max(vote_scores.keys(), key=lambda k: vote_scores[k])
         
         return regime
     
@@ -838,3 +1104,93 @@ def load_segments_from_yaml(filepath: Path) -> Dict[str, List[RegimeSegment]]:
     logger.info(f"Loaded segment configuration from {filepath}")
     
     return result
+
+def save_labels_to_parquet(
+    df: pd.DataFrame,
+    labels: pd.Series,
+    filepath: Path,
+    method: str = 'unknown',
+    confidence: Optional[pd.Series] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> None:
+    """
+    Save regime labels to Parquet file for offline analysis.
+    
+    Creates a Parquet file with timestamps, regime labels, and metadata
+    for reproducibility and efficient data sharing.
+    
+    Args:
+        df: Original DataFrame with 'date' column
+        labels: Series of RegimeType or string regime labels
+        filepath: Path to save Parquet file
+        method: Detection method name (e.g., 'adx_di_hysteresis')
+        confidence: Optional per-bar confidence scores
+        metadata: Optional dict of additional metadata
+    
+    Example:
+        >>> detector = RegimeDetector(method='adx_di_hysteresis')
+        >>> labels = detector.detect(df)
+        >>> save_labels_to_parquet(df, labels, Path('labels.parquet'), 'adx_di_hysteresis')
+    """
+    # Prepare output DataFrame
+    date_col = 'date' if 'date' in df.columns else df.index.name or 'index'
+    dates = df[date_col] if date_col in df.columns else df.index
+    
+    output_df = pd.DataFrame({
+        'date': pd.to_datetime(dates),
+        'regime': labels.apply(lambda x: x.value if hasattr(x, 'value') else str(x)),
+    })
+    
+    if confidence is not None:
+        output_df['confidence'] = confidence.values
+    
+    # Add metadata as Parquet file metadata
+    parquet_metadata = {
+        'method': method,
+        'created_at': datetime.now().isoformat(),
+        'version': '1.0',
+        'num_bars': str(len(output_df)),
+    }
+    if metadata:
+        parquet_metadata.update({k: str(v) for k, v in metadata.items()})
+    
+    # Save with metadata
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    
+    table = pa.Table.from_pandas(output_df)
+    existing_meta = table.schema.metadata or {}
+    merged_meta = {**existing_meta, **{k.encode(): v.encode() for k, v in parquet_metadata.items()}}
+    table = table.replace_schema_metadata(merged_meta)
+    
+    pq.write_table(table, filepath)
+    logger.info(f"Saved {len(output_df)} regime labels to {filepath}")
+
+
+def load_labels_from_parquet(filepath: Path) -> Tuple[pd.DataFrame, Dict[str, str]]:
+    """
+    Load regime labels from Parquet file.
+    
+    Args:
+        filepath: Path to Parquet file
+    
+    Returns:
+        Tuple of (DataFrame with date and regime columns, metadata dict)
+    
+    Example:
+        >>> df, meta = load_labels_from_parquet(Path('labels.parquet'))
+        >>> print(meta['method'])
+        'adx_di_hysteresis'
+    """
+    import pyarrow.parquet as pq
+    
+    table = pq.read_table(filepath)
+    df = table.to_pandas()
+    
+    # Extract metadata
+    metadata = {}
+    if table.schema.metadata:
+        metadata = {k.decode(): v.decode() for k, v in table.schema.metadata.items() if k != b'pandas'}
+    
+    logger.info(f"Loaded {len(df)} regime labels from {filepath}")
+    return df, metadata
