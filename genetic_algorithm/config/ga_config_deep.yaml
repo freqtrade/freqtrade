@@ -1,0 +1,300 @@
+# ============================================================================
+# GA Configuration: DEEP SEARCH (Production Quality)
+# ============================================================================
+# 
+# PURPOSE:
+#   Comprehensive overnight search for production-ready trading strategies.
+#   Maximizes strategy quality, robustness, and regime adaptability.
+#
+# USE CASES:
+#   - Finding real trading strategies for production use
+#   - Exhaustive search across parameter space
+#   - Maximum robustness validation (walk-forward + regime-aware)
+#   - Final strategy selection before live trading
+#
+# EXPECTED RUNTIME: 4-8 hours (overnight run)
+# EXPECTED RESULTS: Production-quality strategies with validated performance
+#
+# RUN COMMAND:
+#   # Start overnight run (use nohup or screen for persistence)
+#   nohup python genetic_algorithm/run_ga.py --config genetic_algorithm/config/ga_config_deep.yaml --visualize --no-interactive > deep_run.log 2>&1 &
+#   
+#   # Or with screen:
+#   screen -S ga_deep
+#   python genetic_algorithm/run_ga.py --config genetic_algorithm/config/ga_config_deep.yaml --visualize --no-interactive
+#   # Ctrl+A, D to detach
+#
+# MONITORING:
+#   tail -f deep_run.log
+#   tail -f genetic_algorithm/output/deep_run/evolution.log
+#
+# VISUALIZATION (after completion):
+#   python genetic_algorithm/scripts/visualize_evolution.py --config deep
+#
+# ============================================================================
+
+# === Genetic Algorithm Parameters ===
+# Maximum quality settings - optimized for thorough search
+genetic_algorithm:
+  # Reproducible for debugging, null for maximum exploration
+  # Set to null for production runs to explore different search paths
+  random_seed: null  # Change to 42 for reproducible debugging
+  
+  # LARGE population - maximum genetic diversity
+  # 100+ individuals explores the solution space thoroughly
+  # More individuals = better coverage but slower generations
+  population_size: 100
+  
+  # MANY generations - allow full convergence
+  # 50 generations typically achieves good convergence
+  # With adaptive mutation, evolution can escape local optima
+  generations: 50
+  
+  # Standard mutation rate - too high causes chaos
+  # 0.12 is slightly conservative for stable evolution
+  mutation_rate: 0.12
+  
+  # High crossover rate - combine good solutions aggressively
+  # 0.75 maximizes recombination of good genes
+  crossover_rate: 0.75
+  
+  # Elite size - preserve top 12% unchanged
+  # 12 elites ensures best solutions are never lost
+  elite_size: 12
+  
+  # Tournament size - moderate selection pressure
+  # 5 provides good balance for large populations
+  tournament_size: 5
+  
+  # Tournament selection - proven reliable
+  selection_method: 'tournament'
+  
+  # Convergence patience - give evolution time
+  # 15 generations allows recovery from local optima
+  convergence_patience: 15
+  
+  # Adaptive mutation - essential for long runs
+  adaptive_mutation: true
+  max_adaptation_factor: 2.5   # Up to 2.5x base rate when stuck
+  adaptation_step: 0.08         # Gradual increase over many generations
+  
+  # Full diversity mechanisms
+  fitness_sharing: true         # Maintain diverse solutions
+  sharing_radius: 0.30          # Standard similarity threshold
+  diversity_threshold: 0.12     # Minimum 12% diversity
+  allow_self_crossover: false   # Always use different parents
+  
+  # Random immigrants - prevent stagnation
+  # 8 per generation (8%) introduces fresh genes
+  random_immigrants: 8
+  
+  # Single objective - proven effective
+  # Could switch to 'nsga2' for multi-objective Pareto front
+  mode: 'single_objective'
+
+# === Fitness Function ===
+# Balanced weights with emphasis on risk-adjusted returns
+# Sum = 1.0 for proper weighting
+fitness_weights:
+  profit: 0.25            # Raw returns (not dominant)
+  sharpe_ratio: 0.18      # Volatility-adjusted returns (important)
+  sortino_ratio: 0.15     # Downside risk (critical for safety)
+  profit_factor: 0.12     # Win/loss ratio
+  drawdown: 0.15          # Maximum drawdown penalty (risk control)
+  win_rate: 0.08          # Win percentage (less important than size)
+  trade_frequency: 0.07   # Avoid extreme trade counts
+
+fitness_penalties:
+  min_trades: 15           # Require statistically significant sample
+  max_drawdown: 0.25       # Strict risk control for production
+  min_win_rate: 0.35       # Higher bar for production strategies
+  complexity_weight: 0.015 # Moderate penalty for over-complex strategies
+
+# === Backtesting Configuration ===
+# Maximum data coverage for robust evaluation
+backtesting:
+  # FULL 2 YEARS of data - covers multiple market cycles
+  # Includes 2024-2026 bull and bear markets
+  timerange: "20240101-20260218"
+  
+  # Standard stake
+  stake_amount: 100
+  
+  # MULTIPLE pairs - test generalization
+  # BTC: primary, ETH/LTC: validate cross-pair robustness
+  pairs:
+    - "BTC/USDT"
+    - "ETH/BTC"
+    - "LTC/BTC"
+  
+  # Standard open trades
+  max_open_trades: 5
+  
+  # Standard fee
+  fee: 0.001
+  
+  # Exchange
+  exchange: "binance"
+  
+  # Auto-download
+  auto_download_data: true
+  
+  # Enable caching - critical for long runs
+  enable_cache: true
+  
+  # Longer timeout for complex strategies
+  timeout: 300
+
+# === Walk-Forward Optimization ===
+# ENABLED with thorough settings
+walk_forward:
+  # Enable walk-forward validation
+  enabled: true
+  
+  # Training window - 90 days (3 months)
+  # Adequate data for reliable strategy evaluation
+  train_days: 90
+  
+  # Validation window - 30 days (1 month)
+  # Long enough for statistical significance
+  validation_days: 30
+  
+  # Step forward - 30 days per step
+  # ~7-8 walk-forward windows for 2 years
+  step_days: 30
+  
+  # Rolling window mode
+  mode: 'rolling'
+  
+  # Harmonic mean aggregation
+  # Severely penalizes strategies that fail in any window
+  aggregation: 'harmonic_mean'
+  
+  # Minimum trades per window for validity
+  min_train_trades: 10
+
+# === REGIME-AWARE EVALUATION ===
+# FULL regime-aware evaluation for maximum robustness
+regime_aware:
+  # ENABLE regime detection
+  enabled: true
+  
+  # USE ENSEMBLE METHOD for maximum robustness
+  # Combines adx_di_hysteresis, rolling_returns, hmm via weighted voting
+  # More stable than single method, handles edge cases better
+  method: 'ensemble'
+  
+  # Alternative: Use adx_di_hysteresis for faster execution
+  # method: 'adx_di_hysteresis'
+  
+  # Benchmark pair - use BTC as regime anchor
+  benchmark_pair: "BTC/USDT"
+  
+  # Detection timeframe - 4h for clean signals
+  detection_timeframe: '4h'
+  
+  # Segment configuration - substantial periods
+  period_days: 60        # 60-day segments capture full regime cycles
+  min_period_days: 45    # Require at least 45 days per segment
+  embargo_days: 5        # 5-day gap prevents leakage
+  
+  # Multiple segments per regime for robustness
+  segments_per_regime: 3  # 3 segments × 3 regimes = 9 total
+  
+  # Holdout ratio - 25% reserved for final validation
+  holdout_ratio: 0.25
+  
+  # CVaR aggregation - focuses on worst-case performance
+  # More conservative than harmonic_mean
+  aggregation: 'harmonic_mean'  # or 'cvar' for even more conservative
+  cvar_alpha: 0.25              # Bottom 25% of segment scores
+  
+  # Regime weights - slight bear emphasis for safety
+  # Bear market performance is critical for capital preservation
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.2      # 20% more weight on bear performance
+    sideways: 1.0
+
+# === Strategy Constraints ===
+# Strict constraints for production-ready strategies
+strategy_constraints:
+  min_trades: 15          # Statistically significant sample
+  max_drawdown: 0.25      # Maximum 25% drawdown
+  min_win_rate: 0.35      # At least 35% win rate
+  # NOTE: Only use timeframes with full data coverage
+  # 15m data is outdated (2023 only) - excluded until updated
+  timeframes: ["5m", "1h", "4h"]  # Removed 15m
+  stoploss_range: [-0.15, -0.05]         # Tighter stop-loss range
+  roi_range: [0.02, 0.12]                # Reasonable ROI targets
+  max_open_trades_range: [1, 8]
+
+# === Multi-Timeframe ===
+# FULL complexity for thorough exploration
+multi_timeframe:
+  enabled: true
+  available: ['15m', '1h', '4h', '1d']  # Full range including daily
+  max_timeframes: 3                     # Up to 3 informative TFs
+  higher_timeframe_preference:
+    - 'EMA'
+    - 'SMA'
+    - 'BBANDS'
+    - 'ATR'
+    - 'ADX'
+    - 'RSI'
+
+# === Indicator Configuration ===
+indicators:
+  # FULL indicator set
+  available:
+    - "RSI"
+    - "MACD"
+    - "BBANDS"
+    - "EMA"
+    - "SMA"
+    - "STOCH"
+    - "ATR"
+    - "ADX"
+    - "CCI"
+  
+  # Allow complex strategies
+  max_per_strategy: 5
+
+# === Trade Visualization ===
+trade_visualization:
+  enabled: true
+  output_dir: 'genetic_algorithm/output/deep_run/trade_plots'
+  generations_to_plot: [0, 10, 20, 30, 40, 49]  # Multiple checkpoints
+  top_strategies_to_plot: 5                     # Top 5 strategies
+
+# === Output Configuration ===
+output:
+  dir: 'genetic_algorithm/output/deep_run'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 5  # Every 5 generations
+
+# === Parallel Evaluation ===
+# ENABLED - speed up evaluation with multiple workers
+parallel_evaluation:
+  enabled: true              # Enable parallel backtesting
+  max_workers: 8             # 8 workers for deep config (adjust to your CPU)
+  chunk_size: 'auto'         # Automatic batch sizing
+  worker_log_level: 'WARNING'  # Reduce log noise from workers
+  timeout_per_eval: 180      # Longer timeout for complex evaluations
+
+# === Logging ===
+logging:
+  level: 'INFO'
+  file: 'genetic_algorithm/output/deep_run/evolution.log'
+  console: true
+  
+  # Log strategy details for top performers
+  log_top_strategies: 10
+  
+  # Log diversity metrics
+  log_diversity: true
+  
+  # Log regime performance
+  log_regime_performance: true

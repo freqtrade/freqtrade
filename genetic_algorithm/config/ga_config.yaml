@@ -177,6 +177,59 @@ walk_forward:
   # Must sum to 1.0, length must match number of windows
   # weights: [0.1, 0.2, 0.3, 0.4]  # Example: more weight to recent windows
 
+# === Regime-Aware Evaluation ===
+# Evaluates strategies across different market regimes (bullish, bearish, sideways)
+# to prevent overfitting to a single market condition.
+# 
+# ⚠️ NOTE: Current regime detection methods are simple and may be noisy/inaccurate.
+# See REGIME_DETECTION_IMPLEMENTATION.md for planned improvements.
+regime_aware:
+  # Enable regime-aware evaluation
+  # When enabled, strategies are evaluated across multiple market regime segments
+  enabled: false  # Set to true to use regime-aware evaluation
+  
+  # Detection method: 'sma_adx', 'adx_di', 'returns', 'bollinger', 'ensemble'
+  # 'sma_adx' is recommended - uses SMA crossover + ADX trend strength
+  method: 'sma_adx'
+  
+  # Benchmark pair for regime detection (uses first pair if not specified)
+  # For consistent regime labeling, use a major pair like BTC/USDT
+  benchmark_pair: null  # null = use first pair from backtesting.pairs
+  
+  # Timeframe for regime detection (can differ from trading timeframe)
+  # Higher timeframes (1h, 4h) give cleaner regimes than 5m
+  detection_timeframe: '1h'
+  
+  # Segment duration parameters
+  period_days: 90         # Target segment length in days
+  min_period_days: 60     # Minimum acceptable segment length
+  embargo_days: 5         # Gap between segments to prevent leakage
+  
+  # Number of segments to select per regime type (bullish, bearish, sideways)
+  segments_per_regime: 3
+  
+  # Holdout split - fraction reserved for final out-of-sample validation
+  # These segments are NEVER seen during GA evolution
+  holdout_ratio: 0.20
+  
+  # Fitness aggregation method across segments:
+  # - 'mean': Average performance (balanced)
+  # - 'min': Worst-case performance (conservative, good for risk management)
+  # - 'harmonic_mean': Penalizes inconsistency (recommended)
+  # - 'cvar': Conditional Value at Risk (average of worst alpha% outcomes)
+  aggregation: 'harmonic_mean'
+  
+  # CVaR alpha parameter (for 'cvar' aggregation only)
+  # 0.2 = average of bottom 20% of segment fitness scores
+  cvar_alpha: 0.20
+  
+  # Per-regime weights (optional, for 'mean' aggregation)
+  # Can weight certain regimes more heavily in fitness calculation
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.0
+    sideways: 1.0
+
 # === Strategy Constraints ===
 strategy_constraints:
   # Minimum number of trades for valid strategy

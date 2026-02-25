@@ -23,6 +23,8 @@ __pycache__/
 # Data files
 data/*.db
 data/checkpoints/
+data/cache/*.json
+!data/cache/.gitkeep
 
 # Plots
 plots/*.png

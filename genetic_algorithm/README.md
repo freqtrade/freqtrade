@@ -1,15 +1,14 @@
 # Genetic Algorithm for FreqTrade Strategy Evolution
 
 **Status**: ✅ **WORKING AND PRODUCTION-READY**  
-**Last Updated**: February 22, 2026  
-**Latest Feature**: 📈 **Trade Visualization** - Candlestick charts with entry/exit markers for backtested strategies ✅
+**Last Updated**: February 25, 2026  
+**Latest Feature**: 🎯 **Regime Detection Accuracy** - ADX+DI Hysteresis method with balanced market classification ✅
 
-> 📊 **Want live plotting of generation scores?** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)  
-> 📈 **Want to visualize strategy trades?** → See Trade Visualization section below **← NEW!**  
-> 🎯 **Want strategies that work in live trading?** → See [WALK_FORWARD_GUIDE.md](WALK_FORWARD_GUIDE.md)  
-> 📖 **Complete visualization guide** → See [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)  
-> 🚀 **Recent GA algorithm improvements** → See [../docs/GA_IMPROVEMENTS_SUMMARY.md](../docs/GA_IMPROVEMENTS_SUMMARY.md)  
-> 📋 **Future improvement roadmap** → See [TODO_ga_improvements.md](TODO_ga_improvements.md)
+> 📊 **Want live plotting?** → See [docs/features/VISUALIZATION_GUIDE.md](docs/features/VISUALIZATION_GUIDE.md)  
+> 🎯 **Prevent overfitting?** → See [docs/features/WALK_FORWARD_GUIDE.md](docs/features/WALK_FORWARD_GUIDE.md)  
+> 📈 **Market regime detection?** → See [docs/features/REGIME_DETECTION_IMPLEMENTATION.md](docs/features/REGIME_DETECTION_IMPLEMENTATION.md)  
+> 📖 **Complete documentation index** → See [docs/INDEX.md](docs/INDEX.md)  
+> 📋 **Future roadmap** → See [docs/plans/MASTER_PLAN.md](docs/plans/MASTER_PLAN.md)
 
 ---
 

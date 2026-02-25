@@ -1,0 +1,123 @@
+# Test Configuration for Regime-Aware Evaluation
+# 
+# This config enables regime-aware evaluation for testing with real market data.
+# Uses BTC/USDT as the benchmark pair for regime detection.
+
+# === Genetic Algorithm Parameters ===
+genetic_algorithm:
+  random_seed: 42  # Reproducible results
+  population_size: 10  # Small for testing
+  generations: 3  # Few generations for quick test
+  mutation_rate: 0.15
+  crossover_rate: 0.7
+  elite_size: 2
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 5
+  adaptive_mutation: true
+  mode: 'single_objective'
+  fitness_sharing: true
+  sharing_radius: 0.3
+  random_immigrants: 2
+
+# === Fitness Function ===
+fitness_weights:
+  profit: 0.29
+  sharpe_ratio: 0.13
+  sortino_ratio: 0.13
+  profit_factor: 0.10
+  drawdown: 0.15
+  win_rate: 0.10
+  trade_frequency: 0.10
+
+fitness_penalties:
+  min_trades: 3  # Lower for testing
+  max_drawdown: 0.35
+  complexity_weight: 0.01
+
+# === Backtesting Configuration ===
+backtesting:
+  timerange: "20240101-20260218"  # 2+ years of data
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: true
+  enable_cache: true
+  timeout: 300
+
+# === Walk-Forward Optimization ===
+walk_forward:
+  enabled: false  # Disable walk-forward for this test
+  train_days: 60
+  validation_days: 15
+  step_days: 15
+  mode: 'rolling'
+  aggregation: 'mean'
+  min_train_trades: 5
+
+# === REGIME-AWARE EVALUATION ===
+# This is what we're testing!
+regime_aware:
+  enabled: true
+  method: 'sma_adx'
+  benchmark_pair: null  # Use first pair (BTC/USDT)
+  detection_timeframe: '1h'
+  period_days: 30       # Shorter periods for better regime variation
+  min_period_days: 20
+  embargo_days: 3
+  segments_per_regime: 2
+  holdout_ratio: 0.20
+  aggregation: 'harmonic_mean'
+  cvar_alpha: 0.20
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.0
+    sideways: 1.0
+
+# === Strategy Constraints ===
+strategy_constraints:
+  min_trades: 5
+  max_drawdown: 0.35
+  min_win_rate: 0.25
+  timeframes: ["5m", "15m", "1h"]
+  stoploss_range: [-0.20, -0.03]
+  roi_range: [0.01, 0.15]
+  max_open_trades_range: [1, 5]
+
+# === Multi-Timeframe ===
+multi_timeframe:
+  enabled: true
+  available: ['15m', '1h', '4h']
+  max_timeframes: 2
+  higher_timeframe_preference:
+    - 'EMA'
+    - 'SMA'
+    - 'BBANDS'
+    - 'ATR'
+    - 'ADX'
+
+# === Indicators ===
+indicators:
+  available:
+    - "RSI"
+    - "MACD"
+    - "BBANDS"
+    - "EMA"
+    - "SMA"
+    - "STOCH"
+    - "ATR"
+    - "ADX"
+  max_per_strategy: 4
+  min_per_strategy: 2
+
+# === Parallel Evaluation ===
+parallel_evaluation:
+  enabled: false  # Sequential for clearer logging
+
+# === Progress ===
+progress:
+  enabled: true
+  detailed: true

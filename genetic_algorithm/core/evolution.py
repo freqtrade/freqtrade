@@ -26,6 +26,7 @@ from genetic_algorithm.core.crossover import crossover
 from genetic_algorithm.core.mutation import mutate
 from genetic_algorithm.strategies.generator import StrategyGenerator
 from genetic_algorithm.evaluation.fitness import FitnessEvaluator
+from genetic_algorithm.evaluation.regime_aware import RegimeAwareEvaluator, create_regime_aware_evaluator
 from genetic_algorithm.core.nsga2 import (
     fast_non_dominated_sort,
     crowding_distance_assignment,
@@ -101,7 +102,25 @@ class GeneticAlgorithm:
         
         # Initialize components
         self.strategy_generator = StrategyGenerator(self.config)
-        self.fitness_evaluator = FitnessEvaluator(self.config)
+        
+        # Initialize fitness evaluator - use regime-aware if enabled
+        regime_config = self.config.get('regime_aware', {})
+        self.regime_aware_enabled = regime_config.get('enabled', False)
+        
+        if self.regime_aware_enabled:
+            self.fitness_evaluator = create_regime_aware_evaluator(
+                self.config,
+                auto_detect=True
+            )
+            self.logger.info("=" * 70)
+            self.logger.info("REGIME-AWARE EVALUATION ENABLED")
+            self.logger.info(f"  Detection method: {regime_config.get('method', 'sma_adx')}")
+            self.logger.info(f"  Aggregation: {regime_config.get('aggregation', 'harmonic_mean')}")
+            self.logger.info(f"  Holdout ratio: {regime_config.get('holdout_ratio', 0.20):.0%}")
+            self.logger.info("  Strategies evaluated across multiple market regimes")
+            self.logger.info("=" * 70)
+        else:
+            self.fitness_evaluator = FitnessEvaluator(self.config)
         
         # Log walk-forward status
         wf_config = self.config.get('walk_forward', {})
