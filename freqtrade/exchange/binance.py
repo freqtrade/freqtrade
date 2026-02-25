@@ -119,10 +119,17 @@ class Binance(Exchange):
         """
         try:
             if self.trading_mode == TradingMode.FUTURES and not self._config["dry_run"]:
-                if self._config.get("exchange", {}).get("ccxt_config", {}).get("options", {}).get("portfolioMargin"):
-                    logger.info("Portfolio Margin enabled. Skipping fapiPrivateGetPositionSideDual checks.")
+                if (
+                    self._config.get("exchange", {})
+                    .get("ccxt_config", {})
+                    .get("options", {})
+                    .get("portfolioMargin")
+                ):
+                    logger.info(
+                        "Portfolio Margin enabled. Skipping fapiPrivateGetPositionSideDual checks."
+                    )
                     return
-                
+
                 position_side = self._api.fapiPrivateGetPositionSideDual()
                 self._log_exchange_response("position_side_setting", position_side)
                 assets_margin = self._api.fapiPrivateGetMultiAssetsMargin()
