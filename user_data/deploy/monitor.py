@@ -158,9 +158,27 @@ def format_daily_report(status: dict) -> str:
     return msg
 
 
+def send_startup_msg():
+    """Send clean startup notification."""
+    send_tg(
+        "🟢 *TrendRider Online*\n"
+        "\n"
+        "💰 $1/trade | Max 10 open\n"
+        "📊 SOL XRP DOGE SUI LINK PEPE ADA AVAX\n"
+        "🛡 Stop: -1.8% | Trail: 3%→0.8%\n"
+        "⏱ 1h timeframe | MEXC Spot\n"
+        "\n"
+        "Commands: /status /balance /profit /daily"
+    )
+
+
 def monitor_loop():
     """Main monitoring loop."""
     logger.info("Monitor started")
+
+    # Send our own clean startup message
+    time.sleep(10)
+    send_startup_msg()
 
     cycle = 0
     last_daily = ""

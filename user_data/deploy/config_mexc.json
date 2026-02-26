@@ -62,9 +62,9 @@
         "token": "8272000103:AAErikRTrml-LzGype0LM4eY_Vi634ZHMi8",
         "chat_id": "5216799062",
         "notification_settings": {
-            "status": "silent",
+            "status": "off",
             "warning": "on",
-            "startup": "on",
+            "startup": "off",
             "entry": "on",
             "entry_fill": "off",
             "entry_cancel": "off",
