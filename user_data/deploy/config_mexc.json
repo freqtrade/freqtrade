@@ -1,6 +1,6 @@
 {
     "$schema": "https://schema.freqtrade.io/schema.json",
-    "max_open_trades": 3,
+    "max_open_trades": 10,
     "stake_currency": "USDT",
     "stake_amount": 1,
     "tradable_balance_ratio": 0.15,
