@@ -191,10 +191,9 @@ class TrendRiderStrategy(IStrategy):
         )
 
     def custom_exit_notify(self, trade: Trade, order, current_time, **kwargs) -> str:
-        """Clean, simple exit notification with P&L."""
+        """Clean exit notification with P&L and reason explanation."""
         profit = trade.calc_profit_ratio(trade.close_rate) if trade.close_rate else 0
         profit_amt = trade.calc_profit(trade.close_rate) if trade.close_rate else 0
-        emoji = "✅" if profit >= 0 else "❌"
         dur = current_time - trade.open_date_utc
         hours = int(dur.total_seconds() // 3600)
         mins = int((dur.total_seconds() % 3600) // 60)
@@ -203,10 +202,25 @@ class TrendRiderStrategy(IStrategy):
         total_bal = trade.stake_amount + profit_amt
         _log_trade_to_pg(trade, profit_amt, profit, str(trade.exit_reason), total_bal)
 
+        reason = str(trade.exit_reason)
+        reason_map = {
+            "roi": "✅ Target hit",
+            "trailing_stop_loss": "✅ Trailing stop",
+            "exit_signal": "✅ Trend reversed (in profit)",
+            "stop_loss": "🛑 Stop loss (-1.8%)",
+            "crash_exit": "🚨 Crash detected — emergency exit",
+            "panic_rsi_exit": "🚨 RSI panic — emergency exit",
+            "trend_broken_exit": "⚠️ Trend broken — cut loss early",
+            "stale_loss_exit": "⚠️ Dead trade — cut after 6h",
+        }
+        reason_text = reason_map.get(reason, reason)
+        emoji = "✅" if profit >= 0 else "❌"
+
         return (
             f"{emoji} *SELL {trade.pair}*\n"
             f"P&L: {profit*100:+.2f}% ({profit_amt:+.4f} USDT)\n"
-            f"Held: {hours}h {mins}m | Reason: {trade.exit_reason}"
+            f"Held: {hours}h {mins}m\n"
+            f"Reason: {reason_text}"
         )
 
     # ─── Indicators ─────────────────────────────────────────────
@@ -275,6 +289,53 @@ class TrendRiderStrategy(IStrategy):
         dataframe["trend_age"] = streak
 
         return dataframe
+
+    # ─── Early Warning Exit (overrides exit_profit_only) ───────
+
+    def custom_exit(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> Optional[str]:
+        """
+        Emergency exit system — fires BEFORE the stop loss.
+        Unlike populate_exit_trend, this CAN exit losing trades.
+
+        Triggers:
+        1. Big red candle (>2% drop in 1 hour) = crash starting
+        2. RSI collapsed below 25 = panic selling happening
+        3. Price fell below EMA50 while we're in a loss = trend broken
+        4. Trade losing > 1% after 6+ hours = dead trade, cut it
+        """
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        if dataframe.empty:
+            return None
+
+        last = dataframe.iloc[-1]
+
+        # 1. CRASH DETECTION: current candle dropped > 2%
+        candle_drop = (last["open"] - last["close"]) / last["open"]
+        if candle_drop > 0.02:
+            return "crash_exit"
+
+        # 2. PANIC RSI: RSI collapsed below 25
+        if last["rsi"] < 25:
+            return "panic_rsi_exit"
+
+        # 3. TREND BROKEN: price below EMA50 and we're losing
+        if current_profit < -0.005 and last["close"] < last["ema50"]:
+            return "trend_broken_exit"
+
+        # 4. DEAD TRADE: losing after 6 hours, not recovering
+        hours_open = (current_time - trade.open_date_utc).total_seconds() / 3600
+        if hours_open > 6 and current_profit < -0.01:
+            return "stale_loss_exit"
+
+        return None
 
     # ─── Entry / Exit ───────────────────────────────────────────
 
