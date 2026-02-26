@@ -1,7 +1,7 @@
 # Master Plan: GA Strategy Optimizer Roadmap
 
-**Last Updated:** February 25, 2026  
-**Current Focus:** Ready for Production Testing
+**Last Updated:** February 26, 2026  
+**Current Focus:** Tier 3 Complete - Robustness & Anti-Overfitting
 
 ---
 
@@ -16,6 +16,10 @@
 | Market Regime Detection (Basic) | ✅ Complete | ⭐⭐⭐⭐ | - |
 | **Regime Detection Accuracy** | ✅ Complete | ⭐⭐⭐⭐⭐ | - |
 | Elite Fitness Caching | ✅ Complete | ⭐⭐⭐ | - |
+| **Monte-Carlo Robustness** | ✅ Complete | ⭐⭐⭐⭐⭐ | - |
+| **Parsimony Pressure** | ✅ Complete | ⭐⭐⭐⭐ | - |
+| **Pareto Archive** | ✅ Complete | ⭐⭐⭐ | - |
+| **Dynamic Bounds** | ✅ Complete | ⭐⭐⭐ | - |
 | Island Model | 📋 Planned | ⭐⭐⭐ | 3-6 days |
 | Strategy Grammar | 📋 Planned | ⭐⭐ | 5-10 days |
 

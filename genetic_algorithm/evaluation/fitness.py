@@ -17,6 +17,8 @@ from genetic_algorithm.utils.timerange import (
     create_walk_forward_windows,
     validate_walk_forward_config,
     aggregate_validation_scores,
+    parse_timerange,
+    format_date,
     TimeWindow
 )
 
@@ -286,7 +288,8 @@ class FitnessEvaluator:
                     train_days=wf_train_days,
                     validation_days=wf_val_days,
                     step_days=wf_step_days,
-                    mode=self.walk_forward_config.get('mode', 'rolling')
+                    mode=self.walk_forward_config.get('mode', 'rolling'),
+                    embargo_days=self.walk_forward_config.get('embargo_days', 0)
                 )
             except ValueError as e:
                 logger.warning(
@@ -301,6 +304,7 @@ class FitnessEvaluator:
             validation_fitness_scores = []
             train_fitness_scores = []  # For comparison/debugging
             all_window_metrics = []
+            failed_windows = 0  # Track failed windows separately
             
             for window in windows:
                 if progress_callback:
@@ -330,13 +334,13 @@ class FitnessEvaluator:
                 if not train_result.success:
                     logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Training backtest failed "
                                  f"({train_result.error_message}). Skipping window.")
-                    validation_fitness_scores.append(0.0)
+                    failed_windows += 1
                     continue
                 
                 if train_result.total_trades < min_train_trades:
                     logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Insufficient training trades "
-                                 f"({train_result.total_trades} < {min_train_trades}). Using penalty fitness.")
-                    validation_fitness_scores.append(0.0)
+                                 f"({train_result.total_trades} < {min_train_trades}). Skipping window.")
+                    failed_windows += 1
                     continue
                 
                 # Run backtest on validation window (never cached - validation is key metric)
@@ -391,6 +395,16 @@ class FitnessEvaluator:
             # Aggregate validation scores
             aggregation_method = self.walk_forward_config.get('aggregation', 'mean')
             
+            # If all windows failed, return zero fitness
+            if not validation_fitness_scores:
+                logger.warning(f"All {len(windows)} walk-forward windows failed for {generated_name}")
+                return 0.0, {
+                    'profit': 0.0, 'sharpe_ratio': 0.0, 'max_drawdown': 1.0,
+                    'win_rate': 0.0, 'num_trades': 0, 'walk_forward': True,
+                    'num_windows': len(windows), 'failed_windows': failed_windows,
+                    'complexity': strategy_gene.calculate_complexity()
+                }
+            
             # For weighted aggregation, auto-generate recency weights (later windows weighted more)
             if aggregation_method == 'weighted' and validation_fitness_scores:
                 n = len(validation_fitness_scores)
@@ -404,10 +418,38 @@ class FitnessEvaluator:
             avg_metrics = self._aggregate_window_metrics(all_window_metrics)
             avg_metrics['walk_forward'] = True
             avg_metrics['num_windows'] = len(windows)
+            avg_metrics['failed_windows'] = failed_windows
+            avg_metrics['successful_windows'] = len(validation_fitness_scores)
+            
+            # Apply proportional penalty for failed windows
+            # If e.g. 2 out of 5 windows failed, penalty = (5-2)/5 = 0.6 multiplier
+            if failed_windows > 0:
+                total_windows = len(windows)
+                success_ratio = len(validation_fitness_scores) / total_windows
+                final_fitness *= success_ratio
+                logger.info(f"Walk-forward window failure penalty: {failed_windows}/{total_windows} failed, "
+                           f"fitness scaled by {success_ratio:.2f}")
+            
             avg_metrics['avg_train_fitness'] = sum(train_fitness_scores) / len(train_fitness_scores) if train_fitness_scores else 0.0
             avg_metrics['avg_val_fitness'] = sum(validation_fitness_scores) / len(validation_fitness_scores) if validation_fitness_scores else 0.0
             # Train-val gap: Positive = training better (potential overfit), Negative = validation better (rare but good)
             avg_metrics['train_val_gap'] = avg_metrics['avg_train_fitness'] - avg_metrics['avg_val_fitness']
+            
+            # Apply train-validation gap penalty to discourage overfitting
+            # A strategy that performs much better on training than validation is likely overfit
+            gap_penalty_config = self.walk_forward_config.get('gap_penalty', {})
+            gap_penalty_enabled = gap_penalty_config.get('enabled', True)
+            gap_penalty_threshold = gap_penalty_config.get('threshold', 0.1)
+            gap_penalty_max = gap_penalty_config.get('max_penalty', 0.5)
+            
+            if gap_penalty_enabled and avg_metrics['train_val_gap'] > gap_penalty_threshold:
+                excess_gap = avg_metrics['train_val_gap'] - gap_penalty_threshold
+                # Progressive penalty: larger gap = harsher penalty, capped at max_penalty
+                gap_penalty_factor = max(1.0 - gap_penalty_max, 1.0 - excess_gap * 2.0)
+                final_fitness *= gap_penalty_factor
+                avg_metrics['gap_penalty_applied'] = 1.0 - gap_penalty_factor
+                logger.info(f"Walk-forward gap penalty: gap={avg_metrics['train_val_gap']:.4f}, "
+                           f"penalty={1.0 - gap_penalty_factor:.2%} applied to {generated_name}")
             
             # Log summary only
             logger.debug(f"Walk-forward {generated_name}: fitness={final_fitness:.4f}, gap={avg_metrics['train_val_gap']:.4f}")
@@ -507,7 +549,7 @@ class FitnessEvaluator:
         Returns:
             Dictionary of metrics
         """
-        return {
+        metrics = {
             'profit': result.profit_percent,
             'sharpe_ratio': result.sharpe_ratio,
             'max_drawdown': result.max_drawdown,
@@ -516,6 +558,19 @@ class FitnessEvaluator:
             'profit_factor': result.profit_factor,
             'sortino_ratio': result.sortino_ratio,
         }
+        
+        # Include per-pair profits for robustness analysis
+        if result.per_pair_profit:
+            metrics['per_pair_profit'] = result.per_pair_profit
+            # Worst pair profit (most negative)
+            metrics['worst_pair_profit'] = min(result.per_pair_profit.values())
+            # Pair consistency: std deviation of per-pair profits
+            pair_profits = list(result.per_pair_profit.values())
+            if len(pair_profits) > 1:
+                mean_pp = sum(pair_profits) / len(pair_profits)
+                metrics['pair_profit_std'] = (sum((p - mean_pp) ** 2 for p in pair_profits) / len(pair_profits)) ** 0.5
+        
+        return metrics
     
     def calculate_fitness(self, metrics: Dict[str, float], strategy_gene: StrategyGene = None) -> float:
         """
@@ -724,6 +779,96 @@ class FitnessEvaluator:
                 logger.debug(f"Applied complexity penalty: {complexity_penalty:.4f} "
                            f"(complexity={complexity}, weight={complexity_weight})")
         
+        # Per-pair robustness penalty: penalize strategies with large losses on any single pair
+        # This prevents pair-concentration risk where aggregate profit masks individual pair losses
+        worst_pair_profit = metrics.get('worst_pair_profit')
+        pair_loss_threshold = penalties.get('pair_loss_threshold', -10.0)  # Max acceptable loss on any pair
+        if worst_pair_profit is not None and worst_pair_profit < pair_loss_threshold:
+            excess_loss = abs(worst_pair_profit - pair_loss_threshold)
+            pair_penalty = max(0.5, 1.0 - excess_loss / 100.0)  # Cap at 50% penalty
+            fitness *= pair_penalty
+            logger.debug(f"Applied per-pair penalty: worst_pair={worst_pair_profit:.2f}%, "
+                        f"penalty={1.0 - pair_penalty:.2%}")
+        
         return fitness
     
-
+    def evaluate_holdout(self, strategy_gene: StrategyGene, holdout_timerange: str,
+                         strategy_name: str = None) -> Tuple[float, Dict[str, float]]:
+        """
+        Evaluate a strategy on a completely unseen holdout period.
+        
+        This method is designed to be called ONLY ONCE after evolution is complete,
+        on the final top-N strategies. The holdout period should never be seen during
+        evolution to provide a true out-of-sample performance estimate.
+        
+        Args:
+            strategy_gene: Strategy to evaluate
+            holdout_timerange: Timerange string for holdout period (YYYYMMDD-YYYYMMDD)
+            strategy_name: Optional name for the strategy
+            
+        Returns:
+            Tuple of (fitness_score, metrics_dict)
+        """
+        try:
+            strategy_code = self.strategy_generator.generate_strategy_code(strategy_gene)
+            generated_name = strategy_name or f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
+            
+            logger.info(f"[HOLDOUT] Evaluating {generated_name} on holdout period: {holdout_timerange}")
+            
+            result = self._backtest_with_timerange(
+                strategy_code, generated_name, holdout_timerange,
+                strategy_max_open_trades=strategy_gene.max_open_trades
+            )
+            
+            if not result.success or result.total_trades == 0:
+                logger.warning(f"[HOLDOUT] {generated_name}: backtest failed or zero trades")
+                return 0.0, {
+                    'profit': 0.0, 'sharpe_ratio': 0.0, 'max_drawdown': 1.0,
+                    'win_rate': 0.0, 'num_trades': 0, 'holdout': True,
+                    'error': result.error_message if not result.success else 'zero trades'
+                }
+            
+            metrics = self._backtest_result_to_metrics(result)
+            metrics['complexity'] = strategy_gene.calculate_complexity()
+            metrics['holdout'] = True
+            fitness = self.calculate_fitness(metrics, strategy_gene)
+            
+            logger.info(f"[HOLDOUT] {generated_name}: fitness={fitness:.4f}, "
+                       f"profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}")
+            
+            return fitness, metrics
+            
+        except Exception as e:
+            logger.error(f"[HOLDOUT] Error evaluating {strategy_name}: {e}", exc_info=True)
+            return 0.0, {'profit': 0.0, 'sharpe_ratio': 0.0, 'max_drawdown': 1.0,
+                        'win_rate': 0.0, 'num_trades': 0, 'holdout': True, 'error': str(e)}
+    
+    @staticmethod
+    def split_timerange_for_holdout(timerange: str, holdout_pct: float = 0.15) -> Tuple[str, str]:
+        """
+        Split a timerange into evolution and holdout periods.
+        
+        The holdout period is taken from the END of the timerange (most recent data),
+        since we want to validate forward generalization.
+        
+        Args:
+            timerange: Full timerange string (YYYYMMDD-YYYYMMDD)
+            holdout_pct: Fraction of data to reserve as holdout (default: 15%)
+            
+        Returns:
+            Tuple of (evolution_timerange, holdout_timerange)
+        """
+        from datetime import timedelta
+        start, end = parse_timerange(timerange)
+        total_days = (end - start).days
+        holdout_days = max(7, int(total_days * holdout_pct))  # minimum 7 days
+        
+        split_date = end - timedelta(days=holdout_days)
+        
+        evolution_tr = f"{format_date(start)}-{format_date(split_date)}"
+        holdout_tr = f"{format_date(split_date)}-{format_date(end)}"
+        
+        logger.info(f"[HOLDOUT] Split timerange: evolution={evolution_tr} ({total_days - holdout_days}d), "
+                    f"holdout={holdout_tr} ({holdout_days}d)")
+        
+        return evolution_tr, holdout_tr

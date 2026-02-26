@@ -52,7 +52,7 @@ genetic_algorithm:
   
   # Standard mutation rate - too high causes chaos
   # 0.12 is slightly conservative for stable evolution
-  mutation_rate: 0.12
+  mutation_rate: 0.2
   
   # High crossover rate - combine good solutions aggressively
   # 0.75 maximizes recombination of good genes
@@ -64,7 +64,7 @@ genetic_algorithm:
   
   # Tournament size - moderate selection pressure
   # 5 provides good balance for large populations
-  tournament_size: 5
+  tournament_size: 6
   
   # Tournament selection - proven reliable
   selection_method: 'tournament'
@@ -86,7 +86,7 @@ genetic_algorithm:
   
   # Random immigrants - prevent stagnation
   # 8 per generation (8%) introduces fresh genes
-  random_immigrants: 8
+  random_immigrants: 35
   
   # Single objective - proven effective
   # Could switch to 'nsga2' for multi-objective Pareto front
@@ -128,10 +128,10 @@ backtesting:
     - "LTC/USDT"
   
   # Standard open trades
-  max_open_trades: 5
+  max_open_trades: 10
   
   # Standard fee
-  fee: 0.001
+  fee: 0.002
   
   # Exchange
   exchange: "binance"
@@ -149,7 +149,7 @@ backtesting:
 # ENABLED with thorough settings
 walk_forward:
   # Enable walk-forward validation
-  enabled: true
+  enabled: false
   
   # Training window - 90 days (3 months)
   # Adequate data for reliable strategy evaluation

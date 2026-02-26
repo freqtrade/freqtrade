@@ -89,7 +89,8 @@ def create_walk_forward_windows(
     validation_days: int,
     step_days: int,
     mode: str = 'rolling',
-    min_train_days: Optional[int] = None
+    min_train_days: Optional[int] = None,
+    embargo_days: int = 0
 ) -> List[TimeWindow]:
     """
     Create walk-forward optimization windows from a timerange.
@@ -101,6 +102,8 @@ def create_walk_forward_windows(
         step_days: Number of days to slide forward for each window
         mode: Window mode - 'rolling' (fixed window) or 'anchored' (expanding window)
         min_train_days: Minimum training days required (defaults to train_days)
+        embargo_days: Number of days gap between training and validation windows
+                      to prevent autocorrelated data leakage (default: 0)
         
     Returns:
         List of TimeWindow objects
@@ -134,11 +137,14 @@ def create_walk_forward_windows(
     if min_train_days is None:
         min_train_days = train_days
     
+    if embargo_days < 0:
+        raise ValueError(f"embargo_days must be non-negative, got {embargo_days}")
+    
     # Parse timerange
     full_start, full_end = parse_timerange(timerange)
     logger.info(f"Creating walk-forward windows from {format_date(full_start)} to {format_date(full_end)}")
     logger.info(f"Parameters: train_days={train_days}, validation_days={validation_days}, "
-                f"step_days={step_days}, mode={mode}")
+                f"step_days={step_days}, mode={mode}, embargo_days={embargo_days}")
     
     windows = []
     window_index = 0
@@ -155,8 +161,8 @@ def create_walk_forward_windows(
             train_start = full_start
             train_end = current_start + timedelta(days=train_days)
         
-        # Calculate validation window
-        val_start = train_end
+        # Calculate validation window (with embargo gap to prevent data leakage)
+        val_start = train_end + timedelta(days=embargo_days)
         val_end = val_start + timedelta(days=validation_days)
         
         # Check if we have enough data for this window

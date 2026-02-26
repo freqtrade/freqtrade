@@ -38,6 +38,7 @@ class IndicatorGene:
     weight: float = 1.0  # importance weight
     instance_id: Optional[str] = None  # Unique instance identifier (e.g., 'RSI_0', 'RSI_1')
     timeframe: Optional[str] = None  # None = base timeframe, e.g. '1h', '4h' for informative
+    param_bounds: Optional[Dict[str, Any]] = None  # evolved [min, max] per parameter
 
 
 @dataclass
@@ -99,7 +100,8 @@ class StrategyGene:
             'individual_id': self.individual_id,
             'indicators': [
                 {'type': ind.type, 'parameters': dict(ind.parameters), 'weight': ind.weight,
-                 'instance_id': ind.instance_id, 'timeframe': ind.timeframe}
+                 'instance_id': ind.instance_id, 'timeframe': ind.timeframe,
+                 'param_bounds': dict(ind.param_bounds) if ind.param_bounds else None}
                 for ind in self.indicators
             ],
             'entry_conditions': [
@@ -139,7 +141,8 @@ class StrategyGene:
                 parameters=ind['parameters'],
                 weight=ind.get('weight', 1.0),
                 instance_id=ind.get('instance_id'),
-                timeframe=ind.get('timeframe')
+                timeframe=ind.get('timeframe'),
+                param_bounds=ind.get('param_bounds')
             )
             for ind in data['indicators']
         ]

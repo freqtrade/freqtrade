@@ -18,7 +18,7 @@ genetic_algorithm:
   random_seed: null  # Set to an integer (e.g., 42) for reproducible experiments
   
   # Population size - number of strategies per generation
-  population_size: 50
+  population_size: 10
   
   # Number of generations to evolve
   generations: 2
@@ -29,8 +29,14 @@ genetic_algorithm:
   # Crossover rate - probability of crossing over two parents
   crossover_rate: 0.7
   
+  # Crossover method: 'single_point', 'uniform', 'component'
+  # - single_point: splits indicator/condition lists at random point, swaps tails
+  # - uniform: each component independently inherited from either parent
+  # - component: swaps entire blocks (indicators, entry conditions, exit conditions, risk params)
+  crossover_method: 'single_point'
+  
   # Elite size - number of top strategies to preserve unchanged (~15% of population)
-  elite_size: 6
+  elite_size: 2
   
   # Tournament size for tournament selection (3-5 recommended for good selection pressure)
   tournament_size: 3
@@ -102,6 +108,7 @@ fitness_penalties:
   max_drawdown: 0.30       # Penalize if drawdown exceeds this (increased from 0.25)
   min_win_rate: 0.30       # Penalize if win rate below this (reduced from 0.35)
   complexity_weight: 0.01  # Penalty weight for strategy complexity (num_indicators + num_conditions)
+  pair_loss_threshold: -10.0  # Max acceptable loss (%) on any single pair before penalty applies
 
 # === Backtesting Configuration ===
 backtesting:
@@ -121,6 +128,11 @@ backtesting:
   
   # Fee for trades (0.1%)
   fee: 0.002
+  
+  # Slippage percentage added on top of exchange fee for realistic cost modeling
+  # Accounts for spread, market impact, and execution delays in live trading
+  # 0.0005 = 0.05%, typical for liquid pairs; set higher for illiquid pairs
+  slippage_pct: 0.0005
   
   # Exchange name (default: binance)
   exchange: "binance"
@@ -142,7 +154,7 @@ backtesting:
 # multiple windows to ensure strategy robustness.
 walk_forward:
   # Enable walk-forward optimization
-  enabled: true  # Set to true to use walk-forward validation
+  enabled: false  # Set to true to use walk-forward validation
   
   # Training window size in days
   # Strategies are evolved using only this training data
@@ -169,6 +181,17 @@ walk_forward:
   # - 'weighted': More weight to recent windows (requires weights config)
   aggregation: 'mean'
   
+  # Embargo days - gap between training and validation windows to prevent
+  # autocorrelated data leakage. Recommended 3-5 days for daily/hourly timeframes.
+  embargo_days: 3
+  
+  # Train-validation gap penalty
+  # Penalizes strategies that perform much better on training than validation (overfit)
+  gap_penalty:
+    enabled: true
+    threshold: 0.1       # Gap above this triggers penalty (10% fitness difference)
+    max_penalty: 0.5     # Maximum penalty factor (50% reduction)
+  
   # Minimum trades required in training window to be valid
   # Windows with fewer trades are skipped
   min_train_trades: 10
@@ -184,9 +207,21 @@ walk_forward:
 # ⚠️ NOTE: Current regime detection methods are simple and may be noisy/inaccurate.
 # See REGIME_DETECTION_IMPLEMENTATION.md for planned improvements.
 regime_aware:
+
+# === Out-of-Sample Holdout Validation ===
+# After evolution completes, evaluates the top strategies on a completely unseen
+# holdout period taken from the END of the timerange. This provides a true
+# out-of-sample performance estimate and detects overfitting.
+holdout_validation:
+  # Enable holdout validation post-evolution
+  enabled: true
+  
+  # Fraction of data to reserve as holdout (taken from the end of timerange)
+  # The GA never sees this data during evolution
+  holdout_pct: 0.15  # 15% of total timerange
   # Enable regime-aware evaluation
   # When enabled, strategies are evaluated across multiple market regime segments
-  enabled: false  # Set to true to use regime-aware evaluation
+  enabled: true  # Set to true to use regime-aware evaluation
   
   # Detection method: 'sma_adx', 'adx_di', 'returns', 'bollinger', 'ensemble'
   # 'sma_adx' is recommended - uses SMA crossover + ADX trend strength
@@ -401,7 +436,7 @@ visualization:
 # Recommendation: Enable for populations > 20 strategies
 parallel_evaluation:
   # Enable parallel evaluation
-  enabled: false  # Set to true to enable parallel backtesting
+  enabled: true  # Set to true to enable parallel backtesting
   
   # Number of worker processes
   # - null: Auto-detect (CPU cores - 1)
@@ -439,3 +474,69 @@ advanced:
     num_islands: 4
     migration_interval: 5  # generations between migrations
     migration_size: 5      # individuals to migrate
+
+# =====================================================================
+# TIER 3 — ADVANCED ROBUSTNESS & SIMPLIFICATION FEATURES
+# =====================================================================
+
+# === Monte-Carlo Robustness Analysis ===
+# After evolution finishes, run Monte-Carlo permutations on top strategies
+# to estimate how robust they are under random perturbations.
+monte_carlo:
+  enabled: true
+
+  # Number of permutation runs (more = more accurate, slower)
+  num_permutations: 30
+
+  # Methods to use (any combination):
+  #   bootstrap       — sample trades with replacement
+  #   shuffle         — randomise trade order (affects compounding)
+  #   slippage_jitter — add random slippage noise
+  methods:
+    - bootstrap
+    - shuffle
+    - slippage_jitter
+
+  # Std dev of slippage noise per trade (e.g. 0.0005 = 0.05%)
+  slippage_std: 0.0005
+
+  # Fraction of trades to sample per bootstrap iteration
+  sample_fraction: 1.0
+
+  # Optional seed for reproducibility (null = random)
+  random_seed: null
+
+# === Parsimony Pressure (Strategy Simplification) ===
+# After creating next-gen elites, attempt to remove indicators/conditions
+# one at a time. If the fitness drop is within epsilon, keep the simpler
+# version. This reduces overfitting and creates more interpretable rules.
+parsimony:
+  enabled: true
+
+  # Max allowed relative fitness drop (0.02 = 2%)
+  epsilon: 0.02
+
+  # Max components to try removing per elite per generation
+  max_removals: 1
+
+# === Pareto Archive (NSGA-II mode only) ===
+# Maintains an external set of historically non-dominated solutions.
+# Uses crowding-distance decay to prune toward the "knee" of the front.
+pareto_archive:
+  enabled: false
+
+  # Maximum archive size
+  max_size: 100
+
+  # Crowding-distance decay rate per generation (< 1.0)
+  # Lower values make long-lived members easier to prune.
+  decay_rate: 0.95
+
+# === Dynamic Indicator Parameter Ranges ===
+# Allow parameter bounds (min, max) to be evolved alongside values.
+# Enables the GA to tighten or widen search spaces per indicator.
+dynamic_bounds:
+  enabled: true
+
+  # Mutation strength when perturbing bounds (0.0–1.0)
+  mutation_strength: 0.1

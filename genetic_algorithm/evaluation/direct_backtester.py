@@ -53,6 +53,9 @@ class BacktestResult:
     trades: Optional[list] = None  # List of trade dicts for visualization
     ohlcv_data: Optional[Dict[str, Any]] = None  # Dict of pair_timeframe -> DataFrame
     
+    # Per-pair performance breakdown
+    per_pair_profit: Optional[Dict[str, float]] = None  # pair -> profit percentage
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -647,7 +650,7 @@ class DirectBacktester:
                      patch.object(Exchange, 'validate_config', MagicMock()), \
                      patch.object(Exchange, 'validate_timeframes', MagicMock()), \
                      patch.object(Exchange, '_init_ccxt', MagicMock()), \
-                     patch.object(Exchange, 'get_fee', return_value=0.001), \
+                     patch.object(Exchange, 'get_fee', return_value=config_dict.get('exchange', {}).get('fee', 0.001)), \
                      patch.object(Exchange, 'precisionMode', PropertyMock(return_value=2)), \
                      patch.object(Exchange, 'precision_mode_price', PropertyMock(return_value=2)), \
                      patch.object(Exchange, 'timeframes', PropertyMock(return_value=["1m", "5m", "15m", "1h", "1d"])), \
@@ -686,6 +689,20 @@ class DirectBacktester:
                         )
                     
                     result = self._parse_stats(strategy_results, strategy_name)
+                    
+                    # Extract per-pair performance breakdown
+                    try:
+                        trades_df = strategy_results.get('trades', None)
+                        if trades_df is not None and hasattr(trades_df, 'groupby') and len(trades_df) > 0:
+                            per_pair = {}
+                            for pair, group in trades_df.groupby('pair'):
+                                # profit_ratio is per-trade profit as a ratio
+                                pair_profit = group['profit_ratio'].sum() * 100 if 'profit_ratio' in group.columns else 0.0
+                                per_pair[pair] = pair_profit
+                            result.per_pair_profit = per_pair
+                            logger.debug(f"Per-pair profits: {per_pair}")
+                    except Exception as e:
+                        logger.debug(f"Could not extract per-pair profits: {e}")
                     
                     # Collect detailed trade data for visualization if requested
                     if collect_trades:
@@ -772,6 +789,14 @@ class DirectBacktester:
         else:
             max_open_trades = ga_cfg.get('max_open_trades', 3)
         fee = ga_cfg.get('fee', 0.001)
+        
+        # Add slippage on top of exchange fee for realistic cost modeling
+        # Slippage accounts for spread, market impact, and execution delays
+        slippage_pct = ga_cfg.get('slippage_pct', 0.0)
+        if slippage_pct > 0:
+            fee = fee + slippage_pct
+            logger.debug(f"Fee adjusted with slippage: base={ga_cfg.get('fee', 0.001)}, "
+                        f"slippage={slippage_pct}, total={fee}")
         
         # Determine stake currency from pairs
         # Extract quote currency from pairs (format: BASE/QUOTE)
@@ -947,6 +972,9 @@ class DirectBacktester:
         logger.debug(f"Parsed {strategy_name}: profit={profit_percent:.4f}%, trades={total_trades}, win_rate={win_rate:.2%}")
         
         # Extract metrics from stats
+        # Note: FreqTrade uses 'max_drawdown_account' for percentage drawdown (as ratio, e.g., 0.15 = 15%)
+        max_drawdown = stats.get('max_drawdown_account', stats.get('max_drawdown', 0.0))
+        
         return BacktestResult(
             success=True,
             strategy_name=strategy_name,
@@ -956,14 +984,15 @@ class DirectBacktester:
             wins=wins,
             losses=losses,
             win_rate=win_rate,
-            max_drawdown=stats.get('max_drawdown', 0.0),
+            max_drawdown=max_drawdown,
             max_drawdown_abs=stats.get('max_drawdown_abs', 0.0),
             sharpe_ratio=stats.get('sharpe', 0.0),
             sortino_ratio=stats.get('sortino', 0.0),
             profit_factor=stats.get('profit_factor', 0.0),
             avg_profit=stats.get('profit_mean', 0.0),
             median_profit=stats.get('profit_median', 0.0),
-            avg_duration=stats.get('duration_avg', ""),
+            # FreqTrade uses 'holding_avg' (timedelta) at strategy level, not 'duration_avg'
+            avg_duration=str(stats.get('holding_avg', '')) if stats.get('holding_avg') else stats.get('duration_avg', ""),
         )
 
     def backtest_strategy_with_trades(

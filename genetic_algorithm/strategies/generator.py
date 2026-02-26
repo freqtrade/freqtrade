@@ -608,16 +608,40 @@ class {strategy_name}(IStrategy):
         dataframe.loc[dataframe['volume'] > dataframe['volume_sma'], '{signal_col}'] = 1
 """
         
-        # Combine conditions based on logic operators
-        # Check if all valid conditions use the same logic
-        logics = [cond.logic for cond in valid_conditions if hasattr(cond, 'logic')]
-        use_or = logics and logics[0] == 'OR'
+        # Combine conditions based on per-condition logic operators
+        # Group conditions: OR conditions are grouped together, then ANDed with AND conditions
+        # This creates: (AND_cond1) & (AND_cond2) & (OR_cond1 | OR_cond2 | OR_cond3)
+        # This way, all AND conditions must be true, plus at least one OR condition must be true
         
-        # Combine with OR or AND
-        if use_or:
-            combined_condition = ' |\n            '.join(f"({expr})" for expr in condition_exprs)
-        else:
-            combined_condition = ' &\n            '.join(f"({expr})" for expr in condition_exprs)
+        and_exprs = []
+        or_exprs = []
+        
+        for cond, expr in zip(valid_conditions, condition_exprs):
+            logic = getattr(cond, 'logic', 'AND')
+            if logic == 'OR':
+                or_exprs.append(expr)
+            else:
+                and_exprs.append(expr)
+        
+        # Build the final combined expression
+        parts = []
+        
+        # Each AND condition is its own required term
+        for expr in and_exprs:
+            parts.append(f"({expr})")
+        
+        # OR conditions are grouped together as a single term
+        if or_exprs:
+            if len(or_exprs) == 1:
+                parts.append(f"({or_exprs[0]})")
+            else:
+                or_combined = ' |\n                '.join(f"({expr})" for expr in or_exprs)
+                parts.append(f"({or_combined})")
+        
+        # If we only have OR conditions and no AND, at least one must fire
+        # If we only have AND conditions, all must fire (original behavior)
+        # If we have both, all AND + at least one OR must fire
+        combined_condition = ' &\n            '.join(parts)
         
         code = f"""        conditions = (
             {combined_condition}

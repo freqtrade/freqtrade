@@ -7,6 +7,8 @@ Supports both single-objective and multi-objective (NSGA-II) optimization.
 
 import random
 import yaml
+import json
+import time
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import logging
@@ -85,6 +87,7 @@ class GeneticAlgorithm:
         self.elite_size = ga_config['elite_size']
         self.tournament_size = ga_config.get('tournament_size', 3)
         self.selection_method = ga_config.get('selection_method', 'tournament')
+        self.crossover_method = ga_config.get('crossover_method', 'single_point')
         self.convergence_patience = ga_config.get('convergence_patience', 10)
         
         # NSGA-II multi-objective settings
@@ -104,7 +107,7 @@ class GeneticAlgorithm:
         self.strategy_generator = StrategyGenerator(self.config)
         
         # Initialize fitness evaluator - use regime-aware if enabled
-        regime_config = self.config.get('regime_aware', {})
+        regime_config = self.config.get('regime_aware') or {}
         self.regime_aware_enabled = regime_config.get('enabled', False)
         
         if self.regime_aware_enabled:
@@ -225,6 +228,135 @@ class GeneticAlgorithm:
             self.logger.info("Progress bar enabled")
         elif progress_config.get('enabled', False) and not TQDM_AVAILABLE:
             self.logger.warning("Progress bar requested but tqdm not installed. Run: pip install tqdm")
+        
+        # Checkpoint settings
+        storage_config = self.config.get('storage', {})
+        self.checkpoint_dir = Path(storage_config.get('checkpoint_dir', 'genetic_algorithm/data/checkpoints'))
+        self.checkpoint_interval = storage_config.get('checkpoint_interval', 5)
+    
+    def save_checkpoint(self, population: Population, generation: int):
+        """
+        Save a checkpoint of the current evolution state.
+        
+        Serializes the population, generation stats, best individual, and 
+        adaptive parameters so evolution can be resumed after interruption.
+        
+        Args:
+            population: Current population
+            generation: Current generation number
+        """
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        
+        checkpoint = {
+            'generation': generation,
+            'population': [ind.to_dict() for ind in population.individuals],
+            'population_size': self.population_size,
+            'best_individual': self.best_individual.to_dict() if self.best_individual else None,
+            'best_fitness_ever': self.best_fitness_ever,
+            'no_improvement_count': self.no_improvement_count,
+            'mutation_rate': self.mutation_rate,
+            'generation_stats': [
+                {
+                    'generation': s.generation,
+                    'size': s.size,
+                    'best_fitness': s.best_fitness,
+                    'avg_fitness': s.avg_fitness,
+                    'worst_fitness': s.worst_fitness,
+                    'best_raw_fitness': s.best_raw_fitness,
+                    'avg_raw_fitness': s.avg_raw_fitness,
+                    'genetic_diversity': s.genetic_diversity,
+                }
+                for s in self.generation_stats
+            ],
+            'random_seed': self.random_seed,
+            'timestamp': time.time(),
+        }
+        
+        checkpoint_path = self.checkpoint_dir / 'latest_checkpoint.json'
+        # Write to temp file first, then rename for atomicity
+        temp_path = self.checkpoint_dir / 'latest_checkpoint.tmp'
+        
+        try:
+            with open(temp_path, 'w') as f:
+                json.dump(checkpoint, f, indent=2, default=str)
+            temp_path.rename(checkpoint_path)
+            self.logger.info(f"[CHECKPOINT] Saved generation {generation} to {checkpoint_path}")
+        except Exception as e:
+            self.logger.error(f"[CHECKPOINT] Failed to save: {e}")
+            if temp_path.exists():
+                temp_path.unlink()
+    
+    def load_checkpoint(self) -> Optional[Dict[str, Any]]:
+        """
+        Load the latest checkpoint if available.
+        
+        Returns:
+            Checkpoint dictionary if found, None otherwise
+        """
+        checkpoint_path = self.checkpoint_dir / 'latest_checkpoint.json'
+        
+        if not checkpoint_path.exists():
+            return None
+        
+        try:
+            with open(checkpoint_path, 'r') as f:
+                checkpoint = json.load(f)
+            
+            self.logger.info(f"[CHECKPOINT] Found checkpoint at generation {checkpoint['generation']} "
+                           f"(saved at {checkpoint.get('timestamp', 'unknown')})")
+            return checkpoint
+        except Exception as e:
+            self.logger.error(f"[CHECKPOINT] Failed to load: {e}")
+            return None
+    
+    def restore_from_checkpoint(self, checkpoint: Dict[str, Any]) -> Population:
+        """
+        Restore evolution state from a checkpoint.
+        
+        Args:
+            checkpoint: Checkpoint dictionary from load_checkpoint()
+            
+        Returns:
+            Restored population
+        """
+        self.current_generation = checkpoint['generation']
+        self.best_fitness_ever = checkpoint.get('best_fitness_ever', 0.0)
+        self.no_improvement_count = checkpoint.get('no_improvement_count', 0)
+        self.mutation_rate = checkpoint.get('mutation_rate', self.base_mutation_rate)
+        
+        # Restore best individual
+        if checkpoint.get('best_individual'):
+            self.best_individual = Individual.from_dict(checkpoint['best_individual'])
+        
+        # Restore population
+        population = Population(
+            size=checkpoint.get('population_size', self.population_size),
+            generation=self.current_generation
+        )
+        for ind_dict in checkpoint['population']:
+            individual = Individual.from_dict(ind_dict)
+            population.add_individual(individual)
+        
+        # Restore generation stats (partial — only serializable fields)
+        self.generation_stats = []
+        for s in checkpoint.get('generation_stats', []):
+            stats = PopulationStats(
+                generation=s.get('generation', 0),
+                size=s.get('size', self.population_size),
+                best_fitness=s.get('best_fitness', 0),
+                avg_fitness=s.get('avg_fitness', 0),
+                worst_fitness=s.get('worst_fitness', 0),
+                best_raw_fitness=s.get('best_raw_fitness'),
+                avg_raw_fitness=s.get('avg_raw_fitness'),
+                genetic_diversity=s.get('genetic_diversity'),
+            )
+            self.generation_stats.append(stats)
+        
+        self.logger.info(f"[CHECKPOINT] Restored: generation={self.current_generation}, "
+                        f"population={len(population.individuals)}, "
+                        f"best_fitness={self.best_fitness_ever:.4f}")
+        
+        return population
     
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file."""
@@ -560,6 +692,19 @@ class GeneticAlgorithm:
             next_gen.add_individual(elite_copy)
         self.logger.info(f"[ELITISM] Preserved {self.elite_size} elite individuals")
         
+        # Step 1b: Parsimony pressure — try to simplify elites
+        parsimony_config = self.config.get('parsimony', {})
+        if parsimony_config.get('enabled', False):
+            from genetic_algorithm.core.parsimony import apply_parsimony_to_elites
+            
+            def _eval_fn(gene):
+                return self.fitness_evaluator.evaluate(gene)
+            
+            elite_list = list(next_gen.individuals)
+            removed = apply_parsimony_to_elites(elite_list, _eval_fn, parsimony_config)
+            if removed > 0:
+                self.logger.info(f"[PARSIMONY] Removed {removed} component(s) from elites")
+        
         # Helper to calculate next available individual ID
         def calculate_next_id():
             return len(next_gen)
@@ -620,7 +765,8 @@ class GeneticAlgorithm:
                         parent1, parent2,
                         generation=self.current_generation + 1,
                         ind_id=child1_id,
-                        config=self.config
+                        config=self.config,
+                        method=self.crossover_method
                     )
                     crossover_count += 1
                 else:
@@ -703,9 +849,12 @@ class GeneticAlgorithm:
         
         return False
     
-    def evolve(self) -> List[Individual]:
+    def evolve(self, resume: bool = False) -> List[Individual]:
         """
         Run the complete evolution process.
+        
+        Args:
+            resume: If True, attempt to resume from a checkpoint
         
         Returns:
             List of best individuals
@@ -714,15 +863,38 @@ class GeneticAlgorithm:
         self.logger.info("GENETIC ALGORITHM STARTING")
         self.logger.info("=" * 70)
         self.logger.info(f"  Population: {self.population_size} | Generations: {self.generations}")
-        self.logger.info(f"  Mutation: {self.mutation_rate:.2%} | Crossover: {self.crossover_rate:.2%}")
+        self.logger.info(f"  Mutation: {self.mutation_rate:.2%} | Crossover: {self.crossover_rate:.2%} ({self.crossover_method})")
         self.logger.info(f"  Selection: {self.selection_method} | Elite size: {self.elite_size}")
         self.logger.info("=" * 70)
         
-        # Initialize population
-        population = self.initialize_population()
+        # Try to resume from checkpoint
+        start_generation = 0
+        if resume:
+            checkpoint = self.load_checkpoint()
+            if checkpoint:
+                population = self.restore_from_checkpoint(checkpoint)
+                start_generation = self.current_generation + 1
+                self.logger.info(f"Resuming evolution from generation {start_generation}")
+            else:
+                self.logger.info("No checkpoint found, starting fresh")
+                population = self.initialize_population()
+        else:
+            # Initialize population
+            population = self.initialize_population()
         
         # Evolution loop
-        for gen in range(self.generations):
+        # Initialise Pareto archive (if NSGA-II + archive enabled)
+        archive_config = self.config.get('pareto_archive', {})
+        pareto_archive = None
+        if self.mode == 'nsga2' and archive_config.get('enabled', False):
+            from genetic_algorithm.core.pareto_archive import ParetoArchive
+            pareto_archive = ParetoArchive(
+                max_size=archive_config.get('max_size', 100),
+                decay_rate=archive_config.get('decay_rate', 0.95),
+            )
+            self.logger.info(f"[ARCHIVE] Pareto archive enabled (max_size={pareto_archive.max_size}, decay={pareto_archive.decay_rate})")
+
+        for gen in range(start_generation, self.generations):
             self.current_generation = gen
             self.logger.info("")
             self.logger.info(f"{'─'*70}")
@@ -742,6 +914,10 @@ class GeneticAlgorithm:
                     crowding_distance_assignment(front)
                 pareto_front = fronts[0] if fronts else []
                 self.logger.info(f"[NSGA-II] {len(fronts)} Pareto fronts, front 1 has {len(pareto_front)} individuals")
+                
+                # Update external archive if enabled
+                if pareto_archive is not None:
+                    pareto_archive.update(list(population.individuals), generation=gen)
             else:
                 # Single-objective: Compute pairwise distances once for efficiency
                 if self.fitness_sharing or len(population.individuals) >= 2:
@@ -786,7 +962,12 @@ class GeneticAlgorithm:
             # Check convergence
             if self.check_convergence(stats):
                 self.logger.info("[CONVERGENCE] Evolution converged early")
+                self.save_checkpoint(population, gen)
                 break
+            
+            # Save checkpoint periodically
+            if self.checkpoint_interval > 0 and (gen + 1) % self.checkpoint_interval == 0:
+                self.save_checkpoint(population, gen)
             
             # Create next generation
             if gen < self.generations - 1:  # Don't create next gen on last iteration
@@ -835,7 +1016,11 @@ class GeneticAlgorithm:
         
         # Return top strategies based on mode
         if self.mode == 'nsga2':
-            # Return entire Pareto front sorted by crowded comparison
+            # Prefer external archive if available
+            if pareto_archive is not None and pareto_archive.size > 0:
+                self.logger.info(f"[ARCHIVE] Returning {pareto_archive.size} archive members as final solution set")
+                return nsga2_crowded_comparison_sort(pareto_archive.get_archive())[:self.pareto_front_size]
+            # Fall back to last generation's Pareto front
             pareto_front = get_pareto_front(list(population.individuals))
             return nsga2_crowded_comparison_sort(pareto_front)[:self.pareto_front_size]
         else:

@@ -813,6 +813,60 @@ def mutate_timeframes(individual: Individual, mutation_rate: float,
     return new_individual
 
 
+def mutate_dynamic_bounds(
+    individual: Individual,
+    mutation_rate: float,
+    config: Dict[str, Any],
+) -> Individual:
+    """
+    Mutate the evolvable parameter bounds on indicators.
+
+    For each indicator with `param_bounds`, randomly shifts/expands/contracts
+    the bounds using the helpers in `dynamic_bounds.py`.
+
+    Args:
+        individual: Strategy to mutate
+        mutation_rate: base mutation probability
+        config: config dict (uses `dynamic_bounds` section)
+
+    Returns:
+        Mutated Individual
+    """
+    from genetic_algorithm.utils.dynamic_bounds import mutate_bounds, initialise_bounds
+
+    dyn_config = config.get('dynamic_bounds', {})
+    strength = dyn_config.get('mutation_strength', 0.1)
+    indicator_config = config.get('indicators', {})
+
+    mutated_gene = individual.strategy_gene.copy()
+    mutations_applied = []
+
+    for i, ind in enumerate(mutated_gene.indicators):
+        if random.random() > mutation_rate:
+            continue
+
+        # Initialize bounds if missing
+        if ind.param_bounds is None:
+            ind.param_bounds = initialise_bounds(ind.type, ind.parameters, indicator_config)
+            mutations_applied.append(f"init_bounds_{ind.type}_{i}")
+
+        # Mutate bounds
+        old_bounds = ind.param_bounds
+        ind.param_bounds = mutate_bounds(old_bounds, ind.parameters, mutation_strength=strength)
+        mutations_applied.append(f"mutate_bounds_{ind.type}_{i}")
+
+    if not mutations_applied:
+        return individual
+
+    new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
+    new_individual.mutations = individual.mutations + [{
+        'type': 'dynamic_bounds',
+        'applied': mutations_applied
+    }]
+
+    return new_individual
+
+
 def mutate(individual: Individual, mutation_rate: float,
           config: Dict[str, Any],
           methods: list = None) -> Individual:
@@ -843,6 +897,10 @@ def mutate(individual: Individual, mutation_rate: float,
         multi_tf_config = config.get('multi_timeframe', {})
         if multi_tf_config.get('enabled', False) and random.random() < 0.2:
             methods.append('timeframes')
+        # Dynamic parameter bounds mutation when enabled
+        dyn_bounds_config = config.get('dynamic_bounds', {})
+        if dyn_bounds_config.get('enabled', False) and random.random() < 0.1:
+            methods.append('dynamic_bounds')
     
     mutated = individual
     
@@ -865,6 +923,8 @@ def mutate(individual: Individual, mutation_rate: float,
                     mutated = mutate_adaptive_per_gene(mutated, mutation_rate, config)
                 elif method == 'timeframes':
                     mutated = mutate_timeframes(mutated, mutation_rate, config)
+                elif method == 'dynamic_bounds':
+                    mutated = mutate_dynamic_bounds(mutated, mutation_rate, config)
             except (ValueError, KeyError, AttributeError, TypeError) as e:
                 # Log the error but continue with the current mutated state
                 # This ensures that a failed mutation doesn't crash the evolution
