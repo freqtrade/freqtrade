@@ -21,24 +21,39 @@ source .venv/bin/activate
 - **Backtesting demo:** `freqtrade backtesting --datadir tests/testdata --strategy SampleStrategy -i 5m`
 - **Type checking:** `mypy freqtrade scripts tests`
 
+### Live deployment (Railway)
+
+TrendRider v8 is deployed on Railway running **live** against MEXC with real funds.
+
+- **Railway project:** `trendrider-bot` (auto-restarts, 24/7)
+- **Exchange:** MEXC spot, $25 USDT wallet
+- **Strategy:** TrendRiderStrategy v8 (1h trend-following)
+- **Database:** Railway PostgreSQL — all trades logged to `trade_log`, hourly snapshots to `bot_status`
+- **Telegram:** `@chatteraes_Bot` — trade alerts, 6h status, daily 8AM UTC report
+- **Monitor:** background thread sends health checks + writes to Postgres
+
+Railway env vars control live/dry mode:
+- `FREQTRADE__DRY_RUN=false` — live trading (set on Railway)
+- `FREQTRADE__EXCHANGE__KEY` / `SECRET` — MEXC API keys (Railway secrets)
+- Config file always says `dry_run: true` as safe default; env var overrides it
+
+Deploy updates: `cd user_data/deploy && railway up -d`
+
 ### Custom strategies
 
-Two custom strategies are available in `user_data/strategies/`:
+Three strategies in `user_data/strategies/`:
 
-- **TrendRiderStrategy** (`config_trendrider.json`): 1h trend-following, profitable in backtests (+0.88% in -48% bear market). Uses Kraken, 8 pairs, $1000 wallet, Telegram enabled. Run with:
-  ```bash
-  freqtrade trade --config user_data/config_trendrider.json --strategy TrendRiderStrategy --userdir user_data
-  ```
-- **MomentumScalpStrategy** (`config_50challenge.json`): 1h momentum scalping for small accounts ($50). Experimental.
+- **TrendRiderStrategy** — production strategy. 1h trend-following with bear market protection, 48h cooldown, stoploss guard. Profitable in backtests (+0.88% in -48% bear market). Writes trades to PostgreSQL, sends clean Telegram notifications.
+- **DailyProfitStrategy** — dual-mode (bull pullback + bear bounce). Experimental.
+- **MomentumScalpStrategy** — 1h momentum scalping. Experimental.
 
-### Dry-run (paper trading)
+### Configs
 
-Multiple configs available:
-- `user_data/config_dryrun.json` — SampleStrategy, Kraken, $1000 wallet
-- `user_data/config_trendrider.json` — TrendRider v8, Kraken, $1000 wallet, Telegram connected
-- `user_data/config_50challenge.json` — MomentumScalp, Gate.io, $50 wallet
+- `user_data/config_mexc.json` — MEXC, TrendRider, $25 wallet, Telegram enabled (production)
+- `user_data/config_trendrider.json` — Kraken, TrendRider, $1000 wallet
+- `user_data/config_dryrun.json` — Kraken, SampleStrategy, $1000 wallet
 
-API server runs on port 8080 (credentials: `freqtrader` / `SuperSecurePassword`). FreqUI is installed.
+API server on port 8080 (credentials: `freqtrader` / `SuperSecurePassword`). FreqUI installed.
 
 ### Backtesting data
 
