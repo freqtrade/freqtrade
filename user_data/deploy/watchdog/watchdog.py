@@ -182,8 +182,8 @@ def main():
                         except Exception:
                             pass
 
-                # 5. 6-hourly status
-                if now.minute < 6 and int(hour) % 6 == 0:
+                # 5. Hourly status
+                if now.minute < 6:
                     trades_str = "None" if not status["open_trades"] else \
                         "\n".join(f"  {'📈' if t.get('profit_pct',0)>=0 else '📉'} {t['pair']}: {t.get('profit_pct',0):+.2f}%"
                                   for t in status["open_trades"])
