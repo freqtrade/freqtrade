@@ -182,8 +182,8 @@ def main():
                         except Exception:
                             pass
 
-                # 5. Hourly status
-                if now.minute < 6:
+                # 5. Hourly status (runs every other check since checks are 30min apart)
+                if now.minute < 31 and int(hour) != getattr(main, '_last_status_hour', -1):
                     trades_str = "None" if not status["open_trades"] else \
                         "\n".join(f"  {'📈' if t.get('profit_pct',0)>=0 else '📉'} {t['pair']}: {t.get('profit_pct',0):+.2f}%"
                                   for t in status["open_trades"])
@@ -220,7 +220,7 @@ def main():
 
         logger.info(f"Check #{cycle} done | bot={'OK' if status else 'FAIL'} | mexc={'OK' if check_mexc() else 'FAIL'}")
         cycle += 1
-        time.sleep(300)  # Check every 5 minutes
+        time.sleep(1800)  # Check every 30 minutes
 
 
 if __name__ == "__main__":
