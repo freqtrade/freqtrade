@@ -163,8 +163,13 @@ class StrategyGenerator:
         conditions = []
         
         # Filter indicators that can generate conditions
+        # Includes candlestick patterns
+        PATTERN_TYPES = ['CDL_ENGULFING', 'CDL_HAMMER', 'CDL_DOJI', 'CDL_MORNINGSTAR', 'CDL_EVENINGSTAR',
+                        'CDL_SHOOTINGSTAR', 'CDL_HARAMI', 'CDL_PIERCING', 'CDL_DARKCLOUD', 
+                        'CDL_3WHITESOLDIERS', 'CDL_3BLACKCROWS']
         valid_indicators = [ind for ind in indicators 
-                          if ind.type in ['RSI', 'MACD', 'STOCH', 'CCI', 'ADX', 'BBANDS', 'EMA', 'SMA']]
+                          if ind.type in ['RSI', 'MACD', 'STOCH', 'CCI', 'ADX', 'BBANDS', 'EMA', 'SMA',
+                                          'SUPERTREND', 'ICHIMOKU', 'DONCHIAN', 'VWAP', 'PSAR', 'CMF', 'VROC'] + PATTERN_TYPES]
         
         if not valid_indicators:
             # If no valid indicators, use first available indicator and create a basic condition
@@ -304,6 +309,123 @@ class StrategyGenerator:
                 indicator=indicator.type,
                 operator=operator,
                 threshold=0,  # Not used for MA crossovers
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        # === NEW INDICATOR CONDITIONS ===
+        
+        elif indicator.type == 'SUPERTREND':
+            # SuperTrend: trend direction changes
+            return ConditionGene(
+                indicator='SUPERTREND',
+                operator='cross_above' if is_entry else 'cross_below',
+                threshold=0,  # Trend flip indicator
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type == 'ICHIMOKU':
+            # Ichimoku: Tenkan/Kijun crossover
+            return ConditionGene(
+                indicator='ICHIMOKU',
+                operator='cross_above' if is_entry else 'cross_below',
+                threshold=0,  # TK crossover
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type == 'DONCHIAN':
+            # Donchian: breakout conditions
+            return ConditionGene(
+                indicator='DONCHIAN',
+                operator='cross_above' if is_entry else 'cross_below',
+                threshold=0,  # Upper/lower channel breakout
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type == 'VWAP':
+            # VWAP: price vs VWAP
+            return ConditionGene(
+                indicator='VWAP',
+                operator='cross_above' if is_entry else 'cross_below',
+                threshold=0,
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type == 'PSAR':
+            # Parabolic SAR: trend flip
+            return ConditionGene(
+                indicator='PSAR',
+                operator='cross_above' if is_entry else 'cross_below',
+                threshold=0,
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type == 'CMF':
+            # Chaikin Money Flow: above/below threshold
+            if is_entry:
+                threshold_range = ind_config.get('buy_threshold', [0.05, 0.2])
+                operator = '>'
+            else:
+                threshold_range = ind_config.get('sell_threshold', [-0.2, -0.05])
+                operator = '<'
+            
+            return ConditionGene(
+                indicator='CMF',
+                operator=operator,
+                threshold=random.uniform(*threshold_range),
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type == 'VROC':
+            # Volume Rate of Change: volume spike
+            threshold_range = ind_config.get('threshold', [50, 200])
+            return ConditionGene(
+                indicator='VROC',
+                operator='>' if is_entry else '<',
+                threshold=random.uniform(*threshold_range),
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        # === CANDLESTICK PATTERN CONDITIONS ===
+        # Patterns that work for entry signals
+        elif indicator.type in ['CDL_ENGULFING', 'CDL_HARAMI']:
+            # Bidirectional patterns: >0 bullish, <0 bearish
+            return ConditionGene(
+                indicator=indicator.type,
+                operator='>' if is_entry else '<',  # Bullish for entry, bearish for exit
+                threshold=0,
+                logic=random.choice(['AND', 'OR'])
+            )
+        
+        elif indicator.type in ['CDL_HAMMER', 'CDL_MORNINGSTAR', 'CDL_PIERCING', 'CDL_3WHITESOLDIERS']:
+            # Bullish-only patterns: good for entry signals
+            if is_entry:
+                return ConditionGene(
+                    indicator=indicator.type,
+                    operator='>',  # Pattern detected (non-zero)
+                    threshold=0,
+                    logic=random.choice(['AND', 'OR'])
+                )
+            # Not suitable for exit, return None and let fallback handle it
+            return None
+        
+        elif indicator.type in ['CDL_EVENINGSTAR', 'CDL_SHOOTINGSTAR', 'CDL_DARKCLOUD', 'CDL_3BLACKCROWS']:
+            # Bearish-only patterns: good for exit signals
+            if not is_entry:
+                return ConditionGene(
+                    indicator=indicator.type,
+                    operator='<',  # Pattern detected (non-zero, negative for bearish)
+                    threshold=0,
+                    logic=random.choice(['AND', 'OR'])
+                )
+            # Not suitable for entry, return None
+            return None
+        
+        elif indicator.type == 'CDL_DOJI':
+            # Doji indicates indecision, can be used as a filter
+            return ConditionGene(
+                indicator=indicator.type,
+                operator='!=',  # Doji detected
+                threshold=0,
                 logic=random.choice(['AND', 'OR'])
             )
         
@@ -564,6 +686,101 @@ class {strategy_name}(IStrategy):
             elif ind.type == 'CCI':
                 period = ind.parameters.get('period', 20)
                 lines.append(f"        dataframe['cci_{period}'] = ta.CCI(dataframe, timeperiod={period})")
+            
+            # === NEW INDICATORS ===
+            
+            elif ind.type == 'SUPERTREND':
+                period = ind.parameters.get('period', 10)
+                multiplier = ind.parameters.get('multiplier', 3.0)
+                lines.append(f"        # SuperTrend calculation")
+                lines.append(f"        hl2 = (dataframe['high'] + dataframe['low']) / 2")
+                lines.append(f"        atr_st = ta.ATR(dataframe, timeperiod={period})")
+                lines.append(f"        dataframe['supertrend_upper'] = hl2 + ({multiplier} * atr_st)")
+                lines.append(f"        dataframe['supertrend_lower'] = hl2 - ({multiplier} * atr_st)")
+                lines.append(f"        dataframe['supertrend'] = dataframe['close'] > dataframe['supertrend_lower']")
+            
+            elif ind.type == 'ICHIMOKU':
+                tenkan = ind.parameters.get('tenkan_period', 9)
+                kijun = ind.parameters.get('kijun_period', 26)
+                senkou_b = ind.parameters.get('senkou_b_period', 52)
+                lines.append(f"        # Ichimoku Cloud")
+                lines.append(f"        high_{tenkan} = dataframe['high'].rolling(window={tenkan}).max()")
+                lines.append(f"        low_{tenkan} = dataframe['low'].rolling(window={tenkan}).min()")
+                lines.append(f"        dataframe['tenkan_sen'] = (high_{tenkan} + low_{tenkan}) / 2")
+                lines.append(f"        high_{kijun} = dataframe['high'].rolling(window={kijun}).max()")
+                lines.append(f"        low_{kijun} = dataframe['low'].rolling(window={kijun}).min()")
+                lines.append(f"        dataframe['kijun_sen'] = (high_{kijun} + low_{kijun}) / 2")
+                lines.append(f"        dataframe['senkou_span_a'] = ((dataframe['tenkan_sen'] + dataframe['kijun_sen']) / 2).shift({kijun})")
+                lines.append(f"        high_{senkou_b} = dataframe['high'].rolling(window={senkou_b}).max()")
+                lines.append(f"        low_{senkou_b} = dataframe['low'].rolling(window={senkou_b}).min()")
+                lines.append(f"        dataframe['senkou_span_b'] = ((high_{senkou_b} + low_{senkou_b}) / 2).shift({kijun})")
+                lines.append(f"        dataframe['cloud_green'] = dataframe['senkou_span_a'] > dataframe['senkou_span_b']")
+            
+            elif ind.type == 'DONCHIAN':
+                period = ind.parameters.get('period', 20)
+                lines.append(f"        # Donchian Channels")
+                lines.append(f"        dataframe['donchian_upper'] = dataframe['high'].rolling({period}).max()")
+                lines.append(f"        dataframe['donchian_lower'] = dataframe['low'].rolling({period}).min()")
+                lines.append(f"        dataframe['donchian_mid'] = (dataframe['donchian_upper'] + dataframe['donchian_lower']) / 2")
+            
+            elif ind.type == 'VWAP':
+                lines.append(f"        # Volume Weighted Average Price")
+                lines.append(f"        typical_price = (dataframe['high'] + dataframe['low'] + dataframe['close']) / 3")
+                lines.append(f"        dataframe['vwap'] = (typical_price * dataframe['volume']).cumsum() / dataframe['volume'].cumsum()")
+            
+            elif ind.type == 'PSAR':
+                acceleration = ind.parameters.get('acceleration', 0.02)
+                maximum = ind.parameters.get('maximum', 0.2)
+                lines.append(f"        dataframe['psar'] = ta.SAR(dataframe, acceleration={acceleration}, maximum={maximum})")
+            
+            elif ind.type == 'CMF':
+                period = ind.parameters.get('period', 20)
+                lines.append(f"        # Chaikin Money Flow")
+                lines.append(f"        mfv = ((dataframe['close'] - dataframe['low']) - (dataframe['high'] - dataframe['close'])) / (dataframe['high'] - dataframe['low'])")
+                lines.append(f"        mfv = mfv.fillna(0) * dataframe['volume']")
+                lines.append(f"        dataframe['cmf'] = mfv.rolling({period}).sum() / dataframe['volume'].rolling({period}).sum()")
+            
+            elif ind.type == 'VROC':
+                period = ind.parameters.get('period', 12)
+                lines.append(f"        # Volume Rate of Change")
+                lines.append(f"        dataframe['vroc'] = ((dataframe['volume'] - dataframe['volume'].shift({period})) / dataframe['volume'].shift({period})) * 100")
+            
+            # === CANDLESTICK PATTERNS ===
+            
+            elif ind.type == 'CDL_ENGULFING':
+                lines.append(f"        dataframe['cdl_engulfing'] = ta.CDLENGULFING(dataframe)")
+            
+            elif ind.type == 'CDL_HAMMER':
+                lines.append(f"        dataframe['cdl_hammer'] = ta.CDLHAMMER(dataframe)")
+            
+            elif ind.type == 'CDL_DOJI':
+                lines.append(f"        dataframe['cdl_doji'] = ta.CDLDOJI(dataframe)")
+            
+            elif ind.type == 'CDL_MORNINGSTAR':
+                penetration = ind.parameters.get('penetration', 0.0)
+                lines.append(f"        dataframe['cdl_morningstar'] = ta.CDLMORNINGSTAR(dataframe, penetration={penetration})")
+            
+            elif ind.type == 'CDL_EVENINGSTAR':
+                penetration = ind.parameters.get('penetration', 0.0)
+                lines.append(f"        dataframe['cdl_eveningstar'] = ta.CDLEVENINGSTAR(dataframe, penetration={penetration})")
+            
+            elif ind.type == 'CDL_SHOOTINGSTAR':
+                lines.append(f"        dataframe['cdl_shootingstar'] = ta.CDLSHOOTINGSTAR(dataframe)")
+            
+            elif ind.type == 'CDL_HARAMI':
+                lines.append(f"        dataframe['cdl_harami'] = ta.CDLHARAMI(dataframe)")
+            
+            elif ind.type == 'CDL_PIERCING':
+                lines.append(f"        dataframe['cdl_piercing'] = ta.CDLPIERCING(dataframe)")
+            
+            elif ind.type == 'CDL_DARKCLOUD':
+                lines.append(f"        dataframe['cdl_darkcloud'] = ta.CDLDARKCLOUDCOVER(dataframe)")
+            
+            elif ind.type == 'CDL_3WHITESOLDIERS':
+                lines.append(f"        dataframe['cdl_3whitesoldiers'] = ta.CDL3WHITESOLDIERS(dataframe)")
+            
+            elif ind.type == 'CDL_3BLACKCROWS':
+                lines.append(f"        dataframe['cdl_3blackcrows'] = ta.CDL3BLACKCROWS(dataframe)")
         
         return '\n'.join(lines) if lines else "        # No indicators"
     
@@ -807,6 +1024,122 @@ class {strategy_name}(IStrategy):
                 return f"(dataframe['{close}'] > dataframe['{col_name}'])"
             elif condition.operator == '<':
                 return f"(dataframe['{close}'] < dataframe['{col_name}'])"
+        
+        # === NEW INDICATOR CONDITIONS ===
+        
+        elif indicator_type == 'SUPERTREND':
+            close = f"close{tf_suffix}" if tf_suffix else "close"
+            if condition.operator == 'cross_above':
+                return f"(dataframe['supertrend'] == True)"
+            elif condition.operator == 'cross_below':
+                return f"(dataframe['supertrend'] == False)"
+            elif condition.operator == '>':
+                return f"(dataframe['{close}'] > dataframe['supertrend_lower'])"
+            elif condition.operator == '<':
+                return f"(dataframe['{close}'] < dataframe['supertrend_upper'])"
+        
+        elif indicator_type == 'ICHIMOKU':
+            if condition.operator == 'cross_above':
+                return f"(dataframe['tenkan_sen'] > dataframe['kijun_sen'])"
+            elif condition.operator == 'cross_below':
+                return f"(dataframe['tenkan_sen'] < dataframe['kijun_sen'])"
+            elif condition.operator == '>':
+                return f"(dataframe['cloud_green'] == True)"
+            elif condition.operator == '<':
+                return f"(dataframe['cloud_green'] == False)"
+        
+        elif indicator_type == 'DONCHIAN':
+            close = f"close{tf_suffix}" if tf_suffix else "close"
+            if condition.operator == 'cross_above':
+                return f"(dataframe['{close}'] > dataframe['donchian_upper'].shift(1))"
+            elif condition.operator == 'cross_below':
+                return f"(dataframe['{close}'] < dataframe['donchian_lower'].shift(1))"
+            elif condition.operator == '>':
+                return f"(dataframe['{close}'] > dataframe['donchian_mid'])"
+            elif condition.operator == '<':
+                return f"(dataframe['{close}'] < dataframe['donchian_mid'])"
+        
+        elif indicator_type == 'VWAP':
+            close = f"close{tf_suffix}" if tf_suffix else "close"
+            if condition.operator == 'cross_above':
+                return f"(dataframe['{close}'] > dataframe['vwap'])"
+            elif condition.operator == 'cross_below':
+                return f"(dataframe['{close}'] < dataframe['vwap'])"
+            elif condition.operator == '>':
+                return f"(dataframe['{close}'] > dataframe['vwap'])"
+            elif condition.operator == '<':
+                return f"(dataframe['{close}'] < dataframe['vwap'])"
+        
+        elif indicator_type == 'PSAR':
+            close = f"close{tf_suffix}" if tf_suffix else "close"
+            if condition.operator == 'cross_above':
+                return f"(dataframe['{close}'] > dataframe['psar'])"
+            elif condition.operator == 'cross_below':
+                return f"(dataframe['{close}'] < dataframe['psar'])"
+            elif condition.operator == '>':
+                return f"(dataframe['{close}'] > dataframe['psar'])"
+            elif condition.operator == '<':
+                return f"(dataframe['{close}'] < dataframe['psar'])"
+        
+        elif indicator_type == 'CMF':
+            threshold = condition.threshold if condition.threshold else 0.1
+            if condition.operator in ['>', 'cross_above']:
+                return f"(dataframe['cmf'] > {threshold})"
+            elif condition.operator in ['<', 'cross_below']:
+                return f"(dataframe['cmf'] < {threshold})"
+        
+        elif indicator_type == 'VROC':
+            threshold = condition.threshold if condition.threshold else 100
+            if condition.operator in ['>', 'cross_above']:
+                return f"(dataframe['vroc'] > {threshold})"
+            elif condition.operator in ['<', 'cross_below']:
+                return f"(dataframe['vroc'] < -{threshold})"
+        
+        # === CANDLESTICK PATTERN CONDITIONS ===
+        # Patterns return: >0 bullish, <0 bearish, ==0 no pattern
+        
+        elif indicator_type == 'CDL_ENGULFING':
+            if condition.operator == '>':
+                return "(dataframe['cdl_engulfing'] > 0)"  # Bullish engulfing
+            elif condition.operator == '<':
+                return "(dataframe['cdl_engulfing'] < 0)"  # Bearish engulfing
+            else:
+                return "(dataframe['cdl_engulfing'] != 0)"  # Any engulfing
+        
+        elif indicator_type == 'CDL_HARAMI':
+            if condition.operator == '>':
+                return "(dataframe['cdl_harami'] > 0)"  # Bullish harami
+            elif condition.operator == '<':
+                return "(dataframe['cdl_harami'] < 0)"  # Bearish harami
+            else:
+                return "(dataframe['cdl_harami'] != 0)"  # Any harami
+        
+        elif indicator_type == 'CDL_HAMMER':
+            return "(dataframe['cdl_hammer'] != 0)"  # Hammer detected
+        
+        elif indicator_type == 'CDL_MORNINGSTAR':
+            return "(dataframe['cdl_morningstar'] != 0)"  # Morning star detected
+        
+        elif indicator_type == 'CDL_EVENINGSTAR':
+            return "(dataframe['cdl_eveningstar'] != 0)"  # Evening star detected
+        
+        elif indicator_type == 'CDL_SHOOTINGSTAR':
+            return "(dataframe['cdl_shootingstar'] != 0)"  # Shooting star detected
+        
+        elif indicator_type == 'CDL_DOJI':
+            return "(dataframe['cdl_doji'] != 0)"  # Doji detected
+        
+        elif indicator_type == 'CDL_PIERCING':
+            return "(dataframe['cdl_piercing'] != 0)"  # Piercing line detected
+        
+        elif indicator_type == 'CDL_DARKCLOUD':
+            return "(dataframe['cdl_darkcloud'] != 0)"  # Dark cloud cover detected
+        
+        elif indicator_type == 'CDL_3WHITESOLDIERS':
+            return "(dataframe['cdl_3whitesoldiers'] != 0)"  # Three white soldiers detected
+        
+        elif indicator_type == 'CDL_3BLACKCROWS':
+            return "(dataframe['cdl_3blackcrows'] != 0)"  # Three black crows detected
         
         # Default fallback - use vectorized condition, not scalar
         return "(dataframe['volume'] > 0)"

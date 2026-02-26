@@ -18,25 +18,28 @@ genetic_algorithm:
   random_seed: null  # Set to an integer (e.g., 42) for reproducible experiments
   
   # Population size - number of strategies per generation
-  population_size: 10
+  # Quick test: 20-25, Production: 50-100
+  population_size: 25
   
   # Number of generations to evolve
-  generations: 2
+  # Quick test: 5-8, Production: 30-100
+  generations: 6
   
   # Mutation rate - probability of mutating an individual
-  mutation_rate: 0.15
+  # Higher = more exploration, Lower = more exploitation
+  mutation_rate: 0.20
   
   # Crossover rate - probability of crossing over two parents
-  crossover_rate: 0.7
+  crossover_rate: 0.75
   
   # Crossover method: 'single_point', 'uniform', 'component'
   # - single_point: splits indicator/condition lists at random point, swaps tails
-  # - uniform: each component independently inherited from either parent
+  # - uniform: each component independently inherited from either parent (recommended)
   # - component: swaps entire blocks (indicators, entry conditions, exit conditions, risk params)
-  crossover_method: 'single_point'
+  crossover_method: 'uniform'
   
-  # Elite size - number of top strategies to preserve unchanged (~15% of population)
-  elite_size: 2
+  # Elite size - number of top strategies to preserve unchanged (~15-20% of population)
+  elite_size: 5
   
   # Tournament size for tournament selection (3-5 recommended for good selection pressure)
   tournament_size: 3
@@ -45,24 +48,24 @@ genetic_algorithm:
   selection_method: 'tournament'
   
   # Convergence threshold - stop if no improvement after N generations
-  convergence_patience: 10
+  convergence_patience: 8
   
   # Adaptive mutation - increase mutation rate when stuck
   adaptive_mutation: true
   
   # Adaptive mutation parameters
-  max_adaptation_factor: 2.0   # Maximum multiplier for mutation rate (2x base rate)
-  adaptation_step: 0.1          # Increase factor per generation with no improvement
+  max_adaptation_factor: 2.5   # Maximum multiplier for mutation rate
+  adaptation_step: 0.15         # Increase factor per generation with no improvement
   
   # Diversity preservation
   fitness_sharing: true         # Enable fitness sharing for diversity
-  sharing_radius: 0.3           # How similar strategies must be to share fitness (0-1)
-  diversity_threshold: 0.15     # Minimum genetic diversity to maintain
+  sharing_radius: 0.25          # How similar strategies must be to share fitness (0-1)
+  diversity_threshold: 0.12     # Minimum genetic diversity to maintain
   allow_self_crossover: false   # Allow same parent to be selected twice (set false for more diversity)
   
   # Random immigrants - inject fresh random strategies each generation to prevent premature convergence
   # When diversity drops below diversity_threshold, this count is doubled for that generation
-  random_immigrants: 5          # Number of fresh random individuals to inject per generation
+  random_immigrants: 8           # Number of fresh random individuals to inject per generation
   
   # Evolution mode: 'single_objective' (default) or 'nsga2' (multi-objective)
   # Single-objective uses weighted fitness function, NSGA-II returns Pareto front
@@ -93,68 +96,67 @@ nsga2:
 # === Fitness Function Weights ===
 # These weights determine how different metrics contribute to overall fitness
 # All weights should sum to 1.0
+# Balanced between profitability and risk management
 fitness_weights:
-  profit: 0.29            # Total profit/return
-  sharpe_ratio: 0.13      # Risk-adjusted returns (volatility)
-  sortino_ratio: 0.13     # Downside risk-adjusted returns
-  profit_factor: 0.10     # Win/loss ratio
+  profit: 0.25            # Total profit/return
+  sharpe_ratio: 0.18      # Risk-adjusted returns (volatility)
+  sortino_ratio: 0.15     # Downside risk-adjusted returns
+  profit_factor: 0.12     # Win/loss ratio
   drawdown: 0.15          # Maximum drawdown (penalty)
-  win_rate: 0.10          # Percentage of winning trades
-  trade_frequency: 0.10   # Number of trades (too few or too many is bad)
+  win_rate: 0.08          # Percentage of winning trades
+  trade_frequency: 0.07   # Number of trades (too few or too many is bad)
 
 # Fitness penalties
 fitness_penalties:
-  min_trades: 5            # Penalize if fewer trades (reduced from 10)
-  max_drawdown: 0.30       # Penalize if drawdown exceeds this (increased from 0.25)
-  min_win_rate: 0.30       # Penalize if win rate below this (reduced from 0.35)
-  complexity_weight: 0.01  # Penalty weight for strategy complexity (num_indicators + num_conditions)
-  pair_loss_threshold: -10.0  # Max acceptable loss (%) on any single pair before penalty applies
+  min_trades: 8            # Penalize if fewer trades
+  max_drawdown: 0.25       # Penalize if drawdown exceeds this
+  min_win_rate: 0.35       # Penalize if win rate below this
+  complexity_weight: 0.015 # Penalty weight for strategy complexity (num_indicators + num_conditions)
+  pair_loss_threshold: -8.0  # Max acceptable loss (%) on any single pair before penalty applies
 
 # === Backtesting Configuration ===
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
-  timerange: "20240620-20260218"  # Last 60 days
+  # Quick test: 30-60 days, Production: 90-180 days
+  timerange: "20250101-20260218"  # ~14 months for better statistical significance
   
-  # Stake amount per trade
-  stake_amount: 0.2
+  # Stake amount per trade (fraction of wallet)
+  stake_amount: 0.15
   
-  # Trading pairs to test strategies on (use test data pairs)
+  # Trading pairs to test strategies on
+  # Quick test: 2-3 pairs, Production: 5-10 diverse pairs
   pairs:
-    - "ETH/BTC"
-    - "LTC/BTC"
+    - "BTC/USDT"
+    - "ETH/USDT"
   
   # Maximum number of open trades
-  max_open_trades: 4
+  max_open_trades: 3
   
-  # Fee for trades (0.1%)
-  fee: 0.002
+  # Fee for trades (0.1% = 0.001)
+  fee: 0.001
   
   # Slippage percentage added on top of exchange fee for realistic cost modeling
-  # Accounts for spread, market impact, and execution delays in live trading
-  # 0.0005 = 0.05%, typical for liquid pairs; set higher for illiquid pairs
   slippage_pct: 0.0005
   
   # Exchange name (default: binance)
   exchange: "binance"
   
   # Auto-download missing data
-  # When enabled, GA will automatically download missing data files
-  # If disabled, you must manually download data before running
   auto_download_data: true
   
-  # Enable caching of backtest results
+  # Enable caching of backtest results (saves time on repeated evaluations)
   enable_cache: true
   
-  # Timeout for single backtest (seconds)
-  timeout: 300
+  # Timeout for single backtest (seconds) - quick test uses lower timeout
+  timeout: 120
 
 # === Walk-Forward Optimization ===
 # Walk-forward optimization prevents overfitting by training on one period
-# and validating on a separate out-of-sample period. This is repeated across
-# multiple windows to ensure strategy robustness.
+# and validating on a separate out-of-sample period.
+# NOTE: Disable for quick tests, enable for production runs
 walk_forward:
   # Enable walk-forward optimization
-  enabled: false  # Set to true to use walk-forward validation
+  enabled: false  # Set to true for production (adds significant time)
   
   # Training window size in days
   # Strategies are evolved using only this training data
@@ -200,28 +202,23 @@ walk_forward:
   # Must sum to 1.0, length must match number of windows
   # weights: [0.1, 0.2, 0.3, 0.4]  # Example: more weight to recent windows
 
-# === Regime-Aware Evaluation ===
-# Evaluates strategies across different market regimes (bullish, bearish, sideways)
-# to prevent overfitting to a single market condition.
-# 
-# ⚠️ NOTE: Current regime detection methods are simple and may be noisy/inaccurate.
-# See REGIME_DETECTION_IMPLEMENTATION.md for planned improvements.
-regime_aware:
-
 # === Out-of-Sample Holdout Validation ===
 # After evolution completes, evaluates the top strategies on a completely unseen
-# holdout period taken from the END of the timerange. This provides a true
-# out-of-sample performance estimate and detects overfitting.
+# holdout period taken from the END of the timerange.
+# NOTE: Disable for quick tests to save time
 holdout_validation:
   # Enable holdout validation post-evolution
-  enabled: true
+  enabled: false  # Set to true for production runs
   
   # Fraction of data to reserve as holdout (taken from the end of timerange)
-  # The GA never sees this data during evolution
   holdout_pct: 0.15  # 15% of total timerange
+  
+# === Regime-Aware Evaluation ===
+# Evaluates strategies across different market regimes (bullish, bearish, sideways)
+# NOTE: Disable for quick tests, enable for production
+regime_aware:
   # Enable regime-aware evaluation
-  # When enabled, strategies are evaluated across multiple market regime segments
-  enabled: true  # Set to true to use regime-aware evaluation
+  enabled: false  # Set to true for production runs
   
   # Detection method: 'sma_adx', 'adx_di', 'returns', 'bollinger', 'ensemble'
   # 'sma_adx' is recommended - uses SMA crossover + ADX trend strength
@@ -268,36 +265,32 @@ holdout_validation:
 # === Strategy Constraints ===
 strategy_constraints:
   # Minimum number of trades for valid strategy
-  min_trades: 10
+  min_trades: 15
   
   # Maximum allowed drawdown
-  max_drawdown: 0.25
+  max_drawdown: 0.20
   
   # Minimum win rate
-  min_win_rate: 0.30
+  min_win_rate: 0.35
   
-  # Allowed timeframes
-  timeframes: ["5m", "15m", "1h"]
+  # Allowed timeframes (focus on intraday for faster backtests)
+  timeframes: ["15m", "1h"]
   
-  # Stop loss range
-  stoploss_range: [-0.20, -0.05]
+  # Stop loss range (tighter for better risk management)
+  stoploss_range: [-0.12, -0.04]
   
   # ROI range
-  roi_range: [0.01, 0.10]
+  roi_range: [0.02, 0.08]
   
   # Max open trades range (per strategy)
-  # Allows strategies to evolve their own trade capacity
-  # Note: Still limited by global max_open_trades in backtesting config
-  max_open_trades_range: [1, 10]
+  max_open_trades_range: [2, 5]
 
 # === Multi-Timeframe Configuration ===
-# Trade on base timeframe but use indicators from higher timeframes for:
-# - Trend confirmation (e.g., only buy on 5m when 1h trend is bullish)
-# - Market regime filtering (e.g., avoid trades during 4h consolidation)
-# - Stronger signals (higher TF = less noise)
+# Trade on base timeframe but use indicators from higher timeframes
+# NOTE: Disable for quick tests, enable for production
 multi_timeframe:
   # Enable multi-timeframe strategy generation
-  enabled: true  # Set to true to evolve multi-TF strategies
+  enabled: false  # Set to true for production (adds complexity)
   
   # Higher timeframes available for informative indicators
   # Must be strictly higher than the base strategy timeframe
@@ -319,20 +312,33 @@ multi_timeframe:
 # === Indicator Configuration ===
 indicators:
   # Available indicators for strategy generation
-  # Only fully-supported indicators with complete codegen and condition support
+  # Curated list balancing variety and quality
+  # Quick test: Use fewer indicators, Production: Use full list
   available:
+    # Classic momentum/trend indicators
     - "RSI"
     - "MACD"
     - "BBANDS"
     - "EMA"
     - "SMA"
-    - "STOCH"
-    - "ATR"
     - "ADX"
-    - "CCI"
+    # New trend indicators (high-quality signals)
+    - "SUPERTREND"
+    - "ICHIMOKU"
+    - "DONCHIAN"
+    - "PSAR"
+    # Volume-based indicators
+    - "CMF"
+    - "VROC"
+    # Best candlestick patterns (most reliable)
+    - "CDL_ENGULFING"
+    - "CDL_HAMMER"
+    - "CDL_MORNINGSTAR"
+    - "CDL_EVENINGSTAR"
+    - "CDL_DOJI"
   
-  # Maximum indicators per strategy
-  max_per_strategy: 5
+  # Maximum indicators per strategy (lower = faster, simpler strategies)
+  max_per_strategy: 4
   
   # Minimum indicators per strategy
   min_per_strategy: 2
@@ -375,6 +381,70 @@ indicators:
     period: [10, 30]
     buy_threshold: [-200, -100]
     sell_threshold: [100, 200]
+  
+  # New indicator parameter ranges
+  SUPERTREND:
+    period: [7, 14]
+    multiplier: [2.0, 4.0]
+  
+  ICHIMOKU:
+    tenkan_period: [7, 12]
+    kijun_period: [20, 30]
+    senkou_b_period: [40, 60]
+  
+  DONCHIAN:
+    period: [10, 30]
+  
+  VWAP:
+    # No parameters needed
+  
+  PSAR:
+    acceleration: [0.01, 0.05]
+    maximum: [0.1, 0.3]
+  
+  CMF:
+    period: [10, 25]
+    buy_threshold: [0.05, 0.2]
+    sell_threshold: [-0.2, -0.05]
+  
+  VROC:
+    period: [5, 20]
+    threshold: [50, 200]
+  
+  # Candlestick pattern configurations
+  # Most patterns have no parameters (they analyze raw OHLC data)
+  CDL_ENGULFING:
+    # No parameters
+  
+  CDL_HAMMER:
+    # No parameters
+  
+  CDL_DOJI:
+    # No parameters
+  
+  CDL_MORNINGSTAR:
+    penetration: [0.0, 0.3]  # Penetration percentage for pattern detection
+  
+  CDL_EVENINGSTAR:
+    penetration: [0.0, 0.3]
+  
+  CDL_SHOOTINGSTAR:
+    # No parameters
+  
+  CDL_HARAMI:
+    # No parameters
+  
+  CDL_PIERCING:
+    # No parameters
+  
+  CDL_DARKCLOUD:
+    # No parameters
+  
+  CDL_3WHITESOLDIERS:
+    # No parameters
+  
+  CDL_3BLACKCROWS:
+    # No parameters
 
 # === Storage Configuration ===
 storage:
@@ -426,26 +496,17 @@ visualization:
 
 # === Parallel Evaluation Configuration ===
 # Enables multi-process parallel backtesting for significant speedup.
-# Each worker process runs independent backtests simultaneously.
-# 
-# Benchmark results (8-core system, 50 strategies):
-#   - Sequential: ~174 seconds
-#   - Parallel (4 workers): ~49 seconds (3.5x speedup)
-#   - Parallel (8 workers): ~37 seconds (4.7x speedup)
-#
-# Recommendation: Enable for populations > 20 strategies
+# CRITICAL for quick tests - provides 3-5x speedup
 parallel_evaluation:
-  # Enable parallel evaluation
-  enabled: true  # Set to true to enable parallel backtesting
+  # Enable parallel evaluation (HIGHLY RECOMMENDED)
+  enabled: true
   
   # Number of worker processes
   # - null: Auto-detect (CPU cores - 1)
   # - Integer: Fixed number of workers
-  # Recommended: Leave as null for automatic optimization
   num_workers: null
   
   # Logging level for worker processes
-  # Workers use WARNING level by default to reduce noise
   worker_log_level: 'WARNING'
 
 # === Advanced Features (Optional) ===
@@ -482,8 +543,9 @@ advanced:
 # === Monte-Carlo Robustness Analysis ===
 # After evolution finishes, run Monte-Carlo permutations on top strategies
 # to estimate how robust they are under random perturbations.
+# NOTE: Disable for quick tests, enable for production runs
 monte_carlo:
-  enabled: true
+  enabled: false  # Set to true for production runs (adds ~2-5 min)
 
   # Number of permutation runs (more = more accurate, slower)
   num_permutations: 30

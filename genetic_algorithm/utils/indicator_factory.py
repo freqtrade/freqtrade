@@ -85,6 +85,93 @@ def create_random_indicator(indicator_type: str, indicator_config: Dict[str, Any
         # Aroon indicator (trend strength)
         parameters['period'] = random.randint(*ind_config.get('period', [10, 25]))
     
+    # === NEW INDICATORS ===
+    
+    elif indicator_type == 'SUPERTREND':
+        # SuperTrend - trend following with dynamic stop
+        parameters['period'] = random.randint(*ind_config.get('period', [7, 14]))
+        parameters['multiplier'] = random.uniform(*ind_config.get('multiplier', [2.0, 4.0]))
+    
+    elif indicator_type == 'ICHIMOKU':
+        # Ichimoku Cloud - comprehensive trend/support/resistance
+        parameters['tenkan_period'] = random.randint(*ind_config.get('tenkan_period', [7, 12]))
+        parameters['kijun_period'] = random.randint(*ind_config.get('kijun_period', [20, 30]))
+        parameters['senkou_b_period'] = random.randint(*ind_config.get('senkou_b_period', [40, 60]))
+    
+    elif indicator_type == 'DONCHIAN':
+        # Donchian Channels - breakout detection
+        parameters['period'] = random.randint(*ind_config.get('period', [10, 30]))
+    
+    elif indicator_type == 'VWAP':
+        # Volume Weighted Average Price - intraday mean reversion anchor
+        parameters = {}  # No parameters, uses volume and typical price
+    
+    elif indicator_type == 'CMF':
+        # Chaikin Money Flow - volume-based momentum
+        parameters['period'] = random.randint(*ind_config.get('period', [10, 25]))
+    
+    elif indicator_type == 'VROC':
+        # Volume Rate of Change
+        parameters['period'] = random.randint(*ind_config.get('period', [5, 20]))
+    
+    elif indicator_type == 'PSAR':
+        # Parabolic SAR (alias for SAR)
+        parameters['acceleration'] = random.uniform(*ind_config.get('acceleration', [0.01, 0.05]))
+        parameters['maximum'] = random.uniform(*ind_config.get('maximum', [0.1, 0.3]))
+    
+    # === CANDLESTICK PATTERNS ===
+    # TALib CDL* functions detect candlestick patterns
+    # All patterns have no parameters - they analyze OHLC data directly
+    
+    elif indicator_type == 'CDL_ENGULFING':
+        # Bullish/Bearish Engulfing pattern
+        parameters = {}
+    
+    elif indicator_type == 'CDL_HAMMER':
+        # Hammer / Hanging Man pattern
+        parameters = {}
+    
+    elif indicator_type == 'CDL_DOJI':
+        # Doji pattern (indecision)
+        parameters = {}
+    
+    elif indicator_type == 'CDL_MORNINGSTAR':
+        # Morning Star (bullish reversal)
+        parameters['penetration'] = random.uniform(*ind_config.get('penetration', [0.0, 0.3]))
+    
+    elif indicator_type == 'CDL_EVENINGSTAR':
+        # Evening Star (bearish reversal)
+        parameters['penetration'] = random.uniform(*ind_config.get('penetration', [0.0, 0.3]))
+    
+    elif indicator_type == 'CDL_SHOOTINGSTAR':
+        # Shooting Star (bearish reversal)
+        parameters = {}
+    
+    elif indicator_type == 'CDL_HARAMI':
+        # Harami pattern (reversal)
+        parameters = {}
+    
+    elif indicator_type == 'CDL_PIERCING':
+        # Piercing Line (bullish reversal)
+        parameters = {}
+    
+    elif indicator_type == 'CDL_DARKCLOUD':
+        # Dark Cloud Cover (bearish reversal)
+        parameters = {}
+    
+    elif indicator_type == 'CDL_3WHITESOLDIERS':
+        # Three White Soldiers (strong bullish)
+        parameters = {}
+    
+    elif indicator_type == 'CDL_3BLACKCROWS':
+        # Three Black Crows (strong bearish)
+        parameters = {}
+    
+    # Validate MACD parameters (slow must be > fast)
+    if indicator_type == 'MACD':
+        if parameters.get('fast_period', 12) >= parameters.get('slow_period', 26):
+            parameters['fast_period'] = max(8, parameters['slow_period'] - 5)
+    
     return IndicatorGene(
         type=indicator_type,
         parameters=parameters,
