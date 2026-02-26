@@ -60,13 +60,18 @@
         "token": "8272000103:AAErikRTrml-LzGype0LM4eY_Vi634ZHMi8",
         "chat_id": "5216799062",
         "notification_settings": {
-            "status": "on",
+            "status": "silent",
             "warning": "on",
             "startup": "on",
             "entry": "on",
-            "entry_fill": "on",
-            "exit": "on",
-            "exit_fill": "on"
+            "entry_fill": "off",
+            "entry_cancel": "off",
+            "exit": "off",
+            "exit_fill": "on",
+            "exit_cancel": "off",
+            "protection_trigger": "on",
+            "protection_trigger_global": "on",
+            "show_candle": "off"
         }
     },
     "api_server": {
@@ -74,12 +79,12 @@
         "listen_ip_address": "0.0.0.0",
         "listen_port": 8080,
         "verbosity": "error",
-        "jwt_secret_key": "mexcDailyProfitStrategy2026Key",
+        "jwt_secret_key": "mexcTrendRiderProdKey2026SecureRandom",
         "CORS_origins": ["*"],
         "username": "freqtrader",
         "password": "SuperSecurePassword"
     },
-    "bot_name": "DailyProfit-MEXC",
+    "bot_name": "TrendRider",
     "initial_state": "running",
     "force_entry_enable": false,
     "internals": {
