@@ -22,6 +22,7 @@ COPY monitor.py /freqtrade/
 COPY start.sh /freqtrade/
 
 RUN freqtrade create-userdir --userdir /freqtrade/user_data 2>/dev/null || true
+RUN freqtrade install-ui
 RUN chmod +x /freqtrade/start.sh
 
 CMD ["/freqtrade/start.sh"]
