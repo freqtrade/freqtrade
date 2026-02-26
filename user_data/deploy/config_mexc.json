@@ -39,6 +39,8 @@
         "ccxt_config": {},
         "ccxt_async_config": {},
         "pair_whitelist": [
+            "BTC/USDT",
+            "ETH/USDT",
             "SOL/USDT",
             "XRP/USDT",
             "DOGE/USDT",
@@ -54,7 +56,8 @@
     },
     "pairlists": [
         {
-            "method": "StaticPairList"
+            "method": "StaticPairList",
+            "allow_inactive": true
         }
     ],
     "telegram": {
