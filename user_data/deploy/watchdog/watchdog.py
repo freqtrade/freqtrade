@@ -56,7 +56,7 @@ def alert_once(key, msg, cooldown=3600):
 def get_bot_token():
     try:
         r = requests.post(f"{BOT_API}/api/v1/token/login",
-                          auth=("freqtrader", "SuperSecurePassword"), timeout=5)
+                          auth=("freqtrader", "SuperSecurePassword"), timeout=15)
         return r.json().get("access_token", "")
     except Exception:
         return ""
@@ -70,10 +70,10 @@ def check_bot():
 
     headers = {"Authorization": f"Bearer {token}"}
     try:
-        config = requests.get(f"{BOT_API}/api/v1/show_config", headers=headers, timeout=5).json()
-        balance = requests.get(f"{BOT_API}/api/v1/balance", headers=headers, timeout=5).json()
-        trades = requests.get(f"{BOT_API}/api/v1/status", headers=headers, timeout=5).json()
-        profit = requests.get(f"{BOT_API}/api/v1/profit", headers=headers, timeout=5).json()
+        config = requests.get(f"{BOT_API}/api/v1/show_config", headers=headers, timeout=15).json()
+        balance = requests.get(f"{BOT_API}/api/v1/balance", headers=headers, timeout=15).json()
+        trades = requests.get(f"{BOT_API}/api/v1/status", headers=headers, timeout=15).json()
+        profit = requests.get(f"{BOT_API}/api/v1/profit", headers=headers, timeout=15).json()
         return {
             "state": config.get("state"),
             "balance": balance.get("total", 0),
@@ -110,6 +110,115 @@ def log_to_pg(status, balance, open_trades, total_trades, profit, pct):
         conn.close()
     except Exception as e:
         logger.warning(f"PG write failed: {e}")
+
+
+def get_market_analysis() -> str:
+    """Check top pairs and explain why we're not trading / what's close."""
+    try:
+        import ccxt
+        ex = ccxt.mexc({'enableRateLimit': True})
+
+        pairs = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT',
+                 'DOGE/USDT', 'BNB/USDT', 'DOT/USDT', 'AVAX/USDT']
+
+        best_pair = None
+        best_score = 0
+        blockers = {}
+
+        for pair in pairs:
+            try:
+                ohlcv = ex.fetch_ohlcv(pair, '1h', limit=60)
+                if len(ohlcv) < 55:
+                    continue
+                closes = [c[4] for c in ohlcv]
+                volumes = [c[5] for c in ohlcv]
+
+                # Simple EMA calculation
+                def ema(data, period):
+                    k = 2 / (period + 1)
+                    result = [data[0]]
+                    for i in range(1, len(data)):
+                        result.append(data[i] * k + result[-1] * (1 - k))
+                    return result
+
+                e9 = ema(closes, 9)[-1]
+                e21 = ema(closes, 21)[-1]
+                e55 = ema(closes, 55)[-1]
+                price = closes[-1]
+
+                # Score each pair
+                score = 0
+                pair_blockers = []
+
+                if e21 > e55:
+                    score += 3
+                else:
+                    pair_blockers.append("downtrend")
+
+                if e9 > e21:
+                    score += 2
+                else:
+                    pair_blockers.append("EMA weak")
+
+                if price > e9:
+                    score += 2
+                else:
+                    pair_blockers.append("below EMA9")
+
+                if e21 > ema(closes[:-5], 21)[-1]:
+                    score += 1
+                else:
+                    pair_blockers.append("EMA falling")
+
+                ticker = ex.fetch_ticker(pair)
+                chg = ticker.get('percentage', 0)
+                if chg > 0:
+                    score += 1
+
+                short_name = pair.split('/')[0]
+                blockers[short_name] = {
+                    'score': score,
+                    'max': 9,
+                    'chg': chg,
+                    'blockers': pair_blockers,
+                    'price': price,
+                }
+
+                if score > best_score:
+                    best_score = score
+                    best_pair = short_name
+
+            except Exception:
+                continue
+
+        if not blockers:
+            return "⚠️ Cannot check market data"
+
+        # Build message
+        msg = "*Market Scan:*\n"
+
+        # Top 3 closest to trading
+        sorted_pairs = sorted(blockers.items(), key=lambda x: x[1]['score'], reverse=True)
+
+        for name, data in sorted_pairs[:3]:
+            bar = "🟩" * data['score'] + "⬜" * (data['max'] - data['score'])
+            bl = ", ".join(data['blockers'][:2]) if data['blockers'] else "ready!"
+            msg += f"`{name:5}` {bar} {data['chg']:+.1f}%"
+            if data['blockers']:
+                msg += f" _{bl}_"
+            msg += "\n"
+
+        if best_score >= 7:
+            msg += f"\n🟢 *{best_pair} is close to entry!* Watch for signal."
+        elif best_score >= 5:
+            msg += f"\n🟡 *{best_pair} looks promising* — needs trend confirmation."
+        else:
+            msg += f"\n🔴 *No pairs ready* — market is bearish, protecting capital."
+
+        return msg
+
+    except Exception as e:
+        return f"⚠️ Market scan error: {str(e)[:50]}"
 
 
 def main():
@@ -182,17 +291,26 @@ def main():
                         except Exception:
                             pass
 
-                # 5. Hourly status (runs every other check since checks are 30min apart)
+                # 5. Hourly market analysis + status
                 if now.minute < 31 and int(hour) != getattr(main, '_last_status_hour', -1):
-                    trades_str = "None" if not status["open_trades"] else \
-                        "\n".join(f"  {'📈' if t.get('profit_pct',0)>=0 else '📉'} {t['pair']}: {t.get('profit_pct',0):+.2f}%"
-                                  for t in status["open_trades"])
+                    main._last_status_hour = int(hour)
+
+                    # Get market analysis
+                    market_msg = get_market_analysis()
+
+                    trades_str = ""
+                    if status["open_trades"]:
+                        trades_str = "\n".join(
+                            f"  {'📈' if t.get('profit_pct',0)>=0 else '📉'} {t['pair']}: {t.get('profit_pct',0):+.2f}%"
+                            for t in status["open_trades"])
+                        trades_str = f"\n*Open trades:*\n{trades_str}"
+
                     send_tg(
-                        f"📊 *Status Update*\n"
-                        f"Balance: *${bal:.2f}*\n"
-                        f"Open: {open_count} trades\n"
+                        f"📊 *Hourly Update*\n"
+                        f"💰 Balance: *${bal:.2f}*\n"
+                        f"📂 Trades: {open_count} open | {total_trades} closed | P&L: {total_profit:+.4f}"
                         f"{trades_str}\n"
-                        f"Total closed: {total_trades} | P&L: {total_profit:+.4f}"
+                        f"\n{market_msg}"
                     )
 
                 # 6. Daily report at 8AM
