@@ -1,0 +1,22 @@
+{
+  "experiment": "exp05_high_selection_pressure",
+  "config_path": "/home/kali/trading/freqtradeForkGA/genetic_algorithm/experiments/configs/exp05_high_selection_pressure.yaml",
+  "start_time": "2026-02-25T21:36:06.179747",
+  "config_summary": {
+    "population_size": 20,
+    "generations": 8,
+    "mutation_rate": 0.18,
+    "crossover_rate": 0.7,
+    "selection_method": "tournament",
+    "tournament_size": 5,
+    "elite_size": 2,
+    "adaptive_mutation": true,
+    "fitness_sharing": true,
+    "regime_aware": true,
+    "parallel": true
+  },
+  "success": false,
+  "elapsed_seconds": 433.02116990089417,
+  "end_time": "2026-02-25T21:43:19.201051",
+  "error": "'PopulationStats' object has no attribute 'min_fitness'"
+}

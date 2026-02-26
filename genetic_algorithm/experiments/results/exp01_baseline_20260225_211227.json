@@ -1,0 +1,22 @@
+{
+  "experiment": "exp01_baseline",
+  "config_path": "/home/kali/trading/freqtradeForkGA/genetic_algorithm/experiments/configs/exp01_baseline.yaml",
+  "start_time": "2026-02-25T20:59:09.066801",
+  "config_summary": {
+    "population_size": 20,
+    "generations": 8,
+    "mutation_rate": 0.15,
+    "crossover_rate": 0.7,
+    "selection_method": "tournament",
+    "tournament_size": 3,
+    "elite_size": 3,
+    "adaptive_mutation": true,
+    "fitness_sharing": true,
+    "regime_aware": true,
+    "parallel": true
+  },
+  "success": false,
+  "elapsed_seconds": 798.2722792625427,
+  "end_time": "2026-02-25T21:12:27.339223",
+  "error": "'PopulationStats' object has no attribute 'min_fitness'"
+}

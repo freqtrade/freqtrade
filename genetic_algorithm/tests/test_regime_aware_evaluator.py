@@ -178,7 +178,7 @@ def create_test_strategy_gene() -> StrategyGene:
     )
 
 
-class TestRegimeAwareEvaluator:
+class RegimeAwareEvaluatorTestSuite:
     """Test suite for RegimeAwareEvaluator."""
     
     def __init__(self):
@@ -368,7 +368,7 @@ class TestRegimeAwareEvaluator:
         return self.failed == 0
 
 
-class TestIntegrationWithRegimeDetector:
+class IntegrationWithRegimeDetectorTestSuite:
     """Integration tests connecting RegimeDetector with RegimeAwareEvaluator."""
     
     def __init__(self):
@@ -639,11 +639,11 @@ def run_demo():
 
 if __name__ == '__main__':
     # Run unit tests
-    unit_tests = TestRegimeAwareEvaluator()
+    unit_tests = RegimeAwareEvaluatorTestSuite()
     unit_success = unit_tests.run_all()
     
     # Run integration tests
-    integration_tests = TestIntegrationWithRegimeDetector()
+    integration_tests = IntegrationWithRegimeDetectorTestSuite()
     integration_success = integration_tests.run_all()
     
     # Run demo

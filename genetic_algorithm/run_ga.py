@@ -412,6 +412,12 @@ Examples:
         help='Skip confirmation prompt and start evolution immediately'
     )
     
+    parser.add_argument(
+        '--resume',
+        action='store_true',
+        help='Resume evolution from the latest checkpoint (if available)'
+    )
+    
     return parser.parse_args()
 
 
@@ -507,7 +513,7 @@ def main():
         
         # Run evolution
         logger.info("Starting evolution process...")
-        top_individuals = ga.evolve()
+        top_individuals = ga.evolve(resume=args.resume)
         
         # Get top N strategies
         top_strategies = top_individuals[:TOP_STRATEGIES_COUNT]
@@ -540,6 +546,112 @@ def main():
     print(f"✓ Created {total_strategies} strategies")
     print()
     
+    # === Out-of-Sample Holdout Validation ===
+    holdout_config = config.get('holdout_validation', {})
+    holdout_enabled = holdout_config.get('enabled', False)
+    
+    if holdout_enabled and top_strategies:
+        holdout_pct = holdout_config.get('holdout_pct', 0.15)
+        original_timerange = config.get('backtesting', {}).get('timerange', '')
+        
+        if original_timerange:
+            from genetic_algorithm.evaluation.fitness import FitnessEvaluator
+            
+            evolution_tr, holdout_tr = FitnessEvaluator.split_timerange_for_holdout(
+                original_timerange, holdout_pct
+            )
+            
+            print("=" * 80)
+            print("OUT-OF-SAMPLE HOLDOUT VALIDATION")
+            print("=" * 80)
+            print(f"  Holdout period: {holdout_tr} ({holdout_pct:.0%} of data)")
+            print(f"  Evaluating top {len(top_strategies)} strategies on unseen data...")
+            print()
+            
+            holdout_evaluator = FitnessEvaluator(config)
+            
+            for rank, individual in enumerate(top_strategies, 1):
+                gene = individual.strategy_gene
+                holdout_fitness, holdout_metrics = holdout_evaluator.evaluate_holdout(
+                    gene, holdout_tr
+                )
+                
+                # Store holdout results in individual metrics
+                individual.metrics['holdout_fitness'] = holdout_fitness
+                individual.metrics['holdout_profit'] = holdout_metrics.get('profit', 0)
+                individual.metrics['holdout_sharpe'] = holdout_metrics.get('sharpe_ratio', 0)
+                individual.metrics['holdout_drawdown'] = holdout_metrics.get('max_drawdown', 0)
+                individual.metrics['holdout_trades'] = holdout_metrics.get('num_trades', 0)
+                
+                # Calculate degradation from evolution fitness to holdout fitness
+                evo_fitness = individual.fitness
+                if evo_fitness > 0:
+                    degradation = (evo_fitness - holdout_fitness) / evo_fitness
+                else:
+                    degradation = 0
+                individual.metrics['holdout_degradation'] = degradation
+                
+                status = "✓" if degradation < 0.3 else "⚠️"
+                print(f"  {status} Rank {rank}: "
+                      f"Evo fitness={evo_fitness:.4f} → Holdout fitness={holdout_fitness:.4f} "
+                      f"(degradation={degradation:.1%})")
+                print(f"      Holdout: profit={holdout_metrics.get('profit', 0):.2f}%, "
+                      f"trades={holdout_metrics.get('num_trades', 0)}, "
+                      f"drawdown={holdout_metrics.get('max_drawdown', 0):.1%}")
+            
+            print()
+            print("  Legend: ✓ = <30% degradation (robust), ⚠️  = ≥30% degradation (potential overfit)")
+            print()
+        else:
+            print("⚠️  Holdout validation skipped: no timerange configured")
+            print()
+    
+    # === Monte-Carlo Robustness Validation ===
+    mc_config = config.get('monte_carlo', {})
+    mc_enabled = mc_config.get('enabled', False)
+
+    if mc_enabled and top_strategies:
+        from genetic_algorithm.evaluation.monte_carlo import run_monte_carlo
+        from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
+
+        print("=" * 80)
+        print("MONTE-CARLO ROBUSTNESS ANALYSIS")
+        print("=" * 80)
+        num_perms = mc_config.get('num_permutations', 100)
+        print(f"  Running {num_perms} permutations per strategy...")
+        print()
+
+        mc_backtester = DirectBacktester(config)
+
+        for rank, individual in enumerate(top_strategies, 1):
+            gene = individual.strategy_gene
+            strategy_code = ga.strategy_generator.generate_strategy_code(gene)
+            strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
+
+            bt_result = mc_backtester.backtest_strategy_with_trades(
+                strategy_code, strategy_name,
+                strategy_max_open_trades=gene.max_open_trades
+            )
+
+            if bt_result.success and bt_result.trades:
+                mc_result = run_monte_carlo(bt_result.trades, mc_config)
+                individual.metrics['mc_robustness'] = mc_result.robustness_score
+                individual.metrics['mc_mean_profit'] = mc_result.mean_profit
+                individual.metrics['mc_profit_p5'] = mc_result.profit_p5
+                individual.metrics['mc_profit_std'] = mc_result.profit_std
+
+                status = "✓" if mc_result.robustness_score >= 0.8 else "⚠️"
+                print(f"  {status} Rank {rank}: robustness={mc_result.robustness_score:.1%}, "
+                      f"mean_profit={mc_result.mean_profit:.2f}%, "
+                      f"p5={mc_result.profit_p5:.2f}%, p95={mc_result.profit_p95:.2f}%")
+            else:
+                individual.metrics['mc_robustness'] = 0.0
+                print(f"  ⚠️  Rank {rank}: backtest failed or no trades — skipped")
+
+        print()
+        print("  Legend: ✓ = ≥80% permutations profitable (robust), ⚠️ = <80% (fragile)")
+        print()
+
     # Display top strategies
     print_top_strategies(top_strategies, ga.strategy_generator)
     

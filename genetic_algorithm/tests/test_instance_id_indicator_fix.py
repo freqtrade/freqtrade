@@ -64,7 +64,6 @@ def test_ensure_indicators_extracts_base_type():
             assert 'period' in ind.parameters, "CCI indicator missing 'period' parameter"
 
     print("  ✓ ensure_indicators correctly extracts base types from instance_ids")
-    return True
 
 
 def test_ensure_indicators_handles_bbands_instance_id():
@@ -97,7 +96,6 @@ def test_ensure_indicators_handles_bbands_instance_id():
             assert 'std_dev' in ind.parameters, "BBANDS missing 'std_dev'"
 
     print("  ✓ BBANDS instance_id correctly resolved")
-    return True
 
 
 def test_generated_code_consistency_with_instance_ids():
@@ -140,7 +138,6 @@ def test_generated_code_consistency_with_instance_ids():
     assert "dataframe['rsi_" in code, f"RSI column reference missing from conditions in code:\n{code}"
 
     print("  ✓ Generated code has all necessary indicator calculations")
-    return True
 
 
 def test_crossover_with_instance_ids_produces_valid_code():
@@ -223,7 +220,6 @@ def test_crossover_with_instance_ids_produces_valid_code():
                         f"Trial {trial} {label}: CCI referenced in condition but not calculated"
 
     print("  ✓ All crossover children have consistent indicator code")
-    return True
 
 
 def test_mutation_remove_cleans_instance_id_conditions():
@@ -283,7 +279,6 @@ def test_mutation_remove_cleans_instance_id_conditions():
                 f"but present types: {present_types}, present ids: {present_ids}"
 
     print("  ✓ Mutation correctly cleans up conditions for removed indicators")
-    return True
 
 
 def main():

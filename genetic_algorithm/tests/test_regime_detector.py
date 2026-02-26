@@ -136,10 +136,10 @@ class TestRegimeDetectorInit:
     def test_default_init(self):
         """Test default initialization."""
         detector = RegimeDetector()
-        assert detector.method == 'sma_adx'
-        assert 'sma_fast' in detector.params
-        assert detector.params['sma_fast'] == 50
-        assert detector.params['sma_slow'] == 200
+        assert detector.method == 'adx_di_hysteresis'  # Updated default method
+        assert 'adx_enter' in detector.params  # adx_di_hysteresis uses different params
+        assert detector.params['adx_enter'] == 25
+        assert detector.params['adx_exit'] == 20
     
     def test_custom_method(self):
         """Test initialization with different methods."""

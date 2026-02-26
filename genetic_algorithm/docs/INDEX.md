@@ -44,6 +44,12 @@ docs/
 | [MARKET_REGIME_DATASET_SELECTION.md](features/MARKET_REGIME_DATASET_SELECTION.md) | Concepts and design for regime-aware evaluation | ✅ Complete |
 | [REGIME_DETECTION_IMPLEMENTATION.md](features/REGIME_DETECTION_IMPLEMENTATION.md) | Implementation details and methods | ✅ Complete |
 
+### Tier 3: Robustness & Anti-Overfitting
+
+| Document | Description | Status |
+|----------|-------------|--------|
+| [TIER3_ROBUSTNESS_FEATURES.md](features/TIER3_ROBUSTNESS_FEATURES.md) | Monte-Carlo, Parsimony, Pareto Archive, Dynamic Bounds | ✅ Complete |
+
 ---
 
 ## 📋 Plans & Roadmaps (`plans/`)
@@ -75,6 +81,10 @@ docs/
 | Market Regime Detection | ✅ Complete | Phase 5/5 implemented |
 | **Regime Detection Accuracy** | ✅ Complete | Phase 6 - adx_di_hysteresis method |
 | Elite Fitness Caching | ✅ Complete | Prevents fitness degradation |
+| **Monte-Carlo Robustness** | ✅ Complete | Tier 3 - Trade permutation testing |
+| **Parsimony Pressure** | ✅ Complete | Tier 3 - Strategy simplification |
+| **Pareto Archive** | ✅ Complete | Tier 3 - Non-dominated solution preservation |
+| **Dynamic Bounds** | ✅ Complete | Tier 3 - Evolvable parameter ranges |
 | Island Model | 📋 Planned | Future enhancement |
 
 ---
@@ -89,4 +99,4 @@ docs/
 
 ---
 
-*Last Updated: February 25, 2026*
+*Last Updated: February 26, 2026*

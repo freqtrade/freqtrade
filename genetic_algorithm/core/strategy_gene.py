@@ -38,6 +38,7 @@ class IndicatorGene:
     weight: float = 1.0  # importance weight
     instance_id: Optional[str] = None  # Unique instance identifier (e.g., 'RSI_0', 'RSI_1')
     timeframe: Optional[str] = None  # None = base timeframe, e.g. '1h', '4h' for informative
+    param_bounds: Optional[Dict[str, Any]] = None  # evolved [min, max] per parameter
 
 
 @dataclass
@@ -99,7 +100,8 @@ class StrategyGene:
             'individual_id': self.individual_id,
             'indicators': [
                 {'type': ind.type, 'parameters': dict(ind.parameters), 'weight': ind.weight,
-                 'instance_id': ind.instance_id, 'timeframe': ind.timeframe}
+                 'instance_id': ind.instance_id, 'timeframe': ind.timeframe,
+                 'param_bounds': dict(ind.param_bounds) if ind.param_bounds else None}
                 for ind in self.indicators
             ],
             'entry_conditions': [
@@ -124,6 +126,7 @@ class StrategyGene:
             'informative_timeframes': self.informative_timeframes,
             'stoploss': self.stoploss,
             'minimal_roi': self.minimal_roi,
+            'max_open_trades': self.max_open_trades,
             'trailing_stop': self.trailing_stop,
             'trailing_stop_positive': self.trailing_stop_positive,
             'trailing_stop_positive_offset': self.trailing_stop_positive_offset,
@@ -138,7 +141,8 @@ class StrategyGene:
                 parameters=ind['parameters'],
                 weight=ind.get('weight', 1.0),
                 instance_id=ind.get('instance_id'),
-                timeframe=ind.get('timeframe')
+                timeframe=ind.get('timeframe'),
+                param_bounds=ind.get('param_bounds')
             )
             for ind in data['indicators']
         ]
@@ -173,6 +177,7 @@ class StrategyGene:
             informative_timeframes=data.get('informative_timeframes', []),
             stoploss=data.get('stoploss', -0.10),
             minimal_roi=data.get('minimal_roi', {"0": 0.04, "30": 0.02, "60": 0.01}),
+            max_open_trades=data.get('max_open_trades', 3),
             trailing_stop=data.get('trailing_stop', False),
             trailing_stop_positive=data.get('trailing_stop_positive'),
             trailing_stop_positive_offset=data.get('trailing_stop_positive_offset'),
