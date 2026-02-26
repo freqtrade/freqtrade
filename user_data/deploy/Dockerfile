@@ -18,6 +18,7 @@ WORKDIR /freqtrade
 
 COPY TrendRiderStrategy.py /freqtrade/user_data/strategies/
 COPY config_mexc.json /freqtrade/
+COPY monitor.py /freqtrade/
 COPY start.sh /freqtrade/
 
 RUN freqtrade create-userdir --userdir /freqtrade/user_data 2>/dev/null || true
