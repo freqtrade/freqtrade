@@ -2,12 +2,12 @@
     "$schema": "https://schema.freqtrade.io/schema.json",
     "max_open_trades": 2,
     "stake_currency": "USDT",
-    "stake_amount": "unlimited",
-    "tradable_balance_ratio": 0.95,
+    "stake_amount": 5,
+    "tradable_balance_ratio": 0.2,
     "fiat_display_currency": "USD",
     "timeframe": "1h",
     "dry_run": true,
-    "dry_run_wallet": 50,
+    "dry_run_wallet": 25,
     "cancel_open_orders_on_exit": false,
     "trading_mode": "spot",
     "margin_mode": "",
@@ -53,7 +53,9 @@
         "pair_blacklist": []
     },
     "pairlists": [
-        {"method": "StaticPairList"}
+        {
+            "method": "StaticPairList"
+        }
     ],
     "telegram": {
         "enabled": true,
@@ -80,7 +82,9 @@
         "listen_port": 8080,
         "verbosity": "error",
         "jwt_secret_key": "mexcTrendRiderProdKey2026SecureRandom",
-        "CORS_origins": ["*"],
+        "CORS_origins": [
+            "*"
+        ],
         "username": "freqtrader",
         "password": "SuperSecurePassword"
     },

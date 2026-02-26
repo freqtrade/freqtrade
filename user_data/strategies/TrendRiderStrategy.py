@@ -146,9 +146,16 @@ class TrendRiderStrategy(IStrategy):
             {
                 "method": "StoplossGuard",
                 "lookback_period_candles": 72,
-                "trade_limit": 2,
-                "stop_duration_candles": 24,
+                "trade_limit": 1,
+                "stop_duration_candles": 48,
                 "only_per_pair": False,
+            },
+            {
+                "method": "MaxDrawdown",
+                "lookback_period_candles": 168,
+                "max_allowed_drawdown": 0.05,
+                "trade_limit": 1,
+                "stop_duration_candles": 72,
             },
         ]
 
