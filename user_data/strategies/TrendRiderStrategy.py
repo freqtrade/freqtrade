@@ -32,13 +32,18 @@ from technical import qtpylib
 
 class TrendRiderStrategy(IStrategy):
     """
-    TrendRider v6 — Final refined version.
+    TrendRider v8 — v6 base + anti-false-signal filters.
 
-    Based on v4 (best: -5.64% in -36% bear market, 70% win rate).
-    Fix: tighter stoploss to cut losses before they grow.
-    v4 had 12 stop losses at avg -4%, causing -173 USDT.
-    With -2.5% stops, those same 12 losses = ~-100 USDT, making the
-    strategy break-even or profitable even in a bear market.
+    v6 had 25 wins and 15 stop-loss losses. If we can eliminate
+    even 5 of those 15 bad trades, we go from -6.6% to profitable.
+
+    Key additions over v6:
+    - Cooldown: 48h lockout per pair after stop loss (prevents re-entering false trends)
+    - Confirmation: previous candle must also be green (momentum confirmation)
+    - Volume: must be above 1.2x average (conviction)
+    - Trend maturity: EMA21 must have been above EMA50 for 5+ candles
+    - Max 2 open trades (less exposure in uncertain markets)
+    - Simple stoploss, no custom (proven cleaner in v6)
     """
 
     INTERFACE_VERSION = 3
@@ -46,20 +51,20 @@ class TrendRiderStrategy(IStrategy):
 
     # --- ROI ---
     minimal_roi = {
-        "0": 0.06,      # 6% immediate
-        "240": 0.035,   # 3.5% after 4h
-        "600": 0.02,    # 2% after 10h
-        "1200": 0.008,  # 0.8% after 20h
+        "0": 0.06,
+        "240": 0.035,
+        "600": 0.02,
+        "1200": 0.008,
     }
 
-    # --- Stop Loss: tighter to cut losses early ---
-    stoploss = -0.025  # 2.5% hard stop
+    # --- Stop Loss ---
+    stoploss = -0.018
     use_custom_stoploss = False
 
     # --- Trailing Stop ---
     trailing_stop = True
-    trailing_stop_positive = 0.012       # trail at 1.2%
-    trailing_stop_positive_offset = 0.025  # activate after 2.5% profit
+    trailing_stop_positive = 0.008
+    trailing_stop_positive_offset = 0.030
     trailing_only_offset_is_reached = True
 
     # --- Timeframe ---
@@ -71,6 +76,23 @@ class TrendRiderStrategy(IStrategy):
     ignore_roi_if_entry_signal = False
 
     startup_candle_count: int = 210
+
+    # --- Cooldown protection: lock pair for 48h after stop loss ---
+    @property
+    def protections(self):
+        return [
+            {
+                "method": "CooldownPeriod",
+                "stop_duration_candles": 48,  # 48 hours on 1h timeframe
+            },
+            {
+                "method": "StoplossGuard",
+                "lookback_period_candles": 72,  # 3 days
+                "trade_limit": 2,  # if 2 stops in 3 days, lock ALL pairs 24h
+                "stop_duration_candles": 24,
+                "only_per_pair": False,
+            },
+        ]
 
     order_types = {
         "entry": "limit",
@@ -116,6 +138,7 @@ class TrendRiderStrategy(IStrategy):
 
         dataframe["volume_sma20"] = dataframe["volume"].rolling(window=20).mean()
 
+        # --- EMA slopes ---
         dataframe["ema200_slope"] = (
             (dataframe["ema200"] - dataframe["ema200"].shift(10))
             / dataframe["ema200"].shift(10) * 100
@@ -125,45 +148,89 @@ class TrendRiderStrategy(IStrategy):
             / dataframe["ema50"].shift(5) * 100
         )
 
+        # --- Bull regime ---
         dataframe["bull_regime"] = np.where(
             (dataframe["ema50"] > dataframe["ema200"])
             & (dataframe["ema200_slope"] > -0.1),
             1.0, 0.0,
         )
 
+        # --- Pullback ---
         dataframe["dist_to_ema21"] = (
             (dataframe["close"] - dataframe["ema21"]) / dataframe["ema21"] * 100
         )
 
+        # --- RSI rising ---
         dataframe["rsi_rising"] = np.where(
             (dataframe["rsi"] > dataframe["rsi"].shift(1))
             & (dataframe["rsi"] > dataframe["rsi"].shift(2)),
             1.0, 0.0,
         )
 
+        # --- Higher lows ---
         dataframe["higher_low"] = np.where(
             dataframe["low"] > dataframe["low"].shift(2), 1.0, 0.0,
+        )
+
+        # --- Trend maturity: how many consecutive candles EMA21 > EMA50 ---
+        ema21_above = (dataframe["ema21"] > dataframe["ema50"]).astype(int)
+        streak = ema21_above * 0
+        for i in range(1, len(ema21_above)):
+            if ema21_above.iloc[i] == 1:
+                streak.iloc[i] = streak.iloc[i - 1] + 1
+            else:
+                streak.iloc[i] = 0
+        dataframe["trend_maturity"] = streak
+
+        # --- Confirmation: previous candle was green ---
+        dataframe["prev_green"] = np.where(
+            dataframe["close"].shift(1) > dataframe["open"].shift(1),
+            1.0, 0.0,
+        )
+
+        # --- Current candle green ---
+        dataframe["green_candle"] = np.where(
+            dataframe["close"] > dataframe["open"], 1.0, 0.0,
         )
 
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """Ultra-selective entries (same as v3/v4)."""
+        """
+        Ultra-selective entries with v8 additions:
+        - Trend maturity: uptrend running for 5+ candles (not fresh/fragile)
+        - Double green: current AND previous candle must be green
+        - Volume conviction: above 1.2x average
+        - All v6 trend filters still apply
+        """
         dataframe.loc[
             (
+                # Bull regime
                 (dataframe["bull_regime"] == 1)
+                # Established uptrend (not just started)
                 & (dataframe["ema21"] > dataframe["ema50"])
+                & (dataframe["trend_maturity"] >= 5)
                 & (dataframe["close"] > dataframe["ema21"])
                 & (dataframe["ema50_slope"] > 0)
+                # Pullback entry zone
                 & (dataframe["dist_to_ema21"] < 1.5)
                 & (dataframe["dist_to_ema21"] > -0.3)
+                # Momentum
                 & (dataframe["adx"] > 22)
                 & (dataframe["plus_di"] > dataframe["minus_di"])
                 & (dataframe["rsi"] > 45)
                 & (dataframe["rsi"] < 62)
                 & (dataframe["rsi_rising"] == 1)
+                # MACD confirmation
                 & (dataframe["macdhist"] > 0)
+                # Structure
                 & (dataframe["higher_low"] == 1)
+                # Double green confirmation
+                & (dataframe["green_candle"] == 1)
+                & (dataframe["prev_green"] == 1)
+                # Volume conviction
+                & (dataframe["volume"] > dataframe["volume_sma20"] * 1.2)
+                # Low volatility
                 & (dataframe["atr_pct"] < 3.0)
                 & (dataframe["volume"] > 0)
             ),
