@@ -19,11 +19,11 @@ genetic_algorithm:
   
   # Population size - number of strategies per generation
   # Quick test: 20-25, Production: 50-100
-  population_size: 25
+  population_size: 50
   
   # Number of generations to evolve
   # Quick test: 5-8, Production: 30-100
-  generations: 6
+  generations: 10
   
   # Mutation rate - probability of mutating an individual
   # Higher = more exploration, Lower = more exploitation
@@ -65,7 +65,7 @@ genetic_algorithm:
   
   # Random immigrants - inject fresh random strategies each generation to prevent premature convergence
   # When diversity drops below diversity_threshold, this count is doubled for that generation
-  random_immigrants: 8           # Number of fresh random individuals to inject per generation
+  random_immigrants: 10           # Number of fresh random individuals to inject per generation
   
   # Evolution mode: 'single_objective' (default) or 'nsga2' (multi-objective)
   # Single-objective uses weighted fitness function, NSGA-II returns Pareto front
@@ -114,13 +114,35 @@ fitness_penalties:
   complexity_weight: 0.015 # Penalty weight for strategy complexity (num_indicators + num_conditions)
   pair_loss_threshold: -8.0  # Max acceptable loss (%) on any single pair before penalty applies
 
+# Fitness bounds for clamping extreme values
+# Values outside these bounds are clamped to prevent extreme outliers from skewing fitness
+fitness_bounds:
+  profit_min: -50          # Minimum profit % to consider (-50% floor)
+  profit_max: 200          # Maximum profit % to consider (200% ceiling)
+  sharpe_min: -5           # Minimum Sharpe ratio
+  sharpe_max: 10           # Maximum Sharpe ratio
+  sortino_min: -5          # Minimum Sortino ratio
+  sortino_max: 12          # Maximum Sortino ratio (typically higher than Sharpe)
+  profit_factor_max: 10    # Maximum profit factor
+
+# Trade frequency thresholds for normalization
+trade_frequency_thresholds:
+  very_few: 5              # Trades below this are heavily penalized
+  few: 10                  # Trades below this get some penalty
+  ideal_min: 10            # Lower bound of ideal range
+  ideal_max: 50            # Upper bound of ideal range
+  moderate_excess: 100     # Slight penalty above ideal_max up to this
+  # Above moderate_excess: significant penalty
+
 # === Backtesting Configuration ===
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
   # Quick test: 30-60 days, Production: 90-180 days
-  timerange: "20250101-20260218"  # ~14 months for better statistical significance
+  timerange: "20230101-20260218"  # ~14 months for better statistical significance
   
-  # Stake amount per trade (fraction of wallet)
+  # Stake amount per trade
+  # Values 0-1: treated as fraction of wallet (e.g., 0.15 = 15% of wallet per trade)
+  # Values >= 1: treated as fixed amount in stake currency (e.g., 1500 = $1500 per trade)
   stake_amount: 0.15
   
   # Trading pairs to test strategies on
@@ -133,7 +155,7 @@ backtesting:
   max_open_trades: 3
   
   # Fee for trades (0.1% = 0.001)
-  fee: 0.001
+  fee: 0.002
   
   # Slippage percentage added on top of exchange fee for realistic cost modeling
   slippage_pct: 0.0005
@@ -218,7 +240,7 @@ holdout_validation:
 # NOTE: Disable for quick tests, enable for production
 regime_aware:
   # Enable regime-aware evaluation
-  enabled: false  # Set to true for production runs
+  enabled: true  # Set to true for production runs
   
   # Detection method: 'sma_adx', 'adx_di', 'returns', 'bollinger', 'ensemble'
   # 'sma_adx' is recommended - uses SMA crossover + ADX trend strength

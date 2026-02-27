@@ -49,6 +49,24 @@ class FitnessEvaluator:
         self.backtest_config = config.get('backtesting', {})
         self.walk_forward_config = config.get('walk_forward', {})
         
+        # Fitness bounds for clamping extreme values
+        fitness_bounds = config.get('fitness_bounds', {})
+        self.profit_min = fitness_bounds.get('profit_min', -50)
+        self.profit_max = fitness_bounds.get('profit_max', 200)
+        self.sharpe_min = fitness_bounds.get('sharpe_min', -5)
+        self.sharpe_max = fitness_bounds.get('sharpe_max', 10)
+        self.sortino_min = fitness_bounds.get('sortino_min', -5)
+        self.sortino_max = fitness_bounds.get('sortino_max', 12)
+        self.profit_factor_max = fitness_bounds.get('profit_factor_max', 10)
+        
+        # Trade frequency thresholds
+        tf_config = config.get('trade_frequency_thresholds', {})
+        self.tf_very_few = tf_config.get('very_few', 5)
+        self.tf_few = tf_config.get('few', 10)
+        self.tf_ideal_min = tf_config.get('ideal_min', 10)
+        self.tf_ideal_max = tf_config.get('ideal_max', 50)
+        self.tf_moderate_excess = tf_config.get('moderate_excess', 100)
+        
         # Validate walk-forward config if enabled
         if self.walk_forward_config.get('enabled', False):
             validate_walk_forward_config(self.walk_forward_config)
@@ -611,17 +629,21 @@ class FitnessEvaluator:
             win_rate = 0
         
         # Clamp values to reasonable ranges to avoid extreme outliers
-        profit = max(-50, min(profit, 200))  # -50% to +200%
-        sharpe = max(-5, min(sharpe, 10))  # -5 to 10
-        sortino = max(-5, min(sortino, 12))  # Sortino often higher than Sharpe
-        profit_factor = max(0, min(profit_factor, 10))  # 0 to 10
+        # Use configurable bounds from self.profit_min, self.profit_max, etc.
+        profit = max(self.profit_min, min(profit, self.profit_max))
+        sharpe = max(self.sharpe_min, min(sharpe, self.sharpe_max))
+        sortino = max(self.sortino_min, min(sortino, self.sortino_max))
+        profit_factor = max(0, min(profit_factor, self.profit_factor_max))
         drawdown = min(drawdown, 1.0)  # 0 to 100%
         win_rate = max(0, min(win_rate, 1.0))  # 0 to 100%
         
-        # Normalize to 0-1 range with better scaling
-        norm_profit = (profit + 50) / 250  # -50% to +200%
-        norm_sharpe = (sharpe + 5) / 15  # -5 to 10
-        norm_sortino = (sortino + 5) / 17  # -5 to 12
+        # Normalize to 0-1 range with configurable scaling
+        profit_range = self.profit_max - self.profit_min
+        norm_profit = (profit - self.profit_min) / profit_range if profit_range > 0 else 0
+        sharpe_range = self.sharpe_max - self.sharpe_min
+        norm_sharpe = (sharpe - self.sharpe_min) / sharpe_range if sharpe_range > 0 else 0
+        sortino_range = self.sortino_max - self.sortino_min
+        norm_sortino = (sortino - self.sortino_min) / sortino_range if sortino_range > 0 else 0
         norm_profit_factor = min(1.0, profit_factor / 3.0)  # >3.0 is excellent
         norm_drawdown = 1 - drawdown  # Lower drawdown is better
         norm_win_rate = win_rate  # Already 0-1
@@ -714,26 +736,26 @@ class FitnessEvaluator:
         """
         Normalize trade frequency to 0-1 range.
         
-        Prefers 10-50 trades for most strategies. Too few trades = unreliable,
-        too many trades = overtrading and high fees.
+        Uses configurable thresholds from self.tf_* attributes.
+        Too few trades = unreliable, too many trades = overtrading and high fees.
         """
         if num_trades == 0:
             return 0.0
-        elif num_trades < 5:
+        elif num_trades < self.tf_very_few:
             # Very few trades - heavily penalized
-            return num_trades / 10
-        elif 5 <= num_trades < 10:
+            return num_trades / (self.tf_very_few * 2)
+        elif self.tf_very_few <= num_trades < self.tf_few:
             # Few trades - some penalty
-            return 0.5 + (num_trades - 5) / 10
-        elif 10 <= num_trades <= 50:
+            return 0.5 + (num_trades - self.tf_very_few) / (self.tf_few - self.tf_very_few) * 0.5
+        elif self.tf_ideal_min <= num_trades <= self.tf_ideal_max:
             # Ideal range - full score
             return 1.0
-        elif 50 < num_trades <= 100:
+        elif self.tf_ideal_max < num_trades <= self.tf_moderate_excess:
             # Moderate overtrading - slight penalty
-            return 1.0 - (num_trades - 50) / 100
+            return 1.0 - (num_trades - self.tf_ideal_max) / (self.tf_moderate_excess - self.tf_ideal_max) * 0.5
         else:
             # Excessive trading - significant penalty
-            return max(0.3, 1.0 - (num_trades - 50) / 200)
+            return max(0.3, 0.5 - (num_trades - self.tf_moderate_excess) / 200)
     
     def _apply_penalties(self, fitness: float, metrics: Dict[str, float], strategy_gene: StrategyGene = None) -> float:
         """
