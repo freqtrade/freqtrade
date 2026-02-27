@@ -4028,6 +4028,18 @@ class Exchange:
         else:
             return None
 
+    def fetch_liquidation_fills(
+        self, pair: str, since: datetime
+    ) -> list[dict]:
+        """
+        Fetch user fills for a pair and return only liquidation fills.
+        Override in exchange-specific subclasses that support liquidation detection.
+        :param pair: Trading pair
+        :param since: Datetime to fetch fills from
+        :return: List of liquidation fill dicts
+        """
+        return []
+
     def dry_run_liquidation_price(
         self,
         pair: str,

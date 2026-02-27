@@ -569,6 +569,14 @@ class FreqtradeBot(LoggingMixin):
                         )
                         trade.delete()
                         return True
+                    # In futures mode, when the position is completely gone,
+                    # check if it was liquidated on the exchange.
+                    if (
+                        self.trading_mode == TradingMode.FUTURES
+                        and total == 0
+                        and self._handle_liquidation(trade)
+                    ):
+                        return False
                     if total > trade.amount * 0.98:
                         logger.warning(
                             f"{trade} has a total of {trade.amount} {trade.base_currency}, "
@@ -595,6 +603,46 @@ class FreqtradeBot(LoggingMixin):
             # catching https://github.com/freqtrade/freqtrade/issues/9025
             logger.warning("Error finding onexchange order", exc_info=True)
         return False
+
+    def _handle_liquidation(self, trade: Trade) -> bool:
+        """
+        Check if a trade was liquidated on the exchange by fetching user fills
+        and looking for liquidation markers.
+        """
+        try:
+            liq_fills = self.exchange.fetch_liquidation_fills(
+                trade.pair, trade.open_date_utc
+            )
+            if not liq_fills:
+                return False
+
+            liq_fill = liq_fills[-1]
+            liq_price = liq_fill["liq_mark_price"]
+            liq_timestamp = liq_fill.get("timestamp")
+
+            logger.warning(
+                f"Position for {trade.pair} was LIQUIDATED on exchange "
+                f"at mark price {liq_price}. Trade: {trade}"
+            )
+
+            trade = self.cancel_stoploss_on_exchange(trade)
+            trade.exit_reason = ExitType.LIQUIDATION.value
+            trade.close(liq_price, show_msg=False)
+            if liq_timestamp:
+                trade.close_date = dt_from_ts(liq_timestamp)
+            Trade.commit()
+
+            self._notify_exit(trade, "liquidation", fill=True)
+            self.handle_protections(trade.pair, trade.trade_direction)
+
+            logger.info(f"Trade {trade} closed due to liquidation at price {liq_price}.")
+            return True
+
+        except Exception:
+            logger.warning(
+                f"Error checking for liquidation of {trade.pair}.", exc_info=True
+            )
+            return False
 
     #
     # enter positions / open trades logic and methods

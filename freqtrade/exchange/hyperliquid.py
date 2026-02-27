@@ -1,6 +1,7 @@
 """Hyperliquid exchange subclass"""
 
 import logging
+import ccxt
 from copy import deepcopy
 from datetime import datetime
 from typing import Any
@@ -8,7 +9,13 @@ from typing import Any
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
 from freqtrade.enums.runmode import NON_UTIL_MODES
-from freqtrade.exceptions import ConfigurationError, ExchangeError, OperationalException
+from freqtrade.exceptions import (
+    ConfigurationError,
+    DDosProtection,
+    ExchangeError,
+    OperationalException,
+    TemporaryError,
+)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.exchange_types import CcxtBalances, CcxtOrder, CcxtPosition, FtHas
 from freqtrade.util.datetime_helpers import dt_from_ts
@@ -272,6 +279,50 @@ class Hyperliquid(Exchange):
             except ExchangeError:
                 logger.warning(f"Could not update funding fees for {pair}.")
         return 0.0
+
+    def fetch_liquidation_fills(
+        self, pair: str, since: datetime
+    ) -> list[dict]:
+        """
+        Fetch user fills for a pair and return only liquidation fills.
+        On Hyperliquid, a liquidation fill has a non-null 'liquidationMarkPx' in the raw data.
+        """
+        if self._config["dry_run"]:
+            return []
+        try:
+            since_ms = int((since.timestamp() - 5) * 1000)
+            my_trades = self._api.fetch_my_trades(pair, since_ms)
+            self._log_exchange_response("fetch_liquidation_fills", my_trades)
+
+            liquidation_fills = []
+            for trade in my_trades:
+                info = trade.get("info", {})
+                liq_mark_px = info.get("liquidationMarkPx")
+                if liq_mark_px is not None:
+                    liquidation_fills.append({
+                        "price": float(trade.get("price", liq_mark_px)),
+                        "amount": float(trade.get("amount", 0)),
+                        "timestamp": trade.get("timestamp"),
+                        "side": trade.get("side"),
+                        "liq_mark_price": float(liq_mark_px),
+                        "info": info,
+                    })
+
+            if liquidation_fills:
+                logger.info(
+                    f"Found {len(liquidation_fills)} liquidation fill(s) for {pair}."
+                )
+            return liquidation_fills
+
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f"Could not fetch liquidation fills for {pair}: "
+                f"{e.__class__.__name__}. Message: {e}"
+            ) from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     def _adjust_hyperliquid_order(
         self,
