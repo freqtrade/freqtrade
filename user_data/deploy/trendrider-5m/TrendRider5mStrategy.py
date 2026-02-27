@@ -48,16 +48,16 @@ class TrendRider5mStrategy(IStrategy):
     INTERFACE_VERSION = 3
     can_short: bool = False
 
-    # --- ROI: fast scalp targets ---
+    # --- ROI: original targets that backtested near break-even ---
     minimal_roi = {
-        "0": 0.03,      # 3% immediate
-        "15": 0.02,     # 2% after 15min
-        "30": 0.012,    # 1.2% after 30min
-        "60": 0.007,    # 0.7% after 1h
-        "120": 0.003,   # 0.3% after 2h
+        "0": 0.03,
+        "15": 0.02,
+        "30": 0.012,
+        "60": 0.007,
+        "120": 0.003,
     }
 
-    stoploss = -0.025  # 2.5% hard stop (last resort — custom_stoploss handles the rest)
+    stoploss = -0.010  # 1% hard stop
     use_custom_stoploss = True
 
     trailing_stop = True
@@ -109,11 +109,13 @@ class TrendRider5mStrategy(IStrategy):
         trend_intact = last["ema9"] > last["ema21"] and last["ema21"] > last["ema55"]
         atr_stop = last["atr_pct"] / 100 * 2  # 2x ATR as dynamic stop
 
-        # Profitable — lock in gains progressively
-        if current_profit > 0.02:
-            return -0.005  # protect 1.5% of the 2% gain
+        # Lock gains progressively
+        if current_profit > 0.015:
+            return -0.003  # up 1.5%+ → lock +1.2%
         if current_profit > 0.01:
-            return -0.007  # protect 0.3% of the 1% gain
+            return -0.005  # up 1.0%+ → lock +0.5%
+        if current_profit > 0.005:
+            return -0.007  # up 0.5%+ → near breakeven
 
         # First 30 min — give the trade time to develop
         if mins_open < 30:
