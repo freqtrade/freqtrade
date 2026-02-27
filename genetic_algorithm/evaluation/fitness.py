@@ -585,6 +585,8 @@ class FitnessEvaluator:
         Returns:
             Fitness score (higher is better)
         """
+        import math
+        
         # Extract and normalize metrics
         profit = metrics.get('profit', 0)
         sharpe = metrics.get('sharpe_ratio', 0)
@@ -593,6 +595,20 @@ class FitnessEvaluator:
         drawdown = metrics.get('max_drawdown', 0)
         win_rate = metrics.get('win_rate', 0)
         trades = metrics.get('num_trades', 0)
+        
+        # NaN/Inf protection: replace invalid values with 0
+        if math.isnan(profit) or math.isinf(profit):
+            profit = 0
+        if math.isnan(sharpe) or math.isinf(sharpe):
+            sharpe = 0
+        if math.isnan(sortino) or math.isinf(sortino):
+            sortino = 0
+        if math.isnan(profit_factor) or math.isinf(profit_factor):
+            profit_factor = 0
+        if math.isnan(drawdown) or math.isinf(drawdown):
+            drawdown = 1.0  # Assume worst case
+        if math.isnan(win_rate) or math.isinf(win_rate):
+            win_rate = 0
         
         # Clamp values to reasonable ranges to avoid extreme outliers
         profit = max(-50, min(profit, 200))  # -50% to +200%
@@ -661,28 +677,32 @@ class FitnessEvaluator:
         
         # ==================================================================================
         # BONUS STACKING STRATEGY:
-        # Multiple bonuses can stack multiplicatively to reward exceptional strategies.
-        # Maximum possible bonus: ~2.01x (1.15 × 1.1 × 1.2 × 1.15 = 1.74x to 2.01x)
-        # This is intentional - truly exceptional strategies deserve strong amplification.
+        # Multiple bonuses are tracked and capped to avoid excessive amplification.
+        # Maximum total bonus: 1.3x (30% boost) to prevent lucky strategies from dominating.
         # ==================================================================================
+        
+        total_bonus = 1.0
         
         # Robustness bonus: reward consistency (good Sortino and profit factor together)
         if sortino > 1.0 and profit_factor > 1.5:
-            robustness_bonus = 1.0 + (0.05 * min(sortino, 3.0))  # Up to 15% bonus
-            fitness *= robustness_bonus
+            robustness_bonus = 0.05 * min(sortino, 3.0)  # Up to 15% bonus
+            total_bonus += robustness_bonus
         
         # Bonus for positive profit (encourage profitable strategies)
         if profit > 0:
-            fitness *= 1.1  # 10% bonus for any positive profit
+            total_bonus += 0.05  # 5% bonus for any positive profit
         
         # Extra bonus for significantly profitable strategies
-        # Note: This is cumulative with above, so total bonus is 32% (1.1 * 1.2) for >10% profit
         if profit > 10:
-            fitness *= 1.2  # Additional 20% bonus (32% total with previous bonus)
+            total_bonus += 0.10  # Additional 10% bonus for >10% profit
         
         # Risk-adjusted excellence bonus: reward exceptional risk-adjusted returns
         if sharpe > 2.0 and drawdown < 0.15:
-            fitness *= 1.15  # 15% bonus for excellent risk management
+            total_bonus += 0.10  # 10% bonus for excellent risk management
+        
+        # Cap total bonus at 1.3x (30% max boost)
+        total_bonus = min(total_bonus, 1.3)
+        fitness *= total_bonus
         
         # Apply penalties and return
         penalized_fitness = self._apply_penalties(fitness, metrics, strategy_gene)

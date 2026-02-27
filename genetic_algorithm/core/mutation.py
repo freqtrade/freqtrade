@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def _mutate_indicator_params(indicator, ind_config, i, mutations_applied):
     """Helper to mutate indicator parameters based on type."""
     # Period-based indicators (simple case)
-    if 'period' in indicator.parameters and indicator.type in ['RSI', 'EMA', 'SMA', 'ATR', 'ADX', 'CCI']:
+    if 'period' in indicator.parameters and indicator.type in ['RSI', 'EMA', 'SMA', 'ATR', 'ADX', 'CCI', 'DONCHIAN', 'CMF', 'VROC']:
         period_range = ind_config.get('period', [7, 21] if indicator.type == 'RSI' else [10, 50])
         indicator.parameters['period'] = random.randint(*period_range)
         mutations_applied.append(f"{indicator.type}_period_{i}")
@@ -31,6 +31,9 @@ def _mutate_indicator_params(indicator, ind_config, i, mutations_applied):
             if param in indicator.parameters and random.random() < 0.5:
                 indicator.parameters[param] = random.randint(*ind_config.get(param, default))
                 mutations_applied.append(f"MACD_{param.split('_')[0]}_{i}")
+        # Validate: ensure slow_period > fast_period
+        if indicator.parameters.get('fast_period', 12) >= indicator.parameters.get('slow_period', 26):
+            indicator.parameters['fast_period'] = max(8, indicator.parameters.get('slow_period', 26) - 5)
     
     elif indicator.type == 'BBANDS':
         if 'period' in indicator.parameters and random.random() < 0.5:
@@ -45,6 +48,30 @@ def _mutate_indicator_params(indicator, ind_config, i, mutations_applied):
             if param in indicator.parameters and random.random() < 0.5:
                 indicator.parameters[param] = random.randint(*ind_config.get(param, default))
                 mutations_applied.append(f"STOCH_{param[0]}_{i}")
+    
+    # === NEW INDICATOR MUTATIONS ===
+    
+    elif indicator.type == 'SUPERTREND':
+        if 'period' in indicator.parameters and random.random() < 0.5:
+            indicator.parameters['period'] = random.randint(*ind_config.get('period', [7, 14]))
+            mutations_applied.append(f"SUPERTREND_period_{i}")
+        if 'multiplier' in indicator.parameters and random.random() < 0.5:
+            indicator.parameters['multiplier'] = random.uniform(*ind_config.get('multiplier', [2.0, 4.0]))
+            mutations_applied.append(f"SUPERTREND_mult_{i}")
+    
+    elif indicator.type == 'ICHIMOKU':
+        for param, default in [('tenkan_period', [7, 12]), ('kijun_period', [20, 30]), ('senkou_b_period', [40, 60])]:
+            if param in indicator.parameters and random.random() < 0.5:
+                indicator.parameters[param] = random.randint(*ind_config.get(param, default))
+                mutations_applied.append(f"ICHIMOKU_{param.split('_')[0]}_{i}")
+    
+    elif indicator.type in ['PSAR', 'SAR']:
+        if 'acceleration' in indicator.parameters and random.random() < 0.5:
+            indicator.parameters['acceleration'] = random.uniform(*ind_config.get('acceleration', [0.01, 0.05]))
+            mutations_applied.append(f"PSAR_accel_{i}")
+        if 'maximum' in indicator.parameters and random.random() < 0.5:
+            indicator.parameters['maximum'] = random.uniform(*ind_config.get('maximum', [0.1, 0.3]))
+            mutations_applied.append(f"PSAR_max_{i}")
     
     # Mutate weight
     if random.random() < 0.3:
