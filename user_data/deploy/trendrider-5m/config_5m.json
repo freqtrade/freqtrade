@@ -98,5 +98,27 @@
     "force_entry_enable": false,
     "internals": {
         "process_throttle_secs": 5
+    },
+    "webhook": {
+        "enabled": true,
+        "url": "https://api.telegram.org/bot8272000103:AAErikRTrml-LzGype0LM4eY_Vi634ZHMi8/sendMessage",
+        "format": "json",
+        "retries": 3,
+        "retry_delay": 0.2,
+        "webhookentry": {
+            "chat_id": "5216799062",
+            "parse_mode": "Markdown",
+            "text": "\u26a1 *5m BUY {pair}*\n\ud83d\udcb0 {stake_amount:.2f} USDT @ {open_rate:.4f}\n\ud83d\udee1 Stop: -2.5% | Smart exit"
+        },
+        "webhookentrycancel": null,
+        "webhookentryfill": null,
+        "webhookexit": {
+            "chat_id": "5216799062",
+            "parse_mode": "Markdown",
+            "text": "\u26a1 *5m SELL {pair}*\nP&L: {profit_ratio:.2%} ({profit_amount:.4f} USDT)\nReason: {exit_reason}"
+        },
+        "webhookexitfill": null,
+        "webhookexitcancel": null,
+        "webhookstatus": null
     }
 }
