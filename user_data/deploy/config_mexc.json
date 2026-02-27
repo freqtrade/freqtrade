@@ -4,7 +4,7 @@
     "stake_currency": "USDT",
     "stake_amount": 1,
     "tradable_balance_ratio": 0.5,
-    "fiat_display_currency": "USD",
+    "fiat_display_currency": "",
     "timeframe": "1h",
     "dry_run": true,
     "dry_run_wallet": 25,
@@ -50,7 +50,9 @@
             "DOT/USDT",
             "AVAX/USDT",
             "LINK/USDT",
-            "PEPE/USDT"
+            "PEPE/USDT",
+            "GOLD(XAUT)/USDT",
+            "GOLD(PAXG)/USDT"
         ],
         "pair_blacklist": []
     },

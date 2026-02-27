@@ -3,8 +3,8 @@
     "max_open_trades": 10,
     "stake_currency": "USDT",
     "stake_amount": 1,
-    "tradable_balance_ratio": 0.50,
-    "fiat_display_currency": "USD",
+    "tradable_balance_ratio": 0.5,
+    "fiat_display_currency": "",
     "timeframe": "5m",
     "dry_run": true,
     "dry_run_wallet": 25,
@@ -50,15 +50,20 @@
             "DOT/USDT",
             "AVAX/USDT",
             "LINK/USDT",
-            "PEPE/USDT"
+            "PEPE/USDT",
+            "GOLD(XAUT)/USDT",
+            "GOLD(PAXG)/USDT"
         ],
         "pair_blacklist": []
     },
     "pairlists": [
-        {"method": "StaticPairList", "allow_inactive": true}
+        {
+            "method": "StaticPairList",
+            "allow_inactive": true
+        }
     ],
     "telegram": {
-        "enabled": true,
+        "enabled": false,
         "token": "8272000103:AAErikRTrml-LzGype0LM4eY_Vi634ZHMi8",
         "chat_id": "5216799062",
         "notification_settings": {
@@ -82,7 +87,9 @@
         "listen_port": 8080,
         "verbosity": "error",
         "jwt_secret_key": "trendRider5mScalpSecureKey2026",
-        "CORS_origins": ["*"],
+        "CORS_origins": [
+            "*"
+        ],
         "username": "freqtrader",
         "password": "SuperSecurePassword"
     },
