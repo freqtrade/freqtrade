@@ -881,7 +881,25 @@ class {strategy_name}(IStrategy):
         """
         # Extract indicator type from condition reference
         indicator_ref = condition.indicator
-        indicator_type = indicator_ref.split('_')[0] if '_' in indicator_ref else indicator_ref
+        
+        # CDL_* patterns have underscore in type name, not instance ID
+        # Instance IDs look like 'RSI_0', 'EMA_1' (type + number)
+        # BUT patterns can also have instance IDs like 'CDL_HAMMER_0'
+        if indicator_ref.startswith('CDL_'):
+            # Check for instance ID suffix on CDL patterns
+            parts = indicator_ref.rsplit('_', 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                indicator_type = parts[0]  # e.g., 'CDL_HAMMER_0' -> 'CDL_HAMMER'
+            else:
+                indicator_type = indicator_ref  # e.g., 'CDL_HAMMER' stays as-is
+        elif '_' in indicator_ref:
+            parts = indicator_ref.rsplit('_', 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                indicator_type = parts[0]  # e.g., 'RSI_0' -> 'RSI'
+            else:
+                indicator_type = indicator_ref
+        else:
+            indicator_type = indicator_ref
         
         # Check if any indicator in the list matches this type
         for ind in indicators:
@@ -900,9 +918,30 @@ class {strategy_name}(IStrategy):
         For informative timeframe indicators, appends the TF suffix (e.g., rsi_14_1h).
         """
         # Extract indicator type from condition reference
-        # Handle both 'RSI' and 'RSI_0' formats
+        # Handle both 'RSI' and 'RSI_0' formats, but preserve full type for CDL_* patterns
         indicator_ref = condition.indicator
-        indicator_type = indicator_ref.split('_')[0] if '_' in indicator_ref else indicator_ref
+        
+        # CDL_* patterns have underscore in type name, not instance ID
+        # Instance IDs look like 'RSI_0', 'EMA_1' (type + number)
+        # Patterns look like 'CDL_HAMMER', 'CDL_ENGULFING' (CDL + descriptor)
+        # BUT patterns can also have instance IDs like 'CDL_HAMMER_0'
+        if indicator_ref.startswith('CDL_'):
+            # This is a candlestick pattern - check for instance ID suffix
+            # CDL_HAMMER_0 -> CDL_HAMMER, CDL_ENGULFING_1 -> CDL_ENGULFING
+            parts = indicator_ref.rsplit('_', 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                indicator_type = parts[0]  # e.g., 'CDL_HAMMER_0' -> 'CDL_HAMMER'
+            else:
+                indicator_type = indicator_ref  # e.g., 'CDL_HAMMER' stays as-is
+        elif '_' in indicator_ref:
+            # Check if this looks like an instance ID (ends with digit)
+            parts = indicator_ref.rsplit('_', 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                indicator_type = parts[0]  # e.g., 'RSI_0' -> 'RSI'
+            else:
+                indicator_type = indicator_ref  # Unknown format, use as-is
+        else:
+            indicator_type = indicator_ref
         
         # Find the specific indicator instance or use first matching type
         target_indicator = None

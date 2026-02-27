@@ -21,11 +21,17 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
     
     Split both parents at a random point and swap the second parts.
     
+    Note: After crossover, `ensure_indicators_for_conditions()` is called to
+    ensure all conditions have their required indicators. This may ADD indicators
+    that were not present in either parent if conditions reference missing 
+    indicator types. This is intentional to maintain strategy validity.
+    
     Args:
         parent1: First parent individual
         parent2: Second parent individual
         generation: Generation number for offspring
         ind_id: Starting individual ID
+        config: Optional config dict for indicator setup
         
     Returns:
         Tuple of two offspring individuals

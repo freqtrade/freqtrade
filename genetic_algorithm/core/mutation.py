@@ -485,8 +485,13 @@ def mutate_structure(individual: Individual, mutation_rate: float,
         
         # If enabling trailing stop, set appropriate parameters
         if mutated_gene.trailing_stop:
-            mutated_gene.trailing_stop_positive = random.uniform(0.01, 0.03)
-            mutated_gene.trailing_stop_positive_offset = random.uniform(0.02, 0.05)
+            # trailing_stop_positive_offset MUST be greater than trailing_stop_positive
+            # Set positive first, then ensure offset is higher
+            trailing_positive = random.uniform(0.01, 0.03)
+            # Offset must be greater than positive (add 0.01 to 0.03 on top)
+            trailing_offset = trailing_positive + random.uniform(0.01, 0.03)
+            mutated_gene.trailing_stop_positive = trailing_positive
+            mutated_gene.trailing_stop_positive_offset = trailing_offset
             mutations_applied.append("trailing_stop_params")
         else:
             mutated_gene.trailing_stop_positive = None

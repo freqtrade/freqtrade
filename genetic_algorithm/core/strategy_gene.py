@@ -225,7 +225,17 @@ class StrategyGene:
         
         for ind_ref in missing_types:
             # Extract base type from instance_id format (e.g., 'RSI_0' -> 'RSI')
-            base_type = ind_ref.split('_')[0] if '_' in ind_ref else ind_ref
+            # But preserve full name for CDL_* patterns
+            if ind_ref.startswith('CDL_'):
+                base_type = ind_ref  # Use full name for candlestick patterns
+            elif '_' in ind_ref:
+                parts = ind_ref.rsplit('_', 1)
+                if len(parts) == 2 and parts[1].isdigit():
+                    base_type = parts[0]  # e.g., 'RSI_0' -> 'RSI'
+                else:
+                    base_type = ind_ref
+            else:
+                base_type = ind_ref
             new_indicator = create_random_indicator(base_type, indicator_config)
             self.indicators.append(new_indicator)
     
