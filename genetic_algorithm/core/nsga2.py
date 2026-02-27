@@ -287,7 +287,7 @@ def calculate_hypervolume(pareto_front: List[Individual], reference_point: List[
     Hypervolume measures the "space" dominated by the Pareto front,
     bounded by a reference point. Higher is better.
     
-    For 2D: calculates area under the staircase-shaped Pareto front.
+    Supports 2D (staircase method) and N-dimensional (inclusion-exclusion algorithm).
     
     Args:
         pareto_front: List of non-dominated individuals
@@ -299,38 +299,104 @@ def calculate_hypervolume(pareto_front: List[Individual], reference_point: List[
     if not pareto_front or not reference_point:
         return 0.0
     
-    # Only implement 2D case for now (profit vs drawdown)
     num_objectives = len(reference_point)
     
-    if num_objectives != 2:
-        logger.warning(f"Hypervolume only implemented for 2 objectives, got {num_objectives}")
-        return 0.0
-    
-    # Filter valid points (dominate reference point)
+    # Filter valid points (dominate reference point in all objectives)
     valid_points = [
         ind.objectives for ind in pareto_front 
-        if ind.objectives and 
-           ind.objectives[0] > reference_point[0] and 
-           ind.objectives[1] > reference_point[1]
+        if ind.objectives and len(ind.objectives) == num_objectives and
+           all(ind.objectives[i] > reference_point[i] for i in range(num_objectives))
     ]
     
     if not valid_points:
         return 0.0
     
-    # Sort by first objective (descending)
-    sorted_points = sorted(valid_points, key=lambda x: -x[0])
+    if num_objectives == 2:
+        return _hypervolume_2d(valid_points, reference_point)
+    else:
+        return _hypervolume_nd(valid_points, reference_point)
+
+
+def _hypervolume_2d(points: List[List[float]], reference_point: List[float]) -> float:
+    """
+    Fast 2D hypervolume calculation using staircase method.
     
-    # Calculate hypervolume (2D staircase area)
+    Args:
+        points: List of objective vectors (all dominating reference)
+        reference_point: Reference point
+        
+    Returns:
+        Hypervolume value
+    """
+    # Sort by first objective (descending)
+    sorted_points = sorted(points, key=lambda x: -x[0])
+    
     hv = 0.0
     prev_y = reference_point[1]
     
     for point in sorted_points:
-        # Width = x - reference_x, height = y - prev_y
         width = point[0] - reference_point[0]
         height = point[1] - prev_y
         if height > 0 and width > 0:
             hv += width * height
         prev_y = max(prev_y, point[1])
+    
+    return hv
+
+
+def _hypervolume_nd(points: List[List[float]], reference_point: List[float]) -> float:
+    """
+    N-dimensional hypervolume using inclusion-exclusion algorithm.
+    
+    This is a simple recursive implementation suitable for small fronts (< 50 points)
+    and low dimensions (2-4). For larger problems, consider using pymoo or pygmo.
+    
+    Args:
+        points: List of objective vectors (all dominating reference)
+        reference_point: Reference point
+        
+    Returns:
+        Hypervolume value
+    """
+    n = len(points)
+    num_obj = len(reference_point)
+    
+    if n == 0:
+        return 0.0
+    
+    if n == 1:
+        # Single point: hypervolume is the box from reference to point
+        hv = 1.0
+        for i in range(num_obj):
+            hv *= max(0.0, points[0][i] - reference_point[i])
+        return hv
+    
+    # Use HSO (Hypervolume by Slicing Objectives) approach for small N
+    # Sort by first objective descending
+    sorted_points = sorted(points, key=lambda x: -x[0])
+    
+    hv = 0.0
+    prev_slice = reference_point[0]
+    
+    for i, point in enumerate(sorted_points):
+        # Current slice width in first objective
+        slice_width = point[0] - prev_slice
+        
+        if slice_width > 0:
+            # Calculate hypervolume of remaining objectives for points up to i
+            remaining_points = [p[1:] for p in sorted_points[:i+1]]
+            remaining_ref = reference_point[1:]
+            
+            if len(remaining_ref) == 1:
+                # Base case: 1D remaining
+                slice_hv = max(max(p[0] for p in remaining_points) - remaining_ref[0], 0.0)
+            else:
+                # Recursive case: N-1 dimensions
+                slice_hv = _hypervolume_nd(remaining_points, remaining_ref)
+            
+            hv += slice_width * slice_hv
+        
+        prev_slice = point[0]
     
     return hv
 

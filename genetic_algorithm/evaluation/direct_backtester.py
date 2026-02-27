@@ -817,6 +817,16 @@ class DirectBacktester:
             starting_balance = self.DEFAULT_STABLECOIN_BALANCE  # Default to stablecoin balance for other currencies
             logger.warning(f"Unknown stake currency '{stake_currency}', using default balance of {self.DEFAULT_STABLECOIN_BALANCE}")
         
+        # Convert fractional stake_amount to actual currency amount
+        # If stake_amount is between 0 and 1, treat it as a fraction of starting balance
+        # e.g., 0.15 means 15% of wallet = $1500 for a $10,000 wallet
+        # Values >= 1 are treated as literal amounts (e.g., 100 = $100 per trade)
+        if isinstance(stake_amount, (int, float)) and 0 < stake_amount < 1:
+            actual_stake = stake_amount * starting_balance
+            logger.info(f"Stake amount {stake_amount} interpreted as {stake_amount:.0%} of "
+                        f"{starting_balance} {stake_currency} = {actual_stake:.2f} {stake_currency} per trade")
+            stake_amount = actual_stake
+        
         # Determine exchange and data directory from pairs
         # Check if exchange is specified in GA config, otherwise use default
         exchange_name = self.backtest_config.get('exchange', self.DEFAULT_EXCHANGE)
@@ -951,6 +961,12 @@ class DirectBacktester:
         # Extract metrics from stats - handle both percentage and absolute values
         profit_total = stats.get('profit_total', 0.0)
         profit_total_abs = stats.get('profit_total_abs', 0.0)
+        
+        # Log raw profit values for debugging
+        logger.debug(f"Raw profit for {strategy_name}: profit_total={profit_total}, "
+                     f"profit_total_abs={profit_total_abs}, "
+                     f"max_drawdown_account={stats.get('max_drawdown_account', 'N/A')}, "
+                     f"max_drawdown_abs={stats.get('max_drawdown_abs', 'N/A')}")
         
         # Convert profit_total to percentage if it's not already
         # FreqTrade typically returns profit_total as a ratio (e.g., 0.05 for 5%)

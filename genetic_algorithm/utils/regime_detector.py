@@ -689,8 +689,8 @@ class RegimeDetector:
         try:
             hmm_detector = RegimeDetector(method='hmm', params={'n_states': 3, 'min_dwell': 10})
             methods_weights['hmm'] = (hmm_detector.detect(df), 1)
-        except Exception:
-            pass  # Skip HMM if it fails
+        except Exception as e:
+            logger.warning(f"HMM regime detection failed, skipping: {type(e).__name__}: {e}")
         
         regime = pd.Series(index=df.index, dtype=object)
         
