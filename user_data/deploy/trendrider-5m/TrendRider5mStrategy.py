@@ -76,23 +76,7 @@ class TrendRider5mStrategy(IStrategy):
 
     @property
     def protections(self):
-        return [
-            {"method": "CooldownPeriod", "stop_duration_candles": 36},
-            {
-                "method": "StoplossGuard",
-                "lookback_period_candles": 144,
-                "trade_limit": 2,
-                "stop_duration_candles": 72,
-                "only_per_pair": False,
-            },
-            {
-                "method": "MaxDrawdown",
-                "lookback_period_candles": 576,
-                "max_allowed_drawdown": 0.05,
-                "trade_limit": 1,
-                "stop_duration_candles": 288,
-            },
-        ]
+        return []  # No cooldowns, no lockouts — trade freely
 
     order_types = {
         "entry": "limit",
