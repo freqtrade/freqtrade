@@ -46,9 +46,12 @@ class ConditionGene:
     """Represents an entry/exit condition."""
     
     indicator: str  # Which indicator to use (can be instance_id like 'RSI_0' or type like 'RSI')
-    operator: str  # Comparison operator: '<', '>', 'cross_above', 'cross_below'
-    threshold: float  # Threshold value
+    operator: str  # Comparison operator: '<', '>', 'cross_above', 'cross_below',
+                    #   'increasing', 'decreasing', 'between', 'value_above_ago'
+    threshold: float  # Threshold value (or lower bound for 'between')
     logic: str = 'AND'  # Logic operator: 'AND', 'OR'
+    threshold_upper: float = 0.0  # Upper bound for 'between' operator
+    lookback: int = 3  # Lookback period for 'increasing', 'decreasing', 'value_above_ago'
 
 
 @dataclass
@@ -85,6 +88,7 @@ class StrategyGene:
     trailing_stop: bool = False
     trailing_stop_positive: Optional[float] = None
     trailing_stop_positive_offset: Optional[float] = None
+    can_short: bool = False  # Enable short selling (enter_short/exit_short signals)
     
     def __post_init__(self):
         """Validate strategy gene after initialization."""
@@ -109,7 +113,9 @@ class StrategyGene:
                     'indicator': cond.indicator,
                     'operator': cond.operator,
                     'threshold': cond.threshold,
-                    'logic': cond.logic
+                    'logic': cond.logic,
+                    'threshold_upper': cond.threshold_upper,
+                    'lookback': cond.lookback
                 }
                 for cond in self.entry_conditions
             ],
@@ -118,7 +124,9 @@ class StrategyGene:
                     'indicator': cond.indicator,
                     'operator': cond.operator,
                     'threshold': cond.threshold,
-                    'logic': cond.logic
+                    'logic': cond.logic,
+                    'threshold_upper': cond.threshold_upper,
+                    'lookback': cond.lookback
                 }
                 for cond in self.exit_conditions
             ],
@@ -130,6 +138,7 @@ class StrategyGene:
             'trailing_stop': self.trailing_stop,
             'trailing_stop_positive': self.trailing_stop_positive,
             'trailing_stop_positive_offset': self.trailing_stop_positive_offset,
+            'can_short': self.can_short,
         }
     
     @classmethod
@@ -152,7 +161,9 @@ class StrategyGene:
                 indicator=cond['indicator'],
                 operator=cond['operator'],
                 threshold=cond['threshold'],
-                logic=cond.get('logic', 'AND')
+                logic=cond.get('logic', 'AND'),
+                threshold_upper=cond.get('threshold_upper', 0.0),
+                lookback=cond.get('lookback', 3)
             )
             for cond in data['entry_conditions']
         ]
@@ -162,7 +173,9 @@ class StrategyGene:
                 indicator=cond['indicator'],
                 operator=cond['operator'],
                 threshold=cond['threshold'],
-                logic=cond.get('logic', 'AND')
+                logic=cond.get('logic', 'AND'),
+                threshold_upper=cond.get('threshold_upper', 0.0),
+                lookback=cond.get('lookback', 3)
             )
             for cond in data.get('exit_conditions', [])
         ]
@@ -181,6 +194,7 @@ class StrategyGene:
             trailing_stop=data.get('trailing_stop', False),
             trailing_stop_positive=data.get('trailing_stop_positive'),
             trailing_stop_positive_offset=data.get('trailing_stop_positive_offset'),
+            can_short=data.get('can_short', False),
         )
     
     def copy(self) -> 'StrategyGene':
@@ -225,9 +239,61 @@ class StrategyGene:
         
         for ind_ref in missing_types:
             # Extract base type from instance_id format (e.g., 'RSI_0' -> 'RSI')
-            base_type = ind_ref.split('_')[0] if '_' in ind_ref else ind_ref
+            # For CDL_* patterns, strip ALL trailing numeric suffixes to prevent
+            # cascading name mangling (CDL_MORNINGSTAR_0_0_0 -> CDL_MORNINGSTAR)
+            if ind_ref.startswith('CDL_'):
+                base_type = self._strip_cdl_suffixes(ind_ref)
+            elif '_' in ind_ref:
+                parts = ind_ref.rsplit('_', 1)
+                if len(parts) == 2 and parts[1].isdigit():
+                    base_type = parts[0]  # e.g., 'RSI_0' -> 'RSI'
+                else:
+                    base_type = ind_ref
+            else:
+                base_type = ind_ref
             new_indicator = create_random_indicator(base_type, indicator_config)
             self.indicators.append(new_indicator)
+    
+    @staticmethod
+    def _strip_cdl_suffixes(name: str) -> str:
+        """Strip ALL trailing numeric suffixes from a CDL indicator name.
+        
+        CDL_MORNINGSTAR_0_0_0 -> CDL_MORNINGSTAR
+        CDL_ENGULFING_0 -> CDL_ENGULFING
+        CDL_HAMMER -> CDL_HAMMER (unchanged)
+        """
+        result = name
+        while '_' in result:
+            parts = result.rsplit('_', 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                result = parts[0]
+            else:
+                break
+        # Safety: never strip below the CDL_ base type
+        if result.startswith('CDL_') and len(result) > 4:
+            return result
+        return name  # Return original if stripping went too far
+    
+    def deduplicate_conditions(self) -> int:
+        """Remove duplicate entry/exit conditions (same indicator + operator + value).
+        
+        Returns:
+            Number of duplicate conditions removed
+        """
+        removed = 0
+        for attr in ('entry_conditions', 'exit_conditions'):
+            conditions = getattr(self, attr)
+            seen = set()
+            unique = []
+            for cond in conditions:
+                key = (cond.indicator, cond.operator, str(cond.threshold))
+                if key not in seen:
+                    seen.add(key)
+                    unique.append(cond)
+                else:
+                    removed += 1
+            setattr(self, attr, unique)
+        return removed
     
     def assign_instance_ids(self) -> None:
         """
@@ -286,6 +352,9 @@ class StrategyGene:
                 # - Require explicit instance references in all conditions
                 elif len(instances) > 1:
                     cond.indicator = instances[0]
+        
+        # Deduplicate conditions after ID reassignment
+        self.deduplicate_conditions()
     
     def calculate_complexity(self) -> int:
         """

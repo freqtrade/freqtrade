@@ -27,6 +27,11 @@ class PopulationStats:
     genetic_diversity: Optional[float] = None  # New: structural diversity
     best_raw_fitness: Optional[float] = None  # Best raw fitness (before fitness sharing)
     avg_raw_fitness: Optional[float] = None  # Average raw fitness
+    # Holdout monitoring (populated by _run_holdout_monitoring when active)
+    holdout_avg_degradation: Optional[float] = None
+    holdout_best_degradation: Optional[float] = None
+    holdout_num_evaluated: Optional[int] = None
+    holdout_num_profitable: Optional[int] = None
 
 
 def calculate_strategy_distance(ind1: Individual, ind2: Individual) -> float:
@@ -66,8 +71,10 @@ def calculate_strategy_distance(ind1: Individual, ind2: Individual) -> float:
     if gene1.timeframe != gene2.timeframe:
         distance += 0.2
     
-    # Stoploss difference (normalized)
-    stoploss_diff = abs(gene1.stoploss - gene2.stoploss) / 0.20  # Max range ~0.20
+    # Stoploss difference (normalized by actual range or clamped)
+    # Stoploss values are negative (e.g., -0.05 to -0.25), so use absolute values
+    stoploss_range = max(abs(gene1.stoploss), abs(gene2.stoploss), 0.20)
+    stoploss_diff = abs(gene1.stoploss - gene2.stoploss) / stoploss_range
     distance += min(stoploss_diff, 1.0) * 0.15
     
     # Trailing stop difference

@@ -1,0 +1,474 @@
+# ============================================================================
+# GA Configuration: OVERNIGHT FULL-FEATURE RUN
+# ============================================================================
+#
+# PURPOSE:
+#   Test every stable feature during an overnight run to either produce
+#   validated strategies or collect diagnostic data for debugging.
+#
+# ENABLED FEATURES:
+#   ✅ Regime-aware evaluation (SMA+ADX method)
+#   ✅ Holdout validation (25% out-of-sample)
+#   ✅ Holdout fitness penalty (soft OOS pressure)
+#   ✅ Walk-forward (180/60 day windows, partial credit)
+#   ✅ Monte Carlo robustness (50 permutations, 3 methods)
+#   ✅ Parsimony pressure (simplify overfit strategies)
+#   ✅ Feature importance tracking
+#   ✅ Hall of fame (inject + archive)
+#   ✅ Adaptive mutation
+#   ✅ Fitness sharing (diversity preservation)
+#   ✅ Random immigrants (doubled when diversity drops)
+#   ✅ Unused-indicator penalty
+#   ✅ Min exit conditions enforcement
+#   ✅ Weighted composite overfit scoring
+#   ✅ Frequent checkpointing (every 3 generations)
+#   ✅ Non-interactive visualization (save plots)
+#   ✅ DEBUG logging (full diagnostic trail)
+#   ⬜ LLM strategy designer (set api_key to activate)
+#
+# DISABLED FEATURES (known issues or not ready):
+#   ❌ NSGA-II / Pareto archive (not needed for this run)
+#   ❌ Island model (not implemented yet)
+#   ❌ Multi-timeframe (adds complexity, skip for baseline)
+#   ❌ Short selling (spot-only for stability)
+#
+# EXPECTED RUNTIME: 4-5 hours on 6-core/12-thread machine
+# ESTIMATED EVALUATIONS: ~4,800 (120 pop × 40 gen)
+#
+# RUN COMMAND:
+#   nohup python genetic_algorithm/run_ga.py \
+#     --config genetic_algorithm/config/ga_config_overnight.yaml \
+#     --visualize --no-interactive --yes \
+#     > genetic_algorithm/logs/overnight_stdout.log 2>&1 &
+#   echo $! > genetic_algorithm/logs/overnight_pid.txt
+#
+# MONITOR:
+#   bash genetic_algorithm/scripts/monitor_overnight.sh
+#
+# MORNING ANALYSIS:
+#   bash genetic_algorithm/scripts/morning_analysis.sh
+#
+# ============================================================================
+
+# === Genetic Algorithm Parameters ===
+genetic_algorithm:
+  # Fixed seed for reproducibility — if results are bad, re-run with same seed
+  # after fixes to compare. Set to null for maximum exploration.
+  random_seed: 42
+
+  # Population size — 120 for wide search space coverage
+  # Larger than past runs (25-50) for better diversity
+  population_size: 120
+
+  # Generations — 40 is enough with large population
+  # With convergence_patience=15, won't waste time if converged early
+  generations: 40
+
+  # Mutation rate — standard, adaptive will increase if stuck
+  mutation_rate: 0.20
+
+  # Crossover rate — high for aggressive recombination
+  crossover_rate: 0.75
+
+  # Uniform crossover — best for diverse component mixing
+  crossover_method: 'uniform'
+
+  # Elite size — preserve top ~7% unchanged
+  elite_size: 8
+
+  # Tournament size — moderate selection pressure
+  tournament_size: 4
+
+  # Tournament selection — proven reliable
+  selection_method: 'tournament'
+
+  # Convergence patience — stop sooner if plateaued
+  convergence_patience: 10
+
+  # Adaptive mutation — essential for escaping local optima
+  adaptive_mutation: true
+  max_adaptation_factor: 1.75  # Lowered from 2.5 — 50% mutation was too random
+  adaptation_step: 0.12  # Moderate increase per stagnant generation
+  max_mutation_rate: 0.35  # Hard cap — prevents random-search behavior
+
+  # Diversity preservation
+  fitness_sharing: true
+  sharing_radius: 0.25
+  diversity_threshold: 0.12
+  allow_self_crossover: false
+
+  # Random immigrants — 20 fresh strategies per generation (increased for diversity)
+  # Doubled automatically when diversity drops below threshold
+  random_immigrants: 20
+
+  # Single objective mode
+  mode: 'single_objective'
+
+# === Fitness Function Weights ===
+# Balanced between profitability and risk management
+# Sum = 1.0
+fitness_weights:
+  profit: 0.22
+  sharpe_ratio: 0.16
+  sortino_ratio: 0.13
+  profit_factor: 0.10
+  drawdown: 0.13
+  win_rate: 0.07
+  trade_frequency: 0.07
+  monthly_stability: 0.06
+  cross_pair: 0.06
+
+# Fitness penalties — strict but fair
+fitness_penalties:
+  min_trades: 10
+  max_drawdown: 0.25
+  min_win_rate: 0.35
+  complexity_weight: 0.015
+  pair_loss_threshold: -8.0
+  unused_indicator_weight: 0.02  # Penalize indicators not used by any condition
+
+# Fitness bounds for clamping extreme values
+fitness_bounds:
+  profit_min: -50
+  profit_max: 200
+  sharpe_min: -5
+  sharpe_max: 10
+  sortino_min: -5
+  sortino_max: 12
+  profit_factor_max: 10
+
+# Trade frequency thresholds
+trade_frequency_thresholds:
+  very_few: 5
+  few: 10
+  ideal_min: 10
+  ideal_max: 50
+  moderate_excess: 100
+
+# === Backtesting Configuration ===
+backtesting:
+  # Full 3+ year timerange covering multiple market cycles
+  timerange: "20230101-20260228"
+
+  # Stake amount — 15% of wallet per trade
+  stake_amount: 0.15
+
+  # 5 diverse pairs for cross-pair robustness
+  pairs:
+    - "BTC/USDT"
+    - "ETH/USDT"
+    - "SOL/USDT"
+    - "BNB/USDT"
+    - "XRP/USDT"
+
+  # Max open trades
+  max_open_trades: 3
+
+  # Realistic fee (0.1%)
+  fee: 0.001
+
+  # Slippage modeling
+  slippage_pct: 0.0005
+
+  # Exchange
+  exchange: "binance"
+
+  # Auto-download if data missing
+  auto_download_data: true
+
+  # Cache backtest results for speed
+  enable_cache: true
+
+  # Longer timeout for complex strategies (3 min)
+  timeout: 180
+
+# === Walk-Forward Optimization ===
+# ENABLED — partial credit system handles low-trade windows gracefully.
+# Uses adaptive min_trades scaling and fallback to standard eval with 30% penalty.
+walk_forward:
+  enabled: true
+  train_days: 180
+  validation_days: 60
+  step_days: 60
+  mode: 'rolling'
+  aggregation: 'mean'
+  embargo_days: 3
+  gap_penalty:
+    enabled: true
+    threshold: 0.1
+    max_penalty: 0.5
+  min_train_trades: 5
+
+# === Out-of-Sample Holdout Validation ===
+# ENABLED — validates top strategies on unseen 15% of data from end of timerange
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.25  # Increased from 0.15 — more holdout data for meaningful OOS test
+
+# === Regime-Aware Evaluation ===
+# ENABLED — evaluates strategies across bullish/bearish/sideways market conditions
+regime_aware:
+  enabled: true
+  method: 'adx_di_hysteresis'  # Hysteresis avoids all-sideways classification (enter=25, exit=20)
+  benchmark_pair: null
+  detection_timeframe: '1h'
+  period_days: 90
+  min_period_days: 60
+  embargo_days: 5
+  segments_per_regime: 3
+  holdout_ratio: 0.30  # Increased from 0.20 for more holdout segments
+  aggregation: 'harmonic_mean'
+  cvar_alpha: 0.20
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.0
+    sideways: 1.0
+
+# === Strategy Constraints ===
+strategy_constraints:
+  min_trades: 15
+  max_drawdown: 0.20
+  min_win_rate: 0.35
+  timeframes: ["15m", "1h"]
+  stoploss_range: [-0.12, -0.04]
+  roi_range: [0.02, 0.08]
+  max_open_trades_range: [2, 5]
+
+# === Short Selling ===
+short_selling:
+  enabled: false
+
+# === Holdout Test Configuration ===
+holdout_test:
+  enabled: false
+  timerange: ""
+  top_n: 5
+
+# === Holdout Monitoring During Evolution ===
+# Monitors holdout degradation and optionally applies fitness penalty to overfit elites.
+# Early stop triggers when degradation exceeds threshold for consecutive checks.
+holdout_monitoring:
+  enabled: true
+  interval: 5      # Check every 5 generations
+  top_n: 3         # Evaluate top 3 elites
+  early_stop: true
+  early_stop_threshold: 0.60  # 60% degradation threshold
+  early_stop_checks: 2        # Stop after 2 consecutive bad checks
+  # Soft fitness penalty: overfit elites get reduced fitness so they're less
+  # likely to survive selection. penalty_factor=0.5 means 50% degradation → 75% of original fitness.
+  fitness_penalty: true
+  penalty_factor: 0.5
+
+# === Multi-Timeframe ===
+# DISABLED for this run — adds complexity, focus on core features
+multi_timeframe:
+  enabled: false
+  available: ['15m', '1h', '4h']
+  max_timeframes: 2
+  higher_timeframe_preference:
+    - 'EMA'
+    - 'SMA'
+    - 'BBANDS'
+    - 'ATR'
+    - 'ADX'
+    - 'RSI'
+
+# === Indicator Configuration ===
+# Full indicator set for maximum variety
+indicators:
+  available:
+    - "RSI"
+    - "MACD"
+    - "BBANDS"
+    - "EMA"
+    - "SMA"
+    - "ADX"
+    - "SUPERTREND"
+    - "ICHIMOKU"
+    - "DONCHIAN"
+    - "PSAR"
+    - "CMF"
+    - "VROC"
+    - "CDL_ENGULFING"
+    - "CDL_HAMMER"
+    - "CDL_MORNINGSTAR"
+    - "CDL_EVENINGSTAR"
+    - "CDL_DOJI"
+
+  max_per_strategy: 4
+  min_per_strategy: 2
+
+  # Minimum entry/exit conditions (prevents single-condition overfitting)
+  min_entry_conditions: 2
+  max_entry_conditions: 4
+  min_exit_conditions: 1
+
+  # Indicator parameter ranges
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 40]
+    sell_threshold: [60, 80]
+  MACD:
+    fast_period: [8, 21]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [15, 30]
+    std_dev: [1.5, 3.0]
+  EMA:
+    period: [5, 50]
+  SMA:
+    period: [10, 100]
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+  SUPERTREND:
+    period: [7, 14]
+    multiplier: [2.0, 4.0]
+  ICHIMOKU:
+    tenkan_period: [7, 12]
+    kijun_period: [20, 30]
+    senkou_b_period: [40, 60]
+  DONCHIAN:
+    period: [10, 30]
+  PSAR:
+    acceleration: [0.01, 0.05]
+    maximum: [0.1, 0.3]
+  CMF:
+    period: [10, 25]
+    buy_threshold: [0.05, 0.2]
+    sell_threshold: [-0.2, -0.05]
+  VROC:
+    period: [5, 20]
+    threshold: [50, 200]
+  CDL_ENGULFING: {}
+  CDL_HAMMER: {}
+  CDL_DOJI: {}
+  CDL_MORNINGSTAR:
+    penetration: [0.0, 0.3]
+  CDL_EVENINGSTAR:
+    penetration: [0.0, 0.3]
+
+# === Storage Configuration ===
+storage:
+  database: "genetic_algorithm/data/strategies.db"
+  strategy_dir: "user_data/strategies/ga_generated"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints"
+  # Frequent checkpointing — every 3 generations for safety
+  checkpoint_interval: 3
+  keep_history: true
+
+# === Hall of Fame Configuration ===
+hall_of_fame:
+  directory: "genetic_algorithm/data/hall_of_fame"
+  max_size: 50
+  min_fitness: 0.0
+  # Inject 3 hall-of-fame champions into initial population
+  inject_count: 3
+
+# === Logging Configuration ===
+# DEBUG level for maximum diagnostic information
+logging:
+  level: "DEBUG"
+  file: "genetic_algorithm/logs/overnight_evolution.log"
+  console: true
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# === Terminal Monitor ===
+terminal_monitor:
+  enabled: true
+  default_mode: "simple"
+  refresh_rate: 4
+  history_window: 20
+
+# === Visualization Configuration ===
+visualization:
+  enabled: true
+  update_interval: 1
+  plots:
+    - "fitness_evolution"
+    - "diversity"
+    - "top_strategies"
+  output_dir: "genetic_algorithm/output/overnight_run/plots"
+
+# === Parallel Evaluation Configuration ===
+parallel_evaluation:
+  enabled: true
+  # Auto-detect cores (will use 12 logical processors - 1 = 11 workers)
+  num_workers: null
+  worker_log_level: 'WARNING'
+
+# === Monte Carlo Robustness Analysis ===
+# ENABLED — first real production test of robustness scoring
+monte_carlo:
+  enabled: true
+  num_permutations: 50
+  methods:
+    - bootstrap
+    - shuffle
+    - slippage_jitter
+  slippage_std: 0.0005
+  sample_fraction: 1.0
+  random_seed: null
+
+# === Parsimony Pressure ===
+# ENABLED — simplify over-complex strategies
+parsimony:
+  enabled: true
+  epsilon: 0.02       # Max 2% fitness drop for simplification
+  max_removals: 1
+
+# === Pareto Archive ===
+# DISABLED — single objective mode
+pareto_archive:
+  enabled: false
+  max_size: 100
+  decay_rate: 0.95
+
+# === Dynamic Indicator Parameter Ranges ===
+dynamic_bounds:
+  enabled: true
+  mutation_strength: 0.1
+
+# === Advanced Features ===
+advanced:
+  enable_dry_run: false
+  dry_run_duration: 7
+  enable_ml_fitness: false
+  
+  # LLM-Based Strategy Designer
+  # Generates seed strategies and immigrants using an LLM for smarter
+  # initial population and guided diversity injection during evolution.
+  llm:
+    enabled: false  # Set to true and provide api_key to activate
+    provider: "grok"  # grok | openai | anthropic | local
+    api_key: ""  # Set via env var or paste here
+    model: ""  # Leave empty for provider default (grok-3-mini, gpt-4o-mini, etc.)
+    base_url: ""  # Leave empty for provider default; set for custom endpoints
+    temperature: 0.7  # Higher = more creative strategies
+    max_tokens: 4096
+    timeout: 60  # Seconds per API call
+    max_retries: 3
+    retry_delay: 2.0
+    min_call_interval: 1.0  # Rate limiting: min seconds between calls
+    # Ratio config
+    seed_ratio: 0.40  # 40% of initial population from LLM
+    immigrant_ratio: 0.50  # 50% of each generation's immigrants from LLM
+  
+  island_model:
+    enabled: false
+    num_islands: 4
+    migration_interval: 5
+    migration_size: 5
+
+# === Overfit Analysis Thresholds ===
+overfit_analysis:
+  thresholds:
+    holdout_degradation_warning: 0.25
+    holdout_degradation_overfit: 0.50
+    wf_gap_warning: 0.15
+    wf_gap_overfit: 0.30
+    mc_robustness_warning: 0.70
+    mc_robustness_overfit: 0.50
+    composite_warning: 0.25  # Tightened from 0.35
+    composite_overfit: 0.50  # Tightened from 0.60

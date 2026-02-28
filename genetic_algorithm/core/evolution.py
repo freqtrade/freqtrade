@@ -5,6 +5,7 @@ Coordinates the genetic algorithm evolution process.
 Supports both single-objective and multi-objective (NSGA-II) optimization.
 """
 
+import os
 import random
 import yaml
 import json
@@ -24,7 +25,7 @@ from genetic_algorithm.core.population import (
 )
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.selection import select_parents
-from genetic_algorithm.core.crossover import crossover
+from genetic_algorithm.core.crossover import crossover, _enforce_min_entry_conditions
 from genetic_algorithm.core.mutation import mutate
 from genetic_algorithm.strategies.generator import StrategyGenerator
 from genetic_algorithm.evaluation.fitness import FitnessEvaluator
@@ -38,6 +39,11 @@ from genetic_algorithm.core.nsga2 import (
     DEFAULT_OBJECTIVES
 )
 from genetic_algorithm.evaluation.parallel import ParallelEvaluator, is_parallel_available
+from genetic_algorithm.core.feature_importance import FeatureImportanceTracker
+from genetic_algorithm.core.hall_of_fame import HallOfFame
+from genetic_algorithm.utils.run_diagnostics import RunDiagnostics
+from genetic_algorithm.llm.designer import StrategyDesigner
+from genetic_algorithm.monitor import create_monitor
 
 
 class GeneticAlgorithm:
@@ -211,11 +217,64 @@ class GeneticAlgorithm:
         self.no_improvement_count = 0
         self.best_fitness_ever = 0.0
         
+        # Feature importance tracking
+        self.feature_tracker = FeatureImportanceTracker()
+        self.logger.info("Feature importance tracking enabled")
+        
+        # Hall of Fame
+        hof_config = self.config.get('hall_of_fame', {})
+        hof_dir = hof_config.get('directory', 'genetic_algorithm/data/hall_of_fame')
+        hof_max = hof_config.get('max_size', 50)
+        hof_min_fitness = hof_config.get('min_fitness', 0.0)
+        self.hall_of_fame = HallOfFame(
+            directory=hof_dir,
+            max_size=hof_max,
+            min_fitness=hof_min_fitness,
+        )
+        self.hof_inject_count = hof_config.get('inject_count', 3)
+        if self.hall_of_fame.entries:
+            self.logger.info(f"Hall of Fame loaded: {len(self.hall_of_fame.entries)} entries (best fitness: {self.hall_of_fame.entries[0].fitness:.4f})")
+        
         # Adaptive parameters
         self.base_mutation_rate = self.mutation_rate
         self.adaptive_mutation = ga_config.get('adaptive_mutation', True)
         self.max_adaptation_factor = ga_config.get('max_adaptation_factor', 2.0)
         self.adaptation_step = ga_config.get('adaptation_step', 0.1)
+        self.max_mutation_rate = ga_config.get('max_mutation_rate', 0.5)  # Configurable hard cap
+        
+        # Holdout monitoring (optionally penalizes overfit elites) 
+        holdout_mon_config = self.config.get('holdout_monitoring', {})
+        self.holdout_monitoring_enabled = holdout_mon_config.get('enabled', False)
+        self.holdout_monitoring_interval = holdout_mon_config.get('interval', 5)
+        self.holdout_monitoring_top_n = holdout_mon_config.get('top_n', 3)
+        
+        # Holdout fitness penalty: when enabled, applies a soft multiplicative
+        # penalty to overfit elites so they're less likely to survive selection.
+        # penalty_factor controls severity: adjusted = fitness * max(0.5, 1.0 - degradation * penalty_factor)
+        self.holdout_fitness_penalty = holdout_mon_config.get('fitness_penalty', False)
+        self.holdout_penalty_factor = holdout_mon_config.get('penalty_factor', 0.5)
+        
+        # Holdout-aware early stopping
+        self.holdout_early_stop = holdout_mon_config.get('early_stop', False)
+        self.holdout_early_stop_threshold = holdout_mon_config.get('early_stop_threshold', 0.60)
+        self.holdout_early_stop_checks = holdout_mon_config.get('early_stop_checks', 2)
+        self._holdout_consecutive_bad = 0  # Counter for consecutive bad checks
+        
+        # Generation-level holdout history for reporting
+        self.generation_holdout_history: list = []
+        
+        # LLM-based strategy designer
+        llm_config = self.config.get('advanced', {}).get('llm', {})
+        self.llm_enabled = llm_config.get('enabled', False)
+        self.strategy_designer = StrategyDesigner(self.config)
+        if self.llm_enabled and self.strategy_designer.enabled:
+            self.logger.info("=" * 70)
+            self.logger.info("LLM STRATEGY DESIGNER ENABLED")
+            self.logger.info(f"  Provider: {llm_config.get('provider', 'N/A')}")
+            self.logger.info(f"  Model: {llm_config.get('model', 'default')}")
+            self.logger.info(f"  Seed ratio: {self.strategy_designer.seed_ratio:.0%}")
+            self.logger.info(f"  Immigrant ratio: {self.strategy_designer.immigrant_ratio:.0%}")
+            self.logger.info("=" * 70)
         
         # Progress bar settings
         progress_config = self.config.get('progress', {})
@@ -233,6 +292,14 @@ class GeneticAlgorithm:
         storage_config = self.config.get('storage', {})
         self.checkpoint_dir = Path(storage_config.get('checkpoint_dir', 'genetic_algorithm/data/checkpoints'))
         self.checkpoint_interval = storage_config.get('checkpoint_interval', 5)
+        
+        # Run diagnostics (CSV, timing, metadata)
+        output_config = self.config.get('output', {})
+        output_dir = Path(output_config.get('directory', 'genetic_algorithm/output'))
+        self.diagnostics = RunDiagnostics(output_dir)
+
+        # Terminal monitor (live dashboard)
+        self.monitor = create_monitor(self.config)
     
     def save_checkpoint(self, population: Population, generation: int):
         """
@@ -265,6 +332,10 @@ class GeneticAlgorithm:
                     'best_raw_fitness': s.best_raw_fitness,
                     'avg_raw_fitness': s.avg_raw_fitness,
                     'genetic_diversity': s.genetic_diversity,
+                    'holdout_avg_degradation': s.holdout_avg_degradation,
+                    'holdout_best_degradation': s.holdout_best_degradation,
+                    'holdout_num_evaluated': s.holdout_num_evaluated,
+                    'holdout_num_profitable': s.holdout_num_profitable,
                 }
                 for s in self.generation_stats
             ],
@@ -349,6 +420,10 @@ class GeneticAlgorithm:
                 best_raw_fitness=s.get('best_raw_fitness'),
                 avg_raw_fitness=s.get('avg_raw_fitness'),
                 genetic_diversity=s.get('genetic_diversity'),
+                holdout_avg_degradation=s.get('holdout_avg_degradation'),
+                holdout_best_degradation=s.get('holdout_best_degradation'),
+                holdout_num_evaluated=s.get('holdout_num_evaluated'),
+                holdout_num_profitable=s.get('holdout_num_profitable'),
             )
             self.generation_stats.append(stats)
         
@@ -373,14 +448,32 @@ class GeneticAlgorithm:
         # The root logger is configured by run_ga.py setup_logging()
         logger.propagate = False
         
+        # Determine if terminal monitor is active
+        # Default to True (matching create_monitor) so log suppression
+        # activates even when the terminal_monitor section is missing.
+        monitor_cfg = self.config.get('terminal_monitor', {})
+        monitor_active = monitor_cfg.get('enabled', True)
+        try:
+            import rich  # noqa: F401
+        except ImportError:
+            monitor_active = False
+        
+        # When monitor is active, strip any existing console StreamHandlers
+        # (they may have been added by a previous init or library code)
+        if monitor_active:
+            for h in list(logger.handlers):
+                if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler):
+                    logger.removeHandler(h)
+        
         # Only add handlers if not already added (avoid duplicate handlers on re-init)
         if not logger.handlers:
             # Create formatter
             log_format = log_config.get('format', '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             formatter = logging.Formatter(log_format)
             
-            # Add console handler if enabled
-            if log_config.get('console', True):
+            # When terminal monitor is active, suppress console StreamHandler
+            # (the monitor captures logs via its own handler for the Logs view).
+            if not monitor_active and log_config.get('console', True):
                 console_handler = logging.StreamHandler()
                 console_handler.setFormatter(formatter)
                 logger.addHandler(console_handler)
@@ -398,7 +491,10 @@ class GeneticAlgorithm:
     
     def initialize_population(self) -> Population:
         """
-        Create initial population with random strategies.
+        Create initial population with a mix of seeded archetypes and random strategies.
+        
+        Seeded strategies (10-20% of population) provide known-good building blocks
+        for crossover, accelerating convergence. The rest are random for diversity.
         
         Returns:
             Initial population
@@ -407,16 +503,73 @@ class GeneticAlgorithm:
         
         population = Population(size=self.population_size, generation=0)
         
-        for i in range(self.population_size):
-            # Generate random strategy
+        # Seed 15% of population with known-good archetype strategies
+        seed_count = max(1, int(self.population_size * 0.15))
+        seed_start_id = 0
+        
+        # Re-inject hall of fame members (up to inject_count)
+        hof_injected = 0
+        try:
+            hof_individuals = self.hall_of_fame.get_individuals(self.hof_inject_count)
+            for ind in hof_individuals:
+                # Enforce min_entry_conditions on HoF strategies
+                _enforce_min_entry_conditions(ind.strategy_gene, self.config)
+                population.add_individual(ind)
+                hof_injected += 1
+            if hof_injected > 0:
+                self.logger.info(f"Injected {hof_injected} hall-of-fame strategies")
+        except Exception as e:
+            self.logger.warning(f"Hall of fame injection failed: {e}")
+        
+        try:
+            from genetic_algorithm.core.seed_strategies import create_seed_population
+            seed_genes = create_seed_population(
+                generation=0,
+                count=seed_count,
+                config=self.config,
+                start_id=seed_start_id
+            )
+            for gene in seed_genes:
+                individual = Individual(strategy_gene=gene)
+                population.add_individual(individual)
+                seed_start_id += 1
+            self.logger.info(f"Seeded {len(seed_genes)} strategies from known archetypes")
+        except Exception as e:
+            self.logger.warning(f"Failed to seed population: {e}. Using all random strategies.")
+            seed_start_id = 0
+        
+        # Fill remaining slots: LLM-generated + random strategies
+        remaining = self.population_size - len(population)
+        
+        # LLM seed generation (configurable ratio of remaining slots)
+        llm_count = 0
+        if self.llm_enabled and self.strategy_designer.enabled and remaining > 0:
+            llm_count = int(remaining * self.strategy_designer.seed_ratio)
+            if llm_count > 0:
+                self.logger.info(f"[LLM] Generating {llm_count} seed strategies via LLM...")
+                llm_genes = self.strategy_designer.generate_seed_strategies(
+                    count=llm_count,
+                    generation=0,
+                    start_id=seed_start_id,
+                )
+                for gene in llm_genes:
+                    individual = Individual(strategy_gene=gene)
+                    individual.metrics['origin'] = 'llm_seed'
+                    population.add_individual(individual)
+                llm_count = len(llm_genes)
+                self.logger.info(f"[LLM] Added {llm_count} LLM-generated seeds")
+        
+        # Fill rest with random strategies
+        random_remaining = self.population_size - len(population)
+        for i in range(random_remaining):
             strategy_gene = self.strategy_generator.generate_random_strategy(
                 generation=0,
-                individual_id=i
+                individual_id=seed_start_id + llm_count + i
             )
             individual = Individual(strategy_gene=strategy_gene)
             population.add_individual(individual)
         
-        self.logger.info("Population initialized successfully")
+        self.logger.info(f"Population initialized: {hof_injected} hall-of-fame + {seed_count} seeded + {llm_count} LLM + {random_remaining} random")
         return population
     
     def evaluate_population(self, population: Population):
@@ -441,6 +594,250 @@ class GeneticAlgorithm:
         else:
             self._evaluate_population_sequential(unevaluated)
     
+    def _post_hoc_walk_forward_validation(self, population: 'Population'):
+        """
+        Run walk-forward validation on elite candidates after parallel evaluation.
+        
+        When parallel evaluation is enabled, walk-forward is disabled inside workers
+        to avoid the N×W backtest explosion. Instead, we validate the top candidates
+        here — in parallel if possible, sequential otherwise.
+        
+        Only runs if walk_forward.enabled=True and parallel_evaluation.enabled=True.
+        Re-evaluates the top `elite_size * 2` individuals with walk-forward and
+        replaces their fitness scores with the walk-forward-validated scores.
+        """
+        wf_config = self.config.get('walk_forward', {})
+        if not wf_config.get('enabled', False):
+            return
+        if not self.parallel_enabled:
+            return  # WF already ran inside sequential evaluation
+        
+        # Get top candidates to validate
+        n_validate = min(self.elite_size * 2, len(population.individuals))
+        candidates = population.get_best(n_validate)
+        
+        self.logger.info(f"[WF-POSTHOC] Validating top {len(candidates)} strategies with walk-forward...")
+        
+        # Use parallel WF validation if parallel evaluator is available
+        if self.parallel_evaluator and len(candidates) > 1:
+            from genetic_algorithm.evaluation.parallel import parallel_walk_forward_validation
+            
+            timeout = self.config.get('parallel_evaluation', {}).get('backtest_timeout', 120) * 4
+            validated = parallel_walk_forward_validation(
+                candidates=candidates,
+                config=self.config,
+                num_workers=self.parallel_evaluator.num_workers,
+                backtest_timeout=timeout,
+            )
+            self.logger.info(f"[WF-POSTHOC] Parallel validation complete: {validated}/{len(candidates)}")
+        else:
+            # Fallback: sequential validation
+            wf_evaluator = FitnessEvaluator(self.config)
+            validated = 0
+            for ind in candidates:
+                try:
+                    wf_fitness, wf_metrics = wf_evaluator.evaluate(ind.strategy_gene)
+                    original_fitness = ind.fitness
+                    ind.set_fitness(wf_fitness, wf_metrics)
+                    validated += 1
+                    self.logger.debug(
+                        f"[WF-POSTHOC] {ind.id}: {original_fitness:.4f} -> {wf_fitness:.4f} "
+                        f"(gap={wf_metrics.get('train_val_gap', 0):.4f})"
+                    )
+                except Exception as e:
+                    self.logger.warning(f"[WF-POSTHOC] Failed for {ind.id}: {e}")
+            self.logger.info(f"[WF-POSTHOC] Validated {validated}/{len(candidates)} strategies")
+    
+    def _run_holdout_test(self, population: 'Population', holdout_config: Dict):
+        """
+        Run holdout/out-of-sample test on top strategies after evolution completes.
+        
+        Tests the best strategies on a separate time period that was NOT used during
+        evolution, to check for overfitting.
+        
+        Config:
+            holdout_test:
+              enabled: true
+              timerange: "20250301-20250401"  # Must be outside training range
+              top_n: 5  # Number of strategies to test
+        """
+        holdout_timerange = holdout_config.get('timerange', '')
+        top_n = holdout_config.get('top_n', 5)
+        
+        if not holdout_timerange:
+            self.logger.warning("[HOLDOUT] No holdout timerange configured, skipping")
+            return
+        
+        candidates = population.get_best(top_n)
+        if not candidates:
+            return
+        
+        self.logger.info("")
+        self.logger.info(f"{'─'*70}")
+        self.logger.info(f"HOLDOUT TEST - Out-of-sample validation on {holdout_timerange}")
+        self.logger.info(f"{'─'*70}")
+        
+        # Create a modified config with the holdout timerange
+        import copy
+        holdout_eval_config = copy.deepcopy(self.config)
+        holdout_eval_config['backtesting']['timerange'] = holdout_timerange
+        # Disable walk-forward for holdout (it's a straight backtest)
+        if 'walk_forward' in holdout_eval_config:
+            holdout_eval_config['walk_forward']['enabled'] = False
+        
+        holdout_evaluator = FitnessEvaluator(holdout_eval_config)
+        
+        results = []
+        for ind in candidates:
+            try:
+                holdout_fitness, holdout_metrics = holdout_evaluator.evaluate(ind.strategy_gene)
+                train_fitness = ind.fitness
+                overfit_ratio = (train_fitness - holdout_fitness) / max(abs(train_fitness), 0.001)
+                
+                results.append({
+                    'id': ind.id,
+                    'train_fitness': train_fitness,
+                    'holdout_fitness': holdout_fitness,
+                    'overfit_ratio': overfit_ratio,
+                    'holdout_profit': holdout_metrics.get('profit', 0),
+                    'holdout_trades': holdout_metrics.get('total_trades', 0),
+                })
+                
+                status = "✓" if holdout_fitness > 0 else "✗"
+                self.logger.info(
+                    f"  {status} {ind.id}: train={train_fitness:.4f} -> holdout={holdout_fitness:.4f} "
+                    f"(overfit={overfit_ratio:+.1%}, profit={holdout_metrics.get('profit', 0):.2f}%, "
+                    f"trades={holdout_metrics.get('total_trades', 0)})"
+                )
+            except Exception as e:
+                self.logger.warning(f"  ✗ {ind.id}: holdout test failed: {e}")
+        
+        if results:
+            avg_overfit = sum(r['overfit_ratio'] for r in results) / len(results)
+            profitable = sum(1 for r in results if r['holdout_fitness'] > 0)
+            self.logger.info(f"\n  Summary: {profitable}/{len(results)} profitable on holdout, "
+                           f"avg overfit ratio: {avg_overfit:+.1%}")
+    
+    def _run_holdout_monitoring(self, population: 'Population', generation: int):
+        """
+        Periodic holdout check during evolution.
+        
+        Evaluates top-N elites on holdout data and logs the results.
+        When holdout_fitness_penalty is enabled, applies a soft multiplicative
+        fitness adjustment to overfit elites so they're disfavored in selection
+        while keeping their genetic material alive.
+        """
+        if not self.holdout_monitoring_enabled:
+            return
+        
+        # Only run at specified intervals
+        if (generation + 1) % self.holdout_monitoring_interval != 0:
+            return
+        
+        # Get holdout split from the validation config
+        holdout_config = self.config.get('holdout_validation', {})
+        holdout_pct = holdout_config.get('holdout_pct', 0.15)
+        original_timerange = self.config.get('backtesting', {}).get('timerange', '')
+        
+        if not original_timerange or not holdout_config.get('enabled', False):
+            return
+        
+        try:
+            evo_range, holdout_range = FitnessEvaluator.split_timerange_for_holdout(
+                original_timerange, holdout_pct
+            )
+        except Exception as e:
+            self.logger.debug(f"[HOLDOUT-MON] Could not split timerange: {e}")
+            return
+        
+        candidates = population.get_best(self.holdout_monitoring_top_n)
+        if not candidates:
+            return
+        
+        self.logger.info(f"[HOLDOUT-MON] Gen {generation + 1}: evaluating top-{len(candidates)} on {holdout_range}...")
+        
+        import copy
+        holdout_eval_config = copy.deepcopy(self.config)
+        holdout_eval_config['backtesting']['timerange'] = holdout_range
+        if 'walk_forward' in holdout_eval_config:
+            holdout_eval_config['walk_forward']['enabled'] = False
+        
+        try:
+            holdout_evaluator = FitnessEvaluator(holdout_eval_config)
+        except Exception as e:
+            self.logger.warning(f"[HOLDOUT-MON] Failed to create evaluator: {e}")
+            return
+        
+        degradations = []
+        for ind in candidates:
+            try:
+                holdout_fitness, holdout_metrics = holdout_evaluator.evaluate(ind.strategy_gene)
+                train_fitness = ind.raw_fitness if ind.raw_fitness is not None else ind.fitness
+                degradation = (train_fitness - holdout_fitness) / max(abs(train_fitness), 0.001) * 100
+                degradations.append(degradation)
+                
+                symbol = "✓" if degradation < 30 else "⚠"
+                self.logger.info(
+                    f"  {symbol} {ind.id}: train={train_fitness:.4f} hold={holdout_fitness:.4f} "
+                    f"(degrad={degradation:.1f}%, hold_profit={holdout_metrics.get('profit', 0):.2f}%)"
+                )
+                
+                # Apply holdout fitness penalty when enabled
+                if self.holdout_fitness_penalty and degradation > 0:
+                    degradation_frac = degradation / 100.0  # Convert back to 0-1
+                    penalty_mult = max(0.5, 1.0 - degradation_frac * self.holdout_penalty_factor)
+                    old_fitness = ind.fitness
+                    ind.fitness = ind.fitness * penalty_mult
+                    ind.metrics['holdout_penalty'] = 1.0 - penalty_mult
+                    ind.metrics['holdout_degradation_monitored'] = degradation_frac
+                    self.logger.info(
+                        f"    → Holdout penalty applied: {old_fitness:.4f} -> {ind.fitness:.4f} "
+                        f"(x{penalty_mult:.3f}, degrad={degradation:.1f}%)"
+                    )
+            except Exception as e:
+                self.logger.debug(f"  ✗ {ind.id}: holdout monitoring failed: {e}")
+        
+        if degradations:
+            avg_degrad = sum(degradations) / len(degradations)
+            best_degrad = min(degradations)
+            worst_degrad = max(degradations)
+            self.logger.info(f"  [HOLDOUT-MON] Avg degradation: {avg_degrad:.1f}%")
+            
+            # Store in generation stats (if current gen stats exist)
+            if self.generation_stats:
+                latest_stats = self.generation_stats[-1]
+                latest_stats.holdout_avg_degradation = avg_degrad
+                latest_stats.holdout_best_degradation = best_degrad
+                latest_stats.holdout_num_evaluated = len(degradations)
+                latest_stats.holdout_num_profitable = sum(1 for d in degradations if d < 30)
+            
+            # Append to holdout history for reporting
+            from genetic_algorithm.utils.overfit_analysis import GenerationHoldoutStats
+            holdout_stat = GenerationHoldoutStats(
+                generation=generation,
+                avg_degradation=avg_degrad,
+                best_degradation=best_degrad,
+                worst_degradation=worst_degrad,
+                num_evaluated=len(degradations),
+                num_profitable=sum(1 for d in degradations if d < 30),
+            )
+            self.generation_holdout_history.append(holdout_stat)
+            
+            # Holdout-aware early stopping check
+            if self.holdout_early_stop:
+                threshold_pct = self.holdout_early_stop_threshold * 100
+                if avg_degrad > threshold_pct:
+                    self._holdout_consecutive_bad += 1
+                    self.logger.warning(
+                        f"  [HOLDOUT-MON] ⚠ Degradation {avg_degrad:.1f}% > {threshold_pct:.0f}% threshold "
+                        f"({self._holdout_consecutive_bad}/{self.holdout_early_stop_checks} consecutive)"
+                    )
+                else:
+                    self._holdout_consecutive_bad = 0
+            
+            return avg_degrad
+        return None
+
     def _evaluate_population_parallel(self, unevaluated: list):
         """
         Evaluate population using parallel workers.
@@ -451,8 +848,9 @@ class GeneticAlgorithm:
         self.logger.info(f"[EVAL] Parallel evaluation of {len(unevaluated)} individuals...")
         
         # Create progress callback for tqdm if enabled
+        # When terminal monitor is active, skip tqdm to avoid display conflicts
         pbar = None
-        if self.progress_enabled:
+        if self.progress_enabled and not self.monitor.active:
             pbar = tqdm(
                 total=len(unevaluated),
                 desc=f"Gen {self.current_generation + 1}",
@@ -465,6 +863,7 @@ class GeneticAlgorithm:
             if pbar:
                 pbar.n = completed
                 pbar.refresh()
+            self.monitor.on_eval_progress(completed, total)
         
         # Run parallel evaluation
         result = self.parallel_evaluator.evaluate_batch(
@@ -500,7 +899,8 @@ class GeneticAlgorithm:
         best_profit = 0.0
         
         # Create progress bar if enabled
-        if self.progress_enabled:
+        # When terminal monitor is active, skip tqdm to avoid display conflicts
+        if self.progress_enabled and not self.monitor.active:
             pbar = tqdm(
                 enumerate(unevaluated),
                 total=len(unevaluated),
@@ -554,6 +954,9 @@ class GeneticAlgorithm:
                     pbar.set_postfix(postfix)
                 
                 self.logger.debug(f"  {strategy_name}: fitness={fitness:.4f}, profit={metrics.get('profit', 0):.2f}%")
+                
+                # Update terminal monitor eval progress
+                self.monitor.on_eval_progress(i + 1, len(unevaluated))
                 
             except Exception as e:
                 # Handle evaluation errors gracefully
@@ -679,8 +1082,20 @@ class GeneticAlgorithm:
         next_gen = Population(size=self.population_size, generation=self.current_generation + 1)
         
         # Step 1: Elitism - keep top performers
-        self.logger.debug(f"[ELITISM] Preserving top {self.elite_size} individuals")
-        for individual in population.get_best(self.elite_size):
+        # Use raw_fitness (not shared fitness) to select elites, because
+        # fitness sharing can push strong strategies down artificially.
+        # This ensures the truly best strategy is never lost to sharing noise.
+        self.logger.debug(f"[ELITISM] Preserving top {self.elite_size} individuals (by raw fitness)")
+        
+        # Select elites by raw_fitness (the un-shared, un-adjusted fitness)
+        ranked_by_raw = sorted(
+            [ind for ind in population.individuals if ind.raw_fitness is not None],
+            key=lambda x: x.raw_fitness,
+            reverse=True,
+        )
+        elites = ranked_by_raw[:self.elite_size]
+        
+        for individual in elites:
             gene_copy = individual.strategy_gene.copy()
             gene_copy.generation = self.current_generation + 1
             elite_copy = Individual(strategy_gene=gene_copy)
@@ -689,19 +1104,42 @@ class GeneticAlgorithm:
             elite_copy.fitness = individual.fitness
             elite_copy.metrics = individual.metrics.copy() if individual.metrics else {}
             elite_copy.evaluated = True
+            # Enforce min_entry_conditions on elite copies
+            _enforce_min_entry_conditions(elite_copy.strategy_gene, self.config)
             next_gen.add_individual(elite_copy)
         self.logger.info(f"[ELITISM] Preserved {self.elite_size} elite individuals")
         
         # Step 1b: Parsimony pressure — try to simplify elites
         parsimony_config = self.config.get('parsimony', {})
+        # Pass min_entry_conditions so parsimony respects the configured floor
+        indicator_config = self.config.get('indicators', {})
+        parsimony_config['min_entry_conditions'] = indicator_config.get('min_entry_conditions', 2)
         if parsimony_config.get('enabled', False):
-            from genetic_algorithm.core.parsimony import apply_parsimony_to_elites
-            
-            def _eval_fn(gene):
-                return self.fitness_evaluator.evaluate(gene)
-            
             elite_list = list(next_gen.individuals)
-            removed = apply_parsimony_to_elites(elite_list, _eval_fn, parsimony_config)
+            
+            if self.parallel_enabled:
+                # Use parallel parsimony: evaluate all removal candidates
+                # concurrently across all elites using ProcessPoolExecutor.
+                from genetic_algorithm.evaluation.parallel import parallel_parsimony
+                
+                parallel_cfg = self.config.get('parallel_evaluation', {})
+                num_workers = parallel_cfg.get('num_workers') or (os.cpu_count() - 1)
+                bt_timeout = parallel_cfg.get('backtest_timeout', 120)
+                
+                removed = parallel_parsimony(
+                    elite_list, parsimony_config, self.config,
+                    num_workers=num_workers,
+                    backtest_timeout=bt_timeout,
+                )
+            else:
+                # Sequential fallback
+                from genetic_algorithm.core.parsimony import apply_parsimony_to_elites
+                
+                def _eval_fn(gene):
+                    return self.fitness_evaluator.evaluate(gene)
+                
+                removed = apply_parsimony_to_elites(elite_list, _eval_fn, parsimony_config)
+            
             if removed > 0:
                 self.logger.info(f"[PARSIMONY] Removed {removed} component(s) from elites")
         
@@ -719,9 +1157,38 @@ class GeneticAlgorithm:
             immigrant_count = self.random_immigrants * 2
             self.logger.warning(f"[DIVERSITY] Low diversity ({stats.genetic_diversity:.4f}), doubling immigrants to {immigrant_count}")
         
-        # Inject random immigrants
+        # Inject immigrants: LLM-generated + random
         immigrants_before = len(next_gen)
-        for _ in range(immigrant_count):
+        
+        # LLM immigrants (configurable ratio of immigrant slots)
+        llm_immigrant_count = 0
+        if self.llm_enabled and self.strategy_designer.enabled:
+            llm_immigrant_count = max(1, int(immigrant_count * self.strategy_designer.immigrant_ratio))
+            
+            # Gather context for guided generation
+            top_inds = sorted(population.individuals, 
+                            key=lambda x: x.fitness, reverse=True)[:5]
+            top_summaries = self.strategy_designer.get_top_performer_summaries(top_inds)
+            weaknesses = self.strategy_designer.get_population_weaknesses(top_inds)
+            
+            llm_genes = self.strategy_designer.generate_immigrants(
+                count=llm_immigrant_count,
+                generation=self.current_generation + 1,
+                start_id=calculate_next_id(),
+                top_performers=top_summaries,
+                weaknesses=weaknesses,
+            )
+            for gene in llm_genes:
+                if len(next_gen) >= self.population_size:
+                    break
+                ind = Individual(strategy_gene=gene)
+                ind.metrics['origin'] = 'llm_immigrant'
+                next_gen.add_individual(ind)
+            llm_immigrant_count = len(llm_genes)
+        
+        # Fill remaining immigrant slots with random strategies
+        random_immigrant_target = immigrant_count - llm_immigrant_count
+        for _ in range(random_immigrant_target):
             if len(next_gen) >= self.population_size:
                 break
             immigrant_gene = self.strategy_generator.generate_random_strategy(
@@ -731,7 +1198,11 @@ class GeneticAlgorithm:
             next_gen.add_individual(Individual(strategy_gene=immigrant_gene))
         
         actual_immigrants_added = len(next_gen) - immigrants_before
-        self.logger.info(f"[IMMIGRANTS] Added {actual_immigrants_added} random immigrants")
+        if llm_immigrant_count > 0:
+            self.logger.info(f"[IMMIGRANTS] Added {actual_immigrants_added} immigrants "
+                           f"({llm_immigrant_count} LLM + {actual_immigrants_added - llm_immigrant_count} random)")
+        else:
+            self.logger.info(f"[IMMIGRANTS] Added {actual_immigrants_added} random immigrants")
         
         # Helper to create child from parent gene
         def create_child(parent_gene, ind_id):
@@ -786,6 +1257,8 @@ class GeneticAlgorithm:
                 try:
                     child = mutate(child, self.mutation_rate, self.config)
                     mutation_count += 1
+                    # Enforce min_entry_conditions after mutation
+                    _enforce_min_entry_conditions(child.strategy_gene, self.config)
                     next_gen.add_individual(child)
                     offspring_added += 1
                 except (ValueError, KeyError, AttributeError, TypeError) as e:
@@ -806,6 +1279,9 @@ class GeneticAlgorithm:
         """
         Check if evolution has converged.
         
+        Uses the global best individual's raw fitness rather than per-generation
+        population best, which can fluctuate from random immigrants.
+        
         Args:
             stats: Current generation statistics
             
@@ -815,15 +1291,20 @@ class GeneticAlgorithm:
         if self.best_individual is None:
             return False
         
-        # Use raw fitness (not shared fitness) for convergence detection
-        current_best = stats.best_raw_fitness if stats.best_raw_fitness is not None else stats.best_fitness
+        # Use the global best individual's raw fitness for stable convergence tracking
+        # (per-gen stats.best_raw_fitness fluctuates from random immigrants/sharing)
+        global_best = self.best_individual.raw_fitness
+        if global_best is None:
+            global_best = self.best_individual.fitness
+        if global_best is None:
+            return False
         
-        # Check for improvement
-        if current_best <= self.best_fitness_ever:
+        # Check for improvement against the all-time best
+        if global_best <= self.best_fitness_ever:
             self.no_improvement_count += 1
         else:
             self.no_improvement_count = 0
-            self.best_fitness_ever = current_best
+            self.best_fitness_ever = global_best
         
         # Adaptive mutation: increase mutation rate if stuck
         if self.adaptive_mutation and self.no_improvement_count > 0:
@@ -834,7 +1315,7 @@ class GeneticAlgorithm:
                 self.max_adaptation_factor, 
                 1.0 + (self.no_improvement_count * self.adaptation_step)
             )
-            self.mutation_rate = min(0.5, self.base_mutation_rate * adaptation_factor)
+            self.mutation_rate = min(self.max_mutation_rate, self.base_mutation_rate * adaptation_factor)
             self.logger.info(
                 f"Adaptive mutation: rate increased to {self.mutation_rate:.3f} "
                 f"(factor={adaptation_factor:.2f}, no improvement for {self.no_improvement_count} gens)"
@@ -846,6 +1327,14 @@ class GeneticAlgorithm:
         if self.no_improvement_count >= self.convergence_patience:
             self.logger.info(f"Converged: No improvement for {self.convergence_patience} generations")
             return True
+        
+        # Stagnation warning at half patience
+        half_patience = self.convergence_patience // 2
+        if self.no_improvement_count == half_patience and half_patience > 0:
+            self.logger.warning(
+                f"⚠ STAGNATION WARNING: No improvement for {half_patience} generations "
+                f"(patience: {self.convergence_patience}). Best ever: {self.best_fitness_ever:.4f}"
+            )
         
         return False
     
@@ -866,6 +1355,12 @@ class GeneticAlgorithm:
         self.logger.info(f"  Mutation: {self.mutation_rate:.2%} | Crossover: {self.crossover_rate:.2%} ({self.crossover_method})")
         self.logger.info(f"  Selection: {self.selection_method} | Elite size: {self.elite_size}")
         self.logger.info("=" * 70)
+        
+        # Start run diagnostics (CSV, timing, metadata)
+        self.diagnostics.start_run(self.config)
+        
+        # Start terminal monitor (live dashboard)
+        self.monitor.start(self.config)
         
         # Try to resume from checkpoint
         start_generation = 0
@@ -901,8 +1396,19 @@ class GeneticAlgorithm:
             self.logger.info(f"GENERATION {gen + 1}/{self.generations}")
             self.logger.info(f"{'─'*70}")
             
+            # Start generation timing
+            self.diagnostics.start_generation(gen)
+            self.monitor.on_generation_start(gen, self.generations)
+            
             # Step 1: Evaluate fitness
+            self.diagnostics.start_phase('eval')
+            self.monitor.on_phase_start('eval')
             self.evaluate_population(population)
+            self.diagnostics.end_phase('eval')
+            self.monitor.on_phase_end('eval', self.diagnostics.timing._phases.get('eval', 0.0))
+            
+            # Step 1b: Post-hoc walk-forward validation on elites (when parallel + WF)
+            self._post_hoc_walk_forward_validation(population)
             
             # Step 2: Apply ranking based on mode
             distance_matrix = None
@@ -948,6 +1454,7 @@ class GeneticAlgorithm:
             if self._should_update_best_individual(best):
                 self.best_individual = best
                 self.logger.info(f"[NEW BEST] {best.id} with fitness {best.fitness:.4f}")
+                self.monitor.on_new_best(best)
                 
                 # Generate trade visualization on improvement
                 if self.trade_visualizer and self.trade_vis_mode == 'improvement':
@@ -959,11 +1466,102 @@ class GeneticAlgorithm:
                 for idx, ind in enumerate(top_individuals):
                     self._visualize_strategy_trades(ind, gen, idx)
             
+            # Update feature importance tracking
+            try:
+                self.feature_tracker.update(population)
+                if (gen + 1) % 5 == 0 or gen == self.generations - 1:
+                    self.feature_tracker.log_summary(top_n=5)
+                
+                # Inject adaptive indicator weights into config for mutation
+                indicator_weights = self.feature_tracker.get_indicator_weights()
+                if indicator_weights:
+                    self.config['_indicator_weights'] = indicator_weights
+                    self.logger.debug(f"[FEATURE-IMPORTANCE] Updated indicator weights: "
+                                    f"{len(indicator_weights)} indicators")
+            except Exception as e:
+                self.logger.warning(f"Feature importance update failed: {e}")
+            
+            # Update hall of fame
+            try:
+                self.hall_of_fame.update(population, gen)
+            except Exception as e:
+                self.logger.warning(f"Hall of fame update failed: {e}")
+            
+            # Holdout monitoring — read-only diagnostic (never affects selection)
+            # But CAN trigger early stopping if degradation consistently exceeds threshold
+            self.diagnostics.start_phase('holdout')
+            self.monitor.on_phase_start('holdout')
+            try:
+                self._run_holdout_monitoring(population, gen)
+                
+                # Check holdout-aware early stopping
+                if (self.holdout_early_stop and 
+                    self._holdout_consecutive_bad >= self.holdout_early_stop_checks):
+                    self.logger.info(
+                        f"[HOLDOUT EARLY STOP] Stopping: holdout degradation exceeded "
+                        f"{self.holdout_early_stop_threshold:.0%} for "
+                        f"{self._holdout_consecutive_bad} consecutive checks. "
+                        f"Further evolution is likely overfitting."
+                    )
+                    self.feature_tracker.log_summary()
+                    self.save_checkpoint(population, gen)
+                    break
+            except Exception as e:
+                self.logger.warning(f"Holdout monitoring failed: {e}")
+            self.diagnostics.end_phase('holdout')
+            self.monitor.on_phase_end('holdout', self.diagnostics.timing._phases.get('holdout', 0.0))
+            
+            # Record generation diagnostics (CSV row + timing)
+            # Compute new-feature metrics for CSV tracking
+            _extras = {'mutation_rate': self.mutation_rate}
+            try:
+                all_inds = population.get_all() if hasattr(population, 'get_all') else []
+                # Holdout penalty stats
+                penalties = [ind.metrics.get('holdout_penalty', 0) for ind in all_inds if ind.metrics]
+                penalised = [p for p in penalties if p > 0]
+                _extras['holdout_penalties_applied'] = len(penalised)
+                _extras['avg_holdout_penalty'] = round(sum(penalised) / len(penalised), 4) if penalised else 0.0
+                # Unused indicator stats (from fitness eval, stored in metrics)
+                unused_counts = [ind.metrics.get('unused_indicators', 0) for ind in all_inds if ind.metrics]
+                _extras['avg_unused_indicators'] = round(sum(unused_counts) / max(len(unused_counts), 1), 2)
+                # LLM origin counts
+                origins = [ind.metrics.get('origin', '') for ind in all_inds if ind.metrics]
+                _extras['llm_seeds_count'] = sum(1 for o in origins if o == 'llm_seed')
+                _extras['llm_immigrants_count'] = sum(1 for o in origins if o == 'llm_immigrant')
+            except Exception:
+                pass  # Non-critical diagnostics
+            self.diagnostics.end_generation(
+                gen, stats, population,
+                extras=_extras,
+            )
+            
+            # Update terminal monitor with generation results
+            gen_timing = self.diagnostics.timing.history[-1] if self.diagnostics.timing.history else None
+            self.monitor.on_generation_end(
+                gen, stats, gen_timing, self.best_individual, extras=_extras
+            )
+            
+            # Log walk-forward cache stats periodically
+            try:
+                if hasattr(self.fitness_evaluator, 'log_wf_cache_stats'):
+                    self.fitness_evaluator.log_wf_cache_stats()
+                elif hasattr(self.fitness_evaluator, 'base_evaluator'):
+                    # RegimeAwareEvaluator wraps a FitnessEvaluator
+                    base = self.fitness_evaluator.base_evaluator
+                    if hasattr(base, 'log_wf_cache_stats'):
+                        base.log_wf_cache_stats()
+            except Exception:
+                pass  # Non-critical
+            
             # Check convergence
             if self.check_convergence(stats):
                 self.logger.info("[CONVERGENCE] Evolution converged early")
+                self.monitor.on_convergence_warning(self.no_improvement_count, self.convergence_patience)
+                self.feature_tracker.log_summary()
                 self.save_checkpoint(population, gen)
                 break
+            elif self.no_improvement_count >= self.convergence_patience // 2:
+                self.monitor.on_convergence_warning(self.no_improvement_count, self.convergence_patience)
             
             # Save checkpoint periodically
             if self.checkpoint_interval > 0 and (gen + 1) % self.checkpoint_interval == 0:
@@ -971,7 +1569,41 @@ class GeneticAlgorithm:
             
             # Create next generation
             if gen < self.generations - 1:  # Don't create next gen on last iteration
+                self.diagnostics.start_phase('selection')
+                self.monitor.on_phase_start('selection')
                 population = self.create_next_generation(population)
+                self.diagnostics.end_phase('selection')
+                self.monitor.on_phase_end('selection', self.diagnostics.timing._phases.get('selection', 0.0))
+        
+        # Final feature importance report
+        try:
+            self.feature_tracker.log_summary(top_n=10)
+        except Exception as e:
+            self.logger.warning(f"Final feature importance report failed: {e}")
+        
+        # Final hall of fame summary
+        try:
+            hof_summary = self.hall_of_fame.get_summary()
+            if hof_summary['size'] > 0:
+                self.logger.info("")
+                self.logger.info(f"[HALL OF FAME] {hof_summary['size']} strategies archived")
+                self.logger.info(f"  Best: {hof_summary['best_fitness']:.4f}  Avg: {hof_summary['avg_fitness']:.4f}")
+                for i, entry in enumerate(hof_summary['top_5']):
+                    self.logger.info(f"  #{i+1}: fitness={entry['fitness']:.4f}  profit={entry['profit']:.2f}%  sharpe={entry['sharpe']:.2f}")
+        except Exception as e:
+            self.logger.warning(f"Hall of fame summary failed: {e}")
+        
+        # LLM strategy designer summary
+        if self.llm_enabled and self.strategy_designer.enabled:
+            try:
+                llm_stats = self.strategy_designer.get_stats()
+                self.logger.info("")
+                self.logger.info(f"[LLM DESIGNER] Requests: {llm_stats['total_requests']} | "
+                               f"Successful: {llm_stats['successful']} | "
+                               f"Failed: {llm_stats['failed']} | "
+                               f"Fixed: {llm_stats['validation_fixed']}")
+            except Exception as e:
+                self.logger.warning(f"LLM stats summary failed: {e}")
         
         # Final summary
         self.logger.info("")
@@ -1002,9 +1634,24 @@ class GeneticAlgorithm:
         
         self.logger.info("=" * 70)
         
+        # Finalize run diagnostics (close CSV, save timing summary)
+        timing_summary = self.diagnostics.end_run(top_strategies=population.get_best(10) if population else None)
+        if timing_summary:
+            self.logger.info(f"[TIMING] {timing_summary}")
+        
         # Close visualization if enabled
         if self.visualizer:
             self.visualizer.close()
+        
+        # Shutdown parallel evaluator pool (free worker processes)
+        if self.parallel_evaluator:
+            self.parallel_evaluator.shutdown()
+        
+        # Stop terminal monitor (prints final summary)
+        self.monitor.on_evolution_complete({
+            'generations': self.current_generation + 1,
+            'best_fitness': self.best_individual.fitness if self.best_individual else None,
+        })
         
         # Generate final trade visualizations for top strategies
         if self.trade_visualizer and self.trade_vis_mode == 'final':
@@ -1013,6 +1660,11 @@ class GeneticAlgorithm:
             for idx, ind in enumerate(top_individuals):
                 self._visualize_strategy_trades(ind, self.current_generation, idx)
             self.logger.info(f"[TRADE VIS] Generated charts for {len(top_individuals)} strategies")
+        
+        # Run holdout test on best strategies (if configured)
+        holdout_config = self.config.get('holdout_test', {})
+        if holdout_config.get('enabled', False):
+            self._run_holdout_test(population, holdout_config)
         
         # Return top strategies based on mode
         if self.mode == 'nsga2':

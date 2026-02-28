@@ -44,6 +44,9 @@ class StrategyGenerator:
         
         # Multi-timeframe config
         self.multi_tf_config = config.get('multi_timeframe', {})
+        
+        # Short selling config
+        self.short_selling_config = config.get('short_selling', {})
     
     def generate_random_strategy(self, generation: int, individual_id: int) -> StrategyGene:
         """
@@ -129,10 +132,33 @@ class StrategyGenerator:
             max_open_trades=max_open_trades,
             informative_timeframes=informative_timeframes,
             trailing_stop=random.choice([True, False]),
+            can_short=self.short_selling_config.get('enabled', False) and random.random() < self.short_selling_config.get('probability', 0.5),
         )
         
         # Assign unique instance IDs to all indicators
         strategy.assign_instance_ids()
+        
+        # Enforce min_entry_conditions — random generation can under-produce
+        min_entry = self.indicator_config.get('min_entry_conditions', 2)
+        while len(strategy.entry_conditions) < min_entry:
+            valid_inds = [ind for ind in strategy.indicators
+                         if ind.type in ['RSI', 'MACD', 'STOCH', 'CCI', 'ADX', 'BBANDS', 'EMA', 'SMA',
+                                          'SUPERTREND', 'ICHIMOKU', 'DONCHIAN', 'VWAP', 'PSAR', 'CMF', 'VROC',
+                                          'CDL_ENGULFING', 'CDL_HAMMER', 'CDL_DOJI', 'CDL_MORNINGSTAR',
+                                          'CDL_EVENINGSTAR', 'CDL_SHOOTINGSTAR', 'CDL_HARAMI']]
+            if not valid_inds:
+                break
+            ind = random.choice(valid_inds)
+            cond = self._generate_condition_for_indicator(ind, is_entry=True)
+            if cond:
+                # Avoid duplicates
+                existing = {(c.indicator, c.operator, str(c.threshold)) for c in strategy.entry_conditions}
+                key = (cond.indicator, cond.operator, str(cond.threshold))
+                if key not in existing:
+                    cond.logic = 'AND'
+                    strategy.entry_conditions.append(cond)
+                else:
+                    break  # Can't add more unique conditions
         
         return strategy
     
@@ -178,16 +204,20 @@ class StrategyGenerator:
                 indicator=indicator.type,
                 operator='>' if is_entry else '<',
                 threshold=50,
-                logic='OR'  # Use OR for more lenient conditions
+                logic='AND'
             ))
             return conditions
         
-        # Generate 1-2 conditions (reduced from 1-3 to make strategies less restrictive)
-        num_conditions = random.randint(1, min(2, len(valid_indicators)))
+        # Generate 2-4 conditions for richer signal construction
+        # Min 2 prevents single-condition overfitting (configurable via indicators.min_entry_conditions)
+        min_conds = self.indicator_config.get('min_entry_conditions', 2) if is_entry else self.indicator_config.get('min_exit_conditions', 1)
+        max_conds = self.indicator_config.get('max_entry_conditions', 4) if is_entry else 3
+        num_conditions = random.randint(min(min_conds, len(valid_indicators)), min(max_conds, len(valid_indicators)))
         
-        # ALWAYS use OR logic to avoid contradictory conditions that produce 0 trades
-        # AND logic often creates impossible combinations (e.g., price > SMA AND price < lower BB)
-        primary_logic = 'OR'
+        # Use AND logic by default to create more selective (higher-quality) entry signals.
+        # The fitness function's trade count penalty handles zero-trade strategies.
+        # OR logic made entries too permissive, generating many low-quality trades.
+        primary_logic = 'AND'
         
         for _ in range(num_conditions):
             # Pick a random indicator
@@ -205,14 +235,14 @@ class StrategyGenerator:
             indicator = valid_indicators[0]
             condition = self._generate_condition_for_indicator(indicator, is_entry)
             if condition:
-                condition.logic = 'OR'
+                condition.logic = 'AND'
                 conditions.append(condition)
         
         return conditions if conditions else [ConditionGene(
             indicator=indicators[0].type,
             operator='>' if is_entry else '<',
             threshold=50,
-            logic='OR'
+            logic='AND'
         )]
     
     def _generate_condition_for_indicator(self, indicator: IndicatorGene, 
@@ -232,7 +262,7 @@ class StrategyGenerator:
                 indicator='RSI',
                 operator=operator,
                 threshold=random.randint(*threshold_range),
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'MACD':
@@ -240,7 +270,7 @@ class StrategyGenerator:
                 indicator='MACD',
                 operator='cross_above' if is_entry else 'cross_below',
                 threshold=0,
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'STOCH':
@@ -255,7 +285,7 @@ class StrategyGenerator:
                 indicator='STOCH',
                 operator=operator,
                 threshold=random.randint(*threshold_range),
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'CCI':
@@ -270,7 +300,7 @@ class StrategyGenerator:
                 indicator='CCI',
                 operator=operator,
                 threshold=random.randint(*threshold_range),
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'ADX':
@@ -279,7 +309,7 @@ class StrategyGenerator:
                 indicator='ADX',
                 operator='>',
                 threshold=random.randint(*threshold_range),
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'BBANDS':
@@ -295,7 +325,7 @@ class StrategyGenerator:
                 indicator='BBANDS',
                 operator=operator,
                 threshold=0,  # Not used for BBANDS
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type in ['EMA', 'SMA']:
@@ -309,7 +339,7 @@ class StrategyGenerator:
                 indicator=indicator.type,
                 operator=operator,
                 threshold=0,  # Not used for MA crossovers
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         # === NEW INDICATOR CONDITIONS ===
@@ -320,7 +350,7 @@ class StrategyGenerator:
                 indicator='SUPERTREND',
                 operator='cross_above' if is_entry else 'cross_below',
                 threshold=0,  # Trend flip indicator
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'ICHIMOKU':
@@ -329,7 +359,7 @@ class StrategyGenerator:
                 indicator='ICHIMOKU',
                 operator='cross_above' if is_entry else 'cross_below',
                 threshold=0,  # TK crossover
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'DONCHIAN':
@@ -338,7 +368,7 @@ class StrategyGenerator:
                 indicator='DONCHIAN',
                 operator='cross_above' if is_entry else 'cross_below',
                 threshold=0,  # Upper/lower channel breakout
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'VWAP':
@@ -347,7 +377,7 @@ class StrategyGenerator:
                 indicator='VWAP',
                 operator='cross_above' if is_entry else 'cross_below',
                 threshold=0,
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'PSAR':
@@ -356,7 +386,7 @@ class StrategyGenerator:
                 indicator='PSAR',
                 operator='cross_above' if is_entry else 'cross_below',
                 threshold=0,
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'CMF':
@@ -372,7 +402,7 @@ class StrategyGenerator:
                 indicator='CMF',
                 operator=operator,
                 threshold=random.uniform(*threshold_range),
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type == 'VROC':
@@ -382,7 +412,7 @@ class StrategyGenerator:
                 indicator='VROC',
                 operator='>' if is_entry else '<',
                 threshold=random.uniform(*threshold_range),
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         # === CANDLESTICK PATTERN CONDITIONS ===
@@ -393,7 +423,7 @@ class StrategyGenerator:
                 indicator=indicator.type,
                 operator='>' if is_entry else '<',  # Bullish for entry, bearish for exit
                 threshold=0,
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         elif indicator.type in ['CDL_HAMMER', 'CDL_MORNINGSTAR', 'CDL_PIERCING', 'CDL_3WHITESOLDIERS']:
@@ -403,7 +433,7 @@ class StrategyGenerator:
                     indicator=indicator.type,
                     operator='>',  # Pattern detected (non-zero)
                     threshold=0,
-                    logic=random.choice(['AND', 'OR'])
+                    logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
                 )
             # Not suitable for exit, return None and let fallback handle it
             return None
@@ -415,7 +445,7 @@ class StrategyGenerator:
                     indicator=indicator.type,
                     operator='<',  # Pattern detected (non-zero, negative for bearish)
                     threshold=0,
-                    logic=random.choice(['AND', 'OR'])
+                    logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
                 )
             # Not suitable for entry, return None
             return None
@@ -426,7 +456,7 @@ class StrategyGenerator:
                 indicator=indicator.type,
                 operator='!=',  # Doji detected
                 threshold=0,
-                logic=random.choice(['AND', 'OR'])
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
         # For other indicators, return a generic condition
@@ -468,6 +498,34 @@ class StrategyGenerator:
         informative_indicator_code = self._generate_informative_indicator_code(
             informative_indicators, strategy_gene.timeframe
         )
+        
+        # Pre-validate: count conditions that will survive the indicator-existence filter.
+        # If too few survive, add replacement conditions from available indicators to meet minimums.
+        min_entry = self.indicator_config.get('min_entry_conditions', 2)
+        min_exit = self.indicator_config.get('min_exit_conditions', 1)
+        
+        valid_entry_count = sum(
+            1 for c in strategy_gene.entry_conditions
+            if self._condition_has_valid_indicator(c, strategy_gene.indicators)
+        )
+        valid_exit_count = sum(
+            1 for c in strategy_gene.exit_conditions
+            if self._condition_has_valid_indicator(c, strategy_gene.indicators)
+        )
+        
+        # Top up entry conditions if too few will survive filtering
+        if valid_entry_count < min_entry:
+            needed = min_entry - valid_entry_count
+            logger.info(f"Pre-code-gen fix: only {valid_entry_count} valid entry conditions, "
+                       f"adding {needed} to reach min {min_entry}")
+            self._add_replacement_conditions(strategy_gene, needed, is_entry=True)
+        
+        # Top up exit conditions if too few will survive filtering
+        if valid_exit_count < min_exit:
+            needed = min_exit - valid_exit_count
+            logger.info(f"Pre-code-gen fix: only {valid_exit_count} valid exit conditions, "
+                       f"adding {needed} to reach min {min_exit}")
+            self._add_replacement_conditions(strategy_gene, needed, is_entry=False)
         
         # Generate entry condition code
         entry_code = self._generate_condition_code(
@@ -514,6 +572,20 @@ class StrategyGenerator:
         else:
             populate_indicators_body = indicator_code
         
+        # Generate short entry/exit code when can_short is enabled
+        can_short_attr = ""
+        short_entry_code = ""
+        short_exit_code = ""
+        if strategy_gene.can_short:
+            can_short_attr = "\n    can_short = True"
+            # Short entry uses inverted exit conditions (exit long = enter short logic)
+            short_entry_code = "\n        # Short entry signals (inverted long exit logic)\n" + self._generate_condition_code(
+                strategy_gene.exit_conditions, strategy_gene.indicators, is_entry=True, signal_col_override='enter_short'
+            )
+            short_exit_code = "\n        # Short exit signals (inverted long entry logic)\n" + self._generate_condition_code(
+                strategy_gene.entry_conditions, strategy_gene.indicators, is_entry=False, signal_col_override='exit_short'
+            )
+        
         code = f'''"""
 Auto-generated strategy by Genetic Algorithm
 Generation: {strategy_gene.generation}
@@ -522,6 +594,7 @@ Individual: {strategy_gene.individual_id}
 
 from freqtrade.strategy import IStrategy, merge_informative_pair
 from pandas import DataFrame
+import pandas as pd
 import talib.abstract as ta
 import numpy as np
 
@@ -535,7 +608,7 @@ class {strategy_name}(IStrategy):
     stoploss = {strategy_gene.stoploss}
     minimal_roi = {strategy_gene.minimal_roi}
     trailing_stop = {strategy_gene.trailing_stop}{trailing_stop_params}
-    max_open_trades = {strategy_gene.max_open_trades}
+    max_open_trades = {strategy_gene.max_open_trades}{can_short_attr}
 {informative_pairs_method}
     
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -545,12 +618,12 @@ class {strategy_name}(IStrategy):
     
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Entry signals"""
-{entry_code}
+{entry_code}{short_entry_code}
         return dataframe
     
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Exit signals"""
-{exit_code}
+{exit_code}{short_exit_code}
         return dataframe
 '''
         
@@ -594,51 +667,79 @@ class {strategy_name}(IStrategy):
         
         return '\n'.join(lines)
     
-    def _generate_single_indicator_code(self, ind: IndicatorGene, prefix: str = "        ") -> str:
-        """Generate code for a single indicator calculation, used for informative indicators."""
+    def _generate_single_indicator_code(self, ind: IndicatorGene, prefix: str = "        ", 
+                                        df_var: str = "informative") -> str:
+        """Generate code for a single indicator calculation.
+        
+        Args:
+            ind: Indicator gene to generate code for
+            prefix: Indentation prefix  
+            df_var: Variable name for the dataframe (e.g. 'informative', 'dataframe')
+        """
+        d = df_var  # Shorthand for template readability
         if ind.type == 'RSI':
             period = ind.parameters.get('period', 14)
-            return f"{prefix}informative['rsi_{period}'] = ta.RSI(informative, timeperiod={period})"
+            return f"{prefix}{d}['rsi_{period}'] = ta.RSI({d}, timeperiod={period})"
         elif ind.type == 'MACD':
             fast = ind.parameters.get('fast_period', 12)
             slow = ind.parameters.get('slow_period', 26)
             signal = ind.parameters.get('signal_period', 9)
-            return (f"{prefix}macd = ta.MACD(informative, fastperiod={fast}, slowperiod={slow}, signalperiod={signal})\n"
-                    f"{prefix}informative['macd'] = macd['macd']\n"
-                    f"{prefix}informative['macdsignal'] = macd['macdsignal']\n"
-                    f"{prefix}informative['macdhist'] = macd['macdhist']")
+            return (f"{prefix}macd = ta.MACD({d}, fastperiod={fast}, slowperiod={slow}, signalperiod={signal})\n"
+                    f"{prefix}{d}['macd'] = macd['macd']\n"
+                    f"{prefix}{d}['macdsignal'] = macd['macdsignal']\n"
+                    f"{prefix}{d}['macdhist'] = macd['macdhist']")
         elif ind.type == 'BBANDS':
             period = ind.parameters.get('period', 20)
             std_dev = ind.parameters.get('std_dev', 2.0)
-            return (f"{prefix}bollinger = ta.BBANDS(informative, timeperiod={period}, nbdevup={std_dev}, nbdevdn={std_dev})\n"
-                    f"{prefix}informative['bb_upperband'] = bollinger['upperband']\n"
-                    f"{prefix}informative['bb_middleband'] = bollinger['middleband']\n"
-                    f"{prefix}informative['bb_lowerband'] = bollinger['lowerband']")
+            return (f"{prefix}bollinger = ta.BBANDS({d}, timeperiod={period}, nbdevup={std_dev}, nbdevdn={std_dev})\n"
+                    f"{prefix}{d}['bb_upperband'] = bollinger['upperband']\n"
+                    f"{prefix}{d}['bb_middleband'] = bollinger['middleband']\n"
+                    f"{prefix}{d}['bb_lowerband'] = bollinger['lowerband']")
         elif ind.type in ['EMA', 'SMA']:
             period = ind.parameters.get('period', 20)
-            return f"{prefix}informative['{ind.type.lower()}_{period}'] = ta.{ind.type}(informative, timeperiod={period})"
+            return f"{prefix}{d}['{ind.type.lower()}_{period}'] = ta.{ind.type}({d}, timeperiod={period})"
         elif ind.type == 'STOCH':
             k_period = ind.parameters.get('k_period', 14)
             d_period = ind.parameters.get('d_period', 3)
-            return (f"{prefix}stoch = ta.STOCH(informative, fastk_period={k_period}, slowk_period={d_period}, slowd_period={d_period})\n"
-                    f"{prefix}informative['slowk'] = stoch['slowk']\n"
-                    f"{prefix}informative['slowd'] = stoch['slowd']")
+            return (f"{prefix}stoch = ta.STOCH({d}, fastk_period={k_period}, slowk_period={d_period}, slowd_period={d_period})\n"
+                    f"{prefix}{d}['slowk'] = stoch['slowk']\n"
+                    f"{prefix}{d}['slowd'] = stoch['slowd']")
         elif ind.type == 'ATR':
             period = ind.parameters.get('period', 14)
-            return f"{prefix}informative['atr_{period}'] = ta.ATR(informative, timeperiod={period})"
+            return f"{prefix}{d}['atr_{period}'] = ta.ATR({d}, timeperiod={period})"
         elif ind.type == 'ADX':
             period = ind.parameters.get('period', 14)
-            return f"{prefix}informative['adx_{period}'] = ta.ADX(informative, timeperiod={period})"
+            return f"{prefix}{d}['adx_{period}'] = ta.ADX({d}, timeperiod={period})"
         elif ind.type == 'CCI':
             period = ind.parameters.get('period', 20)
-            return f"{prefix}informative['cci_{period}'] = ta.CCI(informative, timeperiod={period})"
+            return f"{prefix}{d}['cci_{period}'] = ta.CCI({d}, timeperiod={period})"
         return f"{prefix}pass  # Unsupported indicator: {ind.type}"
     
     def _generate_indicator_code(self, indicators: List[IndicatorGene]) -> str:
-        """Generate Python code for indicators."""
+        """Generate Python code for indicators.
+        
+        Deduplicates identical indicators (same type + params) to avoid
+        redundant calculations (e.g., multiple CDL_DOJI with no parameters).
+        """
         lines = []
         
+        # Deduplicate: track (type, frozen_params) to skip identical indicators
+        seen_indicators = set()
+        unique_indicators = []
         for ind in indicators:
+            # Build a hashable key from type + sorted params
+            params_key = tuple(sorted(ind.parameters.items())) if ind.parameters else ()
+            dedup_key = (ind.type, params_key)
+            if dedup_key in seen_indicators:
+                logger.debug(f"Skipping duplicate indicator: {ind.type} (instance_id={ind.instance_id})")
+                continue
+            seen_indicators.add(dedup_key)
+            unique_indicators.append(ind)
+        
+        if len(unique_indicators) < len(indicators):
+            logger.info(f"[DEDUP] Removed {len(indicators) - len(unique_indicators)} duplicate indicator(s)")
+        
+        for ind in unique_indicators:
             if ind.type == 'RSI':
                 period = ind.parameters.get('period', 14)
                 lines.append(f"        dataframe['rsi_{period}'] = ta.RSI(dataframe, timeperiod={period})")
@@ -692,12 +793,37 @@ class {strategy_name}(IStrategy):
             elif ind.type == 'SUPERTREND':
                 period = ind.parameters.get('period', 10)
                 multiplier = ind.parameters.get('multiplier', 3.0)
-                lines.append(f"        # SuperTrend calculation")
-                lines.append(f"        hl2 = (dataframe['high'] + dataframe['low']) / 2")
-                lines.append(f"        atr_st = ta.ATR(dataframe, timeperiod={period})")
-                lines.append(f"        dataframe['supertrend_upper'] = hl2 + ({multiplier} * atr_st)")
-                lines.append(f"        dataframe['supertrend_lower'] = hl2 - ({multiplier} * atr_st)")
-                lines.append(f"        dataframe['supertrend'] = dataframe['close'] > dataframe['supertrend_lower']")
+                lines.append(f"        # SuperTrend calculation with direction state machine")
+                lines.append(f"        _hl2 = (dataframe['high'] + dataframe['low']) / 2")
+                lines.append(f"        _atr_st = ta.ATR(dataframe, timeperiod={period})")
+                lines.append(f"        _st_upper_basic = _hl2 + ({multiplier} * _atr_st)")
+                lines.append(f"        _st_lower_basic = _hl2 - ({multiplier} * _atr_st)")
+                lines.append(f"        # Final bands start as basic bands")
+                lines.append(f"        _st_upper_final = _st_upper_basic.copy()")
+                lines.append(f"        _st_lower_final = _st_lower_basic.copy()")
+                lines.append(f"        _st_direction = pd.Series(1, index=dataframe.index)  # 1=up, -1=down")
+                lines.append(f"        for i in range(1, len(dataframe)):")
+                lines.append(f"            # Ratchet bands: only move in favorable direction")
+                lines.append(f"            if _st_lower_basic.iloc[i] > _st_lower_final.iloc[i-1]:")
+                lines.append(f"                _st_lower_final.iloc[i] = _st_lower_basic.iloc[i]")
+                lines.append(f"            else:")
+                lines.append(f"                _st_lower_final.iloc[i] = _st_lower_final.iloc[i-1]")
+                lines.append(f"            if _st_upper_basic.iloc[i] < _st_upper_final.iloc[i-1]:")
+                lines.append(f"                _st_upper_final.iloc[i] = _st_upper_basic.iloc[i]")
+                lines.append(f"            else:")
+                lines.append(f"                _st_upper_final.iloc[i] = _st_upper_final.iloc[i-1]")
+                lines.append(f"            # Direction flip logic")
+                lines.append(f"            prev_dir = _st_direction.iloc[i-1]")
+                lines.append(f"            if prev_dir == 1 and dataframe['close'].iloc[i] < _st_lower_final.iloc[i]:")
+                lines.append(f"                _st_direction.iloc[i] = -1")
+                lines.append(f"            elif prev_dir == -1 and dataframe['close'].iloc[i] > _st_upper_final.iloc[i]:")
+                lines.append(f"                _st_direction.iloc[i] = 1")
+                lines.append(f"            else:")
+                lines.append(f"                _st_direction.iloc[i] = prev_dir")
+                lines.append(f"        dataframe['supertrend_upper'] = _st_upper_final")
+                lines.append(f"        dataframe['supertrend_lower'] = _st_lower_final")
+                lines.append(f"        dataframe['supertrend_direction'] = _st_direction")
+                lines.append(f"        dataframe['supertrend'] = (_st_direction == 1)  # True when bullish")
             
             elif ind.type == 'ICHIMOKU':
                 tenkan = ind.parameters.get('tenkan_period', 9)
@@ -724,9 +850,10 @@ class {strategy_name}(IStrategy):
                 lines.append(f"        dataframe['donchian_mid'] = (dataframe['donchian_upper'] + dataframe['donchian_lower']) / 2")
             
             elif ind.type == 'VWAP':
-                lines.append(f"        # Volume Weighted Average Price")
-                lines.append(f"        typical_price = (dataframe['high'] + dataframe['low'] + dataframe['close']) / 3")
-                lines.append(f"        dataframe['vwap'] = (typical_price * dataframe['volume']).cumsum() / dataframe['volume'].cumsum()")
+                vwap_period = ind.parameters.get('period', 20)
+                lines.append(f"        # Volume Weighted Average Price (rolling {vwap_period}-period)")
+                lines.append(f"        _tp = (dataframe['high'] + dataframe['low'] + dataframe['close']) / 3")
+                lines.append(f"        dataframe['vwap'] = (_tp * dataframe['volume']).rolling({vwap_period}).sum() / dataframe['volume'].rolling({vwap_period}).sum()")
             
             elif ind.type == 'PSAR':
                 acceleration = ind.parameters.get('acceleration', 0.02)
@@ -784,13 +911,59 @@ class {strategy_name}(IStrategy):
         
         return '\n'.join(lines) if lines else "        # No indicators"
     
-    def _generate_condition_code(self, conditions: List[ConditionGene], indicators: List[IndicatorGene], is_entry: bool) -> str:
-        """Generate Python code for entry/exit conditions."""
-        if not conditions:
-            signal_col = 'enter_long' if is_entry else 'exit_long'
-            return f"        dataframe['{signal_col}'] = 0\n"
+    def _add_replacement_conditions(self, strategy_gene: StrategyGene, count: int, is_entry: bool) -> None:
+        """
+        Add replacement conditions from the strategy's existing indicators.
         
-        signal_col = 'enter_long' if is_entry else 'exit_long'
+        Called when pre-code-gen validation detects that too few conditions
+        will survive the indicator-existence filter.
+        
+        Args:
+            strategy_gene: Strategy gene to modify in-place
+            count: Number of conditions to add
+            is_entry: True for entry, False for exit
+        """
+        import random
+        
+        existing = strategy_gene.entry_conditions if is_entry else strategy_gene.exit_conditions
+        existing_keys = {(c.indicator, c.operator, str(c.threshold)) for c in existing}
+        
+        added = 0
+        attempts = 0
+        max_attempts = count * 10
+        
+        while added < count and attempts < max_attempts:
+            attempts += 1
+            # Pick from indicators actually present in strategy
+            if not strategy_gene.indicators:
+                break
+            ind = random.choice(strategy_gene.indicators)
+            cond = self._generate_condition_for_indicator(ind, is_entry)
+            if cond:
+                key = (cond.indicator, cond.operator, str(cond.threshold))
+                if key not in existing_keys:
+                    cond.logic = 'AND'
+                    existing.append(cond)
+                    existing_keys.add(key)
+                    added += 1
+                    logger.debug(f"Added replacement {'entry' if is_entry else 'exit'} condition: "
+                               f"{cond.indicator} {cond.operator} {cond.threshold}")
+        
+        if added < count:
+            logger.warning(f"Could only add {added}/{count} replacement {'entry' if is_entry else 'exit'} conditions")
+    
+    def _generate_condition_code(self, conditions: List[ConditionGene], indicators: List[IndicatorGene], is_entry: bool, signal_col_override: str = None) -> str:
+        """Generate Python code for entry/exit conditions.
+        
+        Args:
+            conditions: List of condition genes
+            indicators: List of indicator genes
+            is_entry: True for entry signals, False for exit
+            signal_col_override: Override signal column name (e.g. 'enter_short', 'exit_short')
+        """
+        signal_col = signal_col_override or ('enter_long' if is_entry else 'exit_long')
+        if not conditions:
+            return f"        dataframe['{signal_col}'] = 0\n"
         
         # Build condition expressions, filtering out conditions that reference non-existent indicators
         condition_exprs = []
@@ -881,7 +1054,25 @@ class {strategy_name}(IStrategy):
         """
         # Extract indicator type from condition reference
         indicator_ref = condition.indicator
-        indicator_type = indicator_ref.split('_')[0] if '_' in indicator_ref else indicator_ref
+        
+        # CDL_* patterns have underscore in type name, not instance ID
+        # Instance IDs look like 'RSI_0', 'EMA_1' (type + number)
+        # BUT patterns can also have instance IDs like 'CDL_HAMMER_0'
+        if indicator_ref.startswith('CDL_'):
+            # Check for instance ID suffix on CDL patterns
+            parts = indicator_ref.rsplit('_', 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                indicator_type = parts[0]  # e.g., 'CDL_HAMMER_0' -> 'CDL_HAMMER'
+            else:
+                indicator_type = indicator_ref  # e.g., 'CDL_HAMMER' stays as-is
+        elif '_' in indicator_ref:
+            parts = indicator_ref.rsplit('_', 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                indicator_type = parts[0]  # e.g., 'RSI_0' -> 'RSI'
+            else:
+                indicator_type = indicator_ref
+        else:
+            indicator_type = indicator_ref
         
         # Check if any indicator in the list matches this type
         for ind in indicators:
@@ -898,11 +1089,44 @@ class {strategy_name}(IStrategy):
         
         Handles both type-based references (e.g., 'RSI') and instance-based references (e.g., 'RSI_0').
         For informative timeframe indicators, appends the TF suffix (e.g., rsi_14_1h).
+        
+        Supported operators:
+        - '<', '>', 'cross_above', 'cross_below': Standard comparisons
+        - 'increasing': Value rising over lookback bars (slope > 0)
+        - 'decreasing': Value falling over lookback bars (slope < 0)
+        - 'between': Value between threshold (lower) and threshold_upper
+        - 'value_above_ago': Current value > value from lookback bars ago
         """
         # Extract indicator type from condition reference
-        # Handle both 'RSI' and 'RSI_0' formats
+        # Handle both 'RSI' and 'RSI_0' formats, but preserve full type for CDL_* patterns
         indicator_ref = condition.indicator
-        indicator_type = indicator_ref.split('_')[0] if '_' in indicator_ref else indicator_ref
+        
+        # CDL_* patterns have underscore in type name, not instance ID
+        # Instance IDs look like 'RSI_0', 'EMA_1' (type + number)
+        # Patterns look like 'CDL_HAMMER', 'CDL_ENGULFING' (CDL + descriptor)
+        # BUT patterns can also have instance IDs like 'CDL_HAMMER_0'
+        if indicator_ref.startswith('CDL_'):
+            # Strip ALL trailing numeric suffixes to handle cascaded names
+            # CDL_HAMMER_0 -> CDL_HAMMER, CDL_ENGULFING_0_0_0 -> CDL_ENGULFING
+            indicator_type = indicator_ref
+            while '_' in indicator_type:
+                parts = indicator_type.rsplit('_', 1)
+                if len(parts) == 2 and parts[1].isdigit():
+                    indicator_type = parts[0]
+                else:
+                    break
+            # Safety: never strip below CDL_ base
+            if not (indicator_type.startswith('CDL_') and len(indicator_type) > 4):
+                indicator_type = indicator_ref  # revert if stripping went too far
+        elif '_' in indicator_ref:
+            # Check if this looks like an instance ID (ends with digit)
+            parts = indicator_ref.rsplit('_', 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                indicator_type = parts[0]  # e.g., 'RSI_0' -> 'RSI'
+            else:
+                indicator_type = indicator_ref  # Unknown format, use as-is
+        else:
+            indicator_type = indicator_ref
         
         # Find the specific indicator instance or use first matching type
         target_indicator = None
@@ -942,6 +1166,17 @@ class {strategy_name}(IStrategy):
             elif target_indicator.type == 'STOCH':
                 k_period = target_indicator.parameters.get('k_period', 14)
                 indicator_periods[indicator_ref] = k_period
+        
+        # --- Handle advanced operators generically for all indicators ---
+        # These operators (increasing, decreasing, between, value_above_ago) work on any
+        # numeric column, so we resolve the primary column name and delegate.
+        if condition.operator in ('increasing', 'decreasing', 'between', 'value_above_ago'):
+            primary_col = self._resolve_primary_column(indicator_type, indicator_ref,
+                                                        indicator_periods, tf_suffix, target_indicator)
+            if primary_col:
+                result = self._generate_advanced_operator_condition(primary_col, condition)
+                if result:
+                    return result
         
         if indicator_type == 'RSI':
             # Use actual RSI period if available (try instance_id first, then type)
@@ -1141,5 +1376,91 @@ class {strategy_name}(IStrategy):
         elif indicator_type == 'CDL_3BLACKCROWS':
             return "(dataframe['cdl_3blackcrows'] != 0)"  # Three black crows detected
         
-        # Default fallback - use vectorized condition, not scalar
-        return "(dataframe['volume'] > 0)"
+        # Default fallback - return None and log warning instead of always-true condition
+        logger.warning(f"No condition handler for indicator type '{indicator_type}' "
+                       f"with operator '{condition.operator}'. Skipping condition.")
+        return None
+    
+    def _resolve_primary_column(self, indicator_type: str, indicator_ref: str,
+                                 indicator_periods: dict, tf_suffix: str,
+                                 target_indicator) -> str:
+        """Resolve the primary dataframe column for an indicator type.
+        
+        Used by advanced operators (increasing, decreasing, between, value_above_ago)
+        to determine which column to operate on.
+        
+        Returns:
+            Column name string, or empty string if unknown.
+        """
+        if indicator_type == 'RSI':
+            period = indicator_periods.get(indicator_ref, indicator_periods.get('RSI', 14))
+            return f"rsi_{period}{tf_suffix}"
+        elif indicator_type == 'MACD':
+            return f"macd{tf_suffix}"
+        elif indicator_type == 'STOCH':
+            return f"slowk{tf_suffix}"
+        elif indicator_type == 'CCI':
+            period = indicator_periods.get(indicator_ref, indicator_periods.get('CCI', 20))
+            return f"cci_{period}{tf_suffix}"
+        elif indicator_type == 'ADX':
+            period = indicator_periods.get(indicator_ref, indicator_periods.get('ADX', 14))
+            return f"adx_{period}{tf_suffix}"
+        elif indicator_type in ('EMA', 'SMA'):
+            period = indicator_periods.get(indicator_ref, indicator_periods.get(indicator_type, 20))
+            return f"{indicator_type.lower()}_{period}{tf_suffix}"
+        elif indicator_type == 'BBANDS':
+            return f"bb_middleband{tf_suffix}"
+        elif indicator_type == 'CMF':
+            return "cmf"
+        elif indicator_type == 'VROC':
+            return "vroc"
+        elif indicator_type == 'ATR':
+            period = indicator_periods.get(indicator_ref, indicator_periods.get('ATR', 14))
+            return f"atr_{period}{tf_suffix}"
+        elif indicator_type == 'PSAR':
+            return "psar"
+        elif indicator_type == 'SUPERTREND':
+            return "supertrend_lower"
+        elif indicator_type == 'ICHIMOKU':
+            return "tenkan_sen"
+        elif indicator_type == 'DONCHIAN':
+            return "donchian_mid"
+        elif indicator_type == 'VWAP':
+            return "vwap"
+        return ""
+    
+    def _generate_advanced_operator_condition(self, col: str, condition: ConditionGene) -> str:
+        """Generate code for advanced operators (increasing, decreasing, between, value_above_ago).
+        
+        These operators work on any numeric column and provide richer signal logic than
+        simple threshold comparisons.
+        
+        Args:
+            col: The dataframe column name (e.g., 'rsi_14', 'macd')
+            condition: The ConditionGene with operator, threshold, lookback, etc.
+            
+        Returns:
+            Python expression string for the condition, or empty string if not applicable.
+        """
+        lookback = getattr(condition, 'lookback', 3)
+        lookback = max(2, lookback)  # Minimum 2 bars for slope/comparison
+        
+        if condition.operator == 'increasing':
+            # Value is rising: current value > value N bars ago
+            return f"(dataframe['{col}'] > dataframe['{col}'].shift({lookback}))"
+        
+        elif condition.operator == 'decreasing':
+            # Value is falling: current value < value N bars ago
+            return f"(dataframe['{col}'] < dataframe['{col}'].shift({lookback}))"
+        
+        elif condition.operator == 'between':
+            # Value is between lower and upper thresholds
+            lower = min(condition.threshold, getattr(condition, 'threshold_upper', condition.threshold + 10))
+            upper = max(condition.threshold, getattr(condition, 'threshold_upper', condition.threshold + 10))
+            return f"((dataframe['{col}'] > {lower}) & (dataframe['{col}'] < {upper}))"
+        
+        elif condition.operator == 'value_above_ago':
+            # Current value exceeds its value from N bars ago by threshold amount
+            return f"(dataframe['{col}'] - dataframe['{col}'].shift({lookback}) > {condition.threshold})"
+        
+        return ""

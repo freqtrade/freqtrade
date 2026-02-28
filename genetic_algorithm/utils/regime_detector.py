@@ -429,6 +429,8 @@ class RegimeDetector:
         - Stay in trend mode until ADX < adx_exit
         - In trend mode: +DI > -DI = bullish, else bearish
         - In range mode: sideways
+        
+        Uses numpy vectorization with a single pass for hysteresis state tracking.
         """
         params = self.params
         adx_enter = params.get('adx_enter', 25)
@@ -438,32 +440,37 @@ class RegimeDetector:
         # Calculate ADX and DI
         adx, plus_di, minus_di = self._calculate_adx(df, adx_period)
         
-        regime = pd.Series(index=df.index, dtype=object)
-        regime[:] = RegimeType.UNCERTAIN
+        n = len(df)
+        adx_vals = adx.values
+        plus_di_vals = plus_di.values
+        minus_di_vals = minus_di.values
         
-        # Track trend mode with hysteresis
-        in_trend_mode = False
+        # Vectorized hysteresis: compute trigger/release signals first
+        enters_trend = adx_vals > adx_enter   # Signal to enter trend mode
+        exits_trend = adx_vals < adx_exit      # Signal to exit trend mode
         
-        for i in range(len(df)):
-            if pd.isna(adx.iloc[i]):
+        # Single pass for hysteresis state (unavoidable due to state dependency)
+        # But using numpy arrays for speed instead of .iloc[] lookup
+        in_trend = np.zeros(n, dtype=np.bool_)
+        trend_state = False
+        for i in range(n):
+            if np.isnan(adx_vals[i]):
                 continue
-                
-            current_adx = adx.iloc[i]
-            
-            # Hysteresis logic: different thresholds for entry/exit
-            if not in_trend_mode and current_adx > adx_enter:
-                in_trend_mode = True
-            elif in_trend_mode and current_adx < adx_exit:
-                in_trend_mode = False
-            
-            # Classify based on mode
-            if in_trend_mode:
-                if plus_di.iloc[i] > minus_di.iloc[i]:
-                    regime.iloc[i] = RegimeType.BULLISH
-                else:
-                    regime.iloc[i] = RegimeType.BEARISH
-            else:
-                regime.iloc[i] = RegimeType.SIDEWAYS
+            if not trend_state and enters_trend[i]:
+                trend_state = True
+            elif trend_state and exits_trend[i]:
+                trend_state = False
+            in_trend[i] = trend_state
+        
+        # Vectorized regime classification
+        bullish_mask = in_trend & (plus_di_vals > minus_di_vals)
+        bearish_mask = in_trend & ~(plus_di_vals > minus_di_vals)
+        sideways_mask = ~in_trend & ~np.isnan(adx_vals)
+        
+        regime = pd.Series(RegimeType.UNCERTAIN, index=df.index, dtype=object)
+        regime[bullish_mask] = RegimeType.BULLISH
+        regime[bearish_mask] = RegimeType.BEARISH
+        regime[sideways_mask] = RegimeType.SIDEWAYS
         
         return regime
     
@@ -689,30 +696,42 @@ class RegimeDetector:
         try:
             hmm_detector = RegimeDetector(method='hmm', params={'n_states': 3, 'min_dwell': 10})
             methods_weights['hmm'] = (hmm_detector.detect(df), 1)
-        except Exception:
-            pass  # Skip HMM if it fails
+        except Exception as e:
+            logger.warning(f"HMM regime detection failed, skipping: {type(e).__name__}: {e}")
         
-        regime = pd.Series(index=df.index, dtype=object)
+        regime = pd.Series(RegimeType.UNCERTAIN, index=df.index, dtype=object)
         
-        # Weighted voting for each row
-        for idx in df.index:
-            vote_scores = {}
-            
-            for method_name, (method_regimes, weight) in methods_weights.items():
-                vote = method_regimes.get(idx, RegimeType.UNCERTAIN)
-                
-                # Map VOLATILE to SIDEWAYS for voting consistency
-                if vote == RegimeType.VOLATILE:
-                    vote = RegimeType.SIDEWAYS
-                    
-                if vote != RegimeType.UNCERTAIN:
-                    vote_scores[vote] = vote_scores.get(vote, 0) + weight
-            
-            if not vote_scores:
-                regime[idx] = RegimeType.UNCERTAIN
-            else:
-                # Get highest weighted vote
-                regime[idx] = max(vote_scores.keys(), key=lambda k: vote_scores[k])
+        # Vectorized weighted voting using numeric encoding
+        regime_map = {
+            RegimeType.BULLISH: 0,
+            RegimeType.BEARISH: 1,
+            RegimeType.SIDEWAYS: 2,
+        }
+        n_regimes = 3
+        n = len(df.index)
+        
+        # Accumulate weighted votes per regime type
+        vote_matrix = np.zeros((n, n_regimes), dtype=np.float32)
+        
+        for method_name, (method_regimes, weight) in methods_weights.items():
+            # Align method_regimes to df.index
+            aligned = method_regimes.reindex(df.index)
+            for regime_type, regime_idx in regime_map.items():
+                mask = (aligned == regime_type)
+                # Also treat VOLATILE as SIDEWAYS
+                if regime_type == RegimeType.SIDEWAYS:
+                    mask = mask | (aligned == RegimeType.VOLATILE)
+                vote_matrix[mask.values, regime_idx] += weight
+        
+        # Find winner: highest weighted vote per row
+        has_votes = vote_matrix.sum(axis=1) > 0
+        winners = np.argmax(vote_matrix, axis=1)
+        
+        # Map back to RegimeType
+        idx_to_regime = {0: RegimeType.BULLISH, 1: RegimeType.BEARISH, 2: RegimeType.SIDEWAYS}
+        for regime_idx, regime_type in idx_to_regime.items():
+            mask = has_votes & (winners == regime_idx)
+            regime[mask] = regime_type
         
         return regime
     
@@ -877,16 +896,28 @@ class RegimeDetector:
         
         # Select top N from each regime
         balanced = []
+        missing_regimes = []
         for regime in target_regimes:
             regime_segs = regime_groups.get(regime, [])
             selected = regime_segs[:segments_per_regime]
             balanced.extend(selected)
             
-            if len(selected) < segments_per_regime:
+            if len(selected) == 0:
+                missing_regimes.append(regime.value)
+            elif len(selected) < segments_per_regime:
                 logger.warning(
                     f"Only {len(selected)} segments available for {regime.value} "
                     f"(requested {segments_per_regime})"
                 )
+        
+        # If entire regimes are missing, warn prominently — this likely means
+        # the detection method/params need adjustment
+        if missing_regimes:
+            logger.warning(
+                f"⚠ REGIME DETECTION GAP: No segments found for {missing_regimes}. "
+                f"Detection method '{self.method}' with current params may be too restrictive. "
+                f"Consider switching to 'adx_di_hysteresis' or lowering adx thresholds."
+            )
         
         logger.info(f"Selected {len(balanced)} balanced segments across {len(target_regimes)} regimes")
         

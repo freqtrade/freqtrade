@@ -32,6 +32,7 @@ def simplify_strategy(
     epsilon: float = 0.02,
     max_removals: int = 1,
     random_seed: Optional[int] = None,
+    min_entry_conditions: int = 2,
 ) -> Tuple[StrategyGene, float, int]:
     """
     Try to simplify a strategy by removing components.
@@ -64,7 +65,7 @@ def simplify_strategy(
     total_removed = 0
 
     for _ in range(max_removals):
-        candidates = _build_removal_candidates(current)
+        candidates = _build_removal_candidates(current, min_entry_conditions=min_entry_conditions)
         if not candidates:
             break
 
@@ -73,7 +74,7 @@ def simplify_strategy(
 
         removed_this_round = False
         for kind, index in candidates:
-            trial = _apply_removal(current, kind, index)
+            trial = _apply_removal(current, kind, index, min_entry_conditions=min_entry_conditions)
             if trial is None:
                 continue
 
@@ -109,12 +110,15 @@ def simplify_strategy(
     return current, current_fitness, total_removed
 
 
-def _build_removal_candidates(gene: StrategyGene) -> List[Tuple[str, int]]:
+def _build_removal_candidates(
+    gene: StrategyGene,
+    min_entry_conditions: int = 2,
+) -> List[Tuple[str, int]]:
     """
     Build a list of ``(kind, index)`` tuples representing removable components.
 
     Skips removals that would make the strategy invalid (e.g. removing the
-    last indicator or the last entry condition).
+    last indicator or dropping below min_entry_conditions).
     """
     candidates: List[Tuple[str, int]] = []
 
@@ -123,8 +127,8 @@ def _build_removal_candidates(gene: StrategyGene) -> List[Tuple[str, int]]:
         for i in range(len(gene.indicators)):
             candidates.append(('indicator', i))
 
-    # Entry conditions (only if > 1 remain)
-    if len(gene.entry_conditions) > 1:
+    # Entry conditions (only if above min_entry_conditions)
+    if len(gene.entry_conditions) > min_entry_conditions:
         for i in range(len(gene.entry_conditions)):
             candidates.append(('entry_condition', i))
 
@@ -136,7 +140,8 @@ def _build_removal_candidates(gene: StrategyGene) -> List[Tuple[str, int]]:
 
 
 def _apply_removal(
-    gene: StrategyGene, kind: str, index: int
+    gene: StrategyGene, kind: str, index: int,
+    min_entry_conditions: int = 2,
 ) -> Optional[StrategyGene]:
     """
     Return a *copy* of ``gene`` with the specified component removed, or
@@ -160,13 +165,13 @@ def _apply_removal(
                 c for c in trial.exit_conditions if c.indicator != ref
             ]
 
-            # Must still have at least one entry condition
-            if not trial.entry_conditions:
+            # Must still have at least min_entry_conditions
+            if len(trial.entry_conditions) < min_entry_conditions:
                 return None
 
         elif kind == 'entry_condition':
             del trial.entry_conditions[index]
-            if not trial.entry_conditions:
+            if len(trial.entry_conditions) < min_entry_conditions:
                 return None
 
         elif kind == 'exit_condition':
@@ -205,6 +210,7 @@ def apply_parsimony_to_elites(
     """
     epsilon = config.get('epsilon', 0.02)
     max_removals = config.get('max_removals', 1)
+    min_entry_conditions = config.get('min_entry_conditions', 2)
     total_removed = 0
 
     for ind in elites:
@@ -218,6 +224,7 @@ def apply_parsimony_to_elites(
             evaluate_fn,
             epsilon=epsilon,
             max_removals=max_removals,
+            min_entry_conditions=min_entry_conditions,
         )
 
         if n_removed > 0:
