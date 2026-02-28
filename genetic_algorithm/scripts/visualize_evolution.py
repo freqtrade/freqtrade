@@ -232,6 +232,118 @@ def plot_top_strategies(stats: dict, output_dir: Path):
     return plot_path
 
 
+def plot_overfitting_analysis(stats: dict, output_dir: Path):
+    """
+    Plot overfitting analysis: in-sample vs holdout fitness, holdout degradation trend.
+    
+    Uses generation-level holdout monitoring data (if available) and/or
+    detailed results JSON from overfit_analysis.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    fig.suptitle('Overfitting Analysis', fontsize=14, fontweight='bold')
+    has_data = False
+    
+    # --- Panel 1: Holdout degradation over generations ---
+    ax1 = axes[0]
+    generations = stats.get('generations', [])
+    holdout_gens = []
+    holdout_avg_degs = []
+    holdout_best_degs = []
+    
+    for g in generations:
+        avg_deg = g.get('holdout_avg_degradation')
+        if avg_deg is not None:
+            holdout_gens.append(g.get('generation', 0))
+            holdout_avg_degs.append(avg_deg)
+            holdout_best_degs.append(g.get('holdout_best_degradation', avg_deg))
+    
+    if holdout_gens:
+        has_data = True
+        ax1.plot(holdout_gens, holdout_avg_degs, 'r-o', linewidth=2, label='Avg Degradation (%)', markersize=5)
+        ax1.plot(holdout_gens, holdout_best_degs, 'g-s', linewidth=1.5, label='Best Degradation (%)', markersize=4, alpha=0.7)
+        ax1.axhline(y=30, color='orange', linestyle='--', alpha=0.6, label='Warning (30%)')
+        ax1.axhline(y=50, color='red', linestyle='--', alpha=0.6, label='Overfit (50%)')
+        ax1.fill_between(holdout_gens, 0, holdout_avg_degs, alpha=0.15, color='red')
+        ax1.set_xlabel('Generation')
+        ax1.set_ylabel('Holdout Degradation (%)')
+        ax1.set_title('Holdout Degradation Over Generations')
+        ax1.legend(loc='upper left', fontsize=8)
+        ax1.grid(True, alpha=0.3)
+    else:
+        ax1.text(0.5, 0.5, 'No holdout monitoring data\n(enable holdout_monitoring in config)',
+                transform=ax1.transAxes, ha='center', va='center', fontsize=12, color='gray')
+        ax1.set_title('Holdout Degradation Over Generations')
+    
+    # --- Panel 2: In-sample vs Holdout fitness (from detailed results JSON) ---
+    ax2 = axes[1]
+    detailed_file = None
+    plots_dir = output_dir
+    # Try to find the detailed results JSON
+    for parent in [output_dir, output_dir.parent]:
+        for f in sorted(parent.glob('results_detailed_*.json'), reverse=True):
+            detailed_file = f
+            break
+        if detailed_file:
+            break
+    
+    if detailed_file:
+        try:
+            with open(detailed_file, 'r') as f:
+                detailed = json.load(f)
+            
+            strategies = detailed.get('strategies', [])
+            if strategies:
+                has_data = True
+                ranks = [s['rank'] for s in strategies]
+                in_sample = [s['assessment']['fitness'] for s in strategies]
+                holdout = [s['assessment'].get('holdout_fitness') for s in strategies]
+                labels_list = [s['assessment'].get('overall_label', 'UNKNOWN') for s in strategies]
+                
+                # Color by overfit label
+                color_map = {'SAFE': 'green', 'WARNING': 'orange', 'OVERFIT': 'red', 'UNKNOWN': 'gray'}
+                colors = [color_map.get(l, 'gray') for l in labels_list]
+                
+                ax2.bar([r - 0.2 for r in ranks], in_sample, width=0.35, label='In-Sample', color='steelblue', alpha=0.8)
+                holdout_vals = [h if h is not None else 0 for h in holdout]
+                ax2.bar([r + 0.2 for r in ranks], holdout_vals, width=0.35, label='Holdout', color='coral', alpha=0.8)
+                
+                # Add overfit labels on top
+                for r, lbl, fitness in zip(ranks, labels_list, in_sample):
+                    icon = {'SAFE': '✓', 'WARNING': '⚠', 'OVERFIT': '✗', 'UNKNOWN': '?'}.get(lbl, '?')
+                    ax2.text(r, max(fitness, holdout_vals[r-1]) + 0.01, f'{icon} {lbl}',
+                            ha='center', fontsize=8, fontweight='bold',
+                            color=color_map.get(lbl, 'gray'))
+                
+                ax2.set_xlabel('Strategy Rank')
+                ax2.set_ylabel('Fitness Score')
+                ax2.set_title('In-Sample vs Holdout Fitness')
+                ax2.set_xticks(ranks)
+                ax2.legend()
+                ax2.grid(True, alpha=0.3, axis='y')
+        except Exception as e:
+            ax2.text(0.5, 0.5, f'Error loading results: {e}',
+                    transform=ax2.transAxes, ha='center', va='center', fontsize=10, color='red')
+    else:
+        ax2.text(0.5, 0.5, 'No detailed results JSON found\n(run GA with overfit analysis enabled)',
+                transform=ax2.transAxes, ha='center', va='center', fontsize=12, color='gray')
+        ax2.set_title('In-Sample vs Holdout Fitness')
+    
+    if not has_data:
+        plt.close()
+        print("No overfitting data available for visualization")
+        return None
+    
+    plt.tight_layout()
+    
+    plot_path = output_dir / 'plots' / 'overfitting_analysis.png'
+    plot_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(plot_path, dpi=150, bbox_inches='tight')
+    print(f"Saved: {plot_path}")
+    
+    plt.close()
+    return plot_path
+
+
 def plot_metrics_evolution(stats: dict, output_dir: Path):
     """
     Plot how individual metrics evolve over generations.
@@ -502,6 +614,10 @@ Examples:
     plots_created = []
     
     plot = plot_fitness_evolution(stats, output_dir)
+    if plot:
+        plots_created.append(plot)
+    
+    plot = plot_overfitting_analysis(stats, output_dir)
     if plot:
         plots_created.append(plot)
     

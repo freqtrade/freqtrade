@@ -170,6 +170,9 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
     """
     Mutate indicator set (add, remove, or replace indicators).
     
+    Uses adaptive indicator weights from feature importance tracking
+    when available (stored in config['_indicator_weights']).
+    
     Args:
         individual: Individual to mutate
         mutation_rate: Probability of mutation
@@ -184,7 +187,17 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
     max_indicators = indicator_config.get('max_per_strategy', 5)
     min_indicators = indicator_config.get('min_per_strategy', 2)
     
+    # Get adaptive weights (injected by evolution.py from feature importance)
+    indicator_weights = config.get('_indicator_weights', {})
+    
     mutations_applied = []
+    
+    def _weighted_choice(candidates: list) -> str:
+        """Pick an indicator using adaptive weights if available, else uniform."""
+        if not indicator_weights or not candidates:
+            return random.choice(candidates)
+        weights = [indicator_weights.get(c, 1.0) for c in candidates]
+        return random.choices(candidates, weights=weights, k=1)[0]
     
     # Choose mutation operation
     operations = []
@@ -202,7 +215,7 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
         available_new = [t for t in available_indicators if t not in existing_types]
         
         if available_new:
-            new_type = random.choice(available_new)
+            new_type = _weighted_choice(available_new)
             new_indicator = _create_random_indicator(new_type, indicator_config)
             mutated_gene.indicators.append(new_indicator)
             mutations_applied.append(f"add_{new_type}")
@@ -256,7 +269,7 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
             # Choose a different indicator type
             available_new = [t for t in available_indicators if t != old_type]
             if available_new:
-                new_type = random.choice(available_new)
+                new_type = _weighted_choice(available_new)
                 new_indicator = _create_random_indicator(new_type, indicator_config)
                 mutated_gene.indicators[idx] = new_indicator
                 mutations_applied.append(f"replace_{old_type}_with_{new_type}")
@@ -319,7 +332,14 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
         mutation_type = random.choice(['operator', 'logic', 'threshold'])
         
         if mutation_type == 'operator':
-            condition.operator = random.choice(['<', '>', 'cross_above', 'cross_below'])
+            condition.operator = random.choice(['<', '>', 'cross_above', 'cross_below',
+                                                'increasing', 'decreasing', 'between', 'value_above_ago'])
+            # Set sane defaults for new operators
+            if condition.operator == 'between':
+                # Set a reasonable upper threshold
+                condition.threshold_upper = condition.threshold + abs(condition.threshold) * 0.5
+            elif condition.operator in ('increasing', 'decreasing', 'value_above_ago'):
+                condition.lookback = random.randint(2, 8)
             mutations_applied.append(f"{label}_operator_{idx}")
         elif mutation_type == 'logic':
             condition.logic = 'OR' if condition.logic == 'AND' else 'AND'
@@ -368,14 +388,16 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
                     mutations_applied.append(f"add_exit_condition_{indicator}")
     
     # Possibly remove conditions
-    # IMPORTANT: Must maintain at least 1 entry condition to satisfy validation
+    # Maintain at least min_entry_conditions (default 2) to prevent single-condition overfitting
+    min_entry_conditions = indicator_config.get('min_entry_conditions', 2)
+    min_exit_conditions = indicator_config.get('min_exit_conditions', 1)
     if random.random() < mutation_rate * 0.3:
-        if len(mutated_gene.entry_conditions) > 1:
+        if len(mutated_gene.entry_conditions) > min_entry_conditions:
             removed = mutated_gene.entry_conditions.pop(random.randrange(len(mutated_gene.entry_conditions)))
             mutations_applied.append(f"remove_entry_condition_{removed.indicator}")
         
-        # Exit conditions can be empty, so we can remove them freely
-        if len(mutated_gene.exit_conditions) > 0:
+        # Exit conditions: enforce minimum (configurable, default 1)
+        if len(mutated_gene.exit_conditions) > min_exit_conditions:
             removed = mutated_gene.exit_conditions.pop(random.randrange(len(mutated_gene.exit_conditions)))
             mutations_applied.append(f"remove_exit_condition_{removed.indicator}")
     
@@ -412,7 +434,44 @@ def _create_random_condition(indicator_type: str, is_entry: bool,
         'EMA': ('cross_above', 'cross_below', None, None, None, None),
         'SMA': ('cross_above', 'cross_below', None, None, None, None),
         'ATR': ('>', '<', None, None, None, None),
+        # Extended indicators (mirrored from generator.py condition logic)
+        'PSAR': ('cross_above', 'cross_below', None, None, None, None),
+        'SUPERTREND': ('cross_above', 'cross_below', None, None, None, None),
+        'ICHIMOKU': ('cross_above', 'cross_below', None, None, None, None),
+        'DONCHIAN': ('cross_above', 'cross_below', None, None, None, None),
+        'VWAP': ('cross_above', 'cross_below', None, None, None, None),
+        'CMF': ('>', '<', 'buy_threshold', 'sell_threshold', [0.05, 0.2], [-0.2, -0.05]),
+        'VROC': ('>', '<', 'threshold', 'threshold', [50, 200], [50, 200]),
     }
+    
+    # Candlestick patterns: create threshold-based conditions
+    CDL_BULLISH = ['CDL_ENGULFING', 'CDL_HAMMER', 'CDL_MORNINGSTAR', 'CDL_PIERCING',
+                   'CDL_3WHITESOLDIERS', 'CDL_HARAMI', 'CDL_DOJI']
+    CDL_BEARISH = ['CDL_EVENINGSTAR', 'CDL_SHOOTINGSTAR', 'CDL_DARKCLOUD', 'CDL_3BLACKCROWS']
+    
+    if indicator_type in CDL_BULLISH:
+        if is_entry:
+            return ConditionGene(
+                indicator=indicator_type, operator='>', threshold=0,
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
+            )
+        else:
+            return ConditionGene(
+                indicator=indicator_type, operator='<', threshold=0,
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
+            )
+    
+    if indicator_type in CDL_BEARISH:
+        if is_entry:
+            return ConditionGene(
+                indicator=indicator_type, operator='<', threshold=0,
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
+            )
+        else:
+            return ConditionGene(
+                indicator=indicator_type, operator='>', threshold=0,
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
+            )
     
     if indicator_type not in config_map:
         return None
@@ -420,21 +479,25 @@ def _create_random_condition(indicator_type: str, is_entry: bool,
     entry_op, exit_op, entry_key, exit_key, entry_default, exit_default = config_map[indicator_type]
     operator = entry_op if is_entry else exit_op
     
-    # MACD, BBANDS, EMA, SMA, ATR use threshold 0 (not used in comparison)
-    # ATR doesn't use threshold because it's compared against price or other values
-    if indicator_type in ['MACD', 'BBANDS', 'EMA', 'SMA', 'ATR']:
+    # MACD, BBANDS, EMA, SMA, ATR, PSAR, SUPERTREND, ICHIMOKU, DONCHIAN, VWAP use threshold 0
+    if indicator_type in ['MACD', 'BBANDS', 'EMA', 'SMA', 'ATR', 'PSAR', 'SUPERTREND', 
+                          'ICHIMOKU', 'DONCHIAN', 'VWAP']:
         threshold = 0
     else:
         threshold_key = entry_key if is_entry else exit_key
         default_range = entry_default if is_entry else exit_default
         threshold_range = ind_config.get(threshold_key, default_range)
-        threshold = random.randint(*threshold_range)
+        # Use uniform for float ranges (CMF), randint for integer ranges (RSI, etc.)
+        if any(isinstance(v, float) for v in threshold_range):
+            threshold = random.uniform(*threshold_range)
+        else:
+            threshold = random.randint(*threshold_range)
     
     return ConditionGene(
         indicator=indicator_type,
         operator=operator,
         threshold=threshold,
-        logic=random.choice(['AND', 'OR'])
+        logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]  # Favor AND for selective signals
     )
 
 

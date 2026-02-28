@@ -56,6 +56,9 @@ class BacktestResult:
     # Per-pair performance breakdown
     per_pair_profit: Optional[Dict[str, float]] = None  # pair -> profit percentage
     
+    # Monthly return breakdown for stability analysis
+    monthly_profits: Optional[list] = None  # List of monthly profit percentages
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -545,7 +548,7 @@ class DirectBacktester:
         if self.cache:
             cached_result = self.cache.get(strategy_code, self.backtest_config)
             if cached_result:
-                logger.info(f"Using cached result for {strategy_name}")
+                logger.debug(f"Using cached result for {strategy_name}")
                 return cached_result
         
         # Try multiple times in case of transient errors
@@ -606,6 +609,44 @@ class DirectBacktester:
                 error_message=f"Failed to write strategy file: {e}"
             )
         
+        # Validate generated Python syntax before backtesting
+        try:
+            compile(strategy_code, str(strategy_file), 'exec')
+        except SyntaxError as e:
+            logger.error(f"Generated strategy has syntax error at line {e.lineno}: {e.msg}")
+            return BacktestResult(
+                success=False,
+                strategy_name=strategy_name,
+                error_message=f"Generated strategy syntax error at line {e.lineno}: {e.msg}"
+            )
+        
+        # Deep validation: actually import the module to catch runtime errors
+        # (e.g., missing talib functions, NameError, ImportError)
+        try:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(strategy_name, str(strategy_file))
+            if spec and spec.loader:
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                # Verify the expected class exists in the module
+                if not hasattr(module, strategy_name):
+                    logger.error(f"Strategy module loaded but class '{strategy_name}' not found")
+                    return BacktestResult(
+                        success=False,
+                        strategy_name=strategy_name,
+                        error_message=f"Strategy class '{strategy_name}' not found in module"
+                    )
+        except (ImportError, ModuleNotFoundError, NameError, AttributeError) as e:
+            logger.error(f"Strategy '{strategy_name}' has runtime import error: {e}")
+            return BacktestResult(
+                success=False,
+                strategy_name=strategy_name,
+                error_message=f"Strategy runtime import error: {e}"
+            )
+        except Exception as e:
+            # Don't block on unexpected errors during validation — let FreqTrade try
+            logger.warning(f"Strategy pre-import validation warning for '{strategy_name}': {e}")
+        
         try:
             # Import FreqTrade modules
             from freqtrade.configuration import Configuration
@@ -660,6 +701,10 @@ class DirectBacktester:
                     # Initialize backtesting
                     backtesting = Backtesting(config_dict)
                     
+                    # Skip prior backtest loading - GA generates unique strategies
+                    # and the parallel workers corrupt each other's .meta files
+                    backtesting.load_prior_backtest = lambda: None
+                    
                     # Run backtest
                     backtesting.start()
                     
@@ -703,6 +748,27 @@ class DirectBacktester:
                             logger.debug(f"Per-pair profits: {per_pair}")
                     except Exception as e:
                         logger.debug(f"Could not extract per-pair profits: {e}")
+                    
+                    # Extract monthly profit breakdown for stability analysis
+                    try:
+                        trades_df = strategy_results.get('trades', None)
+                        if trades_df is not None and hasattr(trades_df, 'groupby') and len(trades_df) > 0:
+                            # Use close_date for monthly grouping
+                            date_col = None
+                            for col in ['close_date', 'sell_date', 'exit_date']:
+                                if col in trades_df.columns:
+                                    date_col = col
+                                    break
+                            
+                            if date_col and 'profit_ratio' in trades_df.columns:
+                                import pandas as pd
+                                trades_copy = trades_df.copy()
+                                trades_copy[date_col] = pd.to_datetime(trades_copy[date_col])
+                                monthly = trades_copy.set_index(date_col).resample('ME')['profit_ratio'].sum() * 100
+                                result.monthly_profits = monthly.tolist()
+                                logger.debug(f"Monthly profits: {result.monthly_profits}")
+                    except Exception as e:
+                        logger.debug(f"Could not extract monthly profits: {e}")
                     
                     # Collect detailed trade data for visualization if requested
                     if collect_trades:
@@ -968,12 +1034,13 @@ class DirectBacktester:
                      f"max_drawdown_account={stats.get('max_drawdown_account', 'N/A')}, "
                      f"max_drawdown_abs={stats.get('max_drawdown_abs', 'N/A')}")
         
-        # Convert profit_total to percentage if it's not already
-        # FreqTrade typically returns profit_total as a ratio (e.g., 0.05 for 5%)
-        # Heuristic: if absolute value < 10, assume it's a ratio; otherwise it's already a percentage
-        # Note: This assumes profits won't exceed 1000% (ratio of 10), which is reasonable for backtests
-        RATIO_TO_PERCENT_THRESHOLD = 10
-        profit_percent = profit_total * 100 if abs(profit_total) < RATIO_TO_PERCENT_THRESHOLD else profit_total
+        # Convert profit_total to percentage
+        # FreqTrade always returns profit_total as a ratio (e.g., 0.05 = 5%)
+        # and profit_total_pct as percentage. We use profit_total * 100 for consistency.
+        # See freqtrade/optimize/optimize_reports/optimize_reports.py:
+        #   profit_total = result["profit_abs"].sum() / starting_balance  (ratio)
+        #   "profit_total_pct": round(profit_total * 100.0, 2)  (percentage)
+        profit_percent = stats.get('profit_total_pct', profit_total * 100)
         
         total_trades = stats.get('total_trades', 0)
         wins = stats.get('wins', 0)
@@ -1041,7 +1108,7 @@ class DirectBacktester:
         for attempt in range(max_retries + 1):
             try:
                 if attempt > 0:
-                    logger.info(f"Retry {attempt}/{max_retries} for {strategy_name}")
+                    logger.debug(f"Retry {attempt}/{max_retries} for {strategy_name}")
                     time.sleep(1)
                 
                 # Run backtest with trade collection enabled

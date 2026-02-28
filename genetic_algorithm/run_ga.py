@@ -44,21 +44,36 @@ TIMESTAMP_FORMAT = "%Y%m%d_%H%M%S"
 # ============================================================================
 
 
-def setup_logging():
-    """Set up logging for the GA run."""
+def setup_logging(monitor_active: bool = False):
+    """Set up logging for the GA run.
+    
+    Args:
+        monitor_active: If True, suppress console StreamHandler on the root
+            logger because the terminal monitor captures logs via its own handler.
+    """
     # Ensure log directory exists
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     
     log_file = LOG_DIR / f'ga_run_{datetime.now().strftime(TIMESTAMP_FORMAT)}.log'
     
+    handlers = [logging.FileHandler(log_file)]
+    if not monitor_active:
+        handlers.insert(0, logging.StreamHandler())
+    
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(),
-            logging.FileHandler(log_file)
-        ]
+        handlers=handlers,
+        force=True,  # Override any prior basicConfig calls
     )
+    
+    # When monitor is active, ensure NO StreamHandlers leak to the console.
+    # This covers cases where libraries add their own handlers to the root logger.
+    if monitor_active:
+        root = logging.getLogger()
+        for h in list(root.handlers):
+            if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler):
+                root.removeHandler(h)
 
 
 def load_and_update_config(config_path) -> dict:
@@ -231,19 +246,29 @@ def save_top_strategies(top_strategies: list, strategy_generator: StrategyGenera
     print()
 
 
-def save_summary_report(top_strategies: list, output_dir: Path, config: dict):
+def save_summary_report(top_strategies: list, output_dir: Path, config: dict,
+                        generation_stats=None, generation_holdout_history=None):
     """
-    Save a summary report of the GA run.
+    Save a summary report of the GA run, including holdout and Monte Carlo metrics.
     
     Args:
         top_strategies: List of top Individual objects
         output_dir: Directory to save report
         config: Configuration dictionary
+        generation_stats: Optional list of PopulationStats for fitness history
+        generation_holdout_history: Optional list of GenerationHoldoutStats
     """
+    from genetic_algorithm.utils.overfit_analysis import (
+        classify_overfitting, OverfitThresholds, OverfitAssessment,
+        generate_detailed_results, save_detailed_results, print_overfit_summary,
+    )
+    
     output_dir.mkdir(parents=True, exist_ok=True)
     
     timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
     report_path = output_dir / f"ga_summary_{timestamp}.txt"
+    
+    thresholds = OverfitThresholds.from_config(config)
     
     with open(report_path, 'w') as f:
         f.write("=" * 80 + "\n")
@@ -262,6 +287,7 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict):
         f.write(f"Top {len(top_strategies)} Strategies:\n")
         f.write("-" * 80 + "\n\n")
         
+        assessments = []
         for rank, individual in enumerate(top_strategies, 1):
             gene = individual.strategy_gene
             metrics = individual.metrics
@@ -272,14 +298,86 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict):
             f.write(f"  Sharpe Ratio: {metrics.get('sharpe_ratio', 0):.2f}\n")
             f.write(f"  Max Drawdown: {metrics.get('max_drawdown', 0):.2%}\n")
             f.write(f"  Win Rate: {metrics.get('win_rate', 0):.2%}\n")
-            f.write(f"  Total Trades: {metrics.get('num_trades', 0)}\n\n")
+            f.write(f"  Total Trades: {metrics.get('num_trades', 0)}\n")
+            
+            # Holdout metrics (if available)
+            holdout_fitness = metrics.get('holdout_fitness')
+            if holdout_fitness is not None:
+                f.write(f"  Holdout Fitness: {holdout_fitness:.4f}\n")
+                f.write(f"  Holdout Profit: {metrics.get('holdout_profit', 0):.2f}%\n")
+                f.write(f"  Holdout Drawdown: {metrics.get('holdout_drawdown', 0):.2%}\n")
+                f.write(f"  Holdout Degradation: {metrics.get('holdout_degradation', 0):.1%}\n")
+            
+            # Monte Carlo metrics (if available)
+            mc_robustness = metrics.get('mc_robustness')
+            if mc_robustness is not None:
+                f.write(f"  MC Robustness: {mc_robustness:.1%}\n")
+                f.write(f"  MC Mean Profit: {metrics.get('mc_mean_profit', 0):.2f}%\n")
+                f.write(f"  MC Profit P5: {metrics.get('mc_profit_p5', 0):.2f}%\n")
+            
+            # Walk-forward gap (if available)
+            train_val_gap = metrics.get('train_val_gap')
+            if train_val_gap is not None:
+                f.write(f"  WF Train-Val Gap: {train_val_gap:.1%}\n")
+            
+            # Overfitting classification
+            assessment = classify_overfitting(
+                metrics=metrics, fitness=individual.fitness,
+                thresholds=thresholds, strategy_gene=gene,
+            )
+            assessment.individual_id = getattr(individual, 'id', f'rank_{rank}')
+            assessments.append(assessment)
+            
+            if assessment.overall_label != "UNKNOWN":
+                f.write(f"  Overfit Risk: {assessment.overall_label} "
+                        f"(composite={assessment.composite_score:.3f})\n")
+            
+            f.write("\n")
+        
+        # Summary section
+        if assessments:
+            f.write("=" * 80 + "\n")
+            f.write("OVERFITTING ANALYSIS SUMMARY\n")
+            f.write("-" * 80 + "\n")
+            labels = [a.overall_label for a in assessments]
+            composites = [a.composite_score for a in assessments if a.composite_score is not None]
+            f.write(f"  SAFE: {labels.count('SAFE')}  WARNING: {labels.count('WARNING')}  "
+                    f"OVERFIT: {labels.count('OVERFIT')}  UNKNOWN: {labels.count('UNKNOWN')}\n")
+            if composites:
+                f.write(f"  Avg composite score: {sum(composites)/len(composites):.3f}\n")
+            f.write("\n")
     
     print(f"Summary report saved to: {report_path.absolute()}")
+    
+    # Print overfitting summary to console
+    if assessments:
+        print_overfit_summary(assessments)
+    
+    # Save detailed JSON results
+    try:
+        report = generate_detailed_results(
+            top_strategies=top_strategies,
+            config=config,
+            generation_holdout_history=generation_holdout_history,
+            generation_stats=generation_stats,
+            thresholds=thresholds,
+        )
+        json_path = save_detailed_results(report, output_dir)
+        print(f"Detailed JSON results saved to: {json_path.absolute()}")
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Failed to save detailed results JSON: {e}")
 
 
 def validate_config(config: dict) -> bool:
     """
     Validate GA configuration and warn about issues.
+    
+    Checks for:
+    - Missing required sections and keys
+    - Wrong key names (common typos like max_workers vs num_workers)
+    - Fitness weights summing to ~1.0
+    - Logical inconsistencies (elite_size > population_size, etc.)
+    - Stale or suspicious data configuration
     
     Args:
         config: Configuration dictionary
@@ -288,6 +386,7 @@ def validate_config(config: dict) -> bool:
         bool: True if config is valid, False otherwise
     """
     backtest_cfg = config.get('backtesting', {})
+    ga_cfg = config.get('genetic_algorithm', {})
     pairs = backtest_cfg.get('pairs', [])
     timerange = backtest_cfg.get('timerange', '')
     auto_download = backtest_cfg.get('auto_download_data', True)
@@ -297,26 +396,79 @@ def validate_config(config: dict) -> bool:
     warnings = []
     info = []
     
-    # Critical issues
+    # ── Critical issues ──
     if not pairs:
         issues.append("❌ No pairs configured in 'backtesting.pairs'")
     
-    # Warnings for test data
+    if not ga_cfg:
+        issues.append("❌ Missing 'genetic_algorithm' section")
+    
+    pop_size = ga_cfg.get('population_size', 0)
+    elite_size = ga_cfg.get('elite_size', 0)
+    if pop_size and elite_size and elite_size >= pop_size:
+        issues.append(f"❌ elite_size ({elite_size}) >= population_size ({pop_size})")
+    
+    # ── Wrong key names (common mistakes) ──
+    parallel_cfg = config.get('parallel_evaluation', {})
+    wrong_keys = {
+        'max_workers': 'num_workers',
+        'timeout_per_eval': 'backtest_timeout',
+        'chunk_size': None,  # Unused, just warn
+    }
+    for wrong_key, correct_key in wrong_keys.items():
+        if wrong_key in parallel_cfg:
+            if correct_key:
+                warnings.append(f"⚠️  parallel_evaluation.{wrong_key} is not read by code — "
+                               f"did you mean '{correct_key}'?")
+            else:
+                warnings.append(f"⚠️  parallel_evaluation.{wrong_key} is not used by the code")
+    
+    # ── Fitness weights validation ──
+    weights = config.get('fitness_weights', {})
+    if weights:
+        weight_sum = sum(weights.values())
+        if abs(weight_sum - 1.0) > 0.01:
+            warnings.append(f"⚠️  fitness_weights sum to {weight_sum:.3f} (expected ~1.0)")
+    
+    # ── GA parameter sanity ──
+    mutation_rate = ga_cfg.get('mutation_rate', 0)
+    max_mutation = ga_cfg.get('max_mutation_rate', 0.5)
+    if mutation_rate and max_mutation and mutation_rate > max_mutation:
+        warnings.append(f"⚠️  mutation_rate ({mutation_rate}) > max_mutation_rate ({max_mutation})")
+    
+    tournament_size = ga_cfg.get('tournament_size', 3)
+    if pop_size and tournament_size and tournament_size > pop_size // 2:
+        warnings.append(f"⚠️  tournament_size ({tournament_size}) is very large relative to population ({pop_size})")
+    
+    random_immigrants = ga_cfg.get('random_immigrants', 0)
+    if pop_size and random_immigrants and random_immigrants > pop_size * 0.5:
+        warnings.append(f"⚠️  random_immigrants ({random_immigrants}) is >50% of population ({pop_size}) — "
+                       f"this replaces most evolved strategies each generation")
+    
+    # ── Adaptive mutation without max_mutation_rate ──
+    if ga_cfg.get('adaptive_mutation', False) and 'max_mutation_rate' not in ga_cfg:
+        info.append("ℹ️  adaptive_mutation enabled but max_mutation_rate not set (defaulting to 0.5)")
+    
+    # ── Walk-forward + parallel warning ──
+    wf_cfg = config.get('walk_forward', {})
+    if wf_cfg.get('enabled', False) and parallel_cfg.get('enabled', False):
+        info.append("ℹ️  Walk-forward + parallel: WF runs post-hoc on elites (not inside workers)")
+    
+    # ── Warnings for test data ──
     if any('UNITTEST' in p for p in pairs):
-        warnings.append("⚠️  WARNING: Using UNITTEST pairs (test data from 2018)")
+        warnings.append("⚠️  Using UNITTEST pairs (test data from 2018)")
         warnings.append("   For real strategy development:")
-        warnings.append("   1. Edit config file and set: backtesting.pairs = ['BTC/USDT']")
-        warnings.append("   2. Set timerange: backtesting.timerange = '20250120-20250219'")
+        warnings.append("   1. Edit config and set: backtesting.pairs = ['BTC/USDT']")
+        warnings.append("   2. Set timerange: backtesting.timerange = '20250120-20260228'")
         if auto_download:
-            warnings.append("   3. GA will auto-download data when it starts (auto_download_data: true)")
+            warnings.append("   3. GA will auto-download data (auto_download_data: true)")
         else:
             warnings.append("   3. Download data: freqtrade download-data --pairs BTC/USDT --timeframes 1h --days 90")
     
     if not timerange and not any('UNITTEST' in p for p in pairs):
-        warnings.append("⚠️  WARNING: No timerange specified - will use all available data")
-        warnings.append("   Consider setting: backtesting.timerange = '20250120-20250219'")
+        warnings.append("⚠️  No timerange specified — will use all available data")
     
-    # Info about auto-download
+    # ── Info ──
     if auto_download:
         info.append("ℹ️  Auto-download enabled: Missing data will be downloaded automatically")
         info.append(f"   Exchange: {exchange}")
@@ -324,7 +476,7 @@ def validate_config(config: dict) -> bool:
         info.append("ℹ️  Auto-download disabled: You must manually download data before running")
         info.append(f"   Use: freqtrade download-data --exchange {exchange} --pairs {' '.join(pairs)} --timeframes 1h --days 90")
     
-    # Display results
+    # ── Display results ──
     if info:
         print("\n" + "="*80)
         for msg in info:
@@ -349,8 +501,10 @@ def validate_config(config: dict) -> bool:
     print("✓ Config validation passed")
     print(f"  Pairs: {pairs}")
     print(f"  Timerange: {timerange if timerange else 'ALL AVAILABLE DATA'}")
-    print(f"  Population: {config.get('genetic_algorithm', {}).get('population_size')}")
-    print(f"  Generations: {config.get('genetic_algorithm', {}).get('generations')}")
+    print(f"  Population: {pop_size}")
+    print(f"  Generations: {ga_cfg.get('generations')}")
+    if weights:
+        print(f"  Fitness weights sum: {sum(weights.values()):.3f}")
     print()
     
     return True
@@ -369,8 +523,8 @@ Examples:
   # Use custom config
   python genetic_algorithm/run_ga.py --config my_config.yaml
   
-  # Use example config for real data
-  python genetic_algorithm/run_ga.py --config genetic_algorithm/config/ga_config_example.yaml
+  # Use a preset config
+  python genetic_algorithm/run_ga.py --config genetic_algorithm/config/ga_config_fast.yaml
   
   # Validate config without running
   python genetic_algorithm/run_ga.py --config my_config.yaml --validate-only
@@ -418,6 +572,19 @@ Examples:
         help='Resume evolution from the latest checkpoint (if available)'
     )
     
+    parser.add_argument(
+        '--no-monitor',
+        action='store_true',
+        help='Disable the terminal monitor (use classic scrolling log output)'
+    )
+    
+    parser.add_argument(
+        '--monitor-mode',
+        choices=['simple', 'detailed', 'logs'],
+        default=None,
+        help='Set the initial terminal monitor view mode (default: from config)'
+    )
+    
     return parser.parse_args()
 
 
@@ -437,7 +604,7 @@ def main():
         if config_dir.exists():
             for cfg_file in sorted(config_dir.glob("*.yaml")):
                 print(f"   - {cfg_file}")
-        print(f"\n💡 Tip: Create your own config by copying ga_config_example.yaml")
+        print(f"\n💡 Tip: Use one of the available configs or copy ga_config_fast.yaml as a starting point")
         return 1
     
     print(f"📂 Loading configuration from: {config_file}")
@@ -445,17 +612,34 @@ def main():
     # Print banner
     print_banner()
     
-    # Set up logging
-    setup_logging()
-    logger = logging.getLogger(__name__)
-    
-    # Load configuration
+    # Load configuration first (before logging setup) to check monitor config
     try:
         config = load_and_update_config(config_file)
     except FileNotFoundError:
         print(f"❌ Error: Configuration file not found at {config_file.absolute()}")
         print("Please ensure you're running this from the correct directory.")
         return 1
+    
+    # Apply CLI overrides for terminal monitor
+    if args.no_monitor:
+        config.setdefault('terminal_monitor', {})['enabled'] = False
+    if args.monitor_mode:
+        config.setdefault('terminal_monitor', {})['default_mode'] = args.monitor_mode
+    
+    # Determine if the monitor will be active (for logging setup)
+    # Default to True (matching create_monitor) so log suppression
+    # activates even when the terminal_monitor section is missing.
+    monitor_cfg = config.get('terminal_monitor', {})
+    monitor_will_be_active = monitor_cfg.get('enabled', True)
+    if monitor_will_be_active:
+        try:
+            import rich  # noqa: F401
+        except ImportError:
+            monitor_will_be_active = False
+    
+    # Set up logging (suppress console handler when monitor is active)
+    setup_logging(monitor_active=monitor_will_be_active)
+    logger = logging.getLogger(__name__)
     
     # Validate config
     if not validate_config(config):
@@ -658,8 +842,12 @@ def main():
     # Save strategies
     save_top_strategies(top_strategies, ga.strategy_generator, OUTPUT_DIR)
     
-    # Save summary report
-    save_summary_report(top_strategies, OUTPUT_DIR, config)
+    # Save summary report (with holdout/MC metrics and overfitting analysis)
+    save_summary_report(
+        top_strategies, OUTPUT_DIR, config,
+        generation_stats=getattr(ga, 'generation_stats', None),
+        generation_holdout_history=getattr(ga, 'generation_holdout_history', None),
+    )
     
     # Final summary
     print("\n" + "=" * 80)

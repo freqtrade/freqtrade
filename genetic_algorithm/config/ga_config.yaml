@@ -18,12 +18,12 @@ genetic_algorithm:
   random_seed: null  # Set to an integer (e.g., 42) for reproducible experiments
   
   # Population size - number of strategies per generation
-  # Quick test: 20-25, Production: 50-100
-  population_size: 50
+  # Quick test: 20-25, Validation: 30, Production: 100-200
+  population_size: 30
   
   # Number of generations to evolve
-  # Quick test: 5-8, Production: 30-100
-  generations: 10
+  # Quick test: 5-8, Validation: 12, Production: 50-100
+  generations: 12
   
   # Mutation rate - probability of mutating an individual
   # Higher = more exploration, Lower = more exploitation
@@ -48,7 +48,7 @@ genetic_algorithm:
   selection_method: 'tournament'
   
   # Convergence threshold - stop if no improvement after N generations
-  convergence_patience: 8
+  convergence_patience: 12
   
   # Adaptive mutation - increase mutation rate when stuck
   adaptive_mutation: true
@@ -98,13 +98,15 @@ nsga2:
 # All weights should sum to 1.0
 # Balanced between profitability and risk management
 fitness_weights:
-  profit: 0.25            # Total profit/return
-  sharpe_ratio: 0.18      # Risk-adjusted returns (volatility)
-  sortino_ratio: 0.15     # Downside risk-adjusted returns
-  profit_factor: 0.12     # Win/loss ratio
-  drawdown: 0.15          # Maximum drawdown (penalty)
-  win_rate: 0.08          # Percentage of winning trades
+  profit: 0.22            # Total profit/return
+  sharpe_ratio: 0.16      # Risk-adjusted returns (volatility)
+  sortino_ratio: 0.13     # Downside risk-adjusted returns
+  profit_factor: 0.10     # Win/loss ratio
+  drawdown: 0.13          # Maximum drawdown (penalty)
+  win_rate: 0.07          # Percentage of winning trades
   trade_frequency: 0.07   # Number of trades (too few or too many is bad)
+  monthly_stability: 0.06 # Consistency of monthly returns (lower std = better)
+  cross_pair: 0.06        # Cross-pair consistency (penalizes pair-dependent strategies)
 
 # Fitness penalties
 fitness_penalties:
@@ -112,6 +114,7 @@ fitness_penalties:
   max_drawdown: 0.25       # Penalize if drawdown exceeds this
   min_win_rate: 0.35       # Penalize if win rate below this
   complexity_weight: 0.015 # Penalty weight for strategy complexity (num_indicators + num_conditions)
+  unused_indicator_weight: 0.02  # Penalty for indicators not referenced by any entry/exit condition
   pair_loss_threshold: -8.0  # Max acceptable loss (%) on any single pair before penalty applies
 
 # Fitness bounds for clamping extreme values
@@ -138,7 +141,7 @@ trade_frequency_thresholds:
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
   # Quick test: 30-60 days, Production: 90-180 days
-  timerange: "20230101-20260218"  # ~14 months for better statistical significance
+  timerange: "20230101-20260228"  # ~3 years for better statistical significance
   
   # Stake amount per trade
   # Values 0-1: treated as fraction of wallet (e.g., 0.15 = 15% of wallet per trade)
@@ -147,6 +150,7 @@ backtesting:
   
   # Trading pairs to test strategies on
   # Quick test: 2-3 pairs, Production: 5-10 diverse pairs
+  # Using 2 pairs for validation run (30-60 min); use 5+ for production
   pairs:
     - "BTC/USDT"
     - "ETH/USDT"
@@ -155,9 +159,11 @@ backtesting:
   max_open_trades: 3
   
   # Fee for trades (0.1% = 0.001)
-  fee: 0.002
+  # Realistic fee: 0.1% maker/taker on most exchanges
+  fee: 0.001
   
   # Slippage percentage added on top of exchange fee for realistic cost modeling
+  # 0.05% slippage is conservative for major pairs on Binance
   slippage_pct: 0.0005
   
   # Exchange name (default: binance)
@@ -178,20 +184,21 @@ backtesting:
 # NOTE: Disable for quick tests, enable for production runs
 walk_forward:
   # Enable walk-forward optimization
-  enabled: false  # Set to true for production (adds significant time)
+  # ENABLED BY DEFAULT - critical for preventing overfitting
+  enabled: true
   
   # Training window size in days
   # Strategies are evolved using only this training data
-  train_days: 60
+  train_days: 90
   
   # Validation window size in days
   # Strategy performance is measured on this unseen data
-  validation_days: 15
+  validation_days: 30
   
   # Step size in days - how far to slide the window forward
   # Smaller steps = more windows but slower evolution
   # Larger steps = fewer windows but less validation
-  step_days: 15
+  step_days: 30
   
   # Window mode:
   # - 'rolling': Fixed-size training window that slides forward
@@ -230,11 +237,27 @@ walk_forward:
 # NOTE: Disable for quick tests to save time
 holdout_validation:
   # Enable holdout validation post-evolution
-  enabled: false  # Set to true for production runs
+  # ENABLED BY DEFAULT - validates strategies on completely unseen data
+  enabled: true
   
   # Fraction of data to reserve as holdout (taken from the end of timerange)
   holdout_pct: 0.15  # 15% of total timerange
-  
+
+# === Holdout Monitoring (During Evolution) ===
+# Tracks holdout degradation per generation and optionally penalizes fitness
+# of strategies that show high training→holdout degradation.
+holdout_monitoring:
+  enabled: true
+  interval: 2          # Check every N generations
+  top_n: 5             # Number of top strategies to evaluate on holdout
+  early_stop: true     # Stop evolution if holdout degradation is consistently high
+  early_stop_threshold: 0.60  # Degradation threshold for early stopping
+  early_stop_checks: 3        # Consecutive checks above threshold to trigger
+  # Fitness penalty: reduce fitness of strategies with high holdout degradation
+  fitness_penalty: true
+  penalty_factor: 0.5  # How aggressively to penalize (0.0-1.0)
+  min_holdout_ratio: 0.6  # Min holdout/train fitness ratio before penalty kicks in
+
 # === Regime-Aware Evaluation ===
 # Evaluates strategies across different market regimes (bullish, bearish, sideways)
 # NOTE: Disable for quick tests, enable for production
@@ -306,6 +329,25 @@ strategy_constraints:
   
   # Max open trades range (per strategy)
   max_open_trades_range: [2, 5]
+  
+  # Minimum exit conditions per strategy (prevents exit-less strategies)
+  min_exit_conditions: 1
+
+# === Short Selling Configuration ===
+# Enable strategies to open short positions (enter_short/exit_short)
+# NOTE: Requires exchange support for margin/futures trading
+short_selling:
+  enabled: false  # Set to true for futures/margin exchanges
+  probability: 0.5  # Probability a new strategy gets can_short=True
+
+# === Holdout Test Configuration ===
+# Run best strategies on out-of-sample data after evolution completes
+# to detect overfitting. The holdout timerange should NOT overlap with
+# the training timerange used for backtesting.
+holdout_test:
+  enabled: false
+  timerange: ""  # e.g., "20250301-20250401" - must be outside training range
+  top_n: 5  # Number of top strategies to test on holdout data
 
 # === Multi-Timeframe Configuration ===
 # Trade on base timeframe but use indicators from higher timeframes
@@ -485,6 +527,20 @@ storage:
   # Keep history of all generations
   keep_history: true
 
+# === Hall of Fame Configuration ===
+hall_of_fame:
+  # Directory for hall of fame archive
+  directory: "genetic_algorithm/data/hall_of_fame"
+  
+  # Maximum strategies to archive
+  max_size: 50
+  
+  # Minimum fitness to qualify
+  min_fitness: 0.0
+  
+  # Number of hall-of-fame strategies to inject into new runs
+  inject_count: 3
+
 # === Logging Configuration ===
 logging:
   # Log level: DEBUG, INFO, WARNING, ERROR
@@ -498,6 +554,29 @@ logging:
   
   # Log format
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# === Terminal Monitor Configuration ===
+# Live-updating terminal dashboard that replaces scrolling log output.
+# Requires: pip install rich  (optional — falls back to normal logging if missing)
+terminal_monitor:
+  # Enable the live terminal dashboard (set false to keep classic log output)
+  enabled: true
+
+  # Default view mode: "simple" | "detailed" | "logs"
+  #   simple   — compact overview: fitness, profit, diversity, trends
+  #   detailed — phase timing, population composition, convergence info
+  #   logs     — live scrolling log output with pinned header
+  # Switch at runtime with keyboard: S / D / L
+  default_mode: "simple"
+
+  # Show keybinding hints in the footer
+  show_keybindings: true
+
+  # Number of past generations to keep for trend sparklines
+  history_window: 20
+
+  # Live display refresh rate (times per second)
+  refresh_rate: 4
 
 # === Visualization Configuration ===
 visualization:
@@ -514,7 +593,7 @@ visualization:
     - "top_strategies"
   
   # Save plots to directory
-  output_dir: "genetic_algorithm/plots"
+  output_dir: "genetic_algorithm/output/validation_run/plots"
 
 # === Parallel Evaluation Configuration ===
 # Enables multi-process parallel backtesting for significant speedup.
@@ -542,14 +621,25 @@ advanced:
   # Enable ML-based fitness prediction (FreqAI)
   enable_ml_fitness: false
   
-  # Enable LLM-based strategy generation
-  enable_llm: false
-  
-  # LLM API configuration
+  # LLM-Based Strategy Designer
+  # Generates seed strategies and immigrants using an LLM for smarter
+  # initial population and guided diversity injection during evolution.
+  # Set api_key here or via env var GROK_API_KEY / OPENAI_API_KEY.
   llm:
-    provider: "grok"  # grok, openai, local
-    api_key: ""
-    model: "grok-1"
+    enabled: false  # Set to true and provide api_key to activate
+    provider: "grok"  # grok | openai | anthropic | local
+    api_key: ""  # Set via env var GROK_API_KEY or paste here
+    model: ""  # Leave empty for provider default (grok-3-mini, gpt-4o-mini, etc.)
+    base_url: ""  # Leave empty for provider default; set for custom endpoints
+    temperature: 0.7  # Higher = more creative strategies
+    max_tokens: 4096
+    timeout: 60  # Seconds per API call
+    max_retries: 3
+    retry_delay: 2.0
+    min_call_interval: 1.0  # Rate limiting: min seconds between calls
+    # Ratio config
+    seed_ratio: 0.40  # 40% of initial population from LLM
+    immigrant_ratio: 0.50  # 50% of each generation's immigrants from LLM
   
   # Island model configuration
   island_model:
@@ -567,10 +657,10 @@ advanced:
 # to estimate how robust they are under random perturbations.
 # NOTE: Disable for quick tests, enable for production runs
 monte_carlo:
-  enabled: false  # Set to true for production runs (adds ~2-5 min)
+  enabled: true  # Enabled for validation run
 
   # Number of permutation runs (more = more accurate, slower)
-  num_permutations: 30
+  num_permutations: 20
 
   # Methods to use (any combination):
   #   bootstrap       — sample trades with replacement
@@ -624,3 +714,17 @@ dynamic_bounds:
 
   # Mutation strength when perturbing bounds (0.0–1.0)
   mutation_strength: 0.1
+
+# === Overfit Analysis Thresholds ===
+# Configurable thresholds for the composite overfitting scoring.
+# Composite score combines holdout degradation, walk-forward gap, and MC robustness.
+overfit_analysis:
+  thresholds:
+    holdout_degradation_warning: 0.25
+    holdout_degradation_overfit: 0.50
+    wf_gap_warning: 0.15
+    wf_gap_overfit: 0.30
+    mc_robustness_warning: 0.70
+    mc_robustness_overfit: 0.50
+    composite_warning: 0.25  # Tightened from 0.35
+    composite_overfit: 0.50  # Tightened from 0.60

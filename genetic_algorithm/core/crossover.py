@@ -13,6 +13,61 @@ from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.strategy_gene import StrategyGene
 
 
+def _enforce_min_entry_conditions(gene: StrategyGene, config: dict) -> None:
+    """Ensure a strategy gene has at least min_entry_conditions entry conditions
+    AND at least min_exit_conditions exit conditions.
+    
+    If the gene has fewer, generates additional random conditions from
+    the available indicators.
+    """
+    if not config:
+        return
+    indicator_config = config.get('indicators', {})
+    min_entry = indicator_config.get('min_entry_conditions', 2)
+    min_exit = indicator_config.get('min_exit_conditions', 1)
+    
+    # Enforce entry conditions
+    if len(gene.entry_conditions) < min_entry:
+        _top_up_conditions(gene, min_entry - len(gene.entry_conditions), 
+                          is_entry=True, indicator_config=indicator_config)
+    
+    # Enforce exit conditions
+    if len(gene.exit_conditions) < min_exit:
+        _top_up_conditions(gene, min_exit - len(gene.exit_conditions),
+                          is_entry=False, indicator_config=indicator_config)
+
+
+def _top_up_conditions(gene: StrategyGene, needed: int, is_entry: bool, 
+                       indicator_config: dict) -> None:
+    """Add random conditions to meet the minimum requirement."""
+    from genetic_algorithm.core.mutation import _create_random_condition
+    available_indicators = gene.indicators
+    if not available_indicators:
+        return
+    
+    conditions = gene.entry_conditions if is_entry else gene.exit_conditions
+    attempts = 0
+    added = 0
+    while added < needed and attempts < 10:
+        ind = random.choice(available_indicators)
+        ind_type = ind.type  # _create_random_condition expects the type (e.g. 'RSI')
+        ind_ref = ind.instance_id or ind_type  # conditions reference instance_id
+        try:
+            new_cond = _create_random_condition(ind_type, is_entry, indicator_config)
+            if new_cond:
+                # Update the condition to reference instance_id, not bare type
+                new_cond.indicator = ind_ref
+                existing_keys = {(c.indicator, c.operator, str(c.threshold)) for c in conditions}
+                new_key = (new_cond.indicator, new_cond.operator, str(new_cond.threshold))
+                if new_key not in existing_keys:
+                    conditions.append(new_cond)
+                    added += 1
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Failed to create random condition for {ind_ref}: {e}")
+        attempts += 1
+
+
 def single_point_crossover(parent1: Individual, parent2: Individual, 
                           generation: int, ind_id: int,
                           config: dict = None) -> Tuple[Individual, Individual]:
@@ -98,6 +153,10 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
     # Reassign instance IDs after crossover to avoid ID conflicts
     child1_gene.assign_instance_ids()
     child2_gene.assign_instance_ids()
+    
+    # Enforce minimum entry conditions
+    _enforce_min_entry_conditions(child1_gene, config)
+    _enforce_min_entry_conditions(child2_gene, config)
     
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
@@ -202,6 +261,10 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
     child1_gene.assign_instance_ids()
     child2_gene.assign_instance_ids()
     
+    # Enforce minimum entry conditions
+    _enforce_min_entry_conditions(child1_gene, config)
+    _enforce_min_entry_conditions(child2_gene, config)
+    
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
@@ -272,6 +335,10 @@ def component_crossover(parent1: Individual, parent2: Individual,
     # Reassign instance IDs after crossover to avoid ID conflicts
     child1_gene.assign_instance_ids()
     child2_gene.assign_instance_ids()
+    
+    # Enforce minimum entry conditions
+    _enforce_min_entry_conditions(child1_gene, config)
+    _enforce_min_entry_conditions(child2_gene, config)
     
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))

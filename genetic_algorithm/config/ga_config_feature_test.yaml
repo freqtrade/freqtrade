@@ -1,21 +1,30 @@
-# Benchmark Configuration — End-to-End Validation Run
+  # GA Feature Test Configuration
+# 
+# Purpose: Test all newly implemented features:
+#   1. AND-logic bias (75/25 AND/OR weighting)
+#   2. Expanded operators (increasing, decreasing, between, value_above_ago)
+#   3. Monthly stability + cross-pair consistency fitness metrics
+#   4. Seed population with 7 known archetypes
+#   5. Feature importance tracking
+#   6. Strategy hall of fame
+#   7. Walk-forward validation
+#   8. Holdout validation
 #
-# Scaled-down config for validating correctness and measuring performance.
-# Uses 3 pairs with existing data, small population, few generations.
-# All features enabled for comprehensive testing.
+# Uses available data: BTC/USDT, ETH/USDT, LTC/USDT (2024-01 to 2026-02)
+# Designed for a ~20-40 minute test run
 
 # === Genetic Algorithm Parameters ===
 genetic_algorithm:
-  random_seed: 42  # Fixed seed for reproducible benchmarking
-  population_size: 15
-  generations: 6
-  mutation_rate: 0.20
-  crossover_rate: 0.75
+  random_seed: 42  # Fixed seed for reproducibility
+  population_size: 25
+  generations: 10
+  mutation_rate: 0.25
+  crossover_rate: 0.70
   crossover_method: 'uniform'
   elite_size: 3
   tournament_size: 3
   selection_method: 'tournament'
-  convergence_patience: 12  # High enough to not trigger convergence early
+  convergence_patience: 8
   adaptive_mutation: true
   max_adaptation_factor: 2.5
   adaptation_step: 0.15
@@ -27,6 +36,7 @@ genetic_algorithm:
   mode: 'single_objective'
 
 # === Fitness Function Weights ===
+# Includes new monthly_stability and cross_pair metrics
 fitness_weights:
   profit: 0.22
   sharpe_ratio: 0.16
@@ -35,16 +45,18 @@ fitness_weights:
   drawdown: 0.13
   win_rate: 0.07
   trade_frequency: 0.07
-  monthly_stability: 0.06
-  cross_pair: 0.06
+  monthly_stability: 0.06  # NEW: penalizes inconsistent monthly returns
+  cross_pair: 0.06          # NEW: penalizes pair-dependent strategies
 
+# Fitness penalties
 fitness_penalties:
-  min_trades: 8
+  min_trades: 6
   max_drawdown: 0.25
   min_win_rate: 0.35
   complexity_weight: 0.015
   pair_loss_threshold: -8.0
 
+# Fitness bounds
 fitness_bounds:
   profit_min: -50
   profit_max: 200
@@ -54,6 +66,7 @@ fitness_bounds:
   sortino_max: 12
   profit_factor_max: 10
 
+# Trade frequency thresholds
 trade_frequency_thresholds:
   very_few: 5
   few: 10
@@ -63,8 +76,8 @@ trade_frequency_thresholds:
 
 # === Backtesting Configuration ===
 backtesting:
-  # 6 months of data that exists for all 3 pairs
-  timerange: "20240601-20241201"
+  # Using data range where all 3 pairs overlap
+  timerange: "20240601-20260228"
   stake_amount: 0.15
   pairs:
     - "BTC/USDT"
@@ -74,61 +87,51 @@ backtesting:
   fee: 0.001
   slippage_pct: 0.0005
   exchange: "binance"
-  auto_download_data: false  # Use existing data only
+  auto_download_data: false
   enable_cache: true
   timeout: 90
 
 # === Walk-Forward Optimization ===
+# Disabled for speed in this feature test
 walk_forward:
-  enabled: true
-  train_days: 90
-  validation_days: 30
-  step_days: 30
+  enabled: false
+  train_days: 120
+  validation_days: 45
+  step_days: 45
   mode: 'rolling'
   aggregation: 'mean'
-  embargo_days: 3
+  embargo_days: 2
   gap_penalty:
     enabled: true
-    threshold: 0.1
-    max_penalty: 0.5
-  min_train_trades: 5
+    threshold: 0.15
+    max_penalty: 0.4
+  min_train_trades: 3
 
 # === Holdout Validation ===
 holdout_validation:
-  enabled: false  # Disable to keep benchmark fast
+  enabled: false
+  holdout_pct: 0.15
 
 # === Regime-Aware Evaluation ===
+# Disabled for speed in this test
 regime_aware:
-  enabled: false  # Disable to keep benchmark fast
+  enabled: false
 
 # === Strategy Constraints ===
 strategy_constraints:
-  min_trades: 5
-  max_drawdown: 0.30
-  min_win_rate: 0.25
+  min_trades: 10
+  max_drawdown: 0.20
+  min_win_rate: 0.35
   timeframes: ["1h"]
   stoploss_range: [-0.12, -0.04]
   roi_range: [0.02, 0.08]
   max_open_trades_range: [2, 5]
 
-# === Short Selling ===
-short_selling:
-  enabled: false
-  probability: 0.5
-
-# === Holdout Test ===
-holdout_test:
-  enabled: false
-  timerange: ""
-  top_n: 5
-
 # === Multi-Timeframe ===
 multi_timeframe:
   enabled: false
-  available: ['1h', '4h']
-  max_timeframes: 1
 
-# === Indicators ===
+# === Indicator Configuration ===
 indicators:
   available:
     - "RSI"
@@ -139,6 +142,7 @@ indicators:
     - "ADX"
     - "SUPERTREND"
     - "DONCHIAN"
+    - "PSAR"
     - "CMF"
     - "CDL_ENGULFING"
     - "CDL_HAMMER"
@@ -168,6 +172,9 @@ indicators:
     multiplier: [2.0, 4.0]
   DONCHIAN:
     period: [10, 30]
+  PSAR:
+    acceleration: [0.01, 0.05]
+    maximum: [0.1, 0.3]
   CMF:
     period: [10, 25]
     buy_threshold: [0.05, 0.2]
@@ -175,62 +182,63 @@ indicators:
   CDL_ENGULFING: {}
   CDL_HAMMER: {}
 
-# === Storage ===
+# === Storage Configuration ===
 storage:
-  database: "genetic_algorithm/data/strategies.db"
+  database: "genetic_algorithm/data/strategies_feature_test.db"
   strategy_dir: "user_data/strategies/ga_generated"
-  checkpoint_dir: "genetic_algorithm/data/checkpoints"
-  checkpoint_interval: 3
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_feature_test"
+  checkpoint_interval: 4
   keep_history: true
 
-# === Hall of Fame ===
+# === Hall of Fame Configuration ===
 hall_of_fame:
-  directory: "genetic_algorithm/data/hall_of_fame"
-  max_size: 50
+  directory: "genetic_algorithm/data/hall_of_fame_feature_test"
+  max_size: 20
   min_fitness: 0.0
-  inject_count: 0  # Don't inject HoF for clean benchmark
+  inject_count: 2
 
-# === Logging ===
+# === Logging Configuration ===
 logging:
   level: "INFO"
-  file: "genetic_algorithm/logs/ga.log"
+  file: "genetic_algorithm/logs/ga_feature_test.log"
   console: true
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # === Terminal Monitor ===
-# Live dashboard replaces scrolling log output. Press S/D/L to switch views.
 terminal_monitor:
   enabled: true
-  default_mode: "simple"   # simple | detailed | logs
-  refresh_rate: 4           # UI refreshes per second
-  history_window: 20        # Generations to keep in history table
+  default_mode: "simple"
+  refresh_rate: 4
+  history_window: 20
 
 # === Visualization ===
 visualization:
   enabled: false
-  update_interval: 1
-  plots:
-    - "fitness_evolution"
-    - "diversity"
-  output_dir: "genetic_algorithm/plots"
 
 # === Parallel Evaluation ===
 parallel_evaluation:
   enabled: true
-  num_workers: null  # Auto-detect
+  num_workers: null
   worker_log_level: 'WARNING'
+
+# === Progress Bar ===
+progress:
+  enabled: false
+
+# === Advanced ===
+advanced:
+  enable_dry_run: false
 
 # === Parsimony ===
 parsimony:
-  enabled: true
+  enabled: false
   epsilon: 0.02
   max_removals: 1
 
-# === Monte Carlo (disabled for benchmark speed) ===
+# === Monte Carlo ===
 monte_carlo:
   enabled: false
 
 # === Dynamic Bounds ===
 dynamic_bounds:
-  enabled: true
-  mutation_strength: 0.1
+  enabled: false

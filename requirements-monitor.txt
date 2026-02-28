@@ -1,0 +1,3 @@
+# Optional dependencies for the GA terminal monitor.
+# Install with: pip install -r requirements-monitor.txt
+rich>=13.0

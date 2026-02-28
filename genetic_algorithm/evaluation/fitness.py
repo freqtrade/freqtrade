@@ -346,20 +346,38 @@ class FitnessEvaluator:
                     # Cache the training result
                     self._wf_cache[cache_key] = train_result
                 
-                # Skip validation if training failed (e.g., no data for this window)
-                # This avoids wasting time on a validation backtest that can't be used
-                min_train_trades = self.walk_forward_config.get('min_train_trades', 10)
+                # Skip validation if training backtest completely failed
                 if not train_result.success:
                     logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Training backtest failed "
                                  f"({train_result.error_message}). Skipping window.")
                     failed_windows += 1
                     continue
                 
-                if train_result.total_trades < min_train_trades:
-                    logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Insufficient training trades "
-                                 f"({train_result.total_trades} < {min_train_trades}). Skipping window.")
+                # Adaptive min_train_trades: scale based on window size relative to expected
+                base_min_train_trades = self.walk_forward_config.get('min_train_trades', 10)
+                expected_train_days = self.walk_forward_config.get('train_days', 90)
+                # Calculate actual window days from timerange
+                try:
+                    w_start, w_end = parse_timerange(window.train_timerange)
+                    actual_window_days = (w_end - w_start).days
+                except Exception:
+                    actual_window_days = expected_train_days
+                adaptive_min_trades = max(3, int(base_min_train_trades * (actual_window_days / max(expected_train_days, 1))))
+                
+                # Partial credit system: instead of binary skip, compute a trade-count
+                # confidence factor. Windows with few trades get reduced weight.
+                train_trade_credit = 1.0
+                if train_result.total_trades == 0:
+                    logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Zero training trades. "
+                                 f"Skipping window.")
                     failed_windows += 1
                     continue
+                elif train_result.total_trades < adaptive_min_trades:
+                    # Partial credit: scale from 0.3 (1 trade) to 1.0 (at adaptive_min_trades)
+                    train_trade_credit = 0.3 + 0.7 * (train_result.total_trades / adaptive_min_trades)
+                    logger.info(f"Window {window.window_index + 1}/{len(windows)}: Low training trades "
+                               f"({train_result.total_trades} < {adaptive_min_trades}). "
+                               f"Applying partial credit: {train_trade_credit:.2f}")
                 
                 # Run backtest on validation window (never cached - validation is key metric)
                 val_result = self._backtest_with_timerange(
@@ -374,6 +392,8 @@ class FitnessEvaluator:
                     val_metrics = self._backtest_result_to_metrics(val_result)
                     val_metrics['complexity'] = strategy_gene.calculate_complexity()
                     val_fitness = self.calculate_fitness(val_metrics, strategy_gene)
+                    # Apply partial credit from training trade count
+                    val_fitness *= train_trade_credit
                 else:
                     val_fitness = 0.0
                     val_metrics = {
@@ -413,15 +433,24 @@ class FitnessEvaluator:
             # Aggregate validation scores
             aggregation_method = self.walk_forward_config.get('aggregation', 'mean')
             
-            # If all windows failed, return zero fitness
+            # If all windows failed, fall back to standard eval with heavy penalty
+            # instead of returning 0.0 — this keeps genetic material alive but strongly disfavored
             if not validation_fitness_scores:
-                logger.warning(f"All {len(windows)} walk-forward windows failed for {generated_name}")
-                return 0.0, {
-                    'profit': 0.0, 'sharpe_ratio': 0.0, 'max_drawdown': 1.0,
-                    'win_rate': 0.0, 'num_trades': 0, 'walk_forward': True,
-                    'num_windows': len(windows), 'failed_windows': failed_windows,
-                    'complexity': strategy_gene.calculate_complexity()
-                }
+                logger.warning(f"All {len(windows)} walk-forward windows failed for {generated_name}. "
+                              f"Falling back to standard eval with overfitting penalty.")
+                fallback_fitness, fallback_metrics = self._evaluate_standard(strategy_gene, strategy_name)
+                # Apply heavy penalty: strategy couldn't survive walk-forward at all
+                wf_fallback_penalty = 0.3
+                fallback_fitness *= wf_fallback_penalty
+                fallback_metrics['walk_forward'] = True
+                fallback_metrics['walk_forward_fallback'] = True
+                fallback_metrics['num_windows'] = len(windows)
+                fallback_metrics['failed_windows'] = failed_windows
+                fallback_metrics['wf_fallback_penalty'] = wf_fallback_penalty
+                logger.info(f"Walk-forward fallback for {generated_name}: "
+                           f"standard fitness={fallback_fitness / wf_fallback_penalty:.4f} -> "
+                           f"penalized={fallback_fitness:.4f} (x{wf_fallback_penalty})")
+                return fallback_fitness, fallback_metrics
             
             # For weighted aggregation, auto-generate recency weights (later windows weighted more)
             if aggregation_method == 'weighted' and validation_fitness_scores:
@@ -488,6 +517,27 @@ class FitnessEvaluator:
                 'walk_forward': True
             }
     
+    def get_wf_cache_stats(self) -> Dict[str, Any]:
+        """Get walk-forward cache statistics."""
+        total = self._wf_cache_hits + self._wf_cache_misses
+        hit_rate = self._wf_cache_hits / total if total > 0 else 0.0
+        return {
+            'hits': self._wf_cache_hits,
+            'misses': self._wf_cache_misses,
+            'total': total,
+            'hit_rate': hit_rate,
+            'cache_size': len(self._wf_cache),
+        }
+    
+    def log_wf_cache_stats(self):
+        """Log walk-forward cache statistics at INFO level."""
+        stats = self.get_wf_cache_stats()
+        if stats['total'] > 0:
+            logger.info(
+                f"[WF-CACHE] hits={stats['hits']}, misses={stats['misses']}, "
+                f"hit_rate={stats['hit_rate']:.1%}, cache_size={stats['cache_size']}"
+            )
+    
     def _backtest_with_timerange(
         self, 
         strategy_code: str, 
@@ -544,8 +594,8 @@ class FitnessEvaluator:
         
         # Average most metrics
         avg_metrics = {}
-        numeric_keys = ['profit', 'sharpe_ratio', 'win_rate', 'num_trades', 
-                       'complexity', 'val_trades', 'train_trades']
+        numeric_keys = ['profit', 'sharpe_ratio', 'sortino_ratio', 'win_rate', 'num_trades', 
+                       'profit_factor', 'complexity', 'val_trades', 'train_trades']
         
         for key in numeric_keys:
             values = [m.get(key, 0) for m in window_metrics if key in m]
@@ -587,6 +637,15 @@ class FitnessEvaluator:
             if len(pair_profits) > 1:
                 mean_pp = sum(pair_profits) / len(pair_profits)
                 metrics['pair_profit_std'] = (sum((p - mean_pp) ** 2 for p in pair_profits) / len(pair_profits)) ** 0.5
+        
+        # Include monthly profits for stability analysis
+        if result.monthly_profits and len(result.monthly_profits) > 1:
+            metrics['monthly_profits'] = result.monthly_profits
+            monthly = result.monthly_profits
+            mean_monthly = sum(monthly) / len(monthly)
+            metrics['monthly_return_std'] = (sum((m - mean_monthly) ** 2 for m in monthly) / len(monthly)) ** 0.5
+            # Positive months ratio
+            metrics['positive_months_ratio'] = sum(1 for m in monthly if m > 0) / len(monthly)
         
         return metrics
     
@@ -658,13 +717,40 @@ class FitnessEvaluator:
         
         # Get weights with defaults (adjusted to include new metrics)
         w = self.fitness_weights
-        w_profit = w.get('profit', 0.25)
-        w_sharpe = w.get('sharpe_ratio', 0.15)
-        w_sortino = w.get('sortino_ratio', 0.15)  # New weight
-        w_profit_factor = w.get('profit_factor', 0.10)  # New weight
-        w_drawdown = w.get('drawdown', 0.15)
-        w_win_rate = w.get('win_rate', 0.10)
-        w_trades = w.get('trade_frequency', 0.10)
+        w_profit = w.get('profit', 0.22)
+        w_sharpe = w.get('sharpe_ratio', 0.16)
+        w_sortino = w.get('sortino_ratio', 0.13)
+        w_profit_factor = w.get('profit_factor', 0.10)
+        w_drawdown = w.get('drawdown', 0.13)
+        w_win_rate = w.get('win_rate', 0.07)
+        w_trades = w.get('trade_frequency', 0.07)
+        w_stability = w.get('monthly_stability', 0.06)
+        w_cross_pair = w.get('cross_pair', 0.06)
+        
+        # === Monthly stability score ===
+        # Lower monthly return std = higher stability = better
+        monthly_return_std = metrics.get('monthly_return_std', 0)
+        positive_months = metrics.get('positive_months_ratio', 0.5)
+        if monthly_return_std > 0:
+            # Normalize: std of 0 gets 1.0, std of 20+ gets ~0
+            norm_stability = max(0, 1.0 - monthly_return_std / 20.0)
+            # Bonus for high positive months ratio
+            norm_stability = norm_stability * 0.7 + positive_months * 0.3
+        else:
+            norm_stability = 0.5  # Unknown / not enough data
+        
+        # === Cross-pair consistency score ===
+        # Penalize strategies that only work on 1-2 pairs
+        pair_profit_std = metrics.get('pair_profit_std', 0)
+        per_pair_profit = metrics.get('per_pair_profit', {})
+        if per_pair_profit and len(per_pair_profit) > 1:
+            # Count pairs with positive profit
+            positive_pairs = sum(1 for v in per_pair_profit.values() if v > 0)
+            pair_consistency_ratio = positive_pairs / len(per_pair_profit)
+            # Low std across pairs = consistent = good
+            norm_cross_pair = max(0, 1.0 - pair_profit_std / 30.0) * 0.5 + pair_consistency_ratio * 0.5
+        else:
+            norm_cross_pair = 0.5  # Single pair or no data
         
         # Normalize weights to sum to 1.0 (handles missing or extra weights in configs)
         weights_dict = {
@@ -674,7 +760,9 @@ class FitnessEvaluator:
             'profit_factor': w_profit_factor,
             'drawdown': w_drawdown,
             'win_rate': w_win_rate,
-            'trade_frequency': w_trades
+            'trade_frequency': w_trades,
+            'monthly_stability': w_stability,
+            'cross_pair': w_cross_pair
         }
         total_weight = sum(weights_dict.values())
         if total_weight > 0:
@@ -685,6 +773,8 @@ class FitnessEvaluator:
             w_drawdown = weights_dict['drawdown'] / total_weight
             w_win_rate = weights_dict['win_rate'] / total_weight
             w_trades = weights_dict['trade_frequency'] / total_weight
+            w_stability = weights_dict['monthly_stability'] / total_weight
+            w_cross_pair = weights_dict['cross_pair'] / total_weight
         
         # Calculate weighted fitness
         fitness = (
@@ -694,7 +784,9 @@ class FitnessEvaluator:
             w_profit_factor * norm_profit_factor +
             w_drawdown * norm_drawdown + 
             w_win_rate * norm_win_rate + 
-            w_trades * norm_trades
+            w_trades * norm_trades +
+            w_stability * norm_stability +
+            w_cross_pair * norm_cross_pair
         )
         
         # ==================================================================================
@@ -831,6 +923,35 @@ class FitnessEvaluator:
             fitness *= pair_penalty
             logger.debug(f"Applied per-pair penalty: worst_pair={worst_pair_profit:.2f}%, "
                         f"penalty={1.0 - pair_penalty:.2%}")
+        
+        # Unused-indicator penalty: penalize indicators that don't contribute to any condition
+        # Unused indicators add noise and computational overhead without improving signal quality
+        if strategy_gene is not None:
+            unused_penalty_weight = penalties.get('unused_indicator_weight', 0.02)
+            if unused_penalty_weight > 0:
+                total_indicators = len(strategy_gene.indicators)
+                if total_indicators > 0:
+                    # Collect all indicator references from conditions
+                    used_indicators = set()
+                    for cond in strategy_gene.entry_conditions:
+                        used_indicators.add(cond.indicator)
+                    for cond in strategy_gene.exit_conditions:
+                        used_indicators.add(cond.indicator)
+                    
+                    # Count indicators that are actually used
+                    used_count = 0
+                    for ind in strategy_gene.indicators:
+                        ind_ref = ind.instance_id or ind.type
+                        if ind_ref in used_indicators:
+                            used_count += 1
+                    
+                    unused_count = total_indicators - used_count
+                    if unused_count > 0:
+                        unused_ratio = unused_count / total_indicators
+                        unused_penalty = unused_ratio * unused_penalty_weight * total_indicators
+                        fitness = max(0, fitness - unused_penalty)
+                        logger.debug(f"Applied unused-indicator penalty: {unused_penalty:.4f} "
+                                   f"({unused_count}/{total_indicators} unused)")
         
         return fitness
     
