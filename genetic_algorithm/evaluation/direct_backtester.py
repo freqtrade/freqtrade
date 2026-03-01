@@ -6,6 +6,7 @@ Uses FreqTrade Python API directly with mocked exchange to avoid network calls.
 
 import json
 import logging
+import os
 import tempfile
 import time
 import hashlib
@@ -595,12 +596,34 @@ class DirectBacktester:
         Returns:
             BacktestResult object
         """
-        # Write strategy to file
+        # Write strategy to file atomically to prevent race conditions
+        # when multiple workers write to the same strategy file
         strategy_file = self.strategy_dir / f"{strategy_name}.py"
         try:
-            with open(strategy_file, 'w') as f:
-                f.write(strategy_code)
-            logger.debug(f"Wrote strategy file: {strategy_file}")
+            # Write to a temp file first, then atomically rename
+            fd, tmp_path = tempfile.mkstemp(
+                suffix='.py', dir=str(self.strategy_dir), prefix=f".{strategy_name}_"
+            )
+            try:
+                with os.fdopen(fd, 'w') as f:
+                    f.write(strategy_code)
+                os.replace(tmp_path, str(strategy_file))  # atomic on POSIX
+            except Exception:
+                # Clean up temp file on failure
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
+            # Invalidate any cached .pyc for this module
+            cache_dir = self.strategy_dir / '__pycache__'
+            if cache_dir.exists():
+                for pyc in cache_dir.glob(f"{strategy_name}.*.pyc"):
+                    try:
+                        pyc.unlink()
+                    except OSError:
+                        pass
+            logger.debug(f"Wrote strategy file (atomic): {strategy_file}")
         except Exception as e:
             logger.error(f"Failed to write strategy file: {e}")
             return BacktestResult(
@@ -623,7 +646,9 @@ class DirectBacktester:
         # Deep validation: actually import the module to catch runtime errors
         # (e.g., missing talib functions, NameError, ImportError)
         try:
+            import importlib
             import importlib.util
+            importlib.invalidate_caches()  # ensure fresh file is picked up
             spec = importlib.util.spec_from_file_location(strategy_name, str(strategy_file))
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)

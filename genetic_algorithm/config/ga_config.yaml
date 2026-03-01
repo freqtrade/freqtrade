@@ -38,8 +38,8 @@ genetic_algorithm:
   # - component: swaps entire blocks (indicators, entry conditions, exit conditions, risk params)
   crossover_method: 'uniform'
   
-  # Elite size - number of top strategies to preserve unchanged (~15-20% of population)
-  elite_size: 5
+  # Elite size - number of top strategies to preserve unchanged (~13% of population)
+  elite_size: 4
   
   # Tournament size for tournament selection (3-5 recommended for good selection pressure)
   tournament_size: 3
@@ -48,7 +48,7 @@ genetic_algorithm:
   selection_method: 'tournament'
   
   # Convergence threshold - stop if no improvement after N generations
-  convergence_patience: 12
+  convergence_patience: 8
   
   # Adaptive mutation - increase mutation rate when stuck
   adaptive_mutation: true
@@ -60,12 +60,12 @@ genetic_algorithm:
   # Diversity preservation
   fitness_sharing: true         # Enable fitness sharing for diversity
   sharing_radius: 0.25          # How similar strategies must be to share fitness (0-1)
-  diversity_threshold: 0.12     # Minimum genetic diversity to maintain
+  diversity_threshold: 0.15     # Minimum genetic diversity to maintain
   allow_self_crossover: false   # Allow same parent to be selected twice (set false for more diversity)
   
   # Random immigrants - inject fresh random strategies each generation to prevent premature convergence
   # When diversity drops below diversity_threshold, this count is doubled for that generation
-  random_immigrants: 10           # Number of fresh random individuals to inject per generation
+  random_immigrants: 5            # Number of fresh random individuals to inject per generation
   
   # Evolution mode: 'single_objective' (default) or 'nsga2' (multi-objective)
   # Single-objective uses weighted fitness function, NSGA-II returns Pareto front
@@ -98,19 +98,19 @@ nsga2:
 # All weights should sum to 1.0
 # Balanced between profitability and risk management
 fitness_weights:
-  profit: 0.22            # Total profit/return
-  sharpe_ratio: 0.16      # Risk-adjusted returns (volatility)
+  profit: 0.28            # Total profit/return (increased for stronger signal)
+  sharpe_ratio: 0.18      # Risk-adjusted returns (volatility)
   sortino_ratio: 0.13     # Downside risk-adjusted returns
-  profit_factor: 0.10     # Win/loss ratio
-  drawdown: 0.13          # Maximum drawdown (penalty)
-  win_rate: 0.07          # Percentage of winning trades
-  trade_frequency: 0.07   # Number of trades (too few or too many is bad)
-  monthly_stability: 0.06 # Consistency of monthly returns (lower std = better)
-  cross_pair: 0.06        # Cross-pair consistency (penalizes pair-dependent strategies)
+  profit_factor: 0.08     # Win/loss ratio
+  drawdown: 0.15          # Maximum drawdown (penalty, increased)
+  win_rate: 0.05          # Percentage of winning trades
+  trade_frequency: 0.05   # Number of trades (too few or too many is bad)
+  monthly_stability: 0.04 # Consistency of monthly returns (lower std = better)
+  cross_pair: 0.04        # Cross-pair consistency (penalizes pair-dependent strategies)
 
 # Fitness penalties
 fitness_penalties:
-  min_trades: 8            # Penalize if fewer trades
+  min_trades: 12           # Penalize if fewer trades (increased from 8)
   max_drawdown: 0.25       # Penalize if drawdown exceeds this
   min_win_rate: 0.35       # Penalize if win rate below this
   complexity_weight: 0.015 # Penalty weight for strategy complexity (num_indicators + num_conditions)
@@ -141,7 +141,7 @@ trade_frequency_thresholds:
 backtesting:
   # Time range for backtesting (YYYYMMDD-YYYYMMDD)
   # Quick test: 30-60 days, Production: 90-180 days
-  timerange: "20230101-20260228"  # ~3 years for better statistical significance
+  timerange: "20240301-20260228"  # 2 years for validation run
   
   # Stake amount per trade
   # Values 0-1: treated as fraction of wallet (e.g., 0.15 = 15% of wallet per trade)
@@ -154,6 +154,8 @@ backtesting:
   pairs:
     - "BTC/USDT"
     - "ETH/USDT"
+    - "SOL/USDT"
+    - "BNB/USDT"
   
   # Maximum number of open trades
   max_open_trades: 3
@@ -189,7 +191,7 @@ walk_forward:
   
   # Training window size in days
   # Strategies are evolved using only this training data
-  train_days: 90
+  train_days: 120
   
   # Validation window size in days
   # Strategy performance is measured on this unseen data
@@ -214,7 +216,7 @@ walk_forward:
   
   # Embargo days - gap between training and validation windows to prevent
   # autocorrelated data leakage. Recommended 3-5 days for daily/hourly timeframes.
-  embargo_days: 3
+  embargo_days: 5
   
   # Train-validation gap penalty
   # Penalizes strategies that perform much better on training than validation (overfit)
@@ -226,6 +228,11 @@ walk_forward:
   # Minimum trades required in training window to be valid
   # Windows with fewer trades are skipped
   min_train_trades: 10
+  
+  # Maximum number of walk-forward windows to create.
+  # Caps window count for long timeranges to keep evaluation fast.
+  # Set to null/omit for no cap.
+  max_windows: 10
   
   # Optional: Custom weights for 'weighted' aggregation
   # Must sum to 1.0, length must match number of windows
@@ -253,10 +260,13 @@ holdout_monitoring:
   early_stop: true     # Stop evolution if holdout degradation is consistently high
   early_stop_threshold: 0.60  # Degradation threshold for early stopping
   early_stop_checks: 3        # Consecutive checks above threshold to trigger
+  # Trend-based early stopping: stops if degradation worsens for N consecutive checks
+  trend_early_stop: true
+  trend_checks: 3             # Consecutive worsening checks to trigger
   # Fitness penalty: reduce fitness of strategies with high holdout degradation
+  # NOTE: penalty now applies to BOTH raw_fitness and fitness, affecting elite selection
   fitness_penalty: true
-  penalty_factor: 0.5  # How aggressively to penalize (0.0-1.0)
-  min_holdout_ratio: 0.6  # Min holdout/train fitness ratio before penalty kicks in
+  penalty_factor: 0.8  # How aggressively to penalize (0.0-1.0; was 0.5, increased for stronger pressure)
 
 # === Regime-Aware Evaluation ===
 # Evaluates strategies across different market regimes (bullish, bearish, sideways)
@@ -265,17 +275,17 @@ regime_aware:
   # Enable regime-aware evaluation
   enabled: true  # Set to true for production runs
   
-  # Detection method: 'sma_adx', 'adx_di', 'returns', 'bollinger', 'ensemble'
-  # 'sma_adx' is recommended - uses SMA crossover + ADX trend strength
-  method: 'sma_adx'
+  # Detection method: 'adx_di_hysteresis', 'adx_di', 'sma_adx', 'returns', 'bollinger', 'ensemble'
+  # 'adx_di_hysteresis' is best performer — avoids sideways-only misclassification on 1h
+  method: 'adx_di_hysteresis'
   
   # Benchmark pair for regime detection (uses first pair if not specified)
   # For consistent regime labeling, use a major pair like BTC/USDT
   benchmark_pair: null  # null = use first pair from backtesting.pairs
   
   # Timeframe for regime detection (can differ from trading timeframe)
-  # Higher timeframes (1h, 4h) give cleaner regimes than 5m
-  detection_timeframe: '1h'
+  # Higher timeframes (4h) give cleaner regimes than 1h
+  detection_timeframe: '4h'
   
   # Segment duration parameters
   period_days: 90         # Target segment length in days
@@ -322,7 +332,7 @@ strategy_constraints:
   timeframes: ["15m", "1h"]
   
   # Stop loss range (tighter for better risk management)
-  stoploss_range: [-0.12, -0.04]
+  stoploss_range: [-0.10, -0.04]
   
   # ROI range
   roi_range: [0.02, 0.08]
@@ -388,17 +398,12 @@ indicators:
     - "ADX"
     # New trend indicators (high-quality signals)
     - "SUPERTREND"
-    - "ICHIMOKU"
-    - "DONCHIAN"
     - "PSAR"
     # Volume-based indicators
     - "CMF"
-    - "VROC"
-    # Best candlestick patterns (most reliable)
+    # Best candlestick patterns (most reliable, reduced set)
     - "CDL_ENGULFING"
     - "CDL_HAMMER"
-    - "CDL_MORNINGSTAR"
-    - "CDL_EVENINGSTAR"
     - "CDL_DOJI"
   
   # Maximum indicators per strategy (lower = faster, simpler strategies)

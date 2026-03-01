@@ -65,8 +65,8 @@ class TestOverfitThresholds:
         assert t.holdout_degradation_warning == 0.25
         assert t.holdout_degradation_overfit == 0.50
         assert t.mc_robustness_warning == 0.70
-        assert t.composite_warning == 0.35
-        assert t.composite_overfit == 0.60
+        assert t.composite_warning == 0.25
+        assert t.composite_overfit == 0.50
     
     def test_from_config_empty(self):
         t = OverfitThresholds.from_config({})

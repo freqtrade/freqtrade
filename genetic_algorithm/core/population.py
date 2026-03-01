@@ -256,6 +256,10 @@ class Population:
         self.sort_by_fitness(reverse=True)
         return self.individuals[:n]
     
+    def get_all(self) -> List[Individual]:
+        """Return all individuals in the population (list copy, same references)."""
+        return list(self.individuals)
+
     def get_worst(self, n: int = 1) -> List[Individual]:
         """
         Get the bottom N individuals.

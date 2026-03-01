@@ -307,7 +307,8 @@ class FitnessEvaluator:
                     validation_days=wf_val_days,
                     step_days=wf_step_days,
                     mode=self.walk_forward_config.get('mode', 'rolling'),
-                    embargo_days=self.walk_forward_config.get('embargo_days', 0)
+                    embargo_days=self.walk_forward_config.get('embargo_days', 0),
+                    max_windows=self.walk_forward_config.get('max_windows', None)
                 )
             except ValueError as e:
                 logger.warning(
@@ -323,6 +324,8 @@ class FitnessEvaluator:
             train_fitness_scores = []  # For comparison/debugging
             all_window_metrics = []
             failed_windows = 0  # Track failed windows separately
+            consecutive_zero_trade = 0  # Early exit after repeated zero-trade windows
+            max_consecutive_zero = self.walk_forward_config.get('max_consecutive_zero_windows', 3)
             
             for window in windows:
                 if progress_callback:
@@ -368,11 +371,18 @@ class FitnessEvaluator:
                 # confidence factor. Windows with few trades get reduced weight.
                 train_trade_credit = 1.0
                 if train_result.total_trades == 0:
+                    consecutive_zero_trade += 1
                     logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Zero training trades. "
-                                 f"Skipping window.")
+                                 f"Skipping window. ({consecutive_zero_trade} consecutive)")
                     failed_windows += 1
+                    if consecutive_zero_trade >= max_consecutive_zero:
+                        logger.warning(f"Early exit: {consecutive_zero_trade} consecutive zero-trade windows. "
+                                     f"Skipping remaining {len(windows) - window.window_index - 1} windows.")
+                        break
                     continue
-                elif train_result.total_trades < adaptive_min_trades:
+                else:
+                    consecutive_zero_trade = 0  # Reset on successful window
+                if train_result.total_trades < adaptive_min_trades:
                     # Partial credit: scale from 0.3 (1 trade) to 1.0 (at adaptive_min_trades)
                     train_trade_credit = 0.3 + 0.7 * (train_result.total_trades / adaptive_min_trades)
                     logger.info(f"Window {window.window_index + 1}/{len(windows)}: Low training trades "
@@ -399,7 +409,7 @@ class FitnessEvaluator:
                     val_metrics = {
                         'profit': 0.0,
                         'sharpe_ratio': 0.0,
-                        'max_drawdown': 1.0,
+                        'max_drawdown': 0.0,  # Zero trades = no drawdown (not 100%)
                         'win_rate': 0.0,
                         'num_trades': 0,
                         'complexity': strategy_gene.calculate_complexity()
@@ -619,12 +629,12 @@ class FitnessEvaluator:
         """
         metrics = {
             'profit': result.profit_percent,
-            'sharpe_ratio': result.sharpe_ratio,
+            'sharpe_ratio': max(-10.0, min(50.0, result.sharpe_ratio)),  # Clamp to sane display range
             'max_drawdown': result.max_drawdown,
             'win_rate': result.win_rate,
             'num_trades': result.total_trades,
             'profit_factor': result.profit_factor,
-            'sortino_ratio': result.sortino_ratio,
+            'sortino_ratio': max(-10.0, min(50.0, result.sortino_ratio)),  # Clamp to sane display range
         }
         
         # Include per-pair profits for robustness analysis
@@ -952,6 +962,31 @@ class FitnessEvaluator:
                         fitness = max(0, fitness - unused_penalty)
                         logger.debug(f"Applied unused-indicator penalty: {unused_penalty:.4f} "
                                    f"({unused_count}/{total_indicators} unused)")
+        
+        # Dead exit condition penalty: penalize strategies where ALL exit
+        # conditions use impossible thresholds (e.g. RSI < 0) — forcing exits
+        # to rely entirely on ROI/stoploss, which overfits to training data.
+        if strategy_gene is not None and strategy_gene.exit_conditions:
+            _BOUNDED = {'RSI': (0, 100), 'STOCH': (0, 100), 'CCI': (-300, 300),
+                        'CMF': (-1, 1), 'ADX': (0, 100)}
+            dead_count = 0
+            bounded_count = 0
+            for cond in strategy_gene.exit_conditions:
+                base_type = cond.indicator.split('_')[0] if '_' in cond.indicator else cond.indicator
+                bounds = _BOUNDED.get(base_type.upper())
+                if bounds:
+                    bounded_count += 1
+                    lo, hi = bounds
+                    # Condition is "dead" if threshold is outside the indicator's range
+                    if cond.operator in ('<', 'less_than') and cond.threshold <= lo:
+                        dead_count += 1
+                    elif cond.operator in ('>', 'greater_than') and cond.threshold >= hi:
+                        dead_count += 1
+            if bounded_count > 0 and dead_count == bounded_count:
+                # ALL bounded exit conditions are impossible → heavy penalty
+                fitness *= 0.7
+                logger.debug(f"Applied dead-exit penalty: all {dead_count} bounded exit conditions "
+                           f"use impossible thresholds (fitness x0.7)")
         
         return fitness
     

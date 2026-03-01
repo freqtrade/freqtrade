@@ -90,7 +90,8 @@ def create_walk_forward_windows(
     step_days: int,
     mode: str = 'rolling',
     min_train_days: Optional[int] = None,
-    embargo_days: int = 0
+    embargo_days: int = 0,
+    max_windows: Optional[int] = None
 ) -> List[TimeWindow]:
     """
     Create walk-forward optimization windows from a timerange.
@@ -194,6 +195,11 @@ def create_walk_forward_windows(
         # Move to next window
         current_start += timedelta(days=step_days)
         window_index += 1
+        
+        # Configurable max_windows cap
+        if max_windows and window_index >= max_windows:
+            logger.info(f"Reached max_windows cap ({max_windows}), stopping window creation")
+            break
         
         # Safety check to prevent infinite loops
         if window_index > 1000:

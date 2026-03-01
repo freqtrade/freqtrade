@@ -144,41 +144,51 @@ class StrategyGene:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'StrategyGene':
         """Create strategy gene from dictionary."""
-        indicators = [
-            IndicatorGene(
-                type=ind['type'],
+        indicators = []
+        for ind in data['indicators']:
+            ind_type = ind['type']
+            # Sanitize corrupted CDL types with cascading _0 suffixes
+            # e.g. 'CDL_MORNINGSTAR_0_0_0' -> 'CDL_MORNINGSTAR'
+            if ind_type.startswith('CDL_'):
+                ind_type = cls._strip_cdl_suffixes(ind_type)
+            indicators.append(IndicatorGene(
+                type=ind_type,
                 parameters=ind['parameters'],
                 weight=ind.get('weight', 1.0),
-                instance_id=ind.get('instance_id'),
+                instance_id=None,  # Reset — will be reassigned by assign_instance_ids
                 timeframe=ind.get('timeframe'),
                 param_bounds=ind.get('param_bounds')
-            )
-            for ind in data['indicators']
-        ]
+            ))
         
-        entry_conditions = [
-            ConditionGene(
-                indicator=cond['indicator'],
+        entry_conditions = []
+        for cond in data['entry_conditions']:
+            ind_ref = cond['indicator']
+            # Sanitize corrupted CDL condition references
+            if ind_ref.startswith('CDL_'):
+                ind_ref = cls._strip_cdl_suffixes(ind_ref)
+            entry_conditions.append(ConditionGene(
+                indicator=ind_ref,
                 operator=cond['operator'],
                 threshold=cond['threshold'],
                 logic=cond.get('logic', 'AND'),
                 threshold_upper=cond.get('threshold_upper', 0.0),
                 lookback=cond.get('lookback', 3)
-            )
-            for cond in data['entry_conditions']
-        ]
+            ))
         
-        exit_conditions = [
-            ConditionGene(
-                indicator=cond['indicator'],
+        exit_conditions = []
+        for cond in data.get('exit_conditions', []):
+            ind_ref = cond['indicator']
+            # Sanitize corrupted CDL condition references
+            if ind_ref.startswith('CDL_'):
+                ind_ref = cls._strip_cdl_suffixes(ind_ref)
+            exit_conditions.append(ConditionGene(
+                indicator=ind_ref,
                 operator=cond['operator'],
                 threshold=cond['threshold'],
                 logic=cond.get('logic', 'AND'),
                 threshold_upper=cond.get('threshold_upper', 0.0),
                 lookback=cond.get('lookback', 3)
-            )
-            for cond in data.get('exit_conditions', [])
-        ]
+            ))
         
         return cls(
             generation=data['generation'],
@@ -199,7 +209,9 @@ class StrategyGene:
     
     def copy(self) -> 'StrategyGene':
         """Create a deep copy of this strategy gene."""
-        return StrategyGene.from_dict(self.to_dict())
+        clone = StrategyGene.from_dict(self.to_dict())
+        clone.assign_instance_ids()
+        return clone
     
     def get_missing_indicators(self) -> List[str]:
         """

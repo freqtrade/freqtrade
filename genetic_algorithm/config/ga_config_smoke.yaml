@@ -73,6 +73,7 @@ walk_forward:
   mode: 'rolling'
   aggregation: 'mean'
   min_train_trades: 3
+  max_windows: 8   # Keep smoke test fast
 
 holdout_validation:
   enabled: true
@@ -146,9 +147,10 @@ holdout_monitoring:
   early_stop: true
   early_stop_threshold: 0.60
   early_stop_checks: 2
-  fitness_penalty: true  # NEW: penalize overfit strategies
-  penalty_factor: 0.5
-  min_holdout_ratio: 0.6
+  trend_early_stop: true
+  trend_checks: 3
+  fitness_penalty: true  # Penalizes both raw_fitness and fitness
+  penalty_factor: 0.8
 
 # Parsimony pressure
 parsimony:

@@ -84,6 +84,11 @@ def _kill_pool_processes(executor: ProcessPoolExecutor):
         logger.debug(f"[PARALLEL] Force-killed {killed} lingering worker process(es)")
 
 
+def _pool_health_check_fn():
+    """Module-level function for pool health checks (lambdas can't be pickled)."""
+    return True
+
+
 def _init_worker(config: Dict[str, Any]):
     """
     Initialize worker process with its own FitnessEvaluator.
@@ -542,6 +547,12 @@ def parallel_parsimony(
                 if trial is None:
                     continue
 
+                # Assign unique identity to avoid filename collisions
+                # when multiple trials for the same elite run in parallel.
+                # Use large offset to guarantee no overlap with normal IDs.
+                trial.generation = current_gene.generation
+                trial.individual_id = 9000 + flat_idx  # parsimony namespace: 9000+
+
                 task_meta[flat_idx] = (elite_idx, kind, comp_idx, trial)
                 tasks.append({
                     'trial_dict': trial.to_dict(),
@@ -672,6 +683,9 @@ def parallel_parsimony(
         original_complexity = ind.strategy_gene.calculate_complexity()
         new_complexity = simplified_gene.calculate_complexity()
         if new_complexity < original_complexity:
+            # Restore original identity (parsimony trials used 9000+ namespace)
+            simplified_gene.generation = ind.strategy_gene.generation
+            simplified_gene.individual_id = ind.strategy_gene.individual_id
             ind.strategy_gene = simplified_gene
             ind.raw_fitness = new_fitness
             ind.fitness = new_fitness
@@ -799,7 +813,7 @@ class ParallelEvaluator:
             return True  # Will be freshly created
         
         try:
-            future = self._executor.submit(lambda: True)
+            future = self._executor.submit(_pool_health_check_fn)
             result = future.result(timeout=10)
             return result is True
         except Exception as e:

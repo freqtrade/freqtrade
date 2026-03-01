@@ -11,6 +11,94 @@ from typing import Tuple
 
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.strategy_gene import StrategyGene
+from genetic_algorithm.core.mutation import clamp_condition_thresholds
+
+
+def _deduplicate_indicators(gene: StrategyGene) -> None:
+    """Remove duplicate indicators (same type + params) keeping the first."""
+    seen = set()
+    deduped = []
+    for ind in gene.indicators:
+        key = (ind.type, str(sorted(ind.parameters.items())) if ind.parameters else '')
+        if key not in seen:
+            seen.add(key)
+            deduped.append(ind)
+    gene.indicators = deduped
+
+
+def _enforce_max_indicators(gene: StrategyGene, config: dict) -> None:
+    """Trim indicators to max_per_strategy, removing lowest-weight first.
+    
+    After trimming, removes any conditions that reference indicators
+    no longer present (orphaned conditions).
+    """
+    max_indicators = (config or {}).get('indicators', {}).get('max_per_strategy', 6)
+    if len(gene.indicators) <= max_indicators:
+        return
+    
+    # Sort by weight descending (higher weight = more important = keep)
+    # Indicators without an explicit weight default to 1.0
+    gene.indicators.sort(key=lambda ind: getattr(ind, 'weight', 1.0), reverse=True)
+    gene.indicators = gene.indicators[:max_indicators]
+    
+    # Build set of remaining indicator instance_ids
+    remaining_refs = {ind.instance_id for ind in gene.indicators}
+    
+    # Remove orphaned conditions (reference indicators we just trimmed)
+    gene.entry_conditions = [c for c in gene.entry_conditions if c.indicator in remaining_refs]
+    gene.exit_conditions = [c for c in gene.exit_conditions if c.indicator in remaining_refs]
+    
+    # Ensure at least one entry condition remains
+    if not gene.entry_conditions and gene.indicators:
+        from genetic_algorithm.core.mutation import _create_random_condition
+        indicator_config = (config or {}).get('indicators', {})
+        ind = gene.indicators[0]
+        try:
+            new_cond = _create_random_condition(ind.type, True, indicator_config)
+            if new_cond:
+                new_cond.indicator = ind.instance_id or ind.type
+                gene.entry_conditions = [new_cond]
+        except Exception:
+            pass
+
+
+def _deduplicate_conditions(conditions: list) -> list:
+    """Remove exact-duplicate conditions and prune subsumed pairs.
+    
+    Two conditions on the same indicator with the same operator where one
+    threshold is strictly tighter than the other: keep only the tighter one.
+    E.g. 'vroc < -117' AND 'vroc < -200' → keep 'vroc < -200'.
+    """
+    # 1. Exact dedup
+    seen = set()
+    unique = []
+    for c in conditions:
+        key = (c.indicator, c.operator, round(c.threshold, 6), c.logic)
+        if key not in seen:
+            seen.add(key)
+            unique.append(c)
+    
+    # 2. Subsumption pruning for '<' / '>' operators
+    result = []
+    by_ind_op = {}  # (indicator, operator) → list of conditions
+    for c in unique:
+        if c.operator in ('<', 'less_than'):
+            by_ind_op.setdefault((c.indicator, '<'), []).append(c)
+        elif c.operator in ('>', 'greater_than'):
+            by_ind_op.setdefault((c.indicator, '>'), []).append(c)
+        else:
+            result.append(c)  # keep non-comparable operators as-is
+    
+    for (ind, op), conds in by_ind_op.items():
+        if op == '<':
+            # For AND logic: x < A AND x < B → keep min(A, B)
+            keeper = min(conds, key=lambda c: c.threshold)
+        else:
+            # For AND logic: x > A AND x > B → keep max(A, B)
+            keeper = max(conds, key=lambda c: c.threshold)
+        result.append(keeper)
+    
+    return result
 
 
 def _enforce_min_entry_conditions(gene: StrategyGene, config: dict) -> None:
@@ -158,6 +246,15 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
     _enforce_min_entry_conditions(child1_gene, config)
     _enforce_min_entry_conditions(child2_gene, config)
     
+    # Post-crossover quality: dedup indicators, dedup/prune conditions, clamp thresholds
+    for g in (child1_gene, child2_gene):
+        _deduplicate_indicators(g)
+        _enforce_max_indicators(g, config)
+        g.entry_conditions = _deduplicate_conditions(g.entry_conditions)
+        g.exit_conditions = _deduplicate_conditions(g.exit_conditions)
+        clamp_condition_thresholds(g.entry_conditions)
+        clamp_condition_thresholds(g.exit_conditions)
+    
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
@@ -265,6 +362,15 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
     _enforce_min_entry_conditions(child1_gene, config)
     _enforce_min_entry_conditions(child2_gene, config)
     
+    # Post-crossover quality: dedup indicators, dedup/prune conditions, clamp thresholds
+    for g in (child1_gene, child2_gene):
+        _deduplicate_indicators(g)
+        _enforce_max_indicators(g, config)
+        g.entry_conditions = _deduplicate_conditions(g.entry_conditions)
+        g.exit_conditions = _deduplicate_conditions(g.exit_conditions)
+        clamp_condition_thresholds(g.entry_conditions)
+        clamp_condition_thresholds(g.exit_conditions)
+    
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))
 
@@ -339,6 +445,15 @@ def component_crossover(parent1: Individual, parent2: Individual,
     # Enforce minimum entry conditions
     _enforce_min_entry_conditions(child1_gene, config)
     _enforce_min_entry_conditions(child2_gene, config)
+    
+    # Post-crossover quality: dedup indicators, dedup/prune conditions, clamp thresholds
+    for g in (child1_gene, child2_gene):
+        _deduplicate_indicators(g)
+        _enforce_max_indicators(g, config)
+        g.entry_conditions = _deduplicate_conditions(g.entry_conditions)
+        g.exit_conditions = _deduplicate_conditions(g.exit_conditions)
+        clamp_condition_thresholds(g.entry_conditions)
+        clamp_condition_thresholds(g.exit_conditions)
     
     return (Individual(strategy_gene=child1_gene, parent_ids=[parent1.id, parent2.id]),
             Individual(strategy_gene=child2_gene, parent_ids=[parent1.id, parent2.id]))

@@ -423,6 +423,47 @@ echo ""
 # ═══════════════════════════════════════════════════════════
 # VERDICT
 # ═══════════════════════════════════════════════════════════
+
+# --- 19. HOLDOUT PENALTY EFFECTIVENESS ---
+echo "═══════════════════════════════════════════════════════════"
+echo "  19. HOLDOUT PENALTY & QUALITY GUARDRAILS"
+echo "═══════════════════════════════════════════════════════════"
+
+if [[ -n "$LATEST_LOG" ]]; then
+    # Holdout penalties applied (from raw_fitness modification)
+    PENALTY_APPLIED=$(grep -ci "Holdout penalty applied" "$LATEST_LOG" 2>/dev/null || echo "0")
+    TREND_WARNINGS=$(grep -ci "HOLDOUT-TREND" "$LATEST_LOG" 2>/dev/null || echo "0")
+    TREND_STOP=$(grep -ci "HOLDOUT EARLY STOP" "$LATEST_LOG" 2>/dev/null || echo "0")
+    DEAD_EXIT=$(grep -ci "dead.*exit\|impossible.*exit\|exit.*penalty" "$LATEST_LOG" 2>/dev/null || echo "0")
+
+    echo "Holdout penalties applied: $PENALTY_APPLIED"
+    echo "Trend worsening warnings: $TREND_WARNINGS"
+    echo "Early stops triggered:    $TREND_STOP"
+    echo "Dead exit penalties:      $DEAD_EXIT"
+    echo ""
+
+    if [[ "$PENALTY_APPLIED" -eq 0 ]]; then
+        echo "⚠️  No holdout penalties applied — check if holdout_monitoring.fitness_penalty is enabled"
+    elif [[ "$PENALTY_APPLIED" -gt 0 ]]; then
+        echo "✅ Holdout penalty is active (applied to both raw_fitness & fitness)"
+    fi
+
+    if [[ "$TREND_STOP" -gt 0 ]]; then
+        echo "⚠️  Trend-based early stop was triggered — degradation worsening across generations"
+        echo "   Last trend warning:"
+        grep -i "HOLDOUT-TREND" "$LATEST_LOG" 2>/dev/null | tail -1
+    fi
+
+    # Show last few penalty lines for context
+    PENALTY_TAIL=$(grep -i "Holdout penalty applied" "$LATEST_LOG" 2>/dev/null | tail -3)
+    if [[ -n "$PENALTY_TAIL" ]]; then
+        echo ""
+        echo "Recent penalty applications:"
+        echo "$PENALTY_TAIL"
+    fi
+fi
+echo ""
+
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║  QUICK VERDICT                                                ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
@@ -448,7 +489,9 @@ echo "Next steps:"
 echo "  1. Review top strategies in section 2"
 echo "  2. Check holdout degradation in section 3 (< 30% = robust)"
 echo "  3. Check Monte Carlo robustness in section 4 (≥ 0.80 = robust)"
-echo "  4. If errors occurred, check section 11 for details"
-echo "  5. To continue evolution: python genetic_algorithm/run_ga.py --resume --config genetic_algorithm/config/ga_config_overnight.yaml --yes"
-echo "  6. To visualize a strategy: python genetic_algorithm/visualize_strategy.py <strategy_file>"
+echo "  4. Check holdout penalty effectiveness in section 19 (should be > 0)"
+echo "  5. If errors occurred, check section 11 for details"
+echo "  6. If trend early stop triggered, overfitting is worsening — consider reducing generations"
+echo "  7. To continue evolution: python genetic_algorithm/run_ga.py --resume --config genetic_algorithm/config/ga_config_overnight.yaml --yes"
+echo "  8. To visualize a strategy: python genetic_algorithm/visualize_strategy.py <strategy_file>"
 echo ""

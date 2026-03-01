@@ -45,7 +45,7 @@ class PolicyConfig:
     # Auto mode parameters
     benchmark_pair: Optional[str] = None
     detection_timeframe: str = "1h"
-    detection_method: str = "sma_adx"
+    detection_method: str = "adx_di_hysteresis"
     detection_params: Optional[Dict[str, Any]] = None
     
     # Segment creation
@@ -81,7 +81,7 @@ class PolicyConfig:
             manual_segments=regime_config.get('manual_segments'),
             benchmark_pair=regime_config.get('benchmark_pair') or default_pair,
             detection_timeframe=regime_config.get('detection_timeframe', '1h'),
-            detection_method=regime_config.get('method', 'sma_adx'),
+            detection_method=regime_config.get('method', 'adx_di_hysteresis'),
             detection_params=regime_config.get('detection_params'),
             period_days=regime_config.get('period_days', 30),
             min_period_days=regime_config.get('min_period_days', 20),

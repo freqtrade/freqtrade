@@ -226,6 +226,10 @@ class StrategyGenerator:
             # Generate condition based on indicator type
             condition = self._generate_condition_for_indicator(indicator, is_entry)
             if condition:
+                # Dedup: skip if same indicator + operator already present
+                key = (condition.indicator, condition.operator)
+                if any((c.indicator, c.operator) == key for c in conditions):
+                    continue
                 # Override logic with primary logic for consistency
                 condition.logic = primary_logic
                 conditions.append(condition)
@@ -728,8 +732,13 @@ class {strategy_name}(IStrategy):
         unique_indicators = []
         for ind in indicators:
             # Build a hashable key from type + sorted params
+            # Normalize CDL types for dedup so CDL_HAMMER_0 and CDL_HAMMER aren't treated as different
+            _dedup_type = ind.type
+            if _dedup_type.startswith('CDL_'):
+                from genetic_algorithm.core.strategy_gene import StrategyGene
+                _dedup_type = StrategyGene._strip_cdl_suffixes(_dedup_type)
             params_key = tuple(sorted(ind.parameters.items())) if ind.parameters else ()
-            dedup_key = (ind.type, params_key)
+            dedup_key = (_dedup_type, params_key)
             if dedup_key in seen_indicators:
                 logger.debug(f"Skipping duplicate indicator: {ind.type} (instance_id={ind.instance_id})")
                 continue
@@ -740,11 +749,17 @@ class {strategy_name}(IStrategy):
             logger.info(f"[DEDUP] Removed {len(indicators) - len(unique_indicators)} duplicate indicator(s)")
         
         for ind in unique_indicators:
-            if ind.type == 'RSI':
+            # Normalize indicator type: strip cascading _0 suffixes from CDL types
+            # to handle corrupted types like 'CDL_MORNINGSTAR_0_0' from stale HOF data
+            _ind_type = ind.type
+            if _ind_type.startswith('CDL_'):
+                from genetic_algorithm.core.strategy_gene import StrategyGene
+                _ind_type = StrategyGene._strip_cdl_suffixes(_ind_type)
+            if _ind_type == 'RSI':
                 period = ind.parameters.get('period', 14)
                 lines.append(f"        dataframe['rsi_{period}'] = ta.RSI(dataframe, timeperiod={period})")
             
-            elif ind.type == 'MACD':
+            elif _ind_type == 'MACD':
                 fast = ind.parameters.get('fast_period', 12)
                 slow = ind.parameters.get('slow_period', 26)
                 signal = ind.parameters.get('signal_period', 9)
@@ -753,7 +768,7 @@ class {strategy_name}(IStrategy):
                 lines.append(f"        dataframe['macdsignal'] = macd['macdsignal']")
                 lines.append(f"        dataframe['macdhist'] = macd['macdhist']")
             
-            elif ind.type == 'BBANDS':
+            elif _ind_type == 'BBANDS':
                 period = ind.parameters.get('period', 20)
                 std_dev = ind.parameters.get('std_dev', 2.0)
                 lines.append(f"        bollinger = ta.BBANDS(dataframe, timeperiod={period}, nbdevup={std_dev}, nbdevdn={std_dev})")
@@ -761,36 +776,36 @@ class {strategy_name}(IStrategy):
                 lines.append(f"        dataframe['bb_middleband'] = bollinger['middleband']")
                 lines.append(f"        dataframe['bb_lowerband'] = bollinger['lowerband']")
             
-            elif ind.type == 'EMA':
+            elif _ind_type == 'EMA':
                 period = ind.parameters.get('period', 20)
                 lines.append(f"        dataframe['ema_{period}'] = ta.EMA(dataframe, timeperiod={period})")
             
-            elif ind.type == 'SMA':
+            elif _ind_type == 'SMA':
                 period = ind.parameters.get('period', 20)
                 lines.append(f"        dataframe['sma_{period}'] = ta.SMA(dataframe, timeperiod={period})")
             
-            elif ind.type == 'STOCH':
+            elif _ind_type == 'STOCH':
                 k_period = ind.parameters.get('k_period', 14)
                 d_period = ind.parameters.get('d_period', 3)
                 lines.append(f"        stoch = ta.STOCH(dataframe, fastk_period={k_period}, slowk_period={d_period}, slowd_period={d_period})")
                 lines.append(f"        dataframe['slowk'] = stoch['slowk']")
                 lines.append(f"        dataframe['slowd'] = stoch['slowd']")
             
-            elif ind.type == 'ATR':
+            elif _ind_type == 'ATR':
                 period = ind.parameters.get('period', 14)
                 lines.append(f"        dataframe['atr_{period}'] = ta.ATR(dataframe, timeperiod={period})")
             
-            elif ind.type == 'ADX':
+            elif _ind_type == 'ADX':
                 period = ind.parameters.get('period', 14)
                 lines.append(f"        dataframe['adx_{period}'] = ta.ADX(dataframe, timeperiod={period})")
             
-            elif ind.type == 'CCI':
+            elif _ind_type == 'CCI':
                 period = ind.parameters.get('period', 20)
                 lines.append(f"        dataframe['cci_{period}'] = ta.CCI(dataframe, timeperiod={period})")
             
             # === NEW INDICATORS ===
             
-            elif ind.type == 'SUPERTREND':
+            elif _ind_type == 'SUPERTREND':
                 period = ind.parameters.get('period', 10)
                 multiplier = ind.parameters.get('multiplier', 3.0)
                 lines.append(f"        # SuperTrend calculation with direction state machine")
@@ -825,7 +840,7 @@ class {strategy_name}(IStrategy):
                 lines.append(f"        dataframe['supertrend_direction'] = _st_direction")
                 lines.append(f"        dataframe['supertrend'] = (_st_direction == 1)  # True when bullish")
             
-            elif ind.type == 'ICHIMOKU':
+            elif _ind_type == 'ICHIMOKU':
                 tenkan = ind.parameters.get('tenkan_period', 9)
                 kijun = ind.parameters.get('kijun_period', 26)
                 senkou_b = ind.parameters.get('senkou_b_period', 52)
@@ -842,71 +857,71 @@ class {strategy_name}(IStrategy):
                 lines.append(f"        dataframe['senkou_span_b'] = ((high_{senkou_b} + low_{senkou_b}) / 2).shift({kijun})")
                 lines.append(f"        dataframe['cloud_green'] = dataframe['senkou_span_a'] > dataframe['senkou_span_b']")
             
-            elif ind.type == 'DONCHIAN':
+            elif _ind_type == 'DONCHIAN':
                 period = ind.parameters.get('period', 20)
                 lines.append(f"        # Donchian Channels")
                 lines.append(f"        dataframe['donchian_upper'] = dataframe['high'].rolling({period}).max()")
                 lines.append(f"        dataframe['donchian_lower'] = dataframe['low'].rolling({period}).min()")
                 lines.append(f"        dataframe['donchian_mid'] = (dataframe['donchian_upper'] + dataframe['donchian_lower']) / 2")
             
-            elif ind.type == 'VWAP':
+            elif _ind_type == 'VWAP':
                 vwap_period = ind.parameters.get('period', 20)
                 lines.append(f"        # Volume Weighted Average Price (rolling {vwap_period}-period)")
                 lines.append(f"        _tp = (dataframe['high'] + dataframe['low'] + dataframe['close']) / 3")
                 lines.append(f"        dataframe['vwap'] = (_tp * dataframe['volume']).rolling({vwap_period}).sum() / dataframe['volume'].rolling({vwap_period}).sum()")
             
-            elif ind.type == 'PSAR':
+            elif _ind_type == 'PSAR':
                 acceleration = ind.parameters.get('acceleration', 0.02)
                 maximum = ind.parameters.get('maximum', 0.2)
                 lines.append(f"        dataframe['psar'] = ta.SAR(dataframe, acceleration={acceleration}, maximum={maximum})")
             
-            elif ind.type == 'CMF':
+            elif _ind_type == 'CMF':
                 period = ind.parameters.get('period', 20)
                 lines.append(f"        # Chaikin Money Flow")
                 lines.append(f"        mfv = ((dataframe['close'] - dataframe['low']) - (dataframe['high'] - dataframe['close'])) / (dataframe['high'] - dataframe['low'])")
                 lines.append(f"        mfv = mfv.fillna(0) * dataframe['volume']")
                 lines.append(f"        dataframe['cmf'] = mfv.rolling({period}).sum() / dataframe['volume'].rolling({period}).sum()")
             
-            elif ind.type == 'VROC':
+            elif _ind_type == 'VROC':
                 period = ind.parameters.get('period', 12)
                 lines.append(f"        # Volume Rate of Change")
                 lines.append(f"        dataframe['vroc'] = ((dataframe['volume'] - dataframe['volume'].shift({period})) / dataframe['volume'].shift({period})) * 100")
             
             # === CANDLESTICK PATTERNS ===
             
-            elif ind.type == 'CDL_ENGULFING':
+            elif _ind_type == 'CDL_ENGULFING':
                 lines.append(f"        dataframe['cdl_engulfing'] = ta.CDLENGULFING(dataframe)")
             
-            elif ind.type == 'CDL_HAMMER':
+            elif _ind_type == 'CDL_HAMMER':
                 lines.append(f"        dataframe['cdl_hammer'] = ta.CDLHAMMER(dataframe)")
             
-            elif ind.type == 'CDL_DOJI':
+            elif _ind_type == 'CDL_DOJI':
                 lines.append(f"        dataframe['cdl_doji'] = ta.CDLDOJI(dataframe)")
             
-            elif ind.type == 'CDL_MORNINGSTAR':
+            elif _ind_type == 'CDL_MORNINGSTAR':
                 penetration = ind.parameters.get('penetration', 0.0)
                 lines.append(f"        dataframe['cdl_morningstar'] = ta.CDLMORNINGSTAR(dataframe, penetration={penetration})")
             
-            elif ind.type == 'CDL_EVENINGSTAR':
+            elif _ind_type == 'CDL_EVENINGSTAR':
                 penetration = ind.parameters.get('penetration', 0.0)
                 lines.append(f"        dataframe['cdl_eveningstar'] = ta.CDLEVENINGSTAR(dataframe, penetration={penetration})")
             
-            elif ind.type == 'CDL_SHOOTINGSTAR':
+            elif _ind_type == 'CDL_SHOOTINGSTAR':
                 lines.append(f"        dataframe['cdl_shootingstar'] = ta.CDLSHOOTINGSTAR(dataframe)")
             
-            elif ind.type == 'CDL_HARAMI':
+            elif _ind_type == 'CDL_HARAMI':
                 lines.append(f"        dataframe['cdl_harami'] = ta.CDLHARAMI(dataframe)")
             
-            elif ind.type == 'CDL_PIERCING':
+            elif _ind_type == 'CDL_PIERCING':
                 lines.append(f"        dataframe['cdl_piercing'] = ta.CDLPIERCING(dataframe)")
             
-            elif ind.type == 'CDL_DARKCLOUD':
+            elif _ind_type == 'CDL_DARKCLOUD':
                 lines.append(f"        dataframe['cdl_darkcloud'] = ta.CDLDARKCLOUDCOVER(dataframe)")
             
-            elif ind.type == 'CDL_3WHITESOLDIERS':
+            elif _ind_type == 'CDL_3WHITESOLDIERS':
                 lines.append(f"        dataframe['cdl_3whitesoldiers'] = ta.CDL3WHITESOLDIERS(dataframe)")
             
-            elif ind.type == 'CDL_3BLACKCROWS':
+            elif _ind_type == 'CDL_3BLACKCROWS':
                 lines.append(f"        dataframe['cdl_3blackcrows'] = ta.CDL3BLACKCROWS(dataframe)")
         
         return '\n'.join(lines) if lines else "        # No indicators"

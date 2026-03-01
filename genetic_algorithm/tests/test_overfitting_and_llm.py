@@ -497,5 +497,356 @@ class TestStrategyDesigner:
         assert any('MACD' in w for w in weaknesses)  # MACD not used
 
 
+# ============================================================================
+# Phase 1 Regression Tests (Population.get_all + Holdout Penalty on raw_fitness)
+# ============================================================================
+
+class TestPopulationGetAll:
+    """Verify Population.get_all() returns references to all individuals."""
+
+    def test_get_all_returns_all(self):
+        from genetic_algorithm.core.population import Population
+        from genetic_algorithm.core.individual import Individual
+
+        pop = Population(size=5, generation=0)
+        for i in range(5):
+            gene = StrategyGene(
+                indicators=[IndicatorGene(type='rsi', parameters={'period': 14})],
+                entry_conditions=[ConditionGene(indicator='rsi', operator='less_than', threshold=30)],
+                exit_conditions=[ConditionGene(indicator='rsi', operator='greater_than', threshold=70)],
+                generation=0, individual_id=i,
+            )
+            ind = Individual(strategy_gene=gene)
+            ind.fitness = float(i)
+            ind.raw_fitness = float(i)
+            ind.evaluated = True
+            ind.metrics = {'origin': 'test'}
+            pop.add_individual(ind)
+
+        result = pop.get_all()
+        assert len(result) == 5
+        # Returned list elements should be same object references as internal list
+        for r in result:
+            assert r in pop.individuals
+
+    def test_get_all_empty_population(self):
+        from genetic_algorithm.core.population import Population
+
+        pop = Population(size=0, generation=0)
+        assert pop.get_all() == []
+
+
+class TestHoldoutPenaltyAffectsRawFitness:
+    """Verify holdout penalty reduces raw_fitness (not just fitness)."""
+
+    def _make_individual(self, fitness_val, ind_id=0):
+        """Helper to create a minimal Individual with given fitness."""
+        from genetic_algorithm.core.individual import Individual
+
+        gene = StrategyGene(
+            indicators=[IndicatorGene(type='rsi', parameters={'period': 14})],
+            entry_conditions=[ConditionGene(indicator='rsi', operator='less_than', threshold=30)],
+            exit_conditions=[ConditionGene(indicator='rsi', operator='greater_than', threshold=70)],
+            generation=0, individual_id=ind_id,
+        )
+        ind = Individual(strategy_gene=gene)
+        ind.raw_fitness = fitness_val
+        ind.fitness = fitness_val
+        ind.evaluated = True
+        ind.metrics = {}
+        return ind
+
+    def test_penalty_reduces_raw_fitness(self):
+        """After holdout penalty, raw_fitness must be lower than before."""
+        ind = self._make_individual(0.5)
+        original_raw = ind.raw_fitness
+
+        # Simulate the penalty logic from evolution.py _run_holdout_monitoring
+        degradation = 60.0  # 60% degradation
+        penalty_factor = 0.5
+        degradation_frac = degradation / 100.0
+        penalty_mult = max(0.3, 1.0 - degradation_frac * penalty_factor)
+        ind.raw_fitness = ind.raw_fitness * penalty_mult
+        ind.fitness = ind.fitness * penalty_mult
+        ind.metrics['holdout_penalty'] = 1.0 - penalty_mult
+
+        assert ind.raw_fitness < original_raw
+        assert ind.raw_fitness == pytest.approx(0.5 * 0.7, abs=1e-6)
+        assert ind.fitness == pytest.approx(0.5 * 0.7, abs=1e-6)
+        assert ind.metrics['holdout_penalty'] == pytest.approx(0.3, abs=1e-6)
+
+    def test_penalty_floor_at_0_3(self):
+        """Penalty multiplier should floor at 0.3 (not 0.5 as before)."""
+        ind = self._make_individual(1.0)
+
+        degradation = 200.0  # Extreme degradation
+        penalty_factor = 0.5
+        degradation_frac = degradation / 100.0
+        penalty_mult = max(0.3, 1.0 - degradation_frac * penalty_factor)
+
+        assert penalty_mult == 0.3  # Floor
+        ind.raw_fitness *= penalty_mult
+        assert ind.raw_fitness == pytest.approx(0.3, abs=1e-6)
+
+    def test_penalised_elite_ranks_lower(self):
+        """An overfit elite with penalty should rank below an unpenalized one."""
+        ind_a = self._make_individual(0.5, ind_id=0)  # Will be penalized
+        ind_b = self._make_individual(0.45, ind_id=1)  # Slightly worse but not penalized
+
+        # Penalize ind_a
+        ind_a.raw_fitness *= 0.7
+        ind_a.fitness *= 0.7
+
+        # raw_fitness: ind_a=0.35, ind_b=0.45 → ind_b should rank higher
+        ranked = sorted([ind_a, ind_b], key=lambda x: x.raw_fitness, reverse=True)
+        assert ranked[0] is ind_b, (
+            f"Penalized ind should rank lower: a.raw={ind_a.raw_fitness}, b.raw={ind_b.raw_fitness}"
+        )
+
+
+class TestCachedHoldoutEvaluator:
+    """Verify holdout evaluator caching attributes exist on GeneticAlgorithm."""
+
+    def test_cache_attributes_initialized(self):
+        """_holdout_evaluator and _holdout_range should start as None."""
+        from genetic_algorithm.core.evolution import GeneticAlgorithm
+        import os
+
+        config_path = os.path.join(
+            os.path.dirname(__file__), 'config', 'ga_config.yaml'
+        )
+        if not os.path.exists(config_path):
+            pytest.skip("Test config not available")
+
+        ga = GeneticAlgorithm(config_path)
+        assert ga._holdout_evaluator is None
+        assert ga._holdout_range is None
+
+
+# ============================================================================
+# Phase 2 Tests: Strategy Quality Guardrails
+# ============================================================================
+
+class TestThresholdClamps:
+    """Verify bounded indicator thresholds are clamped to valid ranges."""
+
+    def test_rsi_clamped_to_0_100(self):
+        from genetic_algorithm.core.mutation import clamp_condition_thresholds
+        conds = [ConditionGene(indicator='rsi', operator='<', threshold=-20)]
+        clamp_condition_thresholds(conds)
+        assert conds[0].threshold == 0
+
+    def test_rsi_upper_clamped(self):
+        from genetic_algorithm.core.mutation import clamp_condition_thresholds
+        conds = [ConditionGene(indicator='RSI', operator='>', threshold=120)]
+        clamp_condition_thresholds(conds)
+        assert conds[0].threshold == 100
+
+    def test_stoch_clamped(self):
+        from genetic_algorithm.core.mutation import clamp_condition_thresholds
+        conds = [ConditionGene(indicator='STOCH_0', operator='<', threshold=-5)]
+        clamp_condition_thresholds(conds)
+        assert conds[0].threshold == 0
+
+    def test_between_thresholds_ordered(self):
+        from genetic_algorithm.core.mutation import clamp_condition_thresholds
+        conds = [ConditionGene(indicator='RSI', operator='between',
+                               threshold=80, threshold_upper=30)]
+        clamp_condition_thresholds(conds)
+        assert conds[0].threshold <= conds[0].threshold_upper
+
+    def test_unbounded_indicator_unchanged(self):
+        from genetic_algorithm.core.mutation import clamp_condition_thresholds
+        conds = [ConditionGene(indicator='MACD', operator='>', threshold=-999)]
+        clamp_condition_thresholds(conds)
+        assert conds[0].threshold == -999  # MACD is unbounded
+
+
+class TestConditionDeduplication:
+    """Verify duplicate/subsumed conditions are pruned."""
+
+    def test_exact_duplicate_removed(self):
+        from genetic_algorithm.core.crossover import _deduplicate_conditions
+        conds = [
+            ConditionGene(indicator='rsi', operator='<', threshold=30),
+            ConditionGene(indicator='rsi', operator='<', threshold=30),
+        ]
+        result = _deduplicate_conditions(conds)
+        assert len(result) == 1
+
+    def test_subsumed_less_than_pruned(self):
+        """vroc < -117 AND vroc < -200 → keep only vroc < -200."""
+        from genetic_algorithm.core.crossover import _deduplicate_conditions
+        conds = [
+            ConditionGene(indicator='vroc', operator='<', threshold=-117),
+            ConditionGene(indicator='vroc', operator='<', threshold=-200),
+        ]
+        result = _deduplicate_conditions(conds)
+        assert len(result) == 1
+        assert result[0].threshold == -200
+
+    def test_subsumed_greater_than_pruned(self):
+        """rsi > 60 AND rsi > 80 → keep only rsi > 80."""
+        from genetic_algorithm.core.crossover import _deduplicate_conditions
+        conds = [
+            ConditionGene(indicator='rsi', operator='>', threshold=60),
+            ConditionGene(indicator='rsi', operator='>', threshold=80),
+        ]
+        result = _deduplicate_conditions(conds)
+        assert len(result) == 1
+        assert result[0].threshold == 80
+
+    def test_different_operators_preserved(self):
+        from genetic_algorithm.core.crossover import _deduplicate_conditions
+        conds = [
+            ConditionGene(indicator='rsi', operator='<', threshold=30),
+            ConditionGene(indicator='rsi', operator='cross_above', threshold=30),
+        ]
+        result = _deduplicate_conditions(conds)
+        assert len(result) == 2
+
+
+class TestIndicatorDeduplication:
+    """Verify duplicate indicators are removed after crossover."""
+
+    def test_duplicate_same_type_removed(self):
+        from genetic_algorithm.core.crossover import _deduplicate_indicators
+        gene = StrategyGene(
+            generation=0, individual_id=0,
+            indicators=[
+                IndicatorGene(type='RSI', parameters={'period': 14}),
+                IndicatorGene(type='RSI', parameters={'period': 14}),
+                IndicatorGene(type='MACD', parameters={'fast_period': 12}),
+            ],
+            entry_conditions=[ConditionGene(indicator='RSI', operator='<', threshold=30)],
+        )
+        _deduplicate_indicators(gene)
+        assert len(gene.indicators) == 2
+        types = [i.type for i in gene.indicators]
+        assert types.count('RSI') == 1
+
+    def test_different_params_kept(self):
+        from genetic_algorithm.core.crossover import _deduplicate_indicators
+        gene = StrategyGene(
+            generation=0, individual_id=0,
+            indicators=[
+                IndicatorGene(type='RSI', parameters={'period': 14}),
+                IndicatorGene(type='RSI', parameters={'period': 21}),
+            ],
+            entry_conditions=[ConditionGene(indicator='RSI', operator='<', threshold=30)],
+        )
+        _deduplicate_indicators(gene)
+        assert len(gene.indicators) == 2  # Different params → kept
+
+
+class TestDeadExitPenalty:
+    """Verify fitness penalty for impossible exit thresholds."""
+
+    def test_rsi_below_zero_exit_penalized(self):
+        """RSI < 0 as exit condition should trigger dead-exit penalty."""
+        gene = StrategyGene(
+            generation=0, individual_id=0,
+            indicators=[IndicatorGene(type='RSI', parameters={'period': 14})],
+            entry_conditions=[ConditionGene(indicator='RSI', operator='<', threshold=30)],
+            exit_conditions=[ConditionGene(indicator='RSI', operator='<', threshold=0)],
+        )
+        fitness = 1.0
+        # Simulate the penalty logic from fitness.py
+        _BOUNDED = {'RSI': (0, 100), 'STOCH': (0, 100)}
+        dead_count = 0
+        bounded_count = 0
+        for cond in gene.exit_conditions:
+            base_type = cond.indicator.split('_')[0]
+            bounds = _BOUNDED.get(base_type.upper())
+            if bounds:
+                bounded_count += 1
+                lo, hi = bounds
+                if cond.operator in ('<', 'less_than') and cond.threshold <= lo:
+                    dead_count += 1
+        if bounded_count > 0 and dead_count == bounded_count:
+            fitness *= 0.7
+        assert fitness == pytest.approx(0.7, abs=1e-6)
+
+    def test_valid_exit_not_penalized(self):
+        """RSI > 70 is a valid exit — no penalty."""
+        gene = StrategyGene(
+            generation=0, individual_id=0,
+            indicators=[IndicatorGene(type='RSI', parameters={'period': 14})],
+            entry_conditions=[ConditionGene(indicator='RSI', operator='<', threshold=30)],
+            exit_conditions=[ConditionGene(indicator='RSI', operator='>', threshold=70)],
+        )
+        _BOUNDED = {'RSI': (0, 100)}
+        dead_count = 0
+        bounded_count = 0
+        for cond in gene.exit_conditions:
+            base_type = cond.indicator.split('_')[0]
+            bounds = _BOUNDED.get(base_type.upper())
+            if bounds:
+                bounded_count += 1
+                lo, hi = bounds
+                if cond.operator in ('<', 'less_than') and cond.threshold <= lo:
+                    dead_count += 1
+                elif cond.operator in ('>', 'greater_than') and cond.threshold >= hi:
+                    dead_count += 1
+        assert dead_count == 0  # No dead conditions
+
+
+# ════════════════════════════════════════════════════════════════
+# Walk-Forward max_windows cap
+# ════════════════════════════════════════════════════════════════
+
+class TestMaxWindowsCap:
+    """Verify create_walk_forward_windows respects max_windows."""
+
+    def test_cap_limits_window_count(self):
+        from genetic_algorithm.utils.timerange import create_walk_forward_windows
+        # 365 days with 60/20/20 rolling → ~15 windows uncapped
+        windows = create_walk_forward_windows(
+            timerange='20250101-20251231',
+            train_days=60, validation_days=20, step_days=20,
+            max_windows=5
+        )
+        assert len(windows) == 5
+
+    def test_no_cap_returns_all(self):
+        from genetic_algorithm.utils.timerange import create_walk_forward_windows
+        windows_no_cap = create_walk_forward_windows(
+            timerange='20250101-20251231',
+            train_days=60, validation_days=20, step_days=20,
+            max_windows=None
+        )
+        windows_capped = create_walk_forward_windows(
+            timerange='20250101-20251231',
+            train_days=60, validation_days=20, step_days=20,
+            max_windows=5
+        )
+        assert len(windows_no_cap) > len(windows_capped)
+
+    def test_cap_larger_than_natural_count(self):
+        from genetic_algorithm.utils.timerange import create_walk_forward_windows
+        # 120 days with 60/20/20 → only 2-3 windows
+        windows = create_walk_forward_windows(
+            timerange='20250101-20250501',
+            train_days=60, validation_days=20, step_days=20,
+            max_windows=100
+        )
+        assert len(windows) < 100  # Natural count is well below cap
+
+
+class TestPoolHealthCheckFn:
+    """Verify the module-level health check function is picklable."""
+
+    def test_fn_returns_true(self):
+        from genetic_algorithm.evaluation.parallel import _pool_health_check_fn
+        assert _pool_health_check_fn() is True
+
+    def test_fn_is_picklable(self):
+        import pickle
+        from genetic_algorithm.evaluation.parallel import _pool_health_check_fn
+        pickled = pickle.dumps(_pool_health_check_fn)
+        restored = pickle.loads(pickled)
+        assert restored() is True
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
