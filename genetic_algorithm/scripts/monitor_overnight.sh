@@ -142,13 +142,15 @@ echo ""
 # --- 10. Holdout Penalty Impact ---
 echo "--- Holdout Penalty Impact ---"
 if [[ -n "$LATEST_LOG" ]]; then
-    PENALTY_LINES=$(grep -i "holdout_penalty\|penalty_mult\|fitness.*penaliz" "$LATEST_LOG" 2>/dev/null | tail -5)
+    PENALTY_COUNT=$(grep -ci "Holdout penalty applied" "$LATEST_LOG" 2>/dev/null || echo "0")
+    TREND_WARNINGS=$(grep -ci "HOLDOUT-TREND" "$LATEST_LOG" 2>/dev/null || echo "0")
+    echo "Holdout penalties applied: $PENALTY_COUNT | Trend warnings: $TREND_WARNINGS"
+
+    PENALTY_LINES=$(grep -i "Holdout penalty applied\|HOLDOUT-TREND\|HOLDOUT EARLY STOP" "$LATEST_LOG" 2>/dev/null | tail -5)
     if [[ -n "$PENALTY_LINES" ]]; then
-        PENALIZED_COUNT=$(grep -ci "holdout_penalty" "$LATEST_LOG" 2>/dev/null || echo "0")
-        echo "Holdout penalties applied: $PENALIZED_COUNT instances"
         echo "$PENALTY_LINES"
     else
-        echo "No holdout penalty activity (disabled or no degradation)"
+        echo "No holdout penalty activity yet"
     fi
 fi
 echo ""

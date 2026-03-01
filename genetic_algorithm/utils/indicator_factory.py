@@ -25,6 +25,11 @@ def create_random_indicator(indicator_type: str, indicator_config: Dict[str, Any
     Returns:
         IndicatorGene: A new indicator with random parameters
     """
+    # Sanitize corrupted CDL type names (e.g., CDL_MORNINGSTAR_0_0 -> CDL_MORNINGSTAR)
+    if indicator_type.startswith('CDL_'):
+        from genetic_algorithm.core.strategy_gene import StrategyGene
+        indicator_type = StrategyGene._strip_cdl_suffixes(indicator_type)
+    
     ind_config = indicator_config.get(indicator_type, {})
     parameters = {}
     

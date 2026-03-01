@@ -16,6 +16,35 @@ from genetic_algorithm.utils.indicator_factory import create_random_indicator
 # Set up logger for mutation operations
 logger = logging.getLogger(__name__)
 
+# Hard threshold clamps for bounded indicators.
+# Prevents degenerate conditions like RSI < 0 or RSI > 100.
+_THRESHOLD_CLAMPS = {
+    'RSI':   (0,   100),
+    'STOCH': (0,   100),
+    'CCI':   (-300, 300),
+    'CMF':   (-1,  1),
+    'VROC':  (-500, 500),
+    'ADX':   (0,   100),
+}
+
+
+def clamp_condition_thresholds(conditions: list) -> None:
+    """Clamp condition thresholds to valid ranges for bounded indicators.
+
+    Mutates conditions in-place. Handles instance_id formats like 'RSI_0'.
+    """
+    for cond in conditions:
+        base_type = cond.indicator.split('_')[0] if '_' in cond.indicator else cond.indicator
+        bounds = _THRESHOLD_CLAMPS.get(base_type.upper())
+        if bounds:
+            lo, hi = bounds
+            cond.threshold = max(lo, min(hi, cond.threshold))
+            if cond.operator == 'between':
+                cond.threshold_upper = max(lo, min(hi, cond.threshold_upper))
+                # Ensure lower < upper
+                if cond.threshold > cond.threshold_upper:
+                    cond.threshold, cond.threshold_upper = cond.threshold_upper, cond.threshold
+
 
 def _mutate_indicator_params(indicator, ind_config, i, mutations_applied):
     """Helper to mutate indicator parameters based on type."""
@@ -407,6 +436,10 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
         'type': 'condition',
         'applied': mutations_applied
     }]
+    
+    # Clamp thresholds to valid ranges (prevents degenerate conditions)
+    clamp_condition_thresholds(new_individual.strategy_gene.entry_conditions)
+    clamp_condition_thresholds(new_individual.strategy_gene.exit_conditions)
     
     # Ensure all indicators referenced in conditions are calculated
     indicator_config = config.get('indicators', {})

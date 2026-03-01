@@ -216,6 +216,7 @@ class GeneticAlgorithm:
         self.generation_stats: List[PopulationStats] = []
         self.no_improvement_count = 0
         self.best_fitness_ever = 0.0
+        self._new_best_this_gen = False
         
         # Feature importance tracking
         self.feature_tracker = FeatureImportanceTracker()
@@ -258,7 +259,14 @@ class GeneticAlgorithm:
         self.holdout_early_stop = holdout_mon_config.get('early_stop', False)
         self.holdout_early_stop_threshold = holdout_mon_config.get('early_stop_threshold', 0.60)
         self.holdout_early_stop_checks = holdout_mon_config.get('early_stop_checks', 2)
+
+        # Cached holdout evaluator (created lazily in _run_holdout_monitoring)
+        self._holdout_evaluator = None
+        self._holdout_range = None
         self._holdout_consecutive_bad = 0  # Counter for consecutive bad checks
+        self._holdout_degradation_history: list = []  # Track avg_degrad per check for trend detection
+        self.holdout_trend_early_stop = holdout_mon_config.get('trend_early_stop', True)
+        self.holdout_trend_checks = holdout_mon_config.get('trend_checks', 3)  # Consecutive worsening checks
         
         # Generation-level holdout history for reporting
         self.generation_holdout_history: list = []
@@ -756,17 +764,21 @@ class GeneticAlgorithm:
         
         self.logger.info(f"[HOLDOUT-MON] Gen {generation + 1}: evaluating top-{len(candidates)} on {holdout_range}...")
         
-        import copy
-        holdout_eval_config = copy.deepcopy(self.config)
-        holdout_eval_config['backtesting']['timerange'] = holdout_range
-        if 'walk_forward' in holdout_eval_config:
-            holdout_eval_config['walk_forward']['enabled'] = False
-        
-        try:
-            holdout_evaluator = FitnessEvaluator(holdout_eval_config)
-        except Exception as e:
-            self.logger.warning(f"[HOLDOUT-MON] Failed to create evaluator: {e}")
-            return
+        # Reuse cached holdout evaluator (same holdout range every call)
+        if self._holdout_evaluator is None or self._holdout_range != holdout_range:
+            import copy
+            holdout_eval_config = copy.deepcopy(self.config)
+            holdout_eval_config['backtesting']['timerange'] = holdout_range
+            if 'walk_forward' in holdout_eval_config:
+                holdout_eval_config['walk_forward']['enabled'] = False
+            try:
+                self._holdout_evaluator = FitnessEvaluator(holdout_eval_config)
+                self._holdout_range = holdout_range
+                self.logger.debug(f"[HOLDOUT-MON] Created & cached evaluator for {holdout_range}")
+            except Exception as e:
+                self.logger.warning(f"[HOLDOUT-MON] Failed to create evaluator: {e}")
+                return
+        holdout_evaluator = self._holdout_evaluator
         
         degradations = []
         for ind in candidates:
@@ -783,15 +795,21 @@ class GeneticAlgorithm:
                 )
                 
                 # Apply holdout fitness penalty when enabled
+                # Penalty MUST hit raw_fitness too — elite selection sorts by
+                # raw_fitness, and fitness sharing overwrites .fitness from
+                # raw_fitness.  Without touching raw_fitness the penalty is a no-op.
                 if self.holdout_fitness_penalty and degradation > 0:
                     degradation_frac = degradation / 100.0  # Convert back to 0-1
-                    penalty_mult = max(0.5, 1.0 - degradation_frac * self.holdout_penalty_factor)
+                    penalty_mult = max(0.3, 1.0 - degradation_frac * self.holdout_penalty_factor)
+                    old_raw = ind.raw_fitness if ind.raw_fitness is not None else ind.fitness
                     old_fitness = ind.fitness
+                    ind.raw_fitness = old_raw * penalty_mult
                     ind.fitness = ind.fitness * penalty_mult
                     ind.metrics['holdout_penalty'] = 1.0 - penalty_mult
                     ind.metrics['holdout_degradation_monitored'] = degradation_frac
                     self.logger.info(
-                        f"    → Holdout penalty applied: {old_fitness:.4f} -> {ind.fitness:.4f} "
+                        f"    → Holdout penalty applied: raw {old_raw:.4f}->{ind.raw_fitness:.4f}, "
+                        f"fit {old_fitness:.4f}->{ind.fitness:.4f} "
                         f"(x{penalty_mult:.3f}, degrad={degradation:.1f}%)"
                     )
             except Exception as e:
@@ -834,7 +852,25 @@ class GeneticAlgorithm:
                     )
                 else:
                     self._holdout_consecutive_bad = 0
-            
+
+            # Trend-based early stopping: detect consecutive worsening
+            self._holdout_degradation_history.append(avg_degrad)
+            if self.holdout_trend_early_stop and len(self._holdout_degradation_history) >= self.holdout_trend_checks + 1:
+                recent = self._holdout_degradation_history[-(self.holdout_trend_checks + 1):]
+                consecutive_worse = all(
+                    recent[i + 1] > recent[i] for i in range(len(recent) - 1)
+                )
+                if consecutive_worse:
+                    self.logger.warning(
+                        f"  [HOLDOUT-TREND] ⚠ Degradation worsened for {self.holdout_trend_checks} "
+                        f"consecutive checks: {[f'{d:.1f}%' for d in recent]}. "
+                        f"Triggering early stop."
+                    )
+                    # Force the consecutive_bad counter high enough to trigger early stop
+                    self._holdout_consecutive_bad = max(
+                        self._holdout_consecutive_bad, self.holdout_early_stop_checks
+                    )
+
             return avg_degrad
         return None
 
@@ -1279,8 +1315,10 @@ class GeneticAlgorithm:
         """
         Check if evolution has converged.
         
-        Uses the global best individual's raw fitness rather than per-generation
-        population best, which can fluctuate from random immigrants.
+        best_fitness_ever is maintained at the [NEW BEST] detection point
+        (before holdout monitoring can corrupt raw_fitness in-place).
+        This method only increments no_improvement_count when no new best
+        was recorded this generation, and handles adaptive mutation.
         
         Args:
             stats: Current generation statistics
@@ -1291,20 +1329,14 @@ class GeneticAlgorithm:
         if self.best_individual is None:
             return False
         
-        # Use the global best individual's raw fitness for stable convergence tracking
-        # (per-gen stats.best_raw_fitness fluctuates from random immigrants/sharing)
-        global_best = self.best_individual.raw_fitness
-        if global_best is None:
-            global_best = self.best_individual.fitness
-        if global_best is None:
-            return False
-        
-        # Check for improvement against the all-time best
-        if global_best <= self.best_fitness_ever:
+        # best_fitness_ever and no_improvement_count are already updated
+        # at the [NEW BEST] detection point (before holdout penalty).
+        # Here we only need to increment no_improvement_count when there
+        # was NO new best this generation.
+        if not getattr(self, '_new_best_this_gen', False):
             self.no_improvement_count += 1
-        else:
-            self.no_improvement_count = 0
-            self.best_fitness_ever = global_best
+        # Reset the flag for next generation
+        self._new_best_this_gen = False
         
         # Adaptive mutation: increase mutation rate if stuck
         if self.adaptive_mutation and self.no_improvement_count > 0:
@@ -1453,6 +1485,13 @@ class GeneticAlgorithm:
             best = population.get_best(1)[0]
             if self._should_update_best_individual(best):
                 self.best_individual = best
+                # Snapshot best_fitness_ever NOW, before holdout monitoring
+                # can modify raw_fitness in-place on this same object reference.
+                pre_penalty_raw = best.raw_fitness
+                if pre_penalty_raw is not None and pre_penalty_raw > self.best_fitness_ever:
+                    self.best_fitness_ever = pre_penalty_raw
+                    self.no_improvement_count = 0
+                    self._new_best_this_gen = True
                 self.logger.info(f"[NEW BEST] {best.id} with fitness {best.fitness:.4f}")
                 self.monitor.on_new_best(best)
                 
