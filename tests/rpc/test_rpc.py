@@ -1359,7 +1359,9 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     assert trade.pair == pair
     assert trade.open_rate == 0.0001
 
-    with pytest.raises(RPCException, match=r"Cannot place take_profit while entry order is still open"):
+    with pytest.raises(
+        RPCException, match=r"Cannot place take_profit while entry order is still open"
+    ):
         rpc._rpc_force_entry("NEO/BTC", 0.0001, order_type="limit", take_profit=0.0002)
 
     with pytest.raises(RPCException, match=r"Symbol does not exist or market is not active."):
@@ -1392,6 +1394,54 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     pair = "TKN/BTC"
     with pytest.raises(RPCException, match=r"Failed to enter position for TKN/BTC."):
         trade = rpc._rpc_force_entry(pair, None)
+
+
+def test_rpc_force_entry_invalid_stop_loss_precheck(
+    mocker, default_conf, ticker, fee, limit_buy_order_open
+) -> None:
+    default_conf["force_entry_enable"] = True
+    mocker.patch("freqtrade.rpc.telegram.Telegram", MagicMock())
+    mocker.patch.multiple(
+        EXMS,
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+        create_order=MagicMock(return_value=limit_buy_order_open),
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+    rpc = RPC(freqtradebot)
+
+    execute_entry = mocker.patch.object(freqtradebot, "execute_entry", return_value=True)
+    with pytest.raises(RPCException, match=r"Invalid stop_loss for provided side and entry price."):
+        rpc._rpc_force_entry("XRP/BTC", 0.0001, order_type="limit", stop_loss=0.0002)
+    execute_entry.assert_not_called()
+
+
+def test_rpc_force_entry_invalid_take_profit_precheck(
+    mocker, default_conf, ticker, fee, limit_buy_order_open
+) -> None:
+    default_conf["force_entry_enable"] = True
+    mocker.patch("freqtrade.rpc.telegram.Telegram", MagicMock())
+    mocker.patch.multiple(
+        EXMS,
+        get_balances=MagicMock(return_value=ticker),
+        fetch_ticker=ticker,
+        get_fee=fee,
+        create_order=MagicMock(return_value=limit_buy_order_open),
+    )
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+    rpc = RPC(freqtradebot)
+
+    execute_entry = mocker.patch.object(freqtradebot, "execute_entry", return_value=True)
+    with pytest.raises(
+        RPCException, match=r"Invalid take_profit for provided side and entry price."
+    ):
+        rpc._rpc_force_entry("XRP/BTC", 0.0001, order_type="limit", take_profit=0.00009)
+    execute_entry.assert_not_called()
 
 
 def test_rpc_force_entry_stopped(mocker, default_conf) -> None:

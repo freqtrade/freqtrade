@@ -47,8 +47,8 @@ from freqtrade.persistence import CustomDataWrapper, KeyValueStore, Order, PairL
 from freqtrade.persistence.models import PairLock, custom_data_rpc_wrapper
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
-from freqtrade.strategy import stoploss_from_absolute
 from freqtrade.rpc.rpc_types import RPCSendMsg
+from freqtrade.strategy.strategy_helper import stoploss_from_absolute
 from freqtrade.util import (
     decimals_per_coin,
     dt_from_ts,
@@ -1132,6 +1132,74 @@ class RPC:
                 f"Wrong pair selected. Only pairs with stake-currency {stake_currency} allowed."
             )
 
+    @staticmethod
+    def _validate_force_entry_stop_loss(
+        stop_loss: float, price: float, *, is_short: bool, leverage: float
+    ) -> None:
+        sl_dist = stoploss_from_absolute(
+            stop_loss,
+            price,
+            is_short=is_short,
+            leverage=leverage,
+        )
+        if sl_dist <= 0:
+            raise RPCException("Invalid stop_loss for provided side and entry price.")
+
+    @staticmethod
+    def _validate_force_entry_take_profit(
+        take_profit: float, price: float, *, is_short: bool
+    ) -> None:
+        if (not is_short and take_profit <= price) or (is_short and take_profit >= price):
+            raise RPCException("Invalid take_profit for provided side and entry price.")
+
+    def _validate_force_entry_price_targets(
+        self,
+        *,
+        price: float | None,
+        trade: Trade | None,
+        is_short: bool,
+        leverage: float | None,
+        stop_loss: float | None,
+        take_profit: float | None,
+    ) -> None:
+        # Pre-validate custom SL/TP when a reference entry price is provided to avoid
+        # creating entries with obviously invalid levels.
+        if price is None:
+            return
+
+        effective_leverage = trade.leverage if trade and trade.leverage else leverage or 1.0
+
+        if stop_loss is not None:
+            self._validate_force_entry_stop_loss(
+                stop_loss, price, is_short=is_short, leverage=effective_leverage
+            )
+
+        if take_profit is not None:
+            self._validate_force_entry_take_profit(take_profit, price, is_short=is_short)
+
+    def _get_force_entry_trade(
+        self, pair: str, order_side: SignalDirection
+    ) -> tuple[Trade | None, bool]:
+        trade: Trade | None = Trade.get_trades(
+            [Trade.is_open.is_(True), Trade.pair == pair]
+        ).first()
+        is_short = order_side == SignalDirection.SHORT
+        if trade:
+            is_short = trade.is_short
+            if not self._freqtrade.strategy.position_adjustment_enable:
+                raise RPCException(f"position for {pair} already open - id: {trade.id}")
+            if trade.has_open_orders:
+                raise RPCException(
+                    f"position for {pair} already open - id: {trade.id} "
+                    f"and has open order {','.join(trade.open_orders_ids)}"
+                )
+            return trade, is_short
+
+        if Trade.get_open_trade_count() >= self._config["max_open_trades"]:
+            raise RPCException("Maximum number of trades is reached.")
+
+        return None, is_short
+
     def _rpc_force_entry(
         self,
         pair: str,
@@ -1151,31 +1219,22 @@ class RPC:
         """
         self._force_entry_validations(pair, order_side)
 
-        # check if valid pair
-
-        # check if pair already has an open pair
-        trade: Trade | None = Trade.get_trades(
-            [Trade.is_open.is_(True), Trade.pair == pair]
-        ).first()
-        is_short = order_side == SignalDirection.SHORT
-        if trade:
-            is_short = trade.is_short
-            if not self._freqtrade.strategy.position_adjustment_enable:
-                raise RPCException(f"position for {pair} already open - id: {trade.id}")
-            if trade.has_open_orders:
-                raise RPCException(
-                    f"position for {pair} already open - id: {trade.id} "
-                    f"and has open order {','.join(trade.open_orders_ids)}"
-                )
-        else:
-            if Trade.get_open_trade_count() >= self._config["max_open_trades"]:
-                raise RPCException("Maximum number of trades is reached.")
+        trade, is_short = self._get_force_entry_trade(pair, order_side)
 
         if not stake_amount:
             # gen stake amount
             stake_amount = self._freqtrade.wallets.get_trade_stake_amount(
                 pair, self._config["max_open_trades"]
             )
+
+        self._validate_force_entry_price_targets(
+            price=price,
+            trade=trade,
+            is_short=is_short,
+            leverage=leverage,
+            stop_loss=stop_loss,
+            take_profit=take_profit,
+        )
 
         # execute buy
         if not order_type:

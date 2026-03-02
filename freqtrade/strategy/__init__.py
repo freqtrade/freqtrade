@@ -1,4 +1,6 @@
 # flake8: noqa: F401
+from typing import TYPE_CHECKING
+
 from freqtrade.exchange import (
     timeframe_to_minutes,
     timeframe_to_msecs,
@@ -9,7 +11,6 @@ from freqtrade.exchange import (
 from freqtrade.ft_types import AnnotationType
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.informative_decorator import informative
-from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.parameters import (
     BooleanParameter,
     CategoricalParameter,
@@ -22,6 +23,18 @@ from freqtrade.strategy.strategy_helper import (
     stoploss_from_absolute,
     stoploss_from_open,
 )
+
+
+if TYPE_CHECKING:
+    from freqtrade.strategy.interface import IStrategy
+
+
+def __getattr__(name: str):
+    if name == "IStrategy":
+        from freqtrade.strategy.interface import IStrategy
+
+        return IStrategy
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 # Imports to be used for `from freqtrade.strategy import *`
