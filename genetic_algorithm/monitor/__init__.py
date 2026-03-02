@@ -48,6 +48,15 @@ def create_monitor(config: dict, enabled: bool = True, default_mode: str | None 
     if not enabled or not monitor_config.get("enabled", True):
         return NullMonitor()
 
+    # Web dashboard monitor mode
+    if default_mode == "web":
+        try:
+            from genetic_algorithm.web.ws_monitor import WebSocketMonitor
+            run_id = config.get("_web_run_id", "default")
+            return WebSocketMonitor(run_id=run_id, config=config)
+        except ImportError:
+            return NullMonitor()
+
     try:
         from genetic_algorithm.monitor.terminal_monitor import TerminalMonitor  # noqa: F811
 

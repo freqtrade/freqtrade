@@ -584,6 +584,24 @@ Examples:
         default=None,
         help='Set the initial terminal monitor view mode (default: from config)'
     )
+
+    # Web dashboard flags
+    parser.add_argument(
+        '--dashboard',
+        action='store_true',
+        help='Start evolution with the web dashboard (accessible at http://localhost:8501)'
+    )
+    parser.add_argument(
+        '--dashboard-only',
+        action='store_true',
+        help='Start only the web dashboard server (no immediate evolution run)'
+    )
+    parser.add_argument(
+        '--port',
+        type=int,
+        default=8501,
+        help='Port for the web dashboard (default: 8501)'
+    )
     
     return parser.parse_args()
 
@@ -592,6 +610,16 @@ def main():
     """Main entry point for GA runner."""
     # Parse arguments
     args = parse_arguments()
+
+    # ── Dashboard-only mode ─────────────────────────────────────
+    if args.dashboard_only:
+        return _start_dashboard_only(args)
+
+    # ── Dashboard mode (evolution + dashboard) ──────────────────
+    if args.dashboard:
+        return _start_with_dashboard(args)
+
+    # ── Classic terminal mode ───────────────────────────────────
     
     # Load config from specified file
     config_file = Path(args.config)
@@ -866,6 +894,104 @@ def main():
     print("=" * 80)
     print()
     
+    return 0
+
+
+def _start_dashboard_only(args):
+    """Start the web dashboard server without an immediate evolution run."""
+    print()
+    print("=" * 80)
+    print(" " * 15 + "GA EVOLUTION DASHBOARD — STANDALONE MODE")
+    print("=" * 80)
+    print()
+    print(f"  Starting dashboard at http://127.0.0.1:{args.port}")
+    print(f"  API docs at http://127.0.0.1:{args.port}/docs")
+    print()
+    print("  Start evolution runs from the dashboard UI or via the API.")
+    print("  Press Ctrl+C to stop the server.")
+    print()
+
+    try:
+        from genetic_algorithm.web.config import WebConfig
+        from genetic_algorithm.web.server import start_server
+
+        web_config = WebConfig(port=args.port)
+        setup_logging(monitor_active=False)
+        start_server(web_config=web_config)
+    except ImportError as e:
+        print(f"❌ Dashboard dependencies not installed: {e}")
+        print("   Install with: pip install fastapi uvicorn")
+        return 1
+    except KeyboardInterrupt:
+        print("\n\nDashboard stopped.")
+    return 0
+
+
+def _start_with_dashboard(args):
+    """Start evolution AND web dashboard simultaneously."""
+    import threading
+
+    config_file = Path(args.config)
+    if not config_file.exists():
+        print(f"❌ Error: Config file not found: {config_file}")
+        return 1
+
+    config = load_and_update_config(config_file)
+    config['_config_name'] = config_file.stem
+
+    # Disable terminal monitor when dashboard is active
+    config.setdefault('terminal_monitor', {})['enabled'] = False
+
+    setup_logging(monitor_active=False)
+    logger = logging.getLogger(__name__)
+
+    if not validate_config(config):
+        print("❌ Config validation failed.")
+        return 1
+
+    try:
+        from genetic_algorithm.web.config import WebConfig
+        from genetic_algorithm.web.run_manager import RunManager
+        from genetic_algorithm.web.server import create_app
+
+        web_config = WebConfig(port=args.port)
+        run_manager = RunManager()
+        app = create_app(web_config=web_config, run_manager=run_manager)
+
+        print()
+        print("=" * 80)
+        print(" " * 15 + "GA EVOLUTION DASHBOARD — RUNNING")
+        print("=" * 80)
+        print()
+        print(f"  Dashboard: http://127.0.0.1:{args.port}")
+        print(f"  API docs:  http://127.0.0.1:{args.port}/docs")
+        print()
+
+        # Start evolution as a managed run
+        handle = run_manager.start_run(
+            config=config,
+            resume_from=str(Path("genetic_algorithm/data/checkpoints")) if args.resume else None,
+        )
+        print(f"  Evolution started: run_id={handle.run_id}")
+        print()
+        print("  Press Ctrl+C to stop server and evolution.")
+        print()
+
+        import uvicorn
+        uvicorn.run(
+            app,
+            host=web_config.host,
+            port=web_config.port,
+            log_level=web_config.log_level,
+        )
+
+    except ImportError as e:
+        print(f"❌ Dashboard dependencies not installed: {e}")
+        print("   Install with: pip install fastapi uvicorn")
+        return 1
+    except KeyboardInterrupt:
+        print("\n\nStopping dashboard and evolution...")
+
     return 0
 
 

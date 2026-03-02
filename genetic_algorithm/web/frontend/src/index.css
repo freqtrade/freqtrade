@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme Variables ────────────────────────────────────── */
+:root,
+.dark {
+  --color-surface-0: #0a0e17;
+  --color-surface-1: #111827;
+  --color-surface-2: #1f2937;
+  --color-surface-3: #374151;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #9ca3af;
+  --color-text-tertiary: #6b7280;
+  --color-border: rgba(255, 255, 255, 0.05);
+  --scrollbar-track: #111827;
+  --scrollbar-thumb: #374151;
+  --scrollbar-thumb-hover: #4b5563;
+}
+
+.light {
+  --color-surface-0: #f8fafc;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f1f5f9;
+  --color-surface-3: #e2e8f0;
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #64748b;
+  --color-text-tertiary: #94a3b8;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+}
+
+/* ── Base ──────────────────────────────────────────────── */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  background-color: var(--color-surface-0);
+  color: var(--color-text-primary);
+}
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ── Utility ───────────────────────────────────────────── */
+.glass {
+  background-color: color-mix(in srgb, var(--color-surface-1) 80%, transparent);
+  @apply backdrop-blur-md border border-white/5 rounded-xl;
+}
+
+.card {
+  @apply bg-surface-1 border border-white/5 rounded-xl p-4;
+}
+
+.card-hover {
+  background-color: var(--color-surface-1);
+  @apply border border-white/5 rounded-xl p-4 transition-all duration-200 cursor-pointer;
+}
+.card-hover:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  background-color: color-mix(in srgb, var(--color-surface-2) 50%, transparent);
+}
+
+/* Profit / Loss coloring */
+.text-pnl {
+  &.positive { @apply text-profit; }
+  &.negative { @apply text-loss; }
+  &.zero     { @apply text-gray-400; }
+}
+
+/* Status badges */
+.badge {
+  @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+}
+.badge-running  { @apply badge bg-blue-500/20 text-blue-400; }
+.badge-paused   { @apply badge bg-yellow-500/20 text-yellow-400; }
+.badge-completed { @apply badge bg-green-500/20 text-green-400; }
+.badge-failed   { @apply badge bg-red-500/20 text-red-400; }
+.badge-pending  { @apply badge bg-gray-500/20 text-gray-400; }
+.badge-stopping { @apply badge bg-orange-500/20 text-orange-400; }
+
+/* Table */
+.table-row {
+  @apply border-b border-white/5 hover:bg-white/[0.02] transition-colors;
+}
+
+/* Pulse animation for live indicator */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Toast slide-in animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* ── Light mode overrides ─────────────────────────────── */
+.light .card,
+.light .glass {
+  border-color: var(--color-border);
+}
+
+.light .card {
+  background-color: var(--color-surface-1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.light .card-hover:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}

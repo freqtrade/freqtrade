@@ -68,19 +68,21 @@ class HallOfFame:
     def __init__(self, 
                  directory: str = DEFAULT_HOF_DIR,
                  max_size: int = DEFAULT_MAX_SIZE,
-                 min_fitness: float = 0.0):
+                 min_fitness: float = 0.0,
+                 run_id: Optional[str] = None):
         """
         Args:
             directory: Directory to store hall of fame files.
             max_size: Maximum number of strategies to keep.
             min_fitness: Minimum fitness threshold to enter the hall.
+            run_id: Optional run identifier; auto-generated from timestamp if omitted.
         """
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.max_size = max_size
         self.min_fitness = min_fitness
         self.entries: List[HallOfFameEntry] = []
-        self.run_id = f"run_{int(time.time())}"
+        self.run_id = run_id or f"run_{int(time.time())}"
         
         # Load existing hall of fame
         self._load()
