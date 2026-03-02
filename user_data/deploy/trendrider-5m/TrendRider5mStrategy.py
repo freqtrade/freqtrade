@@ -164,7 +164,7 @@ class TrendRider5mStrategy(IStrategy):
                 & (dataframe["ema21_slope"] > 0)               # trend gaining
                 & (dataframe["dist_to_ema9"] < 0.6)           # not too far from EMA9
                 & (dataframe["dist_to_ema9"] > -0.3)          # not too far below
-                & (dataframe["adx"] > 20)                      # trend has strength
+                & (dataframe["adx"] > 25)                      # strong trend only
                 & (dataframe["plus_di"] > dataframe["minus_di"]) # buyers > sellers
                 & (dataframe["rsi"] > 45)                      # healthy momentum
                 & (dataframe["rsi"] < 65)                      # not overbought
@@ -180,6 +180,28 @@ class TrendRider5mStrategy(IStrategy):
             ),
             "enter_long",
         ] = 1
+
+        # MODE 2: BREAKOUT — catch the START of a big move
+        # Different conditions: momentum just igniting, not yet extended
+        dataframe.loc[
+            (
+                (dataframe["ema21"] > dataframe["ema55"])      # bull regime
+                & (dataframe["ema9"] > dataframe["ema21"])     # trend aligned
+                & (dataframe["close"] > dataframe["ema9"])     # price above
+                & (dataframe["rsi"] > 50)                      # momentum starting
+                & (dataframe["rsi"] < 70)                      # not yet overbought
+                & (qtpylib.crossed_above(dataframe["rsi"], 55))  # RSI JUST crossed 55
+                & (dataframe["macdhist"] > 0)                  # MACD positive
+                & (dataframe["macdhist"] > dataframe["macdhist"].shift(1))  # MACD accelerating
+                & (dataframe["volume"] > dataframe["volume_sma"] * 1.5)    # volume surge
+                & (dataframe["green_candle"] == 1)             # buying candle
+                & (dataframe["adx"] > 25)                      # strong trend only
+                & (dataframe["atr_pct"] < 1.5)                # not chaotic
+                & (dataframe["volume"] > 0)
+            ),
+            ["enter_long", "enter_tag"],
+        ] = (1, "breakout")
+
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
