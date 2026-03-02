@@ -113,107 +113,143 @@ def log_to_pg(status, balance, open_trades, total_trades, profit, pct):
 
 
 def get_market_analysis() -> str:
-    """Check top pairs and explain why we're not trading / what's close."""
+    """Check all pairs against actual 5m strategy conditions."""
     try:
         import ccxt
+        import numpy as np
         ex = ccxt.mexc({'enableRateLimit': True})
 
         pairs = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT',
-                 'DOGE/USDT', 'BNB/USDT', 'DOT/USDT', 'AVAX/USDT']
+                 'DOGE/USDT', 'ADA/USDT', 'SUI/USDT', 'BNB/USDT',
+                 'DOT/USDT', 'AVAX/USDT', 'LINK/USDT', 'PEPE/USDT']
 
-        best_pair = None
-        best_score = 0
-        blockers = {}
+        results = []
+
+        def ema(data, period):
+            k = 2 / (period + 1)
+            result = [data[0]]
+            for i in range(1, len(data)):
+                result.append(data[i] * k + result[-1] * (1 - k))
+            return result
 
         for pair in pairs:
             try:
-                ohlcv = ex.fetch_ohlcv(pair, '1h', limit=60)
-                if len(ohlcv) < 55:
+                ohlcv = ex.fetch_ohlcv(pair, '5m', limit=65)
+                if len(ohlcv) < 60:
                     continue
+
                 closes = [c[4] for c in ohlcv]
+                highs = [c[2] for c in ohlcv]
+                lows = [c[3] for c in ohlcv]
+                opens = [c[1] for c in ohlcv]
                 volumes = [c[5] for c in ohlcv]
 
-                # Simple EMA calculation
-                def ema(data, period):
-                    k = 2 / (period + 1)
-                    result = [data[0]]
-                    for i in range(1, len(data)):
-                        result.append(data[i] * k + result[-1] * (1 - k))
-                    return result
+                e9 = ema(closes, 9)
+                e21 = ema(closes, 21)
+                e55 = ema(closes, 55)
 
-                e9 = ema(closes, 9)[-1]
-                e21 = ema(closes, 21)[-1]
-                e55 = ema(closes, 55)[-1]
-                price = closes[-1]
-
-                # Score each pair
-                score = 0
-                pair_blockers = []
-
-                if e21 > e55:
-                    score += 3
-                else:
-                    pair_blockers.append("downtrend")
-
-                if e9 > e21:
-                    score += 2
-                else:
-                    pair_blockers.append("EMA weak")
-
-                if price > e9:
-                    score += 2
-                else:
-                    pair_blockers.append("below EMA9")
-
-                if e21 > ema(closes[:-5], 21)[-1]:
-                    score += 1
-                else:
-                    pair_blockers.append("EMA falling")
+                # RSI
+                deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
+                gains = [d if d > 0 else 0 for d in deltas[-14:]]
+                losses_r = [-d if d < 0 else 0 for d in deltas[-14:]]
+                avg_gain = sum(gains) / 14
+                avg_loss = sum(losses_r) / 14
+                rsi = 100 - (100 / (1 + avg_gain / avg_loss)) if avg_loss > 0 else 100
 
                 ticker = ex.fetch_ticker(pair)
-                chg = ticker.get('percentage', 0)
-                if chg > 0:
-                    score += 1
+                chg = ticker.get('percentage', 0) or 0
+                price = closes[-1]
 
-                short_name = pair.split('/')[0]
-                blockers[short_name] = {
-                    'score': score,
-                    'max': 9,
-                    'chg': chg,
-                    'blockers': pair_blockers,
-                    'price': price,
+                vol_avg = sum(volumes[-20:]) / 20
+
+                # Check actual strategy conditions
+                checks = {
+                    'trend': e21[-1] > e55[-1],
+                    'ema_align': e9[-1] > e21[-1],
+                    'above_ema': price > e9[-1],
+                    'ema_rising': e21[-1] > e21[-4],
+                    'rsi_ok': 45 < rsi < 65,
+                    'rsi_up': rsi > 50,
+                    'volume': volumes[-1] > vol_avg,
+                    'green': closes[-1] > opens[-1],
                 }
 
-                if score > best_score:
-                    best_score = score
-                    best_pair = short_name
+                passed = sum(1 for v in checks.values() if v)
+                total = len(checks)
+                name = pair.split('/')[0]
 
+                # What's blocking
+                blockers = []
+                if not checks['trend']:
+                    blockers.append("bearish")
+                if not checks['ema_align']:
+                    blockers.append("no momentum")
+                if not checks['above_ema']:
+                    blockers.append("below EMA")
+                if not checks['rsi_ok']:
+                    if rsi >= 65:
+                        blockers.append("overbought")
+                    elif rsi <= 45:
+                        blockers.append("oversold")
+                if not checks['volume']:
+                    blockers.append("low vol")
+
+                results.append({
+                    'name': name,
+                    'score': passed,
+                    'max': total,
+                    'chg': chg,
+                    'price': price,
+                    'rsi': rsi,
+                    'blockers': blockers,
+                    'trend': checks['trend'],
+                    'ready': passed >= 7,
+                })
             except Exception:
                 continue
 
-        if not blockers:
+        if not results:
             return "⚠️ Cannot check market data"
 
-        # Build message
-        msg = "*Market Scan:*\n"
+        # Sort by score
+        results.sort(key=lambda x: x['score'], reverse=True)
 
-        # Top 3 closest to trading
-        sorted_pairs = sorted(blockers.items(), key=lambda x: x[1]['score'], reverse=True)
+        msg = "*Market Scan (5m):*\n"
 
-        for name, data in sorted_pairs[:3]:
-            bar = "🟩" * data['score'] + "⬜" * (data['max'] - data['score'])
-            bl = ", ".join(data['blockers'][:2]) if data['blockers'] else "ready!"
-            msg += f"`{name:5}` {bar} {data['chg']:+.1f}%"
-            if data['blockers']:
-                msg += f" _{bl}_"
-            msg += "\n"
+        # Show top 6 pairs
+        for r in results[:6]:
+            filled = r['score']
+            empty = r['max'] - filled
+            bar = "🟩" * filled + "⬜" * empty
 
-        if best_score >= 7:
-            msg += f"\n🟢 *{best_pair} is close to entry!* Watch for signal."
-        elif best_score >= 5:
-            msg += f"\n🟡 *{best_pair} looks promising* — needs trend confirmation."
+            if r['ready']:
+                status = "🔥"
+            elif filled >= 6:
+                status = "👀"
+            elif r['trend']:
+                status = "📈"
+            else:
+                status = "📉"
+
+            bl = ", ".join(r['blockers'][:2]) if r['blockers'] else "✅ ready"
+            msg += f"{status} `{r['name']:5}` {bar} RSI:{r['rsi']:.0f} {r['chg']:+.1f}% _{bl}_\n"
+
+        # Bottom line
+        ready = [r for r in results if r['ready']]
+        close = [r for r in results if r['score'] >= 6 and not r['ready']]
+        bullish = [r for r in results if r['trend']]
+
+        msg += "\n"
+        if ready:
+            names = ", ".join(r['name'] for r in ready)
+            msg += f"🔥 *{names} ready to trade!*"
+        elif close:
+            names = ", ".join(r['name'] for r in close)
+            msg += f"👀 *{names} almost ready* — watching closely"
+        elif bullish:
+            msg += f"📈 {len(bullish)} pairs bullish but entry conditions not met yet"
         else:
-            msg += f"\n🔴 *No pairs ready* — market is bearish, protecting capital."
+            msg += "📉 Market bearish — protecting capital, waiting for reversal"
 
         return msg
 
