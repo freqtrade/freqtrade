@@ -116,7 +116,6 @@ def get_market_analysis() -> str:
     """Check all pairs against actual 5m strategy conditions."""
     try:
         import ccxt
-        import numpy as np
         ex = ccxt.mexc({'enableRateLimit': True})
 
         pairs = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT',
