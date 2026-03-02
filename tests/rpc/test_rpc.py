@@ -1359,6 +1359,9 @@ def test_rpc_force_entry(mocker, default_conf, ticker, fee, limit_buy_order_open
     assert trade.pair == pair
     assert trade.open_rate == 0.0001
 
+    with pytest.raises(RPCException, match=r"Cannot place take_profit while entry order is still open"):
+        rpc._rpc_force_entry("NEO/BTC", 0.0001, order_type="limit", take_profit=0.0002)
+
     with pytest.raises(RPCException, match=r"Symbol does not exist or market is not active."):
         rpc._rpc_force_entry("LTC/NOTHING", 0.0001)
 
