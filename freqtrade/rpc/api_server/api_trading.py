@@ -233,6 +233,8 @@ def force_entry(payload: ForceEnterPayload, rpc: RPC = Depends(get_rpc)):
         stake_amount=payload.stakeamount,
         enter_tag=payload.entry_tag or "force_entry",
         leverage=payload.leverage,
+        stop_loss=payload.stop_loss,
+        take_profit=payload.take_profit,
     )
 
     if trade:

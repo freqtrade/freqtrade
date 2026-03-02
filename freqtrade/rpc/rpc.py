@@ -47,6 +47,7 @@ from freqtrade.persistence import CustomDataWrapper, KeyValueStore, Order, PairL
 from freqtrade.persistence.models import PairLock, custom_data_rpc_wrapper
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
+from freqtrade.strategy import stoploss_from_absolute
 from freqtrade.rpc.rpc_types import RPCSendMsg
 from freqtrade.util import (
     decimals_per_coin,
@@ -1141,6 +1142,8 @@ class RPC:
         stake_amount: float | None = None,
         enter_tag: str | None = "force_entry",
         leverage: float | None = None,
+        stop_loss: float | None = None,
+        take_profit: float | None = None,
     ) -> Trade | None:
         """
         Handler for forcebuy <asset> <price>
@@ -1193,6 +1196,36 @@ class RPC:
             ):
                 Trade.commit()
                 trade = Trade.get_trades([Trade.is_open.is_(True), Trade.pair == pair]).first()
+                if not trade:
+                    raise RPCException(f"Failed to fetch trade after entering position for {pair}.")
+
+                if stop_loss is not None:
+                    sl_dist = stoploss_from_absolute(
+                        stop_loss,
+                        trade.open_rate,
+                        is_short=trade.is_short,
+                        leverage=trade.leverage or leverage or 1.0,
+                    )
+                    if sl_dist <= 0:
+                        raise RPCException(
+                            "Invalid stop_loss for current trade direction and open rate."
+                        )
+                    trade.adjust_stop_loss(trade.open_rate, -sl_dist, allow_refresh=True)
+                    if self._freqtrade.strategy.order_types.get("stoploss_on_exchange"):
+                        self._freqtrade.create_stoploss_order(
+                            trade=trade, stop_price=trade.stoploss_or_liquidation
+                        )
+
+                if take_profit is not None:
+                    if trade.has_open_orders:
+                        raise RPCException(
+                            "Cannot place take_profit while entry order is still open. "
+                            "Wait for fill and use forceexit with a limit price."
+                        )
+                    if not self.__exec_force_exit(trade, "limit", price=take_profit):
+                        raise RPCException(f"Failed to place take_profit limit order for {pair}.")
+
+                Trade.commit()
                 return trade
             else:
                 raise RPCException(f"Failed to enter position for {pair}.")

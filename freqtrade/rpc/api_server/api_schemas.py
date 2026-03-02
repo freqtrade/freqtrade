@@ -425,6 +425,8 @@ class ForceEnterPayload(BaseModel):
     stakeamount: float | None = None
     entry_tag: str | None = None
     leverage: float | None = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
 
 
 class ForceExitPayload(BaseModel):

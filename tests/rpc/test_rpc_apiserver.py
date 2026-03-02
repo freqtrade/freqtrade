@@ -21,7 +21,7 @@ from requests.auth import _basic_auth_str
 from sqlalchemy import select
 
 from freqtrade.__init__ import __version__
-from freqtrade.enums import CandleType, RunMode, State, TradingMode
+from freqtrade.enums import CandleType, RunMode, SignalDirection, State, TradingMode
 from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.optimize.backtesting import Backtesting
@@ -1847,6 +1847,40 @@ def test_api_force_entry(botclient, mocker, fee, endpoint):
         "orders": [],
     }
 
+
+
+
+def test_api_force_entry_with_tp_sl_payload(botclient, mocker):
+    ftbot, client = botclient
+    ftbot.config["force_entry_enable"] = True
+
+    fbuy_mock = MagicMock(return_value=None)
+    mocker.patch("freqtrade.rpc.rpc.RPC._rpc_force_entry", fbuy_mock)
+
+    rc = client_post(
+        client,
+        f"{BASE_URI}/forceenter",
+        data={
+            "pair": "ETH/BTC",
+            "ordertype": "limit",
+            "price": 0.1,
+            "stop_loss": 0.09,
+            "take_profit": 0.11,
+        },
+    )
+    assert_response(rc)
+    assert rc.json() == {"status": "Error entering long trade for pair ETH/BTC."}
+    fbuy_mock.assert_called_once_with(
+        "ETH/BTC",
+        0.1,
+        order_side=SignalDirection.LONG,
+        order_type="limit",
+        stake_amount=None,
+        enter_tag="force_entry",
+        leverage=None,
+        stop_loss=0.09,
+        take_profit=0.11,
+    )
 
 def test_api_forceexit(botclient, mocker, ticker, fee, markets):
     ftbot, client = botclient
