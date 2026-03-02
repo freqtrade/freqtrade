@@ -36,7 +36,7 @@ class TrendRider5mStrategy(IStrategy):
         "15": 0.012,    # 1.2% after 15min
         "30": 0.007,    # 0.7% after 30min
         "60": 0.004,    # 0.4% after 1h
-        "120": 0.002,   # 0.2% after 2h
+        "120": 0.003,   # 0.2% after 2h
     }
 
     stoploss = -0.009  # 0.8% stop — clean, no custom override
@@ -138,6 +138,12 @@ class TrendRider5mStrategy(IStrategy):
                 streak.iloc[i] = 0
         dataframe["trend_age"] = streak
 
+        # Freshness filter: how far has price risen from recent low?
+        dataframe["recent_low"] = dataframe["low"].rolling(window=12).min()
+        dataframe["rise_from_low"] = (
+            (dataframe["close"] - dataframe["recent_low"]) / dataframe["recent_low"] * 100
+        )
+
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -167,7 +173,8 @@ class TrendRider5mStrategy(IStrategy):
                 & (dataframe["macdhist"] > dataframe["macdhist"].shift(1))  # MACD rising
                 & (dataframe["higher_low"] == 1)               # structure intact
                 & (dataframe["green_candle"] == 1)             # current green
-                & (dataframe["close"].shift(1) > dataframe["open"].shift(1))  # prev green (was double)
+                & (dataframe["close"].shift(1) > dataframe["open"].shift(1))  # prev green
+                & (dataframe["rise_from_low"] < 0.8)          # FRESHNESS: enter early, not late
                 & (dataframe["atr_pct"] < 1.2)                # calmer markets
                 & (dataframe["volume"] > dataframe["volume_sma"])  # above avg volume
             ),
