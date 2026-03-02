@@ -367,8 +367,11 @@ class GeneticAlgorithm:
                 json.dump(checkpoint, f, indent=2, default=str)
             temp_path.rename(checkpoint_path)
             self.logger.info(f"[CHECKPOINT] Saved generation {generation} to {checkpoint_path}")
+            # Emit checkpoint.saved event for the web dashboard
+            self.monitor.on_checkpoint_saved(generation, str(checkpoint_path))
         except Exception as e:
             self.logger.error(f"[CHECKPOINT] Failed to save: {e}")
+            self.monitor.on_error(f"Checkpoint save failed: {e}", {"generation": generation})
             if temp_path.exists():
                 temp_path.unlink()
     
@@ -690,18 +693,20 @@ class GeneticAlgorithm:
         
         self.logger.info(f"[WF-POSTHOC] Validating top {len(candidates)} strategies with walk-forward...")
         
-        # Use parallel WF validation if parallel evaluator is available
+        # Use flat WF parallelization (preferred) - submits individual
+        # (candidate × window) tasks to the PERSISTENT pool, avoiding the
+        # ephemeral WF pool that caused deadlocks and resource exhaustion.
         if self.parallel_evaluator and len(candidates) > 1:
-            from genetic_algorithm.evaluation.parallel import parallel_walk_forward_validation
+            from genetic_algorithm.evaluation.parallel import parallel_walk_forward_flat
             
-            timeout = self.config.get('parallel_evaluation', {}).get('backtest_timeout', 120) * 4
-            validated = parallel_walk_forward_validation(
+            timeout = self.config.get('parallel_evaluation', {}).get('backtest_timeout', 120)
+            validated = parallel_walk_forward_flat(
                 candidates=candidates,
                 config=self.config,
-                num_workers=self.parallel_evaluator.num_workers,
+                evaluator=self.parallel_evaluator,
                 backtest_timeout=timeout,
             )
-            self.logger.info(f"[WF-POSTHOC] Parallel validation complete: {validated}/{len(candidates)}")
+            self.logger.info(f"[WF-POSTHOC] Flat WF validation complete: {validated}/{len(candidates)}")
         else:
             # Fallback: sequential validation
             wf_evaluator = FitnessEvaluator(self.config)
@@ -1608,12 +1613,12 @@ class GeneticAlgorithm:
                                     f"{len(indicator_weights)} indicators")
             except Exception as e:
                 self.logger.warning(f"Feature importance update failed: {e}")
-            
-            # Update hall of fame
+                self.monitor.on_error(f"Feature importance update failed: {e}")
             try:
                 self.hall_of_fame.update(population, gen)
             except Exception as e:
                 self.logger.warning(f"Hall of fame update failed: {e}")
+                self.monitor.on_error(f"Hall of fame update failed: {e}")
             
             # Holdout monitoring — read-only diagnostic (never affects selection)
             # But CAN trigger early stopping if degradation consistently exceeds threshold
@@ -1631,11 +1636,17 @@ class GeneticAlgorithm:
                         f"{self._holdout_consecutive_bad} consecutive checks. "
                         f"Further evolution is likely overfitting."
                     )
+                    self.monitor.on_log(
+                        f"Holdout early stop at gen {gen+1}: degradation exceeded threshold "
+                        f"for {self._holdout_consecutive_bad} consecutive checks",
+                        "warning",
+                    )
                     self.feature_tracker.log_summary()
                     self.save_checkpoint(population, gen)
                     break
             except Exception as e:
                 self.logger.warning(f"Holdout monitoring failed: {e}")
+                self.monitor.on_error(f"Holdout monitoring failed: {e}")
             self.diagnostics.end_phase('holdout')
             self.monitor.on_phase_end('holdout', self.diagnostics.timing._phases.get('holdout', 0.0))
             
@@ -1656,6 +1667,19 @@ class GeneticAlgorithm:
                 origins = [ind.metrics.get('origin', '') for ind in all_inds if ind.metrics]
                 _extras['llm_seeds_count'] = sum(1 for o in origins if o == 'llm_seed')
                 _extras['llm_immigrants_count'] = sum(1 for o in origins if o == 'llm_immigrant')
+                # Deflated Sharpe Ratio penalty stats
+                dsr_penalties = [ind.metrics.get('dsr_penalty', 1.0) for ind in all_inds if ind.metrics]
+                if dsr_penalties:
+                    _extras['avg_dsr_penalty'] = round(sum(dsr_penalties) / len(dsr_penalties), 4)
+                    # Find DSR penalty for best individual
+                    best_inds = sorted(
+                        [ind for ind in all_inds if ind.fitness is not None],
+                        key=lambda x: x.fitness, reverse=True,
+                    )
+                    if best_inds:
+                        _extras['best_dsr_penalty'] = round(
+                            best_inds[0].metrics.get('dsr_penalty', 1.0), 4
+                        )
             except Exception:
                 pass  # Non-critical diagnostics
             self.diagnostics.end_generation(
@@ -1693,6 +1717,7 @@ class GeneticAlgorithm:
             # Check convergence
             if self.check_convergence(stats):
                 self.logger.info("[CONVERGENCE] Evolution converged early")
+                self.monitor.on_log(f"Evolution converged early at gen {gen+1}/{self.generations}", "warning")
                 self.monitor.on_convergence_warning(self.no_improvement_count, self.convergence_patience)
                 self.feature_tracker.log_summary()
                 self.save_checkpoint(population, gen)

@@ -287,6 +287,98 @@ def _evaluate_wf_in_worker(
         }
 
 
+def _evaluate_single_window_in_worker(
+    strategy_gene_dict: Dict[str, Any],
+    candidate_index: int,
+    individual_id: str,
+    window_timerange: str,
+    window_index: int,
+    window_role: str,
+) -> Dict[str, Any]:
+    """
+    Evaluate a single strategy on a single timerange window.
+
+    This is the FLAT parallelization approach: instead of running full
+    walk-forward (W sequential backtests) inside each worker, the caller
+    creates all (candidate × window) combinations and submits each as an
+    independent single-backtest task.  Workers reuse the persistent non-WF
+    pool initialised by ``_init_worker()``.
+
+    Args:
+        strategy_gene_dict: Serialized StrategyGene
+        candidate_index: Which candidate this belongs to
+        individual_id: Human-readable ID of the individual
+        window_timerange: Timerange string for this window (e.g. '20240301-20240601')
+        window_index: Sequential index of this window
+        window_role: 'train' or 'val'
+
+    Returns:
+        Dict with single-window backtest results
+    """
+    global _worker_evaluator
+
+    if _worker_evaluator is None:
+        return {
+            'candidate_index': candidate_index,
+            'id': individual_id,
+            'window_index': window_index,
+            'window_role': window_role,
+            'fitness': 0.0,
+            'metrics': {},
+            'success': False,
+            'error': 'Worker not initialized',
+        }
+
+    try:
+        from genetic_algorithm.core.strategy_gene import StrategyGene
+
+        strategy_gene = StrategyGene.from_dict(strategy_gene_dict)
+
+        # Generate code & run a single-window backtest via the worker evaluator
+        strategy_code = _worker_evaluator.strategy_generator.generate_strategy_code(strategy_gene)
+        name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
+
+        result = _worker_evaluator._backtest_with_timerange(
+            strategy_code, name, window_timerange,
+            strategy_max_open_trades=strategy_gene.max_open_trades
+        )
+
+        if result.success:
+            metrics = _worker_evaluator._backtest_result_to_metrics(result)
+            metrics['complexity'] = strategy_gene.calculate_complexity()
+            fitness = _worker_evaluator.calculate_fitness(metrics, strategy_gene)
+        else:
+            fitness = 0.0
+            metrics = {
+                'profit': 0.0, 'sharpe_ratio': 0.0, 'max_drawdown': 0.0,
+                'win_rate': 0.0, 'num_trades': 0,
+                'complexity': strategy_gene.calculate_complexity(),
+            }
+
+        return {
+            'candidate_index': candidate_index,
+            'id': individual_id,
+            'window_index': window_index,
+            'window_role': window_role,
+            'fitness': fitness,
+            'metrics': metrics,
+            'total_trades': result.total_trades if result.success else 0,
+            'success': True,
+        }
+    except Exception as e:
+        return {
+            'candidate_index': candidate_index,
+            'id': individual_id,
+            'window_index': window_index,
+            'window_role': window_role,
+            'fitness': 0.0,
+            'metrics': {'error': str(e)},
+            'total_trades': 0,
+            'success': False,
+            'error': str(e),
+        }
+
+
 def parallel_walk_forward_validation(
     candidates: list,
     config: Dict[str, Any],
@@ -398,6 +490,8 @@ def parallel_walk_forward_validation(
             _active_executors.remove(executor)
         # Kill any lingering worker processes
         _kill_pool_processes(executor)
+        # Reap any zombie child processes
+        _reap_zombies()
     
     elapsed = time.time() - start_time
     logger.info(
@@ -406,6 +500,258 @@ def parallel_walk_forward_validation(
     )
     
     return validated
+
+
+def parallel_walk_forward_flat(
+    candidates: list,
+    config: Dict[str, Any],
+    evaluator: 'ParallelEvaluator',
+    backtest_timeout: int = 180,
+) -> int:
+    """
+    Flat walk-forward parallelization: submit each (candidate × window) as
+    an independent single-backtest task to the PERSISTENT worker pool.
+
+    Instead of running full WF evaluations inside separate WF workers
+    (which caused deadlocks due to N×W backtest explosion / memory
+    exhaustion), this function:
+
+    1. Creates WF windows once (they're the same for all candidates).
+    2. For each candidate × window, submits a single-backtest task to
+       the existing persistent pool (same ``_init_worker`` initializer).
+    3. Collects all results and aggregates per-candidate WF fitness scores
+       using the configured aggregation method.
+    4. Updates candidate ``Individual.fitness`` and ``metrics`` in-place.
+
+    This eliminates:
+    - Ephemeral WF pool creation (expensive, leaked resources)
+    - Per-worker W sequential backtests (deadlock root cause)
+    - Memory exhaustion from N×W concurrent Backtesting instances
+
+    Args:
+        candidates: List of Individual objects to validate
+        config: Full GA configuration dictionary
+        evaluator: The existing persistent ParallelEvaluator
+        backtest_timeout: Timeout per individual backtest (seconds)
+
+    Returns:
+        Number of successfully validated candidates
+    """
+    if not candidates:
+        return 0
+
+    start_time = time.time()
+    wf_config = config.get('walk_forward', {})
+    if not wf_config.get('enabled', False):
+        return 0
+
+    # ── Step 1: Create WF windows (shared across all candidates) ──
+    from genetic_algorithm.evaluation.fitness import FitnessEvaluator
+    from genetic_algorithm.utils.timerange import (
+        create_walk_forward_windows, aggregate_validation_scores
+    )
+
+    # Build a temporary evaluator just to get the window creation logic
+    temp_evaluator = FitnessEvaluator(config)
+    original_timerange = config.get('backtesting', {}).get('timerange', '')
+    effective_timerange = temp_evaluator.backtester.get_available_data_range()
+    timerange_for_windows = effective_timerange or original_timerange
+
+    adjusted = temp_evaluator._auto_adjust_walk_forward_params(timerange_for_windows)
+    if adjusted is None:
+        logger.warning("[WF-FLAT] Cannot create WF windows — data too short")
+        return 0
+
+    try:
+        windows = create_walk_forward_windows(
+            timerange=timerange_for_windows,
+            train_days=adjusted['train_days'],
+            validation_days=adjusted['validation_days'],
+            step_days=adjusted['step_days'],
+            mode=wf_config.get('mode', 'rolling'),
+            embargo_days=wf_config.get('embargo_days', 0),
+            max_windows=wf_config.get('max_windows', None),
+        )
+    except ValueError as e:
+        logger.warning(f"[WF-FLAT] Window creation failed: {e}")
+        return 0
+
+    n_candidates = len(candidates)
+    n_windows = len(windows)
+    logger.info(
+        f"[WF-FLAT] Submitting {n_candidates} candidates × {n_windows} windows "
+        f"= {n_candidates * n_windows * 2} tasks (train+val) to persistent pool"
+    )
+
+    # ── Step 2: Submit all (candidate × window × role) tasks ──
+    evaluator._check_pool_health()
+    executor = evaluator._get_executor()
+
+    futures = {}
+    for c_idx, ind in enumerate(candidates):
+        gene_dict = ind.strategy_gene.to_dict()
+        for window in windows:
+            # Submit TRAIN backtest
+            ft = executor.submit(
+                _evaluate_single_window_in_worker,
+                gene_dict, c_idx, ind.id,
+                window.train_timerange, window.window_index, 'train',
+            )
+            futures[ft] = (c_idx, window.window_index, 'train')
+
+            # Submit VAL backtest
+            fv = executor.submit(
+                _evaluate_single_window_in_worker,
+                gene_dict, c_idx, ind.id,
+                window.val_timerange, window.window_index, 'val',
+            )
+            futures[fv] = (c_idx, window.window_index, 'val')
+
+    # ── Step 3: Collect results ──
+    # results[candidate_idx] = { window_idx: {'train': result, 'val': result} }
+    from collections import defaultdict
+    results: Dict[int, Dict[int, Dict[str, Any]]] = defaultdict(lambda: defaultdict(dict))
+
+    total_timeout = backtest_timeout * (n_candidates * n_windows * 2 // max(evaluator.num_workers, 1) + 1)
+    completed = 0
+    errors = 0
+
+    try:
+        for future in as_completed(futures, timeout=total_timeout):
+            try:
+                result = future.result(timeout=backtest_timeout)
+                c_idx = result['candidate_index']
+                w_idx = result['window_index']
+                role = result['window_role']
+                results[c_idx][w_idx][role] = result
+                completed += 1
+            except FuturesTimeoutError:
+                errors += 1
+                logger.debug("[WF-FLAT] Single window task timed out")
+            except Exception as e:
+                errors += 1
+                logger.debug(f"[WF-FLAT] Task error: {e}")
+    except FuturesTimeoutError:
+        logger.warning("[WF-FLAT] Batch timeout reached, cancelling remaining")
+        for f in futures:
+            if not f.done():
+                f.cancel()
+    except BrokenProcessPool:
+        logger.error("[WF-FLAT] Worker pool crashed during flat WF — recycling")
+        evaluator._shutdown_executor()
+        return 0
+
+    # ── Step 4: Aggregate per-candidate WF fitness ──
+    aggregation_method = wf_config.get('aggregation', 'mean')
+    gap_penalty_config = wf_config.get('gap_penalty', {})
+    gap_penalty_enabled = gap_penalty_config.get('enabled', True)
+    gap_threshold = gap_penalty_config.get('threshold', 0.1)
+    gap_max_penalty = gap_penalty_config.get('max_penalty', 0.5)
+
+    validated = 0
+    for c_idx, ind in enumerate(candidates):
+        window_results = results.get(c_idx, {})
+        val_scores = []
+        train_scores = []
+
+        for w_idx in sorted(window_results.keys()):
+            wr = window_results[w_idx]
+            train_r = wr.get('train', {})
+            val_r = wr.get('val', {})
+
+            if not train_r.get('success') or train_r.get('total_trades', 0) == 0:
+                continue  # Skip window if training failed
+
+            train_scores.append(train_r.get('fitness', 0.0))
+
+            if val_r.get('success') and val_r.get('total_trades', 0) > 0:
+                val_scores.append(val_r.get('fitness', 0.0))
+            else:
+                val_scores.append(0.0)
+
+        if not val_scores:
+            continue  # All windows failed for this candidate
+
+        # Aggregate validation scores
+        if aggregation_method == 'weighted' and val_scores:
+            n = len(val_scores)
+            weights = [i / sum(range(1, n + 1)) for i in range(1, n + 1)]
+            wf_fitness = aggregate_validation_scores(val_scores, method=aggregation_method, weights=weights)
+        else:
+            wf_fitness = aggregate_validation_scores(val_scores, method=aggregation_method)
+
+        # Apply window failure penalty
+        success_ratio = len([s for s in val_scores if s > 0]) / n_windows
+        if success_ratio < 1.0:
+            wf_fitness *= max(success_ratio, 0.3)
+
+        # Apply train-val gap penalty
+        avg_train = sum(train_scores) / len(train_scores) if train_scores else 0.0
+        avg_val = sum(val_scores) / len(val_scores) if val_scores else 0.0
+        gap = avg_train - avg_val
+
+        if gap_penalty_enabled and gap > gap_threshold:
+            excess = gap - gap_threshold
+            penalty_factor = max(1.0 - gap_max_penalty, 1.0 - excess * 2.0)
+            wf_fitness *= penalty_factor
+
+        # Build aggregated metrics
+        all_val_metrics = [
+            window_results.get(w, {}).get('val', {}).get('metrics', {})
+            for w in sorted(window_results.keys())
+            if window_results.get(w, {}).get('val', {}).get('success')
+        ]
+        agg_metrics = _aggregate_flat_metrics(all_val_metrics)
+        agg_metrics['walk_forward'] = True
+        agg_metrics['num_windows'] = n_windows
+        agg_metrics['successful_windows'] = len(val_scores)
+        agg_metrics['avg_train_fitness'] = avg_train
+        agg_metrics['avg_val_fitness'] = avg_val
+        agg_metrics['train_val_gap'] = gap
+
+        original_fitness = ind.fitness
+        ind.set_fitness(wf_fitness, agg_metrics)
+        validated += 1
+
+        logger.debug(
+            f"[WF-FLAT] {ind.id}: {original_fitness:.4f} -> {wf_fitness:.4f} "
+            f"(gap={gap:.4f}, {len(val_scores)}/{n_windows} windows)"
+        )
+
+    elapsed = time.time() - start_time
+    logger.info(
+        f"[WF-FLAT] Done: {validated}/{n_candidates} validated, "
+        f"{completed} tasks completed, {errors} errors in {elapsed:.1f}s"
+    )
+    return validated
+
+
+def _aggregate_flat_metrics(metrics_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Aggregate metric dicts from multiple windows into averages."""
+    if not metrics_list:
+        return {'profit': 0.0, 'sharpe_ratio': 0.0, 'max_drawdown': 0.0,
+                'win_rate': 0.0, 'num_trades': 0}
+
+    keys = ['profit', 'sharpe_ratio', 'max_drawdown', 'win_rate', 'sortino_ratio',
+            'profit_factor', 'num_trades']
+    result = {}
+    for key in keys:
+        values = [m.get(key, 0) or 0 for m in metrics_list if key in m]
+        result[key] = sum(values) / len(values) if values else 0
+    result['num_trades'] = int(result.get('num_trades', 0))
+    return result
+
+
+def _reap_zombies():
+    """Reap any zombie child processes to prevent accumulation."""
+    try:
+        while True:
+            pid, _ = os.waitpid(-1, os.WNOHANG)
+            if pid == 0:
+                break
+            logger.debug(f"[PARALLEL] Reaped zombie process {pid}")
+    except ChildProcessError:
+        pass  # No child processes
 
 
 # ── Parallel Parsimony Workers ──
@@ -834,7 +1180,9 @@ class ParallelEvaluator:
                     pass
             if self._executor in _active_executors:
                 _active_executors.remove(self._executor)
+            _kill_pool_processes(self._executor)
             self._executor = None
+            _reap_zombies()
             logger.info("[PARALLEL] Worker pool shut down")
     
     def shutdown(self):

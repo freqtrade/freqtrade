@@ -137,6 +137,14 @@ class RegimeDetector:
             'min_dwell': 1,       # Minimum bars to stay in regime (1=no lag, higher=smoother but lagged)
             'vol_window': 20,     # Rolling volatility window
         },
+        'volatility_cluster': {
+            'vol_window': 20,         # Rolling volatility window
+            'vol_lookback': 60,       # Lookback for vol percentile thresholds
+            'high_vol_pct': 75,       # Percentile threshold for "high volatility"
+            'low_vol_pct': 25,        # Percentile threshold for "low volatility"
+            'trend_window': 50,       # Window for trend direction detection
+            'trend_threshold': 0.001, # Min rolling return for trend classification
+        },
     }
     
     def __init__(
@@ -155,7 +163,7 @@ class RegimeDetector:
             benchmark_pair: Optional benchmark pair for market-wide regime labeling
         """
         valid_methods = ['sma_adx', 'adx_di', 'adx_di_hysteresis', 'returns', 
-                         'rolling_returns', 'bollinger', 'hmm', 'ensemble']
+                         'rolling_returns', 'bollinger', 'hmm', 'volatility_cluster', 'ensemble']
         if method not in valid_methods:
             raise ValueError(f"Unknown detection method: {method}. Valid: {valid_methods}")
         
@@ -211,6 +219,8 @@ class RegimeDetector:
             return self._detect_bollinger(df)
         elif self.method == 'hmm':
             return self._detect_hmm(df)
+        elif self.method == 'volatility_cluster':
+            return self._detect_volatility_cluster(df)
         elif self.method == 'ensemble':
             return self._detect_ensemble(df)
         else:
@@ -628,6 +638,79 @@ class RegimeDetector:
             logger.warning(f"HMM fitting failed: {e}, falling back to rolling_returns method")
             return self._detect_rolling_returns(df)
 
+    def _detect_volatility_cluster(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Detect regime using volatility clustering and trend direction.
+
+        Uses the well-known stylized fact that volatility clusters in financial
+        time series (ARCH/GARCH effects). Instead of relying solely on ADX
+        (which over-classifies sideways), this method:
+
+        1. Computes rolling realized volatility (exponentially weighted)
+        2. Classifies each bar into volatility regime using adaptive quantile
+           thresholds computed over a trailing lookback window
+        3. Overlays trend direction from smoothed returns
+
+        Regime mapping:
+        - High vol + positive trend → BULLISH (strong rally with expansion)
+        - High vol + negative trend → BEARISH (crash / sell-off)
+        - High vol + no trend → VOLATILE (choppy high-vol market)
+        - Low/normal vol + positive trend → BULLISH (steady uptrend)
+        - Low/normal vol + negative trend → BEARISH (steady downtrend)
+        - Low/normal vol + no trend → SIDEWAYS
+
+        This avoids the ADX binary threshold problem and naturally captures
+        volatility regime changes that are invisible to trend-only methods.
+        """
+        params = self.params
+        vol_window = params.get('vol_window', 20)
+        vol_lookback = params.get('vol_lookback', 60)
+        high_vol_pct = params.get('high_vol_pct', 75)
+        low_vol_pct = params.get('low_vol_pct', 25)
+        trend_window = params.get('trend_window', 50)
+        trend_threshold = params.get('trend_threshold', 0.001)
+
+        close = df['close']
+        returns = close.pct_change()
+
+        # Exponentially weighted rolling volatility (captures clustering)
+        rolling_vol = returns.ewm(span=vol_window, adjust=False).std()
+
+        # Adaptive quantile thresholds (trailing lookback)
+        high_vol_threshold = rolling_vol.rolling(
+            window=vol_lookback, min_periods=vol_lookback
+        ).quantile(high_vol_pct / 100.0)
+        low_vol_threshold = rolling_vol.rolling(
+            window=vol_lookback, min_periods=vol_lookback
+        ).quantile(low_vol_pct / 100.0)
+
+        # Trend direction from smoothed rolling returns
+        rolling_return = returns.rolling(window=trend_window, min_periods=trend_window).mean()
+
+        # Classification
+        regime = pd.Series(RegimeType.UNCERTAIN, index=df.index, dtype=object)
+
+        valid = rolling_vol.notna() & high_vol_threshold.notna() & rolling_return.notna()
+        is_high_vol = valid & (rolling_vol > high_vol_threshold)
+        is_low_vol = valid & (rolling_vol < low_vol_threshold)
+        is_normal_vol = valid & ~is_high_vol & ~is_low_vol
+
+        is_uptrend = rolling_return > trend_threshold
+        is_downtrend = rolling_return < -trend_threshold
+        is_flat = ~is_uptrend & ~is_downtrend
+
+        # High volatility regimes
+        regime[is_high_vol & is_uptrend] = RegimeType.BULLISH
+        regime[is_high_vol & is_downtrend] = RegimeType.BEARISH
+        regime[is_high_vol & is_flat] = RegimeType.VOLATILE
+
+        # Normal/low volatility regimes
+        regime[(is_normal_vol | is_low_vol) & is_uptrend] = RegimeType.BULLISH
+        regime[(is_normal_vol | is_low_vol) & is_downtrend] = RegimeType.BEARISH
+        regime[(is_normal_vol | is_low_vol) & is_flat] = RegimeType.SIDEWAYS
+
+        return regime
+
     def _detect_bollinger(self, df: pd.DataFrame) -> pd.Series:
         """
         Detect regime using Bollinger Band position.
@@ -862,6 +945,226 @@ class RegimeDetector:
         
         return segments
     
+    def classify_periods_adaptive(
+        self,
+        df: pd.DataFrame,
+        min_segment_days: int = 14,
+        max_segment_days: int = 180,
+        merge_threshold_days: int = 7,
+        warmup_bars: int = 200,
+        embargo_days: int = 5,
+    ) -> List[RegimeSegment]:
+        """
+        Adaptive segmentation: split data at regime change points.
+
+        Instead of fixed-width windows (which mix regimes), this method:
+        1. Detects per-bar regime labels across the full dataset
+        2. Finds regime change points (transitions)
+        3. Creates variable-length segments between change points
+        4. Merges very short segments into their neighbors
+        5. Computes per-segment confidence from label homogeneity
+
+        This produces segments that are internally consistent (each segment
+        contains predominantly one regime) and avoids the fixed-window problem
+        where a single 90-day window straddles a bull→bear transition.
+
+        Args:
+            df: DataFrame with OHLCV data and datetime index
+            min_segment_days: Minimum segment duration (merge shorter ones)
+            max_segment_days: Maximum segment duration (split longer ones)
+            merge_threshold_days: Segments shorter than this get merged
+            warmup_bars: Indicator warmup period to skip
+            embargo_days: Gap between segments to prevent leakage
+
+        Returns:
+            List of RegimeSegment objects with high internal consistency
+        """
+        if df.empty:
+            return []
+
+        # Ensure datetime index
+        if not isinstance(df.index, pd.DatetimeIndex):
+            df = df.copy()
+            if 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date'])
+                df.set_index('date', inplace=True)
+            else:
+                try:
+                    df.index = pd.to_datetime(df.index)
+                except Exception as e:
+                    logger.error(f"Cannot convert index to datetime: {e}")
+                    return []
+
+        # Detect per-bar regime labels
+        regime_series = self.detect(df)
+
+        # Skip warmup bars
+        if warmup_bars > 0 and len(df) > warmup_bars:
+            regime_series = regime_series.iloc[warmup_bars:]
+            df = df.iloc[warmup_bars:]
+
+        if len(regime_series) < 2:
+            return []
+
+        # Find change points: indices where regime differs from previous bar
+        prev_regime = regime_series.shift(1)
+        change_mask = (regime_series != prev_regime) & prev_regime.notna()
+        change_indices = regime_series.index[change_mask].tolist()
+
+        # Include start and end as boundaries
+        all_boundaries = [regime_series.index[0]] + change_indices + [regime_series.index[-1]]
+
+        # Build raw segments between change points
+        raw_segments: List[dict] = []
+        for i in range(len(all_boundaries) - 1):
+            seg_start = all_boundaries[i]
+            seg_end = all_boundaries[i + 1]
+
+            # Get regime labels in this span
+            mask = (regime_series.index >= seg_start) & (regime_series.index < seg_end)
+            seg_labels = regime_series[mask]
+
+            if seg_labels.empty:
+                continue
+
+            # Dominant regime
+            counts = seg_labels.value_counts()
+            valid = counts.drop(RegimeType.UNCERTAIN, errors='ignore')
+            if valid.empty:
+                dominant = RegimeType.UNCERTAIN
+                confidence = 0.0
+            else:
+                dominant = valid.idxmax()
+                confidence = float(valid[dominant]) / len(seg_labels)
+
+            duration_days = (seg_end - seg_start).days
+
+            raw_segments.append({
+                'start': seg_start.to_pydatetime() if hasattr(seg_start, 'to_pydatetime') else seg_start,
+                'end': seg_end.to_pydatetime() if hasattr(seg_end, 'to_pydatetime') else seg_end,
+                'regime': dominant,
+                'confidence': confidence,
+                'duration_days': duration_days,
+                'bar_count': len(seg_labels),
+            })
+
+        # Merge very short segments into neighbors
+        merged = self._merge_short_segments(raw_segments, merge_threshold_days)
+
+        # Split excessively long segments
+        final_raw = []
+        for seg in merged:
+            if seg['duration_days'] > max_segment_days:
+                # Split at midpoint(s)
+                n_splits = (seg['duration_days'] // max_segment_days) + 1
+                split_duration = timedelta(days=seg['duration_days'] / n_splits)
+                for j in range(n_splits):
+                    sub_start = seg['start'] + split_duration * j
+                    sub_end = seg['start'] + split_duration * (j + 1)
+                    if j == n_splits - 1:
+                        sub_end = seg['end']
+                    final_raw.append({
+                        **seg,
+                        'start': sub_start,
+                        'end': sub_end,
+                        'duration_days': (sub_end - sub_start).days,
+                    })
+            else:
+                final_raw.append(seg)
+
+        # Remove segments shorter than minimum
+        final_raw = [s for s in final_raw if s['duration_days'] >= min_segment_days]
+
+        # Build RegimeSegment objects
+        segments = []
+        for idx, seg in enumerate(final_raw):
+            # Compute metadata from df slice
+            mask = (df.index >= seg['start']) & (df.index < seg['end'])
+            seg_df = df[mask]
+
+            metadata = {}
+            if not seg_df.empty and 'close' in seg_df.columns:
+                rets = seg_df['close'].pct_change().dropna()
+                metadata = {
+                    'mean_return': float(rets.mean()) if len(rets) > 0 else 0.0,
+                    'volatility': float(rets.std()) if len(rets) > 0 else 0.0,
+                    'total_return': float(seg_df['close'].iloc[-1] / seg_df['close'].iloc[0] - 1) if len(seg_df) > 1 else 0.0,
+                    'bar_count': len(seg_df),
+                }
+
+            segment_id = f"aseg_{idx:03d}_{seg['start'].strftime('%Y%m%d')}_{seg['end'].strftime('%Y%m%d')}"
+
+            segments.append(RegimeSegment(
+                segment_id=segment_id,
+                start_date=seg['start'],
+                end_date=seg['end'],
+                regime=seg['regime'],
+                confidence=seg['confidence'],
+                metadata=metadata,
+            ))
+
+        logger.info(f"Adaptive segmentation: {len(segments)} segments from {len(raw_segments)} raw change points")
+        regime_dist = {}
+        for s in segments:
+            regime_dist[s.regime.value] = regime_dist.get(s.regime.value, 0) + 1
+        logger.info(f"Regime distribution (adaptive): {regime_dist}")
+        avg_conf = sum(s.confidence for s in segments) / len(segments) if segments else 0
+        logger.info(f"Average segment confidence: {avg_conf:.2%}")
+
+        return segments
+
+    @staticmethod
+    def _merge_short_segments(
+        segments: List[dict],
+        min_duration_days: int,
+    ) -> List[dict]:
+        """
+        Merge segments shorter than min_duration_days into adjacent same-regime
+        neighbors, or into the longer neighbor if regimes differ.
+        """
+        if not segments:
+            return []
+
+        merged = [segments[0]]
+        for seg in segments[1:]:
+            prev = merged[-1]
+
+            # Merge condition: current segment is too short
+            if seg['duration_days'] < min_duration_days:
+                # Same regime → merge into previous
+                if seg['regime'] == prev['regime']:
+                    prev['end'] = seg['end']
+                    prev['duration_days'] = (prev['end'] - prev['start']).days
+                    prev['bar_count'] = prev.get('bar_count', 0) + seg.get('bar_count', 0)
+                    prev['confidence'] = max(prev['confidence'], seg['confidence'])
+                else:
+                    # Different regime, short segment → absorb into previous
+                    # (alternative: could absorb into next, but previous is simpler)
+                    prev['end'] = seg['end']
+                    prev['duration_days'] = (prev['end'] - prev['start']).days
+                    prev['bar_count'] = prev.get('bar_count', 0) + seg.get('bar_count', 0)
+                    # Reduce confidence since we're mixing regimes
+                    prev['confidence'] *= 0.9
+            else:
+                merged.append(seg)
+
+        # Second pass: merge previous segment into current if previous is too short
+        if len(merged) > 1:
+            final = [merged[0]]
+            for seg in merged[1:]:
+                prev = final[-1]
+                if prev['duration_days'] < min_duration_days:
+                    seg['start'] = prev['start']
+                    seg['duration_days'] = (seg['end'] - seg['start']).days
+                    seg['bar_count'] = prev.get('bar_count', 0) + seg.get('bar_count', 0)
+                    seg['confidence'] *= 0.9
+                    final[-1] = seg
+                else:
+                    final.append(seg)
+            merged = final
+
+        return merged
+
     def get_balanced_segments(
         self,
         segments: List[RegimeSegment],

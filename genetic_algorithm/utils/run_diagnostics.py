@@ -160,6 +160,9 @@ _CSV_COLUMNS = [
     'avg_unused_indicators',
     'llm_seeds_count',
     'llm_immigrants_count',
+    # Deflated Sharpe Ratio tracking
+    'avg_dsr_penalty',
+    'best_dsr_penalty',
 ]
 
 

@@ -276,8 +276,12 @@ def _ensure_indicator_registry():
         delta = df["close"].diff()
         gain = delta.where(delta > 0, 0.0).rolling(window=period).mean()
         loss = (-delta.where(delta < 0, 0.0)).rolling(window=period).mean()
-        rs = gain / loss.replace(0, np.nan)
+        rs = gain / loss
+        rs = rs.replace([np.inf, -np.inf], np.nan)
         rsi = 100 - (100 / (1 + rs))
+        # When loss=0 (pure uptrend), RSI=100; when gain=0 (pure downtrend), RSI=0
+        rsi = rsi.where(loss > 0, 100.0)
+        rsi = rsi.where(gain > 0, other=rsi.where(loss > 0, 100.0))
         return {f"RSI_{period}": rsi}
 
     def _macd(df: pd.DataFrame, fast_period: int = 12, slow_period: int = 26, signal_period: int = 9, **_kw) -> dict:
@@ -426,7 +430,7 @@ async def get_indicators(
     df = df.tail(limit).reset_index(drop=True)
 
     # Parse and compute each indicator
-    result_lines: list[dict] = []
+    result_dict: dict = {}
     for spec in indicators.split(","):
         spec = spec.strip()
         if not spec:
@@ -485,12 +489,12 @@ async def get_indicators(
                 if "MACD" in col_name:
                     pane = "separate"
 
-                result_lines.append({
-                    "name": col_name,
-                    "indicator_type": ind_type,
+                # Use dict format matching frontend expectations
+                # Frontend accesses: resp.indicators[name].values / .pane
+                result_dict[col_name] = {
+                    "values": data_points,
                     "pane": pane,
-                    "data": data_points,
-                })
+                }
         except Exception as e:
             logger.warning("Failed to compute %s: %s", spec, e)
 
@@ -498,5 +502,5 @@ async def get_indicators(
         "pair": pair,
         "timeframe": timeframe,
         "exchange": exchange,
-        "indicators": result_lines,
+        "indicators": result_dict,
     }

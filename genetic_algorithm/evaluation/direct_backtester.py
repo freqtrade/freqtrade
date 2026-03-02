@@ -531,7 +531,8 @@ class DirectBacktester:
                          strategy_code: str, 
                          strategy_name: str,
                          max_retries: int = 2,
-                         strategy_max_open_trades: Optional[int] = None) -> BacktestResult:
+                         strategy_max_open_trades: Optional[int] = None,
+                         timerange_override: Optional[str] = None) -> BacktestResult:
         """
         Run backtest for a strategy using direct Python API.
         
@@ -545,8 +546,9 @@ class DirectBacktester:
         """
         start_time = time.time()
         
-        # Check cache first
-        if self.cache:
+        # Check cache first (skip cache when timerange is overridden —
+        # the cache key uses self.backtest_config which doesn't reflect the override)
+        if self.cache and not timerange_override:
             cached_result = self.cache.get(strategy_code, self.backtest_config)
             if cached_result:
                 logger.debug(f"Using cached result for {strategy_name}")
@@ -560,11 +562,14 @@ class DirectBacktester:
                     logger.info(f"Retry {attempt}/{max_retries} for {strategy_name}")
                     time.sleep(1)
                 
-                result = self._run_backtest_direct(strategy_code, strategy_name, strategy_max_open_trades)
+                result = self._run_backtest_direct(
+                    strategy_code, strategy_name, strategy_max_open_trades,
+                    timerange_override=timerange_override,
+                )
                 result.execution_time = time.time() - start_time
                 
-                # Cache successful result
-                if result.success and self.cache:
+                # Cache successful result (skip when timerange overridden)
+                if result.success and self.cache and not timerange_override:
                     self.cache.put(strategy_code, self.backtest_config, result)
                 
                 return result
@@ -584,7 +589,7 @@ class DirectBacktester:
             execution_time=execution_time
         )
     
-    def _run_backtest_direct(self, strategy_code: str, strategy_name: str, strategy_max_open_trades: Optional[int] = None, collect_trades: bool = False) -> BacktestResult:
+    def _run_backtest_direct(self, strategy_code: str, strategy_name: str, strategy_max_open_trades: Optional[int] = None, collect_trades: bool = False, timerange_override: Optional[str] = None) -> BacktestResult:
         """
         Run backtest using FreqTrade Python API with mocked exchange.
         
@@ -681,7 +686,10 @@ class DirectBacktester:
             import sys
             
             # Create configuration
-            config_dict = self._create_backtest_config(strategy_name, strategy_max_open_trades)
+            config_dict = self._create_backtest_config(
+                strategy_name, strategy_max_open_trades,
+                timerange_override=timerange_override,
+            )
             
             # Suppress FreqTrade's verbose output by redirecting stdout
             old_stdout = sys.stdout
@@ -865,7 +873,7 @@ class DirectBacktester:
                 error_message=f"Execution error: {str(e)}"
             )
     
-    def _create_backtest_config(self, strategy_name: str, strategy_max_open_trades: Optional[int] = None) -> Dict[str, Any]:
+    def _create_backtest_config(self, strategy_name: str, strategy_max_open_trades: Optional[int] = None, timerange_override: Optional[str] = None) -> Dict[str, Any]:
         """
         Create FreqTrade config for backtesting from GA config.
         
@@ -967,7 +975,7 @@ class DirectBacktester:
             
             # Don't set timeframe here - let the strategy define it
             # "timeframe": "5m",  # Removed - strategy's timeframe will be used
-            "timerange": timerange if timerange else None,  # From GA config
+            "timerange": timerange_override if timerange_override else (timerange if timerange else None),
             
             # Exchange configuration
             "exchange": {

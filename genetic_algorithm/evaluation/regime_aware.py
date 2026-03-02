@@ -366,6 +366,10 @@ class RegimeAwareEvaluator:
         """
         Aggregate fitness scores and metrics across segments.
         
+        Now uses confidence weighting: segments with higher detection confidence
+        contribute more to the final score. This prevents low-confidence segments
+        (e.g., mixed-regime periods) from having equal influence.
+        
         Args:
             results: List of per-segment evaluation results
             strategy_gene: Strategy being evaluated (for complexity)
@@ -373,16 +377,26 @@ class RegimeAwareEvaluator:
         Returns:
             Tuple of (aggregated_fitness, aggregated_metrics)
         """
-        # Extract successful fitness scores with regime weights
+        # Extract successful fitness scores with regime weights AND confidence
         weighted_scores = []
         regime_scores: Dict[str, List[float]] = {}
+        use_confidence = self.regime_config.get('confidence_weighting', True)
         
         for result in results:
             if result.success and result.fitness > 0:
                 # Apply regime weight
                 regime_type = result.segment.regime.value
-                weight = self.regime_weights.get(regime_type, 1.0)
-                weighted_scores.append((result.fitness, weight))
+                regime_weight = self.regime_weights.get(regime_type, 1.0)
+                
+                # Apply confidence weight: scale from 0.5 (low conf) to 1.0 (high conf)
+                if use_confidence:
+                    confidence = result.segment.confidence
+                    conf_weight = 0.5 + 0.5 * max(0.0, min(1.0, confidence))
+                else:
+                    conf_weight = 1.0
+                
+                combined_weight = regime_weight * conf_weight
+                weighted_scores.append((result.fitness, combined_weight))
                 
                 # Track by regime type
                 if regime_type not in regime_scores:

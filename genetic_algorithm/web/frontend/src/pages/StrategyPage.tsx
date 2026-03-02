@@ -42,7 +42,7 @@ export function StrategyPage() {
   const [lastBacktestId, setLastBacktestId] = useState<string | null>(null);
   const [backtestTrades, setBacktestTrades] = useState<BacktestTrade[]>([]);
   const [btStatus, setBtStatus] = useState<string | null>(null);
-  const [btResult, setBtResult] = useState<Record<string, unknown> | null>(null);
+  const [btResult, setBtResult] = useState<Record<string, any> | null>(null);
   const btPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Lineage timeline
@@ -75,6 +75,19 @@ export function StrategyPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [runId, strategyId]);
+
+  // Load run config to extract exchange
+  useEffect(() => {
+    if (!runId) return;
+    api.getRun(runId).then((detail) => {
+      const cfg = detail.config ?? {};
+      const exchange =
+        (cfg as Record<string, unknown>).exchange as string ??
+        ((cfg as Record<string, Record<string, unknown>>).backtesting?.exchange as string) ??
+        'binance';
+      setBtExchange(exchange);
+    }).catch(() => {});
+  }, [runId]);
 
   // Load available trading pairs on mount
   useEffect(() => {
@@ -130,9 +143,9 @@ export function StrategyPage() {
     }).then((resp) => {
       const lines: IndicatorLine[] = Object.entries(resp.indicators).map(([name, data]) => ({
         name,
-        data: data.values.map(([ts, val]: [number, number]) => ({
-          time: Math.floor(ts / 1000),
-          value: val,
+        data: data.values.map((point) => ({
+          time: Math.floor(point[0] / 1000),
+          value: point[1],
         })),
         pane: data.pane as 'price' | 'separate',
       }));
@@ -788,7 +801,7 @@ export function StrategyPage() {
               </div>
 
               {/* Inline backtest results summary */}
-              {btStatus === 'completed' && btResult != null && (
+              {btStatus === 'completed' && btResult !== null ? (
                 <div className="mt-4 border border-white/10 rounded-lg bg-surface-0 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-medium text-gray-200 flex items-center gap-2">
@@ -804,7 +817,7 @@ export function StrategyPage() {
                   {btResult.error_message != null && (
                     <div className="flex items-center gap-2 text-xs text-yellow-400 bg-yellow-500/10 rounded px-3 py-1.5">
                       <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-                      {String(btResult.error_message)}
+                      <span>{String(btResult.error_message)}</span>
                     </div>
                   )}
 
@@ -832,7 +845,7 @@ export function StrategyPage() {
                     <InlineStat label="Losses" value={String(btResult.losses ?? 0)} color="text-loss" />
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {btStatus === 'failed' && btResult?.error_message && (
                 <div className="mt-3 flex items-center gap-2 text-xs text-loss bg-loss/10 rounded-lg px-3 py-2">

@@ -82,7 +82,7 @@ backtesting:
   pairs:
     - "BTC/USDT"
     - "ETH/USDT"
-    - "LTC/USDT"
+    - "SOL/USDT"
   max_open_trades: 3
   fee: 0.001
   slippage_pct: 0.0005

@@ -31,13 +31,24 @@ class HallOfFameEntry:
     generation_found: int
     run_timestamp: float
     run_id: str = ""
+    individual_id: int = 0
+    entry_id: str = ""
+    
+    def __post_init__(self):
+        """Generate a stable entry_id if not provided."""
+        if not self.entry_id:
+            import hashlib
+            fp = json.dumps(self.strategy_gene_dict, sort_keys=True, default=str)
+            self.entry_id = f"hof_{hashlib.sha256(fp.encode()).hexdigest()[:12]}"
     
     def to_dict(self) -> Dict[str, Any]:
         return {
+            'id': self.entry_id,
             'strategy_gene': self.strategy_gene_dict,
             'fitness': self.fitness,
             'metrics': self.metrics,
             'generation_found': self.generation_found,
+            'individual_id': self.individual_id,
             'run_timestamp': self.run_timestamp,
             'run_id': self.run_id,
         }
@@ -51,6 +62,8 @@ class HallOfFameEntry:
             generation_found=data.get('generation_found', 0),
             run_timestamp=data.get('run_timestamp', 0),
             run_id=data.get('run_id', ''),
+            individual_id=data.get('individual_id', 0),
+            entry_id=data.get('id', ''),
         )
 
 
@@ -168,15 +181,17 @@ class HallOfFame:
             if self._is_duplicate(gene_dict):
                 continue
             
-            # Check if it qualifies
-            if len(self.entries) < self.max_size or ind.fitness > self.entries[-1].fitness:
+            # Check if it qualifies — use raw_fitness (pre-sharing) for true performance
+            actual_fitness = getattr(ind, 'raw_fitness', None) or ind.fitness
+            if len(self.entries) < self.max_size or actual_fitness > self.entries[-1].fitness:
                 entry = HallOfFameEntry(
                     strategy_gene_dict=gene_dict,
-                    fitness=ind.fitness,
+                    fitness=actual_fitness,
                     metrics=ind.metrics or {},
                     generation_found=generation,
                     run_timestamp=time.time(),
                     run_id=self.run_id,
+                    individual_id=getattr(ind, 'id', 0) if hasattr(ind, 'id') else 0,
                 )
                 self.entries.append(entry)
                 added += 1

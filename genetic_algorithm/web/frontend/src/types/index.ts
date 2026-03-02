@@ -253,17 +253,15 @@ export interface OHLCVResponse {
 }
 
 export interface IndicatorLineData {
-  name: string;
-  indicator_type: string;
+  values: number[][];    // [timestamp_ms, value]
   pane: 'price' | 'separate';
-  data: number[][];  // [timestamp_ms, value]
 }
 
 export interface IndicatorsResponse {
   pair: string;
   timeframe: string;
   exchange: string;
-  indicators: IndicatorLineData[];
+  indicators: Record<string, IndicatorLineData>;
 }
 
 // ── Hall of Fame ───────────────────────────────────────────────
