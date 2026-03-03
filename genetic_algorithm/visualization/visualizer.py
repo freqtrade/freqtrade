@@ -7,7 +7,10 @@ during the evolution process.
 
 import logging
 import matplotlib
-import matplotlib.pyplot as plt
+# Set a safe default backend before any pyplot import.
+# __init__() will override this if needed (e.g. TkAgg for interactive mode).
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np
 from typing import List, Dict, Any, Optional
 from pathlib import Path
@@ -49,18 +52,19 @@ class GAVisualizer:
         if not self.enabled:
             return
         
-        # Set up matplotlib for interactive or non-interactive mode
+        # Set up matplotlib for interactive or non-interactive mode.
+        # Backend was already set to 'Agg' at module import time; switch
+        # only if interactive mode is requested and available.
         if self.interactive:
             try:
-                matplotlib.use('TkAgg')  # Use interactive backend
-                plt.ion()  # Enable interactive mode
+                plt.switch_backend('TkAgg')
             except (ImportError, ModuleNotFoundError):
-                # TkAgg not available (headless environment), fall back to non-interactive
                 logger.warning("Interactive backend (TkAgg) not available. Falling back to non-interactive mode.")
                 self.interactive = False
-                matplotlib.use('Agg')  # Use non-interactive backend
-        else:
-            matplotlib.use('Agg')  # Use non-interactive backend
+                plt.switch_backend('Agg')
+
+        if self.interactive:
+            plt.ion()  # Enable interactive mode
         
         # Create output directory if saving plots
         if self.save_plots:
@@ -94,6 +98,10 @@ class GAVisualizer:
         # Create figure with subplots
         self.fig, self.axes = plt.subplots(2, 2, figsize=(15, 10))
         self.fig.suptitle('Genetic Algorithm Evolution Progress', fontsize=16, fontweight='bold')
+
+        # Pre-create the twin axis for the performance metrics subplot
+        # to avoid leaking a new Axes on every update() call.
+        self._perf_twin_ax = self.axes[1, 0].twinx()
         
         # Adjust layout to prevent overlap
         plt.tight_layout(rect=[0, 0.03, 1, 0.96])
@@ -218,8 +226,9 @@ class GAVisualizer:
         
         x = self.generations
         
-        # Create twin axes for different scales
-        ax2 = ax.twinx()
+        # Reuse the pre-created twin axis (created in initialize_plots)
+        ax2 = self._perf_twin_ax
+        ax2.clear()
         
         # Plot profit and sharpe on left axis
         line1 = ax.plot(x, self.best_profit, 'g-', linewidth=2, label='Profit %', marker='o')

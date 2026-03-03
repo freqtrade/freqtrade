@@ -46,7 +46,10 @@ class LLMProvider(ABC):
         """
         Generate a JSON response from the LLM.
         
-        Attempts to parse the response as JSON. Retries on parse failure.
+        Retries on JSON parse failure only.  Network/HTTP retries are
+        handled internally by ``generate()``, so we do **not** wrap
+        ``generate()`` in a second retry loop to avoid max_retries²
+        total attempts.
         
         Args:
             prompt: User prompt requesting JSON output
@@ -58,7 +61,6 @@ class LLMProvider(ABC):
         for attempt in range(self.max_retries):
             try:
                 response = self.generate(prompt, system_prompt)
-                # Try to extract JSON from response (may be wrapped in markdown)
                 json_str = self._extract_json(response)
                 return json.loads(json_str)
             except json.JSONDecodeError as e:
@@ -66,9 +68,10 @@ class LLMProvider(ABC):
                 if attempt < self.max_retries - 1:
                     time.sleep(self.retry_delay)
             except Exception as e:
-                logger.error(f"LLM generation failed (attempt {attempt+1}/{self.max_retries}): {e}")
-                if attempt < self.max_retries - 1:
-                    time.sleep(self.retry_delay)
+                # generate() already retried network errors; if it still raised,
+                # the endpoint is down — don't retry again here.
+                logger.error(f"LLM generation failed: {e}")
+                return None
         
         return None
     

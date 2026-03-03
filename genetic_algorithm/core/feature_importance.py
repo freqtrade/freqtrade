@@ -171,9 +171,10 @@ class FeatureImportanceTracker:
                 if is_bottom:
                     stats.appearances_bottom += 1
             
-            # Update generations_seen
+            # Update generations_seen — count how many distinct generations
+            # this indicator type has appeared in (not the generation number).
             for ind_type in indicator_types_seen:
-                self.indicator_stats[ind_type].generations_seen = self.total_generations
+                self.indicator_stats[ind_type].generations_seen += 1
         
         # Store generation snapshot
         top_indicators = sorted(

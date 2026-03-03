@@ -41,8 +41,16 @@ def _enforce_max_indicators(gene: StrategyGene, config: dict) -> None:
     gene.indicators.sort(key=lambda ind: getattr(ind, 'weight', 1.0), reverse=True)
     gene.indicators = gene.indicators[:max_indicators]
     
-    # Build set of remaining indicator instance_ids
-    remaining_refs = {ind.instance_id for ind in gene.indicators}
+    # Build set of remaining indicator references.
+    # Conditions may reference indicators by instance_id ('RSI_0') or by bare
+    # type ('RSI'), so we must match against both to avoid orphaning valid
+    # conditions when instance_id is None or when conditions predate instance_id
+    # assignment.
+    remaining_refs = set()
+    for ind in gene.indicators:
+        if ind.instance_id:
+            remaining_refs.add(ind.instance_id)
+        remaining_refs.add(ind.type)
     
     # Remove orphaned conditions (reference indicators we just trimmed)
     gene.entry_conditions = [c for c in gene.entry_conditions if c.indicator in remaining_refs]
@@ -79,6 +87,9 @@ def _deduplicate_conditions(conditions: list) -> list:
             unique.append(c)
     
     # 2. Subsumption pruning for '<' / '>' operators
+    #    Only safe when ALL conditions in a group share AND logic.
+    #    Under OR logic, the *looser* condition dominates, which inverts
+    #    the selection — skipping subsumption avoids silent signal loss.
     result = []
     by_ind_op = {}  # (indicator, operator) → list of conditions
     for c in unique:
@@ -90,6 +101,11 @@ def _deduplicate_conditions(conditions: list) -> list:
             result.append(c)  # keep non-comparable operators as-is
     
     for (ind, op), conds in by_ind_op.items():
+        # If any condition uses OR logic, subsumption is unsafe — keep all
+        if any(getattr(c, 'logic', 'AND') == 'OR' for c in conds):
+            result.extend(conds)
+            continue
+
         if op == '<':
             # For AND logic: x < A AND x < B → keep min(A, B)
             keeper = min(conds, key=lambda c: c.threshold)

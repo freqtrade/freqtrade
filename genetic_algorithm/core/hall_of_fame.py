@@ -145,11 +145,30 @@ class HallOfFame:
         return False
     
     def _fingerprint(self, gene_dict: Dict[str, Any]) -> str:
-        """Create a structural fingerprint of a strategy gene dict."""
-        indicators = sorted(ind.get('type', '') for ind in gene_dict.get('indicators', []))
-        entry_ops = sorted(c.get('operator', '') for c in gene_dict.get('entry_conditions', []))
-        exit_ops = sorted(c.get('operator', '') for c in gene_dict.get('exit_conditions', []))
-        return f"{'|'.join(indicators)}::{'|'.join(entry_ops)}::{'|'.join(exit_ops)}"
+        """Create a structural fingerprint of a strategy gene dict.
+        
+        Includes indicator types + parameters, condition operators +
+        thresholds + indicator refs, and timeframes so that strategies
+        differing only in numeric values are NOT treated as duplicates.
+        """
+        # Indicator: type + sorted params + timeframe
+        ind_parts = []
+        for ind in gene_dict.get('indicators', []):
+            params = ind.get('parameters', {})
+            param_str = str(sorted(params.items())) if params else ''
+            tf = ind.get('timeframe', '')
+            ind_parts.append(f"{ind.get('type', '')}({param_str})@{tf}")
+        ind_parts.sort()
+
+        # Conditions: indicator ref + operator + threshold (rounded)
+        def _cond_key(c):
+            thr = round(c.get('threshold', 0), 4)
+            return f"{c.get('indicator', '')}:{c.get('operator', '')}:{thr}"
+
+        entry_keys = sorted(_cond_key(c) for c in gene_dict.get('entry_conditions', []))
+        exit_keys = sorted(_cond_key(c) for c in gene_dict.get('exit_conditions', []))
+
+        return f"{'|'.join(ind_parts)}::{'|'.join(entry_keys)}::{'|'.join(exit_keys)}"
     
     def update(self, population, generation: int) -> int:
         """

@@ -189,8 +189,8 @@ export function RunDetailPage() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <MetricsCard
           label="Generation"
-          value={`${currentGen} / ${totalGen}`}
-          subtitle={totalGen > 0 ? `${((currentGen / totalGen) * 100).toFixed(0)}% complete` : undefined}
+          value={`${allGenStats.length} / ${totalGen}`}
+          subtitle={totalGen > 0 ? `${Math.min(100, Math.round((allGenStats.length / totalGen) * 100))}% complete` : undefined}
           icon={<BarChart3 className="w-4 h-4" />}
         />
         <MetricsCard
@@ -244,7 +244,7 @@ export function RunDetailPage() {
                       to={`/runs/${run.run_id}/generations/${gs.generation}`}
                       className="text-accent hover:underline font-mono"
                     >
-                      {gs.generation}
+                      {gs.generation + 1}
                     </Link>
                   </td>
                   <td className="text-right py-2 px-3 font-mono text-profit">

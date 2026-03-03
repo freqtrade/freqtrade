@@ -372,8 +372,9 @@ def _hypervolume_nd(points: List[List[float]], reference_point: List[float]) -> 
         return hv
     
     # Use HSO (Hypervolume by Slicing Objectives) approach for small N
-    # Sort by first objective descending
-    sorted_points = sorted(points, key=lambda x: -x[0])
+    # Sort by first objective ascending so we sweep from reference upward;
+    # each successive point extends the slice width positively.
+    sorted_points = sorted(points, key=lambda x: x[0])
     
     hv = 0.0
     prev_slice = reference_point[0]

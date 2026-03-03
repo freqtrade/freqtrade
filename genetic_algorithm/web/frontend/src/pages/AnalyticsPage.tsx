@@ -299,7 +299,7 @@ function OverfittingDashboard() {
     return stats
       .filter((s) => s.generation != null)
       .map((s) => ({
-        generation: s.generation,
+        generation: s.generation + 1,
         holdout_degradation: s.holdout_avg_degradation != null ? s.holdout_avg_degradation * 100 : null,
         best_holdout_degradation: s.holdout_best_degradation != null ? s.holdout_best_degradation * 100 : null,
         genetic_diversity: s.genetic_diversity,
@@ -314,7 +314,7 @@ function OverfittingDashboard() {
       .map((s) => ({
         fitness: s.best_fitness,
         degradation: (s.holdout_avg_degradation ?? 0) * 100,
-        generation: s.generation,
+        generation: s.generation + 1,
       }));
   }, [stats]);
 

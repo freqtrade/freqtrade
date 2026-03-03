@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import matplotlib
+    matplotlib.use('Agg')  # Must be set before importing pyplot
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
     from matplotlib.patches import Rectangle
@@ -63,8 +64,6 @@ class TradeVisualizer:
         
         if self.enabled:
             self.output_dir.mkdir(parents=True, exist_ok=True)
-            # Use non-interactive backend for saving
-            matplotlib.use('Agg')
             logger.info(f"TradeVisualizer initialized, output: {self.output_dir}")
         else:
             if not MATPLOTLIB_AVAILABLE:

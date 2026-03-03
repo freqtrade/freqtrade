@@ -1,16 +1,16 @@
 # Validation Config A — Walk-Forward + Parallel Stress Test
 #
 # Goal: Validate the deadlock fix (parallel_walk_forward_flat) under sustained
-#       parallel WF load for 45–60 minutes.
+#       parallel WF load.
 # Focus: WF + parallel evaluation, holdout monitoring, DSR
 # Regime: DISABLED (isolates WF)
 # CPCV: DISABLED (separate test)
-# Est. runtime: ~45–60 min on 6-core/16GB
+# Est. runtime: ~90 min on 6-core/16GB (reduced from 21 to ~7 WF windows)
 
 genetic_algorithm:
   random_seed: null
   population_size: 40
-  generations: 15
+  generations: 10
   mutation_rate: 0.20
   max_mutation_rate: 0.35
   crossover_rate: 0.75
@@ -80,12 +80,13 @@ backtesting:
   enable_cache: true
   timeout: 120
 
-# Heavy WF load: 90d train, 30d val, 30d step → ~21 windows over 26 months
+# WF load: 90d train, 30d val, 120d step → ~7 windows over 26 months
+# (Reduced from 21 windows — each individual runs 7 backtests instead of 21)
 walk_forward:
   enabled: true
   train_days: 90
   validation_days: 30
-  step_days: 30
+  step_days: 120
   mode: 'rolling'
   aggregation: 'mean'
   embargo_days: 5
@@ -94,7 +95,7 @@ walk_forward:
     threshold: 0.10
     max_penalty: 0.5
   min_train_trades: 10
-  max_windows: 21
+  max_windows: 10
 
 holdout_validation:
   enabled: true

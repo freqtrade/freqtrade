@@ -1,4 +1,4 @@
-# Validation Config C — Anti-Overfitting Stack
+# Validation Config C — Anti-Overfitting Stack  (v2 – post-run fixes)
 #
 # Goal: Validate DSR + CPCV + holdout monitoring + Monte Carlo together.
 # Focus: Anti-overfitting features in isolation (regime disabled)
@@ -7,6 +7,13 @@
 # MC: ENABLED with 30 permutations (higher than default 20)
 # Holdout: Strict early stop threshold (0.50)
 # Est. runtime: ~30–40 min on 6-core/16GB
+#
+# v2 changes (post AntiOverfitingValidationRun analysis):
+#   - sharing_radius: 0.25 → 0.12  (over-compression eating ~47% of fitness)
+#   - holdout fitness_penalty: true → false  (monitor-only; avoid compounding)
+#   - holdout penalty_factor: 0.85 → 0.50  (softer if re-enabled later)
+#   - DSR min_trades: 20 → 8  (was dead — no individual reached 20 trades)
+#   - Code fix already applied: _pre_holdout_raw_fitness in evolution.py
 
 genetic_algorithm:
   random_seed: null
@@ -24,7 +31,7 @@ genetic_algorithm:
   max_adaptation_factor: 2.5
   adaptation_step: 0.15
   fitness_sharing: true
-  sharing_radius: 0.25
+  sharing_radius: 0.12
   diversity_threshold: 0.15
   allow_self_crossover: false
   random_immigrants: 4
@@ -109,8 +116,8 @@ holdout_monitoring:
   early_stop_checks: 3
   trend_early_stop: true
   trend_checks: 3
-  fitness_penalty: true
-  penalty_factor: 0.85
+  fitness_penalty: false
+  penalty_factor: 0.50
 
 # Regime DISABLED — isolate anti-overfit features
 regime_aware:
@@ -219,7 +226,7 @@ parallel_evaluation:
 deflated_sharpe:
   enabled: true
   penalty_weight: 0.25            # Aggressive — 25% max reduction (vs default 15%)
-  min_trades: 20
+  min_trades: 8
   significance: 0.05
 
 # CPCV ENABLED — post-evolution PBO validation

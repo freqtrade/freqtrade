@@ -286,6 +286,25 @@ class TerminalMonitor:
         # Print a final static summary to the terminal
         self._print_final_summary(summary)
 
+    def on_checkpoint_saved(self, generation: int, path: str = "") -> None:
+        """Flash checkpoint indicator on the dashboard."""
+        self._extras['last_checkpoint'] = f"Gen {generation}"
+        if path:
+            self._extras['checkpoint_path'] = path
+        self._refresh()
+
+    def on_log(self, message: str, level: str = "info") -> None:
+        """Forward an explicit log message to the monitor's log buffer."""
+        self._log_handler.emit_text(message, level)
+        self._refresh()
+
+    def on_error(self, message: str, details: dict | None = None) -> None:
+        """Show error prominently and log it."""
+        detail_str = f" | {details}" if details else ""
+        self._log_handler.emit_text(f"ERROR: {message}{detail_str}", "error")
+        self._extras['last_error'] = message
+        self._refresh()
+
     # ──────────────────────────────────────────────────────────────────────
     # Key handling
     # ──────────────────────────────────────────────────────────────────────

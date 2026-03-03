@@ -27,11 +27,14 @@ export function FitnessChart({ data, height = 300, showDiversity = false }: Fitn
     );
   }
 
+  // Map data to 1-indexed generation numbers for display
+  const displayData = data.map(d => ({ ...d, generation: d.generation + 1 }));
+
   return (
     <div className="card">
       <h3 className="text-sm font-medium text-gray-300 mb-3">Fitness Over Generations</h3>
       <ResponsiveContainer width="100%" height={height}>
-        <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <AreaChart data={displayData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
           <defs>
             <linearGradient id="fitGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />

@@ -109,18 +109,46 @@ def _mutate_indicator_params(indicator, ind_config, i, mutations_applied):
 
 
 def _mutate_condition_threshold(condition, ind_config, is_entry, i, mutations_applied):
-    """Helper to mutate condition thresholds."""
+    """Helper to mutate condition thresholds.
+    
+    Supports all indicator types that commonly use threshold-based
+    conditions.  Falls back to a small Gaussian perturbation for unknown
+    types so that mutation is never silently skipped.
+    """
     threshold_key = 'buy_threshold' if is_entry else 'sell_threshold'
     # Extract base type from possible instance_id format (e.g., 'RSI_0' -> 'RSI')
     base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
-    if base_indicator == 'RSI':
-        threshold_range = ind_config.get(threshold_key, [20, 40] if is_entry else [60, 80])
-    elif base_indicator == 'CCI':
-        threshold_range = ind_config.get(threshold_key, [-200, -100] if is_entry else [100, 200])
+
+    # Indicator-specific default ranges (buy / sell)
+    _DEFAULT_RANGES = {
+        'RSI':   ([20, 40], [60, 80]),
+        'CCI':   ([-200, -100], [100, 200]),
+        'STOCH': ([15, 30], [70, 85]),
+        'WILLR': ([-90, -70], [-30, -10]),
+        'MFI':   ([15, 35], [65, 85]),
+        'ADX':   ([20, 35], [20, 35]),       # same for entry/exit (trend strength)
+        'AROON': ([60, 80], [60, 80]),
+        'ROC':   ([-5, 0], [0, 5]),
+        'VROC':  ([-200, -50], [50, 200]),
+        'CMF':   ([-0.2, -0.05], [0.05, 0.2]),
+    }
+
+    defaults = _DEFAULT_RANGES.get(base_indicator)
+    if defaults is not None:
+        default_range = defaults[0] if is_entry else defaults[1]
+        threshold_range = ind_config.get(threshold_key, default_range)
+        lo, hi = min(threshold_range), max(threshold_range)
+        if isinstance(lo, int) and isinstance(hi, int):
+            condition.threshold = random.randint(lo, hi)
+        else:
+            condition.threshold = random.uniform(lo, hi)
     else:
-        return
-    
-    condition.threshold = random.randint(*threshold_range)
+        # Fallback: Gaussian perturbation (±10 %) for unknown indicator types
+        if condition.threshold != 0:
+            condition.threshold *= random.uniform(0.9, 1.1)
+        else:
+            condition.threshold = random.uniform(-1.0, 1.0)
+
     mutations_applied.append(f"{'entry' if is_entry else 'exit'}_{condition.indicator}_threshold_{i}")
 
 
@@ -175,6 +203,8 @@ def mutate_parameters(individual: Individual, mutation_rate: float,
             "30": random.uniform(roi_range[0] * 1.5, roi_range[1] * 0.7),
             "60": random.uniform(roi_range[0], roi_range[1] * 0.5),
         }
+        # Enforce monotonically decreasing ROI values
+        mutated_gene._enforce_roi_monotonicity()
         mutations_applied.append("roi")
     
     # Mutate max_open_trades
@@ -572,6 +602,8 @@ def mutate_structure(individual: Individual, mutation_rate: float,
             "30": random.uniform(roi_range[0] * 1.5, roi_range[1] * 0.7),
             "60": random.uniform(roi_range[0], roi_range[1] * 0.5),
         }
+        # Enforce monotonically decreasing ROI values
+        mutated_gene._enforce_roi_monotonicity()
         mutations_applied.append("roi")
     
     # Mutate trailing stop

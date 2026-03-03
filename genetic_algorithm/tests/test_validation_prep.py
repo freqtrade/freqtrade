@@ -406,7 +406,7 @@ class TestConfigValidation:
             config = yaml.safe_load(f)
         assert config['regime_aware']['enabled'] is True
         assert config['regime_aware']['method'] == 'ensemble'
-        assert config['regime_aware']['aggregation'] == 'harmonic_mean'
+        assert config['regime_aware']['aggregation'] == 'mean'
 
     def test_all_validation_configs_use_available_pairs(self):
         """Validation configs only reference pairs with existing data files."""

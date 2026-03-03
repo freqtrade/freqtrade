@@ -49,6 +49,7 @@ class BacktestResult:
     # Additional info
     error_message: Optional[str] = None
     execution_time: float = 0.0
+    no_trades: bool = False  # True when backtest ran successfully but produced zero trades
     
     # Trade visualization data (optional, only populated when requested)
     trades: Optional[list] = None  # List of trade dicts for visualization
@@ -750,6 +751,7 @@ class DirectBacktester:
                             success=True,
                             strategy_name=strategy_name,
                             total_trades=0,
+                            no_trades=True,
                             error_message="No trades generated - strategy may be too restrictive"
                         )
                     
@@ -773,6 +775,7 @@ class DirectBacktester:
                             success=True,
                             strategy_name=strategy_name,
                             total_trades=0,
+                            no_trades=True,
                             error_message="No trades generated - check strategy conditions"
                         )
                     
@@ -960,8 +963,9 @@ class DirectBacktester:
             "runmode": "backtest",  # Required for FreqTrade
             
             # Data format - CRITICAL: must match the format of data files on disk
-            "dataformat_ohlcv": "feather",  # Use feather format for faster data loading
-            "dataformat_trades": "feather",
+            # Read from GA config's backtesting section, default to feather
+            "dataformat_ohlcv": self.backtest_config.get('dataformat_ohlcv', 'feather'),
+            "dataformat_trades": self.backtest_config.get('dataformat_trades', 'feather'),
             
             # Critical config values from GA config
             "stake_currency": stake_currency,  # Calculated from pairs
@@ -970,8 +974,8 @@ class DirectBacktester:
             "max_open_trades": max_open_trades,  # From GA config
             "fee": fee,  # From GA config
             
-            # Allow multiple trades per pair (enables true max_open_trades)
-            "position_stacking": True,  # Required to open more than 1 trade per pair
+            # Position stacking: configurable from GA config (default False to match live trading)
+            "position_stacking": self.backtest_config.get('position_stacking', False),
             
             # Don't set timeframe here - let the strategy define it
             # "timeframe": "5m",  # Removed - strategy's timeframe will be used

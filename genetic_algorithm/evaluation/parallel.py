@@ -828,6 +828,7 @@ def parallel_parsimony(
     ga_config: Dict[str, Any],
     num_workers: int,
     backtest_timeout: int = 120,
+    evaluator: Optional['ParallelEvaluator'] = None,
 ) -> int:
     """
     Apply parsimony pressure to elites with parallel candidate evaluation.
@@ -920,12 +921,18 @@ def parallel_parsimony(
         )
 
         # Phase 2: submit all candidates in parallel
-        executor = ProcessPoolExecutor(
-            max_workers=actual_workers,
-            initializer=_init_worker,
-            initargs=(ga_config,),
-        )
-        _active_executors.append(executor)
+        # Reuse the persistent pool from ParallelEvaluator when available
+        # to avoid expensive per-call pool creation and data reloading.
+        owns_executor = evaluator is None
+        if owns_executor:
+            executor = ProcessPoolExecutor(
+                max_workers=actual_workers,
+                initializer=_init_worker,
+                initargs=(ga_config,),
+            )
+            _active_executors.append(executor)
+        else:
+            executor = evaluator._get_executor()
 
         results_by_elite: Dict[int, List[Dict[str, Any]]] = {
             idx: [] for idx in elite_state
@@ -964,16 +971,19 @@ def parallel_parsimony(
         except BrokenProcessPool:
             logger.error("[PARSIMONY-PARALLEL] Worker pool crashed")
         finally:
-            try:
-                executor.shutdown(wait=True, cancel_futures=True)
-            except Exception:
+            # Only shut down the pool if we created it (ephemeral mode).
+            # When reusing ParallelEvaluator's pool, it manages its own lifecycle.
+            if owns_executor:
                 try:
-                    executor.shutdown(wait=False, cancel_futures=True)
+                    executor.shutdown(wait=True, cancel_futures=True)
                 except Exception:
-                    pass
-            if executor in _active_executors:
-                _active_executors.remove(executor)
-            _kill_pool_processes(executor)
+                    try:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                    except Exception:
+                        pass
+                if executor in _active_executors:
+                    _active_executors.remove(executor)
+                _kill_pool_processes(executor)
 
         # Phase 3: for each elite, pick the best acceptable removal
         removed_this_round = 0

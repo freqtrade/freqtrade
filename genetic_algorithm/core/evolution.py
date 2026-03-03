@@ -250,6 +250,12 @@ class GeneticAlgorithm:
         self.adaptation_step = ga_config.get('adaptation_step', 0.1)
         self.max_mutation_rate = ga_config.get('max_mutation_rate', 0.5)  # Configurable hard cap
         
+        # Centralized DSR tracker — shared across all generations for correct n_trials.
+        # Worker processes have their own isolated DSRTrackers with very few trials;
+        # this one is authoritative and used to recalculate DSR penalties in the main process.
+        from genetic_algorithm.evaluation.deflated_sharpe import DSRTracker
+        self._global_dsr_tracker = DSRTracker(self.config)
+        
         # Holdout monitoring (optionally penalizes overfit elites) 
         holdout_mon_config = self.config.get('holdout_monitoring', {})
         self.holdout_monitoring_enabled = holdout_mon_config.get('enabled', False)
@@ -769,7 +775,7 @@ class GeneticAlgorithm:
             try:
                 holdout_fitness, holdout_metrics = holdout_evaluator.evaluate(ind.strategy_gene)
                 train_fitness = ind.fitness
-                overfit_ratio = (train_fitness - holdout_fitness) / max(abs(train_fitness), 0.001)
+                overfit_ratio = (train_fitness - holdout_fitness) / max(abs(train_fitness), 0.1)
                 
                 results.append({
                     'id': ind.id,
@@ -854,7 +860,10 @@ class GeneticAlgorithm:
             try:
                 holdout_fitness, holdout_metrics = holdout_evaluator.evaluate(ind.strategy_gene)
                 train_fitness = ind.raw_fitness if ind.raw_fitness is not None else ind.fitness
-                degradation = (train_fitness - holdout_fitness) / max(abs(train_fitness), 0.001) * 100
+                # Use larger floor (0.1) to avoid massive percentages when
+                # train_fitness is near-zero, and clamp to [-500%, 500%]
+                degradation = (train_fitness - holdout_fitness) / max(abs(train_fitness), 0.1) * 100
+                degradation = max(-500.0, min(500.0, degradation))
                 degradations.append(degradation)
                 
                 symbol = "✓" if degradation < 30 else "⚠"
@@ -872,6 +881,11 @@ class GeneticAlgorithm:
                     penalty_mult = max(0.3, 1.0 - degradation_frac * self.holdout_penalty_factor)
                     old_raw = ind.raw_fitness if ind.raw_fitness is not None else ind.fitness
                     old_fitness = ind.fitness
+                    # Store pre-holdout raw_fitness so elite carry-over can
+                    # restore the un-penalized value.  Without this, elites
+                    # accumulate holdout penalties across generations because
+                    # fitness sharing uses raw_fitness as its base.
+                    ind._pre_holdout_raw_fitness = old_raw
                     ind.raw_fitness = old_raw * penalty_mult
                     ind.fitness = ind.fitness * penalty_mult
                     ind.metrics['holdout_penalty'] = 1.0 - penalty_mult
@@ -942,6 +956,64 @@ class GeneticAlgorithm:
 
             return avg_degrad
         return None
+
+    def _apply_global_dsr_penalties(self, population):
+        """
+        Recompute DSR penalties in the main process using the global trial count.
+
+        Worker processes each have isolated DSRTrackers with very few trials,
+        making their DSR correction negligible.  This method recalculates each
+        individual's DSR penalty using the cumulative trial count across ALL
+        evaluations in the GA run, ensuring meaningful multiple-testing correction.
+        """
+        if not self._global_dsr_tracker.enabled:
+            return
+
+        evaluated = [ind for ind in population.individuals
+                     if ind.fitness is not None and ind.metrics]
+        if not evaluated:
+            return
+
+        # Register all newly evaluated individuals
+        for ind in evaluated:
+            if not ind.metrics.get('_dsr_registered'):
+                self._global_dsr_tracker.register_evaluation()
+                ind.metrics['_dsr_registered'] = True
+
+        # Need at least 2 trials before DSR applies
+        if self._global_dsr_tracker.n_trials < 2:
+            return
+
+        for ind in evaluated:
+            metrics = ind.metrics
+            sharpe = metrics.get('sharpe_ratio', 0.0)
+            n_returns = metrics.get('num_trades', 0)
+            skewness = metrics.get('return_skewness', 0.0)
+            kurtosis = metrics.get('return_kurtosis', 3.0)
+
+            # Compute penalty with global trial count
+            dsr_penalty, dsr_info = self._global_dsr_tracker.compute_penalty(
+                observed_sharpe=sharpe,
+                n_returns=n_returns,
+                skewness=skewness,
+                kurtosis=kurtosis,
+            )
+
+            old_dsr = metrics.get('dsr_penalty', 1.0)
+
+            # Only update if the new penalty is different from the worker's value
+            if abs(old_dsr - dsr_penalty) > 1e-6:
+                # Reverse old worker penalty, apply correct global penalty
+                if old_dsr > 1e-9 and ind.fitness is not None:
+                    ind.fitness = ind.fitness / old_dsr * dsr_penalty
+                    if ind.raw_fitness is not None:
+                        ind.raw_fitness = ind.raw_fitness / old_dsr * dsr_penalty
+
+            # Always store the authoritative values
+            metrics['dsr'] = dsr_info.get('dsr', float('nan'))
+            metrics['dsr_penalty'] = dsr_info.get('dsr_penalty', 1.0)
+            metrics['dsr_skipped'] = dsr_info.get('dsr_skipped', False)
+            metrics['dsr_n_trials'] = self._global_dsr_tracker.n_trials
 
     def _evaluate_population_parallel(self, unevaluated: list):
         """
@@ -1204,9 +1276,14 @@ class GeneticAlgorithm:
             gene_copy = individual.strategy_gene.copy()
             gene_copy.generation = self.current_generation + 1
             elite_copy = Individual(strategy_gene=gene_copy)
-            # Carry over fitness and metrics to avoid re-evaluation
-            elite_copy.raw_fitness = individual.raw_fitness
-            elite_copy.fitness = individual.fitness
+            # Carry over fitness and metrics to avoid re-evaluation.
+            # If holdout monitoring penalized raw_fitness, restore the
+            # pre-penalty value so that fitness sharing in the next gen
+            # starts from the un-penalized base — otherwise holdout
+            # penalties compound across generations.
+            pre_holdout = getattr(individual, '_pre_holdout_raw_fitness', None)
+            elite_copy.raw_fitness = pre_holdout if pre_holdout is not None else individual.raw_fitness
+            elite_copy.fitness = elite_copy.raw_fitness  # will be re-shared anyway
             elite_copy.metrics = individual.metrics.copy() if individual.metrics else {}
             elite_copy.evaluated = True
             # Enforce min_entry_conditions on elite copies
@@ -1235,6 +1312,7 @@ class GeneticAlgorithm:
                     elite_list, parsimony_config, self.config,
                     num_workers=num_workers,
                     backtest_timeout=bt_timeout,
+                    evaluator=self.parallel_evaluator,
                 )
             else:
                 # Sequential fallback
@@ -1536,6 +1614,10 @@ class GeneticAlgorithm:
             # Step 1b: Post-hoc walk-forward validation on elites (when parallel + WF)
             self._post_hoc_walk_forward_validation(population)
             
+            # Step 1c: Recompute DSR penalties with global trial count
+            # (worker processes have isolated DSRTrackers with too few trials)
+            self._apply_global_dsr_penalties(population)
+            
             # Step 2: Apply ranking based on mode
             distance_matrix = None
             
@@ -1649,6 +1731,12 @@ class GeneticAlgorithm:
                 self.monitor.on_error(f"Holdout monitoring failed: {e}")
             self.diagnostics.end_phase('holdout')
             self.monitor.on_phase_end('holdout', self.diagnostics.timing._phases.get('holdout', 0.0))
+            
+            # ── BUG-1 FIX: Refresh stats after holdout monitoring ──
+            # Holdout monitoring may modify individual fitness values (via penalty).
+            # Recompute stats so that CSV and dashboard reflect post-penalty values.
+            stats = population.get_stats(distance_matrix=distance_matrix)
+            self.generation_stats[-1] = stats  # Replace pre-holdout entry
             
             # Record generation diagnostics (CSV row + timing)
             # Compute new-feature metrics for CSV tracking
