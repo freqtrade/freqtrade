@@ -372,8 +372,10 @@ class FitnessEvaluator:
                 train_trade_credit = 1.0
                 if train_result.total_trades == 0:
                     consecutive_zero_trade += 1
-                    logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Zero training trades. "
-                                 f"Skipping window. ({consecutive_zero_trade} consecutive)")
+                    # Rate-limit zero-trade warnings (only log first 3 per evaluation)
+                    if consecutive_zero_trade <= 3:
+                        logger.warning(f"Window {window.window_index + 1}/{len(windows)}: Zero training trades. "
+                                     f"Skipping window. ({consecutive_zero_trade} consecutive)")
                     failed_windows += 1
                     if consecutive_zero_trade >= max_consecutive_zero:
                         logger.warning(f"Early exit: {consecutive_zero_trade} consecutive zero-trade windows. "

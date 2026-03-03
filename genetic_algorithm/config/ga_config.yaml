@@ -28,6 +28,9 @@ genetic_algorithm:
   # Mutation rate - probability of mutating an individual
   # Higher = more exploration, Lower = more exploitation
   mutation_rate: 0.20
+
+  # Hard cap for adaptive mutation rate (prevents random-search behavior)
+  max_mutation_rate: 0.35
   
   # Crossover rate - probability of crossing over two parents
   crossover_rate: 0.75
@@ -401,10 +404,14 @@ indicators:
     - "PSAR"
     # Volume-based indicators
     - "CMF"
-    # Best candlestick patterns (most reliable, reduced set)
+    # Best candlestick patterns (most reliable)
     - "CDL_ENGULFING"
     - "CDL_HAMMER"
     - "CDL_DOJI"
+    - "CDL_MORNINGSTAR"
+    - "CDL_EVENINGSTAR"
+    - "CDL_SHOOTINGSTAR"
+    - "CDL_HARAMI"
   
   # Maximum indicators per strategy (lower = faster, simpler strategies)
   max_per_strategy: 4

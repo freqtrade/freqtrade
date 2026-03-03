@@ -631,8 +631,49 @@ class {strategy_name}(IStrategy):
         return dataframe
 '''
         
+        # Pre-flight compile check — catch syntax errors before backtest submission
+        try:
+            compile(code, f"<GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}>", "exec")
+        except SyntaxError as e:
+            logger.error(
+                "Generated strategy code has syntax error at line %d: %s (gen=%d, ind=%d)",
+                e.lineno or 0, e.msg, strategy_gene.generation, strategy_gene.individual_id,
+            )
+            # Return a minimal valid strategy so the individual gets zero fitness
+            # instead of crashing the evaluator
+            code = self._generate_fallback_strategy(strategy_gene)
+        
         return code
     
+    def _generate_fallback_strategy(self, strategy_gene: StrategyGene) -> str:
+        """Return a syntactically valid but non-trading strategy (produces zero trades → zero fitness)."""
+        name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
+        return f'''"""
+Auto-generated FALLBACK strategy (original had syntax error)
+Generation: {strategy_gene.generation}  Individual: {strategy_gene.individual_id}
+"""
+from freqtrade.strategy import IStrategy
+from pandas import DataFrame
+
+class {name}(IStrategy):
+    INTERFACE_VERSION = 3
+    timeframe = '{strategy_gene.timeframe}'
+    stoploss = -0.99
+    minimal_roi = {{"0": 100}}
+    max_open_trades = 0
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        return dataframe
+
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe["enter_long"] = 0
+        return dataframe
+
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe["exit_long"] = 0
+        return dataframe
+'''
+
     def _generate_informative_pairs_code(self, strategy_gene: StrategyGene) -> str:
         """Generate the informative_pairs() return value."""
         inf_indicators = strategy_gene.get_informative_indicators()
@@ -1152,6 +1193,13 @@ class {strategy_name}(IStrategy):
                 break
             elif ind.type == indicator_type and not target_indicator:
                 target_indicator = ind
+        
+        # If we found the target indicator, use its canonical type.
+        # This handles instance_ids that embed a timeframe component
+        # (e.g., 'EMA_1h_0' → parsed as indicator_type='EMA_1h', but
+        # the actual type is 'EMA').
+        if target_indicator:
+            indicator_type = target_indicator.type
         
         # Determine TF suffix for informative indicators
         tf_suffix = ""

@@ -131,3 +131,9 @@ benchmark_*.txt
 benchmark_*.json
 evolution_*.txt
 tmp*.yaml
+
+# Web frontend
+genetic_algorithm/web/frontend/node_modules/
+genetic_algorithm/web/frontend/dist/
+genetic_algorithm/web/frontend/.env.local
+genetic_algorithm/web/frontend/.env.*.local

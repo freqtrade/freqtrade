@@ -1,8 +1,9 @@
 # Genetic Algorithm Trading System — Roadmap
 
 **Created:** 2026-03-01  
-**Status:** Foundation laid. Core GA engine is stable and runs end-to-end.  
-**Last validated run:** 9 gens, 0 eval failures, convergence early-stop, 410/411 tests passing.
+**Updated:** 2026-03-01  
+**Status:** Web dashboard implemented (backend + frontend). Core GA engine stable. Branch 3 quick wins done.  
+**Last validated run:** 229/229 GA tests passing.
 
 ---
 
@@ -30,35 +31,35 @@ The GA engine is **production-stable for iteration**. It can:
 
 **Goal:** Real-time visual monitoring, parameter exploration, and live evolution steering.
 
-### Phase 1 — Read-Only Dashboard
-- [ ] **Web server skeleton** — FastAPI/Flask backend serving a React/Vue frontend
-- [ ] **WebSocket real-time feed** — Push generation stats, fitness curves, diversity metrics as they happen
-- [ ] **Fitness evolution chart** — Line chart of best/avg/worst fitness per generation
-- [ ] **Population overview** — Scatter plot of individuals (fitness vs complexity, or 2D PCA)
-- [ ] **Strategy inspector** — Click on a strategy to see its gene (indicators, conditions, parameters)
-- [ ] **Hall of Fame viewer** — Browse and compare top strategies across runs
-- [ ] **Log viewer** — Streaming log output with severity filtering
-- [ ] **Run history** — List past runs with summary stats, compare runs side-by-side
+### Phase 1 — Read-Only Dashboard ✅
+- [x] **Web server skeleton** — FastAPI backend + React/TypeScript/Vite frontend
+- [x] **WebSocket real-time feed** — EventBus → SubprocessEventRelay → async Queue → WS endpoint
+- [x] **Fitness evolution chart** — Recharts area/line chart of best/avg/worst fitness per generation
+- [x] **Population overview** — Scatter plot of individuals (fitness vs complexity)
+- [x] **Strategy inspector** — Gene tree visualization (indicators, conditions, parameters)
+- [x] **Hall of Fame viewer** — Browse top strategies with metrics table
+- [x] **Log viewer** — Event stream with severity filtering (WS-based)
+- [x] **Run history** — List past runs with summary stats, run detail pages
 
-### Phase 2 — Parameter Exploration
-- [ ] **Config editor** — Edit `ga_config.yaml` through the UI with validation
+### Phase 2 — Parameter Exploration (partial)
+- [x] **Config editor** — Config list/load via REST API + frontend page
 - [ ] **Parameter impact visualization** — Show how fitness weights, mutation rates, etc. affect outcomes
 - [ ] **Indicator analysis** — Which indicators appear most in top strategies? Feature importance heatmap
 - [ ] **Walk-forward window inspector** — Per-window train/val breakdown, identify problematic windows
 - [ ] **Overfitting dashboard** — Holdout degradation, Monte Carlo robustness, composite score gauges
 
-### Phase 3 — Live Steering & State Management
+### Phase 3 — Live Steering & State Management (partial)
 - [ ] **Checkpoint save/load** — Save full evolutionary state (population, stats, RNG state) on demand
 - [ ] **Graceful interrupt** — Signal handler to snapshot state before shutdown
 - [ ] **Resume from checkpoint** — Start evolution from any saved state
 - [ ] **Live parameter adjustment** — Change mutation rate, crossover rate, population size mid-run
-- [ ] **Manual individual injection** — Add hand-crafted strategies to the population
-- [ ] **Pause/resume evolution** — Pause, inspect, modify, resume
+- [x] **Manual individual injection** — API endpoint + mp.Queue → evolution loop drain
+- [x] **Pause/resume evolution** — mp.Event flags + RunManager API
 - [ ] **Kill/restart individual evaluations** — Cancel stuck backtests
 
-### Foundation needed now (before branch starts):
-- [ ] Expose evolution engine state via a clean API (not just logging)
-- [ ] Decouple evolution loop from console output — emit structured events
+### Foundation (completed):
+- [x] Expose evolution engine state via a clean API (EventBus + REST + WS)
+- [x] Decouple evolution loop from console output — WebSocketMonitor + EventBus structured events
 - [ ] Ensure checkpoint serialization captures ALL state (best_fitness_ever, no_improvement_count, feature_tracker, etc.)
 
 ---
@@ -105,18 +106,18 @@ The GA engine is **production-stable for iteration**. It can:
 **Priority items to address across branches.**
 
 ### Pre-existing Issues
-- [ ] **Fix `test_code_generation_informative_condition_suffix`** — Multi-TF condition suffix test (1 failing test)
-- [ ] **Strategy code validation** — Pre-flight `compile()` check before submitting for backtest (some generated strategies produce invalid Python)
-- [ ] **CDL indicator availability mismatch** — `CDL_MORNINGSTAR`/`CDL_EVENINGSTAR` have param configs but are NOT in the `available` list in `ga_config.yaml`; can appear via HOF injection
-- [ ] **Stale checkpoint data** — `checkpoints_feature_test/` contains CDL types with cascading `_0_0_0` suffixes. Won't crash (stripped at load time) but should be cleaned or regenerated
-- [ ] **Config: set `max_mutation_rate` explicitly** — Currently defaults to 0.5 with info log; should be explicit in `ga_config.yaml`
-- [ ] **Clean up `tmpum08mhsb.yaml`** — Stale smoke-test config in repo root
+- [x] **Fix `test_code_generation_informative_condition_suffix`** — Root cause: `assign_instance_ids()` creates `EMA_1h_0` instance IDs, `rsplit('_',1)` misparses as type `EMA_1h`. Fixed by using `target_indicator.type` after match.
+- [x] **Strategy code validation** — Pre-flight `compile()` check added to `generate_strategy_code()`. Falls back to zero-trade strategy on syntax error.
+- [x] **CDL indicator availability mismatch** — Added `CDL_MORNINGSTAR`, `CDL_EVENINGSTAR`, `CDL_SHOOTINGSTAR`, `CDL_HARAMI` to `available` list in `ga_config.yaml`
+- [x] **Stale checkpoint data** — Removed `checkpoints_feature_test/` directory
+- [x] **Config: set `max_mutation_rate` explicitly** — Set to `0.35` in `ga_config.yaml`
+- [x] **Clean up `tmpum08mhsb.yaml`** — Already removed (not present)
 
 ### Code Improvements
-- [ ] **Ensure `ga_generated` directory auto-creation** — Log warning when missing
-- [ ] **Rate-limit zero-trade warnings** — Avoid log spam from walk-forward windows with no trades
+- [x] **Ensure `ga_generated` directory auto-creation** — Already handled by `DirectBacktester.__init__` (`mkdir(parents=True, exist_ok=True)`)
+- [x] **Rate-limit zero-trade warnings** — Only first 3 consecutive warnings logged per evaluation
 - [ ] **Add type hints** — Core modules (evolution.py, crossover.py, mutation.py) lack some type annotations
-- [ ] **Structured logging** — Emit JSON-structured events alongside human-readable logs (needed for web dashboard)
+- [x] **Structured logging** — EventBus provides structured events; WebSocketMonitor bridges to WS clients
 - [ ] **Test coverage** — Add tests for: `_enforce_max_indicators`, holdout convergence fix, parsimony ID restore
 
 ---
@@ -148,10 +149,10 @@ The GA engine is **production-stable for iteration**. It can:
 
 ## Priority Order
 
-1. **Branch 3 quick wins** — Fix the remaining test, add strategy code validation, clean up config (1-2 hours)
-2. **Branch 1 Phase 1** — Read-only dashboard with WebSocket streaming (1-2 days)
+1. ~~**Branch 3 quick wins**~~ ✅ Done
+2. ~~**Branch 1 Phase 1**~~ ✅ Done (full React + FastAPI dashboard)
 3. **Branch 2 Phase 1** — Regime detection improvements (1-2 days)
-4. **Branch 1 Phase 2** — Parameter exploration UI (1-2 days)
+4. **Branch 1 Phase 2** — Parameter exploration UI polish (1-2 days)
 5. **Branch 2 Phase 2** — Anti-overfitting mechanisms (2-3 days)
-6. **Branch 1 Phase 3** — Live steering (2-3 days, depends on solid checkpoint system)
+6. **Branch 1 Phase 3** — Checkpoint save/load, live parameter adjustment (2-3 days)
 7. **Branch 2 Phase 3** — Fitness function evolution (2-3 days)

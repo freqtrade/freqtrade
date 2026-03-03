@@ -747,6 +747,16 @@ class DirectBacktester:
                     
                     # Parse results from the strategy results
                     strategy_results = backtesting.results['strategy'].get(strategy_name, {})
+                    
+                    # Fallback: if the expected key is missing, use the first available strategy key
+                    if not strategy_results and backtesting.results['strategy']:
+                        available_keys = list(backtesting.results['strategy'].keys())
+                        logger.warning(
+                            f"Strategy key '{strategy_name}' not found in results. "
+                            f"Available keys: {available_keys}. Using first key."
+                        )
+                        strategy_results = backtesting.results['strategy'][available_keys[0]]
+                    
                     logger.debug(f"Strategy results keys: {strategy_results.keys() if strategy_results else 'None'}")
                     
                     if not strategy_results:

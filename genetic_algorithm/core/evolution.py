@@ -217,6 +217,13 @@ class GeneticAlgorithm:
         self.no_improvement_count = 0
         self.best_fitness_ever = 0.0
         self._new_best_this_gen = False
+
+        # External control hooks (set by web RunManager when run via dashboard)
+        self._web_stop_event = None    # threading/mp.Event — checked each generation
+        self._web_pause_event = None   # threading/mp.Event — blocks when set
+        self._web_injection_queue = None  # queue.Queue — drained each generation
+        self._web_run_id: Optional[str] = None
+        self._web_monitor = None       # WebSocketMonitor reference
         
         # Feature importance tracking
         self.feature_tracker = FeatureImportanceTracker()
@@ -601,7 +608,64 @@ class GeneticAlgorithm:
             self._evaluate_population_parallel(unevaluated)
         else:
             self._evaluate_population_sequential(unevaluated)
-    
+
+    # ── External-control helpers (web dashboard) ────────────────
+
+    def _drain_injection_queue(self, population: 'Population', gen: int):
+        """
+        Drain the injection queue and add any injected strategies to the population.
+
+        Called at the start of each generation when the web injection queue is set.
+        Handles both strategy gene dicts and command sentinels (e.g. checkpoint requests).
+        """
+        import queue as _queue_mod
+        injected = 0
+        while True:
+            try:
+                item = self._web_injection_queue.get_nowait()
+            except (_queue_mod.Empty, Exception):
+                break
+
+            # Handle command sentinels
+            if isinstance(item, dict) and item.get("_command") == "checkpoint":
+                self.logger.info("[WEB] Checkpoint requested via injection queue")
+                self.save_checkpoint(population, gen)
+                continue
+
+            # Treat as strategy gene dict
+            try:
+                from genetic_algorithm.core.strategy_gene import StrategyGene
+                gene = StrategyGene.from_dict(item)
+                gene.generation = gen
+                gene.individual_id = self.population_size + injected
+                individual = Individual(strategy_gene=gene)
+                population.add_individual(individual)
+                injected += 1
+                self.logger.info(f"[WEB] Injected strategy {individual.id} into population")
+            except Exception as e:
+                self.logger.warning(f"[WEB] Failed to inject strategy: {e}")
+
+        if injected:
+            self.logger.info(f"[WEB] Injected {injected} strategies this generation")
+
+    def get_state_snapshot(self) -> dict:
+        """
+        Return a lightweight snapshot of current evolution state.
+
+        Used by the web dashboard for real-time status without deep-copying
+        the entire population.
+        """
+        return {
+            "current_generation": self.current_generation,
+            "total_generations": self.generations,
+            "best_fitness_ever": self.best_fitness_ever,
+            "no_improvement_count": self.no_improvement_count,
+            "mutation_rate": self.mutation_rate,
+            "best_individual_id": self.best_individual.id if self.best_individual else None,
+            "best_profit": self.best_individual.metrics.get("profit") if self.best_individual and self.best_individual.metrics else None,
+            "generation_stats_count": len(self.generation_stats),
+        }
+
     def _post_hoc_walk_forward_validation(self, population: 'Population'):
         """
         Run walk-forward validation on elite candidates after parallel evaluation.
@@ -1423,6 +1487,31 @@ class GeneticAlgorithm:
 
         for gen in range(start_generation, self.generations):
             self.current_generation = gen
+
+            # ── External control: stop check ──
+            if self._web_stop_event and self._web_stop_event.is_set():
+                self.logger.info("[WEB] Stop signal received — saving checkpoint and exiting")
+                self.save_checkpoint(population, max(gen - 1, 0))
+                break
+
+            # ── External control: pause check ──
+            if self._web_pause_event and self._web_pause_event.is_set():
+                self.logger.info("[WEB] Paused — waiting for resume signal...")
+                while self._web_pause_event.is_set():
+                    if self._web_stop_event and self._web_stop_event.is_set():
+                        break
+                    import time as _time
+                    _time.sleep(0.5)
+                self.logger.info("[WEB] Resumed")
+                # Re-check stop after resume
+                if self._web_stop_event and self._web_stop_event.is_set():
+                    self.save_checkpoint(population, max(gen - 1, 0))
+                    break
+
+            # ── External control: strategy injection ──
+            if self._web_injection_queue:
+                self._drain_injection_queue(population, gen)
+
             self.logger.info("")
             self.logger.info(f"{'─'*70}")
             self.logger.info(f"GENERATION {gen + 1}/{self.generations}")
@@ -1576,6 +1665,15 @@ class GeneticAlgorithm:
             
             # Update terminal monitor with generation results
             gen_timing = self.diagnostics.timing.history[-1] if self.diagnostics.timing.history else None
+            # Store population snapshot BEFORE on_generation_end so it's
+            # available when _persist_generation_snapshot runs inside the callback
+            if self._web_monitor and hasattr(self._web_monitor, 'store_population_snapshot'):
+                try:
+                    pop_dicts = [ind.to_dict() for ind in population.individuals]
+                    self._web_monitor.store_population_snapshot(pop_dicts)
+                except Exception as _snap_err:
+                    self.logger.debug(f"Population snapshot failed: {_snap_err}")
+
             self.monitor.on_generation_end(
                 gen, stats, gen_timing, self.best_individual, extras=_extras
             )
