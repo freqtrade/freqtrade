@@ -607,7 +607,8 @@ class FitnessEvaluator:
         # Average most metrics
         avg_metrics = {}
         numeric_keys = ['profit', 'sharpe_ratio', 'sortino_ratio', 'win_rate', 'num_trades', 
-                       'profit_factor', 'complexity', 'val_trades', 'train_trades']
+                       'profit_factor', 'complexity', 'val_trades', 'train_trades',
+                       'dsr_penalty', 'dsr']
         
         for key in numeric_keys:
             values = [m.get(key, 0) for m in window_metrics if key in m]
