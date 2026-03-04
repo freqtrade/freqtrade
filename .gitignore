@@ -125,6 +125,7 @@ genetic_algorithm/data/checkpoints/
 genetic_algorithm/data/checkpoints_feature_test/
 genetic_algorithm/data/hall_of_fame/
 genetic_algorithm/data/hall_of_fame_feature_test/
+genetic_algorithm/data/runs/
 genetic_algorithm/benchmark_results/
 genetic_algorithm/genetic_algorithm/
 benchmark_*.txt

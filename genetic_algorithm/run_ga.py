@@ -320,6 +320,15 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict,
             if train_val_gap is not None:
                 f.write(f"  WF Train-Val Gap: {train_val_gap:.1%}\n")
             
+            # CPCV / PBO metrics (if available)
+            cpcv_pbo = metrics.get('cpcv_pbo')
+            if cpcv_pbo is not None:
+                f.write(f"  CPCV PBO: {cpcv_pbo:.3f}\n")
+                f.write(f"  CPCV Penalty: {metrics.get('cpcv_penalty', 1.0):.3f}\n")
+                cpcv_mean_oos = metrics.get('cpcv_mean_oos')
+                if cpcv_mean_oos is not None:
+                    f.write(f"  CPCV Mean OOS: {cpcv_mean_oos:.3f}\n")
+            
             # Overfitting classification
             assessment = classify_overfitting(
                 metrics=metrics, fitness=individual.fitness,
@@ -818,6 +827,104 @@ def main():
             print("⚠️  Holdout validation skipped: no timerange configured")
             print()
     
+    # === CPCV / PBO Validation ===
+    cpcv_config = config.get('cpcv', {})
+    cpcv_enabled = cpcv_config.get('enabled', False)
+
+    if cpcv_enabled and top_strategies:
+        from genetic_algorithm.evaluation.cpcv import CPCVValidator
+        from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
+        import numpy as np
+
+        print("=" * 80)
+        print("COMBINATORIAL PURGED CROSS-VALIDATION (CPCV)")
+        print("=" * 80)
+        n_groups = cpcv_config.get('n_groups', 6)
+        pbo_threshold = cpcv_config.get('pbo_threshold', 0.5)
+        print(f"  Groups: {n_groups}, PBO threshold: {pbo_threshold}")
+        print(f"  Evaluating top {len(top_strategies)} strategies...")
+        print()
+
+        cpcv_validator = CPCVValidator(config)
+        cpcv_backtester = DirectBacktester(config)
+
+        # Compute the time blocks for splitting backtest results
+        timerange = config.get('backtesting', {}).get('timerange', '')
+        strategy_block_results = {}
+
+        for rank, individual in enumerate(top_strategies, 1):
+            gene = individual.strategy_gene
+            strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
+            strategy_code = ga.strategy_generator.generate_strategy_code(gene)
+            strategy_id = f"rank_{rank}"
+
+            # Parse timerange to create block boundaries
+            if timerange and '-' in timerange:
+                from datetime import datetime as dt, timedelta
+                start_str, end_str = timerange.split('-')
+                start_date = dt.strptime(start_str, '%Y%m%d')
+                end_date = dt.strptime(end_str, '%Y%m%d')
+                total_days = (end_date - start_date).days
+                block_days = total_days // n_groups
+
+                block_profits = []
+                for block_idx in range(n_groups):
+                    block_start = start_date + timedelta(days=block_idx * block_days)
+                    block_end = (start_date + timedelta(days=(block_idx + 1) * block_days)
+                                 if block_idx < n_groups - 1 else end_date)
+                    block_tr = f"{block_start.strftime('%Y%m%d')}-{block_end.strftime('%Y%m%d')}"
+
+                    # Run backtest on this block
+                    bt_result = cpcv_backtester.backtest_strategy(
+                        strategy_code, strategy_name,
+                        timerange_override=block_tr,
+                        strategy_max_open_trades=gene.max_open_trades,
+                    )
+                    block_profit = bt_result.metrics.get('profit', 0.0) if bt_result.success else 0.0
+                    block_profits.append(block_profit)
+
+                strategy_block_results[strategy_id] = np.array(block_profits)
+                logger.info(f"  Rank {rank}: block profits = {[f'{p:.2f}' for p in block_profits]}")
+            else:
+                logger.warning(f"  Rank {rank}: skipped — no timerange configured")
+
+        # Run CPCV validation
+        if len(strategy_block_results) >= 2:
+            cpcv_result = cpcv_validator.validate_strategies(
+                strategy_block_results, timerange=timerange,
+            )
+
+            pbo = cpcv_result.get('pbo', 0.0)
+            penalty = cpcv_result.get('penalty', 1.0)
+            skipped = cpcv_result.get('skipped', False)
+
+            if not skipped:
+                status = "✓" if pbo < pbo_threshold else "⚠️"
+                print(f"  {status} PBO = {pbo:.3f} (threshold: {pbo_threshold})")
+                print(f"      Penalty multiplier: {penalty:.3f}")
+                print(f"      Paths evaluated: {cpcv_result.get('n_paths', 0)}")
+
+                per_strategy_oos = cpcv_result.get('per_strategy_oos', {})
+                for sid, oos_info in per_strategy_oos.items():
+                    print(f"      {sid}: mean_oos={oos_info['mean_oos']:.3f}, "
+                          f"std_oos={oos_info['std_oos']:.3f}")
+
+                # Store PBO in individual metrics
+                for rank, individual in enumerate(top_strategies, 1):
+                    individual.metrics['cpcv_pbo'] = pbo
+                    individual.metrics['cpcv_penalty'] = penalty
+                    oos_key = f"rank_{rank}"
+                    if oos_key in per_strategy_oos:
+                        individual.metrics['cpcv_mean_oos'] = per_strategy_oos[oos_key]['mean_oos']
+            else:
+                print(f"  ⚠️  CPCV skipped: {cpcv_result.get('reason', 'unknown')}")
+        else:
+            print("  ⚠️  CPCV skipped: need >= 2 strategies with block results")
+
+        print()
+        print("  Legend: ✓ = PBO below threshold (low overfit risk), ⚠️ = PBO above threshold")
+        print()
+
     # === Monte-Carlo Robustness Validation ===
     mc_config = config.get('monte_carlo', {})
     mc_enabled = mc_config.get('enabled', False)

@@ -112,7 +112,8 @@ class DataService:
         """
         Find a strategy across all generation snapshots for *run_id*.
 
-        *strategy_id* has the format ``Gen{N}_Ind{M}``.
+        *strategy_id* typically has the format ``Gen{N}_Ind{M}`` but may also
+        be a SHA-256 based HoF entry_id.
         Falls back to Hall of Fame if the run directory doesn't exist
         (e.g. HoF entries that reference a timestamp-based run_id).
         """
@@ -129,13 +130,14 @@ class DataService:
                 if result:
                     return result
 
-            # Fallback: scan all generation files
+            # Fallback: scan all generation files (handles non-standard IDs)
             for path in sorted(run_dir.glob("gen_*.json")):
                 result = self._find_in_gen_file(path, strategy_id)
                 if result:
                     return result
 
-        # Also check HoF (works even when run_dir doesn't exist)
+        # Also check HoF (works even when run_dir doesn't exist,
+        # and handles SHA-256 entry_id lookups)
         return self._search_hof(run_id, strategy_id)
 
     def _find_in_gen_file(self, path, strategy_id: str) -> Optional[StrategyDetail]:
@@ -264,12 +266,26 @@ class DataService:
             logger.exception("Failed to load Hall of Fame")
             return []
 
+    @staticmethod
+    def _get_metric(metrics: Dict[str, Any], *keys: str, default: Any = 0) -> Any:
+        """Try multiple metric keys in order, return first non-None match."""
+        for key in keys:
+            val = metrics.get(key)
+            if val is not None:
+                return val
+        return default
+
     def _flatten_hof_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         """Transform a raw HoF entry into the flat shape the frontend expects."""
         gene = entry.get("strategy_gene", entry.get("strategy_gene_dict", {}))
         metrics = entry.get("metrics", {})
-        gen_num = gene.get("generation", 0)
-        ind_id = gene.get("individual_id", 0)
+
+        # Use entry-level id first, then fall back to generation/individual
+        entry_id = entry.get("id", "")
+        if not entry_id:
+            gen_num = entry.get("generation_found", gene.get("generation", 0))
+            ind_id = entry.get("individual_id", gene.get("individual_id", 0))
+            entry_id = f"Gen{gen_num}_Ind{ind_id}"
 
         # Build added_at from run_timestamp
         ts = entry.get("run_timestamp", 0)
@@ -279,20 +295,24 @@ class DataService:
         except Exception:
             added_at = ""
 
+        # Normalize metric keys — backends may use different names
+        _m = self._get_metric
         return {
-            "id": f"Gen{gen_num}_Ind{ind_id}",
+            "id": entry_id,
             "fitness": entry.get("fitness", 0),
-            "profit": metrics.get("profit", 0),
-            "sharpe_ratio": metrics.get("sharpe_ratio", 0),
-            "num_trades": metrics.get("num_trades", 0),
-            "max_drawdown": metrics.get("max_drawdown", 0),
-            "win_rate": metrics.get("win_rate", 0),
-            "complexity": metrics.get("complexity", 0),
+            "profit": _m(metrics, "profit", "total_profit_pct", "profit_total"),
+            "sharpe_ratio": _m(metrics, "sharpe_ratio", "sharpe", "Sharpe"),
+            "num_trades": _m(metrics, "num_trades", "trade_count", "total_trades"),
+            "max_drawdown": _m(metrics, "max_drawdown", "drawdown", "max_drawdown_pct"),
+            "win_rate": _m(metrics, "win_rate", "win_ratio"),
+            "complexity": _m(metrics, "complexity", "strategy_complexity"),
+            "sortino_ratio": _m(metrics, "sortino_ratio", "sortino"),
+            "profit_factor": _m(metrics, "profit_factor"),
             "timeframe": gene.get("timeframe", "5m"),
             "added_at": added_at,
             "config_name": entry.get("config_name", ""),
             "run_id": entry.get("run_id", ""),
-            "generation_found": entry.get("generation_found", gen_num),
+            "generation_found": entry.get("generation_found", 0),
             # Keep the full strategy_gene for injection
             "strategy_gene": gene,
         }
@@ -580,28 +600,38 @@ class DataService:
     def _search_hof(self, run_id: str, strategy_id: str) -> Optional[StrategyDetail]:
         """Search for a strategy in the Hall of Fame.
 
-        Matches by *strategy_id* and *run_id*.  If no exact run_id match is
-        found, falls back to matching by strategy_id alone so that legacy
-        HoF entries with timestamp-based run_ids are still accessible.
+        Matches by *strategy_id* against:
+          1. The entry's unique ``id`` field (SHA-256 based entry_id)
+          2. A fallback reconstructed Gen/Ind pattern
+
+        Prefers an exact run_id match.  If no exact match is found, returns
+        the first strategy_id match (for legacy HoF entries).
         """
         entries = self.get_hall_of_fame()
         fallback = None
         for entry in entries:
+            # Direct match on the flattened "id" field (unique entry_id)
+            entry_id = entry.get("id", "")
             gene = entry.get("strategy_gene_dict", entry.get("strategy_gene", {}))
             gen = gene.get("generation", 0)
             ind_id = gene.get("individual_id", 0)
-            hof_id = f"Gen{gen}_Ind{ind_id}"
-            if hof_id == strategy_id:
-                detail = self._build_strategy_detail(run_id, {
-                    "id": hof_id,
-                    "strategy_gene": gene,
-                    "fitness": entry.get("fitness"),
-                    "metrics": entry.get("metrics", {}),
-                })
-                # Prefer exact run_id match
-                if entry.get("run_id") == run_id:
-                    return detail
-                # Keep first match as fallback
-                if fallback is None:
-                    fallback = detail
+            legacy_id = f"Gen{gen}_Ind{ind_id}"
+
+            matched = (entry_id == strategy_id) or (legacy_id == strategy_id)
+            if not matched:
+                continue
+
+            detail = self._build_strategy_detail(run_id, {
+                "id": entry_id or legacy_id,
+                "strategy_gene": gene,
+                "fitness": entry.get("fitness"),
+                "raw_fitness": entry.get("raw_fitness"),
+                "metrics": entry.get("metrics", {}),
+            })
+            # Prefer exact run_id match
+            if entry.get("run_id") == run_id:
+                return detail
+            # Keep first match as fallback
+            if fallback is None:
+                fallback = detail
         return fallback

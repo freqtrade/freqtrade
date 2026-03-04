@@ -110,7 +110,7 @@ export function RunComparePage() {
       const row: Record<string, number | null> = { generation: g + 1 };
       for (const d of loaded) {
         const stats = d.detail!.generation_stats;
-        const s = stats.find((ss) => ss.generation === g + 1) ?? stats[g];
+        const s = stats.find((ss) => ss.generation === g) ?? stats[g];
         row[`${d.runId}_best`] = s?.best_fitness ?? null;
         row[`${d.runId}_avg`] = s?.avg_fitness ?? null;
       }

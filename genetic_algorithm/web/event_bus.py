@@ -92,7 +92,10 @@ class EventBus:
     """
 
     def __init__(self) -> None:
-        self._lock = threading.Lock()
+        # RLock (reentrant) because sync callbacks invoked under the lock
+        # may themselves call publish() or subscribe(), which would deadlock
+        # with a plain Lock().
+        self._lock = threading.RLock()
         # event_type → list of sync callbacks
         self._sync_subscribers: Dict[Optional[EventType], List[SyncCallback]] = {}
         # Each async consumer gets its own Queue (filled by publish)

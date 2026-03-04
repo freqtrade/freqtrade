@@ -199,7 +199,7 @@ function RunRow({ run, stats }: { run: RunSummary; stats: GenerationStats[] }) {
 
 function summarizeEventData(data: Record<string, unknown>): string {
   const parts: string[] = [];
-  if ('generation' in data) parts.push(`gen=${data.generation}`);
+  if ('generation' in data) parts.push(`gen=${(data.generation as number) + 1}`);
   if ('best_fitness' in data) parts.push(`fit=${(data.best_fitness as number)?.toFixed(4)}`);
   if ('profit' in data) parts.push(`pnl=${(data.profit as number)?.toFixed(1)}%`);
   if ('phase' in data) parts.push(`${data.phase}`);

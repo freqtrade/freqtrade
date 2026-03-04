@@ -740,3 +740,26 @@ overfit_analysis:
     mc_robustness_overfit: 0.50
     composite_warning: 0.25  # Tightened from 0.35
     composite_overfit: 0.50  # Tightened from 0.60
+
+# === Deflated Sharpe Ratio ===
+# Adjusts fitness for multiple-testing bias: the more strategies you evaluate,
+# the higher the chance of finding a spuriously high Sharpe by luck.
+deflated_sharpe:
+  enabled: true              # Active by default — low overhead
+  penalty_weight: 0.15       # Max fitness reduction from DSR (15%)
+  min_trades: 20             # Minimum trades for reliable DSR estimate
+  significance: 0.05         # p-value threshold for penalty activation
+
+# === Combinatorial Purged Cross-Validation (CPCV) ===
+# Post-evolution validation: splits the backtest period into N blocks,
+# enumerates combinatorial train/test paths, and computes PBO.
+# Expensive — only runs on the top strategies after evolution finishes.
+cpcv:
+  enabled: false             # Opt-in: set true for anti-overfit validation
+  n_groups: 6                # Number of time blocks (N)
+  n_test_groups: 2           # Test set size (S) — paths = C(N, S)
+  purge_pct: 0.01            # % of data to purge at train/test boundaries
+  embargo_pct: 0.01          # % of data to embargo after purge
+  max_paths: 100             # Max combinatorial paths (Monte Carlo subset)
+  pbo_threshold: 0.5         # PBO above this = likely overfit
+  penalty_weight: 0.20       # Max fitness penalty from PBO

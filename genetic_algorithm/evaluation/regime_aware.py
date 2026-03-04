@@ -93,6 +93,11 @@ class RegimeAwareEvaluator:
         # CVaR parameters (for 'cvar' aggregation)
         self.cvar_alpha = self.regime_config.get('cvar_alpha', 0.2)  # Bottom 20%
         
+        # Minimum trades per segment — segments with fewer trades produce noisy
+        # fitness values and are excluded from aggregation to prevent unreliable
+        # scores from dominating (especially under harmonic_mean).
+        self.min_segment_trades = self.regime_config.get('min_segment_trades', 0)
+        
         # Cache for segment-level results: (strategy_hash, segment_id) -> RegimeEvaluationResult
         self._segment_cache: Dict[Tuple[str, str], RegimeEvaluationResult] = {}
         self._cache_hits = 0
@@ -366,6 +371,10 @@ class RegimeAwareEvaluator:
         """
         Aggregate fitness scores and metrics across segments.
         
+        Now uses confidence weighting: segments with higher detection confidence
+        contribute more to the final score. This prevents low-confidence segments
+        (e.g., mixed-regime periods) from having equal influence.
+        
         Args:
             results: List of per-segment evaluation results
             strategy_gene: Strategy being evaluated (for complexity)
@@ -373,16 +382,38 @@ class RegimeAwareEvaluator:
         Returns:
             Tuple of (aggregated_fitness, aggregated_metrics)
         """
-        # Extract successful fitness scores with regime weights
+        # Extract successful fitness scores with regime weights AND confidence
         weighted_scores = []
         regime_scores: Dict[str, List[float]] = {}
+        use_confidence = self.regime_config.get('confidence_weighting', True)
+        skipped_low_trades = 0
         
         for result in results:
-            if result.success and result.fitness > 0:
+            if result.success and result.fitness is not None:
+                # Skip segments with too few trades — their fitness is noise
+                segment_trades = result.metrics.get('num_trades', 0)
+                if self.min_segment_trades > 0 and segment_trades < self.min_segment_trades:
+                    skipped_low_trades += 1
+                    logger.debug(
+                        f"Skipping segment {result.segment.segment_id} "
+                        f"({result.segment.regime.value}): only {segment_trades} trades "
+                        f"(min={self.min_segment_trades})"
+                    )
+                    continue
+                
                 # Apply regime weight
                 regime_type = result.segment.regime.value
-                weight = self.regime_weights.get(regime_type, 1.0)
-                weighted_scores.append((result.fitness, weight))
+                regime_weight = self.regime_weights.get(regime_type, 1.0)
+                
+                # Apply confidence weight: scale from 0.5 (low conf) to 1.0 (high conf)
+                if use_confidence:
+                    confidence = result.segment.confidence
+                    conf_weight = 0.5 + 0.5 * max(0.0, min(1.0, confidence))
+                else:
+                    conf_weight = 1.0
+                
+                combined_weight = regime_weight * conf_weight
+                weighted_scores.append((result.fitness, combined_weight))
                 
                 # Track by regime type
                 if regime_type not in regime_scores:
@@ -390,7 +421,10 @@ class RegimeAwareEvaluator:
                 regime_scores[regime_type].append(result.fitness)
         
         if not weighted_scores:
-            logger.warning("No successful segment evaluations, returning zero fitness")
+            logger.warning(
+                f"No successful segment evaluations (skipped {skipped_low_trades} "
+                f"low-trade segments), returning zero fitness"
+            )
             return 0.0, {
                 'profit': 0.0,
                 'sharpe_ratio': 0.0,
@@ -398,6 +432,7 @@ class RegimeAwareEvaluator:
                 'win_rate': 0.0,
                 'num_trades': 0,
                 'complexity': strategy_gene.calculate_complexity(),
+                'skipped_low_trade_segments': skipped_low_trades,
             }
         
         # Calculate aggregated fitness
@@ -432,6 +467,7 @@ class RegimeAwareEvaluator:
         # Aggregate metrics
         aggregated_metrics = self._aggregate_metrics(results)
         aggregated_metrics['complexity'] = strategy_gene.calculate_complexity()
+        aggregated_metrics['skipped_low_trade_segments'] = skipped_low_trades
         
         return aggregated_fitness, aggregated_metrics
     
@@ -459,14 +495,20 @@ class RegimeAwareEvaluator:
                 'num_trades': 0,
             }
         
-        # Average most metrics
+        # Average most metrics, but sum additive ones like num_trades
         aggregated = {}
         numeric_keys = ['profit', 'sharpe_ratio', 'sortino_ratio', 'profit_factor', 
-                        'win_rate', 'num_trades']
+                        'win_rate']
+        # Additive metrics: these should be summed, not averaged
+        additive_keys = ['num_trades']
         
         for key in numeric_keys:
             values = [r.metrics.get(key, 0) for r in successful_results if key in r.metrics]
             aggregated[key] = sum(values) / len(values) if values else 0.0
+        
+        for key in additive_keys:
+            values = [r.metrics.get(key, 0) for r in successful_results if key in r.metrics]
+            aggregated[key] = sum(values) if values else 0
         
         # Max drawdown: use worst across segments
         drawdowns = [r.metrics.get('max_drawdown', 0) for r in successful_results]
@@ -672,9 +714,7 @@ def _auto_detect_segments(
             logger.warning(f"No data loaded for {benchmark_pair} {timeframe}, no segments created")
             return {}
         
-        # Create detector
-        method = regime_config.get('method', 'sma_adx')
-        detector = RegimeDetector(method=method)
+        # Create detector - support both 'method' and legacy 'detection_method' keys\n        # Default matches RegimeDetector's own default: 'adx_di_hysteresis'\n        method = regime_config.get('method', regime_config.get('detection_method', 'adx_di_hysteresis'))\n        detector = RegimeDetector(method=method)
         
         # Classify periods
         period_days = regime_config.get('period_days', 90)

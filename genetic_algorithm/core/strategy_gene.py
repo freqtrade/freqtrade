@@ -96,6 +96,23 @@ class StrategyGene:
             raise ValueError("Strategy must have at least one indicator")
         if not self.entry_conditions:
             raise ValueError("Strategy must have at least one entry condition")
+        # Enforce ROI monotonicity: values must decrease as time increases
+        self._enforce_roi_monotonicity()
+    
+    def _enforce_roi_monotonicity(self):
+        """Ensure ROI values decrease over time (higher ROI at earlier timepoints)."""
+        if not self.minimal_roi:
+            return
+        # Sort time keys numerically, then enforce descending ROI values
+        sorted_keys = sorted(self.minimal_roi.keys(), key=lambda k: int(k))
+        if len(sorted_keys) < 2:
+            return
+        # Walk from earliest to latest, clamping each to be <= previous
+        for i in range(1, len(sorted_keys)):
+            prev_val = self.minimal_roi[sorted_keys[i - 1]]
+            curr_val = self.minimal_roi[sorted_keys[i]]
+            if curr_val > prev_val:
+                self.minimal_roi[sorted_keys[i]] = prev_val
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert strategy gene to dictionary for storage."""

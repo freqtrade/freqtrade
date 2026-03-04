@@ -216,6 +216,46 @@ class WebSocketMonitor:
             data=summary or {},
         ))
 
+    # ── Checkpoint / logging / error ───────────────────────────────
+
+    def on_checkpoint_saved(self, generation: int, path: str = "") -> None:
+        """Emit checkpoint.saved when the engine actually writes a checkpoint."""
+        self.bus.publish(Event(
+            type=EventType.CHECKPOINT_SAVED,
+            run_id=self.run_id,
+            data={
+                "generation": generation,
+                "path": path,
+                "requested": False,
+            },
+        ))
+
+    def on_log(self, message: str, level: str = "info") -> None:
+        """Emit a log event for the frontend's event feed."""
+        self.bus.publish(Event(
+            type=EventType.LOG,
+            run_id=self.run_id,
+            data={
+                "message": message,
+                "level": level,
+                "generation": self._current_gen,
+            },
+        ))
+
+    def on_error(self, message: str, details: dict | None = None) -> None:
+        """Emit an error event (non-fatal, unlike RUN_ERROR)."""
+        data: Dict[str, Any] = {
+            "message": message,
+            "generation": self._current_gen,
+        }
+        if details:
+            data.update(details)
+        self.bus.publish(Event(
+            type=EventType.ERROR,
+            run_id=self.run_id,
+            data=data,
+        ))
+
     # ── Population snapshot persistence ────────────────────────────
 
     def store_population_snapshot(self, individuals_dicts: List[dict]) -> None:

@@ -471,6 +471,57 @@ class StrategyGenerator:
             logic='AND'
         )
     
+    def _compute_startup_candle_count(self, strategy_gene: StrategyGene) -> int:
+        """Compute startup_candle_count from the maximum indicator lookback period.
+        
+        Accounts for informative timeframe ratios: if a 200-period SMA runs on 4h
+        and the base timeframe is 15m, we need 200 * (240/15) = 3200 base candles.
+        """
+        from genetic_algorithm.core.strategy_gene import timeframe_to_minutes
+        base_minutes = timeframe_to_minutes(strategy_gene.timeframe) or 15
+        max_lookback = 0
+
+        for ind in strategy_gene.indicators:
+            # Determine the raw period for this indicator
+            period = 0
+            params = ind.parameters or {}
+            if ind.type in ('RSI', 'ATR', 'ADX', 'CCI', 'MFI', 'WILLR', 'ROC',
+                            'EMA', 'SMA', 'TEMA', 'KAMA', 'DONCHIAN'):
+                period = params.get('period', 20)
+            elif ind.type == 'MACD':
+                period = params.get('slow_period', 26) + params.get('signal_period', 9)
+            elif ind.type == 'BBANDS':
+                period = params.get('period', 20)
+            elif ind.type == 'STOCH':
+                period = params.get('k_period', 14) + params.get('d_period', 3)
+            elif ind.type == 'SUPERTREND':
+                period = params.get('period', 10)
+            elif ind.type == 'ICHIMOKU':
+                period = max(params.get('tenkan_period', 9),
+                             params.get('kijun_period', 26),
+                             params.get('senkou_b_period', 52)) + params.get('kijun_period', 26)
+            elif ind.type == 'VWAP':
+                period = params.get('period', 20)
+            elif ind.type == 'CMF':
+                period = params.get('period', 20)
+            elif ind.type == 'VROC':
+                period = params.get('period', 12)
+            elif ind.type == 'AROON':
+                period = params.get('period', 14)
+            else:
+                period = max(params.get('period', 0), 5)  # CDL patterns need ~5
+
+            # Scale by timeframe ratio for informative indicators
+            if ind.timeframe:
+                ind_minutes = timeframe_to_minutes(ind.timeframe) or base_minutes
+                tf_ratio = max(1, ind_minutes // base_minutes)
+                period = period * tf_ratio
+
+            max_lookback = max(max_lookback, period)
+
+        # Add a safety buffer (10%) and floor at 30
+        return max(30, int(max_lookback * 1.1) + 5)
+
     def generate_strategy_code(self, strategy_gene: StrategyGene) -> str:
         """
         Convert a StrategyGene to FreqTrade Python code.
@@ -489,6 +540,9 @@ class StrategyGenerator:
         strategy_gene.assign_instance_ids()
         
         strategy_name = f"GAStrategy_Gen{strategy_gene.generation}_Ind{strategy_gene.individual_id}"
+        
+        # Compute startup candle count from indicator lookback periods
+        startup_candle_count = self._compute_startup_candle_count(strategy_gene)
         
         # Separate base and informative indicators
         base_indicators = strategy_gene.get_base_indicators()
@@ -612,7 +666,8 @@ class {strategy_name}(IStrategy):
     stoploss = {strategy_gene.stoploss}
     minimal_roi = {strategy_gene.minimal_roi}
     trailing_stop = {strategy_gene.trailing_stop}{trailing_stop_params}
-    max_open_trades = {strategy_gene.max_open_trades}{can_short_attr}
+    max_open_trades = {strategy_gene.max_open_trades}
+    startup_candle_count = {startup_candle_count}{can_short_attr}
 {informative_pairs_method}
     
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -716,16 +771,29 @@ class {name}(IStrategy):
                                         df_var: str = "informative") -> str:
         """Generate code for a single indicator calculation.
         
+        This is the canonical per-indicator code generator used by both base
+        timeframe and informative timeframe code paths.
+        
         Args:
             ind: Indicator gene to generate code for
             prefix: Indentation prefix  
             df_var: Variable name for the dataframe (e.g. 'informative', 'dataframe')
         """
         d = df_var  # Shorthand for template readability
-        if ind.type == 'RSI':
+        
+        # Normalize CDL types: strip cascading _0 suffixes from stale HOF data
+        _ind_type = ind.type
+        if _ind_type.startswith('CDL_'):
+            from genetic_algorithm.core.strategy_gene import StrategyGene
+            _ind_type = StrategyGene._strip_cdl_suffixes(_ind_type)
+        
+        # === STANDARD TA-LIB INDICATORS ===
+        
+        if _ind_type == 'RSI':
             period = ind.parameters.get('period', 14)
             return f"{prefix}{d}['rsi_{period}'] = ta.RSI({d}, timeperiod={period})"
-        elif ind.type == 'MACD':
+        
+        elif _ind_type == 'MACD':
             fast = ind.parameters.get('fast_period', 12)
             slow = ind.parameters.get('slow_period', 26)
             signal = ind.parameters.get('signal_period', 9)
@@ -733,38 +801,208 @@ class {name}(IStrategy):
                     f"{prefix}{d}['macd'] = macd['macd']\n"
                     f"{prefix}{d}['macdsignal'] = macd['macdsignal']\n"
                     f"{prefix}{d}['macdhist'] = macd['macdhist']")
-        elif ind.type == 'BBANDS':
+        
+        elif _ind_type == 'BBANDS':
             period = ind.parameters.get('period', 20)
             std_dev = ind.parameters.get('std_dev', 2.0)
             return (f"{prefix}bollinger = ta.BBANDS({d}, timeperiod={period}, nbdevup={std_dev}, nbdevdn={std_dev})\n"
                     f"{prefix}{d}['bb_upperband'] = bollinger['upperband']\n"
                     f"{prefix}{d}['bb_middleband'] = bollinger['middleband']\n"
                     f"{prefix}{d}['bb_lowerband'] = bollinger['lowerband']")
-        elif ind.type in ['EMA', 'SMA']:
+        
+        elif _ind_type in ('EMA', 'SMA'):
             period = ind.parameters.get('period', 20)
-            return f"{prefix}{d}['{ind.type.lower()}_{period}'] = ta.{ind.type}({d}, timeperiod={period})"
-        elif ind.type == 'STOCH':
+            return f"{prefix}{d}['{_ind_type.lower()}_{period}'] = ta.{_ind_type}({d}, timeperiod={period})"
+        
+        elif _ind_type == 'STOCH':
             k_period = ind.parameters.get('k_period', 14)
             d_period = ind.parameters.get('d_period', 3)
             return (f"{prefix}stoch = ta.STOCH({d}, fastk_period={k_period}, slowk_period={d_period}, slowd_period={d_period})\n"
                     f"{prefix}{d}['slowk'] = stoch['slowk']\n"
                     f"{prefix}{d}['slowd'] = stoch['slowd']")
-        elif ind.type == 'ATR':
+        
+        elif _ind_type == 'ATR':
             period = ind.parameters.get('period', 14)
             return f"{prefix}{d}['atr_{period}'] = ta.ATR({d}, timeperiod={period})"
-        elif ind.type == 'ADX':
+        
+        elif _ind_type == 'ADX':
             period = ind.parameters.get('period', 14)
             return f"{prefix}{d}['adx_{period}'] = ta.ADX({d}, timeperiod={period})"
-        elif ind.type == 'CCI':
+        
+        elif _ind_type == 'CCI':
             period = ind.parameters.get('period', 20)
             return f"{prefix}{d}['cci_{period}'] = ta.CCI({d}, timeperiod={period})"
-        return f"{prefix}pass  # Unsupported indicator: {ind.type}"
+        
+        elif _ind_type == 'MFI':
+            period = ind.parameters.get('period', 14)
+            return f"{prefix}{d}['mfi_{period}'] = ta.MFI({d}, timeperiod={period})"
+        
+        elif _ind_type == 'OBV':
+            return f"{prefix}{d}['obv'] = ta.OBV({d})"
+        
+        elif _ind_type == 'WILLR':
+            period = ind.parameters.get('period', 14)
+            return f"{prefix}{d}['willr_{period}'] = ta.WILLR({d}, timeperiod={period})"
+        
+        elif _ind_type == 'ROC':
+            period = ind.parameters.get('period', 10)
+            return f"{prefix}{d}['roc_{period}'] = ta.ROC({d}, timeperiod={period})"
+        
+        elif _ind_type == 'TEMA':
+            period = ind.parameters.get('period', 30)
+            return f"{prefix}{d}['tema_{period}'] = ta.TEMA({d}, timeperiod={period})"
+        
+        elif _ind_type == 'KAMA':
+            period = ind.parameters.get('period', 30)
+            return f"{prefix}{d}['kama_{period}'] = ta.KAMA({d}, timeperiod={period})"
+        
+        elif _ind_type == 'AROON':
+            period = ind.parameters.get('period', 14)
+            return (f"{prefix}aroon = ta.AROON({d}, timeperiod={period})\n"
+                    f"{prefix}{d}['aroon_up'] = aroon['aroonup']\n"
+                    f"{prefix}{d}['aroon_down'] = aroon['aroondown']")
+        
+        elif _ind_type == 'PSAR':
+            acceleration = ind.parameters.get('acceleration', 0.02)
+            maximum = ind.parameters.get('maximum', 0.2)
+            return f"{prefix}{d}['psar'] = ta.SAR({d}, acceleration={acceleration}, maximum={maximum})"
+        
+        # === COMPUTED INDICATORS (non-talib) ===
+        
+        elif _ind_type == 'SUPERTREND':
+            period = ind.parameters.get('period', 10)
+            multiplier = ind.parameters.get('multiplier', 3.0)
+            lines = [
+                f"{prefix}# SuperTrend ({period}, {multiplier})",
+                f"{prefix}_hl2 = ({d}['high'] + {d}['low']) / 2",
+                f"{prefix}_atr_st = ta.ATR({d}, timeperiod={period})",
+                f"{prefix}_st_upper = _hl2 + ({multiplier} * _atr_st)",
+                f"{prefix}_st_lower = _hl2 - ({multiplier} * _atr_st)",
+                f"{prefix}_st_dir = pd.Series(1, index={d}.index)",
+                f"{prefix}for i in range(1, len({d})):",
+                f"{prefix}    if _st_lower.iloc[i] > _st_lower.iloc[i-1] or {d}['close'].iloc[i-1] < _st_lower.iloc[i-1]:",
+                f"{prefix}        pass  # keep current lower",
+                f"{prefix}    else:",
+                f"{prefix}        _st_lower.iloc[i] = _st_lower.iloc[i-1]",
+                f"{prefix}    if _st_upper.iloc[i] < _st_upper.iloc[i-1] or {d}['close'].iloc[i-1] > _st_upper.iloc[i-1]:",
+                f"{prefix}        pass  # keep current upper",
+                f"{prefix}    else:",
+                f"{prefix}        _st_upper.iloc[i] = _st_upper.iloc[i-1]",
+                f"{prefix}    prev = _st_dir.iloc[i-1]",
+                f"{prefix}    if prev == 1 and {d}['close'].iloc[i] < _st_lower.iloc[i]:",
+                f"{prefix}        _st_dir.iloc[i] = -1",
+                f"{prefix}    elif prev == -1 and {d}['close'].iloc[i] > _st_upper.iloc[i]:",
+                f"{prefix}        _st_dir.iloc[i] = 1",
+                f"{prefix}    else:",
+                f"{prefix}        _st_dir.iloc[i] = prev",
+                f"{prefix}{d}['supertrend_upper'] = _st_upper",
+                f"{prefix}{d}['supertrend_lower'] = _st_lower",
+                f"{prefix}{d}['supertrend_direction'] = _st_dir",
+                f"{prefix}{d}['supertrend'] = (_st_dir == 1)",
+            ]
+            return '\n'.join(lines)
+        
+        elif _ind_type == 'ICHIMOKU':
+            tenkan = ind.parameters.get('tenkan_period', 9)
+            kijun = ind.parameters.get('kijun_period', 26)
+            senkou_b = ind.parameters.get('senkou_b_period', 52)
+            lines = [
+                f"{prefix}# Ichimoku Cloud",
+                f"{prefix}_hi_t = {d}['high'].rolling(window={tenkan}).max()",
+                f"{prefix}_lo_t = {d}['low'].rolling(window={tenkan}).min()",
+                f"{prefix}{d}['tenkan_sen'] = (_hi_t + _lo_t) / 2",
+                f"{prefix}_hi_k = {d}['high'].rolling(window={kijun}).max()",
+                f"{prefix}_lo_k = {d}['low'].rolling(window={kijun}).min()",
+                f"{prefix}{d}['kijun_sen'] = (_hi_k + _lo_k) / 2",
+                f"{prefix}{d}['senkou_span_a'] = (({d}['tenkan_sen'] + {d}['kijun_sen']) / 2).shift({kijun})",
+                f"{prefix}_hi_sb = {d}['high'].rolling(window={senkou_b}).max()",
+                f"{prefix}_lo_sb = {d}['low'].rolling(window={senkou_b}).min()",
+                f"{prefix}{d}['senkou_span_b'] = ((_hi_sb + _lo_sb) / 2).shift({kijun})",
+                f"{prefix}{d}['cloud_green'] = {d}['senkou_span_a'] > {d}['senkou_span_b']",
+            ]
+            return '\n'.join(lines)
+        
+        elif _ind_type == 'DONCHIAN':
+            period = ind.parameters.get('period', 20)
+            lines = [
+                f"{prefix}# Donchian Channels",
+                f"{prefix}{d}['donchian_upper'] = {d}['high'].rolling({period}).max()",
+                f"{prefix}{d}['donchian_lower'] = {d}['low'].rolling({period}).min()",
+                f"{prefix}{d}['donchian_mid'] = ({d}['donchian_upper'] + {d}['donchian_lower']) / 2",
+            ]
+            return '\n'.join(lines)
+        
+        elif _ind_type == 'VWAP':
+            vwap_period = ind.parameters.get('period', 20)
+            lines = [
+                f"{prefix}# VWAP (rolling {vwap_period}-period)",
+                f"{prefix}_tp = ({d}['high'] + {d}['low'] + {d}['close']) / 3",
+                f"{prefix}{d}['vwap'] = (_tp * {d}['volume']).rolling({vwap_period}).sum() / {d}['volume'].rolling({vwap_period}).sum()",
+            ]
+            return '\n'.join(lines)
+        
+        elif _ind_type == 'CMF':
+            period = ind.parameters.get('period', 20)
+            lines = [
+                f"{prefix}# Chaikin Money Flow",
+                f"{prefix}_mfv = (({d}['close'] - {d}['low']) - ({d}['high'] - {d}['close'])) / ({d}['high'] - {d}['low'])",
+                f"{prefix}_mfv = _mfv.fillna(0) * {d}['volume']",
+                f"{prefix}{d}['cmf'] = _mfv.rolling({period}).sum() / {d}['volume'].rolling({period}).sum()",
+            ]
+            return '\n'.join(lines)
+        
+        elif _ind_type == 'VROC':
+            period = ind.parameters.get('period', 12)
+            return (f"{prefix}# Volume Rate of Change\n"
+                    f"{prefix}{d}['vroc'] = (({d}['volume'] - {d}['volume'].shift({period})) / {d}['volume'].shift({period})) * 100")
+        
+        # === CANDLESTICK PATTERNS ===
+        
+        elif _ind_type == 'CDL_ENGULFING':
+            return f"{prefix}{d}['cdl_engulfing'] = ta.CDLENGULFING({d})"
+        
+        elif _ind_type == 'CDL_HAMMER':
+            return f"{prefix}{d}['cdl_hammer'] = ta.CDLHAMMER({d})"
+        
+        elif _ind_type == 'CDL_DOJI':
+            return f"{prefix}{d}['cdl_doji'] = ta.CDLDOJI({d})"
+        
+        elif _ind_type == 'CDL_MORNINGSTAR':
+            penetration = ind.parameters.get('penetration', 0.0)
+            return f"{prefix}{d}['cdl_morningstar'] = ta.CDLMORNINGSTAR({d}, penetration={penetration})"
+        
+        elif _ind_type == 'CDL_EVENINGSTAR':
+            penetration = ind.parameters.get('penetration', 0.0)
+            return f"{prefix}{d}['cdl_eveningstar'] = ta.CDLEVENINGSTAR({d}, penetration={penetration})"
+        
+        elif _ind_type == 'CDL_SHOOTINGSTAR':
+            return f"{prefix}{d}['cdl_shootingstar'] = ta.CDLSHOOTINGSTAR({d})"
+        
+        elif _ind_type == 'CDL_HARAMI':
+            return f"{prefix}{d}['cdl_harami'] = ta.CDLHARAMI({d})"
+        
+        elif _ind_type == 'CDL_PIERCING':
+            return f"{prefix}{d}['cdl_piercing'] = ta.CDLPIERCING({d})"
+        
+        elif _ind_type == 'CDL_DARKCLOUD':
+            return f"{prefix}{d}['cdl_darkcloud'] = ta.CDLDARKCLOUDCOVER({d})"
+        
+        elif _ind_type == 'CDL_3WHITESOLDIERS':
+            return f"{prefix}{d}['cdl_3whitesoldiers'] = ta.CDL3WHITESOLDIERS({d})"
+        
+        elif _ind_type == 'CDL_3BLACKCROWS':
+            return f"{prefix}{d}['cdl_3blackcrows'] = ta.CDL3BLACKCROWS({d})"
+        
+        # Fallback: log warning for truly unknown indicator types
+        logger.warning(f"Unknown indicator type '{_ind_type}' — no code generated (instance_id={ind.instance_id})")
+        return f"{prefix}pass  # Unknown indicator: {_ind_type}"
     
     def _generate_indicator_code(self, indicators: List[IndicatorGene]) -> str:
-        """Generate Python code for indicators.
+        """Generate Python code for base-timeframe indicators.
         
         Deduplicates identical indicators (same type + params) to avoid
         redundant calculations (e.g., multiple CDL_DOJI with no parameters).
+        Delegates per-indicator code generation to _generate_single_indicator_code().
         """
         lines = []
         
@@ -790,180 +1028,8 @@ class {name}(IStrategy):
             logger.info(f"[DEDUP] Removed {len(indicators) - len(unique_indicators)} duplicate indicator(s)")
         
         for ind in unique_indicators:
-            # Normalize indicator type: strip cascading _0 suffixes from CDL types
-            # to handle corrupted types like 'CDL_MORNINGSTAR_0_0' from stale HOF data
-            _ind_type = ind.type
-            if _ind_type.startswith('CDL_'):
-                from genetic_algorithm.core.strategy_gene import StrategyGene
-                _ind_type = StrategyGene._strip_cdl_suffixes(_ind_type)
-            if _ind_type == 'RSI':
-                period = ind.parameters.get('period', 14)
-                lines.append(f"        dataframe['rsi_{period}'] = ta.RSI(dataframe, timeperiod={period})")
-            
-            elif _ind_type == 'MACD':
-                fast = ind.parameters.get('fast_period', 12)
-                slow = ind.parameters.get('slow_period', 26)
-                signal = ind.parameters.get('signal_period', 9)
-                lines.append(f"        macd = ta.MACD(dataframe, fastperiod={fast}, slowperiod={slow}, signalperiod={signal})")
-                lines.append(f"        dataframe['macd'] = macd['macd']")
-                lines.append(f"        dataframe['macdsignal'] = macd['macdsignal']")
-                lines.append(f"        dataframe['macdhist'] = macd['macdhist']")
-            
-            elif _ind_type == 'BBANDS':
-                period = ind.parameters.get('period', 20)
-                std_dev = ind.parameters.get('std_dev', 2.0)
-                lines.append(f"        bollinger = ta.BBANDS(dataframe, timeperiod={period}, nbdevup={std_dev}, nbdevdn={std_dev})")
-                lines.append(f"        dataframe['bb_upperband'] = bollinger['upperband']")
-                lines.append(f"        dataframe['bb_middleband'] = bollinger['middleband']")
-                lines.append(f"        dataframe['bb_lowerband'] = bollinger['lowerband']")
-            
-            elif _ind_type == 'EMA':
-                period = ind.parameters.get('period', 20)
-                lines.append(f"        dataframe['ema_{period}'] = ta.EMA(dataframe, timeperiod={period})")
-            
-            elif _ind_type == 'SMA':
-                period = ind.parameters.get('period', 20)
-                lines.append(f"        dataframe['sma_{period}'] = ta.SMA(dataframe, timeperiod={period})")
-            
-            elif _ind_type == 'STOCH':
-                k_period = ind.parameters.get('k_period', 14)
-                d_period = ind.parameters.get('d_period', 3)
-                lines.append(f"        stoch = ta.STOCH(dataframe, fastk_period={k_period}, slowk_period={d_period}, slowd_period={d_period})")
-                lines.append(f"        dataframe['slowk'] = stoch['slowk']")
-                lines.append(f"        dataframe['slowd'] = stoch['slowd']")
-            
-            elif _ind_type == 'ATR':
-                period = ind.parameters.get('period', 14)
-                lines.append(f"        dataframe['atr_{period}'] = ta.ATR(dataframe, timeperiod={period})")
-            
-            elif _ind_type == 'ADX':
-                period = ind.parameters.get('period', 14)
-                lines.append(f"        dataframe['adx_{period}'] = ta.ADX(dataframe, timeperiod={period})")
-            
-            elif _ind_type == 'CCI':
-                period = ind.parameters.get('period', 20)
-                lines.append(f"        dataframe['cci_{period}'] = ta.CCI(dataframe, timeperiod={period})")
-            
-            # === NEW INDICATORS ===
-            
-            elif _ind_type == 'SUPERTREND':
-                period = ind.parameters.get('period', 10)
-                multiplier = ind.parameters.get('multiplier', 3.0)
-                lines.append(f"        # SuperTrend calculation with direction state machine")
-                lines.append(f"        _hl2 = (dataframe['high'] + dataframe['low']) / 2")
-                lines.append(f"        _atr_st = ta.ATR(dataframe, timeperiod={period})")
-                lines.append(f"        _st_upper_basic = _hl2 + ({multiplier} * _atr_st)")
-                lines.append(f"        _st_lower_basic = _hl2 - ({multiplier} * _atr_st)")
-                lines.append(f"        # Final bands start as basic bands")
-                lines.append(f"        _st_upper_final = _st_upper_basic.copy()")
-                lines.append(f"        _st_lower_final = _st_lower_basic.copy()")
-                lines.append(f"        _st_direction = pd.Series(1, index=dataframe.index)  # 1=up, -1=down")
-                lines.append(f"        for i in range(1, len(dataframe)):")
-                lines.append(f"            # Ratchet bands: only move in favorable direction")
-                lines.append(f"            if _st_lower_basic.iloc[i] > _st_lower_final.iloc[i-1]:")
-                lines.append(f"                _st_lower_final.iloc[i] = _st_lower_basic.iloc[i]")
-                lines.append(f"            else:")
-                lines.append(f"                _st_lower_final.iloc[i] = _st_lower_final.iloc[i-1]")
-                lines.append(f"            if _st_upper_basic.iloc[i] < _st_upper_final.iloc[i-1]:")
-                lines.append(f"                _st_upper_final.iloc[i] = _st_upper_basic.iloc[i]")
-                lines.append(f"            else:")
-                lines.append(f"                _st_upper_final.iloc[i] = _st_upper_final.iloc[i-1]")
-                lines.append(f"            # Direction flip logic")
-                lines.append(f"            prev_dir = _st_direction.iloc[i-1]")
-                lines.append(f"            if prev_dir == 1 and dataframe['close'].iloc[i] < _st_lower_final.iloc[i]:")
-                lines.append(f"                _st_direction.iloc[i] = -1")
-                lines.append(f"            elif prev_dir == -1 and dataframe['close'].iloc[i] > _st_upper_final.iloc[i]:")
-                lines.append(f"                _st_direction.iloc[i] = 1")
-                lines.append(f"            else:")
-                lines.append(f"                _st_direction.iloc[i] = prev_dir")
-                lines.append(f"        dataframe['supertrend_upper'] = _st_upper_final")
-                lines.append(f"        dataframe['supertrend_lower'] = _st_lower_final")
-                lines.append(f"        dataframe['supertrend_direction'] = _st_direction")
-                lines.append(f"        dataframe['supertrend'] = (_st_direction == 1)  # True when bullish")
-            
-            elif _ind_type == 'ICHIMOKU':
-                tenkan = ind.parameters.get('tenkan_period', 9)
-                kijun = ind.parameters.get('kijun_period', 26)
-                senkou_b = ind.parameters.get('senkou_b_period', 52)
-                lines.append(f"        # Ichimoku Cloud")
-                lines.append(f"        high_{tenkan} = dataframe['high'].rolling(window={tenkan}).max()")
-                lines.append(f"        low_{tenkan} = dataframe['low'].rolling(window={tenkan}).min()")
-                lines.append(f"        dataframe['tenkan_sen'] = (high_{tenkan} + low_{tenkan}) / 2")
-                lines.append(f"        high_{kijun} = dataframe['high'].rolling(window={kijun}).max()")
-                lines.append(f"        low_{kijun} = dataframe['low'].rolling(window={kijun}).min()")
-                lines.append(f"        dataframe['kijun_sen'] = (high_{kijun} + low_{kijun}) / 2")
-                lines.append(f"        dataframe['senkou_span_a'] = ((dataframe['tenkan_sen'] + dataframe['kijun_sen']) / 2).shift({kijun})")
-                lines.append(f"        high_{senkou_b} = dataframe['high'].rolling(window={senkou_b}).max()")
-                lines.append(f"        low_{senkou_b} = dataframe['low'].rolling(window={senkou_b}).min()")
-                lines.append(f"        dataframe['senkou_span_b'] = ((high_{senkou_b} + low_{senkou_b}) / 2).shift({kijun})")
-                lines.append(f"        dataframe['cloud_green'] = dataframe['senkou_span_a'] > dataframe['senkou_span_b']")
-            
-            elif _ind_type == 'DONCHIAN':
-                period = ind.parameters.get('period', 20)
-                lines.append(f"        # Donchian Channels")
-                lines.append(f"        dataframe['donchian_upper'] = dataframe['high'].rolling({period}).max()")
-                lines.append(f"        dataframe['donchian_lower'] = dataframe['low'].rolling({period}).min()")
-                lines.append(f"        dataframe['donchian_mid'] = (dataframe['donchian_upper'] + dataframe['donchian_lower']) / 2")
-            
-            elif _ind_type == 'VWAP':
-                vwap_period = ind.parameters.get('period', 20)
-                lines.append(f"        # Volume Weighted Average Price (rolling {vwap_period}-period)")
-                lines.append(f"        _tp = (dataframe['high'] + dataframe['low'] + dataframe['close']) / 3")
-                lines.append(f"        dataframe['vwap'] = (_tp * dataframe['volume']).rolling({vwap_period}).sum() / dataframe['volume'].rolling({vwap_period}).sum()")
-            
-            elif _ind_type == 'PSAR':
-                acceleration = ind.parameters.get('acceleration', 0.02)
-                maximum = ind.parameters.get('maximum', 0.2)
-                lines.append(f"        dataframe['psar'] = ta.SAR(dataframe, acceleration={acceleration}, maximum={maximum})")
-            
-            elif _ind_type == 'CMF':
-                period = ind.parameters.get('period', 20)
-                lines.append(f"        # Chaikin Money Flow")
-                lines.append(f"        mfv = ((dataframe['close'] - dataframe['low']) - (dataframe['high'] - dataframe['close'])) / (dataframe['high'] - dataframe['low'])")
-                lines.append(f"        mfv = mfv.fillna(0) * dataframe['volume']")
-                lines.append(f"        dataframe['cmf'] = mfv.rolling({period}).sum() / dataframe['volume'].rolling({period}).sum()")
-            
-            elif _ind_type == 'VROC':
-                period = ind.parameters.get('period', 12)
-                lines.append(f"        # Volume Rate of Change")
-                lines.append(f"        dataframe['vroc'] = ((dataframe['volume'] - dataframe['volume'].shift({period})) / dataframe['volume'].shift({period})) * 100")
-            
-            # === CANDLESTICK PATTERNS ===
-            
-            elif _ind_type == 'CDL_ENGULFING':
-                lines.append(f"        dataframe['cdl_engulfing'] = ta.CDLENGULFING(dataframe)")
-            
-            elif _ind_type == 'CDL_HAMMER':
-                lines.append(f"        dataframe['cdl_hammer'] = ta.CDLHAMMER(dataframe)")
-            
-            elif _ind_type == 'CDL_DOJI':
-                lines.append(f"        dataframe['cdl_doji'] = ta.CDLDOJI(dataframe)")
-            
-            elif _ind_type == 'CDL_MORNINGSTAR':
-                penetration = ind.parameters.get('penetration', 0.0)
-                lines.append(f"        dataframe['cdl_morningstar'] = ta.CDLMORNINGSTAR(dataframe, penetration={penetration})")
-            
-            elif _ind_type == 'CDL_EVENINGSTAR':
-                penetration = ind.parameters.get('penetration', 0.0)
-                lines.append(f"        dataframe['cdl_eveningstar'] = ta.CDLEVENINGSTAR(dataframe, penetration={penetration})")
-            
-            elif _ind_type == 'CDL_SHOOTINGSTAR':
-                lines.append(f"        dataframe['cdl_shootingstar'] = ta.CDLSHOOTINGSTAR(dataframe)")
-            
-            elif _ind_type == 'CDL_HARAMI':
-                lines.append(f"        dataframe['cdl_harami'] = ta.CDLHARAMI(dataframe)")
-            
-            elif _ind_type == 'CDL_PIERCING':
-                lines.append(f"        dataframe['cdl_piercing'] = ta.CDLPIERCING(dataframe)")
-            
-            elif _ind_type == 'CDL_DARKCLOUD':
-                lines.append(f"        dataframe['cdl_darkcloud'] = ta.CDLDARKCLOUDCOVER(dataframe)")
-            
-            elif _ind_type == 'CDL_3WHITESOLDIERS':
-                lines.append(f"        dataframe['cdl_3whitesoldiers'] = ta.CDL3WHITESOLDIERS(dataframe)")
-            
-            elif _ind_type == 'CDL_3BLACKCROWS':
-                lines.append(f"        dataframe['cdl_3blackcrows'] = ta.CDL3BLACKCROWS(dataframe)")
+            ind_code = self._generate_single_indicator_code(ind, prefix="        ", df_var="dataframe")
+            lines.append(ind_code)
         
         return '\n'.join(lines) if lines else "        # No indicators"
     
@@ -1087,6 +1153,11 @@ class {name}(IStrategy):
         # If we only have OR conditions and no AND, at least one must fire
         # If we only have AND conditions, all must fire (original behavior)
         # If we have both, all AND + at least one OR must fire
+        
+        # For entry signals, always require volume > 0 to avoid trading on bad data
+        if is_entry:
+            parts.append("(dataframe['volume'] > 0)")
+        
         combined_condition = ' &\n            '.join(parts)
         
         code = f"""        conditions = (

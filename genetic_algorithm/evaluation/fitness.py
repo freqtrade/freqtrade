@@ -80,6 +80,10 @@ class FitnessEvaluator:
         self._wf_cache: Dict[Tuple[str, int], BacktestResult] = {}
         self._wf_cache_hits = 0
         self._wf_cache_misses = 0
+        
+        # Deflated Sharpe Ratio tracker (anti-overfitting)
+        from genetic_algorithm.evaluation.deflated_sharpe import DSRTracker
+        self._dsr_tracker = DSRTracker(config)
     
     def evaluate(self, strategy_gene: StrategyGene, strategy_name: str = None) -> Tuple[float, Dict[str, float]]:
         """
@@ -830,6 +834,26 @@ class FitnessEvaluator:
         # Cap total bonus at 1.3x (30% max boost)
         total_bonus = min(total_bonus, 1.3)
         fitness *= total_bonus
+        
+        # ==================================================================================
+        # DEFLATED SHARPE RATIO PENALTY
+        # Corrects for selection bias (multiple testing) and non-normal return distributions.
+        # A low DSR means the observed Sharpe is likely a statistical artifact.
+        # ==================================================================================
+        dsr_penalty, dsr_info = self._dsr_tracker.compute_penalty(
+            observed_sharpe=sharpe,
+            n_returns=int(trades),
+            skewness=metrics.get('return_skewness', 0.0),
+            kurtosis=metrics.get('return_kurtosis', 3.0),
+        )
+        fitness *= dsr_penalty
+        
+        # Store DSR info in metrics for downstream reporting
+        metrics['dsr'] = dsr_info.get('dsr', float('nan'))
+        metrics['dsr_penalty'] = dsr_info.get('dsr_penalty', 1.0)
+        
+        # Register this evaluation for future DSR calculations
+        self._dsr_tracker.register_evaluation()
         
         # Apply penalties and return
         penalized_fitness = self._apply_penalties(fitness, metrics, strategy_gene)

@@ -53,3 +53,22 @@ class MonitorLogHandler(logging.Handler):
             self._buffer.clear()
         finally:
             self.release()
+
+    def emit_text(self, message: str, level: str = "info") -> None:
+        """Inject a pre-formatted text message into the buffer.
+
+        Useful for programmatic messages that bypass the logging framework
+        (e.g. ``on_log`` / ``on_error`` monitor callbacks).
+        """
+        level_map = {
+            "debug": logging.DEBUG,
+            "info": logging.INFO,
+            "warning": logging.WARNING,
+            "error": logging.ERROR,
+            "critical": logging.CRITICAL,
+        }
+        record = logging.LogRecord(
+            name="Monitor", level=level_map.get(level.lower(), logging.INFO),
+            pathname="", lineno=0, msg=message, args=(), exc_info=None,
+        )
+        self.emit(record)

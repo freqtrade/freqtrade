@@ -169,14 +169,14 @@ class TestMutateConditionThreshold:
         _mutate_condition_threshold(cond, {'buy_threshold': [20, 40]}, True, 0, mutations)
         assert 20 <= cond.threshold <= 40
     
-    def test_unknown_indicator_no_mutation(self):
-        """Unknown indicators should not be mutated."""
+    def test_unknown_indicator_gaussian_fallback(self):
+        """Unknown indicators get a Gaussian perturbation (±10%) fallback."""
         cond = ConditionGene(indicator='UNKNOWN', operator='<', threshold=30)
-        orig_threshold = cond.threshold
         mutations = []
         _mutate_condition_threshold(cond, {}, True, 0, mutations)
-        assert cond.threshold == orig_threshold
-        assert len(mutations) == 0
+        # Should mutate via Gaussian perturbation — value within ±10%
+        assert 27.0 <= cond.threshold <= 33.0
+        assert len(mutations) == 1
 
 
 # ============================================================================
