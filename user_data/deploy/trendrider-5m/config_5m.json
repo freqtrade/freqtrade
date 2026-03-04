@@ -63,7 +63,7 @@
         }
     ],
     "telegram": {
-        "enabled": false,
+        "enabled": true,
         "token": "8272000103:AAErikRTrml-LzGype0LM4eY_Vi634ZHMi8",
         "chat_id": "5216799062",
         "notification_settings": {
