@@ -50,6 +50,12 @@ docs/
 |----------|-------------|--------|
 | [TIER3_ROBUSTNESS_FEATURES.md](features/TIER3_ROBUSTNESS_FEATURES.md) | Monte-Carlo, Parsimony, Pareto Archive, Dynamic Bounds | ✅ Complete |
 
+### LLM Strategy Designer (Phase 1A)
+
+| Document | Description | Status |
+|----------|-------------|--------|
+| [LLM_STRATEGY_DESIGNER_GUIDE.md](features/LLM_STRATEGY_DESIGNER_GUIDE.md) | How to use LLMs to seed and diversify the GA population | ✅ Complete |
+
 ---
 
 ## 📋 Plans & Roadmaps (`plans/`)
@@ -86,6 +92,7 @@ docs/
 | **Pareto Archive** | ✅ Complete | Tier 3 - Non-dominated solution preservation |
 | **Dynamic Bounds** | ✅ Complete | Tier 3 - Evolvable parameter ranges |
 | Island Model | 📋 Planned | Future enhancement |
+| **LLM Strategy Designer** | ✅ Complete | Phase 1A — multi-provider seeding & immigrants |
 
 ---
 
@@ -99,4 +106,4 @@ docs/
 
 ---
 
-*Last Updated: February 26, 2026*
+*Last Updated: March 2026*

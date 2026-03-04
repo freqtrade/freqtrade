@@ -558,6 +558,20 @@ Examples:
     )
     
     parser.add_argument(
+        '--resume', '-r',
+        type=str,
+        default=None,
+        help='Resume evolution from a checkpoint file (e.g., genetic_algorithm/data/checkpoints/checkpoint_gen17_*.json)'
+    )
+    
+    parser.add_argument(
+        '--seed',
+        type=str,
+        default=None,
+        help='Seed population from a checkpoint or strategy JSON file. Injects top strategies as immigrants.'
+    )
+    
+    parser.add_argument(
         '--visualize', '-v',
         action='store_true',
         help='Enable live visualization of evolution progress'
@@ -573,12 +587,6 @@ Examples:
         '--yes', '-y',
         action='store_true',
         help='Skip confirmation prompt and start evolution immediately'
-    )
-    
-    parser.add_argument(
-        '--resume',
-        action='store_true',
-        help='Resume evolution from the latest checkpoint (if available)'
     )
     
     parser.add_argument(
@@ -732,9 +740,28 @@ def main():
             interactive=not args.no_interactive
         )
         
-        # Run evolution
+        # Handle --seed: load strategies from file and queue as immigrants
+        if args.seed:
+            seed_path = Path(args.seed)
+            if not seed_path.exists():
+                print(f"❌ Error: Seed file not found: {seed_path}")
+                return 1
+            seed_individuals = ga.load_seed_strategies(str(seed_path))
+            ga.inject_immigrants(seed_individuals)
+            print(f"  ✓ Loaded {len(seed_individuals)} seed strategies from {seed_path}")
+        
+        # Run evolution (with optional resume)
         logger.info("Starting evolution process...")
-        top_individuals = ga.evolve(resume=args.resume)
+        resume_path = args.resume if args.resume else None
+        
+        if resume_path:
+            resume_file = Path(resume_path)
+            if not resume_file.exists():
+                print(f"❌ Error: Checkpoint file not found: {resume_file}")
+                return 1
+            print(f"  ✓ Resuming from checkpoint: {resume_file}")
+        
+        top_individuals = ga.evolve(resume_from=resume_path)
         
         # Get top N strategies
         top_strategies = top_individuals[:TOP_STRATEGIES_COUNT]
@@ -1077,7 +1104,7 @@ def _start_with_dashboard(args):
         # Start evolution as a managed run
         handle = run_manager.start_run(
             config=config,
-            resume_from=str(Path("genetic_algorithm/data/checkpoints")) if args.resume else None,
+            resume_from=args.resume if args.resume else None,
         )
         print(f"  Evolution started: run_id={handle.run_id}")
         print()

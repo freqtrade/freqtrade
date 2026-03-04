@@ -649,9 +649,12 @@ advanced:
     max_retries: 3
     retry_delay: 2.0
     min_call_interval: 1.0  # Rate limiting: min seconds between calls
-    # Ratio config
-    seed_ratio: 0.40  # 40% of initial population from LLM
-    immigrant_ratio: 0.50  # 50% of each generation's immigrants from LLM
+    # Ratio / count config
+    seed_ratio: 0.20  # 20% of initial population from LLM (LLMInjector)
+    immigrants_per_generation: 2  # Fixed count used by LLMInjector.get_immigrants()
+    immigrant_ratio: 0.50  # 50% of each generation's immigrants from LLM (StrategyDesigner)
+    # Supported providers: grok, openai, anthropic, local
+    providers: [grok, openai, anthropic, local]
   
   # Island model configuration
   island_model:

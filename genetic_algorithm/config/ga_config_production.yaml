@@ -1,0 +1,309 @@
+# Production GA Configuration — Consistent 2-Month Profit
+#
+# Designed for: $50 USDT capital, BTC/USDT + ETH/USDT on Binance
+# Goal: Evolve strategies that produce reliable average profit over any 2-month window
+# Key features:
+#   - Harmonic mean walk-forward aggregation (punishes inconsistent performers)
+#   - Moderate risk profile (max 20% drawdown, tight stoploss)
+#   - Elevated drawdown + Sharpe/Sortino weights (consistency > raw profit)
+#   - Tournament size 3 (proper selection pressure)
+#   - Complexity penalty to avoid overfitting
+#
+# Expected runtime: ~8–12 hours (pop 80 × 25 gens with walk-forward)
+#
+# Usage:
+#   cd /home/kali/trading/freqtradeForkGA
+#   source .venv/bin/activate
+#   python genetic_algorithm/run_ga.py --config genetic_algorithm/config/ga_config_production.yaml
+#
+# Monitor:
+#   tail -f genetic_algorithm/logs/ga_production.log
+
+# === Genetic Algorithm Parameters ===
+genetic_algorithm:
+  random_seed: null
+
+  # Population & generations — sized for overnight run
+  population_size: 80
+  generations: 25
+
+  # Variation operators
+  mutation_rate: 0.15
+  crossover_rate: 0.7
+
+  # Elitism — preserve top ~12.5% unchanged
+  elite_size: 10
+
+  # Tournament selection with size 3 — provides proper selection pressure
+  # (size 1 = random selection = no evolutionary pressure = bad)
+  tournament_size: 3
+  selection_method: 'tournament'
+
+  # Convergence — stop after 12 gens with no improvement
+  convergence_patience: 12
+
+  # Adaptive mutation — increase exploration when stuck
+  adaptive_mutation: true
+  max_adaptation_factor: 2.5
+  adaptation_step: 0.1
+
+  # Diversity preservation
+  fitness_sharing: true
+  sharing_radius: 0.3
+  diversity_threshold: 0.15
+  allow_self_crossover: false
+
+  # Random immigrants — 10% of population for fresh genetic material
+  # Doubled automatically when diversity drops below threshold
+  random_immigrants: 8
+
+  # Single-objective weighted fitness
+  mode: 'single_objective'
+
+# === NSGA-II Multi-Objective Configuration ===
+# Available if mode is switched to 'nsga2'
+nsga2:
+  objectives:
+    - name: 'profit'
+      type: 'maximize'
+      scale: 100.0
+    - name: 'max_drawdown'
+      type: 'minimize'
+      scale: 1.0
+    - name: 'sharpe_ratio'
+      type: 'maximize'
+      scale: 3.0
+  pareto_front_size: 20
+  crowding_distance_percentile: 0.1
+
+# === Fitness Function Weights ===
+# Tuned for CONSISTENCY over raw profit
+# Sharpe + Sortino + Drawdown = 0.52 (majority weight on risk-adjusted metrics)
+# Profit = 0.22 (important but not dominant)
+fitness_weights:
+  profit: 0.22
+  sharpe_ratio: 0.16
+  sortino_ratio: 0.16
+  profit_factor: 0.10
+  drawdown: 0.20           # Elevated from 0.15 — strong drawdown aversion
+  win_rate: 0.08
+  trade_frequency: 0.08
+
+# Fitness penalties — tighter than defaults for real trading
+fitness_penalties:
+  min_trades: 8             # Enough trades for statistical relevance
+  max_drawdown: 0.20        # Tightened from 0.30 (moderate risk profile)
+  min_win_rate: 0.35         # Raised from 0.30
+  complexity_weight: 0.015   # Push toward simpler, generalizable strategies
+
+# === Backtesting Configuration ===
+backtesting:
+  # 8.5 months of data — ample for robust walk-forward with ~10 windows
+  timerange: "20250601-20260218"
+
+  # $16 per trade × 3 max open trades = $48 of $50 capital utilized
+  stake_amount: 16
+
+  # High-liquidity USDT pairs with available data
+  pairs:
+    - "BTC/USDT"
+    - "ETH/USDT"
+
+  # Conservative concurrent trades for $50 account
+  max_open_trades: 3
+
+  # Binance spot fee (0.1% with BNB discount)
+  fee: 0.001
+
+  exchange: "binance"
+  auto_download_data: true
+  enable_cache: true
+  timeout: 45
+
+# === Walk-Forward Optimization ===
+# THE most critical section for "guaranteed" consistency
+# Fitness is ONLY from out-of-sample validation windows
+walk_forward:
+  enabled: true
+
+  # 2-month training windows — matches the target profit horizon
+  train_days: 60
+
+  # 3-week validation — enough trades to be meaningful
+  validation_days: 20
+
+  # 15-day sliding step — creates ~10 overlapping windows across 8.5 months
+  step_days: 15
+
+  # Rolling window — fixed-size, prevents look-ahead bias
+  mode: 'rolling'
+
+  # HARMONIC MEAN — the key to consistency
+  # Unlike arithmetic mean, harmonic mean heavily penalizes strategies that
+  # score well in some windows but fail in others (harmonic mean of 0 = 0)
+  # This is the strongest defense against "lucky" strategies
+  aggregation: 'harmonic_mean'
+
+  # Minimum trades per training window to count
+  min_train_trades: 5
+
+# === Strategy Constraints ===
+strategy_constraints:
+  # Enough trades across 2 months to be statistically meaningful
+  min_trades: 12
+
+  # Moderate risk limits
+  max_drawdown: 0.20
+  min_win_rate: 0.35
+
+  # 15m and 1h only — removed 5m (too noisy for $50 accounts, fees eat profits)
+  timeframes: ["15m", "1h"]
+
+  # Tighter stoploss range — moderate risk
+  stoploss_range: [-0.15, -0.05]
+
+  # Realistic ROI targets
+  roi_range: [0.01, 0.08]
+
+  # Per-strategy concurrent trade limit
+  max_open_trades_range: [1, 5]
+
+# === Multi-Timeframe Configuration ===
+# Higher timeframe confirmation reduces false signals
+multi_timeframe:
+  enabled: true
+  available: ['1h', '4h']
+  max_timeframes: 2
+  higher_timeframe_preference:
+    - 'EMA'
+    - 'SMA'
+    - 'BBANDS'
+    - 'ATR'
+    - 'ADX'
+    - 'RSI'
+
+# === Indicator Configuration ===
+indicators:
+  # All 9 supported indicators available for evolution
+  available:
+    - "RSI"
+    - "MACD"
+    - "BBANDS"
+    - "EMA"
+    - "SMA"
+    - "STOCH"
+    - "ATR"
+    - "ADX"
+    - "CCI"
+
+  # Reduced from 5 to push simpler, more generalizable strategies
+  max_per_strategy: 4
+  min_per_strategy: 2
+
+  # Indicator-specific parameter ranges (well-tuned defaults)
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 40]
+    sell_threshold: [60, 80]
+
+  MACD:
+    fast_period: [8, 21]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+
+  BBANDS:
+    period: [15, 30]
+    std_dev: [1.5, 3.0]
+
+  EMA:
+    period: [5, 50]
+
+  SMA:
+    period: [10, 100]
+
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [20, 40]
+    d_threshold: [60, 80]
+
+  ATR:
+    period: [10, 20]
+
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-200, -100]
+    sell_threshold: [100, 200]
+
+# === Storage Configuration ===
+storage:
+  database: "genetic_algorithm/data/strategies.db"
+  strategy_dir: "user_data/strategies/ga_generated"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints"
+  checkpoint_interval: 5
+  keep_history: true
+
+# === Logging Configuration ===
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/ga_production.log"
+  console: true
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# === Visualization Configuration ===
+visualization:
+  enabled: true
+  update_interval: 1
+  plots:
+    - "fitness_evolution"
+    - "diversity"
+    - "top_strategies"
+  output_dir: "genetic_algorithm/plots"
+
+# === Advanced Features ===
+advanced:
+  parallel_evaluation: false
+  num_workers: 1
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: true
+
+  llm:
+    # LLM-powered strategy generation via Groq (groq.com)
+    enabled: true
+    provider: "groq"  # Groq LPU inference (fast, OpenAI-compatible)
+    
+    # API key — leave empty to use GROQ_API_KEY env var (recommended)
+    api_key: ""
+    
+    # Model selection
+    model: "llama-3.3-70b-versatile"  # Fast, capable 70B model on Groq
+    
+    # Generation parameters
+    temperature: 0.7
+    max_retries: 3
+    timeout: 60
+    
+    # How many LLM-generated strategies to inject per generation
+    # With random_immigrants: 8, setting this to 5 means:
+    # - 5 LLM strategies (62.5%)
+    # - 3 random strategies (37.5%)
+    seed_strategies_per_generation: 5
+    
+    # Strategy design context
+    design_prompt:
+      market_context: "crypto"  # Domain context for the LLM
+      risk_profile: "moderate"  # Options: conservative, moderate, aggressive
+      optimization_focus: "consistency"  # Options: profit, drawdown, sharpe, consistency
+      include_top_performers: true  # Pass best strategies as examples to LLM
+      diversity_boost: true  # Encourage LLM to explore different indicator combos
+
+  island_model:
+    enabled: false
+    num_islands: 4
+    migration_interval: 5
+    migration_size: 5

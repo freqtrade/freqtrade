@@ -684,7 +684,7 @@ class TestCheckpointing:
 
             ga.best_individual = ind2
             ga.best_fitness_ever = 0.7
-            ga.save_checkpoint(pop, generation=0)
+            ga._save_legacy_checkpoint(pop, generation=0)
 
             cp_file = tmpdir / 'latest_checkpoint.json'
             assert cp_file.exists(), f"Checkpoint file not found at {cp_file}"
@@ -709,8 +709,8 @@ class TestCheckpointing:
             ga.best_individual = ind
             ga.best_fitness_ever = 0.6
 
-            ga.save_checkpoint(pop, generation=2)
-            loaded = ga.load_checkpoint()
+            ga._save_legacy_checkpoint(pop, generation=2)
+            loaded = ga._load_legacy_checkpoint()
 
             assert loaded is not None
             assert loaded['generation'] == 2
@@ -723,7 +723,7 @@ class TestCheckpointing:
         tmpdir = Path(tempfile.mkdtemp())
         try:
             ga = self._make_ga(tmpdir)
-            loaded = ga.load_checkpoint()
+            loaded = ga._load_legacy_checkpoint()
             assert loaded is None
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
@@ -747,12 +747,12 @@ class TestCheckpointing:
                 PopulationStats(generation=0, size=2, best_fitness=0.5, avg_fitness=0.4, worst_fitness=0.3),
             ]
 
-            ga.save_checkpoint(pop, generation=5)
+            ga._save_legacy_checkpoint(pop, generation=5)
 
             # Create fresh GA and restore
             ga2 = self._make_ga(tmpdir)
-            cp = ga2.load_checkpoint()
-            restored_pop = ga2.restore_from_checkpoint(cp)
+            cp = ga2._load_legacy_checkpoint()
+            restored_pop = ga2._restore_from_legacy_checkpoint(cp)
 
             assert len(restored_pop.individuals) == 2
             assert ga2.current_generation == 5

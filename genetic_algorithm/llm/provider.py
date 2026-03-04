@@ -7,11 +7,50 @@ Supports Grok (xAI), OpenAI, and any OpenAI-compatible API.
 
 import json
 import logging
+import os
 import time
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
+
+# Environment variable names for API keys per provider
+_ENV_KEY_MAP = {
+    'grok': 'XAI_API_KEY',
+    'xai': 'XAI_API_KEY',
+    'groq': 'GROQ_API_KEY',
+    'openai': 'OPENAI_API_KEY',
+    'anthropic': 'ANTHROPIC_API_KEY',
+    'claude': 'ANTHROPIC_API_KEY',
+}
+
+
+def _load_dotenv():
+    """Load .env file from project root if it exists (no external dependency)."""
+    # Walk up from this file to find .env in project root
+    for parent in Path(__file__).resolve().parents:
+        env_file = parent / '.env'
+        if env_file.exists():
+            try:
+                with open(env_file) as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#') or '=' not in line:
+                            continue
+                        key, _, value = line.partition('=')
+                        key = key.strip()
+                        value = value.strip().strip('"').strip("'")
+                        if key and value and key not in os.environ:
+                            os.environ[key] = value
+                logger.debug(f"Loaded .env from {env_file}")
+            except Exception as e:
+                logger.debug(f"Failed to load .env: {e}")
+            return
+
+
+# Load .env on module import
+_load_dotenv()
 
 
 class LLMProvider(ABC):
@@ -20,13 +59,21 @@ class LLMProvider(ABC):
     def __init__(self, config: Dict[str, Any]):
         self.config = config
         self.model = config.get('model', '')
-        self.api_key = config.get('api_key', '')
         self.base_url = config.get('base_url', '')
         self.temperature = config.get('temperature', 0.7)
         self.max_tokens = config.get('max_tokens', 4096)
         self.timeout = config.get('timeout', 60)
         self.max_retries = config.get('max_retries', 3)
         self.retry_delay = config.get('retry_delay', 2.0)
+        
+        # API key: config value → env var → empty
+        self.api_key = config.get('api_key', '') or ''
+        if not self.api_key:
+            provider = config.get('provider', '').lower()
+            env_var = _ENV_KEY_MAP.get(provider, f'{provider.upper()}_API_KEY')
+            self.api_key = os.environ.get(env_var, '')
+            if self.api_key:
+                logger.info(f"API key loaded from ${env_var} environment variable")
     
     @abstractmethod
     def generate(self, prompt: str, system_prompt: str = "") -> str:
@@ -252,6 +299,17 @@ class AnthropicProvider(LLMProvider):
         raise RuntimeError(f"Failed after {self.max_retries} retries with Anthropic")
 
 
+class GroqProvider(OpenAICompatibleProvider):
+    """Groq (groq.com) LPU inference provider — fast, OpenAI-compatible."""
+    
+    def __init__(self, config: Dict[str, Any]):
+        if not config.get('base_url'):
+            config['base_url'] = 'https://api.groq.com/openai/v1'
+        if not config.get('model'):
+            config['model'] = 'llama-3.3-70b-versatile'
+        super().__init__(config)
+
+
 class LocalProvider(OpenAICompatibleProvider):
     """Local LLM server (Ollama, llama.cpp, vLLM, etc.)"""
     
@@ -273,6 +331,7 @@ class LocalProvider(OpenAICompatibleProvider):
 PROVIDER_REGISTRY: Dict[str, type] = {
     'grok': GrokProvider,
     'xai': GrokProvider,
+    'groq': GroqProvider,
     'openai': OpenAIProvider,
     'anthropic': AnthropicProvider,
     'claude': AnthropicProvider,

@@ -64,6 +64,17 @@ class StrategyDesigner:
             'fallback_used': 0,
         }
         
+        # Generation-over-generation performance tracking for feedback loop
+        self.generation_history: List[Dict[str, Any]] = []
+        self.llm_performance = {
+            'llm_survived': 0,
+            'llm_eliminated': 0,
+            'avg_llm_fitness': 0.0,
+            'avg_random_fitness': 0.0,
+            'best_llm_fitness': 0.0,
+            'best_llm_generation': -1,
+        }
+        
         # Provider
         if provider:
             self.provider = provider
@@ -121,6 +132,7 @@ class StrategyDesigner:
         start_id: int = 0,
         top_performers: Optional[List[Dict]] = None,
         weaknesses: Optional[List[str]] = None,
+        feedback: Optional[Dict[str, Any]] = None,
     ) -> List[StrategyGene]:
         """
         Generate immigrant strategies during evolution.
@@ -131,6 +143,8 @@ class StrategyDesigner:
             start_id: Starting individual ID
             top_performers: Summaries of current top strategies
             weaknesses: Identified population weaknesses
+            feedback: Performance feedback from previous LLM strategies,
+                      feature importance data, and evolution progress
             
         Returns:
             List of StrategyGene objects
@@ -145,6 +159,7 @@ class StrategyDesigner:
                 individual_id=start_id + i,
                 top_performers=top_performers,
                 weaknesses=weaknesses,
+                feedback=feedback,
                 is_seed=False,
             )
             if strategy:
@@ -161,6 +176,7 @@ class StrategyDesigner:
         strategy_style: Optional[str] = None,
         top_performers: Optional[List[Dict]] = None,
         weaknesses: Optional[List[str]] = None,
+        feedback: Optional[Dict[str, Any]] = None,
         is_seed: bool = True,
     ) -> Optional[StrategyGene]:
         """
@@ -172,6 +188,7 @@ class StrategyDesigner:
             strategy_style: Strategy style hint
             top_performers: Top performer summaries (for immigrants)
             weaknesses: Population weaknesses (for immigrants)
+            feedback: Performance feedback and feature importance (for immigrants)
             is_seed: Whether this is a seed or immigrant
             
         Returns:
@@ -193,6 +210,7 @@ class StrategyDesigner:
                 user_prompt = self.prompt_builder.build_immigrant_prompt(
                     top_performers=top_performers,
                     weaknesses=weaknesses,
+                    feedback=feedback,
                 )
             
             # Call LLM
@@ -494,6 +512,159 @@ class StrategyDesigner:
                 logic='AND',
             ))
     
+    def record_llm_performance(self, generation: int, population) -> None:
+        """
+        Record how LLM-generated strategies performed this generation.
+        
+        Compares LLM-origin individuals against random-origin individuals
+        and tracks survival/elimination across generations.
+        
+        Args:
+            generation: Current generation number
+            population: Evaluated Population object
+        """
+        llm_individuals = []
+        random_individuals = []
+        
+        for ind in population.individuals:
+            origin = getattr(ind, 'metrics', {}).get('origin', 'random')
+            if origin in ('llm_seed', 'llm_immigrant'):
+                llm_individuals.append(ind)
+            else:
+                random_individuals.append(ind)
+        
+        # Calculate per-generation stats
+        llm_fitnesses = [ind.fitness for ind in llm_individuals if ind.fitness is not None]
+        random_fitnesses = [ind.fitness for ind in random_individuals if ind.fitness is not None]
+        
+        avg_llm = sum(llm_fitnesses) / len(llm_fitnesses) if llm_fitnesses else 0.0
+        avg_random = sum(random_fitnesses) / len(random_fitnesses) if random_fitnesses else 0.0
+        best_llm = max(llm_fitnesses) if llm_fitnesses else 0.0
+        
+        # Collect detailed LLM strategy results for feedback
+        llm_results = []
+        for ind in llm_individuals:
+            m = getattr(ind, 'metrics', {})
+            gene = getattr(ind, 'strategy_gene', None)
+            llm_results.append({
+                'fitness': ind.fitness or 0.0,
+                'profit': m.get('profit', 0),
+                'max_drawdown': m.get('max_drawdown', 0),
+                'win_rate': m.get('win_rate', 0),
+                'num_trades': m.get('num_trades', 0),
+                'origin': m.get('origin', 'llm'),
+                'indicators': [i.type for i in gene.indicators] if gene else [],
+                'survived': True,  # It's in the population, so it survived
+            })
+        
+        gen_record = {
+            'generation': generation,
+            'llm_count': len(llm_individuals),
+            'random_count': len(random_individuals),
+            'avg_llm_fitness': round(avg_llm, 4),
+            'avg_random_fitness': round(avg_random, 4),
+            'best_llm_fitness': round(best_llm, 4),
+            'llm_results': llm_results,
+        }
+        self.generation_history.append(gen_record)
+        
+        # Keep only last 10 generations of history to limit memory
+        if len(self.generation_history) > 10:
+            self.generation_history = self.generation_history[-10:]
+        
+        # Update cumulative performance stats
+        self.llm_performance['llm_survived'] += len(llm_individuals)
+        if best_llm > self.llm_performance['best_llm_fitness']:
+            self.llm_performance['best_llm_fitness'] = best_llm
+            self.llm_performance['best_llm_generation'] = generation
+        
+        # Running averages (weighted by count)
+        total_llm = sum(r['llm_count'] for r in self.generation_history)
+        total_random = sum(r['random_count'] for r in self.generation_history)
+        if total_llm > 0:
+            self.llm_performance['avg_llm_fitness'] = round(
+                sum(r['avg_llm_fitness'] * r['llm_count'] for r in self.generation_history) / total_llm, 4
+            )
+        if total_random > 0:
+            self.llm_performance['avg_random_fitness'] = round(
+                sum(r['avg_random_fitness'] * r['random_count'] for r in self.generation_history) / total_random, 4
+            )
+        
+        # Log comparison
+        advantage = avg_llm - avg_random
+        emoji = "+" if advantage >= 0 else ""
+        logger.info(f"[LLM FEEDBACK] Gen {generation}: "
+                   f"LLM avg={avg_llm:.4f} ({len(llm_individuals)} strategies) | "
+                   f"Random avg={avg_random:.4f} ({len(random_individuals)}) | "
+                   f"Advantage: {emoji}{advantage:.4f}")
+    
+    def build_feedback_context(self, feature_report: Optional[Dict] = None,
+                                evolution_progress: Optional[Dict] = None) -> Dict[str, Any]:
+        """
+        Build comprehensive feedback context for LLM prompt enrichment.
+        
+        Combines:
+        1. LLM strategy performance history (what worked/failed)
+        2. Feature importance data (which indicators the GA favors)
+        3. Evolution progress (generation, fitness trend, diversity)
+        
+        Args:
+            feature_report: Output from FeatureImportanceTracker.get_report()
+            evolution_progress: Dict with generation, best_fitness, diversity, etc.
+            
+        Returns:
+            Feedback dict to pass to generate_immigrants()
+        """
+        feedback: Dict[str, Any] = {}
+        
+        # 1. Performance history from last 2 generations
+        if self.generation_history:
+            recent = self.generation_history[-2:]
+            performance_entries = []
+            for gen_record in recent:
+                for result in gen_record.get('llm_results', []):
+                    performance_entries.append({
+                        'generation': gen_record['generation'],
+                        'fitness': result['fitness'],
+                        'profit': result['profit'],
+                        'max_drawdown': result['max_drawdown'],
+                        'win_rate': result['win_rate'],
+                        'num_trades': result['num_trades'],
+                        'indicators': result['indicators'],
+                    })
+            feedback['llm_strategy_results'] = performance_entries
+            feedback['llm_vs_random'] = {
+                'avg_llm_fitness': self.llm_performance['avg_llm_fitness'],
+                'avg_random_fitness': self.llm_performance['avg_random_fitness'],
+                'best_llm_fitness': self.llm_performance['best_llm_fitness'],
+            }
+        
+        # 2. Feature importance — which indicators the GA selects for
+        if feature_report:
+            top_indicators = feature_report.get('indicators', [])[:8]
+            feedback['feature_importance'] = [
+                {
+                    'indicator': ind['name'],
+                    'importance_score': ind['importance_score'],
+                    'avg_fitness': ind['avg_fitness'],
+                }
+                for ind in top_indicators
+            ]
+            top_patterns = feature_report.get('top_condition_patterns', [])[:5]
+            feedback['top_condition_patterns'] = [
+                {
+                    'pattern': p['pattern'],
+                    'score': p['importance_score'],
+                }
+                for p in top_patterns
+            ]
+        
+        # 3. Evolution progress context
+        if evolution_progress:
+            feedback['evolution_progress'] = evolution_progress
+        
+        return feedback
+    
     def _rate_limit(self):
         """Enforce minimum interval between API calls."""
         elapsed = time.time() - self._last_call_time
@@ -502,8 +673,11 @@ class StrategyDesigner:
         self._last_call_time = time.time()
     
     def get_stats(self) -> Dict[str, Any]:
-        """Return generation statistics."""
-        return dict(self.stats)
+        """Return generation statistics including LLM-vs-random performance."""
+        stats = dict(self.stats)
+        stats['llm_performance'] = dict(self.llm_performance)
+        stats['generations_tracked'] = len(self.generation_history)
+        return stats
     
     def get_population_weaknesses(self, top_individuals: list) -> List[str]:
         """

@@ -4,12 +4,14 @@ Direct Backtesting Integration Module
 Uses FreqTrade Python API directly with mocked exchange to avoid network calls.
 """
 
+import gc
 import json
 import logging
 import os
 import tempfile
 import time
 import hashlib
+import concurrent.futures
 from pathlib import Path
 from typing import Dict, Any, Optional
 from unittest.mock import MagicMock, PropertyMock, patch
@@ -555,6 +557,9 @@ class DirectBacktester:
                 logger.debug(f"Using cached result for {strategy_name}")
                 return cached_result
         
+        # Per-backtest timeout from config (default 120s)
+        backtest_timeout = self.backtest_config.get('timeout', 120)
+        
         # Try multiple times in case of transient errors
         last_error = None
         for attempt in range(max_retries + 1):
@@ -563,10 +568,38 @@ class DirectBacktester:
                     logger.info(f"Retry {attempt}/{max_retries} for {strategy_name}")
                     time.sleep(1)
                 
-                result = self._run_backtest_direct(
-                    strategy_code, strategy_name, strategy_max_open_trades,
-                    timerange_override=timerange_override,
-                )
+                # Run backtest with timeout using a daemon thread
+                # Daemon thread is abandoned (not joined) on timeout so execution continues
+                import threading
+                result_container = [None]
+                error_container = [None]
+                
+                def _run_with_capture():
+                    try:
+                        result_container[0] = self._run_backtest_direct(
+                            strategy_code, strategy_name, strategy_max_open_trades,
+                            timerange_override=timerange_override,
+                        )
+                    except Exception as e:
+                        error_container[0] = e
+                
+                thread = threading.Thread(target=_run_with_capture, daemon=True)
+                thread.start()
+                thread.join(timeout=backtest_timeout)
+                
+                if thread.is_alive():
+                    # Thread is still running — abandon it (daemon thread will be cleaned up on exit)
+                    logger.warning(f"Backtest TIMEOUT after {backtest_timeout}s for {strategy_name}")
+                    result = BacktestResult(
+                        success=False,
+                        strategy_name=strategy_name,
+                        error_message=f"Timeout after {backtest_timeout}s"
+                    )
+                elif error_container[0] is not None:
+                    raise error_container[0]
+                else:
+                    result = result_container[0]
+                
                 result.execution_time = time.time() - start_time
                 
                 # Cache successful result (skip when timerange overridden)
@@ -865,6 +898,13 @@ class DirectBacktester:
                 # Restore logging levels
                 for logger_name, level in old_log_levels.items():
                     logging.getLogger(logger_name).setLevel(level)
+                # Cleanup backtesting engine to free memory
+                if 'backtesting' in locals():
+                    try:
+                        del backtesting
+                    except Exception:
+                        pass
+                gc.collect()
                 
         except Exception as e:
             logger.error(f"Backtest execution error: {e}")
