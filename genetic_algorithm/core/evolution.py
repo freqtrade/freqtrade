@@ -7,11 +7,13 @@ Supports both single-objective and multi-objective (NSGA-II) optimization.
 
 import os
 import random
-import yaml
 import json
+import signal
+import yaml
 import time
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
+from datetime import datetime
 import logging
 
 try:
@@ -243,6 +245,19 @@ class GeneticAlgorithm:
         if self.hall_of_fame.entries:
             self.logger.info(f"Hall of Fame loaded: {len(self.hall_of_fame.entries)} entries (best fitness: {self.hall_of_fame.entries[0].fitness:.4f})")
         
+        # Checkpoint settings
+        storage_config = self.config.get('storage', {})
+        self.checkpoint_dir = Path(storage_config.get('checkpoint_dir', 'genetic_algorithm/data/checkpoints'))
+        self.checkpoint_interval = storage_config.get('checkpoint_interval', 5)
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        
+        # External strategy injection (LLM immigrants, seed strategies, etc.)
+        self._external_immigrants: List[Individual] = []
+        self._immigrant_provider: Optional[Callable[['GeneticAlgorithm', int], List[Individual]]] = None
+        
+        # Graceful shutdown flag
+        self._shutdown_requested = False
+        
         # Adaptive parameters
         self.base_mutation_rate = self.mutation_rate
         self.adaptive_mutation = ga_config.get('adaptive_mutation', True)
@@ -322,16 +337,13 @@ class GeneticAlgorithm:
         # Terminal monitor (live dashboard)
         self.monitor = create_monitor(self.config)
     
-    def save_checkpoint(self, population: Population, generation: int):
+    def _save_legacy_checkpoint(self, population: Population, generation: int):
         """
-        Save a checkpoint of the current evolution state.
+        Save a quick checkpoint in the legacy format for web dashboard compatibility.
         
-        Serializes the population, generation stats, best individual, and 
-        adaptive parameters so evolution can be resumed after interruption.
-        
-        Args:
-            population: Current population
-            generation: Current generation number
+        This writes to the fixed 'latest_checkpoint.json' used by the web dashboard.
+        The full checkpoint system (save_checkpoint/load_checkpoint) uses
+        timestamped files for proper resume support.
         """
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         
@@ -365,25 +377,20 @@ class GeneticAlgorithm:
         }
         
         checkpoint_path = self.checkpoint_dir / 'latest_checkpoint.json'
-        # Write to temp file first, then rename for atomicity
         temp_path = self.checkpoint_dir / 'latest_checkpoint.tmp'
         
         try:
             with open(temp_path, 'w') as f:
                 json.dump(checkpoint, f, indent=2, default=str)
             temp_path.rename(checkpoint_path)
-            self.logger.info(f"[CHECKPOINT] Saved generation {generation} to {checkpoint_path}")
-            # Emit checkpoint.saved event for the web dashboard
-            self.monitor.on_checkpoint_saved(generation, str(checkpoint_path))
         except Exception as e:
-            self.logger.error(f"[CHECKPOINT] Failed to save: {e}")
-            self.monitor.on_error(f"Checkpoint save failed: {e}", {"generation": generation})
+            self.logger.debug(f"[CHECKPOINT] Legacy checkpoint write failed: {e}")
             if temp_path.exists():
                 temp_path.unlink()
     
-    def load_checkpoint(self) -> Optional[Dict[str, Any]]:
+    def _load_legacy_checkpoint(self) -> Optional[Dict[str, Any]]:
         """
-        Load the latest checkpoint if available.
+        Load the latest legacy checkpoint if available (used by web dashboard).
         
         Returns:
             Checkpoint dictionary if found, None otherwise
@@ -397,14 +404,14 @@ class GeneticAlgorithm:
             with open(checkpoint_path, 'r') as f:
                 checkpoint = json.load(f)
             
-            self.logger.info(f"[CHECKPOINT] Found checkpoint at generation {checkpoint['generation']} "
+            self.logger.info(f"[CHECKPOINT] Found legacy checkpoint at generation {checkpoint['generation']} "
                            f"(saved at {checkpoint.get('timestamp', 'unknown')})")
             return checkpoint
         except Exception as e:
-            self.logger.error(f"[CHECKPOINT] Failed to load: {e}")
+            self.logger.error(f"[CHECKPOINT] Failed to load legacy checkpoint: {e}")
             return None
     
-    def restore_from_checkpoint(self, checkpoint: Dict[str, Any]) -> Population:
+    def _restore_from_legacy_checkpoint(self, checkpoint: Dict[str, Any]) -> Population:
         """
         Restore evolution state from a checkpoint.
         
@@ -507,11 +514,246 @@ class GeneticAlgorithm:
             if log_file:
                 log_path = Path(log_file)
                 log_path.parent.mkdir(parents=True, exist_ok=True)
+                # Use unbuffered file handler to ensure real-time log visibility
                 file_handler = logging.FileHandler(log_file)
                 file_handler.setFormatter(formatter)
+                file_handler.flush = lambda: file_handler.stream.flush()
                 logger.addHandler(file_handler)
         
         return logger
+    
+    # ========================================================================
+    # CHECKPOINT SAVE/LOAD SYSTEM
+    # ========================================================================
+    
+    def save_checkpoint(self, population: 'Population', generation: int, 
+                        filepath: Optional[str] = None) -> str:
+        """
+        Save current evolution state to a checkpoint file.
+        
+        Saves the full population (all individuals with their genes, fitness,
+        and metrics), the GA state (best individual, generation stats, adaptive
+        params), and the config used.
+        
+        Args:
+            population: Current population to save
+            generation: Current generation number
+            filepath: Optional explicit path. If None, auto-generates in checkpoint_dir.
+            
+        Returns:
+            Path to the saved checkpoint file
+        """
+        if filepath is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filepath = str(self.checkpoint_dir / f"checkpoint_gen{generation}_{timestamp}.json")
+        
+        checkpoint = {
+            'version': 2,
+            'timestamp': datetime.now().isoformat(),
+            'generation': generation,
+            'total_generations': self.generations,
+            'population_size': self.population_size,
+            
+            # Full population state
+            'population': {
+                'size': population.size,
+                'generation': population.generation,
+                'individuals': [ind.to_dict() for ind in population.individuals]
+            },
+            
+            # GA engine state
+            'ga_state': {
+                'best_individual': self.best_individual.to_dict() if self.best_individual else None,
+                'best_fitness_ever': self.best_fitness_ever,
+                'no_improvement_count': self.no_improvement_count,
+                'current_mutation_rate': self.mutation_rate,
+                'base_mutation_rate': self.base_mutation_rate,
+            },
+            
+            # Generation history (stats)
+            'generation_stats': [
+                {
+                    'generation': s.generation,
+                    'best_fitness': s.best_fitness,
+                    'avg_fitness': s.avg_fitness,
+                    'worst_fitness': s.worst_fitness,
+                    'genetic_diversity': s.genetic_diversity,
+                    'best_raw_fitness': s.best_raw_fitness,
+                    'avg_raw_fitness': s.avg_raw_fitness,
+                }
+                for s in self.generation_stats
+            ],
+            
+            # Config snapshot for reference
+            'config_snapshot': {
+                'genetic_algorithm': self.config.get('genetic_algorithm', {}),
+                'backtesting': self.config.get('backtesting', {}),
+                'walk_forward': self.config.get('walk_forward', {}),
+            }
+        }
+        
+        Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+        with open(filepath, 'w') as f:
+            json.dump(checkpoint, f, indent=2, default=str)
+        
+        self.logger.info(f"[CHECKPOINT] Saved generation {generation} to {filepath}")
+        
+        # Also write legacy checkpoint for web dashboard compatibility
+        try:
+            self._save_legacy_checkpoint(population, generation)
+            self.monitor.on_checkpoint_saved(generation, filepath)
+        except Exception as e:
+            self.logger.debug(f"[CHECKPOINT] Monitor/legacy notification failed: {e}")
+        
+        return filepath
+    
+    def load_checkpoint(self, filepath: str) -> tuple:
+        """
+        Load evolution state from a checkpoint file.
+        
+        Args:
+            filepath: Path to checkpoint JSON file
+            
+        Returns:
+            Tuple of (population, start_generation)
+        """
+        self.logger.info(f"[CHECKPOINT] Loading from {filepath}")
+        
+        with open(filepath, 'r') as f:
+            checkpoint = json.load(f)
+        
+        version = checkpoint.get('version', 1)
+        saved_gen = checkpoint['generation']
+        
+        # Restore population
+        pop_data = checkpoint['population']
+        population = Population(
+            size=pop_data.get('size', self.population_size),
+            generation=pop_data.get('generation', saved_gen)
+        )
+        
+        for ind_data in pop_data['individuals']:
+            individual = Individual.from_dict(ind_data)
+            population.add_individual(individual)
+        
+        self.logger.info(f"[CHECKPOINT] Restored population: {len(population.individuals)} individuals from generation {saved_gen}")
+        
+        # Restore GA state
+        ga_state = checkpoint.get('ga_state', {})
+        
+        if ga_state.get('best_individual'):
+            self.best_individual = Individual.from_dict(ga_state['best_individual'])
+        
+        self.best_fitness_ever = ga_state.get('best_fitness_ever', 0.0)
+        self.no_improvement_count = ga_state.get('no_improvement_count', 0)
+        self.mutation_rate = ga_state.get('current_mutation_rate', self.mutation_rate)
+        self.base_mutation_rate = ga_state.get('base_mutation_rate', self.base_mutation_rate)
+        
+        # Restore generation stats
+        stats_data = checkpoint.get('generation_stats', [])
+        self.generation_stats = []
+        for s in stats_data:
+            stat = PopulationStats(
+                generation=s.get('generation', 0),
+                size=self.population_size,
+                best_fitness=s.get('best_fitness', 0),
+                avg_fitness=s.get('avg_fitness', 0),
+                worst_fitness=s.get('worst_fitness', 0),
+                best_raw_fitness=s.get('best_raw_fitness'),
+                avg_raw_fitness=s.get('avg_raw_fitness'),
+            )
+            stat.genetic_diversity = s.get('genetic_diversity')
+            self.generation_stats.append(stat)
+        
+        # Log config comparison
+        saved_config = checkpoint.get('config_snapshot', {})
+        saved_pop_size = saved_config.get('genetic_algorithm', {}).get('population_size')
+        if saved_pop_size and saved_pop_size != self.population_size:
+            self.logger.warning(
+                f"[CHECKPOINT] Population size changed: checkpoint={saved_pop_size}, "
+                f"current={self.population_size}. Population will be adjusted."
+            )
+        
+        # Resume from the NEXT generation
+        start_generation = saved_gen + 1
+        self.logger.info(f"[CHECKPOINT] Will resume from generation {start_generation + 1}/{self.generations}")
+        
+        return population, start_generation
+    
+    # ========================================================================
+    # EXTERNAL IMMIGRANT INJECTION (LLM / FILE-BASED SEEDING)
+    # ========================================================================
+    
+    def set_immigrant_provider(self, provider: Callable[['GeneticAlgorithm', int], List[Individual]]):
+        """
+        Register a callback that provides external immigrants each generation.
+        
+        The provider function receives (ga_instance, generation_number) and should
+        return a list of Individual objects to inject as immigrants. These replace
+        a portion of the random immigrants (configured via immigrant_source_ratio).
+        
+        Example:
+            def llm_provider(ga, gen):
+                # Generate strategies via LLM based on best performers
+                best = ga.best_individual
+                return [create_llm_strategy(best, gen)]
+            
+            ga.set_immigrant_provider(llm_provider)
+        
+        Args:
+            provider: Callable that returns List[Individual]
+        """
+        self._immigrant_provider = provider
+        self.logger.info("[IMMIGRANTS] External immigrant provider registered")
+    
+    def inject_immigrants(self, immigrants: List[Individual]):
+        """
+        Queue external immigrants for injection in the next generation.
+        
+        These are one-shot; they're consumed when the next generation is created.
+        For persistent injection, use set_immigrant_provider().
+        
+        Args:
+            immigrants: List of Individual objects to inject
+        """
+        self._external_immigrants.extend(immigrants)
+        self.logger.info(f"[IMMIGRANTS] Queued {len(immigrants)} external immigrants for next generation")
+    
+    def load_seed_strategies(self, filepath: str) -> List[Individual]:
+        """
+        Load strategies from a JSON file and return as Individual objects.
+        
+        Can be used to seed initial population or inject as immigrants.
+        The JSON file should contain a list of individual dicts (as saved by checkpoint).
+        
+        Args:
+            filepath: Path to JSON file with strategy definitions
+            
+        Returns:
+            List of Individual objects
+        """
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+        
+        # Support both full checkpoint format and plain list of individuals
+        if isinstance(data, dict) and 'population' in data:
+            # Checkpoint format
+            individuals_data = data['population']['individuals']
+        elif isinstance(data, dict) and 'individuals' in data:
+            individuals_data = data['individuals']
+        elif isinstance(data, list):
+            individuals_data = data
+        else:
+            raise ValueError(f"Unrecognized format in {filepath}")
+        
+        individuals = [Individual.from_dict(d) for d in individuals_data]
+        self.logger.info(f"[SEED] Loaded {len(individuals)} strategies from {filepath}")
+        return individuals
+    
+    def request_shutdown(self):
+        """Request graceful shutdown after current generation completes."""
+        self._shutdown_requested = True
+        self.logger.info("[SHUTDOWN] Graceful shutdown requested. Will save checkpoint after current generation.")
     
     def initialize_population(self) -> Population:
         """
@@ -1330,7 +1572,7 @@ class GeneticAlgorithm:
         def calculate_next_id():
             return len(next_gen)
         
-        # Step 2: Inject random immigrants to maintain diversity
+        # Step 2: Inject immigrants (external/LLM + random) to maintain diversity
         # Get current generation stats to check diversity
         stats = population.get_stats()
         immigrant_count = self.random_immigrants
@@ -1340,8 +1582,17 @@ class GeneticAlgorithm:
             immigrant_count = self.random_immigrants * 2
             self.logger.warning(f"[DIVERSITY] Low diversity ({stats.genetic_diversity:.4f}), doubling immigrants to {immigrant_count}")
         
-        # Inject immigrants: LLM-generated + random
-        immigrants_before = len(next_gen)
+        # Collect external immigrants (from provider callback + queued)
+        external_immigrants = list(self._external_immigrants)
+        self._external_immigrants.clear()
+        
+        if self._immigrant_provider:
+            try:
+                provider_immigrants = self._immigrant_provider(self, self.current_generation + 1)
+                if provider_immigrants:
+                    external_immigrants.extend(provider_immigrants)
+            except Exception as e:
+                self.logger.warning(f"[IMMIGRANTS] External provider failed: {e}")
         
         # LLM immigrants (configurable ratio of immigrant slots)
         llm_immigrant_count = 0
@@ -1366,12 +1617,27 @@ class GeneticAlgorithm:
                     break
                 ind = Individual(strategy_gene=gene)
                 ind.metrics['origin'] = 'llm_immigrant'
-                next_gen.add_individual(ind)
+                external_immigrants.append(ind)
             llm_immigrant_count = len(llm_genes)
         
-        # Fill remaining immigrant slots with random strategies
-        random_immigrant_target = immigrant_count - llm_immigrant_count
-        for _ in range(random_immigrant_target):
+        # Inject external immigrants first (LLM-generated, seed strategies, queued)
+        immigrants_before = len(next_gen)
+        external_injected = 0
+        for ext_ind in external_immigrants:
+            if len(next_gen) >= self.population_size or external_injected >= immigrant_count:
+                break
+            # Re-tag with current generation
+            ext_ind.strategy_gene.generation = self.current_generation + 1
+            ext_ind.strategy_gene.individual_id = calculate_next_id()
+            ext_ind.evaluated = False  # Force re-evaluation with current config
+            ext_ind.fitness = None
+            ext_ind.raw_fitness = None
+            next_gen.add_individual(ext_ind)
+            external_injected += 1
+        
+        # Fill remaining immigrant slots with random immigrants
+        random_immigrant_slots = max(0, immigrant_count - external_injected)
+        for _ in range(random_immigrant_slots):
             if len(next_gen) >= self.population_size:
                 break
             immigrant_gene = self.strategy_generator.generate_random_strategy(
@@ -1381,11 +1647,15 @@ class GeneticAlgorithm:
             next_gen.add_individual(Individual(strategy_gene=immigrant_gene))
         
         actual_immigrants_added = len(next_gen) - immigrants_before
+        parts = []
         if llm_immigrant_count > 0:
-            self.logger.info(f"[IMMIGRANTS] Added {actual_immigrants_added} immigrants "
-                           f"({llm_immigrant_count} LLM + {actual_immigrants_added - llm_immigrant_count} random)")
-        else:
-            self.logger.info(f"[IMMIGRANTS] Added {actual_immigrants_added} random immigrants")
+            parts.append(f"{llm_immigrant_count} LLM")
+        if external_injected - llm_immigrant_count > 0:
+            parts.append(f"{external_injected - llm_immigrant_count} external")
+        random_added = actual_immigrants_added - external_injected
+        if random_added > 0:
+            parts.append(f"{random_added} random")
+        self.logger.info(f"[IMMIGRANTS] Added {actual_immigrants_added} immigrants ({', '.join(parts)})")
         
         # Helper to create child from parent gene
         def create_child(parent_gene, ind_id):
@@ -1517,23 +1787,42 @@ class GeneticAlgorithm:
         
         return False
     
-    def evolve(self, resume: bool = False) -> List[Individual]:
+    def evolve(self, resume_from: Optional[str] = None) -> List[Individual]:
         """
         Run the complete evolution process.
         
         Args:
-            resume: If True, attempt to resume from a checkpoint
+            resume_from: Optional path to a checkpoint file to resume from.
+                        If provided, skips population initialization and continues
+                        from the saved generation.
         
         Returns:
             List of best individuals
         """
-        self.logger.info("=" * 70)
-        self.logger.info("GENETIC ALGORITHM STARTING")
-        self.logger.info("=" * 70)
-        self.logger.info(f"  Population: {self.population_size} | Generations: {self.generations}")
-        self.logger.info(f"  Mutation: {self.mutation_rate:.2%} | Crossover: {self.crossover_rate:.2%} ({self.crossover_method})")
-        self.logger.info(f"  Selection: {self.selection_method} | Elite size: {self.elite_size}")
-        self.logger.info("=" * 70)
+        # Install signal handler for graceful shutdown (SIGINT = Ctrl+C, SIGTERM = kill)
+        original_sigint = signal.getsignal(signal.SIGINT)
+        original_sigterm = signal.getsignal(signal.SIGTERM)
+        
+        def _graceful_shutdown_handler(signum, frame):
+            if self._shutdown_requested:
+                # Second signal = force quit
+                self.logger.warning("[SHUTDOWN] Force quit requested")
+                signal.signal(signal.SIGINT, original_sigint)
+                raise KeyboardInterrupt
+            self.request_shutdown()
+        
+        signal.signal(signal.SIGINT, _graceful_shutdown_handler)
+        signal.signal(signal.SIGTERM, _graceful_shutdown_handler)
+        
+        try:
+            return self._evolve_inner(resume_from)
+        finally:
+            # Restore original signal handlers
+            signal.signal(signal.SIGINT, original_sigint)
+            signal.signal(signal.SIGTERM, original_sigterm)
+    
+    def _evolve_inner(self, resume_from: Optional[str] = None) -> List[Individual]:
+        """Inner evolution loop with checkpoint/resume support."""
         
         # Start run diagnostics (CSV, timing, metadata)
         self.diagnostics.start_run(self.config)
@@ -1541,18 +1830,27 @@ class GeneticAlgorithm:
         # Start terminal monitor (live dashboard)
         self.monitor.start(self.config)
         
-        # Try to resume from checkpoint
-        start_generation = 0
-        if resume:
-            checkpoint = self.load_checkpoint()
-            if checkpoint:
-                population = self.restore_from_checkpoint(checkpoint)
-                start_generation = self.current_generation + 1
-                self.logger.info(f"Resuming evolution from generation {start_generation}")
-            else:
-                self.logger.info("No checkpoint found, starting fresh")
-                population = self.initialize_population()
+        start_gen = 0
+        
+        if resume_from:
+            # Resume from checkpoint
+            self.logger.info("=" * 70)
+            self.logger.info("RESUMING EVOLUTION FROM CHECKPOINT")
+            self.logger.info("=" * 70)
+            population, start_gen = self.load_checkpoint(resume_from)
+            self.logger.info(f"  Resuming at generation {start_gen + 1}/{self.generations}")
+            self.logger.info(f"  Population: {len(population.individuals)} | Best so far: {self.best_fitness_ever:.4f}")
+            self.logger.info(f"  Mutation rate: {self.mutation_rate:.2%} | No-improvement: {self.no_improvement_count}")
+            self.logger.info("=" * 70)
         else:
+            self.logger.info("=" * 70)
+            self.logger.info("GENETIC ALGORITHM STARTING")
+            self.logger.info("=" * 70)
+            self.logger.info(f"  Population: {self.population_size} | Generations: {self.generations}")
+            self.logger.info(f"  Mutation: {self.mutation_rate:.2%} | Crossover: {self.crossover_rate:.2%} ({self.crossover_method})")
+            self.logger.info(f"  Selection: {self.selection_method} | Elite size: {self.elite_size}")
+            self.logger.info("=" * 70)
+            
             # Initialize population
             population = self.initialize_population()
         
@@ -1568,7 +1866,7 @@ class GeneticAlgorithm:
             )
             self.logger.info(f"[ARCHIVE] Pareto archive enabled (max_size={pareto_archive.max_size}, decay={pareto_archive.decay_rate})")
 
-        for gen in range(start_generation, self.generations):
+        for gen in range(start_gen, self.generations):
             self.current_generation = gen
 
             # ── External control: stop check ──
@@ -1802,12 +2100,25 @@ class GeneticAlgorithm:
             except Exception:
                 pass  # Non-critical
             
+            # Save checkpoint at configured intervals
+            if self.checkpoint_interval > 0 and (gen + 1) % self.checkpoint_interval == 0:
+                self.save_checkpoint(population, gen)
+            
+            # Check for graceful shutdown request
+            if self._shutdown_requested:
+                self.logger.info("[SHUTDOWN] Saving checkpoint before shutdown...")
+                checkpoint_path = self.save_checkpoint(population, gen)
+                self.logger.info(f"[SHUTDOWN] Checkpoint saved: {checkpoint_path}")
+                self.logger.info(f"[SHUTDOWN] Resume with: --resume {checkpoint_path}")
+                break
+            
             # Check convergence
             if self.check_convergence(stats):
                 self.logger.info("[CONVERGENCE] Evolution converged early")
                 self.monitor.on_log(f"Evolution converged early at gen {gen+1}/{self.generations}", "warning")
                 self.monitor.on_convergence_warning(self.no_improvement_count, self.convergence_patience)
                 self.feature_tracker.log_summary()
+                # Save final checkpoint on convergence too
                 self.save_checkpoint(population, gen)
                 break
             elif self.no_improvement_count >= self.convergence_patience // 2:
@@ -1855,10 +2166,17 @@ class GeneticAlgorithm:
             except Exception as e:
                 self.logger.warning(f"LLM stats summary failed: {e}")
         
+        # Save final checkpoint
+        self.save_checkpoint(population, self.current_generation, 
+                            filepath=str(self.checkpoint_dir / "checkpoint_final.json"))
+        
         # Final summary
         self.logger.info("")
         self.logger.info("=" * 70)
-        self.logger.info("EVOLUTION COMPLETE")
+        if self._shutdown_requested:
+            self.logger.info("EVOLUTION PAUSED (graceful shutdown)")
+        else:
+            self.logger.info("EVOLUTION COMPLETE")
         self.logger.info("=" * 70)
         self.logger.info(f"  Total generations: {self.current_generation + 1}")
         
@@ -1876,11 +2194,12 @@ class GeneticAlgorithm:
                     self.logger.info(f"    {i+1}. {ind.id}: profit={m.get('profit', 0):.2f}%, drawdown={m.get('max_drawdown', 0):.1%}, sharpe={m.get('sharpe_ratio', 0):.2f}")
         else:
             # Single-objective: Show best individual
-            self.logger.info(f"  Best individual: {self.best_individual.id}")
-            self.logger.info(f"  Best fitness: {self.best_individual.fitness:.4f}")
-            if self.best_individual.metrics:
-                m = self.best_individual.metrics
-                self.logger.info(f"  Best profit: {m.get('profit', 0):.2f}% | Win rate: {m.get('win_rate', 0):.1%}")
+            if self.best_individual:
+                self.logger.info(f"  Best individual: {self.best_individual.id}")
+                self.logger.info(f"  Best fitness: {self.best_individual.fitness:.4f}")
+                if self.best_individual.metrics:
+                    m = self.best_individual.metrics
+                    self.logger.info(f"  Best profit: {m.get('profit', 0):.2f}% | Win rate: {m.get('win_rate', 0):.1%}")
         
         self.logger.info("=" * 70)
         

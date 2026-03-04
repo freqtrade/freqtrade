@@ -1,0 +1,2375 @@
+{
+  "version": 2,
+  "type": "seed",
+  "timestamp": "2026-03-04T15:23:14.377517",
+  "source": "Extracted from user_data/strategies/ga_generated/",
+  "count": 30,
+  "individuals": [
+    {
+      "id": "Gen17_Ind34",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 34,
+        "indicators": [
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 17
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 11,
+              "slow_period": 38,
+              "signal_period": 13
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 22,
+              "std_dev": 2.4245641106573794
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "BBANDS",
+            "operator": "<",
+            "threshold": 0.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "BBANDS",
+            "operator": ">",
+            "threshold": 0.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.08330263090024684,
+        "minimal_roi": {
+          "0": 0.037196216943282796,
+          "30": 0.017036055547921397,
+          "60": 0.02951180649704223
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377262",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind34.py"
+    },
+    {
+      "id": "Gen17_Ind33",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 33,
+        "indicators": [
+          {
+            "type": "RSI",
+            "parameters": {
+              "period": 16
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 20
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 25
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "CCI",
+            "operator": "<",
+            "threshold": -140.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "CCI",
+            "operator": ">",
+            "threshold": 189.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.053899665974414354,
+        "minimal_roi": {
+          "0": 0.06748683926178436,
+          "30": 0.04829043126544245,
+          "60": 0.010243445796654049
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377296",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind33.py"
+    },
+    {
+      "id": "Gen17_Ind32",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 32,
+        "indicators": [
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 16
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ADX",
+            "parameters": {
+              "period": 10
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 12
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 30.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.0985746040691437,
+        "minimal_roi": {
+          "0": 0.06375910495517383,
+          "30": 0.038399635837061186,
+          "60": 0.015794533402117686
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377310",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind32.py"
+    },
+    {
+      "id": "Gen17_Ind31",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 31,
+        "indicators": [
+          {
+            "type": "RSI",
+            "parameters": {
+              "period": 12
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 29
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 14,
+              "d_period": 5
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 37.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 35.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": ">",
+            "threshold": 68.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.09805584180597396,
+        "minimal_roi": {
+          "0": 0.021774491308540277,
+          "30": 0.029831610958820275,
+          "60": 0.029754394053466207
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377319",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind31.py"
+    },
+    {
+      "id": "Gen17_Ind30",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 30,
+        "indicators": [
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 10
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 13,
+              "slow_period": 23,
+              "signal_period": 14
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 16,
+              "d_period": 3
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 12
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "4h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "CCI",
+            "operator": "<",
+            "threshold": -189.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "CCI",
+            "operator": ">",
+            "threshold": 124.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [
+          "4h"
+        ],
+        "stoploss": -0.053899665974414354,
+        "minimal_roi": {
+          "0": 0.03352327202874135,
+          "30": 0.04259501636079951,
+          "60": 0.01738910209816219
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": 0.019137113314249804,
+        "trailing_stop_positive_offset": 0.04551981771169632
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377328",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind30.py"
+    },
+    {
+      "id": "Gen17_Ind29",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 29,
+        "indicators": [
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 30
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 17
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 20,
+              "std_dev": 2.3023976185832016
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 16,
+              "std_dev": 2.0656330167442145
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 13,
+              "d_period": 11
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 33.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [],
+        "stoploss": -0.10740597811317881,
+        "minimal_roi": {
+          "0": 0.021774491308540277,
+          "30": 0.029831610958820275,
+          "60": 0.029754394053466207
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377337",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind29.py"
+    },
+    {
+      "id": "Gen17_Ind28",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 28,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 29
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 58
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 29,
+              "std_dev": 2.8432628329716247
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "4h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 30.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [
+          "4h"
+        ],
+        "stoploss": -0.10692066861057478,
+        "minimal_roi": {
+          "0": 0.07618980321415304,
+          "30": 0.03338773599407767,
+          "60": 0.028554303972580276
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377347",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind28.py"
+    },
+    {
+      "id": "Gen17_Ind27",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 27,
+        "indicators": [
+          {
+            "type": "EMA",
+            "parameters": {
+              "period": 29
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ADX",
+            "parameters": {
+              "period": 15
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 15,
+              "d_period": 14
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": "cross_above",
+            "threshold": 0.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [],
+        "stoploss": -0.09454575640114996,
+        "minimal_roi": {
+          "0": 0.04076554292604209,
+          "30": 0.0208455114417563,
+          "60": 0.020222688447581436
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": 0.014899292690569724,
+        "trailing_stop_positive_offset": 0.0240744849251524
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377354",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind27.py"
+    },
+    {
+      "id": "Gen17_Ind26",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 26,
+        "indicators": [
+          {
+            "type": "RSI",
+            "parameters": {
+              "period": 7
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 20
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 13
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "CCI",
+            "operator": ">",
+            "threshold": -156.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [],
+        "stoploss": -0.10819035915167498,
+        "minimal_roi": {
+          "0": 0.07264947297464722,
+          "30": 0.03674905343260458,
+          "60": 0.015898487120730057
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377362",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind26.py"
+    },
+    {
+      "id": "Gen17_Ind25",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 25,
+        "indicators": [
+          {
+            "type": "RSI",
+            "parameters": {
+              "period": 10
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 17
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 23,
+              "std_dev": 2.6577707091386102
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": ">",
+            "threshold": 39.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [],
+        "stoploss": -0.053899665974414354,
+        "minimal_roi": {
+          "0": 0.02688037749833185,
+          "30": 0.016054649135155533,
+          "60": 0.019043117901791227
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377370",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind25.py"
+    },
+    {
+      "id": "Gen17_Ind24",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 24,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 29
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 58
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 17
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 20,
+              "std_dev": 2.3023976185832016
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 16,
+              "std_dev": 2.0656330167442145
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 30.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [],
+        "stoploss": -0.10740597811317881,
+        "minimal_roi": {
+          "0": 0.07618980321415304,
+          "30": 0.03338773599407767,
+          "60": 0.028554303972580276
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377378",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind24.py"
+    },
+    {
+      "id": "Gen17_Ind23",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 23,
+        "indicators": [
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 28
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ADX",
+            "parameters": {
+              "period": 10
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "4h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 30.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [
+          "4h"
+        ],
+        "stoploss": -0.08431497077552355,
+        "minimal_roi": {
+          "0": 0.02645932583327706,
+          "30": 0.01856945158049479,
+          "60": 0.017590236147287136
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377385",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind23.py"
+    },
+    {
+      "id": "Gen17_Ind22",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 22,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 32
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 58
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 20
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 19,
+              "d_period": 13
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 30.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.053899665974414354,
+        "minimal_roi": {
+          "0": 0.040676966029900036,
+          "30": 0.026211182577054917,
+          "60": 0.012226426026378067
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377393",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind22.py"
+    },
+    {
+      "id": "Gen17_Ind21",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 21,
+        "indicators": [
+          {
+            "type": "RSI",
+            "parameters": {
+              "period": 21
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 11,
+              "slow_period": 34,
+              "signal_period": 10
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "MACD",
+            "operator": "cross_above",
+            "threshold": 0.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.09652528714768671,
+        "minimal_roi": {
+          "0": 0.0752955605300519,
+          "30": 0.02901082342931518,
+          "60": 0.01938303292987232
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377400",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind21.py"
+    },
+    {
+      "id": "Gen17_Ind20",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 20,
+        "indicators": [
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 24,
+              "std_dev": 2.7267428602563033
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 15,
+              "d_period": 13
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 32.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "BBANDS",
+            "operator": "<",
+            "threshold": 0.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "BBANDS",
+            "operator": ">",
+            "threshold": 0.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "15m",
+        "informative_timeframes": [],
+        "stoploss": -0.053899665974414354,
+        "minimal_roi": {
+          "0": 0.023802207529951346,
+          "30": 0.03796987494100563,
+          "60": 0.02584230047784534
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377405",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind20.py"
+    },
+    {
+      "id": "Gen17_Ind19",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 19,
+        "indicators": [
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 11,
+              "slow_period": 38,
+              "signal_period": 13
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 14,
+              "d_period": 5
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 37.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 35.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": ">",
+            "threshold": 68.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.053899665974414354,
+        "minimal_roi": {
+          "0": 0.06375910495517383,
+          "30": 0.038399635837061186,
+          "60": 0.015794533402117686
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": 0.025026183221988713,
+        "trailing_stop_positive_offset": 0.02608111047878712
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377412",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind19.py"
+    },
+    {
+      "id": "Gen17_Ind18",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 18,
+        "indicators": [
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 13,
+              "slow_period": 23,
+              "signal_period": 14
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 14,
+              "d_period": 5
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 16,
+              "d_period": 3
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 81
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "4h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 37.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 35.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": ">",
+            "threshold": 68.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [
+          "4h"
+        ],
+        "stoploss": -0.14240517548976908,
+        "minimal_roi": {
+          "0": 0.03352327202874135,
+          "30": 0.04259501636079951,
+          "60": 0.01738910209816219
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377419",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind18.py"
+    },
+    {
+      "id": "Gen17_Ind17",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 17,
+        "indicators": [
+          {
+            "type": "EMA",
+            "parameters": {
+              "period": 28
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 16
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ADX",
+            "parameters": {
+              "period": 20
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 19,
+              "slow_period": 37,
+              "signal_period": 9
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ADX",
+            "parameters": {
+              "period": 12
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "1h"
+          },
+          {
+            "type": "EMA",
+            "parameters": {
+              "period": 30
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "4h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "ADX",
+            "operator": ">",
+            "threshold": 33.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "ADX",
+            "operator": ">",
+            "threshold": 29.0,
+            "logic": "OR"
+          }
+        ],
+        "timeframe": "15m",
+        "informative_timeframes": [
+          "1h",
+          "4h"
+        ],
+        "stoploss": -0.12155525259507415,
+        "minimal_roi": {
+          "0": 0.07608990790203939,
+          "30": 0.05092097823795105,
+          "60": 0.033603068876451946
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377427",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind17.py"
+    },
+    {
+      "id": "Gen17_Ind16",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 16,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 88
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 10
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 13,
+              "slow_period": 46,
+              "signal_period": 7
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 6,
+              "d_period": 9
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 28,
+              "std_dev": 2.8941908641323195
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "1h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 30.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": ">",
+            "threshold": 80.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "MACD",
+            "operator": "cross_below",
+            "threshold": 0.0,
+            "logic": "OR"
+          }
+        ],
+        "timeframe": "15m",
+        "informative_timeframes": [
+          "1h"
+        ],
+        "stoploss": -0.06736610759847969,
+        "minimal_roi": {
+          "0": 0.05285076068217538,
+          "30": 0.02461824075784439,
+          "60": 0.011327195097867952
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377435",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind16.py"
+    },
+    {
+      "id": "Gen17_Ind15",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 15,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 46
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 11,
+              "slow_period": 44,
+              "signal_period": 8
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ADX",
+            "parameters": {
+              "period": 19
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "4h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "ADX",
+            "operator": ">",
+            "threshold": 29.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "MACD",
+            "operator": "cross_above",
+            "threshold": 0.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "MACD",
+            "operator": "cross_below",
+            "threshold": 0.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [
+          "4h"
+        ],
+        "stoploss": -0.12141150148719902,
+        "minimal_roi": {
+          "0": 0.027773680970731008,
+          "30": 0.030179536122412094,
+          "60": 0.03904621113102134
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377443",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind15.py"
+    },
+    {
+      "id": "Gen17_Ind14",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 14,
+        "indicators": [
+          {
+            "type": "RSI",
+            "parameters": {
+              "period": 16
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "EMA",
+            "parameters": {
+              "period": 39
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 12
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 16
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "4h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 38.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [
+          "4h"
+        ],
+        "stoploss": -0.09692501163358744,
+        "minimal_roi": {
+          "0": 0.07806662585280319,
+          "30": 0.022772414025844297,
+          "60": 0.03512020294213809
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377450",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind14.py"
+    },
+    {
+      "id": "Gen17_Ind13",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 13,
+        "indicators": [
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 19
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 24,
+              "std_dev": 2.3168957504308887
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ADX",
+            "parameters": {
+              "period": 15
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "4h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "ADX",
+            "operator": ">",
+            "threshold": 28.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "BBANDS",
+            "operator": "<",
+            "threshold": 0.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "BBANDS",
+            "operator": ">",
+            "threshold": 0.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [
+          "4h"
+        ],
+        "stoploss": -0.0638371756857755,
+        "minimal_roi": {
+          "0": 0.07921337654490966,
+          "30": 0.018191320035353477,
+          "60": 0.019920871526196954
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377455",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind13.py"
+    },
+    {
+      "id": "Gen17_Ind12",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 12,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 25
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 16
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ADX",
+            "parameters": {
+              "period": 16
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "ADX",
+            "operator": ">",
+            "threshold": 31.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "ADX",
+            "operator": ">",
+            "threshold": 35.0,
+            "logic": "OR"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.060228378873803404,
+        "minimal_roi": {
+          "0": 0.0528309669540999,
+          "30": 0.034205666407860914,
+          "60": 0.039559527827603476
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377463",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind12.py"
+    },
+    {
+      "id": "Gen17_Ind11",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 11,
+        "indicators": [
+          {
+            "type": "RSI",
+            "parameters": {
+              "period": 21
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 19,
+              "slow_period": 30,
+              "signal_period": 12
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 17,
+              "std_dev": 2.3170694418277598
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 26.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "MACD",
+            "operator": "cross_below",
+            "threshold": 0.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.08736216335118754,
+        "minimal_roi": {
+          "0": 0.02001670963676981,
+          "30": 0.03405363278218935,
+          "60": 0.03256212314400766
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377469",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind11.py"
+    },
+    {
+      "id": "Gen17_Ind10",
+      "strategy_gene": {
+        "generation": 17,
+        "individual_id": 10,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 56
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 19
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "ADX",
+            "parameters": {
+              "period": 11
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 19
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "CCI",
+            "operator": "<",
+            "threshold": -112.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [],
+        "stoploss": -0.07275370853325845,
+        "minimal_roi": {
+          "0": 0.034268805451902196,
+          "30": 0.0505585928004307,
+          "60": 0.02273911728315408
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377476",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen17_Ind10.py"
+    },
+    {
+      "id": "Gen16_Ind79",
+      "strategy_gene": {
+        "generation": 16,
+        "individual_id": 79,
+        "indicators": [
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 13,
+              "slow_period": 23,
+              "signal_period": 14
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 14,
+              "d_period": 5
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 16,
+              "d_period": 3
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 12
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "4h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 37.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 35.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": ">",
+            "threshold": 68.0,
+            "logic": "AND"
+          }
+        ],
+        "timeframe": "1h",
+        "informative_timeframes": [
+          "4h"
+        ],
+        "stoploss": -0.09805584180597396,
+        "minimal_roi": {
+          "0": 0.03352327202874135,
+          "30": 0.04259501636079951,
+          "60": 0.01738910209816219
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377482",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen16_Ind79.py"
+    },
+    {
+      "id": "Gen16_Ind78",
+      "strategy_gene": {
+        "generation": 16,
+        "individual_id": 78,
+        "indicators": [
+          {
+            "type": "ATR",
+            "parameters": {
+              "period": 19
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 23,
+              "std_dev": 2.74350849565107
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 15,
+              "d_period": 11
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 29,
+              "std_dev": 2.8432628329716247
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": "1h"
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": "<",
+            "threshold": 25.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "BBANDS",
+            "operator": "<",
+            "threshold": 0.0,
+            "logic": "OR"
+          }
+        ],
+        "exit_conditions": [
+          {
+            "indicator": "STOCH",
+            "operator": ">",
+            "threshold": 66.0,
+            "logic": "OR"
+          },
+          {
+            "indicator": "BBANDS",
+            "operator": ">",
+            "threshold": 0.0,
+            "logic": "OR"
+          }
+        ],
+        "timeframe": "15m",
+        "informative_timeframes": [
+          "1h"
+        ],
+        "stoploss": -0.09515463279345258,
+        "minimal_roi": {
+          "0": 0.04900093425176815,
+          "30": 0.034449022154126804,
+          "60": 0.02388175647923
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377490",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen16_Ind78.py"
+    },
+    {
+      "id": "Gen16_Ind77",
+      "strategy_gene": {
+        "generation": 16,
+        "individual_id": 77,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 29
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 58
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 17
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 20,
+              "std_dev": 2.3023976185832016
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "BBANDS",
+            "parameters": {
+              "period": 16,
+              "std_dev": 2.0656330167442145
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 30.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [],
+        "stoploss": -0.10740597811317881,
+        "minimal_roi": {
+          "0": 0.07618980321415304,
+          "30": 0.03338773599407767,
+          "60": 0.028554303972580276
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377498",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen16_Ind77.py"
+    },
+    {
+      "id": "Gen16_Ind76",
+      "strategy_gene": {
+        "generation": 16,
+        "individual_id": 76,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 87
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "STOCH",
+            "parameters": {
+              "k_period": 19,
+              "d_period": 13
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "RSI",
+            "operator": "<",
+            "threshold": 30.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "1h",
+        "informative_timeframes": [],
+        "stoploss": -0.0614908057353529,
+        "minimal_roi": {
+          "0": 0.03352327202874135,
+          "30": 0.04259501636079951,
+          "60": 0.01738910209816219
+        },
+        "trailing_stop": true,
+        "trailing_stop_positive": 0.019137113314249804,
+        "trailing_stop_positive_offset": 0.04551981771169632
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377505",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen16_Ind76.py"
+    },
+    {
+      "id": "Gen16_Ind75",
+      "strategy_gene": {
+        "generation": 16,
+        "individual_id": 75,
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {
+              "period": 100
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "CCI",
+            "parameters": {
+              "period": 29
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          },
+          {
+            "type": "MACD",
+            "parameters": {
+              "fast_period": 11,
+              "slow_period": 34,
+              "signal_period": 10
+            },
+            "weight": 1.0,
+            "instance_id": null,
+            "timeframe": null
+          }
+        ],
+        "entry_conditions": [
+          {
+            "indicator": "MACD",
+            "operator": "cross_above",
+            "threshold": 0.0,
+            "logic": "AND"
+          }
+        ],
+        "exit_conditions": [],
+        "timeframe": "15m",
+        "informative_timeframes": [],
+        "stoploss": -0.053899665974414354,
+        "minimal_roi": {
+          "0": 0.021774491308540277,
+          "30": 0.029831610958820275,
+          "60": 0.029754394053466207
+        },
+        "trailing_stop": false,
+        "trailing_stop_positive": null,
+        "trailing_stop_positive_offset": null
+      },
+      "fitness": null,
+      "raw_fitness": null,
+      "objectives": null,
+      "rank": 0,
+      "crowding_distance": 0.0,
+      "metrics": {},
+      "created_at": "2026-03-04T15:23:14.377511",
+      "evaluated": false,
+      "parent_ids": [],
+      "mutations": [],
+      "source_file": "user_data/strategies/ga_generated/GAStrategy_Gen16_Ind75.py"
+    }
+  ]
+}
