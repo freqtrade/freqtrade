@@ -1605,12 +1605,45 @@ class GeneticAlgorithm:
             top_summaries = self.strategy_designer.get_top_performer_summaries(top_inds)
             weaknesses = self.strategy_designer.get_population_weaknesses(top_inds)
             
+            # Build feedback context for the LLM (performance history + feature importance)
+            feedback = None
+            try:
+                feature_report = self.feature_tracker.get_report()
+                
+                # Calculate plateau status
+                plateau_gens = 0
+                if len(self.generation_stats) >= 2:
+                    for i in range(len(self.generation_stats) - 1, 0, -1):
+                        if abs(self.generation_stats[i].best_fitness - self.generation_stats[i-1].best_fitness) < 0.001:
+                            plateau_gens += 1
+                        else:
+                            break
+                
+                evolution_progress = {
+                    'generation': self.current_generation + 1,
+                    'total_generations': self.generations,
+                    'best_fitness': self.best_fitness_ever,
+                    'plateau_generations': plateau_gens,
+                    'diversity': self.generation_stats[-1].genetic_diversity if self.generation_stats else None,
+                }
+                
+                feedback = self.strategy_designer.build_feedback_context(
+                    feature_report=feature_report,
+                    evolution_progress=evolution_progress,
+                )
+                self.logger.debug(f"[LLM FEEDBACK] Built feedback context with "
+                                f"{len(feedback.get('llm_strategy_results', []))} historical results, "
+                                f"{len(feedback.get('feature_importance', []))} feature scores")
+            except Exception as e:
+                self.logger.warning(f"[LLM FEEDBACK] Failed to build feedback context: {e}")
+            
             llm_genes = self.strategy_designer.generate_immigrants(
                 count=llm_immigrant_count,
                 generation=self.current_generation + 1,
                 start_id=calculate_next_id(),
                 top_performers=top_summaries,
                 weaknesses=weaknesses,
+                feedback=feedback,
             )
             for gene in llm_genes:
                 if len(next_gen) >= self.population_size:
@@ -1994,6 +2027,14 @@ class GeneticAlgorithm:
             except Exception as e:
                 self.logger.warning(f"Feature importance update failed: {e}")
                 self.monitor.on_error(f"Feature importance update failed: {e}")
+            
+            # Record LLM strategy performance for feedback loop
+            if self.llm_enabled and self.strategy_designer and self.strategy_designer.enabled:
+                try:
+                    self.strategy_designer.record_llm_performance(gen, population)
+                except Exception as e:
+                    self.logger.warning(f"LLM performance recording failed: {e}")
+            
             try:
                 self.hall_of_fame.update(population, gen)
             except Exception as e:
@@ -2163,6 +2204,29 @@ class GeneticAlgorithm:
                                f"Successful: {llm_stats['successful']} | "
                                f"Failed: {llm_stats['failed']} | "
                                f"Fixed: {llm_stats['validation_fixed']}")
+                
+                # LLM vs Random performance comparison
+                perf = llm_stats.get('llm_performance', {})
+                gens_tracked = llm_stats.get('generations_tracked', 0)
+                if gens_tracked > 0:
+                    avg_llm = perf.get('avg_llm_fitness', 0)
+                    avg_rand = perf.get('avg_random_fitness', 0)
+                    best_llm = perf.get('best_llm_fitness', 0)
+                    best_gen = perf.get('best_llm_generation', -1)
+                    advantage = avg_llm - avg_rand
+                    
+                    self.logger.info(f"[LLM vs RANDOM] Tracked over {gens_tracked} generations:")
+                    self.logger.info(f"  Avg LLM fitness:    {avg_llm:.4f}")
+                    self.logger.info(f"  Avg Random fitness: {avg_rand:.4f}")
+                    self.logger.info(f"  LLM advantage:      {'+' if advantage >= 0 else ''}{advantage:.4f}")
+                    self.logger.info(f"  Best LLM strategy:  {best_llm:.4f} (gen {best_gen})")
+                    
+                    if advantage > 0.05:
+                        self.logger.info("  --> LLM strategies are contributing meaningful value!")
+                    elif advantage < -0.05:
+                        self.logger.info("  --> LLM strategies are underperforming. Consider prompt tuning.")
+                    else:
+                        self.logger.info("  --> LLM strategies performing on par with random.")
             except Exception as e:
                 self.logger.warning(f"LLM stats summary failed: {e}")
         

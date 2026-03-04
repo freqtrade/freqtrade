@@ -590,12 +590,6 @@ Examples:
     )
     
     parser.add_argument(
-        '--resume',
-        action='store_true',
-        help='Resume evolution from the latest checkpoint (if available)'
-    )
-    
-    parser.add_argument(
         '--no-monitor',
         action='store_true',
         help='Disable the terminal monitor (use classic scrolling log output)'
@@ -1110,7 +1104,7 @@ def _start_with_dashboard(args):
         # Start evolution as a managed run
         handle = run_manager.start_run(
             config=config,
-            resume_from=str(Path("genetic_algorithm/data/checkpoints")) if args.resume else None,
+            resume_from=args.resume if args.resume else None,
         )
         print(f"  Evolution started: run_id={handle.run_id}")
         print()

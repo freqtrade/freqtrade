@@ -14,6 +14,7 @@ from genetic_algorithm.llm.provider import (
     LLMProvider,
     LLMProviderFactory,
     GrokProvider,
+    GroqProvider,
     OpenAIProvider,
     AnthropicProvider,
     LocalProvider,
@@ -78,6 +79,13 @@ class AnthropicClient(LLMClient, AnthropicProvider):
         AnthropicProvider.__init__(self, config)
 
 
+class GroqClient(LLMClient, GroqProvider):
+    """Groq (groq.com) LPU inference client."""
+
+    def __init__(self, config: Dict[str, Any]):
+        GroqProvider.__init__(self, config)
+
+
 class LocalClient(LLMClient, LocalProvider):
     """Local LLM server client (Ollama / llama.cpp / vLLM)."""
 
@@ -92,6 +100,7 @@ class LocalClient(LLMClient, LocalProvider):
 _CLIENT_MAP: Dict[str, type] = {
     'grok': GrokClient,
     'xai': GrokClient,
+    'groq': GroqClient,
     'openai': OpenAIClient,
     'anthropic': AnthropicClient,
     'claude': AnthropicClient,

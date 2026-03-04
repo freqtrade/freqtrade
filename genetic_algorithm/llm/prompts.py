@@ -252,7 +252,8 @@ IMPORTANT:
 
     def build_immigrant_prompt(self, 
                                top_performers: Optional[List[Dict]] = None,
-                               weaknesses: Optional[List[str]] = None) -> str:
+                               weaknesses: Optional[List[str]] = None,
+                               feedback: Optional[Dict[str, Any]] = None) -> str:
         """
         Build a prompt for generating immigrant strategies during evolution.
         
@@ -262,6 +263,7 @@ IMPORTANT:
         Args:
             top_performers: Summary of current top strategies for context
             weaknesses: List of identified weaknesses to address
+            feedback: Performance feedback, feature importance, and evolution progress
             
         Returns:
             Formatted prompt string
@@ -286,6 +288,11 @@ IMPORTANT:
                 + "\n".join(f"  - {w}" for w in weaknesses)
             )
         
+        # Build feedback section from LLM performance history
+        feedback_section = ""
+        if feedback:
+            feedback_section = self._format_feedback_context(feedback)
+        
         return f"""Design a NOVEL cryptocurrency trading strategy that would complement existing strategies in a genetic algorithm population.
 
 {indicator_docs}
@@ -296,7 +303,7 @@ AVAILABLE CONDITION OPERATORS:
 {constraints}
 
 {schema}
-{context}{weakness_guidance}
+{context}{weakness_guidance}{feedback_section}
 
 Design a strategy that is DIFFERENT from the top performers above. 
 Use a different combination of indicators and trading logic.
@@ -305,6 +312,116 @@ Focus on robustness and generalization over raw profit.
 Generate exactly 1 strategy as a JSON object.
 Return ONLY valid JSON, no explanations."""
 
+    def _format_feedback_context(self, feedback: Dict[str, Any]) -> str:
+        """
+        Format performance feedback into prompt-friendly text.
+        
+        Includes:
+        1. How previous LLM strategies performed (learn from successes/failures)
+        2. Feature importance data (which indicators the GA selects for)
+        3. Evolution progress (generation, fitness trend, diversity)
+        """
+        sections = []
+        
+        # --- Section 1: LLM strategy performance results ---
+        llm_results = feedback.get('llm_strategy_results', [])
+        if llm_results:
+            lines = ["\n\nPERFORMANCE FEEDBACK - Your previous strategies' results:"]
+            
+            # Separate into successes and failures
+            good = [r for r in llm_results if r.get('fitness', 0) > 0.3]
+            bad = [r for r in llm_results if r.get('fitness', 0) <= 0.3]
+            
+            if good:
+                lines.append("  SUCCESSFUL strategies (learn from these):")
+                for r in good[:3]:
+                    lines.append(
+                        f"    Gen {r['generation']}: fitness={r['fitness']:.4f}, "
+                        f"profit={r['profit']:.1f}%, drawdown={r['max_drawdown']:.1f}%, "
+                        f"win_rate={r['win_rate']:.0f}%, trades={r['num_trades']}, "
+                        f"indicators={r['indicators']}"
+                    )
+            
+            if bad:
+                lines.append("  FAILED strategies (avoid these patterns):")
+                for r in bad[:3]:
+                    reasons = []
+                    if r.get('num_trades', 0) == 0:
+                        reasons.append("no trades generated")
+                    if r.get('max_drawdown', 0) > 0.20:
+                        reasons.append("excessive drawdown")
+                    if r.get('win_rate', 0) < 30:
+                        reasons.append("low win rate")
+                    if r.get('profit', 0) < -5:
+                        reasons.append("large loss")
+                    reason_str = f" (issues: {', '.join(reasons)})" if reasons else ""
+                    lines.append(
+                        f"    Gen {r['generation']}: fitness={r['fitness']:.4f}, "
+                        f"indicators={r['indicators']}{reason_str}"
+                    )
+            
+            # LLM vs Random comparison
+            llm_vs = feedback.get('llm_vs_random', {})
+            if llm_vs:
+                avg_llm = llm_vs.get('avg_llm_fitness', 0)
+                avg_rand = llm_vs.get('avg_random_fitness', 0)
+                diff = avg_llm - avg_rand
+                if diff > 0:
+                    lines.append(f"  Your strategies are OUTPERFORMING random by {diff:.4f} fitness on average. Keep innovating!")
+                elif diff < -0.05:
+                    lines.append(f"  Your strategies are UNDERPERFORMING random by {abs(diff):.4f}. Try different approaches!")
+                else:
+                    lines.append(f"  Your strategies perform similarly to random. Be bolder with indicator combinations!")
+            
+            sections.append("\n".join(lines))
+        
+        # --- Section 2: Feature importance (what the GA selects for) ---
+        feature_data = feedback.get('feature_importance', [])
+        if feature_data:
+            lines = ["\n\nFEATURE IMPORTANCE - Indicators the evolution process values most:"]
+            for f in feature_data:
+                score = f.get('importance_score', 0)
+                marker = "***" if score > 0.3 else "**" if score > 0.1 else "*"
+                lines.append(
+                    f"  {marker} {f['indicator']}: importance={score:+.4f}, "
+                    f"avg_fitness_when_present={f['avg_fitness']:.4f}"
+                )
+            
+            # Top condition patterns
+            patterns = feedback.get('top_condition_patterns', [])
+            if patterns:
+                lines.append("  Best condition patterns:")
+                for p in patterns[:3]:
+                    lines.append(f"    {p['pattern']} (score={p['score']:+.4f})")
+            
+            lines.append("  Use HIGH-importance indicators as building blocks. Avoid or recombine LOW-importance ones.")
+            sections.append("\n".join(lines))
+        
+        # --- Section 3: Evolution progress context ---
+        progress = feedback.get('evolution_progress', {})
+        if progress:
+            lines = ["\n\nEVOLUTION PROGRESS:"]
+            gen = progress.get('generation', '?')
+            total = progress.get('total_generations', '?')
+            best = progress.get('best_fitness', 0)
+            lines.append(f"  Generation: {gen}/{total}")
+            lines.append(f"  Best fitness so far: {best:.4f}")
+            
+            if progress.get('plateau_generations', 0) > 3:
+                lines.append(f"  WARNING: Evolution has plateaued for {progress['plateau_generations']} generations!")
+                lines.append("  Try a radically different approach - unusual indicator combinations or unconventional thresholds.")
+            
+            diversity = progress.get('diversity', None)
+            if diversity is not None:
+                if diversity < 0.3:
+                    lines.append(f"  Population diversity is LOW ({diversity:.2f}). Introduce novel, diverse strategies!")
+                elif diversity > 0.7:
+                    lines.append(f"  Population diversity is HIGH ({diversity:.2f}). Focus on quality over novelty.")
+            
+            sections.append("\n".join(lines))
+        
+        return "".join(sections)
+    
     def _format_indicator_reference(self) -> str:
         """Format the indicator reference for inclusion in prompts.""" 
         lines = ["AVAILABLE INDICATORS:"]

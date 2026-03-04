@@ -270,12 +270,37 @@ advanced:
   num_workers: 1
   enable_dry_run: false
   enable_ml_fitness: false
-  enable_llm: false
+  enable_llm: true
 
   llm:
-    provider: "grok"
+    # LLM-powered strategy generation via Groq (groq.com)
+    enabled: true
+    provider: "groq"  # Groq LPU inference (fast, OpenAI-compatible)
+    
+    # API key — leave empty to use GROQ_API_KEY env var (recommended)
     api_key: ""
-    model: "grok-1"
+    
+    # Model selection
+    model: "llama-3.3-70b-versatile"  # Fast, capable 70B model on Groq
+    
+    # Generation parameters
+    temperature: 0.7
+    max_retries: 3
+    timeout: 60
+    
+    # How many LLM-generated strategies to inject per generation
+    # With random_immigrants: 8, setting this to 5 means:
+    # - 5 LLM strategies (62.5%)
+    # - 3 random strategies (37.5%)
+    seed_strategies_per_generation: 5
+    
+    # Strategy design context
+    design_prompt:
+      market_context: "crypto"  # Domain context for the LLM
+      risk_profile: "moderate"  # Options: conservative, moderate, aggressive
+      optimization_focus: "consistency"  # Options: profit, drawdown, sharpe, consistency
+      include_top_performers: true  # Pass best strategies as examples to LLM
+      diversity_boost: true  # Encourage LLM to explore different indicator combos
 
   island_model:
     enabled: false
