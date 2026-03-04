@@ -117,7 +117,10 @@ class BaseReinforcementLearningModel(IFreqaiModel):
 
         dd: dict[str, Any] = dk.make_train_test_datasets(features_filtered, labels_filtered)
         self.df_raw = copy.deepcopy(dd["train_features"])
-        dk.fit_labels()  # FIXME useless for now, but just satiating append methods
+        # RL models do not use label pipelines for prediction (unlike Regression/Classifier
+        # models). fit_labels() is called here only to populate labels_mean/labels_std
+        # metadata so that downstream append methods do not encounter missing keys.
+        dk.fit_labels()
 
         # normalize all data based on train_dataset only
         prices_train, prices_test = self.build_ohlc_price_dataframes(dk.data_dictionary, pair, dk)
