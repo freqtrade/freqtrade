@@ -319,6 +319,8 @@ def text_table_add_metrics(strat_results: dict) -> None:
             ("Sharpe", f"{strat_results['sharpe']:.2f}" if "sharpe" in strat_results else "N/A"),
             ("Calmar", f"{strat_results['calmar']:.2f}" if "calmar" in strat_results else "N/A"),
             ("SQN", f"{strat_results['sqn']:.2f}" if "sqn" in strat_results else "N/A"),
+            ("Alpha", f"{strat_results['alpha']:.2%}" if "alpha" in strat_results else "N/A"),
+            ("Beta", f"{strat_results['beta']:.2f}" if "beta" in strat_results else "N/A"),
             (
                 "Profit factor",
                 (

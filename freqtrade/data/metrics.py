@@ -360,7 +360,6 @@ def calculate_sortino(
         # Define high (negative) sortino ratio to be clear that this is NOT optimal.
         sortino_ratio = -100
 
-    # print(expected_returns_mean, down_stdev, sortino_ratio)
     return sortino_ratio
 
 
@@ -385,13 +384,12 @@ def calculate_sharpe(
     up_stdev = np.std(total_profit)
 
     if up_stdev != 0:
-        sharp_ratio = expected_returns_mean / up_stdev * np.sqrt(365)
+        sharpe_ratio = expected_returns_mean / up_stdev * np.sqrt(365)
     else:
         # Define high (negative) sharpe ratio to be clear that this is NOT optimal.
-        sharp_ratio = -100
+        sharpe_ratio = -100
 
-    # print(expected_returns_mean, up_stdev, sharp_ratio)
-    return sharp_ratio
+    return sharpe_ratio
 
 
 def calculate_calmar(
@@ -461,3 +459,126 @@ def calculate_sqn(trades: pd.DataFrame, starting_balance: float) -> float:
         sqn = -100.0
 
     return round(sqn, 4)
+
+
+def calculate_alpha_beta(
+    trades: pd.DataFrame,
+    market_data: dict[str, pd.DataFrame],
+    min_date: datetime,
+    max_date: datetime,
+    starting_balance: float,
+) -> tuple[float, float]:
+    """
+    Calculate Alpha and Beta relative to market benchmark.
+
+    Alpha measures the excess return of the strategy over what the market's
+    risk-adjusted return would predict (CAPM model).
+    Beta measures the strategy's sensitivity to market movements.
+
+    :param trades: DataFrame containing trades (requires columns close_date and profit_abs)
+    :param market_data: Dict of DataFrames with OHLCV data for each pair (benchmark)
+    :param min_date: Start date for calculation
+    :param max_date: End date for calculation
+    :param starting_balance: Starting balance for normalization
+    :return: Tuple (alpha, beta) where:
+             - alpha is annualized excess return (float)
+             - beta is market sensitivity coefficient (float)
+    """
+    if len(trades) == 0 or not market_data or min_date >= max_date:
+        return 0.0, 0.0
+
+    strategy_returns = _calculate_daily_returns(trades, min_date, max_date, starting_balance)
+    market_returns = _calculate_market_daily_returns(market_data, min_date, max_date)
+
+    aligned = pd.DataFrame({"strategy": strategy_returns, "market": market_returns}).dropna()
+
+    if len(aligned) < 2:
+        return 0.0, 0.0
+
+    covariance = np.cov(aligned["strategy"], aligned["market"])[0, 1]
+    market_variance = np.var(aligned["market"], ddof=1)
+
+    if market_variance == 0 or np.isnan(market_variance) or math.isinf(market_variance):
+        beta = 0.0
+    else:
+        beta = covariance / market_variance
+
+    days_period = (max_date - min_date).days
+    if days_period == 0:
+        return 0.0, beta
+
+    strategy_return_ann = aligned["strategy"].mean() * 365
+    market_return_ann = aligned["market"].mean() * 365
+    expected_return = beta * market_return_ann
+    alpha = strategy_return_ann - expected_return
+
+    return alpha, beta
+
+
+def _calculate_daily_returns(
+    trades: pd.DataFrame, min_date: datetime, max_date: datetime, starting_balance: float
+) -> pd.Series:
+    """
+    Calculate daily returns from trades using portfolio value approach.
+
+    This function properly accounts for compounding by tracking the portfolio value
+    over time and calculating returns relative to the current portfolio value,
+    not the static starting balance. This ensures accurate comparison with market
+    returns for strategies with different holding periods.
+
+    :param trades: DataFrame containing trades with close_date and profit_abs
+    :param min_date: Start date
+    :param max_date: End date
+    :param starting_balance: Starting balance for normalization
+    :return: Series with date index and daily returns (as ratio)
+    """
+    if starting_balance <= 0:
+        date_range = pd.date_range(start=min_date, end=max_date, freq="D")
+        return pd.Series(0.0, index=date_range)
+
+    trades_copy = trades.copy()
+    trades_copy["close_date"] = pd.to_datetime(trades_copy["close_date"])
+
+    # Aggregate profits by day
+    daily_profits = trades_copy.resample("D", on="close_date")["profit_abs"].sum()
+
+    # Create full date range
+    date_range = pd.date_range(start=min_date, end=max_date, freq="D")
+
+    # Build portfolio value over time
+    portfolio_value = starting_balance
+    daily_returns = pd.Series(0.0, index=date_range)
+
+    for date in date_range:
+        if date in daily_profits.index:
+            profit = daily_profits[date]
+            # Calculate return as profit / portfolio_value_before_profit
+            if portfolio_value > 0:
+                daily_returns[date] = profit / portfolio_value
+            # Update portfolio value with the profit
+            portfolio_value += profit
+        # else: no trades closed this day, return remains 0.0
+
+    return daily_returns
+
+
+def _calculate_market_daily_returns(
+    market_data: dict[str, pd.DataFrame], min_date: datetime, max_date: datetime
+) -> pd.Series:
+    """
+    Calculate daily returns for the market benchmark (mean of all pairs).
+
+    :param market_data: Dict of DataFrames with OHLCV data for each pair
+    :param min_date: Start date
+    :param max_date: End date
+    :return: Series with date index and daily market returns
+    """
+    if not market_data:
+        return pd.Series(dtype=float)
+
+    df_combined = combined_dataframes_with_rel_mean(market_data, min_date, max_date, column="close")
+
+    market_prices = df_combined["mean"]
+    market_returns = market_prices.pct_change().fillna(0)
+
+    return market_returns

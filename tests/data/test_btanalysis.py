@@ -22,6 +22,7 @@ from freqtrade.data.btanalysis import (
 )
 from freqtrade.data.history import load_data, load_pair_history
 from freqtrade.data.metrics import (
+    calculate_alpha_beta,
     calculate_cagr,
     calculate_calmar,
     calculate_csum,
@@ -520,6 +521,173 @@ def test_calculate_sqn_cases(profits, starting_balance, expected_sqn, descriptio
 )
 def test_calculate_cagr(start, end, days, expected):
     assert round(calculate_cagr(days, start, end), 4) == expected
+
+
+def test_calculate_alpha_beta(testdatadir):
+    """Test alpha and beta calculation with real backtest data."""
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_data(filename)
+
+    # Create mock market data
+    min_date = bt_data["open_date"].min()
+    max_date = bt_data["close_date"].max()
+    date_range = DataFrame({"date": [min_date + timedelta(hours=i) for i in range(100)]})
+
+    # Create simple market data (trending up)
+    market_data = {
+        "BTC/USDT": date_range.assign(
+            open=100.0,
+            high=101.0,
+            low=99.0,
+            close=lambda x: 100 + x.index * 0.1,
+            volume=1000,
+        ),
+        "ETH/USDT": date_range.assign(
+            open=50.0,
+            high=51.0,
+            low=49.0,
+            close=lambda x: 50 + x.index * 0.05,
+            volume=1000,
+        ),
+    }
+
+    # Test empty dataframe
+    alpha, beta = calculate_alpha_beta(DataFrame(), {}, None, None, 0)
+    assert alpha == 0.0
+    assert beta == 0.0
+
+    # Test with actual data
+    alpha, beta = calculate_alpha_beta(bt_data, market_data, min_date, max_date, 0.01)
+
+    assert isinstance(alpha, float)
+    assert isinstance(beta, float)
+    assert -5.0 < beta < 5.0
+
+
+@pytest.mark.parametrize(
+    "strategy_returns,market_returns,expected_beta_sign,description",
+    [
+        ([0.01, 0.02, -0.01, 0.015], [0.01, 0.015, -0.005, 0.01], 1, "Positive correlation"),
+        ([-0.01, -0.02, 0.01, -0.015], [0.01, 0.02, -0.01, 0.015], -1, "Negative correlation"),
+        ([0.01, 0.01, 0.01, 0.01], [0.01, 0.02, -0.01, 0.015], 0, "No correlation (flat)"),
+    ],
+)
+def test_calculate_alpha_beta_synthetic(
+    strategy_returns, market_returns, expected_beta_sign, description
+):
+    """Test alpha/beta with synthetic data where outcomes are predictable."""
+    # Create trades from synthetic returns
+    dates = [dt_utc(2024, 1, 1) + timedelta(days=i) for i in range(len(strategy_returns))]
+    trades = DataFrame(
+        {
+            "close_date": dates,
+            "profit_abs": [r * 1000 for r in strategy_returns],  # 1000 starting balance
+        }
+    )
+
+    # Create market data from synthetic returns
+    market_prices = [100.0]
+    for ret in market_returns:
+        market_prices.append(market_prices[-1] * (1 + ret))
+
+    date_range_extended = [dates[0] - timedelta(days=1)] + dates
+    market_data = {
+        "PAIR1/USDT": DataFrame(
+            {
+                "date": date_range_extended,
+                "open": market_prices,
+                "high": market_prices,
+                "low": market_prices,
+                "close": market_prices,
+                "volume": 1000,
+            }
+        )
+    }
+
+    alpha, beta = calculate_alpha_beta(trades, market_data, dates[0], dates[-1], 1000.0)
+
+    if expected_beta_sign > 0:
+        assert beta > 0, f"Expected positive beta for: {description}"
+    elif expected_beta_sign < 0:
+        assert beta < 0, f"Expected negative beta for: {description}"
+    assert isinstance(alpha, float)
+    assert isinstance(beta, float)
+
+
+def test_calculate_alpha_beta_edge_cases():
+    """Test edge cases for alpha/beta calculation."""
+    # Single trade
+    trades = DataFrame({"close_date": [dt_utc(2024, 1, 1)], "profit_abs": [100.0]})
+    market_data = {
+        "PAIR1/USDT": DataFrame(
+            {
+                "date": [dt_utc(2024, 1, 1), dt_utc(2024, 1, 2)],
+                "open": [100, 101],
+                "high": [101, 102],
+                "low": [99, 100],
+                "close": [100, 101],
+                "volume": [1000, 1000],
+            }
+        )
+    }
+
+    alpha, beta = calculate_alpha_beta(
+        trades, market_data, dt_utc(2024, 1, 1), dt_utc(2024, 1, 2), 1000.0
+    )
+    # Should return some values or 0.0 for insufficient data
+    assert isinstance(alpha, float)
+    assert isinstance(beta, float)
+
+    # No market data
+    alpha, beta = calculate_alpha_beta(trades, {}, dt_utc(2024, 1, 1), dt_utc(2024, 1, 2), 1000.0)
+    assert alpha == 0.0
+    assert beta == 0.0
+
+    # Empty trades
+    alpha, beta = calculate_alpha_beta(
+        DataFrame(), market_data, dt_utc(2024, 1, 1), dt_utc(2024, 1, 2), 1000.0
+    )
+    assert alpha == 0.0
+    assert beta == 0.0
+
+
+def test_calculate_alpha_beta_compounding():
+    """
+    Test that alpha/beta calculation properly handles compounding.
+    Verifies returns are calculated relative to current portfolio value,
+    not static starting balance.
+    """
+    dates = [dt_utc(2024, 1, 1), dt_utc(2024, 1, 2)]
+    trades = DataFrame({"close_date": dates, "profit_abs": [100.0, 100.0]})
+
+    market_data = {
+        "PAIR1/USDT": DataFrame(
+            {
+                "date": [dt_utc(2023, 12, 31), dt_utc(2024, 1, 1), dt_utc(2024, 1, 2)],
+                "open": [100.0, 105.0, 110.25],
+                "high": [100.0, 105.0, 110.25],
+                "low": [100.0, 105.0, 110.25],
+                "close": [100.0, 105.0, 110.25],
+                "volume": [1000, 1000, 1000],
+            }
+        )
+    }
+
+    alpha, beta = calculate_alpha_beta(trades, market_data, dates[0], dates[-1], 1000.0)
+
+    from freqtrade.data.metrics import _calculate_daily_returns
+
+    strategy_returns = _calculate_daily_returns(trades, dates[0], dates[-1], 1000.0)
+
+    # Day 1: 100/1000 = 0.10
+    assert abs(strategy_returns[dates[0]] - 0.10) < 0.0001
+
+    # Day 2: 100/1100 = 0.0909 (compounded, NOT 100/1000 = 0.10)
+    expected_day2 = 100.0 / 1100.0
+    assert abs(strategy_returns[dates[1]] - expected_day2) < 0.0001
+
+    assert isinstance(alpha, float)
+    assert isinstance(beta, float)
 
 
 def test_calculate_max_drawdown2():

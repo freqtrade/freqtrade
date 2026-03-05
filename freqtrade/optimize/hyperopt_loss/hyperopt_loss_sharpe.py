@@ -34,6 +34,5 @@ class SharpeHyperOptLoss(IHyperOptLoss):
 
         Uses Sharpe Ratio calculation.
         """
-        sharp_ratio = calculate_sharpe(results, min_date, max_date, starting_balance)
-        # print(expected_returns_mean, up_stdev, sharp_ratio)
-        return -sharp_ratio
+        sharpe_ratio = calculate_sharpe(results, min_date, max_date, starting_balance)
+        return -sharpe_ratio

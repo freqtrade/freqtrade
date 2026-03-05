@@ -35,5 +35,4 @@ class SortinoHyperOptLoss(IHyperOptLoss):
         Uses Sortino Ratio calculation.
         """
         sortino_ratio = calculate_sortino(results, min_date, max_date, starting_balance)
-        # print(expected_returns_mean, down_stdev, sortino_ratio)
         return -sortino_ratio

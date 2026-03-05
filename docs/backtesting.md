@@ -388,10 +388,12 @@ It contains key metrics about the performance of your strategy on backtesting da
 - `Absolute profit`: Profit made in stake currency.
 - `Total profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table. Calculated as `(End capital − Starting capital) / Starting capital`.
 - `CAGR %`: Compound annual growth rate.
-- `Sortino`: Annualized Sortino ratio.
-- `Sharpe`: Annualized Sharpe ratio.
-- `Calmar`: Annualized Calmar ratio.
-- `SQN`: System Quality Number (SQN) - by Van Tharp.
+- `Sortino`: Annualized Sortino ratio - measures risk-adjusted returns using only downside deviation.
+- `Sharpe`: Annualized Sharpe ratio - measures risk-adjusted returns using total volatility.
+- `Calmar`: Annualized Calmar ratio - measures return relative to maximum drawdown.
+- `SQN`: System Quality Number (SQN) - by Van Tharp. Measures systematic trading quality.
+- `Alpha`: Annualized excess return over the market benchmark, adjusted for risk using CAPM. Positive alpha indicates the strategy outperforms a passive market investment after accounting for systematic risk. Expressed as a percentage.
+- `Beta`: Measures the strategy's sensitivity to market movements. A beta of 1.0 means the strategy moves in line with the market. Beta > 1.0 indicates higher volatility than the market, while beta < 1.0 indicates lower volatility. Negative beta indicates inverse correlation.
 - `Profit factor`: Sum of the profits of all winning trades divided by the sum of the losses of all losing trades.
 - `Expectancy (Ratio)`: Expectancy ratio, which is the average profit or loss per trade. A negative expectancy ratio means that your strategy is not profitable.
 - `Avg. daily profit`: Average profit per day, calculated as `(Total Profit / Backtest Days)`.
@@ -416,6 +418,42 @@ It contains key metrics about the performance of your strategy on backtesting da
 - `Profit at drawdown start` / `Profit at drawdown end`: Profit at the beginning and end of the largest drawdown period.
 - `Drawdown start` / `Drawdown end`: Start and end datetime for the largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
 - `Market change`: Change of the market during the backtest period. Calculated as the average of all pairs' changes from the first to the last candle using the "close" column.
+
+#### Understanding Alpha and Beta
+
+Alpha and Beta are metrics from Modern Portfolio Theory that help evaluate strategy performance relative to a market benchmark.
+
+**Beta (β)** measures systematic risk - how sensitive your strategy is to market movements:
+
+- **β = 1.0**: Your strategy moves in sync with the market. If the market goes up 10%, your strategy tends to go up 10%.
+- **β > 1.0**: Your strategy amplifies market moves (higher volatility). β = 1.5 means a 10% market move typically results in a 15% strategy move.
+- **β < 1.0**: Your strategy dampens market moves (lower volatility). β = 0.5 means a 10% market move typically results in a 5% strategy move.
+- **β < 0**: Your strategy moves opposite to the market (inverse correlation).
+
+**Alpha (α)** measures excess returns - the value your strategy adds beyond what the market provides:
+
+- **α > 0**: Your strategy outperforms the market after adjusting for risk. This is the "holy grail" - generating returns that can't be explained by market exposure alone.
+- **α = 0**: Your strategy performs exactly as expected given its beta (no excess returns).
+- **α < 0**: Your strategy underperforms - you'd be better off with a simple buy-and-hold approach.
+
+**The Market Benchmark**: For Freqtrade, the "market" is defined as a buy-and-hold portfolio consisting of equal weights of all pairs in your pairlist. This represents what you would earn by simply buying and holding instead of actively trading.
+
+**Calculation Method**: Strategy returns are calculated using a portfolio value approach that properly accounts for compounding. Each day's return is calculated as the profit divided by the current portfolio value (not the initial balance), ensuring accurate comparison with the market benchmark regardless of trade frequency or holding period. This makes alpha/beta meaningful for both high-frequency scalping strategies and longer-term position-holding strategies.
+
+**Example Interpretation**:
+
+```
+Beta: 0.80
+Alpha: 8.5%
+```
+
+This means:
+
+1. Your strategy is 20% less volatile than the market (β = 0.80).
+2. Despite lower volatility, you're generating 8.5% more annual return than a buy-and-hold strategy would predict (α = 8.5%).
+3. This indicates excellent risk-adjusted performance - you're achieving returns with less downside exposure.
+
+The calculations use the Capital Asset Pricing Model (CAPM) formula with a risk-free rate of 0%, consistent with Sharpe and Sortino calculations.
 
 ### Daily / Weekly / Monthly / Yearly breakdown
 
