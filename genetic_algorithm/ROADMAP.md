@@ -1,8 +1,8 @@
 # Genetic Algorithm Trading System — Roadmap
 
 **Created:** 2026-03-01  
-**Updated:** 2026-03-01  
-**Status:** Web dashboard implemented (backend + frontend). Core GA engine stable. Branch 3 quick wins done.  
+**Updated:** 2026-03-04  
+**Status:** Web dashboard implemented (backend + frontend). Core GA engine stable. Branch 3 quick wins done. **Branch 4 (LLM improvements) implemented.**  
 **Last validated run:** 229/229 GA tests passing.
 
 ---
@@ -18,6 +18,10 @@ The GA engine is **production-stable for iteration**. It can:
 - Parsimony pressure (parallel component removal trials)
 - Adaptive mutation, fitness sharing, convergence detection
 - Feature importance tracking
+- **LLM-guided mutation** — targeted patches to existing strategies *(NEW)*
+- **Batched LLM calls** — request multiple strategies per API call *(NEW)*
+- **Provider router with fallback** — automatic failover across providers *(NEW)*
+- **Stagnation escalation** — increase LLM involvement when GA plateaus *(NEW)*
 
 **Known limitations:**
 - Strategies converge quickly to low-fitness plateaus (best ~0.21 fitness, ~0.3% profit)
@@ -147,12 +151,113 @@ The GA engine is **production-stable for iteration**. It can:
 
 ---
 
+## Branch 4: LLM Integration Improvements
+
+**Status:** ✅ Implemented (2026-03-04)
+
+### Phase 1: LLM-as-Mutation Operator ✅
+
+**Implementation:**
+- [x] **`llm/diagnostics.py`** (NEW) — Diagnose strategy failure modes from metrics
+  - `diagnose_failure_mode()` — Returns targeted improvement hint based on metrics (zero trades, excessive drawdown, low win rate, etc.)
+  - `diagnose_all_failure_modes()` — Returns all applicable failure diagnoses
+  - `select_mutation_objective()` — Picks single most relevant mutation objective
+- [x] **`llm/prompts.py`** — Extended with mutation prompts
+  - `build_mutation_prompt()` — Creates LLM prompt with parent strategy JSON, metrics, and objective-conditioned improvement hint
+  - `build_batch_mutation_prompt()` — Batch version requesting N mutations per call
+- [x] **`llm/designer.py`** — Extended `StrategyDesigner` with mutation methods
+  - `mutate_strategy()` — Single strategy mutation via LLM
+  - `mutate_strategies_batch()` — Batch mutation of multiple strategies
+  - New config: `mutation_enabled`, `mutation_probability`, `mutation_top_k`, `mutation_stagnation_threshold`
+- [x] **`core/evolution.py`** — Wired LLM mutation into offspring loop
+  - Step 4 after normal GA mutation: LLM-guided mutation on top-K offspring
+  - Only applies when `mutation_enabled=True` and random < `mutation_probability`
+
+### Phase 2: Batching ✅
+
+**Implementation:**
+- [x] **`llm/designer.py`** — Added batch methods
+  - `generate_seed_strategies_batch()` — Request multiple seeds in single LLM call
+  - `generate_immigrants_batch()` — Request multiple immigrants per call
+  - Config: `batch_enabled`, `max_batch_size`
+- [x] **`core/evolution.py`** — Uses batch mode when enabled
+  - Seed population uses batch generation
+  - Immigrant injection uses batch generation
+
+### Phase 3: Provider Router with Fallback ✅
+
+**Implementation:**
+- [x] **`llm/router.py`** (NEW) — Multi-provider failover
+  - `LLMProviderRouter(LLMProvider)` — Wraps multiple providers, auto-failover on 429/errors
+  - 60-second cooldown for failed providers
+  - `create_provider_or_router()` — Factory function for backward compatibility
+- [x] **`llm/designer.py`** — Uses `create_provider_or_router()` for provider creation
+- [x] **`llm/__init__.py`** — Exports `LLMProviderRouter`, `create_provider_or_router`
+
+### Phase 4: Objective-Conditioned Prompts ✅
+
+**Implementation:**
+- [x] `build_mutation_prompt()` includes `objective` parameter
+- [x] `diagnose_failure_mode()` returns specific improvement hints:
+  - `ZERO TRADES` → "loosen entry conditions, widen indicator thresholds"
+  - `EXCESSIVE DRAWDOWN` → "add trend filter, tighten stops, reduce position size"
+  - `LOW WIN RATE` → "improve entry timing, add confirmation indicator"
+  - `HIGH TRADE FREQUENCY` → "add cooldown logic, stricter conditions"
+  - etc.
+
+### Phase 5: Stagnation Escalation ✅
+
+**Implementation:**
+- [x] **`core/evolution.py`** — `check_convergence()` enhanced
+  - Detects stagnation via `no_improvement_count >= escalation_threshold`
+  - Increases `immigrant_ratio` and `mutation_probability` when GA plateaus
+  - Config: `escalation_threshold`, `escalation_immigrant_ratio`, `escalation_mutation_probability`
+
+### Phase 6: LLM Usage Metrics ✅
+
+**Implementation:**
+- [x] **`llm/designer.py`** — Enhanced `stats` dictionary
+  - `calls_by_type`: tracks seed, immigrant, mutation calls separately
+  - `improvements_by_type`: tracks successful improvements by type
+  - `_budget_available()`, `_record_call()`, `reset_generation_budget()` for budget tracking
+  - Config: `max_calls_per_generation`, `max_calls_per_run`
+- [x] **`core/evolution.py`** — End-of-run LLM usage report
+  - Per-type breakdown (seeds, immigrants, mutations)
+  - Token usage, cost estimates
+  - Budget tracking
+
+### Config Keys Added
+
+```yaml
+advanced:
+  llm:
+    enabled: true
+    # Mutation
+    mutation_enabled: true
+    mutation_probability: 0.3
+    mutation_top_k: 5
+    mutation_stagnation_threshold: 3
+    # Batching
+    batch_enabled: true
+    max_batch_size: 5
+    # Budget
+    max_calls_per_generation: 20
+    max_calls_per_run: 200
+    # Escalation
+    escalation_threshold: 5
+    escalation_immigrant_ratio: 0.3
+    escalation_mutation_probability: 0.5
+```
+
+---
+
 ## Priority Order
 
 1. ~~**Branch 3 quick wins**~~ ✅ Done
 2. ~~**Branch 1 Phase 1**~~ ✅ Done (full React + FastAPI dashboard)
-3. **Branch 2 Phase 1** — Regime detection improvements (1-2 days)
-4. **Branch 1 Phase 2** — Parameter exploration UI polish (1-2 days)
-5. **Branch 2 Phase 2** — Anti-overfitting mechanisms (2-3 days)
-6. **Branch 1 Phase 3** — Checkpoint save/load, live parameter adjustment (2-3 days)
-7. **Branch 2 Phase 3** — Fitness function evolution (2-3 days)
+3. ~~**Branch 4 LLM improvements**~~ ✅ Done (LLM mutation, batching, router, escalation)
+4. **Branch 2 Phase 1** — Regime detection improvements (1-2 days)
+5. **Branch 1 Phase 2** — Parameter exploration UI polish (1-2 days)
+6. **Branch 2 Phase 2** — Anti-overfitting mechanisms (2-3 days)
+7. **Branch 1 Phase 3** — Checkpoint save/load, live parameter adjustment (2-3 days)
+8. **Branch 2 Phase 3** — Fitness function evolution (2-3 days)

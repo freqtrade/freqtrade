@@ -354,6 +354,13 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
         child1_gene.trailing_stop = parent2.strategy_gene.trailing_stop
         child2_gene.trailing_stop = parent1.strategy_gene.trailing_stop
     
+    # Swap regime specialization fields (Phase 1B)
+    if random.random() < swap_prob:
+        child1_gene.preferred_regime = parent2.strategy_gene.preferred_regime
+        child1_gene.regime_mode = parent2.strategy_gene.regime_mode
+        child2_gene.preferred_regime = parent1.strategy_gene.preferred_regime
+        child2_gene.regime_mode = parent1.strategy_gene.regime_mode
+    
     if random.random() < swap_prob:
         child1_gene.minimal_roi = parent2.strategy_gene.minimal_roi.copy()
         child2_gene.minimal_roi = parent1.strategy_gene.minimal_roi.copy()
@@ -437,10 +444,15 @@ def component_crossover(parent1: Individual, parent2: Individual,
         child1_gene.stoploss = parent2.strategy_gene.stoploss
         child1_gene.minimal_roi = parent2.strategy_gene.minimal_roi.copy()
         child1_gene.trailing_stop = parent2.strategy_gene.trailing_stop
+        # Include regime specialization in risk swap (Phase 1B)
+        child1_gene.preferred_regime = parent2.strategy_gene.preferred_regime
+        child1_gene.regime_mode = parent2.strategy_gene.regime_mode
         
         child2_gene.stoploss = parent1.strategy_gene.stoploss
         child2_gene.minimal_roi = parent1.strategy_gene.minimal_roi.copy()
         child2_gene.trailing_stop = parent1.strategy_gene.trailing_stop
+        child2_gene.preferred_regime = parent1.strategy_gene.preferred_regime
+        child2_gene.regime_mode = parent1.strategy_gene.regime_mode
     
     # Update generation and IDs
     child1_gene.generation = generation

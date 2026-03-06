@@ -88,6 +88,13 @@ class LLMProvider(ABC):
             Generated text response
         """
         pass
+
+    @property
+    def last_used_provider(self) -> str:
+        """Return the name of the provider that served the last call.
+        For single providers, this is always the provider name.
+        Overridden by LLMProviderRouter to track which sub-provider succeeded."""
+        return self.provider_name
     
     def generate_json(self, prompt: str, system_prompt: str = "") -> Optional[Dict]:
         """
@@ -200,8 +207,9 @@ class OpenAICompatibleProvider(LLMProvider):
                 logger.warning(f"HTTP {e.response.status_code} from {self.provider_name} "
                              f"(attempt {attempt+1}/{self.max_retries})")
                 if e.response.status_code == 429:
-                    # Rate limit — exponential backoff
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    # Rate limit — bubble up immediately so the router can
+                    # failover to the next provider without wasting retries.
+                    raise
                 elif e.response.status_code >= 500:
                     time.sleep(self.retry_delay)
                 else:
@@ -249,7 +257,7 @@ class AnthropicProvider(LLMProvider):
         if not self.base_url:
             self.base_url = 'https://api.anthropic.com/v1'
         if not self.model:
-            self.model = 'claude-sonnet-4-20250514'
+            self.model = 'claude-3-haiku-20240307'  # Cheapest model
     
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         """Generate using Anthropic Messages API."""

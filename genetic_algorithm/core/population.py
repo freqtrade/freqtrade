@@ -4,13 +4,19 @@ Population Management
 Manages a collection of individuals representing trading strategies.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict
 import random
 from dataclasses import dataclass, field
 import math
 
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.strategy_gene import StrategyGene
+
+
+# ---------- Module-level configuration (set once from GA config) ----------
+# Behavioral distance weight: 0 = pure structural, 1 = pure behavioral.
+# Modified at runtime by GeneticAlgorithm.__init__() when the config is loaded.
+_BEHAVIORAL_DISTANCE_WEIGHT: float = 0.0
 
 
 @dataclass
@@ -34,54 +40,130 @@ class PopulationStats:
     holdout_num_profitable: Optional[int] = None
 
 
+def calculate_behavioral_distance(ind1: Individual, ind2: Individual) -> Optional[float]:
+    """
+    Calculate behavioral distance between two *evaluated* strategies.
+
+    Uses phenotypic information (actual trading behaviour) rather than
+    genotypic structure.  Returns ``None`` if either individual lacks the
+    required metrics (e.g. not yet evaluated).
+
+    Components (weighted):
+      - Per-pair profit cosine distance  (0.40)
+      - Monthly-profit correlation dist  (0.30)
+      - Normalised trade-count diff      (0.15)
+      - Normalised max-drawdown diff     (0.15)
+    """
+    m1 = ind1.metrics if ind1.metrics else {}
+    m2 = ind2.metrics if ind2.metrics else {}
+
+    # Both must have been evaluated with per_pair_profit
+    pp1: Dict = m1.get('per_pair_profit')  # type: ignore[assignment]
+    pp2: Dict = m2.get('per_pair_profit')  # type: ignore[assignment]
+    if not pp1 or not pp2:
+        return None
+
+    # --- 1. Per-pair profit cosine distance (0-1) ---
+    all_pairs = sorted(set(list(pp1.keys()) + list(pp2.keys())))
+    if all_pairs:
+        v1 = [pp1.get(p, 0.0) for p in all_pairs]
+        v2 = [pp2.get(p, 0.0) for p in all_pairs]
+        dot = sum(a * b for a, b in zip(v1, v2))
+        mag1 = math.sqrt(sum(a * a for a in v1)) or 1e-9
+        mag2 = math.sqrt(sum(b * b for b in v2)) or 1e-9
+        cosine_sim = dot / (mag1 * mag2)
+        # clamp [-1, 1] due to float precision
+        cosine_sim = max(-1.0, min(1.0, cosine_sim))
+        pair_dist = (1.0 - cosine_sim) / 2.0  # map to [0, 1]
+    else:
+        pair_dist = 0.5
+
+    # --- 2. Monthly profits correlation distance (0-1) ---
+    mp1 = m1.get('monthly_profits')
+    mp2 = m2.get('monthly_profits')
+    if mp1 and mp2 and len(mp1) >= 2 and len(mp2) >= 2:
+        # Align lengths (truncate to shorter)
+        n = min(len(mp1), len(mp2))
+        s1, s2 = mp1[:n], mp2[:n]
+        mean1 = sum(s1) / n
+        mean2 = sum(s2) / n
+        cov = sum((a - mean1) * (b - mean2) for a, b in zip(s1, s2))
+        std1 = math.sqrt(sum((a - mean1) ** 2 for a in s1)) or 1e-9
+        std2 = math.sqrt(sum((b - mean2) ** 2 for b in s2)) or 1e-9
+        pearson = cov / (std1 * std2)
+        pearson = max(-1.0, min(1.0, pearson))
+        monthly_dist = (1.0 - pearson) / 2.0
+    else:
+        monthly_dist = 0.5
+
+    # --- 3. Trade count difference (0-1) ---
+    nt1 = m1.get('num_trades', 0)
+    nt2 = m2.get('num_trades', 0)
+    max_trades = max(nt1, nt2, 1)
+    trade_dist = abs(nt1 - nt2) / max_trades
+
+    # --- 4. Max drawdown difference (0-1) ---
+    dd1 = m1.get('max_drawdown', 0.0)
+    dd2 = m2.get('max_drawdown', 0.0)
+    dd_dist = abs(dd1 - dd2)  # already 0-1 range
+
+    return 0.40 * pair_dist + 0.30 * monthly_dist + 0.15 * trade_dist + 0.15 * dd_dist
+
+
 def calculate_strategy_distance(ind1: Individual, ind2: Individual) -> float:
     """
-    Calculate genetic distance between two strategies.
-    
-    Measures how different two strategies are based on:
-    - Indicator types and parameters
-    - Condition types and thresholds
-    - Risk parameters
-    
+    Calculate distance between two strategies.
+
+    Blends **structural** (genotypic) distance with **behavioral**
+    (phenotypic) distance.  The blend ratio is controlled by the
+    module-level ``_BEHAVIORAL_DISTANCE_WEIGHT`` (0 = pure structural,
+    1 = pure behavioral, default 0).
+
     Args:
         ind1: First individual
         ind2: Second individual
-        
+
     Returns:
         Distance score (0 = identical, higher = more different)
     """
+    # --- Structural distance (original) ---
     gene1 = ind1.strategy_gene
     gene2 = ind2.strategy_gene
-    
-    distance = 0.0
-    
+
+    structural = 0.0
+
     # Indicator type difference
     types1 = set(ind.type for ind in gene1.indicators)
     types2 = set(ind.type for ind in gene2.indicators)
     indicator_diff = len(types1.symmetric_difference(types2)) / max(len(types1), len(types2), 1)
-    distance += indicator_diff * 0.3
-    
+    structural += indicator_diff * 0.3
+
     # Condition count difference
     entry_diff = abs(len(gene1.entry_conditions) - len(gene2.entry_conditions))
     exit_diff = abs(len(gene1.exit_conditions) - len(gene2.exit_conditions))
-    condition_diff = (entry_diff + exit_diff) / 10.0  # Normalize
-    distance += min(condition_diff, 1.0) * 0.2
-    
+    condition_diff = (entry_diff + exit_diff) / 10.0
+    structural += min(condition_diff, 1.0) * 0.2
+
     # Timeframe difference
     if gene1.timeframe != gene2.timeframe:
-        distance += 0.2
-    
-    # Stoploss difference (normalized by actual range or clamped)
-    # Stoploss values are negative (e.g., -0.05 to -0.25), so use absolute values
+        structural += 0.2
+
+    # Stoploss difference
     stoploss_range = max(abs(gene1.stoploss), abs(gene2.stoploss), 0.20)
     stoploss_diff = abs(gene1.stoploss - gene2.stoploss) / stoploss_range
-    distance += min(stoploss_diff, 1.0) * 0.15
-    
+    structural += min(stoploss_diff, 1.0) * 0.15
+
     # Trailing stop difference
     if gene1.trailing_stop != gene2.trailing_stop:
-        distance += 0.15
-    
-    return distance
+        structural += 0.15
+
+    # --- Blend with behavioral distance if enabled ---
+    bw = _BEHAVIORAL_DISTANCE_WEIGHT
+    if bw > 0:
+        bd = calculate_behavioral_distance(ind1, ind2)
+        if bd is not None:
+            return (1.0 - bw) * structural + bw * bd
+    return structural
 
 
 def calculate_pairwise_distances(individuals: List[Individual]) -> List[List[float]]:

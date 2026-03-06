@@ -2,7 +2,7 @@
 Tests for Mutation Operators
 
 Tests mutate_parameters, mutate_indicators, mutate_conditions,
-mutate_structure, mutate_gaussian, mutate_swap, mutate_adaptive_per_gene,
+mutate_structure, mutate_gaussian, mutate_condition_reassign, mutate_adaptive_per_gene,
 mutate_dynamic_bounds, and the top-level mutate() dispatcher.
 """
 
@@ -18,7 +18,7 @@ from genetic_algorithm.core.mutation import (
     mutate_conditions,
     mutate_structure,
     mutate_gaussian,
-    mutate_swap,
+    mutate_condition_reassign,
     mutate_adaptive_per_gene,
     mutate,
     _mutate_indicator_params,
@@ -421,23 +421,23 @@ class TestMutateGaussian:
 
 
 # ============================================================================
-# mutate_swap
+# mutate_condition_reassign
 # ============================================================================
 
-class TestMutateSwap:
+class TestMutateConditionReassign:
     def test_returns_new_individual(self):
         random.seed(42)
         ind = _make_individual()
         config = _make_config()
-        result = mutate_swap(ind, 1.0, config)
+        result = mutate_condition_reassign(ind, 1.0, config)
         assert isinstance(result, Individual)
     
-    def test_swap_preserves_count(self):
-        """Swap should not add or remove indicators."""
+    def test_reassign_preserves_count(self):
+        """Condition reassign should not add or remove indicators."""
         random.seed(42)
         ind = _make_individual()
         config = _make_config()
-        result = mutate_swap(ind, 1.0, config)
+        result = mutate_condition_reassign(ind, 1.0, config)
         assert len(result.strategy_gene.indicators) == len(ind.strategy_gene.indicators)
         assert len(result.strategy_gene.entry_conditions) == len(ind.strategy_gene.entry_conditions)
 

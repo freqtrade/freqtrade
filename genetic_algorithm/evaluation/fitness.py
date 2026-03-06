@@ -8,6 +8,7 @@ and walk-forward optimization for preventing overfitting.
 
 import logging
 import hashlib
+from collections import OrderedDict
 from typing import Tuple, Dict, Any, List, Optional
 
 from genetic_algorithm.core.strategy_gene import StrategyGene
@@ -77,9 +78,11 @@ class FitnessEvaluator:
         self.strategy_generator = StrategyGenerator(config)
         
         # Walk-forward cache: (strategy_hash, window_index) -> BacktestResult
-        self._wf_cache: Dict[Tuple[str, int], BacktestResult] = {}
+        # Uses OrderedDict for LRU eviction — most-recently-used entries at the end.
+        self._wf_cache: OrderedDict[Tuple[str, int], BacktestResult] = OrderedDict()
         self._wf_cache_hits = 0
         self._wf_cache_misses = 0
+        self._wf_cache_max_size = self.walk_forward_config.get('cache_max_size', 10000)
         
         # Deflated Sharpe Ratio tracker (anti-overfitting)
         from genetic_algorithm.evaluation.deflated_sharpe import DSRTracker
@@ -339,6 +342,8 @@ class FitnessEvaluator:
                 cache_key = (strategy_hash, window.window_index)
                 if cache_key in self._wf_cache:
                     self._wf_cache_hits += 1
+                    # Promote to end for LRU ordering
+                    self._wf_cache.move_to_end(cache_key)
                     train_result = self._wf_cache[cache_key]
                     logger.debug(f"Cache hit for window {window.window_index + 1}/{len(windows)}")
                 else:
@@ -350,8 +355,10 @@ class FitnessEvaluator:
                         window.train_timerange,
                         strategy_max_open_trades=strategy_gene.max_open_trades
                     )
-                    # Cache the training result
+                    # Cache the training result (LRU eviction if over limit)
                     self._wf_cache[cache_key] = train_result
+                    while len(self._wf_cache) > self._wf_cache_max_size:
+                        self._wf_cache.popitem(last=False)  # evict oldest
                 
                 # Skip validation if training backtest completely failed
                 if not train_result.success:

@@ -25,11 +25,13 @@ data/*.db
 data/checkpoints/
 data/cache/*.json
 !data/cache/.gitkeep
+data/hall_of_fame_island_*/
 
 # Plots
 plots/*.png
 plots/*.jpg
 plots/*.pdf
+visualization/regime_comparison_output/
 
 # Example output
 examples/example_strategy.py

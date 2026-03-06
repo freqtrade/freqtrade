@@ -733,41 +733,85 @@ def main():
             yaml.dump(config, tmp_config)
             tmp_config_path = tmp_config.name
         
-        # Initialize GA with updated config
-        ga = GeneticAlgorithm(
-            tmp_config_path, 
-            visualize=args.visualize,
-            interactive=not args.no_interactive
-        )
+        # ── Island Model branch ──
+        island_cfg = config.get('island_model', {})
+        if island_cfg.get('enabled', False):
+            from genetic_algorithm.core.island_model import IslandModelEvolution
+            
+            print("  ┌───────────────────────────────────────┐")
+            print("  │   ISLAND MODEL EVOLUTION              │")
+            n_islands = len(island_cfg.get('islands', []))
+            n_gens = config.get('genetic_algorithm', {}).get('generations', 25)
+            print(f"  │   Islands: {n_islands}  Generations: {n_gens:<13}│")
+            print("  └───────────────────────────────────────┘")
+            print()
+            
+            island_evo = IslandModelEvolution(
+                config_path=tmp_config_path,
+                visualize=args.visualize,
+                interactive=not args.no_interactive,
+            )
+            
+            logger.info("Starting island model evolution...")
+            results = island_evo.evolve()
+            
+            # Collect top strategies across all islands
+            top_strategies = []
+            for island_name, individuals in results.items():
+                for ind in individuals[:2]:  # Top 2 per island
+                    top_strategies.append(ind)
+            top_strategies.sort(
+                key=lambda x: x.raw_fitness if x.raw_fitness else 0,
+                reverse=True,
+            )
+            top_strategies = top_strategies[:TOP_STRATEGIES_COUNT]
+            
+            # Use island_evo for reporting
+            ga = None  # No single GA instance
+            
+            # Get a strategy_generator from the first island GA for saving
+            first_island_name = list(island_evo.islands.keys())[0]
+            strategy_generator = island_evo.islands[first_island_name].strategy_generator
+            
+            # Clean up temporary config
+            Path(tmp_config_path).unlink(missing_ok=True)
+        else:
+            # ── Standard single-population GA ──
+            ga = GeneticAlgorithm(
+                tmp_config_path, 
+                visualize=args.visualize,
+                interactive=not args.no_interactive
+            )
         
-        # Handle --seed: load strategies from file and queue as immigrants
-        if args.seed:
-            seed_path = Path(args.seed)
-            if not seed_path.exists():
-                print(f"❌ Error: Seed file not found: {seed_path}")
-                return 1
-            seed_individuals = ga.load_seed_strategies(str(seed_path))
-            ga.inject_immigrants(seed_individuals)
-            print(f"  ✓ Loaded {len(seed_individuals)} seed strategies from {seed_path}")
-        
-        # Run evolution (with optional resume)
-        logger.info("Starting evolution process...")
-        resume_path = args.resume if args.resume else None
-        
-        if resume_path:
-            resume_file = Path(resume_path)
-            if not resume_file.exists():
-                print(f"❌ Error: Checkpoint file not found: {resume_file}")
-                return 1
-            print(f"  ✓ Resuming from checkpoint: {resume_file}")
-        
-        top_individuals = ga.evolve(resume_from=resume_path)
-        
-        # Get top N strategies
-        top_strategies = top_individuals[:TOP_STRATEGIES_COUNT]
-        
-        # Clean up temporary config
-        Path(tmp_config_path).unlink()
+            # Handle --seed: load strategies from file and queue as immigrants
+            if args.seed:
+                seed_path = Path(args.seed)
+                if not seed_path.exists():
+                    print(f"❌ Error: Seed file not found: {seed_path}")
+                    return 1
+                seed_individuals = ga.load_seed_strategies(str(seed_path))
+                ga.inject_immigrants(seed_individuals)
+                print(f"  ✓ Loaded {len(seed_individuals)} seed strategies from {seed_path}")
+            
+            # Run evolution (with optional resume)
+            logger.info("Starting evolution process...")
+            resume_path = args.resume if args.resume else None
+            
+            if resume_path:
+                resume_file = Path(resume_path)
+                if not resume_file.exists():
+                    print(f"❌ Error: Checkpoint file not found: {resume_file}")
+                    return 1
+                print(f"  ✓ Resuming from checkpoint: {resume_file}")
+            
+            top_individuals = ga.evolve(resume_from=resume_path)
+            
+            # Get top N strategies
+            top_strategies = top_individuals[:TOP_STRATEGIES_COUNT]
+            strategy_generator = ga.strategy_generator
+            
+            # Clean up temporary config
+            Path(tmp_config_path).unlink(missing_ok=True)
         
     except KeyboardInterrupt:
         print("\n\n" + "=" * 80)
@@ -775,10 +819,12 @@ def main():
         print("=" * 80)
         return 0
     except Exception as e:
+        import traceback
         print("\n\n" + "=" * 80)
         print("ERROR DURING EVOLUTION")
         print("=" * 80)
         print(f"\n{e}")
+        traceback.print_exc()
         logger.exception("Evolution failed")
         return 1
     
@@ -788,10 +834,15 @@ def main():
     print("=" * 80)
     print()
     
-    total_generations = ga.current_generation + 1
-    total_strategies = ga.population_size * total_generations
-    print(f"✓ Completed {total_generations} generations")
-    print(f"✓ Created {total_strategies} strategies")
+    if ga is not None:
+        total_generations = ga.current_generation + 1
+        total_strategies = ga.population_size * total_generations
+        print(f"✓ Completed {total_generations} generations")
+        print(f"✓ Created {total_strategies} strategies")
+    else:
+        # Island model — info is already printed by IslandModelEvolution
+        print(f"✓ Island model evolution finished")
+        print(f"✓ Top strategies collected: {len(top_strategies)}")
     print()
     
     # === Out-of-Sample Holdout Validation ===
@@ -859,156 +910,171 @@ def main():
     cpcv_enabled = cpcv_config.get('enabled', False)
 
     if cpcv_enabled and top_strategies:
-        from genetic_algorithm.evaluation.cpcv import CPCVValidator
-        from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
-        import numpy as np
-
-        print("=" * 80)
-        print("COMBINATORIAL PURGED CROSS-VALIDATION (CPCV)")
-        print("=" * 80)
-        n_groups = cpcv_config.get('n_groups', 6)
-        pbo_threshold = cpcv_config.get('pbo_threshold', 0.5)
-        print(f"  Groups: {n_groups}, PBO threshold: {pbo_threshold}")
-        print(f"  Evaluating top {len(top_strategies)} strategies...")
-        print()
-
-        cpcv_validator = CPCVValidator(config)
-        cpcv_backtester = DirectBacktester(config)
-
-        # Compute the time blocks for splitting backtest results
-        timerange = config.get('backtesting', {}).get('timerange', '')
-        strategy_block_results = {}
-
-        for rank, individual in enumerate(top_strategies, 1):
-            gene = individual.strategy_gene
-            strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
-            strategy_code = ga.strategy_generator.generate_strategy_code(gene)
-            strategy_id = f"rank_{rank}"
-
-            # Parse timerange to create block boundaries
-            if timerange and '-' in timerange:
-                from datetime import datetime as dt, timedelta
-                start_str, end_str = timerange.split('-')
-                start_date = dt.strptime(start_str, '%Y%m%d')
-                end_date = dt.strptime(end_str, '%Y%m%d')
-                total_days = (end_date - start_date).days
-                block_days = total_days // n_groups
-
-                block_profits = []
-                for block_idx in range(n_groups):
-                    block_start = start_date + timedelta(days=block_idx * block_days)
-                    block_end = (start_date + timedelta(days=(block_idx + 1) * block_days)
-                                 if block_idx < n_groups - 1 else end_date)
-                    block_tr = f"{block_start.strftime('%Y%m%d')}-{block_end.strftime('%Y%m%d')}"
-
-                    # Run backtest on this block
-                    bt_result = cpcv_backtester.backtest_strategy(
-                        strategy_code, strategy_name,
-                        timerange_override=block_tr,
-                        strategy_max_open_trades=gene.max_open_trades,
-                    )
-                    block_profit = bt_result.metrics.get('profit', 0.0) if bt_result.success else 0.0
-                    block_profits.append(block_profit)
-
-                strategy_block_results[strategy_id] = np.array(block_profits)
-                logger.info(f"  Rank {rank}: block profits = {[f'{p:.2f}' for p in block_profits]}")
-            else:
-                logger.warning(f"  Rank {rank}: skipped — no timerange configured")
-
-        # Run CPCV validation
-        if len(strategy_block_results) >= 2:
-            cpcv_result = cpcv_validator.validate_strategies(
-                strategy_block_results, timerange=timerange,
-            )
-
-            pbo = cpcv_result.get('pbo', 0.0)
-            penalty = cpcv_result.get('penalty', 1.0)
-            skipped = cpcv_result.get('skipped', False)
-
-            if not skipped:
-                status = "✓" if pbo < pbo_threshold else "⚠️"
-                print(f"  {status} PBO = {pbo:.3f} (threshold: {pbo_threshold})")
-                print(f"      Penalty multiplier: {penalty:.3f}")
-                print(f"      Paths evaluated: {cpcv_result.get('n_paths', 0)}")
-
-                per_strategy_oos = cpcv_result.get('per_strategy_oos', {})
-                for sid, oos_info in per_strategy_oos.items():
-                    print(f"      {sid}: mean_oos={oos_info['mean_oos']:.3f}, "
-                          f"std_oos={oos_info['std_oos']:.3f}")
-
-                # Store PBO in individual metrics
-                for rank, individual in enumerate(top_strategies, 1):
-                    individual.metrics['cpcv_pbo'] = pbo
-                    individual.metrics['cpcv_penalty'] = penalty
-                    oos_key = f"rank_{rank}"
-                    if oos_key in per_strategy_oos:
-                        individual.metrics['cpcv_mean_oos'] = per_strategy_oos[oos_key]['mean_oos']
-            else:
-                print(f"  ⚠️  CPCV skipped: {cpcv_result.get('reason', 'unknown')}")
+        if ga is None:
+            print("\n  \u26a0\ufe0f  CPCV skipped: not supported in island model mode (yet)\n")
         else:
-            print("  ⚠️  CPCV skipped: need >= 2 strategies with block results")
+            from genetic_algorithm.evaluation.cpcv import CPCVValidator
+            from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
+            import numpy as np
 
-        print()
-        print("  Legend: ✓ = PBO below threshold (low overfit risk), ⚠️ = PBO above threshold")
-        print()
+            print("=" * 80)
+            print("COMBINATORIAL PURGED CROSS-VALIDATION (CPCV)")
+            print("=" * 80)
+            n_groups = cpcv_config.get('n_groups', 6)
+            pbo_threshold = cpcv_config.get('pbo_threshold', 0.5)
+            print(f"  Groups: {n_groups}, PBO threshold: {pbo_threshold}")
+            print(f"  Evaluating top {len(top_strategies)} strategies...")
+            print()
+
+            cpcv_validator = CPCVValidator(config)
+            cpcv_backtester = DirectBacktester(config)
+
+            # Compute the time blocks for splitting backtest results
+            timerange = config.get('backtesting', {}).get('timerange', '')
+            strategy_block_results = {}
+
+            for rank, individual in enumerate(top_strategies, 1):
+                gene = individual.strategy_gene
+                strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
+                strategy_code = strategy_generator.generate_strategy_code(gene)
+                strategy_id = f"rank_{rank}"
+
+                # Parse timerange to create block boundaries
+                if timerange and '-' in timerange:
+                    from datetime import datetime as dt, timedelta
+                    start_str, end_str = timerange.split('-')
+                    start_date = dt.strptime(start_str, '%Y%m%d')
+                    end_date = dt.strptime(end_str, '%Y%m%d')
+                    total_days = (end_date - start_date).days
+                    block_days = total_days // n_groups
+
+                    block_profits = []
+                    for block_idx in range(n_groups):
+                        block_start = start_date + timedelta(days=block_idx * block_days)
+                        block_end = (start_date + timedelta(days=(block_idx + 1) * block_days)
+                                     if block_idx < n_groups - 1 else end_date)
+                        block_tr = f"{block_start.strftime('%Y%m%d')}-{block_end.strftime('%Y%m%d')}"
+
+                        # Run backtest on this block
+                        bt_result = cpcv_backtester.backtest_strategy(
+                            strategy_code, strategy_name,
+                            timerange_override=block_tr,
+                            strategy_max_open_trades=gene.max_open_trades,
+                        )
+                        block_profit = bt_result.metrics.get('profit', 0.0) if bt_result.success else 0.0
+                        block_profits.append(block_profit)
+
+                    strategy_block_results[strategy_id] = np.array(block_profits)
+                    logger.info(f"  Rank {rank}: block profits = {[f'{p:.2f}' for p in block_profits]}")
+                else:
+                    logger.warning(f"  Rank {rank}: skipped — no timerange configured")
+
+            # Run CPCV validation
+            if len(strategy_block_results) >= 2:
+                cpcv_result = cpcv_validator.validate_strategies(
+                    strategy_block_results, timerange=timerange,
+                )
+
+                pbo = cpcv_result.get('pbo', 0.0)
+                penalty = cpcv_result.get('penalty', 1.0)
+                skipped = cpcv_result.get('skipped', False)
+
+                if not skipped:
+                    status = "✓" if pbo < pbo_threshold else "⚠️"
+                    print(f"  {status} PBO = {pbo:.3f} (threshold: {pbo_threshold})")
+                    print(f"      Penalty multiplier: {penalty:.3f}")
+                    print(f"      Paths evaluated: {cpcv_result.get('n_paths', 0)}")
+
+                    per_strategy_oos = cpcv_result.get('per_strategy_oos', {})
+                    for sid, oos_info in per_strategy_oos.items():
+                        print(f"      {sid}: mean_oos={oos_info['mean_oos']:.3f}, "
+                              f"std_oos={oos_info['std_oos']:.3f}")
+
+                    # Store PBO in individual metrics
+                    for rank, individual in enumerate(top_strategies, 1):
+                        individual.metrics['cpcv_pbo'] = pbo
+                        individual.metrics['cpcv_penalty'] = penalty
+                        oos_key = f"rank_{rank}"
+                        if oos_key in per_strategy_oos:
+                            individual.metrics['cpcv_mean_oos'] = per_strategy_oos[oos_key]['mean_oos']
+                else:
+                    print(f"  ⚠️  CPCV skipped: {cpcv_result.get('reason', 'unknown')}")
+            else:
+                print("  ⚠️  CPCV skipped: need >= 2 strategies with block results")
+
+            print()
+            print("  Legend: ✓ = PBO below threshold (low overfit risk), ⚠️ = PBO above threshold")
+            print()
 
     # === Monte-Carlo Robustness Validation ===
     mc_config = config.get('monte_carlo', {})
     mc_enabled = mc_config.get('enabled', False)
 
     if mc_enabled and top_strategies:
-        from genetic_algorithm.evaluation.monte_carlo import run_monte_carlo
-        from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
+        if ga is None:
+            print("\n  \u26a0\ufe0f  Monte-Carlo skipped: not supported in island model mode (yet)\n")
+        else:
+            from genetic_algorithm.evaluation.monte_carlo import run_monte_carlo
+            from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
 
-        print("=" * 80)
-        print("MONTE-CARLO ROBUSTNESS ANALYSIS")
-        print("=" * 80)
-        num_perms = mc_config.get('num_permutations', 100)
-        print(f"  Running {num_perms} permutations per strategy...")
-        print()
+            print("=" * 80)
+            print("MONTE-CARLO ROBUSTNESS ANALYSIS")
+            print("=" * 80)
+            num_perms = mc_config.get('num_permutations', 100)
+            print(f"  Running {num_perms} permutations per strategy...")
+            print()
 
-        mc_backtester = DirectBacktester(config)
+            mc_backtester = DirectBacktester(config)
 
-        for rank, individual in enumerate(top_strategies, 1):
-            gene = individual.strategy_gene
-            strategy_code = ga.strategy_generator.generate_strategy_code(gene)
-            strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
+            for rank, individual in enumerate(top_strategies, 1):
+                gene = individual.strategy_gene
+                strategy_code = strategy_generator.generate_strategy_code(gene)
+                strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
 
-            bt_result = mc_backtester.backtest_strategy_with_trades(
-                strategy_code, strategy_name,
-                strategy_max_open_trades=gene.max_open_trades
-            )
+                bt_result = mc_backtester.backtest_strategy_with_trades(
+                    strategy_code, strategy_name,
+                    strategy_max_open_trades=gene.max_open_trades
+                )
 
-            if bt_result.success and bt_result.trades:
-                mc_result = run_monte_carlo(bt_result.trades, mc_config)
-                individual.metrics['mc_robustness'] = mc_result.robustness_score
-                individual.metrics['mc_mean_profit'] = mc_result.mean_profit
-                individual.metrics['mc_profit_p5'] = mc_result.profit_p5
-                individual.metrics['mc_profit_std'] = mc_result.profit_std
+                if bt_result.success and bt_result.trades:
+                    mc_result = run_monte_carlo(bt_result.trades, mc_config)
+                    individual.metrics['mc_robustness'] = mc_result.robustness_score
+                    individual.metrics['mc_mean_profit'] = mc_result.mean_profit
+                    individual.metrics['mc_profit_p5'] = mc_result.profit_p5
+                    individual.metrics['mc_profit_std'] = mc_result.profit_std
 
-                status = "✓" if mc_result.robustness_score >= 0.8 else "⚠️"
-                print(f"  {status} Rank {rank}: robustness={mc_result.robustness_score:.1%}, "
-                      f"mean_profit={mc_result.mean_profit:.2f}%, "
-                      f"p5={mc_result.profit_p5:.2f}%, p95={mc_result.profit_p95:.2f}%")
-            else:
-                individual.metrics['mc_robustness'] = 0.0
-                print(f"  ⚠️  Rank {rank}: backtest failed or no trades — skipped")
+                    status = "✓" if mc_result.robustness_score >= 0.8 else "⚠️"
+                    print(f"  {status} Rank {rank}: robustness={mc_result.robustness_score:.1%}, "
+                          f"mean_profit={mc_result.mean_profit:.2f}%, "
+                          f"p5={mc_result.profit_p5:.2f}%, p95={mc_result.profit_p95:.2f}%")
+                else:
+                    individual.metrics['mc_robustness'] = 0.0
+                    print(f"  ⚠️  Rank {rank}: backtest failed or no trades — skipped")
 
-        print()
-        print("  Legend: ✓ = ≥80% permutations profitable (robust), ⚠️ = <80% (fragile)")
-        print()
+            print()
+            print("  Legend: ✓ = ≥80% permutations profitable (robust), ⚠️ = <80% (fragile)")
+            print()
 
     # Display top strategies
-    print_top_strategies(top_strategies, ga.strategy_generator)
+    print_top_strategies(top_strategies, strategy_generator)
     
     # Save strategies
-    save_top_strategies(top_strategies, ga.strategy_generator, OUTPUT_DIR)
+    save_top_strategies(top_strategies, strategy_generator, OUTPUT_DIR)
     
     # Save summary report (with holdout/MC metrics and overfitting analysis)
+    # Collect generation_stats from island GAs when in island mode
+    _gen_stats = getattr(ga, 'generation_stats', None) if ga is not None else None
+    _gen_holdout = getattr(ga, 'generation_holdout_history', None) if ga is not None else None
+    if _gen_stats is None and ga is None and 'island_evo' in dir():
+        # Aggregate generation_stats from all island GAs
+        _gen_stats = []
+        for _iname, _iga in island_evo.islands.items():
+            for s in getattr(_iga, 'generation_stats', []):
+                _gen_stats.append(s)
     save_summary_report(
         top_strategies, OUTPUT_DIR, config,
-        generation_stats=getattr(ga, 'generation_stats', None),
-        generation_holdout_history=getattr(ga, 'generation_holdout_history', None),
+        generation_stats=_gen_stats,
+        generation_holdout_history=_gen_holdout,
     )
     
     # Final summary

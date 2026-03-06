@@ -163,7 +163,8 @@ class RegimeDetector:
             benchmark_pair: Optional benchmark pair for market-wide regime labeling
         """
         valid_methods = ['sma_adx', 'adx_di', 'adx_di_hysteresis', 'returns', 
-                         'rolling_returns', 'bollinger', 'hmm', 'volatility_cluster', 'ensemble']
+                         'rolling_returns', 'bollinger', 'hmm', 'volatility_cluster',
+                         'ensemble', 'ml_lgbm']
         if method not in valid_methods:
             raise ValueError(f"Unknown detection method: {method}. Valid: {valid_methods}")
         
@@ -197,7 +198,7 @@ class RegimeDetector:
         
         # Validate required columns
         required = ['close']
-        if self.method in ['adx_di', 'adx_di_hysteresis', 'sma_adx']:
+        if self.method in ['adx_di', 'adx_di_hysteresis', 'sma_adx', 'ml_lgbm']:
             required.extend(['high', 'low'])
         
         missing = [c for c in required if c not in df.columns]
@@ -223,6 +224,8 @@ class RegimeDetector:
             return self._detect_volatility_cluster(df)
         elif self.method == 'ensemble':
             return self._detect_ensemble(df)
+        elif self.method == 'ml_lgbm':
+            return self._detect_ml_lgbm(df)
         else:
             raise ValueError(f"Unknown method: {self.method}")
     
@@ -806,6 +809,26 @@ class RegimeDetector:
                     mask = mask | (aligned == RegimeType.VOLATILE)
                 vote_matrix[mask.values, regime_idx] += weight
         
+        # Optionally add ML model as an ensemble voter (Phase 1B)
+        try:
+            ml_model_path = Path(__file__).parent.parent / 'ml' / 'models' / 'regime_lgbm.pkl'
+            if ml_model_path.exists():
+                from genetic_algorithm.ml.regime_detector import MLRegimeDetector
+                ml_detector = MLRegimeDetector(model_path=str(ml_model_path))
+                ml_regimes = ml_detector.detect(df)
+                ml_weight = 2  # Same weight as the top rule-based methods
+                methods_weights['ml_lgbm'] = (ml_regimes, ml_weight)
+                # Re-accumulate votes for ML method
+                aligned_ml = ml_regimes.reindex(df.index)
+                for regime_type, regime_idx in regime_map.items():
+                    mask = (aligned_ml == regime_type)
+                    if regime_type == RegimeType.SIDEWAYS:
+                        mask = mask | (aligned_ml == RegimeType.VOLATILE)
+                    vote_matrix[mask.values, regime_idx] += ml_weight
+                logger.debug("ML regime model included in ensemble voting")
+        except Exception as e:
+            logger.debug(f"ML regime model not available for ensemble: {e}")
+
         # Find winner: highest weighted vote per row
         has_votes = vote_matrix.sum(axis=1) > 0
         winners = np.argmax(vote_matrix, axis=1)
@@ -817,6 +840,30 @@ class RegimeDetector:
             regime[mask] = regime_type
         
         return regime
+
+    def _detect_ml_lgbm(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Detect regime using a pre-trained LightGBM classifier.
+
+        Requires a trained model at genetic_algorithm/ml/models/regime_lgbm.pkl.
+        Train it first with: python -m genetic_algorithm.ml.train_regime
+
+        The ML model uses raw TA features and/or rule-based method outputs
+        as features (configurable via feature_mode during training).
+        """
+        from genetic_algorithm.ml.regime_detector import MLRegimeDetector
+
+        model_path = self.params.get(
+            'model_path',
+            str(Path(__file__).parent.parent / 'ml' / 'models' / 'regime_lgbm.pkl'),
+        )
+        feature_mode = self.params.get('feature_mode', 'combined')
+
+        ml_detector = MLRegimeDetector(
+            model_path=model_path,
+            feature_mode=feature_mode,
+        )
+        return ml_detector.detect(df)
     
     def classify_periods(
         self,

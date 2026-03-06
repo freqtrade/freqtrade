@@ -125,6 +125,7 @@ genetic_algorithm/data/checkpoints/
 genetic_algorithm/data/checkpoints_feature_test/
 genetic_algorithm/data/hall_of_fame/
 genetic_algorithm/data/hall_of_fame_feature_test/
+genetic_algorithm/data/hall_of_fame_island_*/
 genetic_algorithm/data/runs/
 genetic_algorithm/benchmark_results/
 genetic_algorithm/genetic_algorithm/
@@ -132,9 +133,13 @@ benchmark_*.txt
 benchmark_*.json
 evolution_*.txt
 tmp*.yaml
+genetic_algorithm/visualization/regime_comparison_output/
 
 # Web frontend
 genetic_algorithm/web/frontend/node_modules/
 genetic_algorithm/web/frontend/dist/
 genetic_algorithm/web/frontend/.env.local
 genetic_algorithm/web/frontend/.env.*.local
+# Generated ML artifacts
+genetic_algorithm/ml/models/*.pkl
+genetic_algorithm/ml/models/*report*.json

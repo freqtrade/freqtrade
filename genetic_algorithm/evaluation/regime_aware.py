@@ -388,6 +388,15 @@ class RegimeAwareEvaluator:
         use_confidence = self.regime_config.get('confidence_weighting', True)
         skipped_low_trades = 0
         
+        # Phase 1B: regime specialization settings
+        spec_config = self.regime_config.get('regime_specialization', {})
+        spec_enabled = spec_config.get('enabled', False)
+        specialist_boost = spec_config.get('specialist_boost', 1.5)
+        diversity_weight = spec_config.get('diversity_weight', 0.05)
+        
+        preferred_regime = getattr(strategy_gene, 'preferred_regime', None)
+        regime_mode = getattr(strategy_gene, 'regime_mode', 'generalist')
+        
         for result in results:
             if result.success and result.fitness is not None:
                 # Skip segments with too few trades — their fitness is noise
@@ -401,9 +410,25 @@ class RegimeAwareEvaluator:
                     )
                     continue
                 
-                # Apply regime weight
+                # Phase 1B: exclusive mode — skip non-matching regimes
                 regime_type = result.segment.regime.value
+                if (spec_enabled and regime_mode == 'exclusive'
+                        and preferred_regime is not None
+                        and regime_type != preferred_regime):
+                    logger.debug(
+                        f"Exclusive mode: skipping segment {result.segment.segment_id} "
+                        f"({regime_type}) — strategy prefers {preferred_regime}"
+                    )
+                    continue
+                
+                # Apply regime weight
                 regime_weight = self.regime_weights.get(regime_type, 1.0)
+                
+                # Phase 1B: specialist mode — boost preferred regime segments
+                if (spec_enabled and regime_mode == 'specialist'
+                        and preferred_regime is not None
+                        and regime_type == preferred_regime):
+                    regime_weight *= specialist_boost
                 
                 # Apply confidence weight: scale from 0.5 (low conf) to 1.0 (high conf)
                 if use_confidence:
@@ -464,10 +489,49 @@ class RegimeAwareEvaluator:
             # Fallback to mean
             aggregated_fitness = sum(fitness_values) / len(fitness_values)
         
+        # Phase 1B: regime diversity bonus/penalty
+        # Low fitness variance across regimes = consistent = bonus
+        # High variance = mono-regime specialist = slight penalty for generalists
+        regime_fitness_variance = 0.0
+        regime_diversity_score = 0.0
+        if spec_enabled and len(regime_scores) > 1 and diversity_weight > 0:
+            # Compute variance of mean fitness across regime types
+            regime_means = [
+                sum(scores) / len(scores)
+                for scores in regime_scores.values()
+                if scores
+            ]
+            if len(regime_means) > 1:
+                mean_of_means = sum(regime_means) / len(regime_means)
+                regime_fitness_variance = sum(
+                    (m - mean_of_means) ** 2 for m in regime_means
+                ) / len(regime_means)
+                # Diversity score: 1.0 = perfectly consistent, 0.0 = very inconsistent
+                # Use sigmoid-like mapping: variance of 0 → score 1.0, variance of 0.1+ → score ~0
+                regime_diversity_score = 1.0 / (1.0 + 10.0 * regime_fitness_variance)
+
+                # Apply as bonus/penalty for generalists only
+                # Specialists get no diversity penalty (they're supposed to focus)
+                if regime_mode == 'generalist':
+                    diversity_adjustment = diversity_weight * (regime_diversity_score - 0.5) * 2
+                    aggregated_fitness *= (1.0 + diversity_adjustment)
+                    logger.debug(
+                        f"Regime diversity: variance={regime_fitness_variance:.4f}, "
+                        f"score={regime_diversity_score:.4f}, "
+                        f"adjustment={diversity_adjustment:+.4f}"
+                    )
+        
         # Aggregate metrics
         aggregated_metrics = self._aggregate_metrics(results)
         aggregated_metrics['complexity'] = strategy_gene.calculate_complexity()
         aggregated_metrics['skipped_low_trade_segments'] = skipped_low_trades
+        
+        # Phase 1B: add regime specialization metadata
+        if spec_enabled:
+            aggregated_metrics['preferred_regime'] = preferred_regime
+            aggregated_metrics['regime_mode'] = regime_mode
+            aggregated_metrics['regime_fitness_variance'] = regime_fitness_variance
+            aggregated_metrics['regime_diversity_score'] = regime_diversity_score
         
         return aggregated_fitness, aggregated_metrics
     
