@@ -293,7 +293,8 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict,
             metrics = individual.metrics
             
             f.write(f"Rank {rank}: Gen{gene.generation}_Ind{gene.individual_id}\n")
-            f.write(f"  Fitness: {individual.fitness:.4f}\n")
+            f.write(f"  Raw Fitness: {individual.raw_fitness:.4f}\n")
+            f.write(f"  Shared Fitness: {individual.fitness:.4f}\n")
             f.write(f"  Profit: {metrics.get('profit', 0):.2f}%\n")
             f.write(f"  Sharpe Ratio: {metrics.get('sharpe_ratio', 0):.2f}\n")
             f.write(f"  Max Drawdown: {metrics.get('max_drawdown', 0):.2%}\n")
@@ -755,11 +756,11 @@ def main():
             logger.info("Starting island model evolution...")
             results = island_evo.evolve()
             
-            # Collect top strategies across all islands
+            # Collect top strategies across all islands — pool ALL individuals
+            # then rank globally to avoid missing strong candidates
             top_strategies = []
             for island_name, individuals in results.items():
-                for ind in individuals[:2]:  # Top 2 per island
-                    top_strategies.append(ind)
+                top_strategies.extend(individuals)
             top_strategies.sort(
                 key=lambda x: x.raw_fitness if x.raw_fitness else 0,
                 reverse=True,

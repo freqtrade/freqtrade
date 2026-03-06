@@ -1120,7 +1120,17 @@ class IslandModelEvolution:
         stats.generation = generation
         self.generation_stats[island_name].append(stats)
 
-        # Step 6b: Save best strategy snapshot for this generation
+        # Step 6b: Record LLM strategy performance for feedback loop
+        if ga.llm_enabled and ga.strategy_designer and ga.strategy_designer.enabled:
+            try:
+                ga.strategy_designer.record_llm_performance(generation, population)
+            except Exception as e:
+                self.logger.warning(
+                    "LLM performance recording failed for %s gen %d: %s",
+                    island_name, generation, e,
+                )
+
+        # Step 6c: Save best strategy snapshot for this generation
         try:
             self._save_strategy_snapshot(population, island_name, generation)
         except Exception as e:

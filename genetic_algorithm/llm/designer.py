@@ -866,6 +866,10 @@ class StrategyDesigner:
             )
 
             response = self.provider.generate_json(user_prompt, system_prompt)
+            # Track which provider served this call
+            used_provider = getattr(self.provider, 'last_used_provider',
+                                     getattr(self.provider, 'provider_name', 'unknown'))
+            self._last_provider_used = used_provider
             self._record_call()
 
             if response is None:
@@ -948,6 +952,10 @@ class StrategyDesigner:
             user_prompt = self.prompt_builder.build_batch_mutation_prompt(batch_items)
 
             response = self.provider.generate_json(user_prompt, system_prompt)
+            # Track which provider served this call
+            used_provider = getattr(self.provider, 'last_used_provider',
+                                     getattr(self.provider, 'provider_name', 'unknown'))
+            self._last_provider_used = used_provider
             self._record_call()
 
             if response is None:
@@ -1020,6 +1028,10 @@ class StrategyDesigner:
             )
 
             response = self.provider.generate_json(user_prompt, system_prompt)
+            # Track which provider served this call
+            used_provider = getattr(self.provider, 'last_used_provider',
+                                     getattr(self.provider, 'provider_name', 'unknown'))
+            self._last_provider_used = used_provider
             self._record_call()
 
             if response is None:
@@ -1095,6 +1107,10 @@ class StrategyDesigner:
             )
 
             response = self.provider.generate_json(user_prompt, system_prompt)
+            # Track which provider served this call
+            used_provider = getattr(self.provider, 'last_used_provider',
+                                     getattr(self.provider, 'provider_name', 'unknown'))
+            self._last_provider_used = used_provider
             self._record_call()
 
             if response is None:

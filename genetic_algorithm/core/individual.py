@@ -74,8 +74,9 @@ class Individual:
         """
         self.raw_fitness = fitness
         self.fitness = fitness  # Initially same as raw_fitness, may be adjusted by fitness sharing
-        # Preserve metadata keys (e.g., 'origin') set before evaluation
-        preserved = {k: v for k, v in self.metrics.items() if k in ('origin',)}
+        # Preserve metadata keys set before evaluation
+        _PRESERVE_KEYS = ('origin', 'llm_provider', 'island_name')
+        preserved = {k: v for k, v in self.metrics.items() if k in _PRESERVE_KEYS}
         self.metrics = metrics
         self.metrics.update(preserved)
         self.evaluated = True
@@ -98,8 +99,9 @@ class Individual:
             metrics: Dictionary of performance metrics
         """
         self.objectives = objectives
-        # Preserve metadata keys (e.g., 'origin') set before evaluation
-        preserved = {k: v for k, v in self.metrics.items() if k in ('origin',)}
+        # Preserve metadata keys set before evaluation
+        _PRESERVE_KEYS = ('origin', 'llm_provider', 'island_name')
+        preserved = {k: v for k, v in self.metrics.items() if k in _PRESERVE_KEYS}
         self.metrics = metrics
         self.metrics.update(preserved)
         self.evaluated = True
