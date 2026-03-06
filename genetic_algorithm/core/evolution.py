@@ -88,18 +88,20 @@ class GeneticAlgorithm:
                 pass  # NumPy not available, skip
             self.logger.info(f"Random seed set to {self.random_seed} for reproducibility")
         
+        # --- Core GA parameters ---
         self.population_size = ga_config['population_size']
         self.generations = ga_config['generations']
         self.mutation_rate = ga_config['mutation_rate']
         self.crossover_rate = ga_config['crossover_rate']
         self.elite_size = ga_config['elite_size']
         self.tournament_size = ga_config.get('tournament_size', 3)
+        self.adaptive_tournament = ga_config.get('adaptive_tournament', False)
         self.selection_method = ga_config.get('selection_method', 'tournament')
         self.crossover_method = ga_config.get('crossover_method', 'single_point')
         self.convergence_patience = ga_config.get('convergence_patience', 10)
         
         # NSGA-II multi-objective settings
-        self.mode = ga_config.get('mode', 'single_objective')  # 'single_objective' or 'nsga2'
+        self.mode = ga_config.get('mode', 'single_objective')
         self.nsga2_config = self.config.get('nsga2', {})
         self.objectives_config = self.nsga2_config.get('objectives', DEFAULT_OBJECTIVES)
         self.pareto_front_size = self.nsga2_config.get('pareto_front_size', 20)
@@ -111,18 +113,63 @@ class GeneticAlgorithm:
         self.allow_self_crossover = ga_config.get('allow_self_crossover', True)
         self.random_immigrants = ga_config.get('random_immigrants', 3)
         
-        # Initialize components
-        self.strategy_generator = StrategyGenerator(self.config)
+        # Behavioral distance blending (0 = structural only, 1 = behavioral only)
+        behavioral_weight = ga_config.get('behavioral_distance_weight', 0.0)
+        import genetic_algorithm.core.population as _pop_mod
+        _pop_mod._BEHAVIORAL_DISTANCE_WEIGHT = float(behavioral_weight)
         
-        # Initialize fitness evaluator - use regime-aware if enabled
+        # --- Adaptive parameters ---
+        self.base_mutation_rate = self.mutation_rate
+        self.adaptive_mutation = ga_config.get('adaptive_mutation', True)
+        self.max_adaptation_factor = ga_config.get('max_adaptation_factor', 2.0)
+        self.adaptation_step = ga_config.get('adaptation_step', 0.1)
+        self.max_mutation_rate = ga_config.get('max_mutation_rate', 0.5)
+        self.mutation_cooldown_factor = ga_config.get('mutation_cooldown_factor', 0.5)
+        
+        # --- Evolution tracking state ---
+        self.current_generation = 0
+        self.best_individual: Optional[Individual] = None
+        self.generation_stats: List[PopulationStats] = []
+        self.no_improvement_count = 0
+        self.best_fitness_ever = 0.0
+        self._new_best_this_gen = False
+
+        # External control hooks (set by web RunManager when run via dashboard)
+        self._web_stop_event = None
+        self._web_pause_event = None
+        self._web_injection_queue = None
+        self._web_run_id: Optional[str] = None
+        self._web_monitor = None
+
+        # External strategy injection
+        self._external_immigrants: List[Individual] = []
+        self._immigrant_provider: Optional[Callable[['GeneticAlgorithm', int], List[Individual]]] = None
+
+        # Graceful shutdown flag
+        self._shutdown_requested = False
+        
+        # --- Delegate subsystem initialisation to focused setup methods ---
+        self.strategy_generator = StrategyGenerator(self.config)
+        self._setup_evaluator()
+        self._setup_parallel()
+        self._setup_visualization(visualize, interactive)
+        self._setup_hall_of_fame()
+        self._setup_holdout()
+        self._setup_llm()
+        self._setup_diagnostics()
+
+    # ------------------------------------------------------------------
+    # Private setup helpers (extracted from __init__ for readability)
+    # ------------------------------------------------------------------
+
+    def _setup_evaluator(self):
+        """Initialise fitness evaluator (standard or regime-aware) + DSR tracker."""
         regime_config = self.config.get('regime_aware') or {}
         self.regime_aware_enabled = regime_config.get('enabled', False)
         
         if self.regime_aware_enabled:
             self.fitness_evaluator = create_regime_aware_evaluator(
-                self.config,
-                auto_detect=True
-            )
+                self.config, auto_detect=True)
             self.logger.info("=" * 70)
             self.logger.info("REGIME-AWARE EVALUATION ENABLED")
             self.logger.info(f"  Detection method: {regime_config.get('method', 'sma_adx')}")
@@ -136,7 +183,7 @@ class GeneticAlgorithm:
         # Log walk-forward status
         wf_config = self.config.get('walk_forward', {})
         if wf_config.get('enabled', False):
-            self.logger.info("="*80)
+            self.logger.info("=" * 80)
             self.logger.info("WALK-FORWARD OPTIMIZATION ENABLED")
             self.logger.info(f"  Train days: {wf_config.get('train_days')}")
             self.logger.info(f"  Validation days: {wf_config.get('validation_days')}")
@@ -144,7 +191,7 @@ class GeneticAlgorithm:
             self.logger.info(f"  Mode: {wf_config.get('mode', 'rolling')}")
             self.logger.info(f"  Aggregation: {wf_config.get('aggregation', 'mean')}")
             self.logger.info("  Fitness = aggregated validation score (NOT training score)")
-            self.logger.info("="*80)
+            self.logger.info("=" * 80)
         else:
             self.logger.info("Using standard single-period backtesting (walk-forward disabled)")
         
@@ -156,10 +203,18 @@ class GeneticAlgorithm:
             self.logger.info(f"  Pareto front size: {self.pareto_front_size}")
             self.logger.info("  Selection method will be overridden to 'nsga2'")
             self.logger.info("=" * 70)
-            # Override selection method for NSGA-II
             self.selection_method = 'nsga2'
         
-        # Initialize parallel evaluator if enabled
+        # Feature importance tracking
+        self.feature_tracker = FeatureImportanceTracker()
+        self.logger.info("Feature importance tracking enabled")
+        
+        # Centralized DSR tracker
+        from genetic_algorithm.evaluation.deflated_sharpe import DSRTracker
+        self._global_dsr_tracker = DSRTracker(self.config)
+
+    def _setup_parallel(self):
+        """Initialise parallel evaluator if enabled."""
         parallel_config = self.config.get('parallel_evaluation', {})
         self.parallel_enabled = parallel_config.get('enabled', False)
         self.parallel_evaluator = None
@@ -168,8 +223,7 @@ class GeneticAlgorithm:
             if is_parallel_available():
                 self.parallel_evaluator = ParallelEvaluator(
                     self.config,
-                    num_workers=parallel_config.get('num_workers')
-                )
+                    num_workers=parallel_config.get('num_workers'))
                 self.logger.info("=" * 70)
                 self.logger.info("PARALLEL EVALUATION ENABLED")
                 self.logger.info(f"  Workers: {self.parallel_evaluator.num_workers}")
@@ -178,128 +232,74 @@ class GeneticAlgorithm:
             else:
                 self.logger.warning("Parallel evaluation requested but multiprocessing not available")
                 self.parallel_enabled = False
-        
-        # Initialize visualizer (only if enabled and matplotlib is available)
+
+    def _setup_visualization(self, visualize: bool, interactive: bool):
+        """Initialise live visualiser and trade visualiser."""
         self.visualizer = None
         if visualize:
             try:
                 from genetic_algorithm.visualization import GAVisualizer
                 self.visualizer = GAVisualizer(
-                    enabled=True,
-                    interactive=interactive,
-                    save_plots=True
-                )
+                    enabled=True, interactive=interactive, save_plots=True)
             except ImportError as e:
                 import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Visualization disabled: {e}. Install matplotlib to enable visualization.")
+                logging.getLogger(__name__).warning(
+                    f"Visualization disabled: {e}. Install matplotlib to enable visualization.")
         
-        # Initialize trade visualizer (for trade charts)
         self.trade_visualizer = None
         trade_vis_config = self.config.get('trade_visualization', {})
         if trade_vis_config.get('enabled', False):
             try:
                 from genetic_algorithm.visualization.trade_visualizer import TradeVisualizer
-                # TradeVisualizer now accepts either a config dict or Path
-                self.trade_visualizer = TradeVisualizer(
-                    self.config,  # Pass full config, it extracts trade_visualization settings
-                    enabled=True
-                )
+                self.trade_visualizer = TradeVisualizer(self.config, enabled=True)
                 self.trade_vis_mode = trade_vis_config.get('mode', 'final')
                 self.trade_vis_top_n = trade_vis_config.get('top_n_strategies', 3)
                 self.logger.info(f"TradeVisualizer initialized (mode={self.trade_vis_mode}, top_n={self.trade_vis_top_n})")
             except ImportError as e:
                 self.logger.warning(f"Trade visualization disabled: {e}")
                 self.trade_visualizer = None
-        
-        # Track evolution
-        self.current_generation = 0
-        self.best_individual: Optional[Individual] = None
-        self.generation_stats: List[PopulationStats] = []
-        self.no_improvement_count = 0
-        self.best_fitness_ever = 0.0
-        self._new_best_this_gen = False
 
-        # External control hooks (set by web RunManager when run via dashboard)
-        self._web_stop_event = None    # threading/mp.Event — checked each generation
-        self._web_pause_event = None   # threading/mp.Event — blocks when set
-        self._web_injection_queue = None  # queue.Queue — drained each generation
-        self._web_run_id: Optional[str] = None
-        self._web_monitor = None       # WebSocketMonitor reference
-        
-        # Feature importance tracking
-        self.feature_tracker = FeatureImportanceTracker()
-        self.logger.info("Feature importance tracking enabled")
-        
-        # Hall of Fame
+    def _setup_hall_of_fame(self):
+        """Initialise Hall of Fame + checkpoint settings."""
         hof_config = self.config.get('hall_of_fame', {})
         hof_dir = hof_config.get('directory', 'genetic_algorithm/data/hall_of_fame')
         hof_max = hof_config.get('max_size', 50)
         hof_min_fitness = hof_config.get('min_fitness', 0.0)
         self.hall_of_fame = HallOfFame(
-            directory=hof_dir,
-            max_size=hof_max,
-            min_fitness=hof_min_fitness,
-        )
+            directory=hof_dir, max_size=hof_max, min_fitness=hof_min_fitness)
         self.hof_inject_count = hof_config.get('inject_count', 3)
         if self.hall_of_fame.entries:
-            self.logger.info(f"Hall of Fame loaded: {len(self.hall_of_fame.entries)} entries (best fitness: {self.hall_of_fame.entries[0].fitness:.4f})")
+            self.logger.info(
+                f"Hall of Fame loaded: {len(self.hall_of_fame.entries)} entries "
+                f"(best fitness: {self.hall_of_fame.entries[0].fitness:.4f})")
         
         # Checkpoint settings
         storage_config = self.config.get('storage', {})
         self.checkpoint_dir = Path(storage_config.get('checkpoint_dir', 'genetic_algorithm/data/checkpoints'))
         self.checkpoint_interval = storage_config.get('checkpoint_interval', 5)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        
-        # External strategy injection (LLM immigrants, seed strategies, etc.)
-        self._external_immigrants: List[Individual] = []
-        self._immigrant_provider: Optional[Callable[['GeneticAlgorithm', int], List[Individual]]] = None
-        
-        # Graceful shutdown flag
-        self._shutdown_requested = False
-        
-        # Adaptive parameters
-        self.base_mutation_rate = self.mutation_rate
-        self.adaptive_mutation = ga_config.get('adaptive_mutation', True)
-        self.max_adaptation_factor = ga_config.get('max_adaptation_factor', 2.0)
-        self.adaptation_step = ga_config.get('adaptation_step', 0.1)
-        self.max_mutation_rate = ga_config.get('max_mutation_rate', 0.5)  # Configurable hard cap
-        
-        # Centralized DSR tracker — shared across all generations for correct n_trials.
-        # Worker processes have their own isolated DSRTrackers with very few trials;
-        # this one is authoritative and used to recalculate DSR penalties in the main process.
-        from genetic_algorithm.evaluation.deflated_sharpe import DSRTracker
-        self._global_dsr_tracker = DSRTracker(self.config)
-        
-        # Holdout monitoring (optionally penalizes overfit elites) 
+
+    def _setup_holdout(self):
+        """Initialise holdout monitoring configuration."""
         holdout_mon_config = self.config.get('holdout_monitoring', {})
         self.holdout_monitoring_enabled = holdout_mon_config.get('enabled', False)
         self.holdout_monitoring_interval = holdout_mon_config.get('interval', 5)
         self.holdout_monitoring_top_n = holdout_mon_config.get('top_n', 3)
-        
-        # Holdout fitness penalty: when enabled, applies a soft multiplicative
-        # penalty to overfit elites so they're less likely to survive selection.
-        # penalty_factor controls severity: adjusted = fitness * max(0.5, 1.0 - degradation * penalty_factor)
         self.holdout_fitness_penalty = holdout_mon_config.get('fitness_penalty', False)
         self.holdout_penalty_factor = holdout_mon_config.get('penalty_factor', 0.5)
-        
-        # Holdout-aware early stopping
         self.holdout_early_stop = holdout_mon_config.get('early_stop', False)
         self.holdout_early_stop_threshold = holdout_mon_config.get('early_stop_threshold', 0.60)
         self.holdout_early_stop_checks = holdout_mon_config.get('early_stop_checks', 2)
-
-        # Cached holdout evaluator (created lazily in _run_holdout_monitoring)
         self._holdout_evaluator = None
         self._holdout_range = None
-        self._holdout_consecutive_bad = 0  # Counter for consecutive bad checks
-        self._holdout_degradation_history: list = []  # Track avg_degrad per check for trend detection
+        self._holdout_consecutive_bad = 0
+        self._holdout_degradation_history: list = []
         self.holdout_trend_early_stop = holdout_mon_config.get('trend_early_stop', True)
-        self.holdout_trend_checks = holdout_mon_config.get('trend_checks', 3)  # Consecutive worsening checks
-        
-        # Generation-level holdout history for reporting
+        self.holdout_trend_checks = holdout_mon_config.get('trend_checks', 3)
         self.generation_holdout_history: list = []
-        
-        # LLM-based strategy designer
+
+    def _setup_llm(self):
+        """Initialise LLM strategy designer + progress bar settings."""
         llm_config = self.config.get('advanced', {}).get('llm', {})
         self.llm_enabled = llm_config.get('enabled', False)
         self.strategy_designer = StrategyDesigner(self.config)
@@ -318,23 +318,16 @@ class GeneticAlgorithm:
         self.progress_show_fitness = progress_config.get('show_fitness', True)
         self.progress_show_profit = progress_config.get('show_profit', True)
         self.progress_update_every = progress_config.get('update_every', 1)
-        
         if self.progress_enabled:
             self.logger.info("Progress bar enabled")
         elif progress_config.get('enabled', False) and not TQDM_AVAILABLE:
             self.logger.warning("Progress bar requested but tqdm not installed. Run: pip install tqdm")
-        
-        # Checkpoint settings
-        storage_config = self.config.get('storage', {})
-        self.checkpoint_dir = Path(storage_config.get('checkpoint_dir', 'genetic_algorithm/data/checkpoints'))
-        self.checkpoint_interval = storage_config.get('checkpoint_interval', 5)
-        
-        # Run diagnostics (CSV, timing, metadata)
+
+    def _setup_diagnostics(self):
+        """Initialise run diagnostics and terminal monitor."""
         output_config = self.config.get('output', {})
         output_dir = Path(output_config.get('directory', 'genetic_algorithm/output'))
         self.diagnostics = RunDiagnostics(output_dir)
-
-        # Terminal monitor (live dashboard)
         self.monitor = create_monitor(self.config)
     
     def _save_legacy_checkpoint(self, population: Population, generation: int):
@@ -813,14 +806,24 @@ class GeneticAlgorithm:
             llm_count = int(remaining * self.strategy_designer.seed_ratio)
             if llm_count > 0:
                 self.logger.info(f"[LLM] Generating {llm_count} seed strategies via LLM...")
-                llm_genes = self.strategy_designer.generate_seed_strategies(
-                    count=llm_count,
-                    generation=0,
-                    start_id=seed_start_id,
-                )
+                # Use batch generation when enabled and count > 1
+                if self.strategy_designer.batch_enabled and llm_count > 1:
+                    llm_genes = self.strategy_designer.generate_seed_strategies_batch(
+                        count=llm_count,
+                        generation=0,
+                        start_id=seed_start_id,
+                    )
+                else:
+                    llm_genes = self.strategy_designer.generate_seed_strategies(
+                        count=llm_count,
+                        generation=0,
+                        start_id=seed_start_id,
+                    )
                 for gene in llm_genes:
                     individual = Individual(strategy_gene=gene)
                     individual.metrics['origin'] = 'llm_seed'
+                    if self.strategy_designer and hasattr(self.strategy_designer, '_last_provider_used'):
+                        individual.metrics['llm_provider'] = self.strategy_designer._last_provider_used
                     population.add_individual(individual)
                 llm_count = len(llm_genes)
                 self.logger.info(f"[LLM] Added {llm_count} LLM-generated seeds")
@@ -1637,19 +1640,33 @@ class GeneticAlgorithm:
             except Exception as e:
                 self.logger.warning(f"[LLM FEEDBACK] Failed to build feedback context: {e}")
             
-            llm_genes = self.strategy_designer.generate_immigrants(
-                count=llm_immigrant_count,
-                generation=self.current_generation + 1,
-                start_id=calculate_next_id(),
-                top_performers=top_summaries,
-                weaknesses=weaknesses,
-                feedback=feedback,
-            )
+            # Use batch generation when enabled and count > 1
+            if self.strategy_designer.batch_enabled and llm_immigrant_count > 1:
+                llm_genes = self.strategy_designer.generate_immigrants_batch(
+                    count=llm_immigrant_count,
+                    generation=self.current_generation + 1,
+                    start_id=calculate_next_id(),
+                    top_performers=top_summaries,
+                    weaknesses=weaknesses,
+                    feedback=feedback,
+                )
+            else:
+                llm_genes = self.strategy_designer.generate_immigrants(
+                    count=llm_immigrant_count,
+                    generation=self.current_generation + 1,
+                    start_id=calculate_next_id(),
+                    top_performers=top_summaries,
+                    weaknesses=weaknesses,
+                    feedback=feedback,
+                )
             for gene in llm_genes:
                 if len(next_gen) >= self.population_size:
                     break
                 ind = Individual(strategy_gene=gene)
                 ind.metrics['origin'] = 'llm_immigrant'
+                # Track which LLM provider generated this individual
+                if self.strategy_designer and hasattr(self.strategy_designer, '_last_provider_used'):
+                    ind.metrics['llm_provider'] = self.strategy_designer._last_provider_used
                 external_immigrants.append(ind)
             llm_immigrant_count = len(llm_genes)
         
@@ -1702,12 +1719,29 @@ class GeneticAlgorithm:
         offspring_count = 0
         offspring_added = 0
         
+        # --- Adaptive tournament size ---
+        # When enabled, adjusts selection pressure based on population diversity:
+        #   High diversity → larger tournament (exploit good solutions)
+        #   Low diversity  → smaller tournament (explore more broadly)
+        effective_tournament_size = self.tournament_size
+        if getattr(self, 'adaptive_tournament', False) and stats.genetic_diversity is not None:
+            if stats.genetic_diversity > 0.4:
+                effective_tournament_size = min(self.tournament_size + 2,
+                                                max(3, self.population_size // 2))
+            elif stats.genetic_diversity < self.diversity_threshold:
+                effective_tournament_size = max(2, self.tournament_size - 1)
+            if effective_tournament_size != self.tournament_size:
+                self.logger.info(
+                    f"[ADAPTIVE TOURNAMENT] diversity={stats.genetic_diversity:.3f} "
+                    f"→ tournament_size {self.tournament_size} → {effective_tournament_size}"
+                )
+        
         while len(next_gen) < self.population_size:
             # Select parents using configured method
             parent1, parent2 = select_parents(
                 population, num_parents=2,
                 method=self.selection_method,
-                tournament_size=self.tournament_size,
+                tournament_size=effective_tournament_size,
                 allow_duplicates=self.allow_self_crossover
             )
             
@@ -1745,6 +1779,9 @@ class GeneticAlgorithm:
                     mutation_count += 1
                     # Enforce min_entry_conditions after mutation
                     _enforce_min_entry_conditions(child.strategy_gene, self.config)
+                    # Tag GA-origin for tracking
+                    if 'origin' not in child.metrics:
+                        child.metrics['origin'] = 'ga_offspring'
                     next_gen.add_individual(child)
                     offspring_added += 1
                 except (ValueError, KeyError, AttributeError, TypeError) as e:
@@ -1754,8 +1791,76 @@ class GeneticAlgorithm:
             
             offspring_count += 2
         
+        # Step 4: LLM-guided mutation on top-K offspring
+        # Apply targeted LLM patches to offspring from the best parents,
+        # especially when the GA is stagnating.
+        llm_mutation_count = 0
+        if (self.llm_enabled and self.strategy_designer.enabled
+                and self.strategy_designer.mutation_enabled
+                and self.no_improvement_count >= self.strategy_designer.mutation_stagnation_threshold):
+            # Select top-K elites for LLM-guided mutation
+            top_k = self.strategy_designer.mutation_top_k
+            mutation_prob = self.strategy_designer.mutation_probability
+            
+            # During stagnation escalation, increase mutation probability
+            effective_prob = mutation_prob
+            escalation_threshold = self.config.get('advanced', {}).get('llm', {}).get(
+                'escalation_threshold', 5
+            )
+            if self.no_improvement_count >= escalation_threshold:
+                escalation_prob = self.config.get('advanced', {}).get('llm', {}).get(
+                    'escalation_mutation_probability', 0.25
+                )
+                effective_prob = max(mutation_prob, escalation_prob)
+            
+            # Get top individuals for LLM mutation candidates
+            mutation_candidates = ranked_by_raw[:top_k]
+            
+            for elite in mutation_candidates:
+                if len(next_gen) >= self.population_size:
+                    break
+                if random.random() > effective_prob:
+                    continue
+                
+                try:
+                    metrics = getattr(elite, 'metrics', {}) or {}
+                    # Add strategy complexity info for diagnosis
+                    gene = elite.strategy_gene
+                    metrics_with_complexity = dict(metrics)
+                    metrics_with_complexity['indicator_count'] = len(gene.indicators)
+                    metrics_with_complexity['condition_count'] = (
+                        len(gene.entry_conditions) + len(gene.exit_conditions)
+                    )
+                    metrics_with_complexity['fitness'] = elite.raw_fitness or 0
+                    
+                    mutated_gene = self.strategy_designer.mutate_strategy(
+                        parent_gene=gene,
+                        metrics=metrics_with_complexity,
+                        generation=self.current_generation + 1,
+                        individual_id=len(next_gen),
+                    )
+                    if mutated_gene:
+                        mutated_ind = Individual(strategy_gene=mutated_gene)
+                        mutated_ind.metrics['origin'] = 'llm_mutation'
+                        mutated_ind.metrics['parent_id'] = elite.strategy_gene.individual_id
+                        if self.strategy_designer and hasattr(self.strategy_designer, '_last_provider_used'):
+                            mutated_ind.metrics['llm_provider'] = self.strategy_designer._last_provider_used
+                        next_gen.add_individual(mutated_ind)
+                        llm_mutation_count += 1
+                except Exception as e:
+                    self.logger.debug(f"[LLM MUTATION] Failed: {e}")
+            
+            if llm_mutation_count > 0:
+                self.logger.info(
+                    f"[LLM MUTATION] Applied {llm_mutation_count} LLM-guided mutations "
+                    f"(stagnation: {self.no_improvement_count} gens)"
+                )
+        
         # Log generation summary
-        self.logger.info(f"[OFFSPRING] Added {offspring_added} offspring (crossovers: {crossover_count}, mutations: {mutation_count})")
+        parts_log = [f"crossovers: {crossover_count}", f"mutations: {mutation_count}"]
+        if llm_mutation_count > 0:
+            parts_log.append(f"LLM mutations: {llm_mutation_count}")
+        self.logger.info(f"[OFFSPRING] Added {offspring_added} offspring ({', '.join(parts_log)})")
         if crossover_failures > 0 or mutation_failures > 0:
             self.logger.warning(f"[FAILURES] Crossover: {crossover_failures}, Mutation: {mutation_failures}")
         
@@ -1802,13 +1907,52 @@ class GeneticAlgorithm:
                 f"Adaptive mutation: rate increased to {self.mutation_rate:.3f} "
                 f"(factor={adaptation_factor:.2f}, no improvement for {self.no_improvement_count} gens)"
             )
+        elif self.adaptive_mutation:
+            # Gradual cooldown: exponentially decay back toward base rate
+            # instead of snapping instantly.  This prevents sawtooth oscillation
+            # where a marginal improvement kills all exploratory momentum.
+            cooldown = getattr(self, 'mutation_cooldown_factor', 0.5)
+            excess = self.mutation_rate - self.base_mutation_rate
+            if excess > 1e-6:
+                self.mutation_rate = self.base_mutation_rate + excess * cooldown
+                self.logger.info(
+                    f"Adaptive mutation: cooling down to {self.mutation_rate:.3f} "
+                    f"(cooldown factor={cooldown})"
+                )
+            else:
+                self.mutation_rate = self.base_mutation_rate
         else:
-            # Reset to base rate when improving
             self.mutation_rate = self.base_mutation_rate
         
         if self.no_improvement_count >= self.convergence_patience:
             self.logger.info(f"Converged: No improvement for {self.convergence_patience} generations")
             return True
+        
+        # LLM stagnation escalation: boost LLM involvement when stuck
+        if self.llm_enabled and self.strategy_designer.enabled:
+            llm_cfg = self.config.get('advanced', {}).get('llm', {})
+            escalation_threshold = llm_cfg.get('escalation_threshold', 5)
+            
+            if self.no_improvement_count >= escalation_threshold:
+                # Escalate: increase immigrant ratio and log
+                base_ratio = llm_cfg.get('immigrant_ratio', 0.5)
+                escalation_ratio = llm_cfg.get('escalation_immigrant_ratio', 0.8)
+                if self.strategy_designer.immigrant_ratio < escalation_ratio:
+                    self.strategy_designer.immigrant_ratio = escalation_ratio
+                    self.logger.info(
+                        f"[LLM ESCALATION] Stagnation {self.no_improvement_count} gens "
+                        f"≥ threshold {escalation_threshold}: "
+                        f"immigrant_ratio {base_ratio:.0%} → {escalation_ratio:.0%}"
+                    )
+            elif self.no_improvement_count == 0:
+                # Reset to base ratio on improvement
+                base_ratio = llm_cfg.get('immigrant_ratio', 0.5)
+                if self.strategy_designer.immigrant_ratio != base_ratio:
+                    self.strategy_designer.immigrant_ratio = base_ratio
+                    self.logger.info(
+                        f"[LLM ESCALATION] Improvement found, "
+                        f"resetting immigrant_ratio to {base_ratio:.0%}"
+                    )
         
         # Stagnation warning at half patience
         half_patience = self.convergence_patience // 2
@@ -1997,7 +2141,9 @@ class GeneticAlgorithm:
                 pre_penalty_raw = best.raw_fitness
                 if pre_penalty_raw is not None and pre_penalty_raw > self.best_fitness_ever:
                     self.best_fitness_ever = pre_penalty_raw
-                    self.no_improvement_count = 0
+                    # Halve the stuck counter instead of zeroing — preserves
+                    # exploratory momentum from the elevated mutation rate.
+                    self.no_improvement_count = max(0, self.no_improvement_count // 2)
                     self._new_best_this_gen = True
                 self.logger.info(f"[NEW BEST] {best.id} with fitness {best.fitness:.4f}")
                 self.monitor.on_new_best(best)
@@ -2165,12 +2311,12 @@ class GeneticAlgorithm:
             elif self.no_improvement_count >= self.convergence_patience // 2:
                 self.monitor.on_convergence_warning(self.no_improvement_count, self.convergence_patience)
             
-            # Save checkpoint periodically
-            if self.checkpoint_interval > 0 and (gen + 1) % self.checkpoint_interval == 0:
-                self.save_checkpoint(population, gen)
-            
             # Create next generation
             if gen < self.generations - 1:  # Don't create next gen on last iteration
+                # Reset per-generation LLM budget
+                if self.llm_enabled and self.strategy_designer.enabled:
+                    self.strategy_designer.reset_generation_budget()
+                
                 self.diagnostics.start_phase('selection')
                 self.monitor.on_phase_start('selection')
                 population = self.create_next_generation(population)
@@ -2200,10 +2346,22 @@ class GeneticAlgorithm:
             try:
                 llm_stats = self.strategy_designer.get_stats()
                 self.logger.info("")
-                self.logger.info(f"[LLM DESIGNER] Requests: {llm_stats['total_requests']} | "
-                               f"Successful: {llm_stats['successful']} | "
-                               f"Failed: {llm_stats['failed']} | "
-                               f"Fixed: {llm_stats['validation_fixed']}")
+                self.logger.info("=" * 60)
+                self.logger.info("LLM USAGE REPORT")
+                self.logger.info("=" * 60)
+                self.logger.info(f"  Total API calls:  {llm_stats['total_requests']}")
+                self.logger.info(f"  Successful:       {llm_stats['successful']}")
+                self.logger.info(f"  Failed:           {llm_stats['failed']}")
+                self.logger.info(f"  Validation fixed: {llm_stats['validation_fixed']}")
+                self.logger.info(f"  Budget used:      {llm_stats.get('calls_this_run', 0)} / {llm_stats.get('budget_remaining', 0) + llm_stats.get('calls_this_run', 0)}")
+                
+                # Per-type breakdown
+                calls_by_type = llm_stats.get('calls_by_type', {})
+                if any(v > 0 for v in calls_by_type.values()):
+                    self.logger.info("  Calls by type:")
+                    for ctype, count in calls_by_type.items():
+                        if count > 0:
+                            self.logger.info(f"    {ctype}: {count}")
                 
                 # LLM vs Random performance comparison
                 perf = llm_stats.get('llm_performance', {})
@@ -2215,18 +2373,20 @@ class GeneticAlgorithm:
                     best_gen = perf.get('best_llm_generation', -1)
                     advantage = avg_llm - avg_rand
                     
-                    self.logger.info(f"[LLM vs RANDOM] Tracked over {gens_tracked} generations:")
-                    self.logger.info(f"  Avg LLM fitness:    {avg_llm:.4f}")
-                    self.logger.info(f"  Avg Random fitness: {avg_rand:.4f}")
-                    self.logger.info(f"  LLM advantage:      {'+' if advantage >= 0 else ''}{advantage:.4f}")
-                    self.logger.info(f"  Best LLM strategy:  {best_llm:.4f} (gen {best_gen})")
+                    self.logger.info(f"  [LLM vs RANDOM] Tracked over {gens_tracked} generations:")
+                    self.logger.info(f"    Avg LLM fitness:    {avg_llm:.4f}")
+                    self.logger.info(f"    Avg Random fitness: {avg_rand:.4f}")
+                    self.logger.info(f"    LLM advantage:      {'+' if advantage >= 0 else ''}{advantage:.4f}")
+                    self.logger.info(f"    Best LLM strategy:  {best_llm:.4f} (gen {best_gen})")
                     
                     if advantage > 0.05:
-                        self.logger.info("  --> LLM strategies are contributing meaningful value!")
+                        self.logger.info("    --> LLM strategies are contributing meaningful value!")
                     elif advantage < -0.05:
-                        self.logger.info("  --> LLM strategies are underperforming. Consider prompt tuning.")
+                        self.logger.info("    --> LLM strategies are underperforming. Consider prompt tuning.")
                     else:
-                        self.logger.info("  --> LLM strategies performing on par with random.")
+                        self.logger.info("    --> LLM strategies performing on par with random.")
+                
+                self.logger.info("=" * 60)
             except Exception as e:
                 self.logger.warning(f"LLM stats summary failed: {e}")
         

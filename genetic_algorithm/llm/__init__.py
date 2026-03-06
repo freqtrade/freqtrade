@@ -17,13 +17,26 @@ from genetic_algorithm.llm.client import (
 )
 from genetic_algorithm.llm.parser import StrategyParser
 from genetic_algorithm.llm.injector import LLMInjector
+from genetic_algorithm.llm.router import LLMProviderRouter, create_provider_or_router
+from genetic_algorithm.llm.diagnostics import (
+    diagnose_failure_mode,
+    diagnose_all_failure_modes,
+    select_mutation_objective,
+)
 
 __all__ = [
-    # Legacy / provider layer
+    # Provider layer
     'LLMProvider',
     'LLMProviderFactory',
+    'LLMProviderRouter',
+    'create_provider_or_router',
+    # Designer (main interface for evolution engine)
     'StrategyDesigner',
-    # Phase 1A additions
+    # Diagnostics
+    'diagnose_failure_mode',
+    'diagnose_all_failure_modes',
+    'select_mutation_objective',
+    # Client layer (alternative API)
     'LLMClient',
     'GrokClient',
     'OpenAIClient',

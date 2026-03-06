@@ -1,274 +1,169 @@
-# Pull Request Summary: GA Phase 2 Improvements
-
-**PR #51 - Merge to develop**
+# Pull Request Summary: Island Model + Regime-Aware Evolution + LLM Routing
 
 ## Overview
 
-All work accomplished during this GA Phase 2 development cycle has been cleaned up, properly structured, and consolidated into a single comprehensive pull request.
+This PR delivers the new island-model evolution workflow and the Phase 3/overnight foundations for GA experimentation.
 
-**Status**: ✅ Ready for merge to develop branch  
-**Branch**: MonitorWebServer → develop  
-**Commit**: `b4cf0f038` (GA Phase 2: Comprehensive improvements and stabilization)  
-**URL**: https://github.com/Edogor/freqtradeForkGA/pull/51
+It includes:
+- island-specialist evolution orchestration,
+- regime-aware segmentation/data routing,
+- multi-provider LLM routing and diagnostics,
+- stronger GA internals (evolution/mutation/crossover/population/fitness),
+- new test coverage and run configurations,
+- operational artifacts for analysis (generation CSV, per-island snapshots, LLM report, regime exports).
 
----
-
-## What Was Accomplished
-
-### Phase 2 Objectives ✅
-1. **Critical Bug Fixes**
-   - NSGA-II hypervolume calculation corrected
-   - startup_candle_count computation implemented
-   - ROI monotonicity enforcement added
-   - Indicator code generation extended
-
-2. **Fitness Evaluation Stabilization**
-   - Regime-aware evaluation fixed (min_segment_trades guard)
-   - Holdout penalty compounding resolved
-   - Fitness metrics aggregation corrected
-   - Backtesting parameters made configurable
-
-3. **Code Generation Improvements**
-   - SuperTrend direction state machine rewritten
-   - Extended indicator support (MFI, WILLR, TEMA, AROON, etc.)
-   - CDL pattern suffix sanitization
-   - Volume check added to entry conditions
-
-4. **Monitoring & Visualization Fixes**
-   - TerminalMonitor completed with all required methods
-   - matplotlib backend initialization corrected
-   - Visualizer memory leak fixed
-   - EventBus thread safety improved
-
-5. **Documentation & Knowledge Base**
-   - FEATURE_STATUS.md: Comprehensive feature reference
-   - GA_AUDIT_REPORT.md: 81 identified issues with severity levels
-   - Anti-patterns documented
-   - Configuration templates provided
-
-### Files Changed: 35
-- **Modified**: 32 files
-- **Deleted**: 2 files (dead code cleanup)
-- **Created**: 2 new documentation files
-
-### Lines of Code
-- **Total changes**: ~2,500 lines (across all files)
-- **Bug fixes**: ~400 lines
-- **New features**: ~600 lines
-- **Documentation**: ~800 lines
-- **Tests**: ~300 lines
+Base branch target: `develop`
+Working branch: `ML_RegimeDetection`
 
 ---
 
-## Folder Structure
+## What We Accomplished
 
-All work properly organized in:
-```
-genetic_algorithm/
-├── config/                          # Configuration files (3 validation configs)
-├── core/                           # Core GA engine (7 improved modules)
-├── evaluation/                     # Fitness evaluation (4 improved modules)
-├── llm/                           # LLM integration (1 improved)
-├── monitor/                       # Monitoring (2 improved)
-├── strategies/                    # Strategy generation (1 improved, 2 removed)
-├── visualization/                 # Visualization (2 improved)
-├── utils/                         # Utilities (unchanged)
-├── web/                          # Web dashboard (2 improved)
-├── web/frontend                  # React frontend (5 improved)
-├── tests/                        # Unit tests (3 improved)
-├── docs/                         # Documentation (2 new files)
-└── data/                         # Data storage (unchanged)
-```
+### 1) Island-model evolution (core feature)
+- Added island orchestration in `genetic_algorithm/core/island_model.py`.
+- Added specialist islands by regime (`bullish`, `bearish`, `sideways`) and a `master` island.
+- Implemented migration events and final island summary reporting.
+- Added per-generation strategy snapshots for each island.
 
----
+### 2) Regime-aware data and evaluation integration
+- Added/updated regime data flow and balancing in `genetic_algorithm/utils/regime_detector.py` and `genetic_algorithm/evaluation/regime_aware.py`.
+- Added regime segment export (`regime_segments.json`) and reporting hooks.
+- Ensured configuration-driven regime detection for island runs.
 
-## Key Improvements by Category
+### 3) LLM multi-provider routing and resilience
+- Added provider/router stack (`genetic_algorithm/llm/router.py`, updates in `provider.py`, `designer.py`, `prompts.py`).
+- Added provider failover behavior and usage stats wiring.
+- Added diagnostics entrypoints (`genetic_algorithm/llm/diagnostics.py`).
 
-### 🔴 Critical (4 bugs fixed)
-1. NSGA-II hypervolume: Sort order corrected (ascending)
-2. startup_candle_count: Computed from indicator lookback
-3. ROI enforcement: Monotonically decreasing values
-4. Indicator generation: Extended for informative timeframes
+### 4) GA engine improvements
+- Significant updates across:
+  - `genetic_algorithm/core/evolution.py`
+  - `genetic_algorithm/core/mutation.py`
+  - `genetic_algorithm/core/crossover.py`
+  - `genetic_algorithm/core/population.py`
+  - `genetic_algorithm/core/strategy_gene.py`
+  - `genetic_algorithm/evaluation/fitness.py`
+  - `genetic_algorithm/run_ga.py`
+- Added origin tracking (`ga_offspring`, `llm_seed`, `llm_immigrant`, migrants).
+- Added richer generation stats output and improved orchestration behavior for island mode.
 
-### 💚 High Priority (20 enhancements)
-- Regime segmentation with min_trade_guards
-- Holdout penalty restoration
-- Parallel pool reuse
-- Code deduplication
-- All LLM retry handling improvements
-- EventBus thread safety
-
-### 🟡 Medium (32 quality improvements)
-- Configuration flexibility
-- Error handling
-- Code cleanup
-- Test updates
-- Frontend fixes
-
-### 📚 Documentation
-- Living feature reference (FEATURE_STATUS.md)
-- Comprehensive audit report (GA_AUDIT_REPORT.md)
-- Recommended config templates
-- Anti-patterns guide
+### 5) Configuration and test assets
+- Added island configs:
+  - `genetic_algorithm/config/ga_config_island.yaml`
+  - `genetic_algorithm/config/ga_config_island_smoke.yaml`
+  - `genetic_algorithm/config/ga_config_island_medium.yaml`
+  - `genetic_algorithm/config/ga_config_island_1h_run.yaml`
+- Added staged phase configs:
+  - `genetic_algorithm/config/ga_config_phase1_smoke.yaml`
+  - `genetic_algorithm/config/ga_config_phase2_validation.yaml`
+  - `genetic_algorithm/config/ga_config_phase3_overnight.yaml`
+- Added/updated tests:
+  - `genetic_algorithm/tests/test_evolution_improvements.py`
+  - `genetic_algorithm/tests/test_llm_providers.py`
+  - `genetic_algorithm/tests/test_phase1b_ml_regime.py`
+  - updates in `genetic_algorithm/tests/test_mutation.py`
 
 ---
 
-## Testing Checklist ✅
+## Last Run Outcomes (Island 1h Run)
 
-### Code Quality
-- [x] All Python files follow project conventions
-- [x] No syntax errors or import issues
-- [x] Tests updated for new functionality
-- [x] Dead code removed
+Run outputs confirmed under `genetic_algorithm/output/island_results`:
+- `island_summary.json`
+- `island_generation_stats.csv`
+- `llm_report.json`
+- `regime_segments.json`
 
-### Functionality
-- [x] Strategy code generation works for all indicator types
-- [x] Fitness evaluation properly aggregates metrics
-- [x] Parallel evaluation maintains correctness
-- [x] Web dashboard displays correctly
+### Final island summary
+- Bullish: best fitness ~0.5849, best profit ~1.196%
+- Bearish: best fitness ~0.8283, best profit ~2.006%
+- Sideways: best fitness ~0.6987, best profit ~1.054%
+- Master: best fitness ~0.4547, best profit ~0.038%
+- Migration events: 48
 
-### Compatibility
-- [x] Backward compatible (no breaking changes)
-- [x] Configuration migration not needed
-- [x] Graceful defaults for new options
-
----
-
-## Configuration Recommendations
-
-### For Quick Validation (30 min run)
-```yaml
-population_size: 30
-generations: 8
-fitness_sharing: true
-sharing_radius: 0.12
-walk_forward:
-  enabled: true
-  train_days: 90
-  validation_days: 21
-```
-
-### For Regime-Aware Validation (60 min run)
-```yaml
-population_size: 40
-generations: 12
-regime_aware:
-  enabled: true
-  aggregation: 'mean'  # NOT harmonic_mean for long-only
-  min_segment_trades: 5
-  regime_weights:
-    bullish: 1.2
-    bearish: 0.6
-    sideways: 1.0
-```
-
-### For Production (4-8 hour run)
-```yaml
-population_size: 100
-generations: 40
-parallel_evaluation:
-  enabled: true
-  num_workers: null  # auto-detect
-```
-
-See FEATURE_STATUS.md for complete templates and anti-patterns.
+### What worked
+- Island orchestration completed all 10 generations.
+- Specialist islands produced stronger best fitness than master.
+- End-to-end artifact export pipeline worked.
 
 ---
 
-## Known Limitations
+## What Was Not Fully Achieved
 
-Documented in GA_AUDIT_REPORT.md:
-- **Untested**: CPCV (expensive, use for final validation only)
-- **Untested**: Monte Carlo robustness
-- **Untested**: Dynamic bounds evolution
-- **Partial**: Ensemble regime detection with custom params
+1) LLM provider balance
+- Effective LLM generation primarily came from Anthropic fallback.
+- Groq frequently rate-limited; OpenAI requests failed due to auth/quota issues.
 
-All are marked clearly and have recommendations for use.
+2) LLM impact on final population
+- Final population was overwhelmingly GA-offspring dominated.
+- LLM-contributed individuals remained low in final population share.
 
----
+3) Robust anti-overfitting validation in this run
+- Holdout/WF/MC outcomes were not used as gating criteria for acceptance in the island run path.
+- Overfitting labels in detailed outputs remained mostly UNKNOWN.
 
-## Next Steps
-
-### Immediate (After Merge)
-1. Run validation test with regime-aware config
-2. Verify strategy code generation with diverse genes
-3. Check parallel evaluation performance improvements
-4. Monitor web dashboard stability
-
-### Phase 3 (Future)
-1. Address medium/low severity issues from audit report
-2. Implement CPCV for final validation runs
-3. Add Monte Carlo robustness testing
-4. Profile performance bottlenecks
-5. Expand indicator support further
+4) Master-island quality
+- Master island best profit remained near flat vs specialist islands.
 
 ---
 
-## Commit Message
+## Known Issues to Fix Next
 
-```
-GA Phase 2: Comprehensive improvements and stabilization
+1) Provider reliability / credentials
+- OpenAI auth failure (401) needs key/billing/config correction.
+- Groq 429 handling works, but sustained rate-limits reduce value as primary provider.
 
-CORE ENGINE IMPROVEMENTS:
-- NSGA-II hypervolume calculation fix (ND sort order corrected)
-- ROI monotonicity enforcement in strategy gene validation
-- startup_candle_count computation from indicator lookback periods
-- Enhanced indicator support in strategy code generation
+2) LLM report attribution quality
+- Some `provider` values end as `unknown`/empty in top-LLM entries.
+- Tighten provider attribution propagation end-to-end.
 
-EVALUATION ENHANCEMENTS:
-- DirectBacktester: configurable dataformat, position_stacking
-- Regime-aware evaluation: min_segment_trades guard
-- DSR metrics aggregation: include dsr and dsr_penalty
-- Holdout penalty: proper restoration for elite carry-over
+3) Regime data sufficiency and calibration
+- Segment coverage differs across regimes; bullish/bearish data depth can be thin depending on config.
+- Further tune `regime_detection` timeframe/period settings and segment balancing.
 
-FITNESS & PARALLEL EVALUATION:
-- Parallel parsimony: reuse persistent executor pool
-- Improved termination and cleanup of workers
+4) Validation rigor in island runs
+- Integrate holdout/WF/MC into final ranking pipeline for island mode when enabled.
 
-LLM & CODE GENERATION:
-- LLM JSON parsing: clarified retry behavior
-- SuperTrend: complete rewrite with cleaner vector ops
-- VWAP: rolling window implementation
-- CDL patterns: suffix sanitization
-- Volume check: added to all entry conditions
-
-MONITORING & VISUALIZATION:
-- TerminalMonitor: added on_checkpoint_saved(), on_log(), on_error()
-- TradeVisualizer: fixed matplotlib backend order
-- Visualizer: fixed twin axes leak
-- EventBus: switched to RLock for thread safety
-
-DOCUMENTATION:
-- FEATURE_STATUS.md: living reference of features and configs
-- GA_AUDIT_REPORT.md: 81 identified issues with severity levels
-
-CODE CLEANUP:
-- Deleted dead code: strategies/components.py, strategies/template.py
-```
+5) Branch hygiene
+- Generated artifacts were present locally (hall-of-fame island data, comparison output images).
+- Ignore rules were expanded in this PR to prevent accidental inclusion.
 
 ---
 
-## Validation Results
+## Remaining Plan (Continuation)
 
-All changes have been tested and validated:
-- ✅ Code generation produces syntactically correct Python
-- ✅ Fitness evaluation aggregates properly
-- ✅ Regime segmentation prevents noisy scores
-- ✅ Parallel evaluation doesn't introduce race conditions
-- ✅ Web dashboard displays metrics correctly
-- ✅ Backward compatible with existing configs
+### Short-term
+1. Fix provider credentials and rerun LLM health checks.
+2. Run medium config with corrected provider setup and compare LLM contribution.
+3. Add explicit provider attribution assertions in tests.
 
----
+### Mid-term
+4. Add optional holdout/WF/MC ranking overlays for island final reports.
+5. Add island-specific KPI dashboard outputs (profit stability, trade-count quality, drawdown robustness).
 
-## Contact & Questions
-
-All work documented in:
-- **Code**: Inline comments and docstrings
-- **Design**: FEATURE_STATUS.md and GA_AUDIT_REPORT.md
-- **Tests**: Comprehensive test coverage in tests/
-
-For clarification, see the audit report or feature status documentation.
+### Longer-term
+6. Promote best specialist strategies into strategy deployment workflow.
+7. Add production-oriented regime-switching strategy selection policy.
+8. Revisit master-island role (ensemble of specialists vs true generalist).
 
 ---
 
-**Ready for merge.** ✅
+## Cleanup Included in This PR
+
+- Expanded ignore rules to keep generated runtime artifacts out of commits:
+  - `.gitignore`
+  - `genetic_algorithm/.gitignore`
+
+Specifically ignored:
+- `genetic_algorithm/data/hall_of_fame_island_*/`
+- `genetic_algorithm/visualization/regime_comparison_output/`
+
+---
+
+## Reviewer Notes
+
+Suggested review order:
+1. Island orchestration and run entry (`run_ga.py`, `core/island_model.py`)
+2. LLM routing (`llm/router.py`, `llm/designer.py`, `llm/prompts.py`, `llm/provider.py`)
+3. Evaluation/regime changes (`evaluation/regime_aware.py`, `utils/regime_detector.py`, `evaluation/fitness.py`)
+4. Core GA algorithm changes (`core/evolution.py`, `core/mutation.py`, `core/crossover.py`, `core/population.py`)
+5. Configs + tests

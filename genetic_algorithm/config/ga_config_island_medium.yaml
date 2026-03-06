@@ -1,0 +1,285 @@
+# ============================================================================
+# GA Configuration: ISLAND MODEL — Medium Run (5-10 min)
+# ============================================================================
+# 8 pop × 6 gen × 4 islands for meaningful evolution progress check.
+
+genetic_algorithm:
+  random_seed: 42
+  population_size: 8
+  generations: 6
+  mutation_rate: 0.20
+  crossover_rate: 0.78
+  crossover_method: 'uniform'
+  elite_size: 2
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 12
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.12
+  max_mutation_rate: 0.40
+  fitness_sharing: true
+  sharing_radius: 0.18
+  diversity_threshold: 0.10
+  allow_self_crossover: false
+  random_immigrants: 2
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.22
+  sharpe_ratio: 0.20
+  sortino_ratio: 0.14
+  profit_factor: 0.10
+  drawdown: 0.16
+  win_rate: 0.10
+  trade_frequency: 0.04
+  monthly_stability: 0.04
+  cross_pair: 0.00
+
+fitness_penalties:
+  min_trades: 8
+  max_drawdown: 0.20
+  min_win_rate: 0.40
+  complexity_weight: 0.020
+  pair_loss_threshold: -8.0
+  unused_indicator_weight: 0.025
+
+fitness_bounds:
+  profit_min: -50
+  profit_max: 200
+  sharpe_min: -5
+  sharpe_max: 10
+  sortino_min: -5
+  sortino_max: 12
+  profit_factor_max: 10
+
+trade_frequency_thresholds:
+  very_few: 3
+  few: 6
+  ideal_min: 6
+  ideal_max: 40
+  moderate_excess: 80
+
+backtesting:
+  timerange: "20240301-20260228"
+  stake_amount: 0.15
+  pairs:
+    - "BTC/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  slippage_pct: 0.0005
+  exchange: "binance"
+  datadir: "user_data/data/binance"
+  auto_download_data: true
+  enable_cache: true
+  timeout: 120
+
+walk_forward:
+  enabled: false
+
+holdout_validation:
+  enabled: false
+
+holdout_monitoring:
+  enabled: false
+
+regime_aware:
+  enabled: true
+  method: 'ensemble'
+  benchmark_pair: 'BTC/USDT'
+  detection_timeframe: '4h'
+  period_days: 60
+  min_period_days: 30
+  embargo_days: 3
+  segments_per_regime: 4
+  holdout_ratio: 0.20
+  aggregation: 'harmonic_mean'
+  min_segment_trades: 3
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.0
+    sideways: 1.0
+
+strategy_constraints:
+  min_trades: 5
+  max_drawdown: 0.22
+  min_win_rate: 0.35
+  timeframes: ["4h"]
+  stoploss_range: [-0.10, -0.03]
+  roi_range: [0.02, 0.10]
+  max_open_trades_range: [1, 3]
+
+multi_timeframe:
+  enabled: false
+
+indicators:
+  available:
+    - "RSI"
+    - "MACD"
+    - "BBANDS"
+    - "EMA"
+    - "SMA"
+    - "STOCH"
+    - "ATR"
+    - "ADX"
+    - "CCI"
+    - "MFI"
+    - "WILLR"
+  max_per_strategy: 5
+  min_per_strategy: 2
+  min_entry_conditions: 2
+  min_exit_conditions: 1
+
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 38]
+    sell_threshold: [62, 80]
+  MACD:
+    fast_period: [8, 18]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [14, 30]
+    std_dev: [1.5, 3.0]
+  EMA:
+    period: [5, 50]
+  SMA:
+    period: [10, 100]
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [18, 38]
+    d_threshold: [62, 82]
+  ATR:
+    period: [10, 20]
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-200, -80]
+    sell_threshold: [80, 200]
+  MFI:
+    period: [10, 20]
+    buy_threshold: [18, 35]
+    sell_threshold: [65, 82]
+  WILLR:
+    period: [10, 21]
+    buy_threshold: [-85, -70]
+    sell_threshold: [-30, -15]
+
+parsimony:
+  enabled: true
+  tolerance: 0.02
+  max_removals_per_strategy: 2
+
+storage:
+  database: "genetic_algorithm/data/strategies_island_medium.db"
+  strategy_dir: "user_data/strategies/ga_island_medium"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_island_medium"
+  checkpoint_interval: 5
+  keep_history: true
+
+logging:
+  level: "DEBUG"
+  file: "genetic_algorithm/logs/ga_island_medium.log"
+  console: true
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: true
+
+hall_of_fame:
+  enabled: true
+  max_size: 20
+  inject_count: 1
+  min_fitness: 0.10
+  directory: "genetic_algorithm/data/hall_of_fame_island_medium"
+
+deflated_sharpe:
+  enabled: true
+  min_trades: 5
+  benchmark_sr: 0.0
+  skewness_correction: true
+
+advanced:
+  parallel_evaluation: false
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: true
+
+  llm:
+    enabled: true
+    provider: "groq"
+    model: "llama-3.3-70b-versatile"
+    temperature: 0.65
+    max_retries: 2
+    timeout: 60
+    min_call_interval: 3.0
+    max_call_interval: 12.0
+
+    seed_ratio: 0.30
+    immigrant_ratio: 0.40
+
+    mutation_enabled: true
+    mutation_probability: 0.12
+    mutation_top_k: 3
+    mutation_stagnation_threshold: 3
+
+    max_calls_per_generation: 10
+    max_calls_per_run: 120
+
+    batch_enabled: true
+    max_batch_size: 3
+
+    providers_list:
+      - provider: groq
+        api_key: ""
+        model: "llama-3.3-70b-versatile"
+      - provider: anthropic
+        api_key: ""
+        model: "claude-3-haiku-20240307"
+      - provider: openai
+        api_key: ""
+        model: "gpt-4o-mini"
+
+# ============================================================================
+# ISLAND MODEL — Medium: 8 pop × 6 gen × 4 islands ≈ 5-10 min
+# ============================================================================
+island_model:
+  enabled: true
+
+  islands:
+    - name: 'bullish'
+      population_size: 8
+      data_regime: 'bullish'
+    - name: 'bearish'
+      population_size: 8
+      data_regime: 'bearish'
+    - name: 'sideways'
+      population_size: 8
+      data_regime: 'sideways'
+    - name: 'master'
+      population_size: 8
+      data_regime: 'balanced'
+
+  migration:
+    specialist:
+      interval: 3
+      count: 2
+      topology: 'fully_connected'
+    master:
+      interval: 2
+      count: 2
+      send_count: 2
+
+  regime_detection:
+    pair: 'BTC/USDT'
+    timeframe: '4h'
+    timerange: '20240301-20260228'
+    method: 'ensemble'
+    period_days: 60
+    holdout_ratio: 0.20

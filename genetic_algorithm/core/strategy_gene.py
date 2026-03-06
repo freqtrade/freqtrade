@@ -90,6 +90,16 @@ class StrategyGene:
     trailing_stop_positive_offset: Optional[float] = None
     can_short: bool = False  # Enable short selling (enter_short/exit_short signals)
     
+    # Regime specialization (Phase 1B)
+    # preferred_regime: which market regime this strategy is designed for
+    #   None = no preference, 'bullish', 'bearish', 'sideways', 'volatile'
+    preferred_regime: Optional[str] = None
+    # regime_mode: how preferred_regime affects fitness evaluation
+    #   'generalist': all regimes evaluated equally (default, backward compatible)
+    #   'specialist': preferred regime segments get higher weight
+    #   'exclusive': only evaluate on segments matching preferred regime
+    regime_mode: str = 'generalist'
+    
     def __post_init__(self):
         """Validate strategy gene after initialization."""
         if not self.indicators:
@@ -156,6 +166,8 @@ class StrategyGene:
             'trailing_stop_positive': self.trailing_stop_positive,
             'trailing_stop_positive_offset': self.trailing_stop_positive_offset,
             'can_short': self.can_short,
+            'preferred_regime': self.preferred_regime,
+            'regime_mode': self.regime_mode,
         }
     
     @classmethod
@@ -222,6 +234,8 @@ class StrategyGene:
             trailing_stop_positive=data.get('trailing_stop_positive'),
             trailing_stop_positive_offset=data.get('trailing_stop_positive_offset'),
             can_short=data.get('can_short', False),
+            preferred_regime=data.get('preferred_regime'),
+            regime_mode=data.get('regime_mode', 'generalist'),
         )
     
     def copy(self) -> 'StrategyGene':

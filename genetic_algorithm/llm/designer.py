@@ -14,9 +14,11 @@ from genetic_algorithm.core.strategy_gene import (
     StrategyGene, IndicatorGene, ConditionGene
 )
 from genetic_algorithm.llm.provider import LLMProvider, LLMProviderFactory
+from genetic_algorithm.llm.router import create_provider_or_router
 from genetic_algorithm.llm.prompts import (
     StrategyPromptBuilder, STRATEGY_STYLES, get_diverse_styles, INDICATOR_REFERENCE
 )
+from genetic_algorithm.llm.diagnostics import diagnose_failure_mode, select_mutation_objective
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +53,28 @@ class StrategyDesigner:
         self.seed_ratio = llm_config.get('seed_ratio', 0.4)
         self.immigrant_ratio = llm_config.get('immigrant_ratio', 0.5)
         
-        # Rate limiting
+        # Rate limiting (adaptive: backs off on failures, resets on success)
         self._last_call_time = 0.0
-        self._min_call_interval = llm_config.get('min_call_interval', 1.0)
+        self._min_call_interval = llm_config.get('min_call_interval', 3.0)
+        self._max_call_interval = llm_config.get('max_call_interval', 12.0)
+        self._effective_call_interval = self._min_call_interval
         
+        # LLM mutation config
+        self.mutation_enabled = llm_config.get('mutation_enabled', False)
+        self.mutation_probability = llm_config.get('mutation_probability', 0.1)
+        self.mutation_top_k = llm_config.get('mutation_top_k', 3)
+        self.mutation_stagnation_threshold = llm_config.get('mutation_stagnation_threshold', 3)
+
+        # Batching config
+        self.batch_enabled = llm_config.get('batch_enabled', True)
+        self.max_batch_size = llm_config.get('max_batch_size', 5)
+
+        # Budget enforcement
+        self._calls_this_generation = 0
+        self._calls_this_run = 0
+        self._max_calls_per_generation = llm_config.get('max_calls_per_generation', 20)
+        self._max_calls_per_run = llm_config.get('max_calls_per_run', 500)
+
         # Statistics
         self.stats = {
             'total_requests': 0,
@@ -62,6 +82,13 @@ class StrategyDesigner:
             'failed': 0,
             'validation_fixed': 0,
             'fallback_used': 0,
+            'calls_by_type': {
+                'seed': 0, 'immigrant': 0, 'mutation': 0, 'batch_seed': 0,
+                'batch_immigrant': 0, 'batch_mutation': 0,
+            },
+            'improvements_by_type': {
+                'seed': 0, 'immigrant': 0, 'mutation': 0,
+            },
         }
         
         # Generation-over-generation performance tracking for feedback loop
@@ -75,18 +102,61 @@ class StrategyDesigner:
             'best_llm_generation': -1,
         }
         
-        # Provider
+        # Per-provider attribution tracking
+        self._last_provider_used: str = ''
+        self.provider_attribution: Dict[str, Dict[str, int]] = {}  # provider → {generated, survived, ...}
+        
+        # Provider — use router if providers_list is configured
         if provider:
             self.provider = provider
-        elif self.enabled and llm_config.get('provider'):
+        elif self.enabled and (llm_config.get('provider') or llm_config.get('providers_list')):
             try:
-                self.provider = LLMProviderFactory.create(llm_config)
+                self.provider = create_provider_or_router(llm_config)
             except Exception as e:
                 logger.error(f"Failed to create LLM provider: {e}. LLM generation disabled.")
                 self.provider = None
                 self.enabled = False
         else:
             self.provider = None
+
+        # Run connectivity test at startup when using router
+        if self.enabled and self.provider is not None:
+            self._test_provider_connectivity()
+
+    # ------------------------------------------------------------------
+    # Provider health check
+    # ------------------------------------------------------------------
+
+    def _test_provider_connectivity(self):
+        """Ping each provider with a minimal prompt at startup.
+
+        If the primary provider fails but a fallback succeeds, the router's
+        cooldown mechanism will automatically redirect traffic.  This test
+        just logs the status so operators can see which providers are live
+        before the run starts.
+        """
+        from genetic_algorithm.llm.router import LLMProviderRouter
+
+        if not isinstance(self.provider, LLMProviderRouter):
+            # Single provider — quick test
+            try:
+                _ = self.provider.generate("Say 'ok'.", "Respond with only the word ok.")
+                logger.info("[LLM HEALTH] Provider %s: OK", self.provider.provider_name)
+            except Exception as e:
+                logger.warning("[LLM HEALTH] Provider %s: FAILED (%s)",
+                               self.provider.provider_name, e)
+            return
+
+        # Router — test each sub-provider individually
+        for idx, sub in enumerate(self.provider._providers):
+            name = self.provider._provider_names[idx]
+            try:
+                _ = sub.generate("Say 'ok'.", "Respond with only the word ok.")
+                logger.info("[LLM HEALTH] %s: OK", name)
+            except Exception as e:
+                logger.warning("[LLM HEALTH] %s: FAILED (%s) — will use fallback", name, e)
+                # Pre-cooldown this provider so the router skips it initially
+                self.provider._cooldown_until[idx] = time.time() + self.provider._cooldown_seconds
     
     def generate_seed_strategies(
         self,
@@ -194,7 +264,12 @@ class StrategyDesigner:
         Returns:
             StrategyGene or None on failure
         """
+        if not self._budget_available():
+            return None
+
         self.stats['total_requests'] += 1
+        call_type = 'seed' if is_seed else 'immigrant'
+        self.stats['calls_by_type'][call_type] += 1
         
         # Rate limiting
         self._rate_limit()
@@ -202,23 +277,33 @@ class StrategyDesigner:
         try:
             # Build prompt
             system_prompt = self.prompt_builder.build_system_prompt()
+            # Read island regime from config (injected by island model)
+            island_regime = self.config.get('advanced', {}).get('llm', {}).get('island_regime')
             if is_seed:
                 user_prompt = self.prompt_builder.build_seed_prompt(
-                    strategy_style=strategy_style
+                    strategy_style=strategy_style,
+                    island_regime=island_regime,
                 )
             else:
                 user_prompt = self.prompt_builder.build_immigrant_prompt(
                     top_performers=top_performers,
                     weaknesses=weaknesses,
                     feedback=feedback,
+                    island_regime=island_regime,
                 )
             
             # Call LLM
             response = self.provider.generate_json(user_prompt, system_prompt)
+            # Track which provider served this call
+            used_provider = getattr(self.provider, 'last_used_provider', 
+                                     getattr(self.provider, 'provider_name', 'unknown'))
+            self._last_provider_used = used_provider
+            self._record_call()
             
             if response is None:
                 logger.warning(f"LLM returned no valid JSON for strategy {individual_id}")
                 self.stats['failed'] += 1
+                self._on_llm_failure()
                 return None
             
             # Handle array response (LLM sometimes returns array even when asked for one)
@@ -226,6 +311,7 @@ class StrategyDesigner:
                 response = response[0] if response else None
                 if response is None:
                     self.stats['failed'] += 1
+                    self._on_llm_failure()
                     return None
             
             # Convert to StrategyGene
@@ -233,6 +319,7 @@ class StrategyDesigner:
             
             if gene:
                 self.stats['successful'] += 1
+                self._on_llm_success()
                 logger.info(f"LLM generated strategy {individual_id} "
                           f"({strategy_style or 'immigrant'}): "
                           f"{len(gene.indicators)} indicators, "
@@ -240,12 +327,14 @@ class StrategyDesigner:
                           f"{len(gene.exit_conditions)} exit conditions")
             else:
                 self.stats['failed'] += 1
+                self._on_llm_failure()
             
             return gene
             
         except Exception as e:
             logger.error(f"LLM strategy generation failed: {e}")
             self.stats['failed'] += 1
+            self._on_llm_failure()
             return None
     
     def _json_to_strategy_gene(
@@ -528,7 +617,7 @@ class StrategyDesigner:
         
         for ind in population.individuals:
             origin = getattr(ind, 'metrics', {}).get('origin', 'random')
-            if origin in ('llm_seed', 'llm_immigrant'):
+            if origin in ('llm_seed', 'llm_immigrant', 'llm_mutation'):
                 llm_individuals.append(ind)
             else:
                 random_individuals.append(ind)
@@ -666,17 +755,393 @@ class StrategyDesigner:
         return feedback
     
     def _rate_limit(self):
-        """Enforce minimum interval between API calls."""
+        """Enforce minimum interval between API calls with adaptive backoff.
+
+        On consecutive failures the effective interval increases by 1.5x
+        (up to ``_max_call_interval``).  On success, it resets to the
+        configured base interval.  A small random jitter (0-25%) is added
+        to avoid thundering-herd effects when multiple calls are queued.
+        """
+        import random as _rand
+        interval = self._effective_call_interval
+        jitter = interval * _rand.uniform(0, 0.25)
         elapsed = time.time() - self._last_call_time
-        if elapsed < self._min_call_interval:
-            time.sleep(self._min_call_interval - elapsed)
+        wait = (interval + jitter) - elapsed
+        if wait > 0:
+            time.sleep(wait)
         self._last_call_time = time.time()
+
+    def _on_llm_success(self):
+        """Reset adaptive rate-limit interval after a successful call."""
+        self._effective_call_interval = self._min_call_interval
+
+    def _on_llm_failure(self):
+        """Increase adaptive rate-limit interval after a failed call."""
+        self._effective_call_interval = min(
+            self._effective_call_interval * 1.5,
+            self._max_call_interval,
+        )
+
+    def _budget_available(self) -> bool:
+        """Check if LLM call budget allows another call."""
+        if self._calls_this_generation >= self._max_calls_per_generation:
+            logger.debug("LLM generation budget exhausted (%d/%d)",
+                        self._calls_this_generation, self._max_calls_per_generation)
+            return False
+        if self._calls_this_run >= self._max_calls_per_run:
+            logger.debug("LLM run budget exhausted (%d/%d)",
+                        self._calls_this_run, self._max_calls_per_run)
+            return False
+        return True
+
+    def _record_call(self):
+        """Increment call counters."""
+        self._calls_this_generation += 1
+        self._calls_this_run += 1
+
+    def reset_generation_budget(self):
+        """Reset per-generation call counter (call at start of each generation)."""
+        self._calls_this_generation = 0
+
+    # ------------------------------------------------------------------
+    # LLM-Guided Mutation
+    # ------------------------------------------------------------------
+
+    def mutate_strategy(
+        self,
+        parent_gene: 'StrategyGene',
+        metrics: Dict[str, Any],
+        generation: int,
+        individual_id: int,
+        failure_mode: Optional[str] = None,
+        objective: Optional[str] = None,
+    ) -> Optional['StrategyGene']:
+        """
+        Use the LLM to propose a targeted mutation of an existing strategy.
+
+        Instead of generating a new strategy from scratch, asks the LLM to
+        make 1–3 minimal edits to address a specific diagnosed problem.
+
+        Args:
+            parent_gene: The parent StrategyGene to mutate.
+            metrics: Backtest metrics of the parent.
+            generation: Generation number for the child.
+            individual_id: Individual ID for the child.
+            failure_mode: Diagnosed failure string. Auto-diagnosed if None.
+            objective: Mutation objective string. Auto-selected if None.
+
+        Returns:
+            Mutated StrategyGene or None on failure.
+        """
+        if not self.enabled or not self.provider:
+            return None
+        if not self._budget_available():
+            return None
+
+        self.stats['total_requests'] += 1
+        self.stats['calls_by_type']['mutation'] += 1
+        self._rate_limit()
+
+        try:
+            parent_dict = parent_gene.to_dict()
+
+            # Auto-diagnose if not provided
+            if failure_mode is None:
+                failure_mode = diagnose_failure_mode(metrics, self.config)
+            if failure_mode is None:
+                failure_mode = (
+                    "No specific failure detected. Make a small improvement: "
+                    "try a different indicator combination, adjust thresholds, "
+                    "or add a complementary filter."
+                )
+            if objective is None:
+                objective = select_mutation_objective(metrics, self.config)
+
+            system_prompt = self.prompt_builder.build_system_prompt()
+            user_prompt = self.prompt_builder.build_mutation_prompt(
+                parent_strategy=parent_dict,
+                metrics=metrics,
+                failure_mode=failure_mode,
+                objective=objective,
+            )
+
+            response = self.provider.generate_json(user_prompt, system_prompt)
+            self._record_call()
+
+            if response is None:
+                logger.warning("LLM mutation returned no valid JSON")
+                self.stats['failed'] += 1
+                return None
+
+            # Handle array response
+            if isinstance(response, list):
+                response = response[0] if response else None
+                if response is None:
+                    self.stats['failed'] += 1
+                    return None
+
+            gene = self._json_to_strategy_gene(response, generation, individual_id)
+            if gene:
+                self.stats['successful'] += 1
+                logger.info(
+                    f"LLM mutation of strategy {parent_gene.individual_id} → {individual_id}: "
+                    f"objective={objective}, {len(gene.indicators)} indicators, "
+                    f"{len(gene.entry_conditions)} entry, {len(gene.exit_conditions)} exit"
+                )
+            else:
+                self.stats['failed'] += 1
+
+            return gene
+
+        except Exception as e:
+            logger.error(f"LLM mutation failed: {e}")
+            self.stats['failed'] += 1
+            return None
+
+    def mutate_strategies_batch(
+        self,
+        parents: List[Dict[str, Any]],
+        generation: int,
+        start_id: int = 0,
+    ) -> List[Optional['StrategyGene']]:
+        """
+        Batch-mutate multiple strategies in a single LLM call.
+
+        Each item in *parents* should have keys:
+        ``gene`` (StrategyGene), ``metrics`` (dict), and optionally
+        ``failure_mode`` (str) and ``objective`` (str).
+
+        Args:
+            parents: List of dicts with parent info.
+            generation: Generation number for children.
+            start_id: Starting individual ID.
+
+        Returns:
+            List of mutated StrategyGene (None for failures).
+        """
+        if not self.enabled or not self.provider or not parents:
+            return []
+        if not self._budget_available():
+            return []
+
+        self.stats['total_requests'] += 1
+        self.stats['calls_by_type']['batch_mutation'] += 1
+        self._rate_limit()
+
+        try:
+            batch_items = []
+            for item in parents:
+                gene = item['gene']
+                metrics = item['metrics']
+                fm = item.get('failure_mode') or diagnose_failure_mode(metrics, self.config)
+                if fm is None:
+                    fm = "No specific failure. Make a small targeted improvement."
+                obj = item.get('objective') or select_mutation_objective(metrics, self.config)
+                batch_items.append({
+                    'parent': gene.to_dict(),
+                    'metrics': metrics,
+                    'failure_mode': fm,
+                    'objective': obj,
+                })
+
+            system_prompt = self.prompt_builder.build_system_prompt()
+            user_prompt = self.prompt_builder.build_batch_mutation_prompt(batch_items)
+
+            response = self.provider.generate_json(user_prompt, system_prompt)
+            self._record_call()
+
+            if response is None:
+                self.stats['failed'] += 1
+                return []
+
+            # Expect an array of strategies
+            if isinstance(response, dict):
+                response = [response]
+            if not isinstance(response, list):
+                self.stats['failed'] += 1
+                return []
+
+            results = []
+            for i, resp_item in enumerate(response):
+                if i >= len(parents):
+                    break
+                gene = self._json_to_strategy_gene(resp_item, generation, start_id + i)
+                if gene:
+                    self.stats['successful'] += 1
+                else:
+                    self.stats['failed'] += 1
+                results.append(gene)
+
+            logger.info(f"LLM batch mutation: {len([r for r in results if r])}/{len(parents)} successful")
+            return results
+
+        except Exception as e:
+            logger.error(f"LLM batch mutation failed: {e}")
+            self.stats['failed'] += 1
+            return []
+
+    # ------------------------------------------------------------------
+    # Batched seed / immigrant generation
+    # ------------------------------------------------------------------
+
+    def generate_seed_strategies_batch(
+        self,
+        count: int,
+        generation: int = 0,
+        start_id: int = 0,
+    ) -> List['StrategyGene']:
+        """
+        Generate multiple seed strategies in a single LLM call.
+
+        Falls back to sequential generation if batch parsing fails.
+
+        Args:
+            count: Number of seeds to generate.
+            generation: Generation number.
+            start_id: Starting individual ID.
+
+        Returns:
+            List of StrategyGene objects.
+        """
+        if not self.enabled or not self.provider:
+            return []
+        if not self._budget_available():
+            return []
+
+        self.stats['total_requests'] += 1
+        self.stats['calls_by_type']['batch_seed'] += 1
+        self._rate_limit()
+
+        try:
+            styles = get_diverse_styles(count)
+            system_prompt = self.prompt_builder.build_system_prompt()
+            user_prompt = self.prompt_builder.build_batch_seed_prompt(
+                count=count, styles=styles
+            )
+
+            response = self.provider.generate_json(user_prompt, system_prompt)
+            self._record_call()
+
+            if response is None:
+                self.stats['failed'] += 1
+                logger.warning("Batch seed generation failed, falling back to sequential")
+                return self.generate_seed_strategies(count, generation, start_id)
+
+            # Expect array
+            if isinstance(response, dict):
+                response = [response]
+            if not isinstance(response, list):
+                self.stats['failed'] += 1
+                return self.generate_seed_strategies(count, generation, start_id)
+
+            strategies = []
+            for i, item in enumerate(response):
+                gene = self._json_to_strategy_gene(item, generation, start_id + i)
+                if gene:
+                    strategies.append(gene)
+                    self.stats['successful'] += 1
+                else:
+                    self.stats['failed'] += 1
+
+            logger.info(f"LLM batch seed generation: {len(strategies)}/{count} successful")
+            return strategies
+
+        except Exception as e:
+            logger.error(f"Batch seed generation failed: {e}")
+            self.stats['failed'] += 1
+            return self.generate_seed_strategies(count, generation, start_id)
+
+    def generate_immigrants_batch(
+        self,
+        count: int,
+        generation: int,
+        start_id: int = 0,
+        top_performers: Optional[List[Dict]] = None,
+        weaknesses: Optional[List[str]] = None,
+        feedback: Optional[Dict[str, Any]] = None,
+    ) -> List['StrategyGene']:
+        """
+        Generate multiple immigrants in a single LLM call.
+
+        Falls back to sequential generation if batch parsing fails.
+
+        Args:
+            count: Number of immigrants to generate.
+            generation: Current generation number.
+            start_id: Starting individual ID.
+            top_performers: Top strategy summaries.
+            weaknesses: Population weakness gaps.
+            feedback: Performance feedback and feature importance.
+
+        Returns:
+            List of StrategyGene objects.
+        """
+        if not self.enabled or not self.provider:
+            return []
+        if not self._budget_available():
+            return []
+
+        self.stats['total_requests'] += 1
+        self.stats['calls_by_type']['batch_immigrant'] += 1
+        self._rate_limit()
+
+        try:
+            system_prompt = self.prompt_builder.build_system_prompt()
+            user_prompt = self.prompt_builder.build_batch_immigrant_prompt(
+                count=count,
+                top_performers=top_performers,
+                weaknesses=weaknesses,
+                feedback=feedback,
+            )
+
+            response = self.provider.generate_json(user_prompt, system_prompt)
+            self._record_call()
+
+            if response is None:
+                self.stats['failed'] += 1
+                logger.warning("Batch immigrant generation failed, falling back to sequential")
+                return self.generate_immigrants(
+                    count, generation, start_id,
+                    top_performers, weaknesses, feedback
+                )
+
+            if isinstance(response, dict):
+                response = [response]
+            if not isinstance(response, list):
+                self.stats['failed'] += 1
+                return self.generate_immigrants(
+                    count, generation, start_id,
+                    top_performers, weaknesses, feedback
+                )
+
+            strategies = []
+            for i, item in enumerate(response):
+                gene = self._json_to_strategy_gene(item, generation, start_id + i)
+                if gene:
+                    strategies.append(gene)
+                    self.stats['successful'] += 1
+                else:
+                    self.stats['failed'] += 1
+
+            logger.info(f"LLM batch immigrant generation: {len(strategies)}/{count} successful "
+                       f"(gen {generation})")
+            return strategies
+
+        except Exception as e:
+            logger.error(f"Batch immigrant generation failed: {e}")
+            self.stats['failed'] += 1
+            return self.generate_immigrants(
+                count, generation, start_id,
+                top_performers, weaknesses, feedback
+            )
     
     def get_stats(self) -> Dict[str, Any]:
         """Return generation statistics including LLM-vs-random performance."""
         stats = dict(self.stats)
         stats['llm_performance'] = dict(self.llm_performance)
         stats['generations_tracked'] = len(self.generation_history)
+        stats['calls_this_run'] = self._calls_this_run
+        stats['budget_remaining'] = max(0, self._max_calls_per_run - self._calls_this_run)
         return stats
     
     def get_population_weaknesses(self, top_individuals: list) -> List[str]:

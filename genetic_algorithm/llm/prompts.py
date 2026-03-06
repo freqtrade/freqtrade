@@ -176,7 +176,8 @@ Key principles:
     
     def build_seed_prompt(self, strategy_style: Optional[str] = None,
                           market_context: Optional[str] = None,
-                          num_strategies: int = 1) -> str:
+                          num_strategies: int = 1,
+                          island_regime: Optional[str] = None) -> str:
         """
         Build a prompt for generating seed strategies for initial population.
         
@@ -184,6 +185,7 @@ Key principles:
             strategy_style: Optional hint like 'trend_following', 'mean_reversion', 'breakout'
             market_context: Optional market description for context
             num_strategies: Number of strategies to generate
+            island_regime: Optional regime specialization ('bullish', 'bearish', 'sideways', 'balanced')
             
         Returns:
             Formatted prompt string
@@ -224,6 +226,60 @@ Key principles:
         if market_context:
             market_guidance = f"\n\nMARKET CONTEXT: {market_context}"
         
+        # Regime-specific guidance for island model
+        regime_guidance = ""
+        if island_regime:
+            regime_hints = {
+                'bullish': (
+                    "\n\nISLAND REGIME: BULLISH MARKET SPECIALIST\n"
+                    "You are designing strategies for a BULLISH (uptrending) market island.\n"
+                    "Focus on:\n"
+                    "- Trend-following entries: buy on pullbacks within uptrends\n"
+                    "- Use EMA/SMA crossovers, ADX for trend strength confirmation\n"
+                    "- RSI oversold (30-40) as entry in uptrend, NOT overbought exits too early\n"
+                    "- MACD histogram rising, SUPERTREND bullish alignment\n"
+                    "- Use trailing ROI targets (higher targets since trends persist)\n"
+                    "- Wider stop-losses (-8% to -12%) to avoid shakeouts in volatile uptrends\n"
+                    "- Higher max_open_trades (2-3) to ride multiple trend opportunities"
+                ),
+                'bearish': (
+                    "\n\nISLAND REGIME: BEARISH MARKET SPECIALIST\n"
+                    "You are designing strategies for a BEARISH (downtrending) market island.\n"
+                    "Focus on:\n"
+                    "- Counter-trend reversal entries: buy extreme oversold bounces only\n"
+                    "- RSI < 25 with bullish divergence, STOCH oversold cross upward\n"
+                    "- Mean-reversion at Bollinger Band lower band touches\n"
+                    "- Quick profit-taking (low ROI targets: 2-5%) — don't hold long in downtrends\n"
+                    "- Tight stop-losses (-4% to -7%) to limit downside\n"
+                    "- Lower max_open_trades (1-2) to reduce exposure\n"
+                    "- Volume confirmation (MFI, CMF) for potential bottoms"
+                ),
+                'sideways': (
+                    "\n\nISLAND REGIME: SIDEWAYS/RANGING MARKET SPECIALIST\n"
+                    "You are designing strategies for a SIDEWAYS (range-bound) market island.\n"
+                    "Focus on:\n"
+                    "- Range-bound oscillator strategies: buy low, sell high within range\n"
+                    "- BBANDS: buy near lower band, exit near upper band or middle\n"
+                    "- RSI range trading: buy 30-35, sell 65-70 (classic mean reversion)\n"
+                    "- CCI mean-reversion: buy < -100, sell > +100\n"
+                    "- ADX < 25 confirms ranging (avoid trend entries)\n"
+                    "- Moderate stop-losses (-5% to -9%)\n"
+                    "- Medium ROI targets (3-6%) matching typical range amplitude\n"
+                    "- WILLR oscillator boundaries for timing"
+                ),
+                'balanced': (
+                    "\n\nISLAND REGIME: GENERALIST (ALL MARKET CONDITIONS)\n"
+                    "You are designing strategies for a MASTER island that trades ALL regimes.\n"
+                    "Focus on:\n"
+                    "- Adaptive strategies that work across trends AND ranges\n"
+                    "- Use ADX to switch between trend-following and mean-reversion logic\n"
+                    "- Robust indicator combinations (RSI + MACD + EMA) that degrade gracefully\n"
+                    "- Moderate stop-loss (-6% to -10%) and ROI (3-7%) for all conditions\n"
+                    "- Prioritize consistency over peak performance in any single regime"
+                ),
+            }
+            regime_guidance = regime_hints.get(island_regime, "")
+        
         count_instruction = ""
         if num_strategies > 1:
             count_instruction = (
@@ -243,7 +299,7 @@ AVAILABLE CONDITION OPERATORS:
 {constraints}
 
 {schema}
-{style_guidance}{market_guidance}{count_instruction}
+{style_guidance}{market_guidance}{regime_guidance}{count_instruction}
 
 IMPORTANT: 
 - Every indicator referenced in conditions MUST be in the indicators list
@@ -253,7 +309,8 @@ IMPORTANT:
     def build_immigrant_prompt(self, 
                                top_performers: Optional[List[Dict]] = None,
                                weaknesses: Optional[List[str]] = None,
-                               feedback: Optional[Dict[str, Any]] = None) -> str:
+                               feedback: Optional[Dict[str, Any]] = None,
+                               island_regime: Optional[str] = None) -> str:
         """
         Build a prompt for generating immigrant strategies during evolution.
         
@@ -264,6 +321,7 @@ IMPORTANT:
             top_performers: Summary of current top strategies for context
             weaknesses: List of identified weaknesses to address
             feedback: Performance feedback, feature importance, and evolution progress
+            island_regime: Optional regime specialization ('bullish', 'bearish', 'sideways', 'balanced')
             
         Returns:
             Formatted prompt string
@@ -293,6 +351,23 @@ IMPORTANT:
         if feedback:
             feedback_section = self._format_feedback_context(feedback)
         
+        # Regime-specific guidance for island model (reuse from seed prompt)
+        regime_guidance = ""
+        if island_regime:
+            regime_hints = {
+                'bullish': "ISLAND REGIME: BULLISH — design trend-following strategies. "
+                    "Buy pullbacks in uptrends, use EMA/MACD for trend confirmation, wider stops.",
+                'bearish': "ISLAND REGIME: BEARISH — design mean-reversion/counter-trend strategies. "
+                    "Buy extreme oversold bounces only, quick profit-taking, tight stops.",
+                'sideways': "ISLAND REGIME: SIDEWAYS — design range-bound oscillator strategies. "
+                    "Buy near support (BBANDS lower, RSI 30), sell near resistance, ADX < 25.",
+                'balanced': "ISLAND REGIME: GENERALIST — design adaptive strategies "
+                    "that work across all market conditions. Prioritize robustness.",
+            }
+            rg = regime_hints.get(island_regime, "")
+            if rg:
+                regime_guidance = f"\n\n{rg}"
+        
         return f"""Design a NOVEL cryptocurrency trading strategy that would complement existing strategies in a genetic algorithm population.
 
 {indicator_docs}
@@ -303,7 +378,7 @@ AVAILABLE CONDITION OPERATORS:
 {constraints}
 
 {schema}
-{context}{weakness_guidance}{feedback_section}
+{context}{weakness_guidance}{feedback_section}{regime_guidance}
 
 Design a strategy that is DIFFERENT from the top performers above. 
 Use a different combination of indicators and trading logic.
@@ -503,6 +578,321 @@ Return ONLY valid JSON, no explanations."""
   "trailing_stop_positive": null,
   "trailing_stop_positive_offset": null
 }"""
+
+
+    def build_mutation_prompt(
+        self,
+        parent_strategy: Dict[str, Any],
+        metrics: Dict[str, Any],
+        failure_mode: str,
+        objective: Optional[str] = None,
+    ) -> str:
+        """
+        Build a prompt for LLM-guided mutation of an existing strategy.
+
+        Instead of generating a strategy from scratch, ask the LLM to propose
+        a *minimal edit* that addresses a specific failure mode while
+        preserving the parent's strengths.
+
+        Args:
+            parent_strategy: The parent StrategyGene serialised via ``to_dict()``.
+            metrics: Backtest metrics of the parent (profit, drawdown, etc.).
+            failure_mode: Diagnosed failure string from ``diagnose_failure_mode()``.
+            objective: Optional high-level objective like ``"reduce_drawdown"``.
+
+        Returns:
+            Formatted prompt string.
+        """
+        import json as _json
+
+        indicator_docs = self._format_indicator_reference()
+        constraints = self._format_constraints()
+        schema = self._format_output_schema()
+
+        # Compact parent representation (strip internal fields)
+        parent_compact = {
+            'indicators': parent_strategy.get('indicators', []),
+            'entry_conditions': parent_strategy.get('entry_conditions', []),
+            'exit_conditions': parent_strategy.get('exit_conditions', []),
+            'timeframe': parent_strategy.get('timeframe'),
+            'stoploss': parent_strategy.get('stoploss'),
+            'minimal_roi': parent_strategy.get('minimal_roi'),
+            'max_open_trades': parent_strategy.get('max_open_trades'),
+            'trailing_stop': parent_strategy.get('trailing_stop'),
+            'trailing_stop_positive': parent_strategy.get('trailing_stop_positive'),
+            'trailing_stop_positive_offset': parent_strategy.get('trailing_stop_positive_offset'),
+        }
+
+        # Format metrics
+        metrics_str = (
+            f"  Profit: {metrics.get('profit', 0):.1f}%\n"
+            f"  Max drawdown: {metrics.get('max_drawdown', 0):.1%}\n"
+            f"  Win rate: {metrics.get('win_rate', 0):.0f}%\n"
+            f"  Trade count: {metrics.get('num_trades', 0)}\n"
+            f"  Sharpe ratio: {metrics.get('sharpe_ratio', 0):.2f}\n"
+            f"  Fitness: {metrics.get('fitness', 0):.4f}"
+        )
+
+        objective_section = ""
+        if objective:
+            objective_hints = {
+                'increase_trades': (
+                    "PRIMARY OBJECTIVE: Increase trade count. The strategy triggers "
+                    "too rarely. Loosen entry thresholds, add alternative entry paths, "
+                    "or replace restrictive operators."
+                ),
+                'reduce_drawdown': (
+                    "PRIMARY OBJECTIVE: Reduce maximum drawdown. Add trend filters "
+                    "(ADX, EMA on higher timeframe), tighten stoploss, enable "
+                    "trailing stop, or add protective exit conditions."
+                ),
+                'improve_entries': (
+                    "PRIMARY OBJECTIVE: Improve entry quality (win rate). Use "
+                    "cross_above/cross_below for better timing, add volume "
+                    "confirmation (CMF, VROC), or add a trend-strength filter."
+                ),
+                'improve_risk_adjusted': (
+                    "PRIMARY OBJECTIVE: Improve risk-adjusted returns (Sharpe ratio). "
+                    "Add exit conditions to capture profits earlier, use trailing "
+                    "stops, or tighten ROI targets."
+                ),
+                'simplify': (
+                    "PRIMARY OBJECTIVE: Simplify the strategy to reduce overfitting. "
+                    "Remove 1–2 indicators or conditions, use longer lookback periods, "
+                    "prefer robust operators over exact thresholds."
+                ),
+                'general_improvement': (
+                    "PRIMARY OBJECTIVE: General improvement. Make targeted edits that "
+                    "improve overall fitness while preserving the strategy's core logic."
+                ),
+            }
+            objective_section = f"\n\n{objective_hints.get(objective, objective_hints['general_improvement'])}"
+
+        return f"""You are given a trading strategy and its backtest performance metrics.
+Your task is to make a MINIMAL, TARGETED EDIT to improve the strategy.
+
+PARENT STRATEGY:
+{_json.dumps(parent_compact, indent=2)}
+
+PERFORMANCE METRICS:
+{metrics_str}
+
+DIAGNOSED PROBLEM:
+{failure_mode}
+{objective_section}
+
+{indicator_docs}
+
+AVAILABLE CONDITION OPERATORS:
+{self._format_operators()}
+
+{constraints}
+
+{schema}
+
+MUTATION RULES:
+1. Return a COMPLETE strategy JSON (not just the changed parts)
+2. Make as FEW changes as possible — 1 to 3 targeted edits
+3. PRESERVE the indicators and conditions that are working well
+4. Address the specific DIAGNOSED PROBLEM above
+5. Every indicator referenced in conditions MUST be in the indicators list
+6. Use instance_id (e.g., "RSI_0") to reference indicators in conditions
+
+Possible edits include:
+- Add/remove/modify an indicator
+- Add/remove/modify an entry or exit condition
+- Change operator or threshold on a condition
+- Adjust stoploss, ROI targets, or trailing stop settings
+- Add a higher-timeframe trend filter
+- Replace AND with OR logic (or vice versa)
+
+Return ONLY valid JSON, no explanations."""
+
+    def build_batch_seed_prompt(
+        self,
+        count: int,
+        styles: Optional[List[str]] = None,
+    ) -> str:
+        """
+        Build a prompt requesting multiple seed strategies in a single call.
+
+        Args:
+            count: Number of strategies to generate.
+            styles: Optional list of style hints (one per strategy).
+
+        Returns:
+            Formatted prompt string.
+        """
+        indicator_docs = self._format_indicator_reference()
+        schema = self._format_output_schema()
+        constraints = self._format_constraints()
+
+        style_section = ""
+        if styles:
+            style_list = ", ".join(styles[:count])
+            style_section = (
+                f"\n\nEach strategy should follow a DIFFERENT trading style. "
+                f"Target styles: {style_list}. "
+                "Make each strategy use a distinct combination of indicators."
+            )
+
+        return f"""Design {count} DIFFERENT cryptocurrency trading strategies.
+
+{indicator_docs}
+
+AVAILABLE CONDITION OPERATORS:
+{self._format_operators()}
+
+{constraints}
+
+{schema}
+{style_section}
+
+Generate exactly {count} strategies as a JSON ARRAY of objects.
+Each strategy should use a different combination of indicators and logic.
+Focus on diversity — vary indicator types, operators, timeframes, and risk parameters.
+
+IMPORTANT:
+- Every indicator referenced in conditions MUST be in the indicators list
+- Use instance_id (e.g., "RSI_0") to reference indicators in conditions
+- Return ONLY a valid JSON array, no explanations or comments"""
+
+    def build_batch_immigrant_prompt(
+        self,
+        count: int,
+        top_performers: Optional[List[Dict]] = None,
+        weaknesses: Optional[List[str]] = None,
+        feedback: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Build a prompt requesting multiple immigrant strategies in one call.
+
+        Args:
+            count: Number of immigrants to generate.
+            top_performers: Current top strategy summaries.
+            weaknesses: Population weakness gaps.
+            feedback: Performance feedback and feature importance.
+
+        Returns:
+            Formatted prompt string.
+        """
+        indicator_docs = self._format_indicator_reference()
+        schema = self._format_output_schema()
+        constraints = self._format_constraints()
+
+        context = ""
+        if top_performers:
+            context += "\n\nCURRENT EVOLUTION CONTEXT - Top performing strategies:"
+            for i, perf in enumerate(top_performers[:3], 1):
+                context += (f"\n  Strategy {i}: fitness={perf.get('fitness', 'N/A'):.4f}, "
+                          f"indicators={perf.get('indicators', [])}, "
+                          f"profit={perf.get('profit', 'N/A'):.1f}%, "
+                          f"drawdown={perf.get('max_drawdown', 'N/A'):.1f}%")
+
+        weakness_guidance = ""
+        if weaknesses:
+            weakness_guidance = (
+                "\n\nIDENTIFIED GAPS to address with your new strategies:\n"
+                + "\n".join(f"  - {w}" for w in weaknesses)
+            )
+
+        feedback_section = ""
+        if feedback:
+            feedback_section = self._format_feedback_context(feedback)
+
+        return f"""Design {count} NOVEL cryptocurrency trading strategies that complement existing strategies in a genetic algorithm population.
+
+{indicator_docs}
+
+AVAILABLE CONDITION OPERATORS:
+{self._format_operators()}
+
+{constraints}
+
+{schema}
+{context}{weakness_guidance}{feedback_section}
+
+Design {count} strategies that are DIFFERENT from each other AND from the top performers above.
+Each should use a different combination of indicators and trading logic.
+Focus on robustness and generalization over raw profit.
+
+Generate exactly {count} strategies as a JSON ARRAY of objects.
+Return ONLY valid JSON, no explanations."""
+
+    def build_batch_mutation_prompt(
+        self,
+        strategies: List[Dict[str, Any]],
+    ) -> str:
+        """
+        Build a prompt for batched LLM-guided mutation of multiple strategies.
+
+        Each item in *strategies* should have keys: ``parent``, ``metrics``,
+        ``failure_mode``, and optionally ``objective``.
+
+        Args:
+            strategies: List of dicts with parent strategy info.
+
+        Returns:
+            Formatted prompt string.
+        """
+        import json as _json
+
+        indicator_docs = self._format_indicator_reference()
+        constraints = self._format_constraints()
+        schema = self._format_output_schema()
+
+        entries = []
+        for i, item in enumerate(strategies, 1):
+            parent = item['parent']
+            parent_compact = {
+                'indicators': parent.get('indicators', []),
+                'entry_conditions': parent.get('entry_conditions', []),
+                'exit_conditions': parent.get('exit_conditions', []),
+                'timeframe': parent.get('timeframe'),
+                'stoploss': parent.get('stoploss'),
+                'minimal_roi': parent.get('minimal_roi'),
+                'trailing_stop': parent.get('trailing_stop'),
+            }
+            m = item['metrics']
+            metrics_str = (
+                f"profit={m.get('profit', 0):.1f}%, "
+                f"drawdown={m.get('max_drawdown', 0):.1%}, "
+                f"win_rate={m.get('win_rate', 0):.0f}%, "
+                f"trades={m.get('num_trades', 0)}, "
+                f"sharpe={m.get('sharpe_ratio', 0):.2f}"
+            )
+            entries.append(
+                f"STRATEGY {i}:\n"
+                f"{_json.dumps(parent_compact, indent=2)}\n"
+                f"Metrics: {metrics_str}\n"
+                f"Problem: {item['failure_mode']}"
+            )
+
+        strategies_block = "\n\n".join(entries)
+
+        return f"""You are given {len(strategies)} trading strategies with their performance metrics and diagnosed problems.
+For EACH strategy, propose a MINIMAL, TARGETED edit to fix its specific problem.
+
+{strategies_block}
+
+{indicator_docs}
+
+AVAILABLE CONDITION OPERATORS:
+{self._format_operators()}
+
+{constraints}
+
+{schema}
+
+MUTATION RULES:
+1. Return a JSON ARRAY with exactly {len(strategies)} strategy objects (one improved version per input)
+2. Make 1–3 targeted edits per strategy
+3. Preserve indicators and conditions that are working well
+4. Address each strategy's specific DIAGNOSED PROBLEM
+5. Every indicator referenced in conditions MUST be in the indicators list
+6. Use instance_id (e.g., "RSI_0") to reference indicators in conditions
+
+Return ONLY a valid JSON array, no explanations."""
 
 
 # Strategy style pool for diverse seed generation

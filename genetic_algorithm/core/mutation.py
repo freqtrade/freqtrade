@@ -723,53 +723,89 @@ def mutate_gaussian(individual: Individual, mutation_rate: float,
     return new_individual
 
 
-def mutate_swap(individual: Individual, mutation_rate: float,
-               config: Dict[str, Any]) -> Individual:
+def mutate_condition_reassign(individual: Individual, mutation_rate: float,
+                              config: Dict[str, Any]) -> Individual:
     """
-    Swap mutation - swaps positions of indicators or conditions.
-    
-    Can discover better orderings and combinations by rearranging
-    existing components rather than modifying them.
-    
+    Condition reassignment mutation — picks a random condition and changes its
+    indicator reference to a *different* existing indicator, adjusting the
+    threshold to be valid for the new indicator type.
+
+    This creates novel strategy combinations (e.g. an RSI-style threshold
+    applied to a STOCH indicator) that cannot arise from other mutation
+    operators.
+
     Args:
         individual: Individual to mutate
         mutation_rate: Probability of mutation
         config: Configuration
-        
+
     Returns:
         Mutated individual
     """
     mutated_gene = individual.strategy_gene.copy()
     mutations_applied = []
-    
-    # Swap indicators
-    if len(mutated_gene.indicators) >= 2 and random.random() < mutation_rate:
-        i, j = random.sample(range(len(mutated_gene.indicators)), 2)
-        mutated_gene.indicators[i], mutated_gene.indicators[j] = \
-            mutated_gene.indicators[j], mutated_gene.indicators[i]
-        mutations_applied.append(f"swap_indicators_{i}_{j}")
-    
-    # Swap entry conditions
-    if len(mutated_gene.entry_conditions) >= 2 and random.random() < mutation_rate:
-        i, j = random.sample(range(len(mutated_gene.entry_conditions)), 2)
-        mutated_gene.entry_conditions[i], mutated_gene.entry_conditions[j] = \
-            mutated_gene.entry_conditions[j], mutated_gene.entry_conditions[i]
-        mutations_applied.append(f"swap_entry_conditions_{i}_{j}")
-    
-    # Swap exit conditions
-    if len(mutated_gene.exit_conditions) >= 2 and random.random() < mutation_rate:
-        i, j = random.sample(range(len(mutated_gene.exit_conditions)), 2)
-        mutated_gene.exit_conditions[i], mutated_gene.exit_conditions[j] = \
-            mutated_gene.exit_conditions[j], mutated_gene.exit_conditions[i]
-        mutations_applied.append(f"swap_exit_conditions_{i}_{j}")
-    
-    # Create new individual with mutation record
+    indicator_config = config.get('indicators', {})
+
+    # Build set of available indicator instance_ids (or types as fallback)
+    available_indicators = []
+    for ind in mutated_gene.indicators:
+        label = ind.instance_id if ind.instance_id else ind.type
+        available_indicators.append((label, ind.type))
+
+    if len(available_indicators) < 2:
+        # Need at least 2 indicators to reassign between
+        new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
+        new_individual.mutations = individual.mutations + [{
+            'type': 'condition_reassign',
+            'applied': [],
+        }]
+        return new_individual
+
+    # Try to reassign one entry condition and one exit condition
+    for cond_list, is_entry, label in [
+        (mutated_gene.entry_conditions, True, 'entry'),
+        (mutated_gene.exit_conditions, False, 'exit'),
+    ]:
+        if not cond_list or random.random() > mutation_rate:
+            continue
+
+        cond = random.choice(cond_list)
+        old_ref = cond.indicator
+
+        # Pick a different indicator
+        candidates = [(iid, itype) for iid, itype in available_indicators if iid != old_ref]
+        if not candidates:
+            continue
+
+        new_id, new_type = random.choice(candidates)
+        cond.indicator = new_id
+
+        # Generate a valid condition for the new indicator type using
+        # _create_random_condition and copy its operator + threshold.
+        replacement = _create_random_condition(new_type, is_entry, indicator_config)
+        if replacement:
+            cond.operator = replacement.operator
+            cond.threshold = replacement.threshold
+            if replacement.operator == 'between':
+                cond.threshold_upper = replacement.threshold_upper
+        else:
+            # Fallback: keep operator, reset threshold to 0
+            cond.threshold = 0
+
+        mutations_applied.append(
+            f"reassign_{label}_{old_ref}_to_{new_id}"
+        )
+
+    # Clamp thresholds after reassignment
+    clamp_condition_thresholds(mutated_gene.entry_conditions)
+    clamp_condition_thresholds(mutated_gene.exit_conditions)
+
     new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
     new_individual.mutations = individual.mutations + [{
-        'type': 'swap',
-        'applied': mutations_applied
+        'type': 'condition_reassign',
+        'applied': mutations_applied,
     }]
-    
+
     return new_individual
 
 
@@ -1027,6 +1063,73 @@ def mutate_dynamic_bounds(
     return new_individual
 
 
+# Valid regime values for mutation
+_VALID_REGIMES = [None, 'bullish', 'bearish', 'sideways', 'volatile']
+_VALID_REGIME_MODES = ['generalist', 'specialist', 'exclusive']
+
+
+def mutate_regime(
+    individual: Individual,
+    mutation_rate: float,
+    config: Dict[str, Any],
+) -> Individual:
+    """
+    Mutate the regime specialization fields of a strategy.
+
+    Operations (independent, each triggered by probability):
+    - 50% chance: mutate preferred_regime (pick from None/bullish/bearish/sideways/volatile)
+    - 30% chance: mutate regime_mode (pick from generalist/specialist/exclusive)
+
+    Only active when regime_aware.enabled is true AND
+    regime_aware.regime_specialization.enabled is true in config.
+
+    Args:
+        individual: Individual to mutate
+        mutation_rate: Probability of mutation
+        config: Configuration dictionary
+
+    Returns:
+        Mutated individual (or original if no mutation applied)
+    """
+    regime_config = config.get('regime_aware', {})
+    spec_config = regime_config.get('regime_specialization', {})
+
+    if not regime_config.get('enabled', False) or not spec_config.get('enabled', True):
+        return individual
+
+    mutated_gene = individual.strategy_gene.copy()
+    mutations_applied = []
+
+    # Mutate preferred_regime
+    if random.random() < 0.5:
+        old_regime = mutated_gene.preferred_regime
+        new_regime = random.choice(_VALID_REGIMES)
+        if new_regime != old_regime:
+            mutated_gene.preferred_regime = new_regime
+            mutations_applied.append(
+                f"preferred_regime_{old_regime}_to_{new_regime}"
+            )
+
+    # Mutate regime_mode
+    if random.random() < 0.3:
+        old_mode = mutated_gene.regime_mode
+        new_mode = random.choice(_VALID_REGIME_MODES)
+        if new_mode != old_mode:
+            mutated_gene.regime_mode = new_mode
+            mutations_applied.append(f"regime_mode_{old_mode}_to_{new_mode}")
+
+    if not mutations_applied:
+        return individual
+
+    new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
+    new_individual.mutations = individual.mutations + [{
+        'type': 'regime',
+        'applied': mutations_applied,
+    }]
+
+    return new_individual
+
+
 def mutate(individual: Individual, mutation_rate: float,
           config: Dict[str, Any],
           methods: list = None) -> Individual:
@@ -1049,8 +1152,8 @@ def mutate(individual: Individual, mutation_rate: float,
         # Add advanced operators based on random selection
         if random.random() < 0.2:  # 20% chance to use Gaussian mutation
             methods.append('gaussian')
-        if random.random() < 0.1:  # 10% chance to use swap mutation
-            methods.append('swap')
+        if random.random() < 0.1:  # 10% chance to use condition reassignment mutation
+            methods.append('condition_reassign')
         if random.random() < 0.15:  # 15% chance to use adaptive mutation
             methods.append('adaptive')
         # Multi-timeframe mutation when enabled
@@ -1061,6 +1164,11 @@ def mutate(individual: Individual, mutation_rate: float,
         dyn_bounds_config = config.get('dynamic_bounds', {})
         if dyn_bounds_config.get('enabled', False) and random.random() < 0.1:
             methods.append('dynamic_bounds')
+        # Regime specialization mutation when regime-aware enabled (Phase 1B)
+        regime_config = config.get('regime_aware', {})
+        spec_config = regime_config.get('regime_specialization', {})
+        if regime_config.get('enabled', False) and spec_config.get('enabled', True) and random.random() < 0.15:
+            methods.append('regime')
     
     mutated = individual
     
@@ -1077,14 +1185,16 @@ def mutate(individual: Individual, mutation_rate: float,
                     mutated = mutate_structure(mutated, mutation_rate, config)
                 elif method == 'gaussian':
                     mutated = mutate_gaussian(mutated, mutation_rate, config, sigma=0.1)
-                elif method == 'swap':
-                    mutated = mutate_swap(mutated, mutation_rate, config)
+                elif method == 'condition_reassign':
+                    mutated = mutate_condition_reassign(mutated, mutation_rate, config)
                 elif method == 'adaptive':
                     mutated = mutate_adaptive_per_gene(mutated, mutation_rate, config)
                 elif method == 'timeframes':
                     mutated = mutate_timeframes(mutated, mutation_rate, config)
                 elif method == 'dynamic_bounds':
                     mutated = mutate_dynamic_bounds(mutated, mutation_rate, config)
+                elif method == 'regime':
+                    mutated = mutate_regime(mutated, mutation_rate, config)
             except (ValueError, KeyError, AttributeError, TypeError) as e:
                 # Log the error but continue with the current mutated state
                 # This ensures that a failed mutation doesn't crash the evolution

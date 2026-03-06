@@ -60,6 +60,25 @@ genetic_algorithm:
   max_adaptation_factor: 2.5   # Maximum multiplier for mutation rate
   adaptation_step: 0.15         # Increase factor per generation with no improvement
   
+  # Mutation cooldown: when a new best is found while the mutation rate is
+  # elevated, the rate decays exponentially toward the base rate rather than
+  # snapping back instantly.  0.0 = instant reset (legacy), 0.5 = halve the
+  # excess each improvement, 0.9 = very slow cooldown.
+  mutation_cooldown_factor: 0.5
+  
+  # Adaptive tournament size: dynamically adjust tournament_size based on
+  # population diversity.  High diversity → larger tournament (exploit);
+  # low diversity → smaller tournament (explore).
+  adaptive_tournament: false
+
+  # Behavioral distance weight for diversity/fitness sharing.
+  # 0.0 = pure structural distance (indicator types, condition counts, etc.)
+  # 0.5 = blend 50% structural + 50% behavioral (per-pair profit, monthly returns)
+  # 1.0 = pure behavioral distance.
+  # Behavioral distance only applies to evaluated individuals; unevaluated
+  # ones fall back to structural distance automatically.
+  behavioral_distance_weight: 0.0
+  
   # Diversity preservation
   fitness_sharing: true         # Enable fitness sharing for diversity
   sharing_radius: 0.25          # How similar strategies must be to share fitness (0-1)
@@ -319,6 +338,36 @@ regime_aware:
     bullish: 1.0
     bearish: 1.0
     sideways: 1.0
+
+  # === ML Regime Detection (Phase 1B) ===
+  # LightGBM classifier that sits as a meta-ensemble on top of rule-based methods.
+  # Must be trained first: python -m genetic_algorithm.ml.train_regime --config <this_config>
+  ml_regime:
+    enabled: false                    # Set to true after training model
+    feature_mode: 'combined'          # 'combined' (rules + raw TA), 'raw_only', 'rules_only'
+    label_mode: 'rules'              # 'rules' (distill ensemble), 'price' (self-label from returns)
+    model_path: 'genetic_algorithm/ml/models/regime_lgbm.pkl'
+    include_in_ensemble: true        # Add ML as a voter in ensemble method when model exists
+    ensemble_weight: 2               # ML voter weight in ensemble (same as top rule-based methods)
+    # LightGBM hyperparameters (overrides defaults in RegimeTrainer)
+    # lgbm_params:
+    #   n_estimators: 300
+    #   learning_rate: 0.05
+    #   num_leaves: 31
+    # Self-labeling thresholds (only used when label_mode='price')
+    # label_params:
+    #   return_window: 20
+    #   bullish_threshold: 0.02
+    #   bearish_threshold: -0.02
+    #   volatile_pct: 75
+
+  # === Regime Specialization (Phase 1B) ===
+  # Allow strategies to declare preferred market regime via StrategyGene
+  regime_specialization:
+    enabled: true                    # Allow preferred_regime gene to evolve
+    specialist_boost: 1.5            # Weight multiplier for preferred regime segments (specialist mode)
+    diversity_weight: 0.05           # Bonus for consistent cross-regime performance (generalist mode)
+    initial_regime_ratio: 0.3        # Fraction of initial population seeded with a preferred_regime
 
 # === Strategy Constraints ===
 strategy_constraints:
@@ -655,6 +704,29 @@ advanced:
     immigrant_ratio: 0.50  # 50% of each generation's immigrants from LLM (StrategyDesigner)
     # Supported providers: grok, openai, anthropic, local
     providers: [grok, openai, anthropic, local]
+
+    # LLM-Guided Mutation (Phase 1)
+    # Uses the LLM to propose targeted patches to existing strategies
+    # instead of generating new ones from scratch.
+    mutation_enabled: false  # Set to true to enable LLM-guided mutation
+    mutation_probability: 0.10  # Probability of applying LLM patch per top-K elite
+    mutation_top_k: 3  # Number of top elites eligible for LLM mutation
+    mutation_stagnation_threshold: 3  # Only trigger after N gens without improvement
+
+    # Batching
+    # Request multiple strategies per API call to reduce request count.
+    batch_enabled: true  # Batch seed/immigrant generation into fewer calls
+    max_batch_size: 5  # Maximum strategies per batch call
+
+    # Budget control
+    max_calls_per_generation: 20  # Hard cap on LLM calls per generation
+    max_calls_per_run: 500  # Hard cap on total LLM calls per evolution run
+
+    # Stagnation escalation
+    # When the GA stagnates, temporarily increase LLM involvement.
+    escalation_threshold: 5  # Escalate after this many stagnant generations
+    escalation_immigrant_ratio: 0.80  # Immigrant ratio during escalation
+    escalation_mutation_probability: 0.25  # Mutation probability during escalation
   
   # Island model configuration
   island_model:
