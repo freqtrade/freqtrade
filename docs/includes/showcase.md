@@ -9,3 +9,4 @@ This section will highlight a few projects from members of the community.
 - [Freqtrade analysis notebook](https://github.com/froggleston/freqtrade_analysis_notebook) (by Froggleston).
 - [FTUI - Terminal UI for freqtrade](https://github.com/freqtrade/ftui) (by Froggleston).
 - [Bot Academy](https://botacademy.ddns.net/) (by stash86) - Blog about crypto bot projects.
+- [VARRD - Statistical edge validation for strategies](https://github.com/augiemazza/varrd) (by augiemazza) - Validates whether a strategy has a real statistical edge before deployment. Generates ready-to-run Freqtrade strategy files from validated edges.
