@@ -78,9 +78,15 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument(
         "--label-mode",
         type=str,
-        choices=["rules", "price"],
+        choices=["rules", "advanced_ensemble", "score_band", "price"],
         default=None,
-        help="Override label mode from config (rules = distill existing ensemble, price = self-label).",
+        help=(
+            "Override label mode from config. "
+            "'rules' = basic ensemble distillation, "
+            "'advanced_ensemble' = 5-detector confidence-weighted consensus (recommended), "
+            "'score_band' = labels from continuous trend score bands, "
+            "'price' = self-label from raw price data."
+        ),
     )
     parser.add_argument(
         "--feature-mode",

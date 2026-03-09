@@ -10,7 +10,7 @@ import logging
 from typing import Dict, Any, Optional
 
 from genetic_algorithm.core.individual import Individual
-from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene, is_higher_timeframe
+from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene, RegimeGene, is_higher_timeframe
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
 
 # Set up logger for mutation operations
@@ -1118,6 +1118,14 @@ def mutate_regime(
             mutated_gene.regime_mode = new_mode
             mutations_applied.append(f"regime_mode_{old_mode}_to_{new_mode}")
 
+    # Mutate in-strategy regime gene (Phase 2)
+    in_strategy_cfg = regime_config.get('in_strategy_regime', {})
+    if in_strategy_cfg.get('enabled', False):
+        mutated_gene, rgene_mutations = _mutate_regime_gene(
+            mutated_gene, in_strategy_cfg
+        )
+        mutations_applied.extend(rgene_mutations)
+
     if not mutations_applied:
         return individual
 
@@ -1128,6 +1136,88 @@ def mutate_regime(
     }]
 
     return new_individual
+
+
+def _mutate_regime_gene(
+    gene: StrategyGene,
+    in_strategy_cfg: Dict[str, Any],
+) -> tuple:
+    """
+    Mutate the in-strategy RegimeGene fields.
+
+    Operations:
+    - 20% chance: toggle regime_gene.enabled
+    - 40% chance: perturb entry_trend_min / entry_trend_max by ±0.15
+    - 20% chance: toggle exit_on_regime_change
+    - 15% chance: mutate regime_timeframes (add/remove a TF)
+    - 15% chance: swap combination method
+
+    Returns:
+        Tuple of (mutated_gene, list_of_mutation_descriptions)
+    """
+    mutations = []
+    available_tfs = in_strategy_cfg.get('regime_timeframes', ['4h', '1d'])
+
+    # Ensure regime_gene exists
+    if gene.regime_gene is None:
+        gene.regime_gene = RegimeGene(
+            enabled=False,
+            regime_timeframes=list(available_tfs),
+        )
+
+    rg = gene.regime_gene
+
+    # Toggle enabled
+    if random.random() < 0.20:
+        old = rg.enabled
+        rg.enabled = not rg.enabled
+        mutations.append(f"regime_gene_enabled_{old}_to_{rg.enabled}")
+
+    # Perturb entry trend filter
+    if random.random() < 0.40:
+        delta = random.gauss(0, 0.15)
+        if random.random() < 0.5:
+            old_val = rg.entry_trend_min
+            rg.entry_trend_min = max(-1.0, min(rg.entry_trend_max - 0.05,
+                                                rg.entry_trend_min + delta))
+            mutations.append(f"regime_entry_min_{old_val:.2f}_to_{rg.entry_trend_min:.2f}")
+        else:
+            old_val = rg.entry_trend_max
+            rg.entry_trend_max = max(rg.entry_trend_min + 0.05,
+                                     min(1.0, rg.entry_trend_max + delta))
+            mutations.append(f"regime_entry_max_{old_val:.2f}_to_{rg.entry_trend_max:.2f}")
+
+    # Toggle exit_on_regime_change
+    if random.random() < 0.20:
+        rg.exit_on_regime_change = not rg.exit_on_regime_change
+        mutations.append(f"exit_on_regime_change_{not rg.exit_on_regime_change}_to_{rg.exit_on_regime_change}")
+
+    # Mutate regime timeframes
+    if random.random() < 0.15:
+        all_tfs = ['30m', '1h', '4h', '1d']
+        if len(rg.regime_timeframes) > 1 and random.random() < 0.5:
+            # Remove a random TF
+            removed = random.choice(rg.regime_timeframes)
+            rg.regime_timeframes = [t for t in rg.regime_timeframes if t != removed]
+            mutations.append(f"regime_tf_remove_{removed}")
+        else:
+            # Add a random TF not already present
+            missing = [t for t in all_tfs if t not in rg.regime_timeframes]
+            if missing:
+                added = random.choice(missing)
+                rg.regime_timeframes.append(added)
+                rg.regime_timeframes.sort(
+                    key=lambda x: {'30m': 0, '1h': 1, '4h': 2, '1d': 3}.get(x, 4)
+                )
+                mutations.append(f"regime_tf_add_{added}")
+
+    # Swap combination method
+    if random.random() < 0.15:
+        old_comb = rg.combination
+        rg.combination = 'hierarchical' if old_comb == 'weighted_voting' else 'weighted_voting'
+        mutations.append(f"regime_combination_{old_comb}_to_{rg.combination}")
+
+    return gene, mutations
 
 
 def mutate(individual: Individual, mutation_rate: float,

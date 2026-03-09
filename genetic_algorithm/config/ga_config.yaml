@@ -369,6 +369,46 @@ regime_aware:
     diversity_weight: 0.05           # Bonus for consistent cross-regime performance (generalist mode)
     initial_regime_ratio: 0.3        # Fraction of initial population seeded with a preferred_regime
 
+  # === Multi-Timeframe Regime Detection ===
+  # Combine regime classifications from multiple timeframes for more robust
+  # detection.  Each TF is analyzed independently then fused into a composite
+  # continuous score: trend_score [-1, +1] and volatility_score [0, 1].
+  mtf_enabled: false                  # Set to true for production MTF regime
+  mtf_timeframes: ['30m', '1h', '4h', '1d']  # Timeframes to analyze
+  mtf_combination: 'hierarchical'    # 'hierarchical' or 'weighted_voting'
+  # Per-TF weights (used by weighted_voting; also sets TF ordering for hierarchical)
+  mtf_weights:
+    30m: 0.5
+    1h: 1.0
+    4h: 2.0
+    1d: 3.0
+  # Hierarchical refinement range: lower TFs can deviate at most this much
+  # from the higher-TF anchor (only used when mtf_combination='hierarchical')
+  mtf_hierarchical_refine: 0.3
+  # Transition detection windows (used to compute regime change speed)
+  mtf_transition_fast_window: 5
+  mtf_transition_slow_window: 20
+  # Trend score thresholds that trigger transition signals
+  mtf_transition_thresholds: [-0.5, 0.0, 0.5]
+
+  # === Segmentation Mode ===
+  # 'adaptive': split at regime change points (recommended — internally
+  #   consistent segments, variable length)
+  # 'fixed': fixed-width windows of period_days length (legacy)
+  segmentation: 'adaptive'
+
+  # === In-Strategy Regime Awareness ===
+  # When enabled, generated strategies include runtime regime detection
+  # in populate_indicators() and can filter entries/exits by regime score.
+  # This lets strategies adapt to current market conditions at trade time.
+  in_strategy_regime:
+    enabled: false                   # Toggle runtime regime awareness
+    regime_timeframes: ['4h', '1d'] # TFs to compute regime on inside strategies
+    # Default trend_score entry filter: only enter long when score is in [min, max]
+    default_entry_filter: [-1.0, 1.0]  # [-1, 1] = no filter (allow all)
+    # Probability that a new individual gets regime awareness enabled
+    initial_probability: 0.3
+
 # === Strategy Constraints ===
 strategy_constraints:
   # Minimum number of trades for valid strategy

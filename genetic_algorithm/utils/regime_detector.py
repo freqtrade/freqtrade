@@ -164,7 +164,7 @@ class RegimeDetector:
         """
         valid_methods = ['sma_adx', 'adx_di', 'adx_di_hysteresis', 'returns', 
                          'rolling_returns', 'bollinger', 'hmm', 'volatility_cluster',
-                         'ensemble', 'ml_lgbm']
+                         'ensemble', 'advanced_ensemble', 'ml_lgbm']
         if method not in valid_methods:
             raise ValueError(f"Unknown detection method: {method}. Valid: {valid_methods}")
         
@@ -198,7 +198,7 @@ class RegimeDetector:
         
         # Validate required columns
         required = ['close']
-        if self.method in ['adx_di', 'adx_di_hysteresis', 'sma_adx', 'ml_lgbm']:
+        if self.method in ['adx_di', 'adx_di_hysteresis', 'sma_adx', 'ml_lgbm', 'advanced_ensemble']:
             required.extend(['high', 'low'])
         
         missing = [c for c in required if c not in df.columns]
@@ -224,11 +224,353 @@ class RegimeDetector:
             return self._detect_volatility_cluster(df)
         elif self.method == 'ensemble':
             return self._detect_ensemble(df)
+        elif self.method == 'advanced_ensemble':
+            return self._detect_advanced_ensemble(df)
         elif self.method == 'ml_lgbm':
             return self._detect_ml_lgbm(df)
         else:
             raise ValueError(f"Unknown method: {self.method}")
-    
+
+    def detect_continuous(self, df: pd.DataFrame) -> Tuple[pd.Series, pd.Series]:
+        """
+        Detect market regime as continuous scores instead of discrete categories.
+
+        Returns two continuous series that capture regime nuances beyond simple
+        bullish/bearish/sideways categories:
+
+        - **trend_score** in [-1.0, +1.0]:
+          -1.0 = strong bearish, 0.0 = sideways/neutral, +1.0 = strong bullish.
+          Derived from the underlying indicator values (e.g. ADX * DI direction,
+          normalized rolling return) and clipped to [-1, 1].
+
+        - **volatility_score** in [0.0, 1.0]:
+          0.0 = calm/low volatility, 1.0 = extreme volatility.
+          Derived from rolling realized volatility ranked against its own
+          trailing distribution (percentile rank).
+
+        These scores allow downstream consumers (MTF fusion, strategy code gen,
+        fitness evaluation) to operate on a gradient rather than hard buckets.
+
+        The existing ``detect()`` method is equivalent to thresholding these
+        continuous scores.
+
+        Args:
+            df: DataFrame with OHLCV data (columns: open, high, low, close, volume).
+                Must be sorted by date ascending.
+
+        Returns:
+            Tuple of (trend_score: pd.Series, volatility_score: pd.Series)
+            with the same index as *df*.  NaN for warmup bars.
+        """
+        if df.empty:
+            return pd.Series(dtype=float), pd.Series(dtype=float)
+
+        df = df.copy()
+        df.columns = df.columns.str.lower()
+
+        trend_score = self._compute_trend_score(df)
+        volatility_score = self._compute_volatility_score(df)
+
+        return trend_score, volatility_score
+
+    def _compute_trend_score(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Compute a continuous trend score in [-1, +1].
+
+        Strategy depends on the active detection method:
+        - advanced_ensemble / ensemble:
+            Confidence-weighted average of 5 sub-detector continuous scores
+            (ADX-DI, rolling-returns, Bollinger, volatility-cluster, HMM).
+            Directly mirrors the discrete voting logic but stays continuous.
+        - adx_di_hysteresis / adx_di / sma_adx:
+            score = (plus_di - minus_di) / (plus_di + minus_di) * (adx / 50)
+            This captures both *direction* (DI differential) and *strength* (ADX).
+        - returns / rolling_returns:
+            score = tanh(rolling_mean_return / threshold)
+            Smooth sigmoid mapping of returns to [-1, 1].
+        - bollinger:
+            score = (close - sma) / (2 * std)  clipped to [-1, 1]
+        - hmm / volatility_cluster / ml_lgbm / other:
+            Adaptive returns-based continuous score with data-derived threshold.
+        """
+        close = df['close']
+
+        # ── Advanced / standard ensemble: confidence-weighted multi-score ──
+        if self.method in ('advanced_ensemble', 'ensemble'):
+            return self._compute_ensemble_trend_score(df)
+
+        if self.method in (
+            'adx_di_hysteresis', 'adx_di', 'sma_adx',
+        ):
+            adx_period = self.params.get('adx_period', 14)
+            adx, plus_di, minus_di = self._calculate_adx(df, adx_period)
+
+            # Direction: normalized DI differential in [-1, 1]
+            di_sum = plus_di + minus_di
+            di_direction = (plus_di - minus_di) / di_sum.replace(0, np.nan)
+
+            # Strength: ADX normalized by 50 (ADX > 50 is very strong), clipped to [0, 1]
+            adx_strength = (adx / 50.0).clip(0, 1)
+
+            # Combined: direction * strength → [-1, 1]
+            score = di_direction * adx_strength
+
+            # For adx_di_hysteresis: apply hysteresis dampening
+            # When ADX is below the exit threshold, dampen the score towards zero
+            if self.method == 'adx_di_hysteresis':
+                adx_enter = self.params.get('adx_enter', 25)
+                adx_exit = self.params.get('adx_exit', 20)
+                # Smooth dampening: below adx_exit → score * 0, above adx_enter → score * 1
+                dampen = ((adx - adx_exit) / (adx_enter - adx_exit)).clip(0, 1)
+                score = score * dampen
+
+            return score.clip(-1.0, 1.0)
+
+        elif self.method in ('returns', 'rolling_returns'):
+            returns = close.pct_change()
+            window = self.params.get('window', self.params.get('lookback_period', 50))
+            threshold = self.params.get('threshold', self.params.get('trend_threshold', 0.0005))
+            rolling_mean = returns.rolling(window=window, min_periods=window).mean()
+            # tanh mapping: smooth transition, threshold controls sensitivity
+            score = np.tanh(rolling_mean / max(threshold, 1e-8))
+            return pd.Series(score, index=df.index).clip(-1.0, 1.0)
+
+        elif self.method == 'bollinger':
+            period = self.params.get('period', 20)
+            std_dev = self.params.get('std_dev', 2.0)
+            sma = self._calculate_sma(close, period)
+            std = close.rolling(window=period, min_periods=period).std()
+            score = (close - sma) / (std_dev * std.replace(0, np.nan))
+            return score.clip(-1.0, 1.0)
+
+        else:
+            # Generic fallback: adaptive returns-based continuous score
+            # Uses the asset's own rolling volatility to set sensitivity,
+            # ensuring the score spreads across [-1, +1] with adequate
+            # coverage in all three bands regardless of asset/timeframe.
+            #
+            # Calibration: threshold = rolling_std.median() * k
+            #   k=0.5 → ~78% sideways (too conservative)
+            #   k=0.2 → ~40-50% sideways (balanced for GA island splits)
+            # The lower multiplier ensures rolling mean returns that are
+            # even modestly directional get mapped to the bull/bear zones.
+            returns = close.pct_change()
+            rolling_mean = returns.rolling(window=50, min_periods=50).mean()
+            rolling_std = returns.rolling(window=50, min_periods=50).std()
+            threshold = rolling_std.median() * 0.2
+            threshold = max(threshold, 1e-6)
+            score = np.tanh(rolling_mean / threshold)
+            return pd.Series(score, index=df.index).clip(-1.0, 1.0)
+
+    def _compute_ensemble_trend_score(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Compute a continuous trend score for advanced_ensemble / ensemble.
+
+        Instead of falling to a single generic formula, this method mirrors
+        the discrete ensemble approach but stays continuous:
+
+        1. Compute each sub-detector's continuous score in [-1, +1].
+        2. Compute a rolling agreement-based confidence weight per method.
+        3. Return the confidence-weighted average across all sub-detectors.
+
+        This produces a well-calibrated score with natural spread across
+        the [-1, +1] range because different methods contribute different
+        sensitivities (e.g. ADX-DI is conservative, returns-based is
+        responsive, Bollinger is mean-reversion aware).
+
+        Sub-detectors and base weights:
+          1. adx_di_hysteresis  (w=2.0)  — stable trend with hysteresis
+          2. rolling_returns    (w=2.0)  — momentum/directional bias
+          3. bollinger          (w=1.0)  — mean-reversion / range
+          4. volatility_cluster (w=1.0)  — volatility-adjusted (via returns fallback)
+          5. hmm                (w=1.5)  — statistical state model (via returns fallback)
+        """
+        n = len(df)
+
+        # Sub-detector specs: (method, params, base_weight)
+        sub_specs = [
+            ('adx_di_hysteresis', {}, 2.0),
+            ('rolling_returns', {'window': 50, 'threshold': 0.0005}, 2.0),
+            ('bollinger', {}, 1.0),
+            ('volatility_cluster', {}, 1.0),
+            ('hmm', {}, 1.5),
+        ]
+
+        sub_scores: Dict[str, Tuple[pd.Series, float]] = {}
+        for method_name, params, base_weight in sub_specs:
+            try:
+                det = RegimeDetector(method=method_name, params=params)
+                score = det._compute_trend_score(df)
+                sub_scores[method_name] = (score, base_weight)
+            except Exception as e:
+                logger.debug(
+                    "Ensemble trend score: %s failed, skipping: %s",
+                    method_name, e,
+                )
+
+        if not sub_scores:
+            # Ultimate fallback — adaptive returns
+            logger.warning("Ensemble trend score: all sub-detectors failed, using fallback")
+            close = df['close']
+            returns = close.pct_change()
+            rolling_mean = returns.rolling(window=50, min_periods=50).mean()
+            rolling_std = returns.rolling(window=50, min_periods=50).std()
+            threshold = max(rolling_std.median() * 0.2, 1e-6)
+            return pd.Series(np.tanh(rolling_mean / threshold), index=df.index).clip(-1, 1)
+
+        # Stack all sub-scores into a DataFrame
+        score_df = pd.DataFrame(
+            {name: s for name, (s, _) in sub_scores.items()},
+            index=df.index,
+        )
+
+        # Compute rolling confidence per sub-detector:
+        # Agreement = correlation with the mean of other detectors
+        # over a rolling window.  High correlation → high confidence.
+        conf_window = min(100, max(20, n // 10))
+        weights_df = pd.DataFrame(index=df.index, columns=score_df.columns, dtype=float)
+
+        for method_name in score_df.columns:
+            others = score_df.drop(columns=[method_name])
+            others_mean = others.mean(axis=1)
+
+            # Rolling correlation with consensus (others' average)
+            rolling_corr = score_df[method_name].rolling(
+                window=conf_window, min_periods=max(10, conf_window // 4),
+            ).corr(others_mean)
+
+            # Transform: corr in [-1, 1] → confidence in [0.2, 1.0]
+            # Low/negative correlation → low weight but not zero
+            confidence = (rolling_corr.clip(-1, 1) + 1) / 2  # → [0, 1]
+            confidence = confidence * 0.8 + 0.2  # → [0.2, 1.0]
+            confidence = confidence.fillna(0.5)
+
+            base_weight = sub_scores[method_name][1]
+            weights_df[method_name] = base_weight * confidence
+
+        # Compute weighted average score
+        weighted_sum = (score_df * weights_df).sum(axis=1)
+        weight_total = weights_df.sum(axis=1).replace(0, np.nan)
+        final_score = weighted_sum / weight_total
+
+        return final_score.clip(-1.0, 1.0)
+
+    def _compute_volatility_score(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Compute a continuous volatility score in [0, 1].
+
+        Uses rolling realized volatility ranked against its own trailing
+        distribution.  A rolling percentile rank ensures the score adapts
+        to changing volatility regimes (e.g., a 2% daily std is extreme
+        in calm markets but normal in a crash).
+
+        Score = rolling_percentile_rank(realized_vol, lookback=252)
+        """
+        close = df['close']
+        returns = close.pct_change()
+
+        # Exponentially weighted realized volatility
+        vol_window = self.params.get('vol_window', 20)
+        realized_vol = returns.ewm(span=vol_window, adjust=False).std()
+
+        # Percentile rank over a trailing window (default 252 bars ≈ 1 year on daily)
+        vol_lookback = self.params.get('vol_lookback', 252)
+
+        def _percentile_rank(series: pd.Series, lookback: int) -> pd.Series:
+            """Rolling percentile rank — fraction of trailing values <= current."""
+            result = pd.Series(np.nan, index=series.index)
+            vals = series.values
+            n = len(vals)
+            for i in range(lookback, n):
+                window = vals[max(0, i - lookback):i + 1]
+                valid = window[~np.isnan(window)]
+                if len(valid) < 2:
+                    continue
+                result.iloc[i] = np.sum(valid <= vals[i]) / len(valid)
+            return result
+
+        # Vectorized percentile rank (faster approximation)
+        vol_min = realized_vol.rolling(window=vol_lookback, min_periods=min(vol_lookback, 60)).min()
+        vol_max = realized_vol.rolling(window=vol_lookback, min_periods=min(vol_lookback, 60)).max()
+        vol_range = vol_max - vol_min
+        score = (realized_vol - vol_min) / vol_range.replace(0, np.nan)
+
+        return score.clip(0.0, 1.0)
+
+    @staticmethod
+    def continuous_to_regime(
+        trend_score: pd.Series,
+        volatility_score: pd.Series,
+        trend_threshold: float = 0.25,
+        volatility_threshold: float = 0.75,
+        bullish_min: Optional[float] = None,
+        bearish_max: Optional[float] = None,
+    ) -> pd.Series:
+        """
+        Convert continuous scores to discrete RegimeType labels.
+
+        This is the inverse of detect_continuous() — useful for backward
+        compatibility with code that expects RegimeType enum values.
+
+        When ``bullish_min`` / ``bearish_max`` are provided (score-band mode)
+        they take precedence over the legacy symmetric ``trend_threshold``.
+        Default band boundaries: bullish >= 0.35, bearish <= -0.35,
+        sideways = everything in between.
+
+        Args:
+            trend_score: Continuous trend score in [-1, 1]
+            volatility_score: Continuous volatility score in [0, 1]
+            trend_threshold: Legacy symmetric threshold (used when bands
+                             are not specified). |trend_score| above this
+                             → trending (bull/bear).
+            volatility_threshold: volatility_score above this → VOLATILE
+            bullish_min: Score-band lower bound for bullish regime.
+                         When set, ``trend_score >= bullish_min`` → BULLISH.
+            bearish_max: Score-band upper bound for bearish regime.
+                         When set, ``trend_score <= bearish_max`` → BEARISH.
+
+        Returns:
+            pd.Series of RegimeType
+        """
+        # Resolve band boundaries
+        if bullish_min is not None or bearish_max is not None:
+            bull_threshold = bullish_min if bullish_min is not None else 0.35
+            bear_threshold = bearish_max if bearish_max is not None else -0.35
+        else:
+            # Legacy symmetric mode
+            bull_threshold = trend_threshold
+            bear_threshold = -trend_threshold
+
+        # Support scalar inputs
+        if not isinstance(trend_score, pd.Series):
+            trend_score = pd.Series([trend_score])
+            volatility_score = pd.Series([volatility_score])
+            scalar = True
+        else:
+            scalar = False
+
+        regime = pd.Series(RegimeType.UNCERTAIN, index=trend_score.index, dtype=object)
+        valid = trend_score.notna() & volatility_score.notna()
+
+        is_volatile = valid & (volatility_score > volatility_threshold)
+        is_trending_up = valid & (trend_score >= bull_threshold)
+        is_trending_down = valid & (trend_score <= bear_threshold)
+        is_sideways = valid & ~is_trending_up & ~is_trending_down & ~is_volatile
+
+        # High volatility + trend → keep direction; high vol + flat → VOLATILE
+        regime[is_volatile & is_trending_up] = RegimeType.BULLISH
+        regime[is_volatile & is_trending_down] = RegimeType.BEARISH
+        regime[is_volatile & ~is_trending_up & ~is_trending_down] = RegimeType.VOLATILE
+
+        # Normal volatility
+        regime[~is_volatile & is_trending_up] = RegimeType.BULLISH
+        regime[~is_volatile & is_trending_down] = RegimeType.BEARISH
+        regime[is_sideways] = RegimeType.SIDEWAYS
+
+        if scalar:
+            return regime.iloc[0]
+        return regime
+
     def _calculate_sma(self, series: pd.Series, period: int) -> pd.Series:
         """Calculate Simple Moving Average."""
         return series.rolling(window=period, min_periods=period).mean()
@@ -841,6 +1183,141 @@ class RegimeDetector:
         
         return regime
 
+    def _detect_advanced_ensemble(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Advanced ensemble — combines 6 detection methods with confidence-weighted voting.
+
+        This is the recommended 'standard' detection method that maximizes
+        robustness by combining complementary approaches:
+
+        1. ADX+DI Hysteresis (weight=2) — stable trend detection
+        2. Rolling Returns (weight=2) — momentum / directional bias
+        3. HMM (weight=1.5) — statistical state model
+        4. Volatility Cluster (weight=1) — volatility regime overlay
+        5. Bollinger (weight=1) — mean-reversion / range detection
+        6. ML LightGBM (weight=3 when available) — learned consensus
+
+        Each method's contribution is scaled by a rolling confidence score
+        (agreement rate over a lookback window), so noisy methods are
+        automatically down-weighted.
+        """
+        # Define methods and base weights
+        method_specs = [
+            ('adx_di_hysteresis', {}, 2.0),
+            ('rolling_returns', {'window': 50, 'threshold': 0.0005}, 2.0),
+            ('hmm', {'n_states': 3, 'min_dwell': 10}, 1.5),
+            ('volatility_cluster', {}, 1.0),
+            ('bollinger', {}, 1.0),
+        ]
+
+        methods_results = {}
+        for method_name, params, base_weight in method_specs:
+            try:
+                det = RegimeDetector(method=method_name, params=params)
+                result = det.detect(df)
+                methods_results[method_name] = (result, base_weight)
+            except Exception as e:
+                logger.debug(f"Advanced ensemble: {method_name} failed, skipping: {e}")
+
+        # Try ML model (highest weight when available)
+        try:
+            ml_model_path = Path(__file__).parent.parent / 'ml' / 'models' / 'regime_lgbm.pkl'
+            if ml_model_path.exists():
+                from genetic_algorithm.ml.regime_detector import MLRegimeDetector
+                ml_detector = MLRegimeDetector(model_path=str(ml_model_path))
+                ml_regimes = ml_detector.detect(df)
+                methods_results['ml_lgbm'] = (ml_regimes, 3.0)
+                logger.info("Advanced ensemble: ML model included (weight=3.0)")
+        except Exception as e:
+            logger.debug(f"Advanced ensemble: ML model not available: {e}")
+
+        if not methods_results:
+            logger.warning("Advanced ensemble: all methods failed, falling back to adx_di_hysteresis")
+            det = RegimeDetector(method='adx_di_hysteresis')
+            return det.detect(df)
+
+        logger.info(
+            f"Advanced ensemble: {len(methods_results)} methods active: "
+            f"{list(methods_results.keys())}"
+        )
+
+        # Regime encoding
+        regime_map = {
+            RegimeType.BULLISH: 0,
+            RegimeType.BEARISH: 1,
+            RegimeType.SIDEWAYS: 2,
+        }
+        n_regimes = 3
+        n = len(df.index)
+
+        # Compute confidence-adjusted weights per method
+        # Confidence = rolling agreement rate with the majority over a lookback window
+        confidence_window = min(100, max(20, n // 10))  # adaptive window
+
+        # First pass: collect all results aligned to df.index
+        aligned_results = {}
+        for method_name, (result, _) in methods_results.items():
+            aligned = result.reindex(df.index)
+            # Encode to numeric
+            encoded = pd.Series(np.nan, index=df.index)
+            for regime_type, regime_idx in regime_map.items():
+                mask = (aligned == regime_type)
+                if regime_type == RegimeType.SIDEWAYS:
+                    mask = mask | (aligned == RegimeType.VOLATILE)
+                encoded[mask] = regime_idx
+            aligned_results[method_name] = encoded
+
+        # Compute per-bar majority vote (unweighted) for confidence calc
+        all_encoded = pd.DataFrame(aligned_results)
+        majority = all_encoded.mode(axis=1).iloc[:, 0]  # most common regime per bar
+
+        # Compute per-method rolling confidence (agreement with majority)
+        method_confidence = {}
+        for method_name in aligned_results:
+            agreement = (aligned_results[method_name] == majority).astype(float)
+            rolling_conf = agreement.rolling(
+                window=confidence_window, min_periods=max(1, confidence_window // 4)
+            ).mean()
+            # Fill leading NaN with global agreement rate
+            global_conf = agreement.mean()
+            rolling_conf = rolling_conf.fillna(global_conf)
+            method_confidence[method_name] = rolling_conf
+
+        # Build confidence-weighted vote matrix
+        vote_matrix = np.zeros((n, n_regimes), dtype=np.float64)
+
+        for method_name, (result, base_weight) in methods_results.items():
+            conf = method_confidence[method_name].values  # shape (n,)
+            effective_weight = base_weight * conf  # per-bar adaptive weight
+
+            aligned = result.reindex(df.index)
+            for regime_type, regime_idx in regime_map.items():
+                mask = (aligned == regime_type)
+                if regime_type == RegimeType.SIDEWAYS:
+                    mask = mask | (aligned == RegimeType.VOLATILE)
+                vote_matrix[mask.values, regime_idx] += effective_weight[mask.values]
+
+        # Determine winners
+        regime = pd.Series(RegimeType.UNCERTAIN, index=df.index, dtype=object)
+        has_votes = vote_matrix.sum(axis=1) > 0
+        winners = np.argmax(vote_matrix, axis=1)
+
+        idx_to_regime = {0: RegimeType.BULLISH, 1: RegimeType.BEARISH, 2: RegimeType.SIDEWAYS}
+        for regime_idx, regime_type in idx_to_regime.items():
+            mask = has_votes & (winners == regime_idx)
+            regime[mask] = regime_type
+
+        # Log confidence stats
+        for method_name, conf_series in method_confidence.items():
+            avg_conf = conf_series.mean()
+            base_w = methods_results[method_name][1]
+            logger.debug(
+                f"  {method_name}: base_weight={base_w:.1f}, "
+                f"avg_confidence={avg_conf:.3f}, effective_avg={base_w * avg_conf:.3f}"
+            )
+
+        return regime
+
     def _detect_ml_lgbm(self, df: pd.DataFrame) -> pd.Series:
         """
         Detect regime using a pre-trained LightGBM classifier.
@@ -991,7 +1468,265 @@ class RegimeDetector:
         logger.info(f"Regime distribution: {regime_dist}")
         
         return segments
-    
+
+    def classify_periods_by_score(
+        self,
+        df: pd.DataFrame,
+        bullish_min: float = 0.35,
+        bearish_max: float = -0.35,
+        min_segment_days: int = 14,
+        max_segment_days: int = 180,
+        merge_threshold_days: int = 7,
+        embargo_days: int = 5,
+        warmup_bars: int = 200,
+    ) -> List[RegimeSegment]:
+        """
+        Score-band adaptive segmentation.
+
+        Uses continuous ``trend_score`` from ``detect_continuous()`` to
+        build variable-length segments.  Instead of classifying each bar
+        discretely and finding change-points in the discrete labels, this
+        method tracks when the continuous score crosses configurable band
+        boundaries:
+
+            trend_score >= bullish_min   →  BULLISH
+            bearish_max < score < bullish_min  →  SIDEWAYS
+            trend_score <= bearish_max   →  BEARISH
+
+        Because the bands partition the full [-1, +1] range exhaustively,
+        **every regime is guaranteed to receive data** whenever the history
+        covers diverse market conditions (3+ years recommended).
+
+        Segments are created at band crossings, merged when too short,
+        split when too long, and enriched with continuous score metadata
+        (``avg_trend_score``, ``avg_volatility_score``).
+
+        Args:
+            df: OHLCV DataFrame with datetime index
+            bullish_min: Lower trend_score boundary for bullish regime
+            bearish_max: Upper trend_score boundary for bearish regime
+            min_segment_days: Merge segments shorter than this
+            max_segment_days: Split segments longer than this
+            merge_threshold_days: Short-segment merge threshold
+            embargo_days: Gap between segments to prevent data leakage
+            warmup_bars: Indicator warmup bars to skip
+
+        Returns:
+            List of RegimeSegment objects with score-based regime labels
+        """
+        if df.empty:
+            return []
+
+        # Ensure datetime index
+        if not isinstance(df.index, pd.DatetimeIndex):
+            df = df.copy()
+            if 'date' in df.columns:
+                df['date'] = pd.to_datetime(df['date'])
+                df.set_index('date', inplace=True)
+            else:
+                try:
+                    df.index = pd.to_datetime(df.index)
+                except Exception as e:
+                    logger.error(f"Cannot convert index to datetime: {e}")
+                    return []
+
+        start_date = df.index.min().to_pydatetime()
+        end_date = df.index.max().to_pydatetime()
+        total_days = (end_date - start_date).days
+
+        logger.info(
+            "Score-band segmentation: %s to %s (%d days), "
+            "bands=[bear<=%.2f | sideways | bull>=%.2f]",
+            start_date.date(), end_date.date(), total_days,
+            bearish_max, bullish_min,
+        )
+
+        # ── Compute continuous scores ──
+        trend_score, volatility_score = self.detect_continuous(df)
+
+        # Skip warmup period
+        warmup_end = df.index[min(warmup_bars, len(df) - 1)]
+        trend_score = trend_score.loc[trend_score.index >= warmup_end]
+        volatility_score = volatility_score.loc[volatility_score.index >= warmup_end]
+        df_valid = df.loc[df.index >= warmup_end]
+
+        if trend_score.empty:
+            logger.warning("No data after warmup — cannot create segments")
+            return []
+
+        # ── Assign each bar to a band ──
+        def _score_to_band(score: float) -> str:
+            if np.isnan(score):
+                return 'sideways'  # safe default
+            if score >= bullish_min:
+                return 'bullish'
+            if score <= bearish_max:
+                return 'bearish'
+            return 'sideways'
+
+        band_series = trend_score.map(_score_to_band)
+
+        # ── Find band crossings (change points) ──
+        prev_band = band_series.shift(1)
+        change_mask = (band_series != prev_band) & prev_band.notna()
+        change_indices = band_series.index[change_mask].tolist()
+
+        all_boundaries = [band_series.index[0]] + change_indices + [band_series.index[-1]]
+
+        # ── Build raw segments between crossings ──
+        raw_segments: List[Dict[str, Any]] = []
+        for i in range(len(all_boundaries) - 1):
+            seg_start = all_boundaries[i]
+            seg_end = all_boundaries[i + 1]
+
+            mask = (trend_score.index >= seg_start) & (trend_score.index < seg_end)
+            seg_trend = trend_score[mask]
+            seg_vol = volatility_score[mask]
+
+            if seg_trend.empty:
+                continue
+
+            avg_trend = float(seg_trend.mean())
+            avg_vol = float(seg_vol.mean())
+            trend_std = float(seg_trend.std()) if len(seg_trend) > 1 else 0.0
+
+            # Regime from average score in the band
+            if avg_trend >= bullish_min:
+                regime = RegimeType.BULLISH
+            elif avg_trend <= bearish_max:
+                regime = RegimeType.BEARISH
+            else:
+                regime = RegimeType.SIDEWAYS
+
+            # Confidence: high when trend_score is consistent within segment
+            # 1 - std  → score=1 when perfectly flat, lower when noisy
+            confidence = max(0.0, min(1.0, 1.0 - trend_std))
+
+            s = seg_start.to_pydatetime() if hasattr(seg_start, 'to_pydatetime') else seg_start
+            e = seg_end.to_pydatetime() if hasattr(seg_end, 'to_pydatetime') else seg_end
+            duration_days = (e - s).days
+
+            raw_segments.append({
+                'start': s,
+                'end': e,
+                'regime': regime,
+                'confidence': confidence,
+                'duration_days': duration_days,
+                'bar_count': len(seg_trend),
+                'avg_trend_score': avg_trend,
+                'avg_volatility_score': avg_vol,
+                'trend_score_std': trend_std,
+            })
+
+        # ── Merge short segments into neighbours ──
+        merged = self._merge_short_segments(raw_segments, merge_threshold_days)
+
+        # ── Split excessively long segments ──
+        final_raw: List[Dict[str, Any]] = []
+        for seg in merged:
+            if seg['duration_days'] > max_segment_days:
+                n_splits = (seg['duration_days'] // max_segment_days) + 1
+                split_dur = timedelta(days=seg['duration_days'] / n_splits)
+                for j in range(n_splits):
+                    sub_start = seg['start'] + split_dur * j
+                    sub_end = seg['start'] + split_dur * (j + 1)
+                    if j == n_splits - 1:
+                        sub_end = seg['end']
+                    final_raw.append({
+                        **seg,
+                        'start': sub_start,
+                        'end': sub_end,
+                        'duration_days': (sub_end - sub_start).days,
+                    })
+            else:
+                final_raw.append(seg)
+
+        # ── Remove segments below minimum length ──
+        final_raw = [s for s in final_raw if s['duration_days'] >= min_segment_days]
+
+        # ── Apply embargo gaps ──
+        if embargo_days > 0 and len(final_raw) > 1:
+            gap = timedelta(days=embargo_days)
+            for i in range(len(final_raw)):
+                if i > 0:
+                    prev_end = final_raw[i - 1]['end']
+                    if final_raw[i]['start'] < prev_end + gap:
+                        final_raw[i]['start'] = prev_end + gap
+                        d = (final_raw[i]['end'] - final_raw[i]['start']).days
+                        final_raw[i]['duration_days'] = d
+            # Remove segments that became too short after embargo
+            final_raw = [s for s in final_raw if s['duration_days'] >= min_segment_days]
+
+        # ── Build RegimeSegment objects ──
+        segments: List[RegimeSegment] = []
+        for idx, seg in enumerate(final_raw):
+            # Re-derive regime from avg score (may have shifted after merge)
+            avg_t = seg.get('avg_trend_score', 0.0)
+            if avg_t >= bullish_min:
+                regime = RegimeType.BULLISH
+            elif avg_t <= bearish_max:
+                regime = RegimeType.BEARISH
+            else:
+                regime = RegimeType.SIDEWAYS
+
+            # Enrich metadata with continuous scores
+            seg_df = df_valid.loc[
+                (df_valid.index >= seg['start']) & (df_valid.index < seg['end'])
+            ]
+            rets = seg_df['close'].pct_change().dropna() if not seg_df.empty else pd.Series(dtype=float)
+
+            metadata = {
+                'avg_trend_score': seg.get('avg_trend_score', 0.0),
+                'avg_volatility_score': seg.get('avg_volatility_score', 0.0),
+                'trend_score_std': seg.get('trend_score_std', 0.0),
+                'bar_count': seg.get('bar_count', 0),
+                'mean_return': float(rets.mean()) if len(rets) > 0 else 0.0,
+                'volatility': float(rets.std()) if len(rets) > 0 else 0.0,
+                'total_return': float(
+                    seg_df['close'].iloc[-1] / seg_df['close'].iloc[0] - 1
+                ) if len(seg_df) > 1 else 0.0,
+                'source': 'score_band',
+                'bullish_min': bullish_min,
+                'bearish_max': bearish_max,
+            }
+
+            segment_id = (
+                f"sb_{idx:03d}_{seg['start'].strftime('%Y%m%d')}"
+                f"_{seg['end'].strftime('%Y%m%d')}"
+            )
+            segments.append(RegimeSegment(
+                segment_id=segment_id,
+                start_date=seg['start'],
+                end_date=seg['end'],
+                regime=regime,
+                confidence=seg.get('confidence', 0.5),
+                metadata=metadata,
+            ))
+
+        # ── Log results ──
+        regime_dist: Dict[str, int] = {}
+        total_bars = 0
+        for s in segments:
+            regime_dist[s.regime.value] = regime_dist.get(s.regime.value, 0) + 1
+            total_bars += s.metadata.get('bar_count', 0)
+
+        logger.info(
+            "Score-band segmentation produced %d segments (%d bars): %s",
+            len(segments), total_bars, regime_dist,
+        )
+
+        # Warn about empty regimes
+        for regime_name in ['bullish', 'bearish', 'sideways']:
+            if regime_name not in regime_dist or regime_dist[regime_name] == 0:
+                logger.warning(
+                    "⚠ Score-band: NO segments for regime '%s'. "
+                    "Consider widening the timerange (3-6 years recommended) "
+                    "or adjusting band boundaries (current: bull>=%.2f, bear<=%.2f).",
+                    regime_name, bullish_min, bearish_max,
+                )
+
+        return segments
+
     def classify_periods_adaptive(
         self,
         df: pd.DataFrame,
@@ -1279,18 +2014,25 @@ class RegimeDetector:
         optimization_ratio: float = 0.60,
         model_selection_ratio: float = 0.20,
         holdout_ratio: float = 0.20,
+        min_holdout_segments: int = 3,
     ) -> Dict[str, List[RegimeSegment]]:
         """
         Split segments into optimization, model-selection, and holdout sets.
         
         Maintains regime balance within each split. Newer segments are preferentially
         assigned to holdout to simulate forward-testing.
+
+        Smart holdout: When a regime has fewer than `min_holdout_segments` segments,
+        ALL segments go to optimization (holdout is waived for that regime).
+        This prevents the scenario where scarce regimes get zero optimization data.
         
         Args:
             segments: List of segments to split
             optimization_ratio: Fraction for GA evolution (default 60%)
             model_selection_ratio: Fraction for elite re-ranking (default 20%)
             holdout_ratio: Fraction for final holdout (default 20%)
+            min_holdout_segments: Minimum segments per regime to reserve holdout
+                                 (below this, all segments go to optimization)
         
         Returns:
             Dict with keys 'optimization', 'model_selection', 'holdout'
@@ -1313,16 +2055,34 @@ class RegimeDetector:
             'model_selection': [],
             'holdout': []
         }
+
+        holdout_waived_regimes = []
         
         # For each regime, split maintaining temporal order (holdout = newest)
         for regime, segs in regime_groups.items():
             n = len(segs)
             if n == 0:
                 continue
+
+            # Smart holdout: skip holdout when segments are scarce
+            if n < min_holdout_segments:
+                holdout_waived_regimes.append(f"{regime.value}({n})")
+                for seg in segs:
+                    seg.role = 'optimization'
+                    result['optimization'].append(seg)
+                continue
             
             n_holdout = max(1, int(n * holdout_ratio))
             n_model_sel = max(0, int(n * model_selection_ratio))
             n_opt = n - n_holdout - n_model_sel
+
+            # Safety: ensure at least 1 optimization segment
+            if n_opt <= 0:
+                n_opt = 1
+                n_holdout = n - n_opt - n_model_sel
+                if n_holdout < 0:
+                    n_model_sel = 0
+                    n_holdout = n - n_opt
             
             # Assign: oldest to optimization, middle to model_selection, newest to holdout
             for i, seg in enumerate(segs):
@@ -1335,6 +2095,13 @@ class RegimeDetector:
                 else:
                     seg.role = 'holdout'
                     result['holdout'].append(seg)
+
+        if holdout_waived_regimes:
+            logger.warning(
+                f"Smart holdout: waived holdout for regimes with <{min_holdout_segments} "
+                f"segments: {', '.join(holdout_waived_regimes)}. "
+                f"All segments assigned to optimization to maximize training data."
+            )
         
         logger.info(
             f"Split segments: {len(result['optimization'])} optimization, "
@@ -1381,6 +2148,12 @@ def load_ohlcv_data(
         )
         
         if df is not None and len(df) > 0:
+            # Ensure DatetimeIndex — load_pair_history may return RangeIndex
+            # with 'date' as a column; the rest of the pipeline (MTF fusion,
+            # classify_segments) requires a DatetimeIndex.
+            if 'date' in df.columns and not isinstance(df.index, pd.DatetimeIndex):
+                df = df.set_index('date')
+                df.index = pd.to_datetime(df.index)
             logger.info(f"Loaded {len(df)} candles for {pair} {timeframe}")
             return df
         else:

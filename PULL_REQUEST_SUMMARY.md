@@ -1,169 +1,91 @@
-# Pull Request Summary: Island Model + Regime-Aware Evolution + LLM Routing
+# Pull Request Summary: MTF Regime Detection + Phase 1 Calibration Tooling
 
 ## Overview
 
-This PR delivers the new island-model evolution workflow and the Phase 3/overnight foundations for GA experimentation.
+This PR adds multi-timeframe regime detection, score-band calibration/reporting, and a complete Phase 1 test harness for reproducible GA comparisons.
 
-It includes:
-- island-specialist evolution orchestration,
-- regime-aware segmentation/data routing,
-- multi-provider LLM routing and diagnostics,
-- stronger GA internals (evolution/mutation/crossover/population/fitness),
-- new test coverage and run configurations,
-- operational artifacts for analysis (generation CSV, per-island snapshots, LLM report, regime exports).
-
-Base branch target: `develop`
-Working branch: `ML_RegimeDetection`
+It introduces:
+- continuous regime scoring upgrades (`advanced_ensemble` + score-band segmentation),
+- MTF fusion (`hierarchical` and `weighted_voting`) with transition/context signals,
+- new island/MTF/Phase1 configs and runners,
+- diagnostics and calibration tooling,
+- dedicated regression tests for the new behavior.
 
 ---
 
-## What We Accomplished
+## Scope Included
 
-### 1) Island-model evolution (core feature)
-- Added island orchestration in `genetic_algorithm/core/island_model.py`.
-- Added specialist islands by regime (`bullish`, `bearish`, `sideways`) and a `master` island.
-- Implemented migration events and final island summary reporting.
-- Added per-generation strategy snapshots for each island.
+### Core logic
+- `genetic_algorithm/utils/regime_detector.py`
+  - Adds `advanced_ensemble` detection path.
+  - Adds continuous score APIs and score-band segmentation.
+  - Improves segment splitting with scarcity-aware holdout behavior.
+- `genetic_algorithm/utils/mtf_regime_detector.py`
+  - New module for MTF score fusion, transition detection, and context labeling.
+- `genetic_algorithm/utils/dataset_policy.py`
+  - Adds MTF-aware auto-holdout path and segmentation mode selection.
 
-### 2) Regime-aware data and evaluation integration
-- Added/updated regime data flow and balancing in `genetic_algorithm/utils/regime_detector.py` and `genetic_algorithm/evaluation/regime_aware.py`.
-- Added regime segment export (`regime_segments.json`) and reporting hooks.
-- Ensured configuration-driven regime detection for island runs.
-
-### 3) LLM multi-provider routing and resilience
-- Added provider/router stack (`genetic_algorithm/llm/router.py`, updates in `provider.py`, `designer.py`, `prompts.py`).
-- Added provider failover behavior and usage stats wiring.
-- Added diagnostics entrypoints (`genetic_algorithm/llm/diagnostics.py`).
-
-### 4) GA engine improvements
-- Significant updates across:
-  - `genetic_algorithm/core/evolution.py`
+### GA/strategy/ML integration
+- Updated integration points:
+  - `genetic_algorithm/core/island_model.py`
   - `genetic_algorithm/core/mutation.py`
-  - `genetic_algorithm/core/crossover.py`
-  - `genetic_algorithm/core/population.py`
   - `genetic_algorithm/core/strategy_gene.py`
-  - `genetic_algorithm/evaluation/fitness.py`
-  - `genetic_algorithm/run_ga.py`
-- Added origin tracking (`ga_offspring`, `llm_seed`, `llm_immigrant`, migrants).
-- Added richer generation stats output and improved orchestration behavior for island mode.
+  - `genetic_algorithm/strategies/generator.py`
+  - `genetic_algorithm/ml/regime_detector.py`
+  - `genetic_algorithm/ml/regime_trainer.py`
+  - `genetic_algorithm/ml/train_regime.py`
 
-### 5) Configuration and test assets
-- Added island configs:
-  - `genetic_algorithm/config/ga_config_island.yaml`
-  - `genetic_algorithm/config/ga_config_island_smoke.yaml`
-  - `genetic_algorithm/config/ga_config_island_medium.yaml`
-  - `genetic_algorithm/config/ga_config_island_1h_run.yaml`
-- Added staged phase configs:
-  - `genetic_algorithm/config/ga_config_phase1_smoke.yaml`
-  - `genetic_algorithm/config/ga_config_phase2_validation.yaml`
-  - `genetic_algorithm/config/ga_config_phase3_overnight.yaml`
-- Added/updated tests:
-  - `genetic_algorithm/tests/test_evolution_improvements.py`
-  - `genetic_algorithm/tests/test_llm_providers.py`
-  - `genetic_algorithm/tests/test_phase1b_ml_regime.py`
-  - updates in `genetic_algorithm/tests/test_mutation.py`
+### Tooling and test harness
+- New tools:
+  - `genetic_algorithm/tools/calibrate_bands.py`
+  - `genetic_algorithm/tools/phase1_diagnostics.py`
+- New runners:
+  - `genetic_algorithm/scripts/run_phase1_tests.py`
+  - `genetic_algorithm/scripts/run_island_v2_tests.sh`
+  - `run_island_mtf_tests.sh`
+- New tests:
+  - `genetic_algorithm/tests/test_mtf_regime.py`
 
----
-
-## Last Run Outcomes (Island 1h Run)
-
-Run outputs confirmed under `genetic_algorithm/output/island_results`:
-- `island_summary.json`
-- `island_generation_stats.csv`
-- `llm_report.json`
-- `regime_segments.json`
-
-### Final island summary
-- Bullish: best fitness ~0.5849, best profit ~1.196%
-- Bearish: best fitness ~0.8283, best profit ~2.006%
-- Sideways: best fitness ~0.6987, best profit ~1.054%
-- Master: best fitness ~0.4547, best profit ~0.038%
-- Migration events: 48
-
-### What worked
-- Island orchestration completed all 10 generations.
-- Specialist islands produced stronger best fitness than master.
-- End-to-end artifact export pipeline worked.
+### Config additions
+- Added MTF/island and Phase 1 config matrix under `genetic_algorithm/config/`:
+  - `ga_config_island_mtf_*.yaml`
+  - `ga_config_island_v2_*.yaml`
+  - `ga_config_mtf_test*.yaml`
+  - `ga_config_phase1_*.yaml`
 
 ---
 
-## What Was Not Fully Achieved
+## PR Hygiene / Cleanup
 
-1) LLM provider balance
-- Effective LLM generation primarily came from Anthropic fallback.
-- Groq frequently rate-limited; OpenAI requests failed due to auth/quota issues.
-
-2) LLM impact on final population
-- Final population was overwhelmingly GA-offspring dominated.
-- LLM-contributed individuals remained low in final population share.
-
-3) Robust anti-overfitting validation in this run
-- Holdout/WF/MC outcomes were not used as gating criteria for acceptance in the island run path.
-- Overfitting labels in detailed outputs remained mostly UNKNOWN.
-
-4) Master-island quality
-- Master island best profit remained near flat vs specialist islands.
+- Verified changed files are source/config/test/tooling only.
+- Verified no generated `output` artifacts or local strategy outputs are included in the diff.
+- Existing ignore rules already cover:
+  - `genetic_algorithm/output/`
+  - `genetic_algorithm/logs/`
+  - `user_data/*` (including strategy artifacts)
 
 ---
 
-## Known Issues to Fix Next
+## Validation Status
 
-1) Provider reliability / credentials
-- OpenAI auth failure (401) needs key/billing/config correction.
-- Groq 429 handling works, but sustained rate-limits reduce value as primary provider.
-
-2) LLM report attribution quality
-- Some `provider` values end as `unknown`/empty in top-LLM entries.
-- Tighten provider attribution propagation end-to-end.
-
-3) Regime data sufficiency and calibration
-- Segment coverage differs across regimes; bullish/bearish data depth can be thin depending on config.
-- Further tune `regime_detection` timeframe/period settings and segment balancing.
-
-4) Validation rigor in island runs
-- Integrate holdout/WF/MC into final ranking pipeline for island mode when enabled.
-
-5) Branch hygiene
-- Generated artifacts were present locally (hall-of-fame island data, comparison output images).
-- Ignore rules were expanded in this PR to prevent accidental inclusion.
+- Editor/static diagnostics: no errors reported in modified files.
+- Runtime tests: local environment missing Python dependencies (`numpy`) and pytest plugin args from project config required override, so full test run was not completed in this environment.
 
 ---
 
-## Remaining Plan (Continuation)
+## Suggested Next Improvements
 
-### Short-term
-1. Fix provider credentials and rerun LLM health checks.
-2. Run medium config with corrected provider setup and compare LLM contribution.
-3. Add explicit provider attribution assertions in tests.
+1. **Stabilize CI/dev test environment**
+   - Ensure required deps/plugins (`numpy`, pytest-xdist, etc.) are installed by default to avoid false-negative local validation.
 
-### Mid-term
-4. Add optional holdout/WF/MC ranking overlays for island final reports.
-5. Add island-specific KPI dashboard outputs (profit stability, trade-count quality, drawdown robustness).
+2. **Tighten calibration quality gates**
+   - Enforce minimum regime coverage/segment thresholds as hard fail in CI for new configs to prevent poor splits from passing.
 
-### Longer-term
-6. Promote best specialist strategies into strategy deployment workflow.
-7. Add production-oriented regime-switching strategy selection policy.
-8. Revisit master-island role (ensemble of specialists vs true generalist).
+3. **Unify config matrix lifecycle**
+   - Add a compact index/doc for the new config families (MTF v1/v2/Phase1) and expected use-cases to reduce maintenance drift.
 
----
+4. **Add benchmark snapshots to PR checks**
+   - Capture quick smoke metrics (runtime, best fitness, regime coverage) for A/B/C/D runs to make regressions visible earlier.
 
-## Cleanup Included in This PR
-
-- Expanded ignore rules to keep generated runtime artifacts out of commits:
-  - `.gitignore`
-  - `genetic_algorithm/.gitignore`
-
-Specifically ignored:
-- `genetic_algorithm/data/hall_of_fame_island_*/`
-- `genetic_algorithm/visualization/regime_comparison_output/`
-
----
-
-## Reviewer Notes
-
-Suggested review order:
-1. Island orchestration and run entry (`run_ga.py`, `core/island_model.py`)
-2. LLM routing (`llm/router.py`, `llm/designer.py`, `llm/prompts.py`, `llm/provider.py`)
-3. Evaluation/regime changes (`evaluation/regime_aware.py`, `utils/regime_detector.py`, `evaluation/fitness.py`)
-4. Core GA algorithm changes (`core/evolution.py`, `core/mutation.py`, `core/crossover.py`, `core/population.py`)
-5. Configs + tests
+5. **Harden MTF fallback behavior observability**
+   - Emit explicit counters in diagnostics for fallback paths (single-TF fallback, scarce-regime holdout waiver) to simplify production troubleshooting.

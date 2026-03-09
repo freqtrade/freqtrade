@@ -10,7 +10,7 @@ import logging
 from typing import Dict, Any, List
 
 from genetic_algorithm.core.strategy_gene import (
-    StrategyGene, IndicatorGene, ConditionGene, is_higher_timeframe
+    StrategyGene, IndicatorGene, ConditionGene, RegimeGene, is_higher_timeframe
 )
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
 
@@ -621,6 +621,37 @@ class StrategyGenerator:
         \"\"\"Define additional informative pair/interval combinations.\"\"\"
         return []"""
         
+        # --- Regime awareness code injection ---
+        regime_gene = strategy_gene.regime_gene
+        regime_indicator_code = ""
+        regime_entry_filter = ""
+        regime_exit_filter = ""
+        regime_inf_tfs = []
+        
+        if regime_gene and regime_gene.enabled:
+            regime_inf_tfs = regime_gene.regime_timeframes or ['4h', '1d']
+            regime_indicator_code = self._generate_regime_indicator_code(
+                regime_gene, strategy_gene.timeframe
+            )
+            regime_entry_filter = self._generate_regime_entry_filter(regime_gene)
+            regime_exit_filter = self._generate_regime_exit_filter(regime_gene)
+            
+            # Merge regime timeframes into informative_pairs
+            all_inf_tfs = sorted(set(
+                [ind.timeframe for ind in informative_indicators if ind.timeframe]
+                + regime_inf_tfs
+            ))
+            if all_inf_tfs:
+                informative_pairs_method = f"""
+    def informative_pairs(self):
+        \"\"\"Define additional informative pair/interval combinations.\"\"\"
+        pairs = self.dp.current_whitelist()
+        informative = []
+        for pair in pairs:
+            for tf in {all_inf_tfs!r}:
+                informative.append((pair, tf))
+        return informative"""
+        
         # Build populate_indicators body
         if informative_indicator_code:
             populate_indicators_body = f"""{indicator_code}
@@ -629,6 +660,13 @@ class StrategyGenerator:
 {informative_indicator_code}"""
         else:
             populate_indicators_body = indicator_code
+        
+        # Append regime indicator code if enabled
+        if regime_indicator_code:
+            populate_indicators_body = f"""{populate_indicators_body}
+        
+        # --- Regime awareness indicators ---
+{regime_indicator_code}"""
         
         # Generate short entry/exit code when can_short is enabled
         can_short_attr = ""
@@ -677,12 +715,12 @@ class {strategy_name}(IStrategy):
     
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Entry signals"""
-{entry_code}{short_entry_code}
+{entry_code}{regime_entry_filter}{short_entry_code}
         return dataframe
     
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Exit signals"""
-{exit_code}{short_exit_code}
+{exit_code}{regime_exit_filter}{short_exit_code}
         return dataframe
 '''
         
@@ -765,6 +803,159 @@ class {name}(IStrategy):
                 lines.append(ind_lines)
             lines.append(f"                dataframe = merge_informative_pair(dataframe, informative, self.timeframe, inf_tf, ffill=True)")
         
+        return '\n'.join(lines)
+    
+    def _generate_regime_indicator_code(
+        self, regime_gene: 'RegimeGene', base_timeframe: str
+    ) -> str:
+        """
+        Generate code that computes regime trend_score and volatility_score
+        from higher-timeframe ADX/DI indicators, merges them into the base
+        dataframe, and produces a composite ``regime_trend_score`` column.
+
+        The generated code in ``populate_indicators()`` will:
+        1. For each regime timeframe, fetch the informative dataframe.
+        2. Compute ADX, +DI, -DI on that timeframe.
+        3. Derive a per-TF trend_score: (plus_di - minus_di) / (plus_di + minus_di) * (adx / 50).
+        4. Derive a per-TF volatility_score from rolling vol percentile.
+        5. Merge the scores into the base dataframe via merge_informative_pair.
+        6. Combine per-TF scores into a composite using weighted average.
+        """
+        if not regime_gene or not regime_gene.enabled:
+            return ''
+
+        regime_tfs = regime_gene.regime_timeframes or ['4h', '1d']
+        combination = regime_gene.combination or 'weighted_voting'
+
+        # Default weights: higher TF gets higher weight
+        tf_weights = {'30m': 0.5, '1h': 1.0, '4h': 2.0, '1d': 3.0}
+
+        lines = []
+        lines.append("        # --- Regime detection: compute trend_score per timeframe ---")
+
+        for tf in regime_tfs:
+            w = tf_weights.get(tf, 1.0)
+            safe_tf = tf.replace('m', 'min').replace('h', 'hr').replace('d', 'day')
+            lines.append(f"        # Regime indicators for {tf}")
+            lines.append(f"        if self.dp:")
+            lines.append(f"            _regime_inf_{safe_tf} = self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe='{tf}')")
+            lines.append(f"            if _regime_inf_{safe_tf} is not None and len(_regime_inf_{safe_tf}) > 0:")
+            lines.append(f"                _ri = _regime_inf_{safe_tf}")
+            # Compute ADX and DI
+            lines.append(f"                _plus_dm = _ri['high'].diff()")
+            lines.append(f"                _minus_dm = -_ri['low'].diff()")
+            lines.append(f"                _plus_dm = _plus_dm.where((_plus_dm > _minus_dm) & (_plus_dm > 0), 0)")
+            lines.append(f"                _minus_dm = _minus_dm.where((_minus_dm > _plus_dm) & (_minus_dm > 0), 0)")
+            lines.append(f"                _tr = pd.concat([_ri['high'] - _ri['low'], abs(_ri['high'] - _ri['close'].shift(1)), abs(_ri['low'] - _ri['close'].shift(1))], axis=1).max(axis=1)")
+            lines.append(f"                _atr = _tr.ewm(alpha=1/14, adjust=False).mean()")
+            lines.append(f"                _pdi = 100 * _plus_dm.ewm(alpha=1/14, adjust=False).mean() / _atr")
+            lines.append(f"                _mdi = 100 * _minus_dm.ewm(alpha=1/14, adjust=False).mean() / _atr")
+            lines.append(f"                _di_sum = _pdi + _mdi")
+            lines.append(f"                _di_sum = _di_sum.replace(0, np.nan)")
+            lines.append(f"                _dx = 100 * abs(_pdi - _mdi) / _di_sum")
+            lines.append(f"                _adx = _dx.ewm(alpha=1/14, adjust=False).mean()")
+            # Compute trend_score
+            lines.append(f"                _direction = (_pdi - _mdi) / _di_sum")
+            lines.append(f"                _strength = (_adx / 50.0).clip(0, 1)")
+            lines.append(f"                _ri['regime_trend_{tf}'] = (_direction * _strength).clip(-1, 1)")
+            # Compute volatility_score
+            lines.append(f"                _rets = _ri['close'].pct_change()")
+            lines.append(f"                _vol = _rets.ewm(span=20, adjust=False).std()")
+            lines.append(f"                _vol_min = _vol.rolling(window=60, min_periods=30).min()")
+            lines.append(f"                _vol_max = _vol.rolling(window=60, min_periods=30).max()")
+            lines.append(f"                _vol_range = _vol_max - _vol_min")
+            lines.append(f"                _ri['regime_vol_{tf}'] = ((_vol - _vol_min) / _vol_range.replace(0, np.nan)).clip(0, 1)")
+            # Merge into base dataframe
+            lines.append(f"                dataframe = merge_informative_pair(dataframe, _ri[['date', 'regime_trend_{tf}', 'regime_vol_{tf}']].copy(), self.timeframe, '{tf}', ffill=True)")
+            lines.append(f"            else:")
+            lines.append(f"                dataframe['regime_trend_{tf}_{tf}'] = 0.0")
+            lines.append(f"                dataframe['regime_vol_{tf}_{tf}'] = 0.5")
+
+        # Composite score: weighted average of per-TF scores
+        lines.append("")
+        lines.append("        # --- Composite regime score ---")
+        weight_parts = []
+        total_w = 0.0
+        for tf in regime_tfs:
+            w = tf_weights.get(tf, 1.0)
+            total_w += w
+            # After merge_informative_pair, columns are suffixed with _{tf}
+            weight_parts.append(f"dataframe['regime_trend_{tf}_{tf}'].fillna(0) * {w}")
+
+        if weight_parts:
+            composite_expr = " + ".join(weight_parts)
+            lines.append(f"        dataframe['regime_trend_score'] = ({composite_expr}) / {total_w}")
+            lines.append(f"        dataframe['regime_trend_score'] = dataframe['regime_trend_score'].clip(-1, 1)")
+        else:
+            lines.append(f"        dataframe['regime_trend_score'] = 0.0")
+
+        # Composite volatility score
+        vol_parts = []
+        for tf in regime_tfs:
+            w = tf_weights.get(tf, 1.0)
+            vol_parts.append(f"dataframe['regime_vol_{tf}_{tf}'].fillna(0.5) * {w}")
+
+        if vol_parts:
+            vol_expr = " + ".join(vol_parts)
+            lines.append(f"        dataframe['regime_vol_score'] = ({vol_expr}) / {total_w}")
+            lines.append(f"        dataframe['regime_vol_score'] = dataframe['regime_vol_score'].clip(0, 1)")
+
+        return '\n'.join(lines)
+
+    def _generate_regime_entry_filter(self, regime_gene: 'RegimeGene') -> str:
+        """
+        Generate entry condition code that filters based on regime_trend_score.
+
+        Only adds a filter if the RegimeGene's entry bounds are not the full
+        [-1, 1] range (i.e., there's actually a restriction).
+        """
+        if not regime_gene or not regime_gene.enabled:
+            return ""
+
+        min_t = regime_gene.entry_trend_min
+        max_t = regime_gene.entry_trend_max
+
+        # If effectively no filter, skip
+        if min_t <= -0.99 and max_t >= 0.99:
+            return ""
+
+        lines = []
+        lines.append("")
+        lines.append("        # Regime entry filter: only enter when trend_score is in range")
+        lines.append(f"        regime_filter = (")
+        if min_t > -0.99:
+            lines.append(f"            (dataframe['regime_trend_score'] >= {min_t:.4f}) &")
+        if max_t < 0.99:
+            lines.append(f"            (dataframe['regime_trend_score'] <= {max_t:.4f}) &")
+        lines.append(f"            (dataframe['regime_trend_score'].notna())")
+        lines.append(f"        )")
+        lines.append(f"        dataframe.loc[~regime_filter, 'enter_long'] = 0")
+
+        return '\n'.join(lines)
+
+    def _generate_regime_exit_filter(self, regime_gene: 'RegimeGene') -> str:
+        """
+        Generate exit condition code based on regime changes.
+
+        When ``exit_on_regime_change`` is True, generates code that triggers
+        an exit signal when the trend_score crosses zero against the long
+        position (i.e., turns bearish).
+        """
+        if not regime_gene or not regime_gene.enabled:
+            return ""
+
+        if not regime_gene.exit_on_regime_change:
+            return ""
+
+        lines = []
+        lines.append("")
+        lines.append("        # Regime exit: exit long when trend turns bearish")
+        lines.append("        regime_exit = (")
+        lines.append("            (dataframe['regime_trend_score'] < -0.1) &")
+        lines.append("            (dataframe['regime_trend_score'].shift(1) >= -0.1)")
+        lines.append("        )")
+        lines.append("        dataframe.loc[regime_exit, 'exit_long'] = 1")
+
         return '\n'.join(lines)
     
     def _generate_single_indicator_code(self, ind: IndicatorGene, prefix: str = "        ", 

@@ -23,6 +23,7 @@ from genetic_algorithm.utils.regime_detector import (
     RegimeType,
     load_ohlcv_data,
 )
+from genetic_algorithm.utils.mtf_regime_detector import MTFRegimeDetector
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,10 @@ class PolicyConfig:
     optimization_ratio: float = 0.70
     model_selection_ratio: float = 0.10
     holdout_ratio: float = 0.20
+
+    # MTF settings
+    mtf_enabled: bool = False
+    segmentation: str = 'adaptive'  # 'adaptive' or 'fixed'
     
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "PolicyConfig":
@@ -88,6 +93,8 @@ class PolicyConfig:
             embargo_days=regime_config.get('embargo_days', 5),
             segments_per_regime=regime_config.get('segments_per_regime', 3),
             optimization_ratio=1.0 - regime_config.get('holdout_ratio', 0.20),
+            mtf_enabled=regime_config.get('mtf_enabled', False),
+            segmentation=regime_config.get('segmentation', 'adaptive'),
             model_selection_ratio=0.0,
             holdout_ratio=regime_config.get('holdout_ratio', 0.20),
         )
@@ -301,13 +308,23 @@ class AutoRegimePolicy(DatasetPolicy):
             params=params,
         )
         
-        # Classify periods
-        all_segments = detector.classify_periods(
-            df=df,
-            period_days=self.config.period_days,
-            min_period_days=self.config.min_period_days,
-            embargo_days=self.config.embargo_days,
-        )
+        # Classify periods — choose segmentation mode
+        segmentation = self.config.segmentation
+        if segmentation == 'adaptive':
+            all_segments = detector.classify_periods_adaptive(
+                df=df,
+                min_segment_days=max(14, self.config.min_period_days // 2),
+                max_segment_days=self.config.period_days * 2,
+                merge_threshold_days=7,
+                embargo_days=self.config.embargo_days,
+            )
+        else:
+            all_segments = detector.classify_periods(
+                df=df,
+                period_days=self.config.period_days,
+                min_period_days=self.config.min_period_days,
+                embargo_days=self.config.embargo_days,
+            )
         
         if not all_segments:
             logger.warning("No segments created from regime detection")
@@ -319,7 +336,7 @@ class AutoRegimePolicy(DatasetPolicy):
             segments_per_regime=self.config.segments_per_regime,
         )
         
-        logger.info(f"AutoRegimePolicy: {len(balanced)} balanced segments (no holdout)")
+        logger.info(f"AutoRegimePolicy ({segmentation}): {len(balanced)} balanced segments (no holdout)")
         
         return {
             'optimization': balanced,
@@ -342,6 +359,13 @@ class AutoHoldoutPolicy(DatasetPolicy):
     2. Ensuring holdout segments are never seen during optimization
     3. Final validation only uses holdout segments
     
+    Supports two segmentation modes:
+    - 'adaptive' (default): change-point based, variable-length segments
+    - 'fixed': fixed-width windows of period_days length (legacy)
+    
+    When mtf_enabled=true, uses MTFRegimeDetector for multi-timeframe
+    regime classification with continuous scores and enriched metadata.
+    
     This is the recommended policy for production use.
     """
     
@@ -362,9 +386,13 @@ class AutoHoldoutPolicy(DatasetPolicy):
         else:
             datadir = Path(backtest_config.get('datadir', 'user_data/data/binance'))
         
-        # Load data
         timerange = backtest_config.get('timerange', '')
         
+        # --- MTF path: use MTFRegimeDetector for multi-timeframe detection ---
+        if self.config.mtf_enabled:
+            return self._build_segments_mtf(config, datadir, timerange)
+        
+        # --- Single-TF path (existing behavior) ---
         logger.info(f"AutoHoldoutPolicy: Loading {self.config.benchmark_pair} "
                     f"{self.config.detection_timeframe} from {datadir}")
         
@@ -390,13 +418,23 @@ class AutoHoldoutPolicy(DatasetPolicy):
             params=params,
         )
         
-        # Classify periods
-        all_segments = detector.classify_periods(
-            df=df,
-            period_days=self.config.period_days,
-            min_period_days=self.config.min_period_days,
-            embargo_days=self.config.embargo_days,
-        )
+        # Choose segmentation mode
+        segmentation = self.config.segmentation
+        if segmentation == 'adaptive':
+            all_segments = detector.classify_periods_adaptive(
+                df=df,
+                min_segment_days=max(14, self.config.min_period_days // 2),
+                max_segment_days=self.config.period_days * 2,
+                merge_threshold_days=7,
+                embargo_days=self.config.embargo_days,
+            )
+        else:
+            all_segments = detector.classify_periods(
+                df=df,
+                period_days=self.config.period_days,
+                min_period_days=self.config.min_period_days,
+                embargo_days=self.config.embargo_days,
+            )
         
         if not all_segments:
             logger.warning("No segments created from regime detection")
@@ -416,13 +454,93 @@ class AutoHoldoutPolicy(DatasetPolicy):
             holdout_ratio=self.config.holdout_ratio,
         )
         
-        logger.info(f"AutoHoldoutPolicy: {len(splits.get('optimization', []))} opt, "
+        logger.info(f"AutoHoldoutPolicy ({segmentation}): "
+                    f"{len(splits.get('optimization', []))} opt, "
                     f"{len(splits.get('holdout', []))} holdout segments")
         
         return splits
     
+    def _build_segments_mtf(
+        self,
+        config: Dict[str, Any],
+        datadir: Path,
+        timerange: str,
+    ) -> Dict[str, List[RegimeSegment]]:
+        """
+        Build segments using multi-timeframe regime detection.
+        
+        Runs MTFRegimeDetector with continuous scores, then classifies
+        adaptive segments with enriched metadata (trend_score,
+        volatility_score, regime_context).
+        """
+        logger.info(
+            f"AutoHoldoutPolicy (MTF): Running multi-timeframe detection for "
+            f"{self.config.benchmark_pair}"
+        )
+        
+        try:
+            mtf_detector = MTFRegimeDetector(config)
+            result = mtf_detector.detect(
+                benchmark_pair=self.config.benchmark_pair,
+                datadir=datadir,
+                timerange=timerange or None,
+            )
+        except Exception as e:
+            logger.error(f"MTF detection failed, falling back to single-TF: {e}")
+            # Fall back to single-TF adaptive detection
+            self_copy = AutoHoldoutPolicy(PolicyConfig(
+                **{k: v for k, v in self.config.__dict__.items() if k != 'mtf_enabled'},
+                mtf_enabled=False,
+            ))
+            return self_copy.build_segments(config, datadir)
+        
+        # Load base-TF OHLCV for segment metadata computation
+        target_tf = result.metadata.get('target_timeframe', self.config.detection_timeframe)
+        df = load_ohlcv_data(
+            pair=self.config.benchmark_pair,
+            timeframe=target_tf,
+            datadir=datadir,
+            timerange=timerange or None,
+        )
+        
+        # Build adaptive segments from MTF result
+        all_segments = mtf_detector.classify_segments(
+            result=result,
+            df=df,
+            min_segment_days=max(14, self.config.min_period_days // 2),
+            max_segment_days=self.config.period_days * 2,
+            merge_threshold_days=7,
+            embargo_days=self.config.embargo_days,
+        )
+        
+        if not all_segments:
+            logger.warning("MTF: No segments created from detection")
+            return {'optimization': [], 'model_selection': [], 'holdout': []}
+        
+        # Use the existing RegimeDetector for balancing & splitting
+        detector = RegimeDetector(method=self.config.detection_method)
+        balanced = detector.get_balanced_segments(
+            all_segments,
+            segments_per_regime=self.config.segments_per_regime,
+        )
+        
+        splits = detector.split_segments_by_role(
+            balanced,
+            optimization_ratio=self.config.optimization_ratio,
+            model_selection_ratio=self.config.model_selection_ratio,
+            holdout_ratio=self.config.holdout_ratio,
+        )
+        
+        logger.info(
+            f"AutoHoldoutPolicy (MTF): {len(splits.get('optimization', []))} opt, "
+            f"{len(splits.get('holdout', []))} holdout segments"
+        )
+        
+        return splits
+    
     def describe(self) -> str:
-        return (f"Auto-Holdout: {self.config.detection_method} detection, "
+        mode = 'MTF' if self.config.mtf_enabled else self.config.segmentation
+        return (f"Auto-Holdout ({mode}): {self.config.detection_method} detection, "
                 f"{self.config.period_days}-day periods, "
                 f"{int(self.config.holdout_ratio*100)}% holdout")
 

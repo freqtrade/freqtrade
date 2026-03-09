@@ -28,9 +28,11 @@ Usage:
 import copy
 import json
 import logging
+import os
 import signal
 import time
 import yaml
+import numpy as np
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
@@ -45,6 +47,7 @@ from genetic_algorithm.utils.regime_detector import (
     RegimeType,
     load_ohlcv_data,
 )
+from genetic_algorithm.utils.mtf_regime_detector import MTFRegimeDetector
 
 logger = logging.getLogger(__name__)
 
@@ -193,6 +196,46 @@ class IslandModelEvolution:
         self.regime_method = regime_det_cfg.get('method', 'ensemble')
         self.regime_period_days = regime_det_cfg.get('period_days', 60)
         self.regime_holdout_ratio = regime_det_cfg.get('holdout_ratio', 0.20)
+
+        # Score-band config (new default segmentation mode)
+        bands_cfg = regime_det_cfg.get('regime_bands', {})
+        self.regime_bullish_min = float(bands_cfg.get('bullish_min', 0.44))
+        self.regime_bearish_max = float(bands_cfg.get('bearish_max', -0.37))
+        # Segment mode: 'score_band' (default) or 'discrete' (legacy)
+        self.segment_mode = regime_det_cfg.get('segment_mode', 'score_band')
+
+        # Coverage validation thresholds
+        self.min_segments_per_regime = regime_det_cfg.get(
+            'min_segments_per_regime', 2
+        )
+        self.min_bars_per_regime = regime_det_cfg.get(
+            'min_bars_per_regime', 500
+        )
+        self.abort_on_insufficient_data = regime_det_cfg.get(
+            'abort_on_insufficient_data', False
+        )
+
+        # Phase 1 improvements: auto-calibration, quality report, TF sweep
+        phase1_cfg = regime_det_cfg.get('phase1', {})
+        self.auto_calibrate_bands = phase1_cfg.get('auto_calibrate', False)
+        default_calibration_pairs = ['BTC/USDT', 'ETH/USDT']
+        self.calibration_pairs = phase1_cfg.get(
+            'calibration_pairs', default_calibration_pairs
+        )
+        self.calibration_timeframes = phase1_cfg.get(
+            'timeframe_sweep', None  # e.g. ['30m', '1h', '4h', '1d']
+        )
+        self.quality_report_enabled = phase1_cfg.get('quality_report', True)
+
+        # MTF regime detection config (optional)
+        self.mtf_enabled = regime_det_cfg.get('mtf_enabled', False)
+        self.mtf_timeframes = regime_det_cfg.get(
+            'mtf_timeframes', ['1h', '4h', '1d']
+        )
+        self.mtf_combination = regime_det_cfg.get(
+            'mtf_combination', 'hierarchical'
+        )
+        self.mtf_weights = regime_det_cfg.get('mtf_weights', None)
 
         # Shared hall of fame
         hof_cfg = self.config.get('hall_of_fame', {})
@@ -469,12 +512,19 @@ class IslandModelEvolution:
         Detect regime segments from historical data and split into
         optimization / holdout sets.
 
+        When mtf_enabled is True, uses MTFRegimeDetector to combine
+        signals from multiple timeframes (e.g. 1h, 4h, 1d) for richer
+        regime classification with continuous scores.
+
         Returns:
             Dict with keys 'bullish', 'bearish', 'sideways' (and 'all'),
             each containing a dict with 'optimization' and 'holdout' lists.
         """
         backtest_cfg = self.config.get('backtesting', {})
         datadir = Path(backtest_cfg.get('datadir', 'user_data/data/binance'))
+
+        if self.mtf_enabled:
+            return self._detect_regime_segments_mtf(datadir)
 
         self.logger.info(
             "Detecting regimes from %s %s (%s) in %s",
@@ -497,11 +547,28 @@ class IslandModelEvolution:
 
         detector = RegimeDetector(method=self.regime_method)
 
-        raw_segments = detector.classify_periods(
-            df=df,
-            period_days=self.regime_period_days,
-            min_period_days=max(14, self.regime_period_days // 2),
-        )
+        # Choose segmentation mode: score-band (default) or legacy discrete
+        if self.segment_mode == 'score_band':
+            self.logger.info(
+                "Using score-band segmentation: bull>=%.2f, bear<=%.2f",
+                self.regime_bullish_min, self.regime_bearish_max,
+            )
+            raw_segments = detector.classify_periods_by_score(
+                df=df,
+                bullish_min=self.regime_bullish_min,
+                bearish_max=self.regime_bearish_max,
+                min_segment_days=max(14, self.regime_period_days // 2),
+                max_segment_days=self.regime_period_days * 3,
+                merge_threshold_days=7,
+                embargo_days=3,
+            )
+        else:
+            self.logger.info("Using legacy discrete segmentation")
+            raw_segments = detector.classify_periods(
+                df=df,
+                period_days=self.regime_period_days,
+                min_period_days=max(14, self.regime_period_days // 2),
+            )
 
         if not raw_segments:
             raise RuntimeError("Regime detection produced no segments.")
@@ -575,6 +642,175 @@ class IslandModelEvolution:
 
         return regime_map
 
+    def _detect_regime_segments_mtf(
+        self,
+        datadir: Path,
+    ) -> Dict[str, Dict[str, List[RegimeSegment]]]:
+        """
+        Detect regime segments using Multi-Timeframe (MTF) regime detection.
+
+        Combines signals from multiple timeframes (e.g. 1h, 4h, 1d) using
+        hierarchical or weighted_voting fusion to produce richer segments
+        with continuous trend/volatility scores.
+        """
+        self.logger.info(
+            "Detecting regimes with MTF: %s %s (%s), combination=%s, in %s",
+            self.regime_pair, self.mtf_timeframes,
+            self.regime_timerange, self.mtf_combination, datadir,
+        )
+
+        # Build MTF config from island regime detection settings
+        mtf_config = {
+            'regime_aware': {
+                'mtf_enabled': True,
+                'mtf_timeframes': self.mtf_timeframes,
+                'mtf_combination': self.mtf_combination,
+                'method': self.regime_method,
+                'detection_method': self.regime_method,
+            },
+        }
+        if self.mtf_weights:
+            mtf_config['regime_aware']['mtf_weights'] = self.mtf_weights
+
+        try:
+            mtf_detector = MTFRegimeDetector(mtf_config)
+            result = mtf_detector.detect(
+                benchmark_pair=self.regime_pair,
+                datadir=datadir,
+                timerange=self.regime_timerange or None,
+            )
+        except Exception as e:
+            self.logger.error(
+                "MTF detection failed, falling back to single-TF: %s", e
+            )
+            # Fall back to single-TF detection
+            self.mtf_enabled = False
+            return self._detect_regime_segments()
+
+        # Load base-TF OHLCV for segment metadata
+        target_tf = result.metadata.get(
+            'target_timeframe', self.mtf_timeframes[0]
+        )
+        df = load_ohlcv_data(
+            pair=self.regime_pair,
+            timeframe=target_tf,
+            datadir=datadir,
+            timerange=self.regime_timerange or None,
+        )
+
+        # Build adaptive segments from MTF result
+        # Pass score-band boundaries for consistent regime assignment
+        all_segments = mtf_detector.classify_segments(
+            result=result,
+            df=df,
+            min_segment_days=max(14, self.regime_period_days // 2),
+            max_segment_days=self.regime_period_days * 2,
+            merge_threshold_days=7,
+            embargo_days=3,
+            bullish_min=self.regime_bullish_min,
+            bearish_max=self.regime_bearish_max,
+        )
+
+        if not all_segments:
+            self.logger.warning(
+                "MTF: No segments created, falling back to single-TF"
+            )
+            self.mtf_enabled = False
+            return self._detect_regime_segments()
+
+        self.logger.info(
+            "MTF detection produced %d adaptive segments", len(all_segments)
+        )
+
+        # Balance & split using standard RegimeDetector utilities
+        detector = RegimeDetector(method=self.regime_method)
+        segments_per_regime = max(3, len(all_segments) // 4)
+        balanced = detector.get_balanced_segments(
+            all_segments,
+            segments_per_regime=segments_per_regime,
+        )
+
+        splits = detector.split_segments_by_role(
+            balanced,
+            optimization_ratio=1.0 - self.regime_holdout_ratio,
+            model_selection_ratio=0.0,
+            holdout_ratio=self.regime_holdout_ratio,
+        )
+
+        # Group by regime type (same structure as single-TF path)
+        regime_map: Dict[str, Dict[str, List[RegimeSegment]]] = {
+            'bullish': {'optimization': [], 'holdout': []},
+            'bearish': {'optimization': [], 'holdout': []},
+            'sideways': {'optimization': [], 'holdout': []},
+            'all':     {'optimization': [], 'holdout': []},
+        }
+
+        for seg in splits.get('optimization', []):
+            regime_key = seg.regime.value.lower()
+            if regime_key in regime_map:
+                regime_map[regime_key]['optimization'].append(seg)
+            regime_map['all']['optimization'].append(seg)
+
+        for seg in splits.get('holdout', []):
+            regime_key = seg.regime.value.lower()
+            if regime_key in regime_map:
+                regime_map[regime_key]['holdout'].append(seg)
+            regime_map['all']['holdout'].append(seg)
+
+        # Log summary
+        for regime, data in regime_map.items():
+            opt_count = len(data['optimization'])
+            hold_count = len(data['holdout'])
+            self.logger.info(
+                "  MTF %-10s: %d optimization, %d holdout segments",
+                regime, opt_count, hold_count,
+            )
+
+        # Safety check: if any specialist regime has 0 optimization segments,
+        # reassign its holdout segments to optimization (better to train on
+        # something than to have an empty island).
+        for regime_key in ['bullish', 'bearish', 'sideways']:
+            data = regime_map.get(regime_key, {})
+            if not data.get('optimization') and data.get('holdout'):
+                self.logger.warning(
+                    "  MTF regime '%s' has 0 optimization segments — "
+                    "reassigning %d holdout segments to optimization",
+                    regime_key, len(data['holdout']),
+                )
+                data['optimization'] = list(data['holdout'])
+                data['holdout'] = []
+                # Also add to 'all' optimization pool
+                regime_map['all']['optimization'].extend(data['optimization'])
+
+        # Generate regime chart
+        try:
+            per_candle_regimes = detector.detect(df)
+            output_dir = Path(
+                self.config.get('output_dir', 'genetic_algorithm/output')
+            )
+            self._plot_regime_chart(
+                df=df,
+                regimes=per_candle_regimes,
+                raw_segments=balanced,
+                regime_map=regime_map,
+                output_dir=output_dir,
+            )
+        except Exception as e:
+            self.logger.warning("Failed to generate MTF regime chart: %s", e)
+
+        # Print data usage summary
+        self._print_data_usage_summary(regime_map)
+
+        # Save regime segments JSON
+        try:
+            self._save_regime_segments_json(regime_map)
+        except Exception as e:
+            self.logger.warning(
+                "Failed to save MTF regime segments JSON: %s", e
+            )
+
+        return regime_map
+
     def _assign_segments_to_islands(
         self,
         regime_map: Dict[str, Dict[str, List[RegimeSegment]]],
@@ -591,6 +827,418 @@ class IslandModelEvolution:
                 "Island %-10s: %d optimization + %d holdout segments (regime=%s)",
                 ic.name, len(ic.segments), len(ic.holdout_segments), ic.data_regime,
             )
+
+    def _validate_regime_coverage(
+        self,
+        regime_map: Dict[str, Dict[str, List[RegimeSegment]]],
+    ) -> bool:
+        """
+        Validate that each specialist island has sufficient data for
+        meaningful backtesting.
+
+        Checks two thresholds per regime (configurable via YAML):
+          - ``min_segments_per_regime`` (default 3)
+          - ``min_bars_per_regime``     (default 1500)
+
+        When data is insufficient:
+          - Always logs a prominent WARNING with actionable advice
+          - If ``abort_on_insufficient_data`` is True, raises RuntimeError
+            to stop the run before wasting compute
+          - Otherwise, marks the island as degraded and continues
+
+        Returns:
+            True if all regimes pass, False otherwise.
+        """
+        all_ok = True
+        specialist_regimes = ['bullish', 'bearish', 'sideways']
+
+        self.logger.info("")
+        self.logger.info("── Regime Coverage Validation ──")
+
+        for regime_key in specialist_regimes:
+            data = regime_map.get(regime_key, {})
+            opt_segs = data.get('optimization', [])
+            n_segs = len(opt_segs)
+            n_bars = sum(s.metadata.get('bar_count', 0) for s in opt_segs)
+            total_days = sum(s.duration_days for s in opt_segs)
+
+            seg_ok = n_segs >= self.min_segments_per_regime
+            bar_ok = n_bars >= self.min_bars_per_regime
+
+            if seg_ok and bar_ok:
+                self.logger.info(
+                    "  ✓ %-10s: %d segments, %d bars, %d days — OK",
+                    regime_key, n_segs, n_bars, total_days,
+                )
+            else:
+                all_ok = False
+                issues = []
+                if not seg_ok:
+                    issues.append(
+                        f"segments={n_segs} < min={self.min_segments_per_regime}"
+                    )
+                if not bar_ok:
+                    issues.append(
+                        f"bars={n_bars} < min={self.min_bars_per_regime}"
+                    )
+
+                # Estimate how much more data is needed
+                if n_bars > 0:
+                    bars_per_day = n_bars / max(total_days, 1)
+                    needed_bars = self.min_bars_per_regime - n_bars
+                    needed_days = int(needed_bars / max(bars_per_day, 1))
+                    needed_months = max(1, needed_days // 30)
+                else:
+                    needed_months = 6
+
+                self.logger.warning(
+                    "  ✗ %-10s: %s — INSUFFICIENT DATA. "
+                    "Extend timerange by ~%d months or download more data. "
+                    "Recommended: use 3-6 years of history for full "
+                    "regime coverage.",
+                    regime_key, ", ".join(issues), needed_months,
+                )
+
+        if not all_ok and self.abort_on_insufficient_data:
+            raise RuntimeError(
+                "Regime coverage validation FAILED. One or more regimes "
+                "have insufficient data for meaningful backtesting. "
+                "Set 'abort_on_insufficient_data: false' to continue "
+                "anyway, or extend the timerange."
+            )
+
+        if all_ok:
+            self.logger.info("  All regimes pass coverage validation ✓")
+        else:
+            self.logger.warning(
+                "  Some regimes have insufficient data — evolution will "
+                "continue but results for those regimes may be unreliable."
+            )
+
+        return all_ok
+
+    def _phase1_auto_calibrate(self) -> None:
+        """
+        Auto-calibrate score-band boundaries by sweeping bullish_min /
+        bearish_max grids and selecting the candidate with the best
+        composite quality score (balance + coverage + separation + stability).
+
+        When ``calibration_timeframes`` is set, also sweeps across
+        timeframes and picks the best (timeframe, bands) combination.
+        Updates ``self.regime_bullish_min``, ``self.regime_bearish_max``,
+        and optionally ``self.regime_timeframe`` in-place.
+        """
+        from genetic_algorithm.tools.calibrate_bands import BandCalibrator
+
+        backtest_cfg = self.config.get('backtesting', {})
+        datadir = Path(backtest_cfg.get('datadir', 'user_data/data/binance'))
+
+        self.logger.info("")
+        self.logger.info("── Phase 1 Auto-Calibration ──")
+
+        calibrator = BandCalibrator(method=self.regime_method)
+
+        if self.calibration_timeframes:
+            # Full timeframe sweep — runs calibrate() per TF on primary pair
+            self.logger.info(
+                "  Sweeping timeframes: %s for %s",
+                self.calibration_timeframes, self.regime_pair,
+            )
+            tf_results = calibrator.sweep_timeframes(
+                pair=self.regime_pair,
+                datadir=datadir,
+                timerange=self.regime_timerange,
+                timeframes=self.calibration_timeframes,
+            )
+
+            if tf_results:
+                # Pick best by composite score (dict is already sorted)
+                best_tf = next(iter(tf_results))
+                best_result = tf_results[best_tf]
+                self.logger.info(
+                    "  Best timeframe: %s (score=%.4f) → "
+                    "bull>=%.2f, bear<=%.2f",
+                    best_tf, best_result.composite_score,
+                    best_result.bullish_min, best_result.bearish_max,
+                )
+                self.regime_timeframe = best_tf
+                self.regime_bullish_min = best_result.bullish_min
+                self.regime_bearish_max = best_result.bearish_max
+            else:
+                self.logger.warning("  Timeframe sweep returned no results")
+        elif len(self.calibration_pairs) > 1:
+            # Multi-pair calibration on a single timeframe
+            self.logger.info(
+                "  Calibrating bands for %s across %s",
+                self.regime_timeframe, self.calibration_pairs,
+            )
+            result = calibrator.calibrate_multi_pair(
+                pairs=self.calibration_pairs,
+                timeframe=self.regime_timeframe,
+                datadir=datadir,
+                timerange=self.regime_timerange,
+            )
+            if result is not None:
+                self.logger.info(
+                    "  Calibrated bands: bull>=%.2f, bear<=%.2f "
+                    "(score=%.4f, coverage: bull=%.1f%% side=%.1f%% bear=%.1f%%)",
+                    result.bullish_min, result.bearish_max,
+                    result.composite_score,
+                    result.bull_pct, result.side_pct, result.bear_pct,
+                )
+                self.regime_bullish_min = result.bullish_min
+                self.regime_bearish_max = result.bearish_max
+            else:
+                self.logger.warning("  Calibration returned no result — keeping defaults")
+        else:
+            # Single pair, single TF calibration
+            self.logger.info(
+                "  Calibrating bands for %s %s",
+                self.regime_pair, self.regime_timeframe,
+            )
+            df = load_ohlcv_data(
+                self.regime_pair, self.regime_timeframe,
+                datadir, self.regime_timerange,
+            )
+            if df.empty:
+                self.logger.warning("  No data for calibration — keeping defaults")
+            else:
+                result = calibrator.calibrate(
+                    df, pair=self.regime_pair, timeframe=self.regime_timeframe,
+                )
+                self.logger.info(
+                    "  Calibrated bands: bull>=%.2f, bear<=%.2f "
+                    "(score=%.4f, coverage: bull=%.1f%% side=%.1f%% bear=%.1f%%)",
+                    result.bullish_min, result.bearish_max,
+                    result.composite_score,
+                    result.bull_pct, result.side_pct, result.bear_pct,
+                )
+                self.regime_bullish_min = result.bullish_min
+                self.regime_bearish_max = result.bearish_max
+
+        self.logger.info(
+            "  Active bands: bull>=%.2f, bear<=%.2f",
+            self.regime_bullish_min, self.regime_bearish_max,
+        )
+
+    def _phase1_quality_report(
+        self,
+        regime_map: Dict[str, Dict[str, List[RegimeSegment]]],
+    ) -> Dict[str, Any]:
+        """
+        Phase 1 Data Quality Report.
+
+        Computes and logs diagnostic metrics that validate the quality of
+        the regime segmentation produced by Phase 1:
+
+        1. **Score distribution** — histogram of trend_score across 10 bins
+           to detect saturation or skew.
+        2. **Conditional statistics** — mean return, volatility, and Sharpe
+           per regime to verify segments are economically distinct.
+        3. **Cross-pair consistency** — if multiple pairs are configured,
+           checks that BTC-derived regimes also make sense on other pairs.
+        4. **Segment detail table** — per-segment metrics for inspection.
+
+        Returns the report dict and saves it to JSON + prints summary.
+        """
+        backtest_cfg = self.config.get('backtesting', {})
+        datadir = Path(backtest_cfg.get('datadir', 'user_data/data/binance'))
+        pairs = backtest_cfg.get('pairs', [self.regime_pair])
+
+        report: Dict[str, Any] = {
+            'pair': self.regime_pair,
+            'timeframe': self.regime_timeframe,
+            'timerange': self.regime_timerange,
+            'method': self.regime_method,
+            'segment_mode': self.segment_mode,
+            'bands': {
+                'bullish_min': self.regime_bullish_min,
+                'bearish_max': self.regime_bearish_max,
+            },
+        }
+
+        # 1. Score distribution
+        try:
+            df = load_ohlcv_data(
+                pair=self.regime_pair,
+                timeframe=self.regime_timeframe,
+                datadir=datadir,
+                timerange=self.regime_timerange,
+            )
+            detector = RegimeDetector(method=self.regime_method)
+            trend_scores = detector._compute_trend_score(df)
+            valid = trend_scores.dropna()
+
+            bins = np.linspace(-1, 1, 11)
+            hist, _ = np.histogram(valid.values, bins=bins)
+            hist_pct = (hist / max(len(valid), 1) * 100).tolist()
+
+            report['score_distribution'] = {
+                'bins': [f"[{bins[i]:.1f}, {bins[i+1]:.1f})" for i in range(len(hist))],
+                'counts': hist.tolist(),
+                'percentages': [round(p, 1) for p in hist_pct],
+                'mean': round(float(valid.mean()), 4),
+                'std': round(float(valid.std()), 4),
+                'skew': round(float(valid.skew()), 4),
+                'kurtosis': round(float(valid.kurtosis()), 4),
+            }
+
+            # Band coverage
+            bull_pct = float((valid >= self.regime_bullish_min).mean() * 100)
+            bear_pct = float((valid <= self.regime_bearish_max).mean() * 100)
+            side_pct = 100.0 - bull_pct - bear_pct
+            report['band_coverage'] = {
+                'bullish_pct': round(bull_pct, 1),
+                'sideways_pct': round(side_pct, 1),
+                'bearish_pct': round(bear_pct, 1),
+            }
+
+            self.logger.info("  Score distribution: mean=%.3f std=%.3f skew=%.3f",
+                             valid.mean(), valid.std(), valid.skew())
+            self.logger.info("  Band coverage: bull=%.1f%% side=%.1f%% bear=%.1f%%",
+                             bull_pct, side_pct, bear_pct)
+        except Exception as e:
+            self.logger.warning("Score distribution analysis failed: %s", e)
+            df = None
+
+        # 2. Conditional statistics per regime
+        regime_stats: Dict[str, Dict[str, float]] = {}
+        specialist_regimes = ['bullish', 'bearish', 'sideways']
+
+        for regime_key in specialist_regimes:
+            opt_segs = regime_map.get(regime_key, {}).get('optimization', [])
+            if not opt_segs:
+                regime_stats[regime_key] = {'n_segments': 0}
+                continue
+
+            seg_returns = []
+            seg_volatilities = []
+            seg_bars = []
+            for seg in opt_segs:
+                ret = seg.metadata.get('total_return', seg.metadata.get('mean_return', 0.0))
+                vol = seg.metadata.get('volatility', 0.0)
+                bars = seg.metadata.get('bar_count', 0)
+                seg_returns.append(ret)
+                seg_volatilities.append(vol)
+                seg_bars.append(bars)
+
+            mean_ret = float(np.mean(seg_returns)) if seg_returns else 0.0
+            mean_vol = float(np.mean(seg_volatilities)) if seg_volatilities else 0.0
+            total_bars = sum(seg_bars)
+
+            # Simplified Sharpe-like ratio (return / volatility)
+            sharpe_like = mean_ret / max(mean_vol, 1e-6)
+
+            regime_stats[regime_key] = {
+                'n_segments': len(opt_segs),
+                'total_bars': total_bars,
+                'mean_return': round(mean_ret, 4),
+                'mean_volatility': round(mean_vol, 4),
+                'sharpe_like': round(sharpe_like, 4),
+                'total_days': sum(s.duration_days for s in opt_segs),
+                'avg_confidence': round(
+                    float(np.mean([s.confidence for s in opt_segs])), 3
+                ),
+            }
+
+        report['regime_statistics'] = regime_stats
+
+        # Log regime statistics
+        self.logger.info("")
+        self.logger.info("── Phase 1 Quality: Regime Statistics ──")
+        for regime_key, stats in regime_stats.items():
+            if stats.get('n_segments', 0) == 0:
+                self.logger.info("  %-10s: NO DATA", regime_key)
+            else:
+                self.logger.info(
+                    "  %-10s: %d seg, %d bars, ret=%.4f, vol=%.4f, sharpe=%.2f, conf=%.3f",
+                    regime_key,
+                    stats['n_segments'], stats['total_bars'],
+                    stats['mean_return'], stats['mean_volatility'],
+                    stats['sharpe_like'], stats['avg_confidence'],
+                )
+
+        # Check return separation (bull should outperform bear)
+        bull_ret = regime_stats.get('bullish', {}).get('mean_return', 0.0)
+        bear_ret = regime_stats.get('bearish', {}).get('mean_return', 0.0)
+        ret_separation = bull_ret - bear_ret
+        report['return_separation'] = round(ret_separation, 4)
+
+        if ret_separation > 0:
+            self.logger.info("  Return separation: bull-bear = +%.4f ✓", ret_separation)
+        else:
+            self.logger.warning(
+                "  Return separation: bull-bear = %.4f ✗ (bull should outperform bear!)",
+                ret_separation,
+            )
+
+        # 3. Cross-pair consistency
+        if df is not None and len(pairs) > 1:
+            cross_pair_results: Dict[str, Dict[str, float]] = {}
+            for other_pair in pairs:
+                if other_pair == self.regime_pair:
+                    continue
+                try:
+                    other_df = load_ohlcv_data(
+                        other_pair, '1h', datadir, self.regime_timerange,
+                    )
+                    if other_df.empty:
+                        continue
+
+                    # For each regime segment, compute other pair's return
+                    total_match = 0
+                    total_segs = 0
+                    for regime_key in specialist_regimes:
+                        opt_segs = regime_map.get(regime_key, {}).get('optimization', [])
+                        for seg in opt_segs:
+                            total_segs += 1
+                            mask = (
+                                (other_df.index >= seg.start_date)
+                                & (other_df.index <= seg.end_date)
+                            )
+                            sub = other_df.loc[mask]
+                            if len(sub) < 10:
+                                continue
+                            other_ret = (sub['close'].iloc[-1] / sub['close'].iloc[0]) - 1
+
+                            # Check consistency: bull → positive, bear → negative
+                            if regime_key == 'bullish' and other_ret > 0:
+                                total_match += 1
+                            elif regime_key == 'bearish' and other_ret < 0:
+                                total_match += 1
+                            elif regime_key == 'sideways':
+                                total_match += 1  # sideways is always "consistent"
+
+                    consistency = total_match / max(total_segs, 1)
+                    cross_pair_results[other_pair] = {
+                        'consistency': round(consistency, 3),
+                        'matched_segments': total_match,
+                        'total_segments': total_segs,
+                    }
+                    self.logger.info(
+                        "  Cross-pair %s: consistency=%.1f%% (%d/%d segments)",
+                        other_pair, consistency * 100, total_match, total_segs,
+                    )
+                except Exception as e:
+                    self.logger.debug("Cross-pair %s failed: %s", other_pair, e)
+
+            report['cross_pair_consistency'] = cross_pair_results
+
+        # Save report to JSON
+        try:
+            output_dir = Path(
+                self.config.get('output_dir')
+                or os.getenv('GA_OUTPUT_DIR', 'genetic_algorithm/output')
+            )
+            output_dir.mkdir(parents=True, exist_ok=True)
+            report_path = output_dir / 'phase1_quality_report.json'
+            with open(report_path, 'w') as f:
+                json.dump(report, f, indent=2, default=str)
+            self.logger.info("  Quality report saved: %s", report_path)
+        except Exception as e:
+            self.logger.warning("Failed to save quality report: %s", e)
+
+        return report
 
     # ------------------------------------------------------------------
     # Island GA construction
@@ -625,6 +1273,11 @@ class IslandModelEvolution:
 
         # Disable terminal monitor for sub-islands (parent orchestrates)
         cfg['terminal_monitor'] = {'enabled': False}
+
+        # Pass through in_strategy_regime settings if configured
+        isr_cfg = self.config.get('in_strategy_regime', {})
+        if isr_cfg.get('enabled', False):
+            cfg['in_strategy_regime'] = copy.deepcopy(isr_cfg)
 
         # Tag the island name for logging
         cfg['_island_name'] = ic.name
@@ -907,15 +1560,132 @@ class IslandModelEvolution:
         self.monitor = create_monitor(monitor_cfg)
         self.monitor.start(monitor_cfg)
 
-        # ── Step 1: Detect regime segments ──
         self.logger.info("=" * 70)
         self.logger.info("ISLAND MODEL EVOLUTION STARTING")
         self.logger.info("=" * 70)
 
+        # ═══════════════════════════════════════════════════════════════
+        # PHASE 1: DATA COLLECTION & PREPARATION
+        # ═══════════════════════════════════════════════════════════════
+        regime_map = self._phase1_data()
+
+        # ═══════════════════════════════════════════════════════════════
+        # PHASE 2: EVOLUTION
+        # ═══════════════════════════════════════════════════════════════
+        results = self._phase2_evolve()
+
+        # ═══════════════════════════════════════════════════════════════
+        # PHASE 3: VALIDATION
+        # ═══════════════════════════════════════════════════════════════
+        results = self._phase3_validate(results)
+
+        # ═══════════════════════════════════════════════════════════════
+        # PHASE 4: REPORTING
+        # ═══════════════════════════════════════════════════════════════
+        total_elapsed = time.time() - start_time
+        self._phase4_report(results, total_elapsed)
+
+        # Stop monitor
+        self.monitor.on_evolution_complete({
+            'total_time': total_elapsed,
+            'generations': self.generations,
+            'islands': len(self.islands),
+            'migrations': len(self.migration_history),
+        })
+
+        return results
+
+    # ------------------------------------------------------------------
+    # Phase 1: Data Collection & Preparation
+    # ------------------------------------------------------------------
+
+    def _phase1_data(self) -> Dict[str, Dict[str, List[RegimeSegment]]]:
+        """
+        Phase 1 — Data Collection & Preparation.
+
+        Detects market regimes from historical data, builds segments
+        using score-band or legacy discrete classification, balances them
+        across regimes, splits into optimization/holdout, assigns segments
+        to islands, and validates coverage.
+
+        Sub-steps:
+          1a. Auto-calibrate score-band boundaries (if enabled)
+          1b. Detect regime segments
+          1c. Assign segments to islands
+          1d. Validate coverage
+          1e. Generate quality report (if enabled)
+
+        Raises RuntimeError if data is insufficient and
+        ``abort_on_insufficient_data`` is enabled.
+
+        Returns:
+            regime_map: Dict with keys per regime → optimization/holdout lists.
+        """
+        phase_start = time.time()
+        self.logger.info("")
+        self.logger.info("═" * 70)
+        self.logger.info("  PHASE 1: DATA COLLECTION & PREPARATION")
+        self.logger.info("═" * 70)
+
+        # 1a. Auto-calibrate bands (optional)
+        if self.auto_calibrate_bands and self.segment_mode == 'score_band':
+            try:
+                self._phase1_auto_calibrate()
+            except Exception as e:
+                self.logger.warning(
+                    "Auto-calibration failed, using configured bands: %s", e
+                )
+
+        # 1b. Detect regime segments
         regime_map = self._detect_regime_segments()
+
+        # 1c. Assign segments to islands
         self._assign_segments_to_islands(regime_map)
 
-        # ── Step 2: Create GA instances ──
+        # 1d. Validate coverage
+        self._validate_regime_coverage(regime_map)
+
+        # 1e. Quality report (optional)
+        if self.quality_report_enabled:
+            try:
+                self._phase1_quality_report(regime_map)
+            except Exception as e:
+                self.logger.warning("Quality report generation failed: %s", e)
+
+        phase_elapsed = time.time() - phase_start
+        self.logger.info(
+            "  Phase 1 complete: %.1f seconds. %d total segments assigned.",
+            phase_elapsed,
+            sum(
+                len(ic.segments) + len(ic.holdout_segments)
+                for ic in self.island_configs
+            ),
+        )
+        self.logger.info("")
+
+        return regime_map
+
+    # ------------------------------------------------------------------
+    # Phase 2: Evolution
+    # ------------------------------------------------------------------
+
+    def _phase2_evolve(self) -> Dict[str, List[Individual]]:
+        """
+        Phase 2 — Evolution.
+
+        Creates one GeneticAlgorithm per island, initializes populations,
+        runs the generation loop with periodic migration, and tracks
+        statistics + hall of fame.
+
+        Returns:
+            Dict mapping island name → top individuals.
+        """
+        phase_start = time.time()
+        self.logger.info("═" * 70)
+        self.logger.info("  PHASE 2: EVOLUTION")
+        self.logger.info("═" * 70)
+
+        # ── Create GA instances ──
         self.logger.info("Creating %d island GA instances...", len(self.island_configs))
 
         for ic in self.island_configs:
@@ -935,14 +1705,14 @@ class IslandModelEvolution:
                 ic.name, len(pop.individuals), ic.data_regime, len(ic.segments),
             )
 
-        # ── Step 3: Evolution loop ──
+        # ── Evolution loop ──
         self.logger.info("")
-        self.logger.info("=" * 70)
+        self.logger.info("─" * 70)
         self.logger.info(
             "EVOLVING %d ISLANDS × %d GENERATIONS",
             len(self.islands), self.generations,
         )
-        self.logger.info("=" * 70)
+        self.logger.info("─" * 70)
 
         # Track overall best for monitor
         overall_best_individual = None
@@ -990,7 +1760,6 @@ class IslandModelEvolution:
             self._log_generation_summary(gen, gen_elapsed)
 
             # ── Notify monitor of generation end ──
-            # Build aggregate stats from all islands for this generation
             agg_best = max(
                 (ist.best_fitness for ist in self.island_stats.values()),
                 default=0,
@@ -1013,7 +1782,6 @@ class IslandModelEvolution:
                             overall_best_individual = cand
                             self.monitor.on_new_best(cand)
 
-            # Build a lightweight stats object for the monitor
             _agg_stats = _AggregateStats(
                 best_fitness=agg_best,
                 avg_fitness=agg_avg,
@@ -1032,19 +1800,163 @@ class IslandModelEvolution:
                 },
             )
 
-        # ── Step 4: Final report ──
-        total_elapsed = time.time() - start_time
-        results = self._final_report(total_elapsed)
+        # Collect results
+        results: Dict[str, List[Individual]] = {}
+        for ic in self.island_configs:
+            pop = self.island_populations.get(ic.name)
+            if pop:
+                top5 = sorted(
+                    [ind for ind in pop.individuals if ind.raw_fitness is not None],
+                    key=lambda x: x.raw_fitness,
+                    reverse=True,
+                )[:5]
+                results[ic.name] = top5
 
-        # Stop monitor
-        self.monitor.on_evolution_complete({
-            'total_time': total_elapsed,
-            'generations': self.generations,
-            'islands': len(self.islands),
-            'migrations': len(self.migration_history),
-        })
+        phase_elapsed = time.time() - phase_start
+        self.logger.info("")
+        self.logger.info(
+            "  Phase 2 complete: %.1f seconds (%.1f minutes). "
+            "%d migrations performed.",
+            phase_elapsed, phase_elapsed / 60, len(self.migration_history),
+        )
 
         return results
+
+    # ------------------------------------------------------------------
+    # Phase 3: Validation
+    # ------------------------------------------------------------------
+
+    def _phase3_validate(
+        self,
+        results: Dict[str, List[Individual]],
+    ) -> Dict[str, List[Individual]]:
+        """
+        Phase 3 — Validation.
+
+        Runs holdout evaluation on top strategies from each island to
+        detect overfitting.  Populates ``ind.metrics`` with holdout
+        fitness and degradation scores.
+
+        Returns:
+            The same results dict with updated metrics.
+        """
+        phase_start = time.time()
+        self.logger.info("")
+        self.logger.info("═" * 70)
+        self.logger.info("  PHASE 3: VALIDATION")
+        self.logger.info("═" * 70)
+
+        # Holdout validation
+        self._run_holdout_validation(results)
+
+        phase_elapsed = time.time() - phase_start
+        self.logger.info(
+            "  Phase 3 complete: %.1f seconds.", phase_elapsed,
+        )
+
+        return results
+
+    # ------------------------------------------------------------------
+    # Phase 4: Reporting
+    # ------------------------------------------------------------------
+
+    def _phase4_report(
+        self,
+        results: Dict[str, List[Individual]],
+        total_elapsed: float,
+    ):
+        """
+        Phase 4 — Reporting.
+
+        Generates charts, saves CSVs/JSONs, logs final summary.
+        """
+        phase_start = time.time()
+        self.logger.info("")
+        self.logger.info("═" * 70)
+        self.logger.info("  PHASE 4: REPORTING")
+        self.logger.info("═" * 70)
+
+        self.logger.info("  Total time: %.1f seconds (%.1f minutes)",
+                         total_elapsed, total_elapsed / 60)
+        self.logger.info("  Generations: %d", self.generations)
+        self.logger.info("  Islands: %d", len(self.islands))
+        self.logger.info("  Migrations: %d events", len(self.migration_history))
+        self.logger.info("")
+
+        # Log per-island summary
+        for ic in self.island_configs:
+            ist = self.island_stats[ic.name]
+            pop = self.island_populations.get(ic.name)
+
+            self.logger.info("── Island: %s (regime=%s) ──", ic.name, ic.data_regime)
+            self.logger.info("  Best fitness:  %.4f", ist.best_fitness)
+            self.logger.info("  Best profit:   %.2f%%", ist.best_profit)
+            self.logger.info("  Avg fitness:   %.4f", ist.avg_fitness)
+            self.logger.info("  Migrants sent: %d  received: %d",
+                             ist.migrants_sent, ist.migrants_received)
+
+            top5 = results.get(ic.name, [])
+            for rank, ind in enumerate(top5, 1):
+                profit = ind.metrics.get('profit', 0)
+                sharpe = ind.metrics.get('sharpe_ratio', 0)
+                trades = ind.metrics.get('num_trades', 0)
+                self.logger.info(
+                    "    #%d: fitness=%.4f profit=%.2f%% sharpe=%.2f trades=%d",
+                    rank, ind.raw_fitness or 0, profit, sharpe, trades,
+                )
+            self.logger.info("")
+
+        # Hall of fame summary
+        if self.hall_of_fame.entries:
+            self.logger.info("── Shared Hall of Fame: %d entries ──",
+                             len(self.hall_of_fame.entries))
+            for i, entry in enumerate(self.hall_of_fame.entries[:5]):
+                self.logger.info(
+                    "  #%d: fitness=%.4f (gen %d)",
+                    i + 1, entry.fitness, entry.generation_found,
+                )
+
+        # Migration effectiveness
+        if self.migration_history:
+            self.logger.info("")
+            self.logger.info("── Migration Summary ──")
+            source_counts: Dict[str, int] = {}
+            for event in self.migration_history:
+                source_counts[event.source] = (
+                    source_counts.get(event.source, 0) + event.count
+                )
+            for source, count in sorted(source_counts.items()):
+                self.logger.info("  %s: %d individuals exported", source, count)
+
+        # Generate evolution plots
+        try:
+            self._plot_island_evolution()
+        except Exception as e:
+            self.logger.warning("Failed to generate evolution plots: %s", e)
+
+        # Save per-island generation stats to CSV
+        try:
+            self._save_generation_stats_csv()
+        except Exception as e:
+            self.logger.warning("Failed to save generation stats CSV: %s", e)
+
+        # Save LLM contribution report
+        try:
+            self._save_llm_report()
+        except Exception as e:
+            self.logger.warning("Failed to save LLM report: %s", e)
+
+        # Save results
+        self._save_results(results)
+
+        phase_elapsed = time.time() - phase_start
+        self.logger.info(
+            "  Phase 4 complete: %.1f seconds.", phase_elapsed,
+        )
+        self.logger.info("")
+        self.logger.info("═" * 70)
+        self.logger.info("  ALL 4 PHASES COMPLETE — ISLAND MODEL EVOLUTION FINISHED")
+        self.logger.info("═" * 70)
 
     def _evolve_island_one_generation(
         self,
@@ -1155,38 +2067,17 @@ class IslandModelEvolution:
         )
 
     # ------------------------------------------------------------------
-    # Final report
+    # Final report (legacy — kept for backward compatibility)
     # ------------------------------------------------------------------
 
     def _final_report(
         self,
         total_elapsed: float,
     ) -> Dict[str, List[Individual]]:
-        """Generate and log the final report."""
-        self.logger.info("")
-        self.logger.info("=" * 70)
-        self.logger.info("ISLAND MODEL EVOLUTION COMPLETE")
-        self.logger.info("=" * 70)
-        self.logger.info("  Total time: %.1f seconds (%.1f minutes)",
-                         total_elapsed, total_elapsed / 60)
-        self.logger.info("  Generations: %d", self.generations)
-        self.logger.info("  Islands: %d", len(self.islands))
-        self.logger.info("  Migrations: %d events", len(self.migration_history))
-        self.logger.info("")
-
+        """Legacy wrapper — now split into _phase3_validate + _phase4_report."""
         results: Dict[str, List[Individual]] = {}
-
         for ic in self.island_configs:
-            ist = self.island_stats[ic.name]
             pop = self.island_populations.get(ic.name)
-
-            self.logger.info("── Island: %s (regime=%s) ──", ic.name, ic.data_regime)
-            self.logger.info("  Best fitness:  %.4f", ist.best_fitness)
-            self.logger.info("  Best profit:   %.2f%%", ist.best_profit)
-            self.logger.info("  Avg fitness:   %.4f", ist.avg_fitness)
-            self.logger.info("  Migrants sent: %d  received: %d",
-                             ist.migrants_sent, ist.migrants_received)
-
             if pop:
                 top5 = sorted(
                     [ind for ind in pop.individuals if ind.raw_fitness is not None],
@@ -1194,61 +2085,119 @@ class IslandModelEvolution:
                     reverse=True,
                 )[:5]
                 results[ic.name] = top5
-
-                for rank, ind in enumerate(top5, 1):
-                    profit = ind.metrics.get('profit', 0)
-                    sharpe = ind.metrics.get('sharpe_ratio', 0)
-                    trades = ind.metrics.get('num_trades', 0)
-                    self.logger.info(
-                        "    #%d: fitness=%.4f profit=%.2f%% sharpe=%.2f trades=%d",
-                        rank, ind.raw_fitness or 0, profit, sharpe, trades,
-                    )
-            self.logger.info("")
-
-        # Hall of fame summary
-        if self.hall_of_fame.entries:
-            self.logger.info("── Shared Hall of Fame: %d entries ──",
-                             len(self.hall_of_fame.entries))
-            for i, entry in enumerate(self.hall_of_fame.entries[:5]):
-                self.logger.info(
-                    "  #%d: fitness=%.4f (gen %d)",
-                    i + 1, entry.fitness, entry.generation_found,
-                )
-
-        # Migration effectiveness
-        if self.migration_history:
-            self.logger.info("")
-            self.logger.info("── Migration Summary ──")
-            source_counts: Dict[str, int] = {}
-            for event in self.migration_history:
-                source_counts[event.source] = (
-                    source_counts.get(event.source, 0) + event.count
-                )
-            for source, count in sorted(source_counts.items()):
-                self.logger.info("  %s: %d individuals exported", source, count)
-
-        # Generate evolution plots
-        try:
-            self._plot_island_evolution()
-        except Exception as e:
-            self.logger.warning("Failed to generate evolution plots: %s", e)
-
-        # Save per-island generation stats to CSV
-        try:
-            self._save_generation_stats_csv()
-        except Exception as e:
-            self.logger.warning("Failed to save generation stats CSV: %s", e)
-
-        # Save LLM contribution report
-        try:
-            self._save_llm_report()
-        except Exception as e:
-            self.logger.warning("Failed to save LLM report: %s", e)
-
-        # Save results
-        self._save_results(results)
-
+        results = self._phase3_validate(results)
+        self._phase4_report(results, total_elapsed)
         return results
+
+    # ------------------------------------------------------------------
+    # Holdout Validation
+    # ------------------------------------------------------------------
+
+    def _run_holdout_validation(
+        self,
+        results: Dict[str, List[Individual]],
+    ):
+        """
+        Evaluate top strategies on holdout segments to detect overfitting.
+
+        Uses the master island's evaluator (which holds ALL holdout segments)
+        to get a regime-diversified out-of-sample score.  If the master island
+        has no holdout segments (smart-skip), falls back to the first island
+        that does.
+
+        Populates ``ind.metrics`` with ``holdout_fitness``,
+        ``holdout_degradation``, etc. so that ``classify_overfitting()`` in
+        ``overfit_analysis.py`` can produce a real verdict instead of UNKNOWN.
+        """
+        # Find an evaluator that has holdout segments
+        evaluator = None
+        evaluator_source = None
+
+        # Prefer master / balanced island (has all holdout segments)
+        for ic in self.island_configs:
+            if ic.data_regime.lower() in ('balanced', 'all') and ic.holdout_segments:
+                ga = self.islands.get(ic.name)
+                if ga and hasattr(ga, 'fitness_evaluator'):
+                    evaluator = ga.fitness_evaluator
+                    evaluator_source = ic.name
+                    break
+
+        # Fallback: any island with holdout segments
+        if evaluator is None:
+            for ic in self.island_configs:
+                if ic.holdout_segments:
+                    ga = self.islands.get(ic.name)
+                    if ga and hasattr(ga, 'fitness_evaluator'):
+                        evaluator = ga.fitness_evaluator
+                        evaluator_source = ic.name
+                        break
+
+        if evaluator is None:
+            self.logger.warning(
+                "No holdout segments available on any island — "
+                "skipping holdout validation (overfitting will be UNKNOWN)"
+            )
+            return
+
+        n_holdout = len(getattr(evaluator, '_holdout_segments', []))
+        self.logger.info("")
+        self.logger.info("=" * 70)
+        self.logger.info("HOLDOUT VALIDATION  (evaluator from '%s', %d holdout segments)",
+                         evaluator_source, n_holdout)
+        self.logger.info("=" * 70)
+
+        # Pool all top individuals across islands (deduplicate by id)
+        seen_ids: set = set()
+        all_top: List[Individual] = []
+        for island_name, individuals in results.items():
+            for ind in individuals:
+                ind_id = id(ind)
+                if ind_id not in seen_ids:
+                    seen_ids.add(ind_id)
+                    all_top.append(ind)
+
+        # Sort by optimization fitness (descending)
+        all_top.sort(key=lambda x: x.raw_fitness or 0, reverse=True)
+
+        evaluated = 0
+        for ind in all_top:
+            if ind.strategy_gene is None:
+                continue
+            try:
+                holdout_fitness, holdout_metrics = evaluator.evaluate_holdout(
+                    ind.strategy_gene, auto_unlock=True,
+                )
+            except (ValueError, RuntimeError) as exc:
+                self.logger.debug("Holdout eval failed for ind %s: %s", ind, exc)
+                continue
+
+            # Compute degradation: how much worse is holdout vs optimization
+            opt_fitness = ind.raw_fitness or 0
+            if opt_fitness > 0:
+                degradation = (opt_fitness - holdout_fitness) / opt_fitness
+            else:
+                degradation = 0.0
+
+            # Store in metrics for overfit_analysis.classify_overfitting()
+            ind.metrics['holdout_fitness'] = holdout_fitness
+            ind.metrics['holdout_degradation'] = degradation
+            ind.metrics['holdout_profit'] = holdout_metrics.get('profit', 0)
+            ind.metrics['holdout_sharpe'] = holdout_metrics.get('sharpe_ratio', 0)
+            ind.metrics['holdout_drawdown'] = holdout_metrics.get('max_drawdown', 0)
+            ind.metrics['holdout_trades'] = holdout_metrics.get('num_trades', 0)
+
+            status = "✓" if degradation < 0.30 else "⚠"
+            self.logger.info(
+                "  %s fitness=%.4f → holdout=%.4f  degradation=%.1f%%  "
+                "holdout_profit=%.2f%%  trades=%d",
+                status, opt_fitness, holdout_fitness, degradation * 100,
+                holdout_metrics.get('profit', 0),
+                holdout_metrics.get('num_trades', 0),
+            )
+            evaluated += 1
+
+        self.logger.info("  Evaluated %d / %d individuals on holdout", evaluated, len(all_top))
+        self.logger.info("")
 
     def _plot_island_evolution(self):
         """

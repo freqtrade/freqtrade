@@ -42,6 +42,19 @@ RAW_FEATURE_NAMES = [
     'volume_ratio', 'volume_sma_ratio',
 ]
 
+# Cross-timeframe feature names (appended when MTF data is available)
+MTF_FEATURE_NAMES = [
+    # Per-TF trend/vol scores from continuous regime detector
+    'trend_score_{tf}', 'vol_score_{tf}',
+    # Cross-TF divergences
+    'trend_div_low_high',        # low-TF trend minus high-TF trend
+    'trend_alignment',           # product of all TF trend signs (1=aligned, <0=diverging)
+    'vol_spread',                # max(vol) - min(vol) across TFs
+    # Transition features
+    'transition_speed',
+    'transition_accel',          # derivative of transition speed
+]
+
 # Rule-based methods used as feature providers
 RULE_METHODS = ['adx_di_hysteresis', 'rolling_returns', 'bollinger', 'volatility_cluster']
 
@@ -158,9 +171,17 @@ class MLRegimeDetector:
 
         return regime_series, confidence_series
 
-    def compute_features(self, df: pd.DataFrame) -> pd.DataFrame:
+    def compute_features(self, df: pd.DataFrame,
+                         mtf_scores: Optional[Dict[str, pd.DataFrame]] = None,
+                         ) -> pd.DataFrame:
         """
         Compute the feature matrix for the given OHLCV data.
+
+        Args:
+            df: OHLCV DataFrame (base timeframe).
+            mtf_scores: Optional dict mapping timeframe strings to DataFrames
+                        with 'trend_score' and 'volatility_score' columns,
+                        already aligned/reindexed to df.index (ffilled).
 
         Returns a DataFrame with the same index as df and feature columns.
         """
@@ -176,6 +197,11 @@ class MLRegimeDetector:
         if self.feature_mode in ('combined', 'rules_only'):
             rules = self._compute_rule_features(df)
             features = pd.concat([features, rules], axis=1)
+
+        # Add MTF cross-timeframe features when available
+        if mtf_scores:
+            mtf_feats = self._compute_mtf_features(df, mtf_scores)
+            features = pd.concat([features, mtf_feats], axis=1)
 
         # Reorder to match training feature names if available
         if self.feature_names:
@@ -249,6 +275,84 @@ class MLRegimeDetector:
         feats['volume_ratio'] = volume / vol_sma.replace(0, np.nan)
         short_vol = volume.rolling(5, min_periods=5).mean()
         feats['volume_sma_ratio'] = short_vol / vol_sma.replace(0, np.nan)
+
+        return pd.DataFrame(feats, index=df.index)
+
+    # ------------------------------------------------------------------
+    # Multi-timeframe cross-TF features
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _compute_mtf_features(
+        df: pd.DataFrame,
+        mtf_scores: Dict[str, pd.DataFrame],
+    ) -> pd.DataFrame:
+        """
+        Compute cross-timeframe features from pre-computed per-TF trend and
+        volatility scores.
+
+        Args:
+            df: Base-timeframe OHLCV data (used only for index).
+            mtf_scores: Dict[tf_string -> DataFrame] where each DataFrame has
+                        'trend_score' and 'volatility_score' columns aligned
+                        to df.index via ffill.
+
+        Returns:
+            DataFrame of MTF features with df.index.
+        """
+        feats: Dict[str, pd.Series] = {}
+        ordered_tfs = sorted(
+            mtf_scores.keys(),
+            key=lambda x: {'30m': 0, '1h': 1, '4h': 2, '1d': 3}.get(x, 4),
+        )
+
+        # Per-TF scores
+        trend_series = {}
+        vol_series = {}
+        for tf in ordered_tfs:
+            scores_df = mtf_scores[tf]
+            t = scores_df['trend_score'].reindex(df.index).ffill()
+            v = scores_df['volatility_score'].reindex(df.index).ffill()
+            feats[f'trend_score_{tf}'] = t
+            feats[f'vol_score_{tf}'] = v
+            trend_series[tf] = t
+            vol_series[tf] = v
+
+        if len(ordered_tfs) >= 2:
+            lowest_tf = ordered_tfs[0]
+            highest_tf = ordered_tfs[-1]
+
+            # Divergence: low-TF minus high-TF (positive = low TF more bullish)
+            feats['trend_div_low_high'] = (
+                trend_series[lowest_tf] - trend_series[highest_tf]
+            )
+
+            # Alignment: product of signs (+1 when all agree, < 0 when diverging)
+            sign_product = pd.Series(1.0, index=df.index)
+            for tf in ordered_tfs:
+                sign_product *= np.sign(trend_series[tf]).replace(0, 1)
+            feats['trend_alignment'] = sign_product
+
+            # Volatility spread: max - min across TFs
+            vol_stack = pd.concat(
+                [vol_series[tf] for tf in ordered_tfs], axis=1
+            )
+            feats['vol_spread'] = vol_stack.max(axis=1) - vol_stack.min(axis=1)
+        else:
+            feats['trend_div_low_high'] = pd.Series(0.0, index=df.index)
+            feats['trend_alignment'] = pd.Series(1.0, index=df.index)
+            feats['vol_spread'] = pd.Series(0.0, index=df.index)
+
+        # Transition features (computed from composite trend if available,
+        # else from highest-TF trend)
+        ref_trend = trend_series.get(
+            ordered_tfs[-1], pd.Series(0.0, index=df.index)
+        )
+        fast_ema = ref_trend.ewm(span=5, min_periods=3).mean()
+        slow_ema = ref_trend.ewm(span=20, min_periods=10).mean()
+        transition_speed = fast_ema - slow_ema
+        feats['transition_speed'] = transition_speed
+        feats['transition_accel'] = transition_speed.diff()
 
         return pd.DataFrame(feats, index=df.index)
 
