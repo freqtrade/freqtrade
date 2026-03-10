@@ -9,16 +9,18 @@ import asyncio
 import logging
 import socket
 from collections.abc import Callable
+from pathlib import Path
 from threading import Thread
 from typing import Any, TypedDict
 
+import rapidjson
 import websockets
 from pydantic import ValidationError
 
 from freqtrade.constants import FULL_DATAFRAME_THRESHOLD
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType
-from freqtrade.misc import remove_entry_exit_signals
+from freqtrade.misc import json_to_dataframe, remove_entry_exit_signals
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel, create_channel
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
 from freqtrade.rpc.api_server.ws_schemas import (
@@ -32,12 +34,21 @@ from freqtrade.rpc.api_server.ws_schemas import (
 )
 
 
-class Producer(TypedDict):
+class Producer(TypedDict, total=False):
+    """Producer configuration.
+
+    Supports websocket producers (host/ws_token/...) and local signal file producers (signal_file).
+    """
+
     name: str
     host: str
     port: int
     secure: bool
     ws_token: str
+
+    # Local signal file transport.
+    signal_file: str
+    signal_file_poll_interval: float
 
 
 logger = logging.getLogger(__name__)
@@ -45,6 +56,13 @@ logger = logging.getLogger(__name__)
 
 def schema_to_dict(schema: WSMessageSchema | WSRequestSchema):
     return schema.model_dump(exclude_none=True)
+
+
+def _signal_file_object_hook(obj: dict[str, Any]):
+    """RapidJSON object hook to decode DataFrame markers."""
+    if obj.get("__type__") == "dataframe":
+        return json_to_dataframe(obj.get("__value__"))
+    return obj
 
 
 class ExternalMessageConsumer:
@@ -98,6 +116,7 @@ class ExternalMessageConsumer:
         }
 
         self._channel_streams: dict[str, MessageStream] = {}
+        self._signal_file_offsets: dict[str, int] = {}
 
         self.start()
 
@@ -126,6 +145,7 @@ class ExternalMessageConsumer:
             self._running = False
 
             self._channel_streams = {}
+            self._signal_file_offsets = {}
 
             asyncio.run_coroutine_threadsafe(self._shutdown_async(), loop=self._loop)
 
@@ -154,10 +174,16 @@ class ExternalMessageConsumer:
 
         try:
             # Create a connection to each producer
-            self._sub_tasks = [
-                self._loop.create_task(self._handle_producer_connection(producer, lock))
-                for producer in self.producers
-            ]
+            self._sub_tasks = []
+            for producer in self.producers:
+                if producer.get("signal_file"):
+                    self._sub_tasks.append(
+                        self._loop.create_task(self._handle_signal_file_producer(producer, lock))
+                    )
+                else:
+                    self._sub_tasks.append(
+                        self._loop.create_task(self._handle_producer_connection(producer, lock))
+                    )
 
             await asyncio.gather(*self._sub_tasks)
         except asyncio.CancelledError:
@@ -176,6 +202,14 @@ class ExternalMessageConsumer:
         """
         try:
             await self._create_connection(producer, lock)
+        except asyncio.CancelledError:
+            # Exit silently
+            pass
+
+    async def _handle_signal_file_producer(self, producer: Producer, lock: asyncio.Lock):
+        """Main loop for consuming messages from a local signal file."""
+        try:
+            await self._consume_signal_file(producer, lock)
         except asyncio.CancelledError:
             # Exit silently
             pass
@@ -237,6 +271,93 @@ class ExternalMessageConsumer:
                 logger.exception(e)
                 await asyncio.sleep(self.sleep_time)
                 continue
+
+    def _read_signal_file_messages(
+        self, signal_file: Path, *, offset: int, producer_name: str
+    ) -> tuple[int, list[dict[str, Any]]]:
+        """Read newline-delimited JSON messages from a local signal file.
+
+        The file format is expected to be one JSON object per line.
+        Dataframes must be encoded using the same marker as websocket messages:
+        {"__type__": "dataframe", "__value__": "<json>"}.
+        """
+
+        if not signal_file.exists():
+            return offset, []
+
+        try:
+            file_size = signal_file.stat().st_size
+        except OSError:
+            return offset, []
+
+        if offset > file_size:
+            # File rotated/truncated.
+            offset = 0
+
+        messages: list[dict[str, Any]] = []
+
+        try:
+            with signal_file.open("rb") as fp:
+                fp.seek(offset)
+                while True:
+                    pos = fp.tell()
+                    raw = fp.readline()
+                    if not raw:
+                        break
+                    if not raw.endswith(b"\n"):
+                        # Incomplete line - retry later.
+                        fp.seek(pos)
+                        break
+
+                    line = raw.decode("utf-8", errors="replace").strip()
+                    if not line:
+                        continue
+
+                    try:
+                        msg = rapidjson.loads(line, object_hook=_signal_file_object_hook)
+                    except Exception as e:
+                        logger.warning(
+                            f"Invalid signal_file message from `{producer_name}`: {e}"
+                        )
+                        continue
+
+                    if isinstance(msg, dict):
+                        messages.append(msg)
+
+                new_offset = fp.tell()
+        except OSError as e:
+            logger.debug(f"Could not read signal_file {signal_file}: {e}")
+            return offset, []
+
+        return new_offset, messages
+
+    async def _consume_signal_file(self, producer: Producer, lock: asyncio.Lock):
+        """Consume ws-style messages from a local signal file."""
+
+        producer_name = producer.get("name", "default")
+        signal_file = Path(str(producer.get("signal_file"))).expanduser()
+        poll_interval = float(
+            producer.get(
+                "signal_file_poll_interval",
+                self._emc_config.get("signal_file_poll_interval", 1.0),
+            )
+        )
+
+        while self._running:
+            offset = self._signal_file_offsets.get(producer_name, 0)
+            new_offset, messages = self._read_signal_file_messages(
+                signal_file, offset=offset, producer_name=producer_name
+            )
+            self._signal_file_offsets[producer_name] = new_offset
+
+            for msg in messages:
+                try:
+                    async with lock:
+                        self.handle_producer_message(producer, msg)
+                except Exception as e:
+                    logger.exception(f"Error handling producer message: {e}")
+
+            await asyncio.sleep(poll_interval)
 
     async def _send_requests(self, channel: WebSocketChannel, channel_stream: MessageStream):
         # Send the initial requests

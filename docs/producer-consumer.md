@@ -52,8 +52,29 @@ Enable subscribing to an instance by adding the `external_message_consumer` sect
 | `remove_entry_exit_signals` | Remove signal columns from the dataframe (set them to 0) on dataframe receipt.<br>*Defaults to `false`.*<br> **Datatype:** Boolean.
 | `initial_candle_limit` | Initial candles to expect from the Producer.<br>*Defaults to `1500`.*<br> **Datatype:** Integer - Number of candles.
 | `message_size_limit` | Size limit per message<br>*Defaults to `8`.*<br> **Datatype:** Integer - Megabytes.
+| `signal_file_poll_interval` | Default polling interval for `signal_file` producers.<br>*Defaults to `1`.*<br> **Datatype:** Number - in seconds.
 
 Instead of (or as well as) calculating indicators in `populate_indicators()` the follower instance listens on the connection to a producer instance's messages (or multiple producer instances in advanced configurations) and requests the producer's most recently analyzed dataframes for each pair in the active whitelist.
+
+### Local (file-based) producer
+
+In addition to websocket producers, the consumer can read ws-style messages from a local newline-delimited JSON file.
+This can be useful when running a producer that writes messages to disk (e.g. a SignalFileStrategy).
+
+```json
+{
+    "external_message_consumer": {
+        "enabled": true,
+        "producers": [
+            {
+                "name": "default",
+                "signal_file": "./user_data/signals/producer.ndjson",
+                "signal_file_poll_interval": 1
+            }
+        ]
+    }
+}
+```
 
 A consumer instance will then have a full copy of the analyzed dataframes without the need to calculate them itself.
 

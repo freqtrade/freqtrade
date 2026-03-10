@@ -8,9 +8,12 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
+import rapidjson
 import websockets
 
+from freqtrade.constants import FULL_DATAFRAME_THRESHOLD
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.misc import dataframe_to_json
 from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
 from tests.conftest import log_has, log_has_re, log_has_when
 
@@ -466,3 +469,74 @@ async def test_emc_receive_messages_handle_error(default_conf, caplog, mocker):
         assert log_has_re(r"Error handling producer message.+", caplog)
     finally:
         emc.shutdown()
+
+
+async def test_emc_consume_signal_file(default_conf, tmp_path, caplog, mocker, ohlcv_history):
+    caplog.set_level(logging.DEBUG)
+
+    signal_file = tmp_path / "producer.ndjson"
+
+    default_conf.update(
+        {
+            "external_message_consumer": {
+                "enabled": True,
+                "producers": [
+                    {
+                        "name": "default",
+                        "signal_file": str(signal_file),
+                        "signal_file_poll_interval": 0.01,
+                    }
+                ],
+            }
+        }
+    )
+
+    # Avoid starting the threaded loop in unit test.
+    mocker.patch("freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start")
+
+    dp = DataProvider(default_conf, None, None, None)
+    emc = ExternalMessageConsumer(default_conf, dp)
+
+    # Ensure we store a full dataframe (bypass append / backfill logic)
+    import pandas as pd
+
+    mul = int(FULL_DATAFRAME_THRESHOLD / max(len(ohlcv_history), 1)) + 1
+    df_big = pd.concat([ohlcv_history] * mul, ignore_index=True)
+
+    whitelist_message = {"type": "whitelist", "data": ["BTC/USDT"]}
+    df_message = {
+        "type": "analyzed_df",
+        "data": {
+            "key": ["BTC/USDT", "5m", "spot"],
+            "df": {"__type__": "dataframe", "__value__": dataframe_to_json(df_big)},
+            "la": datetime.now(UTC).isoformat(),
+        },
+    }
+
+    signal_file.write_text(
+        rapidjson.dumps(whitelist_message) + "\n" + rapidjson.dumps(df_message) + "\n",
+        encoding="utf-8",
+    )
+
+    # Stop the loop after receiving 2 messages.
+    count = {"n": 0}
+    original = emc.handle_producer_message
+
+    def _wrapped(self, producer, message):
+        count["n"] += 1
+        original(producer, message)
+        if count["n"] >= 2:
+            self._running = False
+
+    emc.handle_producer_message = _wrapped.__get__(emc, ExternalMessageConsumer)
+
+    try:
+        emc._running = True
+        producer = default_conf["external_message_consumer"]["producers"][0]
+        await asyncio.wait_for(emc._consume_signal_file(producer, asyncio.Lock()), timeout=2)
+    finally:
+        emc.shutdown()
+
+    assert "BTC/USDT" in dp.get_producer_pairs("default")
+    df, _ = dp.get_producer_df("BTC/USDT", timeframe="5m")
+    assert not df.empty

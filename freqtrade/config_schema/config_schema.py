@@ -1058,6 +1058,18 @@ CONF_SCHEMA = {
                                 "description": "Name of the producer.",
                                 "type": "string",
                             },
+                            "signal_file": {
+                                "description": (
+                                    "Local signal file to consume. If set, this producer will be read "
+                                    "as newline-delimited JSON messages instead of via websocket."
+                                ),
+                                "type": "string",
+                            },
+                            "signal_file_poll_interval": {
+                                "description": "Polling interval for signal_file producers (seconds).",
+                                "type": "number",
+                                "minimum": 0.1,
+                            },
                             "host": {
                                 "description": "Host of the producer.",
                                 "type": "string",
@@ -1079,7 +1091,10 @@ CONF_SCHEMA = {
                                 "type": "string",
                             },
                         },
-                        "required": ["name", "host", "ws_token"],
+                        "oneOf": [
+                            {"required": ["name", "host", "ws_token"]},
+                            {"required": ["name", "signal_file"]},
+                        ],
                     },
                 },
                 "wait_timeout": {
@@ -1115,6 +1130,12 @@ CONF_SCHEMA = {
                     "minimum": 1,
                     "maximum": 20,
                     "default": 8,
+                },
+                "signal_file_poll_interval": {
+                    "description": "Default polling interval for signal_file producers (seconds).",
+                    "type": "number",
+                    "minimum": 0.1,
+                    "default": 1,
                 },
             },
             "required": ["producers"],

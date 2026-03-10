@@ -391,7 +391,18 @@ def _validate_consumers(conf: dict[str, Any]) -> None:
         if len(emc_conf.get("producers", [])) < 1:
             raise ConfigurationError("You must specify at least 1 Producer to connect to.")
 
-        producer_names = [p["name"] for p in emc_conf.get("producers", [])]
+        # Validate producer config (either websocket or signal_file)
+        for p in emc_conf.get("producers", []):
+            if not p.get("name"):
+                raise ConfigurationError("Producer name is required.")
+            if p.get("signal_file"):
+                continue
+            if not (p.get("host") and p.get("ws_token")):
+                raise ConfigurationError(
+                    "Producer must specify either `signal_file` or both `host` and `ws_token`."
+                )
+
+        producer_names = [p["name"] for p in emc_conf.get("producers", []) if p.get("name")]
         duplicates = [item for item, count in Counter(producer_names).items() if count > 1]
         if duplicates:
             raise ConfigurationError(
