@@ -9,16 +9,18 @@ import asyncio
 import logging
 import socket
 from collections.abc import Callable
+from pathlib import Path
 from threading import Thread
-from typing import Any, TypedDict
+from typing import Any, NotRequired, Required, TypedDict
 
 import websockets
+import rapidjson
 from pydantic import ValidationError
 
 from freqtrade.constants import FULL_DATAFRAME_THRESHOLD
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RPCMessageType
-from freqtrade.misc import remove_entry_exit_signals
+from freqtrade.misc import json_to_dataframe, remove_entry_exit_signals
 from freqtrade.rpc.api_server.ws.channel import WebSocketChannel, create_channel
 from freqtrade.rpc.api_server.ws.message_stream import MessageStream
 from freqtrade.rpc.api_server.ws_schemas import (
@@ -33,11 +35,12 @@ from freqtrade.rpc.api_server.ws_schemas import (
 
 
 class Producer(TypedDict):
-    name: str
-    host: str
-    port: int
-    secure: bool
-    ws_token: str
+    name: Required[str]
+    host: NotRequired[str]
+    port: NotRequired[int]
+    secure: NotRequired[bool]
+    ws_token: NotRequired[str]
+    signals_file: NotRequired[str]
 
 
 logger = logging.getLogger(__name__)
@@ -190,6 +193,11 @@ class ExternalMessageConsumer:
         """
         while self._running:
             try:
+                signals_file = producer.get("signals_file")
+                if signals_file:
+                    await self._consume_signals_file(producer, lock, signals_file)
+                    break
+
                 host, port = producer["host"], producer["port"]
                 token = producer["ws_token"]
                 name = producer["name"]
@@ -237,6 +245,64 @@ class ExternalMessageConsumer:
                 logger.exception(e)
                 await asyncio.sleep(self.sleep_time)
                 continue
+
+    async def _consume_signals_file(
+        self, producer: Producer, lock: asyncio.Lock, filename: str
+    ) -> None:
+        """Load and consume messages from a JSON file.
+
+        This allows replaying captured websocket messages for debugging and tests.
+        The file must contain either a list of websocket messages or an object with
+        a `messages` list.
+        """
+
+        producer_name = producer.get("name", "default")
+        path = Path(filename)
+        if not path.is_file():
+            logger.error(f"signals_file for `{producer_name}` does not exist: {path}")
+            return
+
+        def _json_object_hook(z: dict[str, Any]):
+            if z.get("__type__") == "dataframe":
+                return json_to_dataframe(z.get("__value__"))
+            return z
+
+        try:
+            with path.open("r") as fp:
+                payload = rapidjson.load(fp, object_hook=_json_object_hook)
+        except Exception as e:
+            logger.error(
+                f"Unable to load signals_file for `{producer_name}`: {path} - {e}"
+            )
+            return
+
+        messages: list[dict[str, Any]]
+        if isinstance(payload, list):
+            messages = payload
+        elif isinstance(payload, dict) and isinstance(payload.get("messages"), list):
+            messages = payload["messages"]
+        elif isinstance(payload, dict):
+            messages = [payload]
+        else:
+            logger.error(
+                f"signals_file for `{producer_name}` must be a list of messages or an object "
+                "with a `messages` list."
+            )
+            return
+
+        for message in messages:
+            if not self._running:
+                break
+            if not isinstance(message, dict):
+                logger.error(f"Invalid message in signals_file for `{producer_name}`: {message}")
+                continue
+            try:
+                async with lock:
+                    self.handle_producer_message(producer, message)
+            except Exception as e:
+                logger.exception(
+                    f"Error handling signals_file message for `{producer_name}`: {e}"
+                )
 
     async def _send_requests(self, channel: WebSocketChannel, channel_stream: MessageStream):
         # Send the initial requests

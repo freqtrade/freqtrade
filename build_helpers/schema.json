@@ -1376,6 +1376,10 @@
                 "description": "Name of the producer.",
                 "type": "string"
               },
+              "signals_file": {
+                "description": "Optional JSON file containing captured websocket messages (replay). When set, no websocket connection is created.",
+                "type": "string"
+              },
               "host": {
                 "description": "Host of the producer.",
                 "type": "string"
@@ -1398,9 +1402,20 @@
               }
             },
             "required": [
-              "name",
-              "host",
-              "ws_token"
+              "name"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "signals_file"
+                ]
+              },
+              {
+                "required": [
+                  "host",
+                  "ws_token"
+                ]
+              }
             ]
           }
         },

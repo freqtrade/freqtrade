@@ -1058,6 +1058,13 @@ CONF_SCHEMA = {
                                 "description": "Name of the producer.",
                                 "type": "string",
                             },
+                            "signals_file": {
+                                "description": (
+                                    "Optional JSON file containing captured websocket messages "
+                                    "(replay). When set, no websocket connection is created."
+                                ),
+                                "type": "string",
+                            },
                             "host": {
                                 "description": "Host of the producer.",
                                 "type": "string",
@@ -1079,7 +1086,11 @@ CONF_SCHEMA = {
                                 "type": "string",
                             },
                         },
-                        "required": ["name", "host", "ws_token"],
+                        "required": ["name"],
+                        "anyOf": [
+                            {"required": ["signals_file"]},
+                            {"required": ["host", "ws_token"]},
+                        ],
                     },
                 },
                 "wait_timeout": {
