@@ -9,6 +9,45 @@ Freqtrade is a free and open source crypto trading bot written in Python. It is 
 
 ![freqtrade](https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/assets/freqtrade-screenshot.png)
 
+---
+
+## PortfolioBench Extensions (mlsys-io fork)
+
+This fork adds multi-asset portfolio backtesting support for [PortfolioBench](https://github.com/mlsys-io/PortfolioBench). PortfolioBench uses this repo as a git submodule.
+
+### What this fork adds
+
+**Custom exchange subclasses** (`freqtrade/exchange/`):
+- `Portfoliobench` — extends Binance to support US stocks, global indices, and crypto in a single backtest. Handles offline-tolerant market loading, synthetic market injection for non-crypto assets, USD/USDT normalization, and zero-fee fallback.
+- `Polymarket` — extends Binance to support prediction market contracts (binary YES/NO outcomes priced $0–$1).
+
+**CLI subcommands** (`freqtrade/commands/`):
+- `portbench benchmark` — run the full benchmarking suite (16 strategies x 4 asset classes x 3 timeframes)
+- `portbench benchmark-all` — matrix benchmark runner with filters
+- `portbench portfolio` — standalone portfolio construction pipeline
+- `portbench generate-data` — generate synthetic OHLCV test data
+- `portbench download-data --exchange portfoliobench|polymarket` — download pre-built OHLCV datasets from Google Drive
+
+**Other changes**:
+- CLI rebranded from `freqtrade` to `portbench`
+- Exchange validation updated to allow non-ccxt exchanges (`portfoliobench`, `polymarket`)
+- `gdown` required for data download (install via `pip install gdown`)
+
+### Usage with PortfolioBench
+
+This fork is designed to be used as a git submodule inside PortfolioBench:
+
+```bash
+git clone https://github.com/mlsys-io/PortfolioBench.git
+cd PortfolioBench
+git submodule update --init --recursive
+pip install -e .
+```
+
+The benchmark, portfolio, and generate-data commands resolve the PortfolioBench project root at runtime. They will not work when freqtrade is run standalone.
+
+---
+
 ## Disclaimer
 
 This software is for educational purposes only. Do not risk money which
