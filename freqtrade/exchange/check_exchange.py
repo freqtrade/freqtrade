@@ -39,7 +39,7 @@ def check_exchange(config: Config, check_for_bad: bool = True) -> bool:
             f"{', '.join(available_exchanges())}"
         )
 
-    if not is_exchange_known_ccxt(exchange):
+    if not is_exchange_known_ccxt(exchange) and exchange not in SUPPORTED_EXCHANGES:
         raise OperationalException(
             f'Exchange "{exchange}" is not known to the ccxt library '
             f"and therefore not available for the bot.\n"
@@ -47,16 +47,17 @@ def check_exchange(config: Config, check_for_bad: bool = True) -> bool:
             f"{', '.join(available_exchanges())}"
         )
 
-    valid, reason, _, _ = validate_exchange(exchange)
-    if not valid:
-        if check_for_bad:
-            raise OperationalException(
-                f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}.'
-            )
-        else:
-            logger.warning(
-                f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}.'
-            )
+    if is_exchange_known_ccxt(exchange):
+        valid, reason, _, _ = validate_exchange(exchange)
+        if not valid:
+            if check_for_bad:
+                raise OperationalException(
+                    f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}.'
+                )
+            else:
+                logger.warning(
+                    f'Exchange "{exchange}"  will not work with Freqtrade. Reason: {reason}.'
+                )
 
     if MAP_EXCHANGE_CHILDCLASS.get(exchange, exchange) in SUPPORTED_EXCHANGES:
         logger.info(

@@ -185,6 +185,33 @@ ARGS_DOWNLOAD_DATA = [
     "prepend_data",
 ]
 
+ARGS_BENCHMARK = [
+    "quick",
+    "trading_only",
+    "portfolio_only",
+    "benchmark_export",
+]
+
+ARGS_BENCHMARK_ALL = [
+    "quick",
+    "trading_only",
+    "portfolio_only",
+    "skip_backtests",
+    "strategies",
+    "benchmark_timeframes",
+    "benchmark_categories",
+    "json_output",
+]
+
+ARGS_PORTFOLIO = [
+    "pairs",
+    "timeframe",
+    "datadir_portfolio",
+    "initial_capital",
+]
+
+ARGS_GENERATE_DATA: list[str] = []
+
 ARGS_PLOT_DATAFRAME = [
     "pairs",
     "indicators1",
@@ -284,6 +311,7 @@ NO_CONF_REQURIED = [
     "convert-data",
     "convert-trade-data",
     "download-data",
+    "generate-data",
     "hyperopt-list",
     "hyperopt-show",
     "list-data",
@@ -295,6 +323,7 @@ NO_CONF_REQURIED = [
     "list-timeframes",
     "plot-dataframe",
     "plot-profit",
+    "portfolio",
     "show-trades",
     "install-ui",
     "strategy-updater",
@@ -378,7 +407,8 @@ class Arguments:
 
         # Build main command
         self.parser = ArgumentParser(
-            prog="freqtrade", description="Free, open source crypto trading bot"
+            prog="portbench",
+            description="PortfolioBench — multi-asset portfolio benchmarking framework",
         )
         self._build_args(optionlist=ARGS_MAIN, parser=self.parser)
 
@@ -386,6 +416,10 @@ class Arguments:
             start_analysis_entries_exits,
             start_backtesting,
             start_backtesting_show,
+            start_benchmark,
+            start_benchmark_all,
+            start_generate_data,
+            start_portfolio,
             start_convert_data,
             start_convert_db,
             start_convert_trades,
@@ -716,3 +750,39 @@ class Arguments:
         recursive_analayis_cmd.set_defaults(func=start_recursive_analysis)
 
         self._build_args(optionlist=ARGS_RECURSIVE_ANALYSIS, parser=recursive_analayis_cmd)
+
+        # Add benchmark subcommand (PortfolioBench)
+        benchmark_cmd = subparsers.add_parser(
+            "benchmark",
+            help="Run the PortfolioBench benchmarking suite.",
+            parents=[_common_parser],
+        )
+        benchmark_cmd.set_defaults(func=start_benchmark)
+        self._build_args(optionlist=ARGS_BENCHMARK, parser=benchmark_cmd)
+
+        # Add benchmark-all subcommand (PortfolioBench — full matrix)
+        benchmark_all_cmd = subparsers.add_parser(
+            "benchmark-all",
+            help="Run the full PortfolioBench benchmark matrix with detailed reports.",
+            parents=[_common_parser],
+        )
+        benchmark_all_cmd.set_defaults(func=start_benchmark_all)
+        self._build_args(optionlist=ARGS_BENCHMARK_ALL, parser=benchmark_all_cmd)
+
+        # Add portfolio subcommand (PortfolioBench — standalone pipeline)
+        portfolio_cmd = subparsers.add_parser(
+            "portfolio",
+            help="Run the standalone portfolio construction pipeline.",
+            parents=[_common_parser],
+        )
+        portfolio_cmd.set_defaults(func=start_portfolio)
+        self._build_args(optionlist=ARGS_PORTFOLIO, parser=portfolio_cmd)
+
+        # Add generate-data subcommand (PortfolioBench — synthetic test data)
+        generate_data_cmd = subparsers.add_parser(
+            "generate-data",
+            help="Generate synthetic OHLCV test data for all 119 instruments.",
+            parents=[_common_parser],
+        )
+        generate_data_cmd.set_defaults(func=start_generate_data)
+        self._build_args(optionlist=ARGS_GENERATE_DATA, parser=generate_data_cmd)

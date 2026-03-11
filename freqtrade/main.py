@@ -47,19 +47,16 @@ def main(sysargv: list[str] | None = None) -> None:
             print_version_info()
             return_code = 0
         elif "func" in args:
-            logger.info(f"freqtrade {__version__}")
+            logger.info(f"portbench {__version__}")
             gc_set_threshold()
             set_mp_start_method()
             return_code = args["func"](args)
         else:
             # No subcommand was issued.
             raise OperationalException(
-                "Usage of Freqtrade requires a subcommand to be specified.\n"
-                "To have the bot executing trades in live/dry-run modes, "
-                "depending on the value of the `dry_run` setting in the config, run Freqtrade "
-                "as `freqtrade trade [options...]`.\n"
+                "Usage of portbench requires a subcommand to be specified.\n"
                 "To see the full list of options available, please use "
-                "`freqtrade --help` or `freqtrade <command> --help`."
+                "`portbench --help` or `portbench <command> --help`."
             )
 
     except SystemExit as e:  # pragma: no cover

@@ -25,14 +25,60 @@ def _check_data_config_download_sanity(config: Config) -> None:
         )
 
 
+def _download_gdrive_data(exchange_name: str, datadir: str) -> None:
+    """Download pre-built OHLCV data from Google Drive for PortfolioBench exchanges."""
+    from pathlib import Path
+
+    GDRIVE_FOLDERS: dict[str, tuple[str, str]] = {
+        "portfoliobench": (
+            "18DqXyrfxDXxibC9gjm9TFzXolhaOBmyk",
+            "usstock (crypto + US stocks + global indices)",
+        ),
+        "polymarket": (
+            "1x5jQ_8tkQhJuinhLKIctqa7aZ8D1uUHf",
+            "polymarket prediction-market contracts",
+        ),
+    }
+
+    folder_id, description = GDRIVE_FOLDERS[exchange_name]
+    dest = Path(datadir)
+    dest.mkdir(parents=True, exist_ok=True)
+
+    try:
+        import gdown
+    except ImportError:
+        raise ConfigurationError(
+            "gdown is required to download PortfolioBench data from Google Drive.\n"
+            "Install it with: pip install gdown"
+        )
+
+    url = f"https://drive.google.com/drive/folders/{folder_id}"
+    logger.info("Downloading %s data into %s ...", description, dest)
+    gdown.download_folder(url, output=str(dest), quiet=False, remaining_ok=True)
+
+    n_files = len(list(dest.glob("*.feather")))
+    logger.info("Done — %d feather files in %s", n_files, dest)
+
+
 def start_download_data(args: dict[str, Any]) -> None:
     """
-    Download data (former download_backtest_data.py script)
+    Download data (former download_backtest_data.py script).
+
+    For the portfoliobench and polymarket exchanges, data is downloaded from
+    Google Drive instead of from a live exchange API.
     """
     from freqtrade.configuration import setup_utils_configuration
     from freqtrade.data.history import download_data_main
 
     config = setup_utils_configuration(args, RunMode.UTIL_EXCHANGE)
+
+    exchange_name = config.get("exchange", {}).get("name", "").lower()
+    if exchange_name in ("portfoliobench", "polymarket"):
+        try:
+            _download_gdrive_data(exchange_name, str(config["datadir"]))
+        except KeyboardInterrupt:
+            sys.exit("SIGINT received, aborting ...")
+        return
 
     _check_data_config_download_sanity(config)
 

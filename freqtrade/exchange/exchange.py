@@ -73,12 +73,13 @@ from freqtrade.exchange.exchange_types import (
     CcxtPosition,
     FtHas,
     FundingRate,
-    LeverageTier,
     OHLCVResponse,
     OrderBook,
     Ticker,
     Tickers,
 )
+from freqtrade.exchange.exchange_types import LeverageTier
+
 from freqtrade.exchange.exchange_utils import (
     ROUND,
     ROUND_DOWN,
@@ -708,7 +709,9 @@ class Exchange:
             # Reload async markets, then assign them to sync api
             retrier(self._load_async_markets, retries=retries)(reload=True)
             self._markets = self._api_async.markets
+
             self._api.set_markets_from_exchange(self._api_async)
+
             # Assign options array, as it contains some temporary information from the exchange.
             # ccxt does not implicitly copy options over in set_markets_from_exchange
             self._api.options = self._api_async.options
@@ -3510,12 +3513,11 @@ class Exchange:
             return symbol, tier
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
-        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+        except ccxt.OperationFailed as e:
             raise TemporaryError(
-                f"Could not load leverage tiers for {symbol}"
-                f" due to {e.__class__.__name__}. Message: {e}"
+                f"Could not load leverage tiers for {symbol}. {e.__class__.__name__}. Message: {e}"
             ) from e
-        except ccxt.BaseError as e:
+        except (ccxt.ExchangeError, ccxt.BaseError) as e:
             raise OperationalException(e) from e
 
     def load_leverage_tiers(self) -> dict[str, list[dict]]:

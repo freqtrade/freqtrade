@@ -842,4 +842,64 @@ AVAILABLE_CLI_OPTIONS = {
         action="store_true",
         default=False,
     ),
+    # ── PortfolioBench benchmark options ──────────────────────────────
+    "quick": Arg(
+        "--quick",
+        help="Quick smoke test (subset of strategies/timeframes).",
+        action="store_true",
+    ),
+    "trading_only": Arg(
+        "--trading-only",
+        help="Only run trading strategy backtests.",
+        action="store_true",
+    ),
+    "portfolio_only": Arg(
+        "--portfolio-only",
+        help="Only run portfolio strategy backtests.",
+        action="store_true",
+    ),
+    "benchmark_export": Arg(
+        "--export",
+        help="Export benchmark results to a JSON file.",
+        metavar="PATH",
+    ),
+    "skip_backtests": Arg(
+        "--skip-backtests",
+        help="Only run data checks, unit tests, and pipeline (skip backtests).",
+        action="store_true",
+    ),
+    "strategies": Arg(
+        "--strategies",
+        help="Run only specified strategies (by class name).",
+        nargs="+",
+    ),
+    "benchmark_timeframes": Arg(
+        "--timeframes",
+        help="Limit benchmark to specific timeframes.",
+        nargs="+",
+        choices=["5m", "4h", "1d"],
+    ),
+    "benchmark_categories": Arg(
+        "--categories",
+        help="Limit benchmark to specific asset categories.",
+        nargs="+",
+        choices=["crypto", "stocks", "indices", "mixed"],
+    ),
+    "json_output": Arg(
+        "--json-output",
+        help="Write detailed results to a JSON file.",
+        metavar="PATH",
+    ),
+    # ── PortfolioBench portfolio / generate-data options ──────────────
+    "datadir_portfolio": Arg(
+        "--data-dir",
+        help="Path to the OHLCV data directory (default: user_data/data/usstock).",
+        metavar="PATH",
+    ),
+    "initial_capital": Arg(
+        "--initial-capital",
+        help="Starting capital for the portfolio backtest (default: 10000).",
+        type=float,
+        default=10_000.0,
+    ),
 }
