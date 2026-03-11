@@ -215,7 +215,7 @@ class RPC:
                 oo_details_lst = [
                     f"({oo.order_type} {oo.side} rem={oo.safe_remaining:.8f})"
                     for oo in trade.open_orders
-                    if oo.ft_order_side not in ["stoploss"]
+                    if not oo.ft_is_conditional_exit
                 ]
                 oo_details = ", ".join(oo_details_lst)
 
@@ -1246,14 +1246,16 @@ class RPC:
                 except ExchangeError:
                     pass
 
-            # cancel stoploss on exchange orders ...
+            # cancel conditional exit orders on exchange ...
             if (
                 self._freqtrade.strategy.order_types.get("stoploss_on_exchange")
-                and trade.has_open_sl_orders
+                and trade.has_open_conditional_exit_orders
             ):
-                for oslo in trade.open_sl_orders:
+                for conditional_exit_order in trade.open_conditional_exit_orders:
                     try:
-                        self._freqtrade.exchange.cancel_stoploss_order(oslo.order_id, trade.pair)
+                        self._freqtrade.exchange.cancel_stoploss_order(
+                            conditional_exit_order.order_id, trade.pair
+                        )
                         c_count += 1
                     except ExchangeError:
                         pass

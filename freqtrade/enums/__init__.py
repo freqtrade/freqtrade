@@ -1,11 +1,13 @@
 # flake8: noqa: F401
 from freqtrade.enums.backteststate import BacktestState
 from freqtrade.enums.candletype import CandleType
+from freqtrade.enums.conditionaltriggertype import ConditionalTriggerType
 from freqtrade.enums.exitchecktuple import ExitCheckTuple
 from freqtrade.enums.exittype import ExitType
 from freqtrade.enums.hyperoptstate import HyperoptState
 from freqtrade.enums.marginmode import MarginMode
 from freqtrade.enums.marketstatetype import MarketDirection
+from freqtrade.enums.orderrole import OrderRole
 from freqtrade.enums.ordertypevalue import OrderTypeValues
 from freqtrade.enums.pricetype import PriceType
 from freqtrade.enums.rpcmessagetype import NO_ECHO_MESSAGES, RPCMessageType, RPCRequestType

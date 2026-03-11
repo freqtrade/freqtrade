@@ -767,7 +767,7 @@ class Backtesting:
             )
 
             if self.margin_mode == MarginMode.CROSS or not (
-                order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount
+                order.ft_is_exit and order.safe_amount == trade.amount
             ):
                 # trade is still open or we are in cross margin mode and
                 # must update all liquidation prices
@@ -778,7 +778,7 @@ class Backtesting:
                     stake_currency=self.config["stake_currency"],
                     dry_run=True,
                 )
-            if not (order.ft_order_side == trade.exit_side and order.safe_amount == trade.amount):
+            if not (order.ft_is_exit and order.safe_amount == trade.amount):
                 self._call_adjust_stop(current_date, trade, order.ft_price)
             return True
         return False
