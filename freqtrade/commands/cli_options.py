@@ -892,7 +892,7 @@ AVAILABLE_CLI_OPTIONS = {
     ),
     # ── PortfolioBench portfolio / generate-data options ──────────────
     "datadir_portfolio": Arg(
-        "--data-dir",
+        "--portfolio-data-dir",
         help="Path to the OHLCV data directory (default: user_data/data/usstock).",
         metavar="PATH",
     ),
