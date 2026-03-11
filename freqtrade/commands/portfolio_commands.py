@@ -9,17 +9,16 @@ import logging
 import sys
 from typing import Any
 
+from freqtrade.commands.benchmark_commands import _find_portbench_root
+
 
 logger = logging.getLogger(__name__)
 
 
 def start_portfolio(args: dict[str, Any]) -> None:
     """Entry point for ``portbench portfolio``."""
-    import os
 
-    project_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
+    project_root = _find_portbench_root()
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
@@ -40,11 +39,8 @@ def start_portfolio(args: dict[str, Any]) -> None:
 
 def start_generate_data(args: dict[str, Any]) -> None:
     """Entry point for ``portbench generate-data``."""
-    import os
 
-    project_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
+    project_root = _find_portbench_root()
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 

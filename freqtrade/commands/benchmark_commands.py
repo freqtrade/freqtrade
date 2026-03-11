@@ -19,13 +19,27 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-def start_benchmark(args: dict[str, Any]) -> None:
-    """Entry point for ``portbench benchmark``."""
+def _find_portbench_root() -> str:
+    """Walk up from this file to find the PortfolioBench project root.
+
+    Works both when freqtrade is vendored directly (freqtrade/commands/...)
+    and when it lives inside a git submodule (freqtrade/freqtrade/commands/...).
+    """
     import os
 
-    project_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
+    d = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        d = os.path.dirname(d)
+        if os.path.isfile(os.path.join(d, "benchmark.py")):
+            return d
+    # Fallback: 3 levels up (legacy vendored layout)
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def start_benchmark(args: dict[str, Any]) -> None:
+    """Entry point for ``portbench benchmark``."""
+
+    project_root = _find_portbench_root()
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
@@ -49,11 +63,8 @@ def start_benchmark(args: dict[str, Any]) -> None:
 
 def start_benchmark_all(args: dict[str, Any]) -> None:
     """Entry point for ``portbench benchmark-all``."""
-    import os
 
-    project_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
+    project_root = _find_portbench_root()
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
