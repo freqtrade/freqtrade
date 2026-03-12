@@ -1229,7 +1229,9 @@ class FreqtradeBot(LoggingMixin):
         if not fill and trade.nr_of_successful_entries > 0:
             # If we have open orders, we need to add the stake amount of the open orders
             # as it's not yet included in the trade.stake_amount
-            stake_amount += sum(o.stake_amount for o in trade.open_orders if o.ft_is_entry)
+            stake_amount += sum(
+                o.stake_amount for o in trade.open_orders if trade.is_entry_order(o)
+            )
 
         msg: RPCEntryMsg = {
             "trade_id": trade.id,
@@ -2408,7 +2410,7 @@ class FreqtradeBot(LoggingMixin):
                 pair=trade.pair, trade=trade, order=order, current_time=datetime.now(UTC)
             )
             # If a entry order was closed, force update on stoploss on exchange
-            if order.ft_is_entry:
+            if trade.is_entry_order(order):
                 if send_msg:
                     if trade.nr_of_successful_entries > 1:
                         # Reset fee_open_currency so fee checking can work
@@ -2418,7 +2420,7 @@ class FreqtradeBot(LoggingMixin):
                     trade = self.cancel_conditional_exit_orders(trade)
                 trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
             if (
-                order.ft_is_entry
+                trade.is_entry_order(order)
                 or (trade.amount > 0 and trade.is_open)
                 or self.margin_mode == MarginMode.CROSS
             ):
@@ -2451,7 +2453,7 @@ class FreqtradeBot(LoggingMixin):
     ):
         """send "fill" notifications"""
 
-        if order.ft_is_exit:
+        if trade.is_exit_order(order):
             # Exit notification
             if send_msg and not conditional_exit and order.order_id not in trade.open_orders_ids:
                 self._notify_exit(
@@ -2507,11 +2509,11 @@ class FreqtradeBot(LoggingMixin):
         """
         self.wallets.update()
         amount_ = trade.amount
-        if order_obj.ft_is_position_exit:
+        if trade.is_position_exit_order(order_obj):
             # check against remaining amount!
             amount_ = trade.amount - amount
 
-        if trade.nr_of_successful_entries >= 1 and order_obj.ft_is_entry:
+        if trade.nr_of_successful_entries >= 1 and trade.is_entry_order(order_obj):
             # In case of re-entry's, trade.amount doesn't contain the amount of the last entry.
             amount_ = trade.amount + amount
 

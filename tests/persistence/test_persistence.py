@@ -2126,20 +2126,20 @@ def test_order_role_helpers(fee, is_short):
     exit_order = trades[1].orders[1]
     conditional_exit_order = trades[4].orders[1]
 
-    assert entry_order.ft_order_role == OrderRole.entry
-    assert entry_order.ft_is_entry is True
-    assert entry_order.ft_is_position_exit is False
+    assert trades[1].get_order_role(entry_order) == OrderRole.entry
+    assert trades[1].is_entry_order(entry_order) is True
+    assert trades[1].is_position_exit_order(entry_order) is False
 
-    assert exit_order.ft_order_role == OrderRole.exit
-    assert exit_order.ft_is_exit is True
-    assert exit_order.ft_is_position_exit is True
+    assert trades[1].get_order_role(exit_order) == OrderRole.exit
+    assert trades[1].is_exit_order(exit_order) is True
+    assert trades[1].is_position_exit_order(exit_order) is True
 
-    assert conditional_exit_order.ft_order_role == OrderRole.conditional_exit
+    assert trades[4].get_order_role(conditional_exit_order) == OrderRole.conditional_exit
     assert conditional_exit_order.ft_is_conditional_exit is True
-    assert conditional_exit_order.ft_is_position_exit is True
+    assert trades[4].is_position_exit_order(conditional_exit_order) is True
     assert conditional_exit_order.ft_conditional_trigger_type == ConditionalTriggerType.stop_loss
-    assert conditional_exit_order.ft_order_role_matches("stoploss") is True
-    assert conditional_exit_order.ft_order_role_matches(OrderRole.conditional_exit) is True
+    assert trades[4].order_has_role(conditional_exit_order, "stoploss") is True
+    assert trades[4].order_has_role(conditional_exit_order, OrderRole.conditional_exit) is True
 
     assert trades[1].select_order_by_role(OrderRole.entry, False) == entry_order
     assert trades[1].select_order_by_role(OrderRole.exit, False) == exit_order

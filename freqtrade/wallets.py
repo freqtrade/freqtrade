@@ -126,8 +126,12 @@ class Wallets:
         if self._config.get("trading_mode", "spot") != TradingMode.FUTURES:
             for trade in open_trades:
                 curr = self._exchange.get_pair_base_currency(trade.pair)
-                used_stake += sum(o.stake_amount for o in trade.open_orders if o.ft_is_entry)
-                pending = sum(o.amount for o in trade.open_orders if o.amount and o.ft_is_exit)
+                used_stake += sum(
+                    o.stake_amount for o in trade.open_orders if trade.is_entry_order(o)
+                )
+                pending = sum(
+                    o.amount for o in trade.open_orders if o.amount and trade.is_exit_order(o)
+                )
                 curr_wallet_bal = self._start_cap.get(curr, 0)
 
                 _wallets[curr] = Wallet(
