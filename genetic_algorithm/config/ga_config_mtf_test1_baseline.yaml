@@ -1,0 +1,140 @@
+# ============================================================================
+# MTF REGIME TEST 1: BASELINE (No MTF, No In-Strategy Regime)
+# ============================================================================
+# Control run — standard regime-aware evaluation with single-TF detection (4h).
+# ~10 min target: pop=10, gen=5, 2 pairs, 6-month timerange.
+# ============================================================================
+
+genetic_algorithm:
+  random_seed: 100
+  population_size: 10
+  generations: 5
+  mutation_rate: 0.20
+  crossover_rate: 0.75
+  crossover_method: 'uniform'
+  elite_size: 2
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 5
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.15
+  max_mutation_rate: 0.35
+  fitness_sharing: true
+  sharing_radius: 0.25
+  diversity_threshold: 0.20
+  allow_self_crossover: false
+  random_immigrants: 1
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.15
+  sortino_ratio: 0.10
+  profit_factor: 0.10
+  drawdown: 0.15
+  win_rate: 0.10
+  trade_frequency: 0.10
+
+fitness_penalties:
+  min_trades: 3
+  max_drawdown: 0.40
+  min_win_rate: 0.25
+  complexity_weight: 0.005
+  unused_indicator_weight: 0.02
+
+backtesting:
+  timerange: "20250601-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+    - "ETH/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: true
+  enable_cache: true
+  timeout: 120
+
+walk_forward:
+  enabled: true
+  train_days: 60
+  validation_days: 20
+  step_days: 20
+  mode: 'rolling'
+  aggregation: 'mean'
+  min_train_trades: 3
+  max_windows: 4
+
+holdout_validation:
+  enabled: false
+
+regime_aware:
+  enabled: true
+  method: 'adx_di_hysteresis'
+  benchmark_pair: null
+  detection_timeframe: '4h'
+  period_days: 30
+  min_period_days: 20
+  embargo_days: 2
+  segments_per_regime: 2
+  holdout_ratio: 0.10
+  aggregation: 'harmonic_mean'
+  cvar_alpha: 0.20
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.0
+    sideways: 1.0
+  # MTF disabled for baseline
+  mtf_enabled: false
+  segmentation: 'fixed'
+  in_strategy_regime:
+    enabled: false
+
+strategy_constraints:
+  min_trades: 3
+  max_drawdown: 0.40
+  min_win_rate: 0.25
+  timeframes: ["15m", "1h"]
+  stoploss_range: [-0.15, -0.03]
+  roi_range: [0.01, 0.15]
+  max_open_trades_range: [1, 5]
+  min_exit_conditions: 1
+
+multi_timeframe:
+  enabled: false
+
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "BBANDS"
+    - "ADX"
+    - "MACD"
+    - "SMA"
+  max_per_strategy: 4
+  min_entry_conditions: 2
+
+trade_visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: false
+
+parallel_evaluation:
+  enabled: true
+  num_workers: null
+  worker_log_level: 'WARNING'
+  backtest_timeout: 90
+
+parsimony:
+  enabled: true
+  max_indicators: 5
+  max_conditions: 6
+
+output:
+  dir: 'genetic_algorithm/output/mtf_test1_baseline'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 1

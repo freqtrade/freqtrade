@@ -298,10 +298,17 @@ class RegimeTrainer:
         """
         if self.label_mode == 'rules':
             return self._label_from_rules(df)
+        elif self.label_mode == 'advanced_ensemble':
+            return self._label_from_advanced_ensemble(df)
+        elif self.label_mode == 'score_band':
+            return self._label_from_score_band(df)
         elif self.label_mode == 'price':
             return self._label_from_price(df)
         else:
-            raise ValueError(f"Unknown label_mode: {self.label_mode}. Use 'rules' or 'price'.")
+            raise ValueError(
+                f"Unknown label_mode: {self.label_mode}. "
+                f"Use 'rules', 'advanced_ensemble', 'score_band', or 'price'."
+            )
 
     def _label_from_rules(self, df: pd.DataFrame) -> pd.Series:
         """Generate labels by running the existing ensemble rule-based detector."""
@@ -311,6 +318,134 @@ class RegimeTrainer:
         labels = regime_series.map(lambda r: REGIME_TO_INT.get(r, -1))
         # Drop UNCERTAIN (-1) — these will become NaN and be dropped during alignment
         labels = labels.replace(-1, np.nan)
+        return labels
+
+    def _label_from_advanced_ensemble(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Generate labels using the 5-detector advanced_ensemble (excluding ML).
+
+        Uses confidence-weighted voting of the 5 rule-based sub-detectors
+        (ADX-DI hysteresis, rolling returns, HMM, volatility cluster,
+        Bollinger) — the same detectors that participate in the full
+        advanced_ensemble, but *without* the ML sub-detector.
+
+        This avoids circular label leakage: we train the ML model on
+        the consensus of the 5 rule-based methods, then at runtime the
+        ML model joins as the 6th voter to strengthen the ensemble.
+        """
+        # Build the 5-detector sub-ensemble (same specs as _detect_advanced_ensemble)
+        method_specs = [
+            ('adx_di_hysteresis', {}, 2.0),
+            ('rolling_returns', {'window': 50, 'threshold': 0.0005}, 2.0),
+            ('hmm', {'n_states': 3, 'min_dwell': 10}, 1.5),
+            ('volatility_cluster', {}, 1.0),
+            ('bollinger', {}, 1.0),
+        ]
+
+        regime_map_int = {
+            RegimeType.BULLISH: 0,
+            RegimeType.BEARISH: 1,
+            RegimeType.SIDEWAYS: 2,
+        }
+        n_regimes = 3
+        n = len(df)
+
+        methods_results = {}
+        for method_name, params, base_weight in method_specs:
+            try:
+                det = RegimeDetector(method=method_name, params=params)
+                result = det.detect(df)
+                methods_results[method_name] = (result, base_weight)
+            except Exception as e:
+                logger.warning(f"Advanced ensemble labeling: {method_name} failed: {e}")
+
+        if not methods_results:
+            logger.warning("All sub-detectors failed, falling back to 'rules' labeling")
+            return self._label_from_rules(df)
+
+        # Confidence-weighted voting (same logic as _detect_advanced_ensemble)
+        confidence_window = min(100, max(20, n // 10))
+
+        aligned_results = {}
+        for method_name, (result, _) in methods_results.items():
+            aligned = result.reindex(df.index)
+            encoded = pd.Series(np.nan, index=df.index)
+            for regime_type, regime_idx in regime_map_int.items():
+                mask = (aligned == regime_type)
+                if regime_type == RegimeType.SIDEWAYS:
+                    mask = mask | (aligned == RegimeType.VOLATILE)
+                encoded[mask] = regime_idx
+            aligned_results[method_name] = encoded
+
+        all_encoded = pd.DataFrame(aligned_results)
+        majority = all_encoded.mode(axis=1).iloc[:, 0]
+
+        method_confidence = {}
+        for method_name in aligned_results:
+            agreement = (aligned_results[method_name] == majority).astype(float)
+            rolling_conf = agreement.rolling(
+                window=confidence_window,
+                min_periods=max(1, confidence_window // 4),
+            ).mean()
+            rolling_conf = rolling_conf.fillna(agreement.mean())
+            method_confidence[method_name] = rolling_conf
+
+        vote_matrix = np.zeros((n, n_regimes), dtype=np.float64)
+        for method_name, (result, base_weight) in methods_results.items():
+            conf = method_confidence[method_name].values
+            effective_weight = base_weight * conf
+            aligned = result.reindex(df.index)
+            for regime_type, regime_idx in regime_map_int.items():
+                mask = (aligned == regime_type)
+                if regime_type == RegimeType.SIDEWAYS:
+                    mask = mask | (aligned == RegimeType.VOLATILE)
+                vote_matrix[mask.values, regime_idx] += effective_weight[mask.values]
+
+        # Convert to labels
+        labels = pd.Series(np.nan, index=df.index)
+        has_votes = vote_matrix.sum(axis=1) > 0
+        winners = np.argmax(vote_matrix, axis=1)
+        labels[has_votes] = winners[has_votes]
+
+        logger.info(
+            "Advanced ensemble labels: %d bars, distribution: %s",
+            int(labels.notna().sum()),
+            dict(labels.dropna().value_counts().sort_index()),
+        )
+        return labels
+
+    def _label_from_score_band(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Generate labels from the continuous trend score using score-band
+        boundaries.
+
+        Uses the same ``_compute_trend_score()`` method as score-band
+        segmentation, then maps each bar to a regime based on the
+        configurable band boundaries.  This trains the ML model to
+        directly predict the score-band regime, aligning the ML sub-
+        detector with the score-band segmentation used in Phase 1.
+        """
+        bullish_min = self.label_params.get('bullish_min', 0.35)
+        bearish_max = self.label_params.get('bearish_max', -0.35)
+
+        # Use advanced_ensemble method for continuous score to get the
+        # best quality score (mirrors what Phase 1 does)
+        detector = RegimeDetector(method='advanced_ensemble')
+        trend_scores = detector._compute_trend_score(df)
+
+        labels = pd.Series(np.nan, index=df.index)
+        valid = trend_scores.notna()
+
+        labels[valid & (trend_scores >= bullish_min)] = REGIME_TO_INT[RegimeType.BULLISH]
+        labels[valid & (trend_scores <= bearish_max)] = REGIME_TO_INT[RegimeType.BEARISH]
+        labels[valid & (trend_scores > bearish_max) & (trend_scores < bullish_min)] = REGIME_TO_INT[RegimeType.SIDEWAYS]
+
+        logger.info(
+            "Score-band labels (bull>=%.2f bear<=%.2f): %d bars, distribution: %s",
+            bullish_min, bearish_max,
+            int(labels.notna().sum()),
+            dict(labels.dropna().value_counts().sort_index()),
+        )
         return labels
 
     def _label_from_price(self, df: pd.DataFrame) -> pd.Series:

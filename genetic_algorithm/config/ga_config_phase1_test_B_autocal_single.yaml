@@ -1,0 +1,229 @@
+# ============================================================================
+# PHASE 1 TEST B: Auto-Calibration (single pair BTC)
+# ============================================================================
+# PURPOSE: Test auto_calibrate finding optimal bands from BTC/USDT alone.
+#          Compares auto-found bands vs default 0.35/-0.35.
+#
+# FEATURES TESTED: phase1.auto_calibrate = true (single pair)
+# DIFF FROM CONTROL: auto_calibrate on, quality_report on, method advanced_ensemble
+
+genetic_algorithm:
+  random_seed: 42
+  population_size: 3
+  generations: 2
+  mutation_rate: 0.20
+  crossover_rate: 0.78
+  crossover_method: 'uniform'
+  elite_size: 1
+  tournament_size: 2
+  selection_method: 'tournament'
+  convergence_patience: 12
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.12
+  max_mutation_rate: 0.40
+  fitness_sharing: true
+  sharing_radius: 0.18
+  diversity_threshold: 0.10
+  allow_self_crossover: false
+  random_immigrants: 1
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.22
+  sharpe_ratio: 0.20
+  sortino_ratio: 0.14
+  profit_factor: 0.10
+  drawdown: 0.16
+  win_rate: 0.10
+  trade_frequency: 0.04
+  monthly_stability: 0.04
+  cross_pair: 0.00
+
+fitness_penalties:
+  min_trades: 6
+  max_drawdown: 0.22
+  min_win_rate: 0.38
+  complexity_weight: 0.015
+  pair_loss_threshold: -10.0
+  unused_indicator_weight: 0.020
+
+fitness_bounds:
+  profit_min: -50
+  profit_max: 200
+  sharpe_min: -5
+  sharpe_max: 10
+  sortino_min: -5
+  sortino_max: 12
+  profit_factor_max: 10
+
+trade_frequency_thresholds:
+  very_few: 3
+  few: 5
+  ideal_min: 6
+  ideal_max: 50
+  moderate_excess: 100
+
+backtesting:
+  timerange: "20230101-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  slippage_pct: 0.0005
+  exchange: "binance"
+  datadir: "user_data/data/binance"
+  auto_download_data: true
+  enable_cache: true
+  timeout: 120
+
+walk_forward:
+  enabled: false
+
+holdout_validation:
+  enabled: false
+
+holdout_monitoring:
+  enabled: false
+
+regime_aware:
+  enabled: true
+  method: 'advanced_ensemble'
+  benchmark_pair: 'BTC/USDT'
+  detection_timeframe: '4h'
+  period_days: 60
+  min_period_days: 30
+  embargo_days: 3
+  segments_per_regime: 4
+  holdout_ratio: 0.20
+  aggregation: 'harmonic_mean'
+  min_segment_trades: 3
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.0
+    sideways: 1.0
+
+strategy_constraints:
+  min_trades: 5
+  max_drawdown: 0.22
+  min_win_rate: 0.35
+  timeframes: ["4h"]
+  stoploss_range: [-0.10, -0.03]
+  roi_range: [0.02, 0.10]
+  max_open_trades_range: [1, 3]
+
+multi_timeframe:
+  enabled: false
+
+indicators:
+  available: ["RSI", "MACD", "BBANDS", "EMA", "SMA", "ATR", "ADX"]
+  max_per_strategy: 4
+  min_per_strategy: 2
+  min_entry_conditions: 2
+  min_exit_conditions: 1
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 38]
+    sell_threshold: [62, 80]
+  MACD:
+    fast_period: [8, 18]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [14, 30]
+    std_dev: [1.5, 3.0]
+  EMA:
+    period: [5, 50]
+  SMA:
+    period: [10, 100]
+  ATR:
+    period: [10, 20]
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+
+parsimony:
+  enabled: true
+  tolerance: 0.02
+  max_removals_per_strategy: 2
+
+storage:
+  database: "genetic_algorithm/data/strategies_p1test_B.db"
+  strategy_dir: "user_data/strategies/ga_p1test_B"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_p1test_B"
+  checkpoint_interval: 5
+  keep_history: true
+
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/ga_p1test_B_autocal_single.log"
+  console: true
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: false
+
+hall_of_fame:
+  enabled: false
+
+deflated_sharpe:
+  enabled: false
+
+advanced:
+  parallel_evaluation: false
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: false
+
+island_model:
+  enabled: true
+
+  islands:
+    - name: 'bullish'
+      population_size: 3
+      data_regime: 'bullish'
+    - name: 'bearish'
+      population_size: 3
+      data_regime: 'bearish'
+    - name: 'sideways'
+      population_size: 3
+      data_regime: 'sideways'
+    - name: 'master'
+      population_size: 3
+      data_regime: 'balanced'
+
+  migration:
+    specialist:
+      interval: 2
+      count: 1
+      topology: 'fully_connected'
+    master:
+      interval: 2
+      count: 1
+      send_count: 1
+
+  regime_detection:
+    pair: 'BTC/USDT'
+    timeframe: '4h'
+    timerange: '20230101-20260228'
+    method: 'advanced_ensemble'          # ← uses ensemble continuous score
+    period_days: 60
+    holdout_ratio: 0.20
+    segment_mode: 'score_band'
+    regime_bands:
+      bullish_min: 0.44                  # ← will be overridden by auto-calibrate
+      bearish_max: -0.37
+    min_segments_per_regime: 2
+    min_bars_per_regime: 500
+    abort_on_insufficient_data: false
+    mtf_enabled: false
+    # Phase 1: auto-calibrate single pair
+    phase1:
+      auto_calibrate: true               # ★ FEATURE UNDER TEST
+      quality_report: true
+      calibration_pairs:
+        - 'BTC/USDT'

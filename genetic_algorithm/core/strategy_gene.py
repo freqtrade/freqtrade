@@ -42,6 +42,60 @@ class IndicatorGene:
 
 
 @dataclass
+class RegimeGene:
+    """Configuration for in-strategy runtime regime awareness.
+
+    When ``enabled`` is True, the generated strategy includes regime
+    detection logic in ``populate_indicators()`` and can filter entries/exits
+    based on the computed continuous regime scores.
+
+    The regime scores are computed from higher-timeframe ADX/DI indicators
+    and merged into the base-timeframe dataframe via ``merge_informative_pair``.
+
+    Attributes:
+        enabled: Whether this strategy uses runtime regime awareness.
+        regime_timeframes: Which timeframes to compute regime on (e.g. ['4h', '1d']).
+        entry_trend_min: Minimum composite trend_score for long entry.
+            Range [-1, 1]. Default -1.0 (no filter).
+        entry_trend_max: Maximum composite trend_score for long entry.
+            Range [-1, 1]. Default 1.0 (no filter).
+        exit_on_regime_change: If True, exit when trend_score crosses
+            zero against position direction.
+        combination: How to combine multi-TF regime scores.
+            'hierarchical' or 'weighted_voting'.
+    """
+    enabled: bool = False
+    regime_timeframes: List[str] = field(default_factory=lambda: ['4h', '1d'])
+    entry_trend_min: float = -1.0
+    entry_trend_max: float = 1.0
+    exit_on_regime_change: bool = False
+    combination: str = 'weighted_voting'
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'enabled': self.enabled,
+            'regime_timeframes': list(self.regime_timeframes),
+            'entry_trend_min': self.entry_trend_min,
+            'entry_trend_max': self.entry_trend_max,
+            'exit_on_regime_change': self.exit_on_regime_change,
+            'combination': self.combination,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Optional[Dict[str, Any]]) -> Optional['RegimeGene']:
+        if data is None:
+            return None
+        return cls(
+            enabled=data.get('enabled', False),
+            regime_timeframes=data.get('regime_timeframes', ['4h', '1d']),
+            entry_trend_min=data.get('entry_trend_min', -1.0),
+            entry_trend_max=data.get('entry_trend_max', 1.0),
+            exit_on_regime_change=data.get('exit_on_regime_change', False),
+            combination=data.get('combination', 'weighted_voting'),
+        )
+
+
+@dataclass
 class ConditionGene:
     """Represents an entry/exit condition."""
     
@@ -99,6 +153,11 @@ class StrategyGene:
     #   'specialist': preferred regime segments get higher weight
     #   'exclusive': only evaluate on segments matching preferred regime
     regime_mode: str = 'generalist'
+    
+    # In-strategy runtime regime awareness (Phase 2)
+    # When enabled, the generated strategy computes regime scores at runtime
+    # and uses them to filter entries/exits.
+    regime_gene: Optional[RegimeGene] = None
     
     def __post_init__(self):
         """Validate strategy gene after initialization."""
@@ -168,6 +227,7 @@ class StrategyGene:
             'can_short': self.can_short,
             'preferred_regime': self.preferred_regime,
             'regime_mode': self.regime_mode,
+            'regime_gene': self.regime_gene.to_dict() if self.regime_gene else None,
         }
     
     @classmethod
@@ -236,6 +296,7 @@ class StrategyGene:
             can_short=data.get('can_short', False),
             preferred_regime=data.get('preferred_regime'),
             regime_mode=data.get('regime_mode', 'generalist'),
+            regime_gene=RegimeGene.from_dict(data['regime_gene']) if data.get('regime_gene') else None,
         )
     
     def copy(self) -> 'StrategyGene':
