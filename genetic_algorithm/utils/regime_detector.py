@@ -145,6 +145,11 @@ class RegimeDetector:
             'trend_window': 50,       # Window for trend direction detection
             'trend_threshold': 0.001, # Min rolling return for trend classification
         },
+        'sma_slope': {
+            'sma_period': 20,         # SMA lookback period (use 20 on 1d candles)
+            'slope_window': 5,        # Bars over which to compute slope
+            'tanh_k': 0.3,            # tanh sensitivity multiplier (k * median_slope)
+        },
     }
     
     def __init__(
@@ -164,7 +169,7 @@ class RegimeDetector:
         """
         valid_methods = ['sma_adx', 'adx_di', 'adx_di_hysteresis', 'returns', 
                          'rolling_returns', 'bollinger', 'hmm', 'volatility_cluster',
-                         'ensemble', 'advanced_ensemble', 'ml_lgbm']
+                         'sma_slope', 'ensemble', 'advanced_ensemble', 'ml_lgbm']
         if method not in valid_methods:
             raise ValueError(f"Unknown detection method: {method}. Valid: {valid_methods}")
         
@@ -222,6 +227,8 @@ class RegimeDetector:
             return self._detect_hmm(df)
         elif self.method == 'volatility_cluster':
             return self._detect_volatility_cluster(df)
+        elif self.method == 'sma_slope':
+            return self._detect_sma_slope(df)
         elif self.method == 'ensemble':
             return self._detect_ensemble(df)
         elif self.method == 'advanced_ensemble':
@@ -272,6 +279,47 @@ class RegimeDetector:
         volatility_score = self._compute_volatility_score(df)
 
         return trend_score, volatility_score
+
+    def detect_transition_speed(self, df: pd.DataFrame, lookback: int = 5) -> pd.Series:
+        """
+        Compute regime transition speed — how rapidly the market regime is changing.
+        
+        Returns a Series in [0.0, 1.0] where:
+        - 0.0 = regime is completely stable (no change)
+        - 1.0 = regime is changing at maximum observed rate
+        
+        Calculated as the rolling absolute change in the continuous trend score
+        over `lookback` bars, normalized to [0, 1] via percentile rank.
+        
+        Useful for:
+        - Filtering entries near regime transitions (high speed = risky)
+        - Adjusting position sizing based on regime stability
+        - As an indicator in generated strategies
+        
+        Args:
+            df: DataFrame with OHLCV data
+            lookback: Number of bars to measure change over (default: 5)
+            
+        Returns:
+            pd.Series of transition speed values [0.0, 1.0], same index as df
+        """
+        if df.empty:
+            return pd.Series(dtype=float)
+        
+        trend_score, _ = self.detect_continuous(df)
+        
+        # Rate of change in trend score over lookback bars
+        delta = trend_score.diff(lookback).abs()
+        
+        # Normalize to [0, 1] using rolling percentile rank
+        # This adapts to the data's own volatility characteristics
+        window = max(50, lookback * 10)
+        rank = delta.rolling(window=window, min_periods=lookback).rank(pct=True)
+        
+        # Fill NaN warmup bars with 0.5 (neutral)
+        rank = rank.fillna(0.5)
+        
+        return rank
 
     def _compute_trend_score(self, df: pd.DataFrame) -> pd.Series:
         """
@@ -343,6 +391,9 @@ class RegimeDetector:
             score = (close - sma) / (std_dev * std.replace(0, np.nan))
             return score.clip(-1.0, 1.0)
 
+        elif self.method == 'sma_slope':
+            return self._compute_sma_slope_score(df)
+
         else:
             # Generic fallback: adaptive returns-based continuous score
             # Uses the asset's own rolling volatility to set sensitivity,
@@ -388,12 +439,17 @@ class RegimeDetector:
         n = len(df)
 
         # Sub-detector specs: (method, params, base_weight)
+        # Propagate user-configured params to each sub-detector by namespace
+        # so that custom settings (e.g. adx_period=20) reach the right detector.
+        def _params_for(prefix: str) -> dict:
+            return {k: v for k, v in self.params.items() if k.startswith(prefix)}
+
         sub_specs = [
-            ('adx_di_hysteresis', {}, 2.0),
-            ('rolling_returns', {'window': 50, 'threshold': 0.0005}, 2.0),
-            ('bollinger', {}, 1.0),
-            ('volatility_cluster', {}, 1.0),
-            ('hmm', {}, 1.5),
+            ('adx_di_hysteresis', _params_for('adx_'), 2.0),
+            ('rolling_returns', {**{'window': 50, 'threshold': 0.0005}, **_params_for('rolling_')}, 2.0),
+            ('bollinger', _params_for('bb_'), 1.0),
+            ('volatility_cluster', _params_for('vol_'), 1.0),
+            ('hmm', _params_for('hmm_'), 1.5),
         ]
 
         sub_scores: Dict[str, Tuple[pd.Series, float]] = {}
@@ -574,6 +630,123 @@ class RegimeDetector:
     def _calculate_sma(self, series: pd.Series, period: int) -> pd.Series:
         """Calculate Simple Moving Average."""
         return series.rolling(window=period, min_periods=period).mean()
+    
+    def _detect_sma_slope(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Detect regime using SMA slope thresholding.
+
+        Converts the continuous sma_slope score in [-1, 1] to discrete
+        RegimeType labels:
+          - Bullish:  score > +0.25
+          - Bearish:  score < -0.25
+          - Sideways: |score| <= 0.25
+        NaN warmup bars are labeled UNCERTAIN.
+        """
+        score = self._compute_sma_slope_score(df)
+
+        regime = pd.Series(index=df.index, dtype=object)
+        regime[:] = RegimeType.UNCERTAIN
+
+        valid = score.notna()
+        regime[valid & (score > 0.25)] = RegimeType.BULLISH
+        regime[valid & (score < -0.25)] = RegimeType.BEARISH
+        regime[valid & (score >= -0.25) & (score <= 0.25)] = RegimeType.SIDEWAYS
+
+        return regime
+
+    @staticmethod
+    def _infer_bar_interval_hours(df: pd.DataFrame) -> float:
+        """Infer the bar interval in hours from the DataFrame's datetime index.
+
+        Uses the median difference between consecutive timestamps.
+        Returns 24.0 (daily) if the index has fewer than 2 rows or
+        is not a DatetimeIndex.
+        """
+        if not isinstance(df.index, pd.DatetimeIndex) or len(df) < 2:
+            return 24.0
+        diffs = df.index.to_series().diff().dropna()
+        if diffs.empty:
+            return 24.0
+        median_td = diffs.median()
+        hours = median_td.total_seconds() / 3600.0
+        return max(hours, 0.01)  # safety floor
+
+    def _compute_sma_slope_score(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Compute a continuous trend score using the slope of an SMA.
+
+        The default ``sma_period`` and ``slope_window`` are calibrated for
+        **daily (1d)** candles.  When the data has a sub-daily bar interval
+        the parameters are automatically scaled up so that the SMA and slope
+        window cover equivalent calendar durations (e.g. SMA(20) on 1d
+        becomes SMA(480) on 1h).  This prevents the noisy micro-slopes that
+        caused all-bearish regime detection on hourly data.
+
+        Steps:
+        1. Auto-scale ``sma_period`` and ``slope_window`` to match the
+           data's bar frequency (if sub-daily).
+        2. Compute SMA(sma_period) on close prices.
+        3. Compute percentage slope over ``slope_window`` bars.
+        4. Shift forward by ``sma_period // 2`` to correct for SMA lag.
+        5. Normalize to [-1, 1] via tanh with an adaptive threshold
+           derived from the median absolute slope.
+
+        Parameters (via self.params):
+            sma_period:    SMA lookback in *daily* bars (default 20).
+                           Auto-scaled for sub-daily timeframes.
+            slope_window:  Bars over which to measure slope in *daily* bars
+                           (default 5).  Auto-scaled likewise.
+            tanh_k:        Sensitivity multiplier applied to median absolute
+                           slope for the tanh denominator (default 0.3).
+                           Lower = more sensitive (more bull/bear labels).
+        """
+        close = df['close']
+        sma_period_cfg = self.params.get('sma_period', 20)
+        slope_window_cfg = self.params.get('slope_window', 5)
+        tanh_k = self.params.get('tanh_k', 0.3)
+
+        # ── Auto-scale for sub-daily timeframes ──
+        bar_hours = self._infer_bar_interval_hours(df)
+        if bar_hours < 23.0:  # sub-daily data detected
+            scale = 24.0 / bar_hours
+            sma_period = max(2, int(round(sma_period_cfg * scale)))
+            slope_window = max(1, int(round(slope_window_cfg * scale)))
+            logger.debug(
+                "SMA-slope auto-scaled for %.1fh bars: sma_period %d→%d, "
+                "slope_window %d→%d",
+                bar_hours, sma_period_cfg, sma_period,
+                slope_window_cfg, slope_window,
+            )
+        else:
+            sma_period = sma_period_cfg
+            slope_window = slope_window_cfg
+
+        # 1. SMA
+        sma = self._calculate_sma(close, sma_period)
+
+        # 2. Percentage slope: (sma[t] - sma[t - slope_window]) / sma[t - slope_window]
+        sma_shifted = sma.shift(slope_window)
+        slope = (sma - sma_shifted) / sma_shifted.replace(0, np.nan)
+
+        # 3. Shift forward by half the SMA period to correct for lag
+        # SMA(n) at candle t describes the average of candles [t-n+1 .. t],
+        # whose midpoint is t - n//2. Shifting forward by n//2 aligns the
+        # score with the candle it best describes.
+        shift_amount = sma_period // 2
+        slope = slope.shift(-shift_amount)
+
+        # 4. Adaptive tanh normalization
+        # Use median of absolute slope as the reference scale so that the
+        # score naturally spreads across [-1, +1] regardless of the
+        # asset's average drift. The multiplier k controls sensitivity:
+        # k=0.3 → the tanh denominator is 0.3 * median, meaning a slope
+        # equal to ~0.3 * median maps to ~tanh(1)≈0.76.
+        abs_slope = slope.abs()
+        median_slope = abs_slope.median()
+        threshold = max(median_slope * tanh_k, 1e-8)
+        score = np.tanh(slope / threshold)
+
+        return pd.Series(score, index=df.index).clip(-1.0, 1.0)
     
     def _calculate_ema(self, series: pd.Series, period: int) -> pd.Series:
         """Calculate Exponential Moving Average."""
@@ -1903,9 +2076,25 @@ class RegimeDetector:
         """
         Merge segments shorter than min_duration_days into adjacent same-regime
         neighbors, or into the longer neighbor if regimes differ.
+
+        IMPORTANT: avg_trend_score, avg_volatility_score, and trend_score_std
+        are recomputed as bar-count-weighted averages on every merge so that
+        the final regime re-derivation (which uses avg_trend_score) reflects
+        the actual data composition of the merged segment.
         """
         if not segments:
             return []
+
+        def _weighted_merge_scores(target: dict, source: dict) -> None:
+            """Recompute score fields as bar-count-weighted averages."""
+            tb = target.get('bar_count', 1) or 1
+            sb = source.get('bar_count', 1) or 1
+            total = tb + sb
+            for key in ('avg_trend_score', 'avg_volatility_score', 'trend_score_std'):
+                tv = target.get(key, 0.0)
+                sv = source.get(key, 0.0)
+                target[key] = (tv * tb + sv * sb) / total
+            target['bar_count'] = total
 
         merged = [segments[0]]
         for seg in segments[1:]:
@@ -1917,14 +2106,14 @@ class RegimeDetector:
                 if seg['regime'] == prev['regime']:
                     prev['end'] = seg['end']
                     prev['duration_days'] = (prev['end'] - prev['start']).days
-                    prev['bar_count'] = prev.get('bar_count', 0) + seg.get('bar_count', 0)
+                    _weighted_merge_scores(prev, seg)
                     prev['confidence'] = max(prev['confidence'], seg['confidence'])
                 else:
                     # Different regime, short segment → absorb into previous
                     # (alternative: could absorb into next, but previous is simpler)
                     prev['end'] = seg['end']
                     prev['duration_days'] = (prev['end'] - prev['start']).days
-                    prev['bar_count'] = prev.get('bar_count', 0) + seg.get('bar_count', 0)
+                    _weighted_merge_scores(prev, seg)
                     # Reduce confidence since we're mixing regimes
                     prev['confidence'] *= 0.9
             else:
@@ -1938,7 +2127,7 @@ class RegimeDetector:
                 if prev['duration_days'] < min_duration_days:
                     seg['start'] = prev['start']
                     seg['duration_days'] = (seg['end'] - seg['start']).days
-                    seg['bar_count'] = prev.get('bar_count', 0) + seg.get('bar_count', 0)
+                    _weighted_merge_scores(seg, prev)
                     seg['confidence'] *= 0.9
                     final[-1] = seg
                 else:

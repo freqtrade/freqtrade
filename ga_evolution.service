@@ -1,0 +1,38 @@
+[Unit]
+Description=FreqTrade Genetic Algorithm Evolution
+After=network.target
+Documentation=https://github.com/your-repo/freqtradeForkGA
+
+[Service]
+Type=simple
+User=kali
+WorkingDirectory=/home/kali/trading/freqtradeForkGA
+Environment="PATH=/home/kali/trading/freqtradeForkGA/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="VIRTUAL_ENV=/home/kali/trading/freqtradeForkGA/.venv"
+
+# Main command — uses server-optimized config, non-interactive
+ExecStart=/home/kali/trading/freqtradeForkGA/.venv/bin/python \
+    genetic_algorithm/run_ga.py \
+    --config genetic_algorithm/config/ga_config_server_6core.yaml \
+    --no-monitor --yes
+
+# On crash: attempt to resume from latest checkpoint
+# Uses 'on-failure' so intentional stops (convergence, max_runtime) stay stopped
+Restart=on-failure
+RestartSec=30
+
+# Graceful shutdown: send SIGINT first (triggers checkpoint save),
+# wait 60s for it to write, then SIGTERM
+KillSignal=SIGINT
+TimeoutStopSec=60
+
+# Resource limits
+MemoryMax=14G
+CPUQuota=500%
+
+# Logging
+StandardOutput=append:/home/kali/trading/freqtradeForkGA/genetic_algorithm/logs/ga_server.log
+StandardError=append:/home/kali/trading/freqtradeForkGA/genetic_algorithm/logs/ga_server_error.log
+
+[Install]
+WantedBy=multi-user.target

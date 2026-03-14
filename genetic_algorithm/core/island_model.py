@@ -31,8 +31,10 @@ import logging
 import os
 import signal
 import time
+import threading
 import yaml
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
@@ -199,8 +201,8 @@ class IslandModelEvolution:
 
         # Score-band config (new default segmentation mode)
         bands_cfg = regime_det_cfg.get('regime_bands', {})
-        self.regime_bullish_min = float(bands_cfg.get('bullish_min', 0.44))
-        self.regime_bearish_max = float(bands_cfg.get('bearish_max', -0.37))
+        self.regime_bullish_min = float(bands_cfg.get('bullish_min', 0.40))
+        self.regime_bearish_max = float(bands_cfg.get('bearish_max', -0.40))
         # Segment mode: 'score_band' (default) or 'discrete' (legacy)
         self.segment_mode = regime_det_cfg.get('segment_mode', 'score_band')
 
@@ -245,6 +247,13 @@ class IslandModelEvolution:
             max_size=hof_cfg.get('max_size', 50),
             min_fitness=hof_cfg.get('min_fitness', 0.0),
         )
+
+        # ── Parallel island evolution ──
+        self.parallel_islands = island_cfg.get('parallel_islands', False)
+        # Thread lock for shared state (hall_of_fame, island_stats, migration_history)
+        self._hof_lock = threading.Lock()
+        self._stats_lock = threading.Lock()
+        self._migration_lock = threading.Lock()
 
         # Runtime state
         self.islands: Dict[str, GeneticAlgorithm] = {}
@@ -553,13 +562,14 @@ class IslandModelEvolution:
                 "Using score-band segmentation: bull>=%.2f, bear<=%.2f",
                 self.regime_bullish_min, self.regime_bearish_max,
             )
+            merge_days = 7
             raw_segments = detector.classify_periods_by_score(
                 df=df,
                 bullish_min=self.regime_bullish_min,
                 bearish_max=self.regime_bearish_max,
-                min_segment_days=max(14, self.regime_period_days // 2),
+                min_segment_days=merge_days,          # aligned with merge to avoid dead zone
                 max_segment_days=self.regime_period_days * 3,
-                merge_threshold_days=7,
+                merge_threshold_days=merge_days,
                 embargo_days=3,
             )
         else:
@@ -1288,6 +1298,21 @@ class IslandModelEvolution:
             llm_cfg['island_regime'] = ic.data_regime.lower()
             llm_cfg['island_name'] = ic.name
 
+        # ── Parallel island partitioning ──
+        # When running islands in parallel, split workers across islands
+        # so total process count doesn't exceed CPU count.
+        if self.parallel_islands:
+            par_cfg = cfg.get('parallel_evaluation', {})
+            if par_cfg.get('enabled', False):
+                total_workers = par_cfg.get('num_workers') or max(1, os.cpu_count() - 1)
+                num_islands = len(self.island_configs)
+                workers_per_island = max(1, total_workers // num_islands)
+                par_cfg['num_workers'] = workers_per_island
+                self.logger.debug(
+                    "Island %s: %d workers (total %d / %d islands)",
+                    ic.name, workers_per_island, total_workers, num_islands,
+                )
+
         return cfg
 
     def _create_island_ga(
@@ -1709,8 +1734,9 @@ class IslandModelEvolution:
         self.logger.info("")
         self.logger.info("─" * 70)
         self.logger.info(
-            "EVOLVING %d ISLANDS × %d GENERATIONS",
+            "EVOLVING %d ISLANDS × %d GENERATIONS%s",
             len(self.islands), self.generations,
+            " (PARALLEL)" if self.parallel_islands else "",
         )
         self.logger.info("─" * 70)
 
@@ -1732,12 +1758,14 @@ class IslandModelEvolution:
             self.monitor.on_generation_start(gen, self.generations)
 
             # Evolve each island for one generation
-            for ic in self.island_configs:
-                island_name = ic.name
-                ga = self.islands[island_name]
-                pop = self.island_populations[island_name]
-
-                self._evolve_island_one_generation(ga, pop, island_name, gen)
+            if self.parallel_islands and len(self.island_configs) > 1:
+                self._evolve_all_islands_parallel(gen)
+            else:
+                for ic in self.island_configs:
+                    island_name = ic.name
+                    ga = self.islands[island_name]
+                    pop = self.island_populations[island_name]
+                    self._evolve_island_one_generation(ga, pop, island_name, gen)
 
             # Migration: specialist ↔ specialist
             if (
@@ -2001,21 +2029,23 @@ class IslandModelEvolution:
         best = population.get_best(1)
         if best:
             best_ind = best[0]
-            ist = self.island_stats[island_name]
-            if best_ind.raw_fitness and best_ind.raw_fitness > ist.best_fitness:
-                ist.best_fitness = best_ind.raw_fitness
-                profit = best_ind.metrics.get('profit', 0)
-                ist.best_profit = profit
-                self.logger.info(
-                    "  [%s] NEW BEST: fitness=%.4f profit=%.2f%%",
-                    island_name, ist.best_fitness, profit,
-                )
-            ist.avg_fitness = stats.avg_fitness
-            ist.generations_completed = generation + 1
+            with self._stats_lock:
+                ist = self.island_stats[island_name]
+                if best_ind.raw_fitness and best_ind.raw_fitness > ist.best_fitness:
+                    ist.best_fitness = best_ind.raw_fitness
+                    profit = best_ind.metrics.get('profit', 0)
+                    ist.best_profit = profit
+                    self.logger.info(
+                        "  [%s] NEW BEST: fitness=%.4f profit=%.2f%%",
+                        island_name, ist.best_fitness, profit,
+                    )
+                ist.avg_fitness = stats.avg_fitness
+                ist.generations_completed = generation + 1
 
         # Step 4: Update hall of fame
         try:
-            ga.hall_of_fame.update(population, generation)
+            with self._hof_lock:
+                ga.hall_of_fame.update(population, generation)
         except Exception as e:
             self.logger.warning("Hall of fame update failed for %s: %s", island_name, e)
 
@@ -2030,7 +2060,8 @@ class IslandModelEvolution:
 
         # Step 6: Record generation stats for this island
         stats.generation = generation
-        self.generation_stats[island_name].append(stats)
+        with self._stats_lock:
+            self.generation_stats[island_name].append(stats)
 
         # Step 6b: Record LLM strategy performance for feedback loop
         if ga.llm_enabled and ga.strategy_designer and ga.strategy_designer.enabled:
@@ -2065,6 +2096,51 @@ class IslandModelEvolution:
             "[SUMMARY] Gen %d/%d (%.1fs): %s",
             gen + 1, self.generations, elapsed, " | ".join(parts),
         )
+
+    def _evolve_all_islands_parallel(self, generation: int):
+        """
+        Evolve ALL islands for one generation concurrently using threads.
+
+        Each island's GA already uses its own ``ProcessPoolExecutor`` for
+        backtesting, so we use threads here (not processes) to orchestrate
+        island-level parallelism.  The per-island worker pools are partitioned
+        in ``_build_island_config`` so that total process count stays within
+        CPU core limits.
+
+        Migration is NOT done here — it runs synchronously on the main
+        thread after this method returns (requires all populations to be
+        evaluated).
+        """
+        def _evolve_single(ic: IslandConfig):
+            """Thread target: evolve one island for one generation."""
+            island_name = ic.name
+            ga = self.islands[island_name]
+            pop = self.island_populations[island_name]
+            try:
+                self._evolve_island_one_generation(ga, pop, island_name, generation)
+            except Exception as e:
+                self.logger.error(
+                    "[PARALLEL-ISLAND] Island %s gen %d failed: %s",
+                    island_name, generation, e,
+                )
+
+        with ThreadPoolExecutor(
+            max_workers=len(self.island_configs),
+            thread_name_prefix="island",
+        ) as executor:
+            futures = {
+                executor.submit(_evolve_single, ic): ic.name
+                for ic in self.island_configs
+            }
+            for future in as_completed(futures):
+                island_name = futures[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    self.logger.error(
+                        "[PARALLEL-ISLAND] Island %s raised: %s",
+                        island_name, e,
+                    )
 
     # ------------------------------------------------------------------
     # Final report (legacy — kept for backward compatibility)

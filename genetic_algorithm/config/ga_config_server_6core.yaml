@@ -1,0 +1,280 @@
+# Server-Optimized GA Configuration — 6-Core i5 / 16 GB RAM / NVMe
+#
+# Tuned for: i5-9500T (6 real cores), 16 GB RAM, NVMe SSD
+# Goal: Maximize evolution quality per server-hour
+# Key differences from production config:
+#   - Parallel evaluation ENABLED (5 workers = cores - 1)
+#   - Population 50 (sweet spot for 5-worker throughput)
+#   - 30 generations (overnight runtime budget with parallel)
+#   - 3-year timerange for statistical significance
+#   - More frequent checkpoints (every 3 gens for remote safety)
+#   - 12-hour safety cap
+#   - Memory-aware worker scaling enabled
+#
+# Expected runtime: ~6-10 hours (pop 50 × 30 gens with walk-forward + parallel)
+#
+# Usage:
+#   cd /home/kali/trading/freqtradeForkGA
+#   source .venv/bin/activate
+#   python genetic_algorithm/run_ga.py \
+#     --config genetic_algorithm/config/ga_config_server_6core.yaml \
+#     --no-monitor --yes
+#
+# Remote monitoring:
+#   ssh user@server 'tail -f /home/kali/trading/freqtradeForkGA/genetic_algorithm/logs/ga_server.log'
+#   # Or via web dashboard: http://server-ip:8501
+
+# === Genetic Algorithm Parameters ===
+genetic_algorithm:
+  random_seed: null
+
+  # Population & generations — tuned for 5-worker parallelism
+  # Each gen evaluates ~46 new individuals (50 - 4 elites)
+  # With 5 workers: ~10 evaluation batches per generation
+  population_size: 50
+  generations: 30
+
+  # Variation operators
+  mutation_rate: 0.15
+  crossover_rate: 0.7
+
+  # Elitism — preserve top ~10%
+  elite_size: 5
+
+  # Tournament selection with size 3
+  tournament_size: 3
+  selection_method: 'tournament'
+
+  # Convergence — more patience with larger pop + more gens
+  convergence_patience: 15
+
+  # Safety cap — 12 hours max
+  max_runtime_minutes: 720
+
+  # Adaptive mutation
+  adaptive_mutation: true
+  max_adaptation_factor: 2.5
+  adaptation_step: 0.1
+
+  # Diversity preservation
+  fitness_sharing: true
+  sharing_radius: 0.3
+  diversity_threshold: 0.15
+  allow_self_crossover: false
+
+  # Random immigrants — 10% of population
+  random_immigrants: 5
+
+  # Single-objective weighted fitness
+  mode: 'single_objective'
+
+# === NSGA-II Multi-Objective Configuration ===
+nsga2:
+  objectives:
+    - name: 'profit'
+      type: 'maximize'
+      scale: 100.0
+    - name: 'max_drawdown'
+      type: 'minimize'
+      scale: 1.0
+    - name: 'sharpe_ratio'
+      type: 'maximize'
+      scale: 3.0
+  pareto_front_size: 20
+  crowding_distance_percentile: 0.1
+  # Min trades constraint for NSGA-II (strategies below this get worst-case objectives)
+  min_trades: 8
+
+# === Fitness Function Weights ===
+# Consistency-focused (same as production)
+fitness_weights:
+  profit: 0.22
+  sharpe_ratio: 0.16
+  sortino_ratio: 0.16
+  profit_factor: 0.10
+  drawdown: 0.20
+  win_rate: 0.08
+  trade_frequency: 0.08
+
+# Fitness penalties
+fitness_penalties:
+  min_trades: 8
+  max_drawdown: 0.20
+  min_win_rate: 0.35
+  complexity_weight: 0.015
+
+# === Backtesting Configuration ===
+backtesting:
+  # 3 YEARS of data — much longer than production for statistical significance
+  # Helps island specialists avoid overfitting on narrow windows
+  timerange: "20230101-20260228"
+
+  stake_amount: 16
+  pairs:
+    - "BTC/USDT"
+    - "ETH/USDT"
+
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: true
+  enable_cache: true
+  timeout: 60
+
+# === Walk-Forward Optimization ===
+walk_forward:
+  enabled: true
+  train_days: 60
+  validation_days: 20
+  step_days: 15
+  mode: 'rolling'
+  aggregation: 'harmonic_mean'
+  min_train_trades: 5
+
+# === Strategy Constraints ===
+strategy_constraints:
+  min_trades: 12
+  max_drawdown: 0.20
+  min_win_rate: 0.35
+  timeframes: ["15m", "1h"]
+  stoploss_range: [-0.15, -0.05]
+  roi_range: [0.01, 0.08]
+  max_open_trades_range: [1, 5]
+
+# === Multi-Timeframe ===
+multi_timeframe:
+  enabled: true
+  available: ['1h', '4h']
+  max_timeframes: 2
+  higher_timeframe_preference:
+    - 'EMA'
+    - 'SMA'
+    - 'BBANDS'
+    - 'ATR'
+    - 'ADX'
+    - 'RSI'
+
+# === Indicators ===
+indicators:
+  available:
+    - "RSI"
+    - "MACD"
+    - "BBANDS"
+    - "EMA"
+    - "SMA"
+    - "STOCH"
+    - "ATR"
+    - "ADX"
+    - "CCI"
+  max_per_strategy: 4
+  min_per_strategy: 2
+
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 40]
+    sell_threshold: [60, 80]
+  MACD:
+    fast_period: [8, 21]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [15, 30]
+    std_dev: [1.5, 3.0]
+  EMA:
+    period: [5, 50]
+  SMA:
+    period: [10, 100]
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [20, 40]
+    d_threshold: [60, 80]
+  ATR:
+    period: [10, 20]
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-200, -100]
+    sell_threshold: [100, 200]
+
+# === Storage Configuration ===
+storage:
+  database: "genetic_algorithm/data/strategies.db"
+  strategy_dir: "user_data/strategies/ga_generated"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints"
+  # More frequent checkpoints for remote/unattended runs
+  checkpoint_interval: 3
+  keep_history: true
+
+# === Logging Configuration ===
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/ga_server.log"
+  console: true
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# === Visualization ===
+visualization:
+  enabled: true
+  update_interval: 1
+  plots:
+    - "fitness_evolution"
+    - "diversity"
+    - "top_strategies"
+  output_dir: "genetic_algorithm/plots"
+
+# === Parallel Evaluation — ENABLED for server ===
+parallel_evaluation:
+  enabled: true
+  # null = auto-detect (cpu_count - 1 = 5 on 6-core)
+  # Set explicitly if memory-aware scaling should cap lower
+  num_workers: null
+  backtest_timeout: 120
+  # Memory-aware scaling: cap workers if available RAM is low
+  memory_aware: true
+  # Estimated MB per worker process (FreqTrade backtester + data)
+  estimated_worker_memory_mb: 800
+  # Minimum free RAM to maintain (MB) — for OS + main process
+  min_free_ram_mb: 2048
+
+# === Advanced Features ===
+advanced:
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: true
+
+  llm:
+    enabled: true
+    provider: "groq"
+    api_key: ""
+    model: "llama-3.3-70b-versatile"
+    temperature: 0.7
+    max_retries: 3
+    timeout: 60
+    seed_strategies_per_generation: 3
+    design_prompt:
+      market_context: "crypto"
+      risk_profile: "moderate"
+      optimization_focus: "consistency"
+      include_top_performers: true
+      diversity_boost: true
+
+  island_model:
+    enabled: false
+    num_islands: 4
+    migration_interval: 5
+    migration_size: 5
+
+# === Web Dashboard ===
+web_dashboard:
+  host: "0.0.0.0"
+  port: 8501
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:5173"
+  log_level: "info"
+  open_browser: false
+  save_generation_snapshots: true
+  max_snapshot_generations: 500

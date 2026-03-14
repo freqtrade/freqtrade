@@ -105,7 +105,7 @@ def test_supertrend_generates_direction_code():
     # Must have direction state machine elements
     assert 'supertrend_direction' in code, "SuperTrend should generate direction column"
     assert '_st_dir' in code, "SuperTrend should have direction tracking variable"
-    assert 'prev' in code, "SuperTrend should reference previous direction"
+    assert 'i-1' in code, "SuperTrend should reference previous direction via numpy indexing"
     assert 'supertrend_upper' in code
     assert 'supertrend_lower' in code
     print("✓ SuperTrend generates direction state machine code")

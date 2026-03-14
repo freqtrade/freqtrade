@@ -49,6 +49,7 @@ class FitnessEvaluator:
         self.fitness_penalties = config.get('fitness_penalties', {})
         self.backtest_config = config.get('backtesting', {})
         self.walk_forward_config = config.get('walk_forward', {})
+        self.monte_carlo_config = config.get('monte_carlo', {})
         
         # Fitness bounds for clamping extreme values
         fitness_bounds = config.get('fitness_bounds', {})
@@ -156,6 +157,27 @@ class FitnessEvaluator:
             
             # Calculate fitness (includes complexity penalty)
             fitness = self.calculate_fitness(metrics, strategy_gene)
+            
+            # Monte Carlo robustness adjustment (optional, config-driven)
+            mc_cfg = self.monte_carlo_config
+            if mc_cfg.get('enabled', False) and backtest_result.trade_profit_ratios:
+                mc_min_fitness = mc_cfg.get('min_fitness_threshold', 0.0)
+                if fitness >= mc_min_fitness:
+                    try:
+                        from genetic_algorithm.evaluation.monte_carlo import run_monte_carlo
+                        trades_for_mc = [{'profit_ratio': p} for p in backtest_result.trade_profit_ratios]
+                        mc_result = run_monte_carlo(trades_for_mc, mc_cfg)
+                        # Apply robustness score as a multiplier: (0.5 + 0.5 * score)
+                        # Score of 1.0 → no penalty; score of 0.0 → 50% penalty
+                        mc_multiplier = 0.5 + 0.5 * mc_result.robustness_score
+                        fitness *= mc_multiplier
+                        metrics['mc_robustness'] = mc_result.robustness_score
+                        metrics['mc_multiplier'] = mc_multiplier
+                        metrics['mc_profit_p5'] = mc_result.profit_p5
+                        logger.debug(f"{generated_name}: MC robustness={mc_result.robustness_score:.2%}, "
+                                   f"multiplier={mc_multiplier:.3f}")
+                    except Exception as e:
+                        logger.debug(f"Monte Carlo evaluation failed: {e}")
             
             # Log at debug level - summary is logged by evolution.py
             logger.debug(f"{generated_name}: fitness={fitness:.4f}, profit={metrics['profit']:.2f}%, trades={metrics['num_trades']}")
@@ -662,6 +684,10 @@ class FitnessEvaluator:
                 mean_pp = sum(pair_profits) / len(pair_profits)
                 metrics['pair_profit_std'] = (sum((p - mean_pp) ** 2 for p in pair_profits) / len(pair_profits)) ** 0.5
         
+        # Include tail-risk metrics
+        metrics['max_consecutive_losses'] = result.max_consecutive_losses
+        metrics['max_drawdown_duration_days'] = result.max_drawdown_duration_days
+
         # Include monthly profits for stability analysis
         if result.monthly_profits and len(result.monthly_profits) > 1:
             metrics['monthly_profits'] = result.monthly_profits
@@ -740,17 +766,30 @@ class FitnessEvaluator:
         norm_drawdown = max(0, min(norm_drawdown, 1))
         
         # Get weights with defaults (adjusted to include new metrics)
+        # Profit is heavily weighted to ensure fitness correlates with actual profitability.
+        # Benchmark analysis (2026-03-12) showed high-fitness strategies with negative
+        # profit when profit weight was 0.22 — raised to 0.35 to fix this misalignment.
         w = self.fitness_weights
-        w_profit = w.get('profit', 0.22)
-        w_sharpe = w.get('sharpe_ratio', 0.16)
-        w_sortino = w.get('sortino_ratio', 0.13)
+        w_profit = w.get('profit', 0.35)
+        w_sharpe = w.get('sharpe_ratio', 0.12)
+        w_sortino = w.get('sortino_ratio', 0.10)
         w_profit_factor = w.get('profit_factor', 0.10)
         w_drawdown = w.get('drawdown', 0.13)
-        w_win_rate = w.get('win_rate', 0.07)
+        w_win_rate = w.get('win_rate', 0.05)
         w_trades = w.get('trade_frequency', 0.07)
         w_stability = w.get('monthly_stability', 0.06)
         w_cross_pair = w.get('cross_pair', 0.06)
+        w_dd_duration = w.get('drawdown_duration', 0.02)
+        w_consec_losses = w.get('consecutive_losses', 0.02)
         
+        # === Tail-risk scores ===
+        # Drawdown duration: 0 days = 1.0, 90+ days = 0.0 (linear)
+        dd_duration = metrics.get('max_drawdown_duration_days', 0)
+        norm_dd_duration = max(0.0, 1.0 - dd_duration / 90.0)
+        # Consecutive losses: 0 = 1.0, 10+ = 0.0 (linear)
+        consec_losses = metrics.get('max_consecutive_losses', 0)
+        norm_consec_losses = max(0.0, 1.0 - consec_losses / 10.0)
+
         # === Monthly stability score ===
         # Lower monthly return std = higher stability = better
         monthly_return_std = metrics.get('monthly_return_std', 0)
@@ -786,7 +825,9 @@ class FitnessEvaluator:
             'win_rate': w_win_rate,
             'trade_frequency': w_trades,
             'monthly_stability': w_stability,
-            'cross_pair': w_cross_pair
+            'cross_pair': w_cross_pair,
+            'drawdown_duration': w_dd_duration,
+            'consecutive_losses': w_consec_losses
         }
         total_weight = sum(weights_dict.values())
         if total_weight > 0:
@@ -799,6 +840,8 @@ class FitnessEvaluator:
             w_trades = weights_dict['trade_frequency'] / total_weight
             w_stability = weights_dict['monthly_stability'] / total_weight
             w_cross_pair = weights_dict['cross_pair'] / total_weight
+            w_dd_duration = weights_dict['drawdown_duration'] / total_weight
+            w_consec_losses = weights_dict['consecutive_losses'] / total_weight
         
         # Calculate weighted fitness
         fitness = (
@@ -810,7 +853,9 @@ class FitnessEvaluator:
             w_win_rate * norm_win_rate + 
             w_trades * norm_trades +
             w_stability * norm_stability +
-            w_cross_pair * norm_cross_pair
+            w_cross_pair * norm_cross_pair +
+            w_dd_duration * norm_dd_duration +
+            w_consec_losses * norm_consec_losses
         )
         
         # ==================================================================================
@@ -915,15 +960,17 @@ class FitnessEvaluator:
         win_rate = metrics.get('win_rate', 0)
         
         # Soft penalty for low trade count (gradual instead of harsh)
-        min_trades = penalties.get('min_trades', 5)
+        # Raised default from 5→15 based on benchmark analysis: strategies with
+        # 5-10 trades got inflated fitness despite being statistically meaningless.
+        min_trades = penalties.get('min_trades', 15)
         if num_trades < min_trades:
             if num_trades == 0:
-                fitness *= 0.1  # Very low fitness for no trades
+                fitness *= 0.01  # Near-zero fitness for no trades
             else:
-                # Gradual penalty: 50% at 1 trade, increasing to full at min_trades
-                # Formula: 0.5 + (num_trades / min_trades) * 0.5
-                # E.g., with min_trades=5: 1 trade=60%, 2=70%, 3=80%, 4=90%, 5+=100%
-                trade_penalty = 0.5 + (num_trades / min_trades) * 0.5
+                # Gradual penalty: 40% at 1 trade, increasing to full at min_trades
+                # Formula: 0.4 + (num_trades / min_trades) * 0.6
+                # E.g., with min_trades=15: 1 trade=44%, 5=60%, 10=80%, 15+=100%
+                trade_penalty = 0.4 + (num_trades / min_trades) * 0.6
                 fitness *= trade_penalty
         
         # Penalty for excessive drawdown

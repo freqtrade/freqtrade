@@ -26,7 +26,8 @@ def download_data(
     timeframes: list = None,
     exchange: str = "binance",
     days: int = 90,
-    datadir: Path = None
+    datadir: Path = None,
+    timerange: str = None,
 ):
     """
     Download real market data from exchange.
@@ -37,6 +38,8 @@ def download_data(
         exchange: Exchange name (default: binance)
         days: Number of days of historical data to download
         datadir: Directory to save data (default: user_data/data/<exchange>)
+        timerange: Explicit timerange string (e.g., '20230101-20260314').
+                   If provided, overrides 'days'.
     """
     from freqtrade.configuration import Configuration
     from freqtrade.data.history import download_data_main
@@ -55,9 +58,10 @@ def download_data(
     datadir.mkdir(parents=True, exist_ok=True)
     
     # Calculate timerange
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=days)
-    timerange = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
+    if timerange is None:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+        timerange = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
     
     logger.info(f"Downloading data from {exchange}")
     logger.info(f"Pairs: {pairs}")
@@ -140,36 +144,68 @@ def download_data(
 
 def main():
     """Main entry point."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="FreqTrade GA - Market Data Downloader")
+    parser.add_argument(
+        '--mode', choices=['default', 'server'], default='default',
+        help="'default' downloads 90 days of 3 timeframes. "
+             "'server' downloads 3+ years of all timeframes needed for GA + regime detection."
+    )
+    parser.add_argument('--timerange', type=str, default=None,
+                        help="Explicit timerange, e.g. '20230101-20260314'")
+    parser.add_argument('--days', type=int, default=None,
+                        help="Days of history (ignored if --timerange is set)")
+    args = parser.parse_args()
+
     print("=" * 80)
     print("FreqTrade GA - Market Data Downloader")
     print("=" * 80)
     print()
-    
-    # Default configuration - can be modified based on needs
-    pairs = [
-        'BTC/USDT',
-        'ETH/USDT',
-        'BNB/USDT',
-        'SOL/USDT',
-        'ADA/USDT'
-    ]
-    
-    timeframes = ['5m', '15m', '1h']
-    exchange = 'binance'
-    days = 90  # 3 months of data
-    
+
+    if args.mode == 'server':
+        # Full server download: all pairs × all timeframes × 3+ years
+        pairs = [
+            'BTC/USDT',
+            'ETH/USDT',
+            'BNB/USDT',
+            'SOL/USDT',
+            'ADA/USDT',
+        ]
+        timeframes = ['5m', '15m', '30m', '1h', '4h', '1d']
+        exchange = 'binance'
+        timerange_str = args.timerange or '20230101-20260314'
+        days = None  # not used when timerange is explicit
+    else:
+        pairs = [
+            'BTC/USDT',
+            'ETH/USDT',
+            'BNB/USDT',
+            'SOL/USDT',
+            'ADA/USDT',
+        ]
+        timeframes = ['5m', '15m', '1h']
+        exchange = 'binance'
+        timerange_str = args.timerange
+        days = args.days or 90
+
     print(f"Configuration:")
+    print(f"  Mode: {args.mode}")
     print(f"  Exchange: {exchange}")
     print(f"  Pairs: {', '.join(pairs)}")
     print(f"  Timeframes: {', '.join(timeframes)}")
-    print(f"  Days of history: {days}")
+    if timerange_str:
+        print(f"  Timerange: {timerange_str}")
+    else:
+        print(f"  Days of history: {days}")
     print()
     
     success = download_data(
         pairs=pairs,
         timeframes=timeframes,
         exchange=exchange,
-        days=days
+        days=days or 90,
+        timerange=timerange_str,
     )
     
     if success:

@@ -160,8 +160,9 @@ def print_top_strategies(top_strategies: list, strategy_generator: StrategyGener
         metrics = individual.metrics
         
         # Header and fitness
+        fitness_str = f"{individual.fitness:.4f}" if individual.fitness is not None else "N/A"
         print(f"RANK {rank}: Strategy Gen{gene.generation}_Ind{gene.individual_id}")
-        print(f"{'-'*80}\n  Fitness Score:      {individual.fitness:.4f}\n")
+        print(f"{'-'*80}\n  Fitness Score:      {fitness_str}\n")
         
         # Performance metrics (consolidated print statements)
         print(f"  Performance Metrics:\n"
@@ -293,7 +294,7 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict,
             metrics = individual.metrics
             
             f.write(f"Rank {rank}: Gen{gene.generation}_Ind{gene.individual_id}\n")
-            f.write(f"  Raw Fitness: {individual.raw_fitness:.4f}\n")
+            f.write(f"  Raw Fitness: {(individual.raw_fitness if individual.raw_fitness is not None else 0):.4f}\n")
             f.write(f"  Shared Fitness: {individual.fitness:.4f}\n")
             f.write(f"  Profit: {metrics.get('profit', 0):.2f}%\n")
             f.write(f"  Sharpe Ratio: {metrics.get('sharpe_ratio', 0):.2f}\n")
@@ -692,6 +693,13 @@ def main():
         print("❌ Config validation failed. Please fix the issues above.")
         return 1
     
+    # Run richer config validation (walk-forward bounds, weight polarity, etc.)
+    try:
+        from genetic_algorithm.utils.config_validator import validate_and_log
+        validate_and_log(config)
+    except Exception as e:
+        logger.debug(f"Extended config validation skipped: {e}")
+    
     if args.validate_only:
         print("✅ Config validation passed!")
         return 0
@@ -885,15 +893,17 @@ def main():
                 
                 # Calculate degradation from evolution fitness to holdout fitness
                 evo_fitness = individual.fitness
-                if evo_fitness > 0:
+                if evo_fitness is not None and holdout_fitness is not None and evo_fitness > 0:
                     degradation = (evo_fitness - holdout_fitness) / evo_fitness
                 else:
                     degradation = 0
                 individual.metrics['holdout_degradation'] = degradation
-                
+
+                evo_fitness_str = f"{evo_fitness:.4f}" if evo_fitness is not None else "N/A"
+                holdout_fitness_str = f"{holdout_fitness:.4f}" if holdout_fitness is not None else "N/A"
                 status = "✓" if degradation < 0.3 else "⚠️"
                 print(f"  {status} Rank {rank}: "
-                      f"Evo fitness={evo_fitness:.4f} → Holdout fitness={holdout_fitness:.4f} "
+                      f"Evo fitness={evo_fitness_str} → Holdout fitness={holdout_fitness_str} "
                       f"(degradation={degradation:.1%})")
                 print(f"      Holdout: profit={holdout_metrics.get('profit', 0):.2f}%, "
                       f"trades={holdout_metrics.get('num_trades', 0)}, "
@@ -962,7 +972,7 @@ def main():
                             timerange_override=block_tr,
                             strategy_max_open_trades=gene.max_open_trades,
                         )
-                        block_profit = bt_result.metrics.get('profit', 0.0) if bt_result.success else 0.0
+                        block_profit = bt_result.profit_percent if bt_result.success else 0.0
                         block_profits.append(block_profit)
 
                     strategy_block_results[strategy_id] = np.array(block_profits)

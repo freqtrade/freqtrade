@@ -63,6 +63,13 @@ class BacktestResult:
     # Monthly return breakdown for stability analysis
     monthly_profits: Optional[list] = None  # List of monthly profit percentages
     
+    # Tail-risk metrics
+    max_consecutive_losses: int = 0  # Longest streak of consecutive losing trades
+    max_drawdown_duration_days: float = 0.0  # Days from drawdown start to recovery (or end of data)
+    
+    # Lightweight trade profit list for Monte Carlo analysis
+    trade_profit_ratios: Optional[list] = None  # List of per-trade profit ratios
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -430,6 +437,19 @@ class DirectBacktester:
                 logger.warning(f"Could not derive stake currency from pairs {config_pairs}, "
                              f"defaulting to '{stake_currency}'")
             
+            # Determine trading mode from short_selling config
+            short_selling_cfg = self.config.get('short_selling', {})
+            if short_selling_cfg.get('enabled', False):
+                _trading_mode_str = 'futures'
+                _margin_mode_str = 'isolated'
+                _trading_mode_enum = TradingMode.FUTURES
+                _candle_type = CandleType.FUTURES
+            else:
+                _trading_mode_str = 'spot'
+                _margin_mode_str = ''
+                _trading_mode_enum = TradingMode.SPOT
+                _candle_type = CandleType.SPOT
+
             # Create exchange configuration
             exchange_config = {
                 'exchange': {
@@ -441,8 +461,8 @@ class DirectBacktester:
                 },
                 'datadir': datadir,
                 'user_data_dir': self.freqtrade_root / "user_data",
-                'trading_mode': 'spot',
-                'margin_mode': '',
+                'trading_mode': _trading_mode_str,
+                'margin_mode': _margin_mode_str,
                 'stake_currency': stake_currency,
                 'dry_run': True,
                 'runmode': 'other',
@@ -478,8 +498,8 @@ class DirectBacktester:
                 datadir=datadir,
                 timerange=ft_timerange,
                 erase=False,
-                trading_mode=TradingMode.SPOT,
-                candle_types=[CandleType.SPOT],
+                trading_mode=_trading_mode_enum,
+                candle_types=[_candle_type],
             )
             
             logger.info("✓ Data download completed successfully")
@@ -557,9 +577,6 @@ class DirectBacktester:
                 logger.debug(f"Using cached result for {strategy_name}")
                 return cached_result
         
-        # Per-backtest timeout from config (default 120s)
-        backtest_timeout = self.backtest_config.get('timeout', 120)
-        
         # Try multiple times in case of transient errors
         last_error = None
         for attempt in range(max_retries + 1):
@@ -568,37 +585,12 @@ class DirectBacktester:
                     logger.info(f"Retry {attempt}/{max_retries} for {strategy_name}")
                     time.sleep(1)
                 
-                # Run backtest with timeout using a daemon thread
-                # Daemon thread is abandoned (not joined) on timeout so execution continues
-                import threading
-                result_container = [None]
-                error_container = [None]
-                
-                def _run_with_capture():
-                    try:
-                        result_container[0] = self._run_backtest_direct(
-                            strategy_code, strategy_name, strategy_max_open_trades,
-                            timerange_override=timerange_override,
-                        )
-                    except Exception as e:
-                        error_container[0] = e
-                
-                thread = threading.Thread(target=_run_with_capture, daemon=True)
-                thread.start()
-                thread.join(timeout=backtest_timeout)
-                
-                if thread.is_alive():
-                    # Thread is still running — abandon it (daemon thread will be cleaned up on exit)
-                    logger.warning(f"Backtest TIMEOUT after {backtest_timeout}s for {strategy_name}")
-                    result = BacktestResult(
-                        success=False,
-                        strategy_name=strategy_name,
-                        error_message=f"Timeout after {backtest_timeout}s"
-                    )
-                elif error_container[0] is not None:
-                    raise error_container[0]
-                else:
-                    result = result_container[0]
+                result = self._run_backtest_direct(
+                    strategy_code,
+                    strategy_name,
+                    strategy_max_open_trades,
+                    timerange_override=timerange_override,
+                )
                 
                 result.execution_time = time.time() - start_time
                 
@@ -849,6 +841,64 @@ class DirectBacktester:
                     except Exception as e:
                         logger.debug(f"Could not extract monthly profits: {e}")
                     
+                    # Extract tail-risk metrics from trade data
+                    try:
+                        trades_df = strategy_results.get('trades', None)
+                        if trades_df is not None and hasattr(trades_df, '__len__') and len(trades_df) > 0:
+                            # --- Max consecutive losses ---
+                            if 'profit_ratio' in trades_df.columns:
+                                is_loss = (trades_df['profit_ratio'] < 0).values
+                                max_streak = 0
+                                current_streak = 0
+                                for loss in is_loss:
+                                    if loss:
+                                        current_streak += 1
+                                        max_streak = max(max_streak, current_streak)
+                                    else:
+                                        current_streak = 0
+                                result.max_consecutive_losses = max_streak
+
+                            # --- Max drawdown duration (days) ---
+                            if 'profit_ratio' in trades_df.columns:
+                                import pandas as pd
+                                date_col = None
+                                for col in ['close_date', 'sell_date', 'exit_date']:
+                                    if col in trades_df.columns:
+                                        date_col = col
+                                        break
+                                if date_col:
+                                    dates = pd.to_datetime(trades_df[col])
+                                    equity = (1 + trades_df['profit_ratio']).cumprod()
+                                    running_max = equity.cummax()
+                                    in_drawdown = equity < running_max
+                                    max_dd_dur = 0.0
+                                    dd_start = None
+                                    for i in range(len(in_drawdown)):
+                                        if in_drawdown.iloc[i]:
+                                            if dd_start is None:
+                                                dd_start = dates.iloc[i]
+                                        else:
+                                            if dd_start is not None:
+                                                dur = (dates.iloc[i] - dd_start).total_seconds() / 86400.0
+                                                max_dd_dur = max(max_dd_dur, dur)
+                                                dd_start = None
+                                    # Handle ongoing drawdown at end of data
+                                    if dd_start is not None:
+                                        dur = (dates.iloc[-1] - dd_start).total_seconds() / 86400.0
+                                        max_dd_dur = max(max_dd_dur, dur)
+                                    result.max_drawdown_duration_days = max_dd_dur
+                    except Exception as e:
+                        logger.debug(f"Could not extract tail-risk metrics: {e}")
+
+                    # Extract lightweight trade profit ratios for Monte Carlo analysis
+                    try:
+                        trades_df = strategy_results.get('trades', None)
+                        if trades_df is not None and hasattr(trades_df, '__len__') and len(trades_df) > 0:
+                            if 'profit_ratio' in trades_df.columns:
+                                result.trade_profit_ratios = trades_df['profit_ratio'].tolist()
+                    except Exception as e:
+                        logger.debug(f"Could not extract trade profit ratios: {e}")
+
                     # Collect detailed trade data for visualization if requested
                     if collect_trades:
                         trades_list = []
@@ -950,6 +1000,18 @@ class DirectBacktester:
             logger.debug(f"Fee adjusted with slippage: base={ga_cfg.get('fee', 0.001)}, "
                         f"slippage={slippage_pct}, total={fee}")
         
+        # Fee noise injection: jitter fee per evaluation to prevent overfitting
+        # to the exact fee level. Configured via 'fee_noise_std' (default 0 = off).
+        import random
+        # Mild fee noise enabled by default (0.0002) — benchmark analysis showed
+        # this preserves diversity (-9% decline vs -21% without) by making fitness
+        # evaluations slightly stochastic, acting as a natural regularizer.
+        fee_noise_std = ga_cfg.get('fee_noise_std', 0.0002)
+        if fee_noise_std > 0:
+            noise = random.gauss(0, fee_noise_std)
+            fee = max(0.0, fee + noise)
+            logger.debug(f"Fee after noise injection: {fee:.6f} (noise={noise:+.6f})")
+        
         # Determine stake currency from pairs
         # Extract quote currency from pairs (format: BASE/QUOTE)
         stake_currency = 'BTC'  # Default
@@ -993,6 +1055,15 @@ class DirectBacktester:
         exportdir = self.freqtrade_root / "user_data" / "backtest_results"
         exportdir.mkdir(parents=True, exist_ok=True)
         
+        # Determine trading mode from short_selling config
+        short_selling_cfg = self.config.get('short_selling', {})
+        if short_selling_cfg.get('enabled', False):
+            _bt_trading_mode = 'futures'
+            _bt_margin_mode = 'isolated'
+        else:
+            _bt_trading_mode = 'spot'
+            _bt_margin_mode = ''
+        
         # Build FreqTrade config
         config = {
             "strategy": strategy_name,
@@ -1030,8 +1101,8 @@ class DirectBacktester:
             },
             "pairlists": [{"method": "StaticPairList"}],
             
-            "trading_mode": "spot",
-            "margin_mode": "",
+            "trading_mode": _bt_trading_mode,
+            "margin_mode": _bt_margin_mode,
             "dry_run": True,
         }
         

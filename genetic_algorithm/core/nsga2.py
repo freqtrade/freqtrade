@@ -384,8 +384,10 @@ def _hypervolume_nd(points: List[List[float]], reference_point: List[float]) -> 
         slice_width = point[0] - prev_slice
         
         if slice_width > 0:
-            # Calculate hypervolume of remaining objectives for points up to i
-            remaining_points = [p[1:] for p in sorted_points[:i+1]]
+            # Calculate hypervolume of remaining objectives for points
+            # that extend through this slice (first-objective >= point[0]).
+            # Since sorted ascending, these are indices i onward.
+            remaining_points = [p[1:] for p in sorted_points[i:]]
             remaining_ref = reference_point[1:]
             
             if len(remaining_ref) == 1:
@@ -404,7 +406,8 @@ def _hypervolume_nd(points: List[List[float]], reference_point: List[float]) -> 
 
 def extract_objectives_from_metrics(
     metrics: Dict[str, float], 
-    objective_config: List[Dict[str, Any]]
+    objective_config: List[Dict[str, Any]],
+    min_trades: int = 0,
 ) -> List[float]:
     """
     Extract objective values from metrics based on configuration.
@@ -412,16 +415,42 @@ def extract_objectives_from_metrics(
     Transforms metrics to objectives where all objectives are to be MAXIMIZED.
     For "minimize" objectives, negates the value.
     
+    If *min_trades* > 0 and the strategy produced fewer trades than that
+    threshold, all objectives are set to worst-case values (0.0 for maximize,
+    large negative for minimize).  This prevents statistically meaningless
+    strategies (e.g. 1-3 trades with lucky profit) from dominating the
+    Pareto front.
+    
     Args:
         metrics: Dictionary of performance metrics
         objective_config: List of objective configurations, each with:
             - name: Metric name (e.g., 'profit', 'max_drawdown')
             - type: 'maximize' or 'minimize'
             - normalize: Optional normalization params
+        min_trades: Minimum number of trades required for valid objectives.
+                    Strategies below this get worst-case objective values.
             
     Returns:
         List of objective values (all to be maximized)
     """
+    # ── Min-trades gate: penalize degenerate strategies ──
+    num_trades = metrics.get('num_trades', metrics.get('trade_count', 0))
+    if min_trades > 0 and num_trades < min_trades:
+        # Return worst-case objectives so these individuals sink to the
+        # bottom of NSGA-II ranking without being discarded entirely
+        # (they can still mutate into something useful).
+        worst_objectives = []
+        for obj_cfg in objective_config:
+            obj_type = obj_cfg.get('type', 'maximize')
+            scale = obj_cfg.get('scale', 1.0)
+            if obj_type == 'minimize':
+                # For minimize objectives (converted to maximization via negation),
+                # worst case = large penalty value (e.g. -1.0 after negation)
+                worst_objectives.append(-1.0 / scale)
+            else:
+                worst_objectives.append(0.0)
+        return worst_objectives
+
     objectives = []
     
     for obj_cfg in objective_config:

@@ -52,7 +52,8 @@ class TestParetoArchiveInit:
     def test_default_params(self):
         archive = ParetoArchive()
         assert archive.max_size == 100
-        assert archive.decay_rate == 0.95
+        assert archive.decay_rate == 0.99
+        assert archive.min_size == 3
         assert archive.members == []
         assert archive.size == 0
     
@@ -98,14 +99,14 @@ class TestParetoArchiveUpdate:
     
     def test_dominated_individuals_excluded(self):
         """Dominated individuals should not be in the archive."""
-        archive = ParetoArchive(max_size=10)
+        archive = ParetoArchive(max_size=10, min_size=1)
         pop = _make_population([
             (1.0, 1.0),    # dominates (0.5, 0.5)
             (0.5, 0.5),    # dominated
             (0.0, 2.0),    # non-dominated (best on obj2)
         ])
         archive.update(pop, generation=0)
-        # Only rank-1 (non-dominated) kept
+        # Only rank-1 (non-dominated) kept (min_size=1 prevents rank-2 inclusion)
         assert archive.size == 2
         obj_sets = [tuple(m.objectives) for m in archive.members]
         assert (0.5, 0.5) not in obj_sets
@@ -280,7 +281,8 @@ class TestSerialization:
         """Missing keys should use defaults."""
         restored = ParetoArchive.from_dict({})
         assert restored.max_size == 100
-        assert restored.decay_rate == 0.95
+        assert restored.decay_rate == 0.99
+        assert restored.min_size == 3
         assert restored.size == 0
 
 
@@ -334,7 +336,7 @@ class TestEdgeCases:
     
     def test_single_objective(self):
         """Archive should work with single-element objective vectors."""
-        archive = ParetoArchive(max_size=5)
+        archive = ParetoArchive(max_size=5, min_size=1)
         pop = _make_population([(1.0,), (2.0,), (0.5,)])
         archive.update(pop, generation=0)
         # Only (2.0,) is non-dominated
