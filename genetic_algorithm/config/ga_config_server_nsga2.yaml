@@ -1,0 +1,152 @@
+# Server-Optimized NSGA-II Configuration — 6-Core i5 / 16 GB RAM / NVMe
+#
+# Multi-objective evolution with the min_trades fix applied.
+# Uses the same base as ga_config_server_6core.yaml but in NSGA-II mode.
+
+genetic_algorithm:
+  random_seed: null
+  population_size: 50
+  generations: 25
+  mutation_rate: 0.15
+  crossover_rate: 0.7
+  elite_size: 5
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 15
+  max_runtime_minutes: 720
+  adaptive_mutation: true
+  max_adaptation_factor: 2.5
+  adaptation_step: 0.1
+  fitness_sharing: true
+  sharing_radius: 0.3
+  diversity_threshold: 0.15
+  allow_self_crossover: false
+  random_immigrants: 5
+  # NSGA-II multi-objective mode
+  mode: 'nsga2'
+
+nsga2:
+  objectives:
+    - name: 'profit'
+      type: 'maximize'
+      scale: 100.0
+    - name: 'max_drawdown'
+      type: 'minimize'
+      scale: 1.0
+    - name: 'sharpe_ratio'
+      type: 'maximize'
+      scale: 3.0
+  pareto_front_size: 20
+  crowding_distance_percentile: 0.1
+  # Fix: minimum trades to avoid degenerate 3-trade Pareto dominance
+  min_trades: 8
+
+fitness_weights:
+  profit: 0.22
+  sharpe_ratio: 0.16
+  sortino_ratio: 0.16
+  profit_factor: 0.10
+  drawdown: 0.20
+  win_rate: 0.08
+  trade_frequency: 0.08
+
+fitness_penalties:
+  min_trades: 8
+  max_drawdown: 0.20
+  min_win_rate: 0.35
+  complexity_weight: 0.015
+
+backtesting:
+  timerange: "20230101-20260228"
+  stake_amount: 16
+  pairs:
+    - "BTC/USDT"
+    - "ETH/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: true
+  enable_cache: true
+  timeout: 60
+
+walk_forward:
+  enabled: true
+  train_days: 60
+  validation_days: 20
+  step_days: 15
+  mode: 'rolling'
+  aggregation: 'harmonic_mean'
+  min_train_trades: 5
+
+strategy_constraints:
+  min_trades: 12
+  max_drawdown: 0.20
+  min_win_rate: 0.35
+  timeframes: ["15m", "1h"]
+  stoploss_range: [-0.15, -0.05]
+  roi_range: [0.01, 0.08]
+  max_open_trades_range: [1, 5]
+
+multi_timeframe:
+  enabled: true
+  available: ['1h', '4h']
+  max_timeframes: 2
+  higher_timeframe_preference: ['EMA', 'SMA', 'BBANDS', 'ATR', 'ADX', 'RSI']
+
+indicators:
+  available: ["RSI", "MACD", "BBANDS", "EMA", "SMA", "STOCH", "ATR", "ADX", "CCI"]
+  max_per_strategy: 4
+  min_per_strategy: 2
+
+storage:
+  database: "genetic_algorithm/data/strategies_nsga2_server.db"
+  strategy_dir: "user_data/strategies/ga_nsga2_server"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_nsga2_server"
+  checkpoint_interval: 3
+  keep_history: true
+
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/ga_server_nsga2.log"
+  console: true
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+visualization:
+  enabled: false
+
+parallel_evaluation:
+  enabled: true
+  num_workers: null
+  backtest_timeout: 120
+  memory_aware: true
+  estimated_worker_memory_mb: 800
+  min_free_ram_mb: 2048
+
+advanced:
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: true
+
+  llm:
+    enabled: true
+    provider: "groq"
+    api_key: ""
+    model: "llama-3.3-70b-versatile"
+    temperature: 0.7
+    max_retries: 3
+    timeout: 60
+    seed_strategies_per_generation: 3
+    design_prompt:
+      market_context: "crypto"
+      risk_profile: "moderate"
+      optimization_focus: "consistency"
+      include_top_performers: true
+      diversity_boost: true
+
+  island_model:
+    enabled: false
+
+web_dashboard:
+  host: "0.0.0.0"
+  port: 8501
+  open_browser: false

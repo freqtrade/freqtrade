@@ -161,8 +161,10 @@ class HallOfFame:
         ind_parts.sort()
 
         # Conditions: indicator ref + operator + threshold (rounded)
+        # Use 1-decimal rounding so near-identical strategies (30.0 vs 30.0001)
+        # are properly deduplicated while meaningfully different ones stay separate.
         def _cond_key(c):
-            thr = round(c.get('threshold', 0), 4)
+            thr = round(c.get('threshold', 0), 1)
             return f"{c.get('indicator', '')}:{c.get('operator', '')}:{thr}"
 
         entry_keys = sorted(_cond_key(c) for c in gene_dict.get('entry_conditions', []))

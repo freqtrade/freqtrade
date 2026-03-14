@@ -245,9 +245,9 @@ class TestParsimony:
         
         # 3 indicators, 2 entry conditions, 1 exit condition
         # indicators: 3 (all removable since >1)
-        # entry: 2 (all removable since >1)
+        # entry: 0 removable (2 == min_entry_conditions=2, so not removable)
         # exit: 1
-        assert len(candidates) == 3 + 2 + 1
+        assert len(candidates) == 3 + 0 + 1
 
 
 # =============================================================================

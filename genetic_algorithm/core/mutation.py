@@ -190,6 +190,19 @@ def mutate_parameters(individual: Individual, mutation_rate: float,
             ind_config = indicator_config.get(base_indicator, {})
             _mutate_condition_threshold(condition, ind_config, False, i, mutations_applied)
     
+    # Mutate independent short conditions (if present)
+    for i, condition in enumerate(mutated_gene.short_entry_conditions):
+        if random.random() < mutation_rate:
+            base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+            ind_config = indicator_config.get(base_indicator, {})
+            _mutate_condition_threshold(condition, ind_config, True, i, mutations_applied)
+    
+    for i, condition in enumerate(mutated_gene.short_exit_conditions):
+        if random.random() < mutation_rate:
+            base_indicator = condition.indicator.split('_')[0] if '_' in condition.indicator else condition.indicator
+            ind_config = indicator_config.get(base_indicator, {})
+            _mutate_condition_threshold(condition, ind_config, False, i, mutations_applied)
+    
     # Mutate stoploss
     if random.random() < mutation_rate:
         mutated_gene.stoploss = random.uniform(*strategy_constraints.get('stoploss_range', [-0.20, -0.05]))

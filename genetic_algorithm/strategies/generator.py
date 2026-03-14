@@ -135,6 +135,25 @@ class StrategyGenerator:
             can_short=self.short_selling_config.get('enabled', False) and random.random() < self.short_selling_config.get('probability', 0.5),
         )
         
+        # Generate independent short conditions when configured
+        if strategy.can_short and self.short_selling_config.get('independent_conditions', False):
+            num_short_entry = random.randint(1, max(1, len(entry_conditions)))
+            num_short_exit = random.randint(1, max(1, len(exit_conditions)))
+            short_entry_conds = []
+            short_exit_conds = []
+            for _ in range(num_short_entry):
+                ind = random.choice(strategy.indicators)
+                cond = self._generate_condition_for_indicator(ind, is_entry=True)
+                if cond:
+                    short_entry_conds.append(cond)
+            for _ in range(num_short_exit):
+                ind = random.choice(strategy.indicators)
+                cond = self._generate_condition_for_indicator(ind, is_entry=False)
+                if cond:
+                    short_exit_conds.append(cond)
+            strategy.short_entry_conditions = short_entry_conds
+            strategy.short_exit_conditions = short_exit_conds
+        
         # Assign unique instance IDs to all indicators
         strategy.assign_instance_ids()
         
@@ -674,13 +693,23 @@ class StrategyGenerator:
         short_exit_code = ""
         if strategy_gene.can_short:
             can_short_attr = "\n    can_short = True"
-            # Short entry uses inverted exit conditions (exit long = enter short logic)
-            short_entry_code = "\n        # Short entry signals (inverted long exit logic)\n" + self._generate_condition_code(
-                strategy_gene.exit_conditions, strategy_gene.indicators, is_entry=True, signal_col_override='enter_short'
-            )
-            short_exit_code = "\n        # Short exit signals (inverted long entry logic)\n" + self._generate_condition_code(
-                strategy_gene.entry_conditions, strategy_gene.indicators, is_entry=False, signal_col_override='exit_short'
-            )
+            if strategy_gene.short_entry_conditions:
+                # Use independent short conditions
+                short_entry_code = "\n        # Short entry signals (independent conditions)\n" + self._generate_condition_code(
+                    strategy_gene.short_entry_conditions, strategy_gene.indicators, is_entry=True, signal_col_override='enter_short'
+                )
+                short_exit_code = "\n        # Short exit signals (independent conditions)\n" + self._generate_condition_code(
+                    strategy_gene.short_exit_conditions or strategy_gene.entry_conditions,
+                    strategy_gene.indicators, is_entry=False, signal_col_override='exit_short'
+                )
+            else:
+                # Fallback: Short entry uses inverted exit conditions (exit long = enter short logic)
+                short_entry_code = "\n        # Short entry signals (inverted long exit logic)\n" + self._generate_condition_code(
+                    strategy_gene.exit_conditions, strategy_gene.indicators, is_entry=True, signal_col_override='enter_short'
+                )
+                short_exit_code = "\n        # Short exit signals (inverted long entry logic)\n" + self._generate_condition_code(
+                    strategy_gene.entry_conditions, strategy_gene.indicators, is_entry=False, signal_col_override='exit_short'
+                )
         
         code = f'''"""
 Auto-generated strategy by Genetic Algorithm
@@ -1063,29 +1092,28 @@ class {name}(IStrategy):
         elif _ind_type == 'SUPERTREND':
             period = ind.parameters.get('period', 10)
             multiplier = ind.parameters.get('multiplier', 3.0)
+            # Vectorized SuperTrend using numpy arrays instead of slow Python for-loop.
+            # The direction state requires a forward pass, but operating on numpy
+            # arrays with direct indexing is orders of magnitude faster than
+            # pandas .iloc[] inside a Python for-loop.
             lines = [
-                f"{prefix}# SuperTrend ({period}, {multiplier})",
+                f"{prefix}# SuperTrend ({period}, {multiplier}) — vectorized",
+                f"{prefix}import numpy as np",
                 f"{prefix}_hl2 = ({d}['high'] + {d}['low']) / 2",
                 f"{prefix}_atr_st = ta.ATR({d}, timeperiod={period})",
-                f"{prefix}_st_upper = _hl2 + ({multiplier} * _atr_st)",
-                f"{prefix}_st_lower = _hl2 - ({multiplier} * _atr_st)",
-                f"{prefix}_st_dir = pd.Series(1, index={d}.index)",
-                f"{prefix}for i in range(1, len({d})):",
-                f"{prefix}    if _st_lower.iloc[i] > _st_lower.iloc[i-1] or {d}['close'].iloc[i-1] < _st_lower.iloc[i-1]:",
-                f"{prefix}        pass  # keep current lower",
+                f"{prefix}_st_upper = (_hl2 + ({multiplier} * _atr_st)).values.copy()",
+                f"{prefix}_st_lower = (_hl2 - ({multiplier} * _atr_st)).values.copy()",
+                f"{prefix}_close = {d}['close'].values",
+                f"{prefix}_st_dir = np.ones(len({d}), dtype=np.float64)",
+                f"{prefix}for i in range(1, len(_close)):",
+                f"{prefix}    if _st_lower[i] < _st_lower[i-1] and _close[i-1] >= _st_lower[i-1]:",
+                f"{prefix}        _st_lower[i] = _st_lower[i-1]",
+                f"{prefix}    if _st_upper[i] > _st_upper[i-1] and _close[i-1] <= _st_upper[i-1]:",
+                f"{prefix}        _st_upper[i] = _st_upper[i-1]",
+                f"{prefix}    if _st_dir[i-1] == 1.0:",
+                f"{prefix}        _st_dir[i] = -1.0 if _close[i] < _st_lower[i] else 1.0",
                 f"{prefix}    else:",
-                f"{prefix}        _st_lower.iloc[i] = _st_lower.iloc[i-1]",
-                f"{prefix}    if _st_upper.iloc[i] < _st_upper.iloc[i-1] or {d}['close'].iloc[i-1] > _st_upper.iloc[i-1]:",
-                f"{prefix}        pass  # keep current upper",
-                f"{prefix}    else:",
-                f"{prefix}        _st_upper.iloc[i] = _st_upper.iloc[i-1]",
-                f"{prefix}    prev = _st_dir.iloc[i-1]",
-                f"{prefix}    if prev == 1 and {d}['close'].iloc[i] < _st_lower.iloc[i]:",
-                f"{prefix}        _st_dir.iloc[i] = -1",
-                f"{prefix}    elif prev == -1 and {d}['close'].iloc[i] > _st_upper.iloc[i]:",
-                f"{prefix}        _st_dir.iloc[i] = 1",
-                f"{prefix}    else:",
-                f"{prefix}        _st_dir.iloc[i] = prev",
+                f"{prefix}        _st_dir[i] = 1.0 if _close[i] > _st_upper[i] else -1.0",
                 f"{prefix}{d}['supertrend_upper'] = _st_upper",
                 f"{prefix}{d}['supertrend_lower'] = _st_lower",
                 f"{prefix}{d}['supertrend_direction'] = _st_dir",

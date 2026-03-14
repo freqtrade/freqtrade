@@ -8,6 +8,7 @@ Supports both single-objective and multi-objective (NSGA-II) optimization.
 import os
 import random
 import json
+import hashlib
 import signal
 import yaml
 import time
@@ -74,6 +75,11 @@ class GeneticAlgorithm:
         self.config = self._load_config(config_path)
         self.logger = self._setup_logging()
         
+        # Validate config before proceeding
+        from genetic_algorithm.utils.config_validator import validate_and_log
+        if not validate_and_log(self.config):
+            raise ValueError("GA configuration has errors. Check logs above.")
+        
         # Extract configuration
         ga_config = self.config['genetic_algorithm']
         
@@ -99,6 +105,7 @@ class GeneticAlgorithm:
         self.selection_method = ga_config.get('selection_method', 'tournament')
         self.crossover_method = ga_config.get('crossover_method', 'single_point')
         self.convergence_patience = ga_config.get('convergence_patience', 10)
+        self.max_runtime_minutes = ga_config.get('max_runtime_minutes', None)
         
         # NSGA-II multi-objective settings
         self.mode = ga_config.get('mode', 'single_objective')
@@ -111,7 +118,10 @@ class GeneticAlgorithm:
         self.sharing_radius = ga_config.get('sharing_radius', 0.3)
         self.diversity_threshold = ga_config.get('diversity_threshold', 0.15)
         self.allow_self_crossover = ga_config.get('allow_self_crossover', True)
-        self.random_immigrants = ga_config.get('random_immigrants', 3)
+        # Scale immigrants to population size (at least 3, up to 20% of pop)
+        # so that diversity injection is meaningful regardless of pop size.
+        _default_immigrants = max(3, self.population_size // 5)
+        self.random_immigrants = ga_config.get('random_immigrants', _default_immigrants)
         
         # Behavioral distance blending (0 = structural only, 1 = behavioral only)
         behavioral_weight = ga_config.get('behavioral_distance_weight', 0.0)
@@ -123,7 +133,7 @@ class GeneticAlgorithm:
         self.adaptive_mutation = ga_config.get('adaptive_mutation', True)
         self.max_adaptation_factor = ga_config.get('max_adaptation_factor', 2.0)
         self.adaptation_step = ga_config.get('adaptation_step', 0.1)
-        self.max_mutation_rate = ga_config.get('max_mutation_rate', 0.5)
+        self.max_mutation_rate = ga_config.get('max_mutation_rate', 0.65)
         self.mutation_cooldown_factor = ga_config.get('mutation_cooldown_factor', 0.5)
         
         # --- Evolution tracking state ---
@@ -133,6 +143,7 @@ class GeneticAlgorithm:
         self.no_improvement_count = 0
         self.best_fitness_ever = 0.0
         self._new_best_this_gen = False
+        self._catastrophic_restart_needed = False
 
         # External control hooks (set by web RunManager when run via dashboard)
         self._web_stop_event = None
@@ -586,8 +597,15 @@ class GeneticAlgorithm:
         }
         
         Path(filepath).parent.mkdir(parents=True, exist_ok=True)
-        with open(filepath, 'w') as f:
+        
+        # Atomic write: serialize to temp file, then rename (prevents corruption on crash)
+        json_bytes = json.dumps(checkpoint, indent=2, default=str).encode('utf-8')
+        checkpoint['checksum'] = hashlib.sha256(json_bytes).hexdigest()
+        
+        tmp_path = filepath + '.tmp'
+        with open(tmp_path, 'w') as f:
             json.dump(checkpoint, f, indent=2, default=str)
+        os.replace(tmp_path, filepath)  # atomic on same filesystem
         
         self.logger.info(f"[CHECKPOINT] Saved generation {generation} to {filepath}")
         
@@ -614,6 +632,18 @@ class GeneticAlgorithm:
         
         with open(filepath, 'r') as f:
             checkpoint = json.load(f)
+        
+        # Verify checksum if present (checkpoint hardening)
+        stored_checksum = checkpoint.pop('checksum', None)
+        if stored_checksum:
+            # Recompute checksum on the data without the checksum field
+            json_bytes = json.dumps(checkpoint, indent=2, default=str).encode('utf-8')
+            computed = hashlib.sha256(json_bytes).hexdigest()
+            if computed != stored_checksum:
+                self.logger.warning(f"[CHECKPOINT] Checksum mismatch! File may be corrupted. "
+                                   f"Expected {stored_checksum[:12]}..., got {computed[:12]}...")
+            else:
+                self.logger.debug("[CHECKPOINT] Checksum verified OK")
         
         version = checkpoint.get('version', 1)
         saved_gen = checkpoint['generation']
@@ -1046,6 +1076,111 @@ class GeneticAlgorithm:
             self.logger.info(f"\n  Summary: {profitable}/{len(results)} profitable on holdout, "
                            f"avg overfit ratio: {avg_overfit:+.1%}")
     
+    def _run_post_evolution_cpcv(self, population, cpcv_config: dict):
+        """
+        Run Combinatorial Purged Cross-Validation on top strategies after evolution.
+        
+        Splits the training timerange into N blocks, runs backtests per block for
+        each top strategy, then computes PBO to quantify overfitting risk.
+        
+        Config:
+            cpcv:
+              enabled: true
+              top_n: 5            # Number of strategies to validate
+              n_groups: 6         # Number of time blocks
+        """
+        import copy
+        import numpy as np
+        
+        top_n = cpcv_config.get('top_n', 5)
+        n_groups = cpcv_config.get('n_groups', 6)
+        
+        candidates = population.get_best(top_n)
+        if len(candidates) < 2:
+            self.logger.info("[CPCV] Need at least 2 strategies, skipping")
+            return
+        
+        self.logger.info("")
+        self.logger.info(f"{'─'*70}")
+        self.logger.info(f"CPCV POST-EVOLUTION VALIDATION ({len(candidates)} strategies, {n_groups} blocks)")
+        self.logger.info(f"{'─'*70}")
+        
+        # Parse training timerange into date boundaries
+        try:
+            from genetic_algorithm.utils.timerange import parse_timerange
+            timerange_str = self.backtest_config.get('timerange', '')
+            if not timerange_str:
+                self.logger.warning("[CPCV] No timerange configured, skipping")
+                return
+            start_dt, end_dt = parse_timerange(timerange_str)
+            total_days = (end_dt - start_dt).days
+            if total_days < n_groups * 7:
+                self.logger.warning(f"[CPCV] Timerange too short ({total_days} days) for {n_groups} blocks")
+                return
+        except Exception as e:
+            self.logger.warning(f"[CPCV] Could not parse timerange: {e}")
+            return
+        
+        # Create time blocks
+        from datetime import timedelta
+        block_days = total_days / n_groups
+        block_ranges = []
+        for i in range(n_groups):
+            b_start = start_dt + timedelta(days=int(i * block_days))
+            b_end = start_dt + timedelta(days=int((i + 1) * block_days)) if i < n_groups - 1 else end_dt
+            block_ranges.append(f"{b_start.strftime('%Y%m%d')}-{b_end.strftime('%Y%m%d')}")
+        
+        # Run backtests for each strategy on each block
+        strategy_results = {}
+        for ind in candidates:
+            block_profits = []
+            for block_idx, block_tr in enumerate(block_ranges):
+                try:
+                    block_config = copy.deepcopy(self.config)
+                    block_config['backtesting']['timerange'] = block_tr
+                    if 'walk_forward' in block_config:
+                        block_config['walk_forward']['enabled'] = False
+                    if 'monte_carlo' in block_config:
+                        block_config['monte_carlo']['enabled'] = False
+                    
+                    block_evaluator = FitnessEvaluator(block_config)
+                    _, block_metrics = block_evaluator.evaluate(ind.strategy_gene)
+                    block_profits.append(block_metrics.get('profit', 0.0))
+                except Exception as e:
+                    self.logger.debug(f"[CPCV] Block {block_idx} failed for {ind.id}: {e}")
+                    block_profits.append(0.0)
+            
+            strategy_results[ind.id] = np.array(block_profits)
+            self.logger.debug(f"[CPCV] {ind.id} block profits: {block_profits}")
+        
+        # Run CPCV validation
+        try:
+            from genetic_algorithm.evaluation.cpcv import CPCVValidator
+            validator = CPCVValidator(self.config)
+            # Override enabled since we're calling explicitly
+            validator.enabled = True
+            validator.n_groups = n_groups
+            result = validator.validate_strategies(strategy_results, timerange_str)
+            
+            pbo = result.get('pbo', 0.0)
+            penalty = result.get('penalty', 1.0)
+            
+            self.logger.info(f"\n  PBO (Probability of Backtest Overfitting): {pbo:.3f}")
+            if pbo < 0.3:
+                self.logger.info("  --> LOW overfitting risk. Strategies likely have genuine edge.")
+            elif pbo < 0.6:
+                self.logger.info("  --> MODERATE overfitting risk. Proceed with caution.")
+            else:
+                self.logger.info("  --> HIGH overfitting risk. Strategies may be curve-fitted.")
+            
+            # Log per-strategy OOS performance
+            per_strategy = result.get('per_strategy_oos', {})
+            for sid, stats in per_strategy.items():
+                self.logger.info(f"  {sid}: OOS mean={stats['mean_oos']:.2f}%, "
+                               f"std={stats['std_oos']:.2f}%, min={stats['min_oos']:.2f}%")
+        except Exception as e:
+            self.logger.warning(f"[CPCV] Validation failed: {e}")
+
     def _run_holdout_monitoring(self, population: 'Population', generation: int):
         """
         Periodic holdout check during evolution.
@@ -1354,7 +1489,10 @@ class GeneticAlgorithm:
                 
                 # For NSGA-II: also set objectives
                 if self.mode == 'nsga2':
-                    objectives = extract_objectives_from_metrics(metrics, self.objectives_config)
+                    nsga2_min_trades = self.nsga2_config.get('min_trades', 0)
+                    objectives = extract_objectives_from_metrics(
+                        metrics, self.objectives_config, min_trades=nsga2_min_trades
+                    )
                     individual.set_objectives(objectives, metrics)
                 
                 successful += 1
@@ -1928,6 +2066,17 @@ class GeneticAlgorithm:
             self.logger.info(f"Converged: No improvement for {self.convergence_patience} generations")
             return True
         
+        # Catastrophic restart: when stuck for half the convergence patience,
+        # flag for replacing 40% of the population with random individuals.
+        # The actual replacement happens in evolve() which has population access.
+        half_patience = self.convergence_patience // 2
+        if half_patience > 0 and self.no_improvement_count == half_patience:
+            self._catastrophic_restart_needed = True
+            self.logger.warning(
+                f"[CATASTROPHIC RESTART] Stagnation for {half_patience} gens "
+                f"— flagged for 40% population replacement"
+            )
+        
         # LLM stagnation escalation: boost LLM involvement when stuck
         if self.llm_enabled and self.strategy_designer.enabled:
             llm_cfg = self.config.get('advanced', {}).get('llm', {})
@@ -1953,14 +2102,6 @@ class GeneticAlgorithm:
                         f"[LLM ESCALATION] Improvement found, "
                         f"resetting immigrant_ratio to {base_ratio:.0%}"
                     )
-        
-        # Stagnation warning at half patience
-        half_patience = self.convergence_patience // 2
-        if self.no_improvement_count == half_patience and half_patience > 0:
-            self.logger.warning(
-                f"⚠ STAGNATION WARNING: No improvement for {half_patience} generations "
-                f"(patience: {self.convergence_patience}). Best ever: {self.best_fitness_ever:.4f}"
-            )
         
         return False
     
@@ -2043,8 +2184,23 @@ class GeneticAlgorithm:
             )
             self.logger.info(f"[ARCHIVE] Pareto archive enabled (max_size={pareto_archive.max_size}, decay={pareto_archive.decay_rate})")
 
+        _evolution_start_time = time.time()
+        if self.max_runtime_minutes:
+            self.logger.info(f"  Max runtime: {self.max_runtime_minutes} minutes")
+
         for gen in range(start_gen, self.generations):
             self.current_generation = gen
+
+            # ── Time limit check ──
+            if self.max_runtime_minutes:
+                elapsed_min = (time.time() - _evolution_start_time) / 60.0
+                if elapsed_min >= self.max_runtime_minutes:
+                    self.logger.info(
+                        f"[TIME LIMIT] Reached {elapsed_min:.1f} min "
+                        f"(limit: {self.max_runtime_minutes} min) — stopping evolution"
+                    )
+                    self.save_checkpoint(population, max(gen - 1, 0))
+                    break
 
             # ── External control: stop check ──
             if self._web_stop_event and self._web_stop_event.is_set():
@@ -2126,6 +2282,17 @@ class GeneticAlgorithm:
             summary_parts = [f"Best: {stats.best_fitness:.4f}", f"Avg: {stats.avg_fitness:.4f}"]
             if stats.genetic_diversity is not None:
                 summary_parts.append(f"Diversity: {stats.genetic_diversity:.4f}")
+            
+            # Memory tracking — log RSS for long-running server deployments
+            try:
+                from genetic_algorithm.evaluation.parallel import ParallelEvaluator
+                mem_mb = ParallelEvaluator.get_memory_usage_mb()
+                if mem_mb > 0:
+                    summary_parts.append(f"RSS: {mem_mb:.0f}MB")
+                    stats.memory_mb = mem_mb  # Attach to stats for CSV export
+            except Exception:
+                pass
+            
             self.logger.info(f"[STATS] {' | '.join(summary_parts)}")
             
             # Update visualization if enabled
@@ -2311,6 +2478,38 @@ class GeneticAlgorithm:
             elif self.no_improvement_count >= self.convergence_patience // 2:
                 self.monitor.on_convergence_warning(self.no_improvement_count, self.convergence_patience)
             
+            # Catastrophic restart: replace 40% of population with random individuals
+            if self._catastrophic_restart_needed:
+                self._catastrophic_restart_needed = False
+                replace_count = int(self.population_size * 0.4)
+                # Sort by fitness and replace worst 40%
+                sorted_inds = sorted(
+                    list(population.individuals),
+                    key=lambda ind: (ind.raw_fitness if ind.raw_fitness is not None else 0.0),
+                    reverse=True
+                )
+                # Keep the best 60%, replace the rest
+                keep_count = self.population_size - replace_count
+                kept = sorted_inds[:keep_count]
+                from genetic_algorithm.core.population import Population
+                new_pop = Population(size=self.population_size)
+                for ind in kept:
+                    new_pop.add_individual(ind)
+                for i in range(replace_count):
+                    rand_gene = self.strategy_generator.generate_random_strategy(
+                        generation=self.current_generation + 1,
+                        individual_id=keep_count + i
+                    )
+                    new_pop.add_individual(Individual(strategy_gene=rand_gene))
+                population = new_pop
+                # Reset stagnation counter so evolution continues
+                self.no_improvement_count = 0
+                self.mutation_rate = self.base_mutation_rate
+                self.logger.warning(
+                    f"[CATASTROPHIC RESTART] Replaced {replace_count}/{self.population_size} "
+                    f"individuals with random strategies, reset stagnation counter"
+                )
+            
             # Create next generation
             if gen < self.generations - 1:  # Don't create next gen on last iteration
                 # Reset per-generation LLM budget
@@ -2458,6 +2657,11 @@ class GeneticAlgorithm:
         holdout_config = self.config.get('holdout_test', {})
         if holdout_config.get('enabled', False):
             self._run_holdout_test(population, holdout_config)
+        
+        # Run CPCV post-evolution validation (if configured)
+        cpcv_config = self.config.get('cpcv', {})
+        if cpcv_config.get('enabled', False):
+            self._run_post_evolution_cpcv(population, cpcv_config)
         
         # Return top strategies based on mode
         if self.mode == 'nsga2':

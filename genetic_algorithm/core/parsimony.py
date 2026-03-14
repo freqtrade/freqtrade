@@ -176,6 +176,10 @@ def _apply_removal(
 
         elif kind == 'exit_condition':
             del trial.exit_conditions[index]
+            # Ensure at least 1 exit condition remains — strategies relying
+            # solely on ROI/stoploss for exits tend to overfit.
+            if len(trial.exit_conditions) < 1:
+                return None
 
         else:
             return None

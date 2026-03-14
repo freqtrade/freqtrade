@@ -680,6 +680,168 @@ def run_tests_cli():
     return failed == 0
 
 
+# ──────────────────────────────────────────────────────────────────────
+# Regression tests for regime detection bug-fixes (March 2026)
+# ──────────────────────────────────────────────────────────────────────
+
+class TestMergeShortSegmentsScoreRecompute:
+    """
+    Verify that _merge_short_segments recomputes avg_trend_score as
+    a bar-count-weighted average instead of keeping the first segment's
+    stale value.
+    """
+
+    @staticmethod
+    def _make_seg(regime, start_day, end_day, avg_trend_score, bar_count):
+        from datetime import datetime
+        return {
+            'regime': regime,
+            'start': datetime(2023, 1, start_day),
+            'end': datetime(2023, 1, end_day),
+            'duration_days': end_day - start_day,
+            'bar_count': bar_count,
+            'confidence': 0.8,
+            'avg_trend_score': avg_trend_score,
+            'avg_volatility_score': 0.5,
+            'trend_score_std': 0.1,
+        }
+
+    def test_same_regime_merge_recomputes_score(self):
+        """When two same-regime segments merge, avg_trend_score should be
+        the bar-count-weighted average, not frozen at the first segment."""
+        seg1 = self._make_seg(RegimeType.BEARISH, 1, 3, -0.95, 48)
+        seg2 = self._make_seg(RegimeType.BEARISH, 3, 5, -0.20, 48)
+
+        merged = RegimeDetector._merge_short_segments([seg1, seg2], min_duration_days=7)
+        assert len(merged) == 1
+        # Weighted avg: (-0.95*48 + -0.20*48) / 96 = -0.575
+        assert merged[0]['avg_trend_score'] == pytest.approx(-0.575, abs=0.01)
+
+    def test_different_regime_merge_recomputes_score(self):
+        """When a short different-regime segment is absorbed, avg_trend_score
+        should be recomputed, potentially flipping the final regime label."""
+        # First segment: short bearish
+        seg1 = self._make_seg(RegimeType.BEARISH, 1, 3, -0.80, 20)
+        # Second segment: short bullish with many more bars
+        seg2 = self._make_seg(RegimeType.BULLISH, 3, 5, 0.90, 100)
+        # Third: long bullish (anchor)
+        seg3 = self._make_seg(RegimeType.BULLISH, 5, 20, 0.85, 360)
+
+        merged = RegimeDetector._merge_short_segments([seg1, seg2, seg3], min_duration_days=7)
+
+        # seg1 absorbs seg2 → weighted avg: (-0.80*20 + 0.90*100) / 120 ≈ 0.617
+        # seg3 is long enough to survive on its own
+        # So we expect either 1 or 2 segments, and the first one should NOT be -0.80
+        first = merged[0]
+        assert first['avg_trend_score'] > 0.0, (
+            f"Expected positive avg_trend_score after absorbing large bullish segment, "
+            f"got {first['avg_trend_score']:.3f}"
+        )
+
+    def test_second_pass_recomputes_score(self):
+        """The second pass (prev too short, absorb into current) should also
+        recompute avg_trend_score."""
+        # First segment: short with bearish score
+        seg1 = self._make_seg(RegimeType.BEARISH, 1, 3, -0.90, 48)
+        # Second segment: long bullish
+        seg2 = self._make_seg(RegimeType.BULLISH, 3, 20, 0.80, 408)
+
+        merged = RegimeDetector._merge_short_segments([seg1, seg2], min_duration_days=7)
+        assert len(merged) == 1
+        # First pass: seg1 absorbs seg2? No — seg2 is long enough (17 days >= 7)
+        # So after first pass: [seg1(2d), seg2(17d)]
+        # Second pass: seg1 is too short → absorbed into seg2
+        # Weighted avg: (-0.90*48 + 0.80*408) / 456 ≈ 0.621
+        assert merged[0]['avg_trend_score'] > 0.0
+
+
+class TestSMAAutoScale:
+    """Verify SMA params auto-scale for sub-daily timeframes."""
+
+    def test_infer_bar_interval_1h(self):
+        dates = pd.date_range('2023-01-01', periods=100, freq='1h')
+        df = pd.DataFrame({'close': np.random.randn(100) + 100}, index=dates)
+        hours = RegimeDetector._infer_bar_interval_hours(df)
+        assert hours == pytest.approx(1.0, abs=0.1)
+
+    def test_infer_bar_interval_4h(self):
+        dates = pd.date_range('2023-01-01', periods=100, freq='4h')
+        df = pd.DataFrame({'close': np.random.randn(100) + 100}, index=dates)
+        hours = RegimeDetector._infer_bar_interval_hours(df)
+        assert hours == pytest.approx(4.0, abs=0.1)
+
+    def test_infer_bar_interval_1d(self):
+        dates = pd.date_range('2023-01-01', periods=100, freq='1D')
+        df = pd.DataFrame({'close': np.random.randn(100) + 100}, index=dates)
+        hours = RegimeDetector._infer_bar_interval_hours(df)
+        assert hours == pytest.approx(24.0, abs=0.5)
+
+    def test_sma_slope_score_on_hourly_data_finds_all_regimes(self):
+        """SMA on 1h data with auto-scaling should find bullish AND bearish
+        in a multi-regime synthetic dataset."""
+        regime_seq = [
+            ('bullish', 90),
+            ('bearish', 90),
+            ('sideways', 60),
+            ('bullish', 120),
+            ('bearish', 60),
+        ]
+        data = generate_multi_regime_data(
+            start_date=datetime(2023, 1, 1),
+            regime_sequence=regime_seq,
+            timeframe_minutes=60,
+        )
+        det = RegimeDetector(method='sma_slope')
+        score = det._compute_sma_slope_score(data)
+        valid = score.dropna()
+
+        bull_pct = (valid > 0.40).mean()
+        bear_pct = (valid < -0.40).mean()
+
+        assert bull_pct > 0.10, f"Expected >10% bullish bars, got {bull_pct*100:.1f}%"
+        assert bear_pct > 0.10, f"Expected >10% bearish bars, got {bear_pct*100:.1f}%"
+
+
+class TestClassifyPeriodsByScoreMultiRegime:
+    """End-to-end test: classify_periods_by_score on multi-regime 1h data
+    must produce segments in at least bullish AND bearish regimes."""
+
+    def test_hourly_multi_regime_segments(self):
+        regime_seq = [
+            ('bullish', 90),
+            ('bearish', 90),
+            ('sideways', 60),
+            ('bullish', 120),
+            ('bearish', 90),
+        ]
+        data = generate_multi_regime_data(
+            start_date=datetime(2023, 1, 1),
+            regime_sequence=regime_seq,
+            timeframe_minutes=60,
+        )
+        det = RegimeDetector(method='sma_slope')
+        segments = det.classify_periods_by_score(
+            df=data,
+            bullish_min=0.40,
+            bearish_max=-0.40,
+            min_segment_days=7,
+            max_segment_days=180,
+            merge_threshold_days=7,
+            embargo_days=3,
+        )
+
+        regimes_found = {s.regime for s in segments}
+        assert RegimeType.BULLISH in regimes_found, (
+            f"No bullish segments found! Regimes: {regimes_found}"
+        )
+        assert RegimeType.BEARISH in regimes_found, (
+            f"No bearish segments found! Regimes: {regimes_found}"
+        )
+        assert len(segments) >= 3, (
+            f"Expected at least 3 segments for 5 regime periods, got {len(segments)}"
+        )
+
+
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == '--pytest':
         # Run with pytest

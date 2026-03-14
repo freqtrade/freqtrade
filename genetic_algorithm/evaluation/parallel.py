@@ -135,7 +135,8 @@ def _evaluate_strategy_in_worker(
     strategy_gene_dict: Dict[str, Any],
     strategy_index: int,
     nsga2_mode: bool = False,
-    objectives_config: List[Dict[str, Any]] = None
+    objectives_config: List[Dict[str, Any]] = None,
+    **kwargs,
 ) -> Dict[str, Any]:
     """
     Evaluate a single strategy in a worker process.
@@ -191,7 +192,10 @@ def _evaluate_strategy_in_worker(
         
         # Extract objectives for NSGA-II if needed
         if nsga2_mode and objectives_config:
-            objectives = extract_objectives_from_metrics(metrics, objectives_config)
+            nsga2_min_trades = kwargs.get('nsga2_min_trades', 0)
+            objectives = extract_objectives_from_metrics(
+                metrics, objectives_config, min_trades=nsga2_min_trades
+            )
             result['objectives'] = objectives
         
         return result
@@ -1115,6 +1119,12 @@ class ParallelEvaluator:
             # Auto-detect: use CPU count but leave 1 core free
             self.num_workers = max(1, os.cpu_count() - 1)
         
+        # Memory-aware scaling: cap workers based on available RAM
+        if parallel_config.get('memory_aware', False):
+            self.num_workers = self._memory_aware_worker_cap(
+                self.num_workers, parallel_config
+            )
+        
         # Per-backtest timeout (seconds). 0 = no timeout.
         self.backtest_timeout = parallel_config.get('backtest_timeout', 120)
         
@@ -1135,6 +1145,98 @@ class ParallelEvaluator:
         logger.info(f"[PARALLEL] Initialized with {self.num_workers} workers, "
                     f"timeout={self.backtest_timeout}s per backtest")
     
+    @staticmethod
+    def _memory_aware_worker_cap(
+        desired_workers: int,
+        parallel_config: Dict[str, Any],
+    ) -> int:
+        """
+        Cap the number of workers based on available system RAM.
+        
+        Each worker process loads a full FreqTrade Backtesting engine + OHLCV
+        data.  On a 16 GB system with 5 workers at ~800 MB each, that's ~4 GB
+        for workers alone plus ~2 GB for OS + main process.
+        
+        This method prevents OOM by checking available RAM at startup and 
+        capping workers accordingly.
+        
+        Args:
+            desired_workers: Number of workers requested (from CPU count or config)
+            parallel_config: parallel_evaluation config section
+            
+        Returns:
+            Capped number of workers (>= 1)
+        """
+        estimated_worker_mb = parallel_config.get('estimated_worker_memory_mb', 800)
+        min_free_ram_mb = parallel_config.get('min_free_ram_mb', 2048)
+        
+        try:
+            import psutil
+            available_mb = psutil.virtual_memory().available / (1024 * 1024)
+            usable_mb = available_mb - min_free_ram_mb
+            
+            if usable_mb <= 0:
+                logger.warning(
+                    "[PARALLEL] Very low available RAM (%.0f MB free, need %.0f MB reserve). "
+                    "Using 1 worker.",
+                    available_mb, min_free_ram_mb,
+                )
+                return 1
+            
+            max_by_memory = max(1, int(usable_mb / estimated_worker_mb))
+            
+            if max_by_memory < desired_workers:
+                logger.info(
+                    "[PARALLEL] Memory-aware scaling: capping workers from %d → %d "
+                    "(%.0f MB available, %.0f MB reserved, ~%d MB/worker)",
+                    desired_workers, max_by_memory, available_mb,
+                    min_free_ram_mb, estimated_worker_mb,
+                )
+                return max_by_memory
+            else:
+                logger.info(
+                    "[PARALLEL] Memory check passed: %d workers OK "
+                    "(%.0f MB available, ~%d MB/worker, %.0f MB headroom)",
+                    desired_workers, available_mb, estimated_worker_mb,
+                    usable_mb - desired_workers * estimated_worker_mb,
+                )
+                return desired_workers
+                
+        except ImportError:
+            logger.warning(
+                "[PARALLEL] psutil not installed — memory-aware scaling disabled. "
+                "Install with: pip install psutil"
+            )
+            return desired_workers
+        except Exception as e:
+            logger.warning(
+                "[PARALLEL] Memory check failed (%s) — using %d workers",
+                e, desired_workers,
+            )
+            return desired_workers
+    
+    @staticmethod
+    def get_memory_usage_mb() -> float:
+        """
+        Get current process memory usage in MB (RSS).
+        
+        Returns peak RSS for the main process. Useful for tracking
+        memory drift over long evolution runs.
+        """
+        try:
+            import psutil
+            process = psutil.Process(os.getpid())
+            return process.memory_info().rss / (1024 * 1024)
+        except ImportError:
+            try:
+                import resource
+                # ru_maxrss is in KB on Linux
+                return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+            except Exception:
+                return 0.0
+        except Exception:
+            return 0.0
+
     def _get_executor(self) -> ProcessPoolExecutor:
         """
         Return the persistent ProcessPoolExecutor, creating it on first call.
@@ -1244,12 +1346,14 @@ class ParallelEvaluator:
         
         # Prepare tasks: serialize strategies to dicts for pickling
         tasks = []
+        nsga2_min_trades = self.config.get('nsga2', {}).get('min_trades', 0)
         for i, ind in enumerate(individuals):
             tasks.append({
                 'strategy_gene_dict': ind.strategy_gene.to_dict(),
                 'strategy_index': i,
                 'nsga2_mode': self.nsga2_mode,
-                'objectives_config': self.objectives_config
+                'objectives_config': self.objectives_config,
+                'nsga2_min_trades': nsga2_min_trades,
             })
         
         self._pool_generation_count += 1

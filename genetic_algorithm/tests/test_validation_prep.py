@@ -435,6 +435,7 @@ class TestSummaryReportCPCV:
         mock_ind = MagicMock()
         mock_ind.id = 'test_strat_1'
         mock_ind.fitness = 0.75
+        mock_ind.raw_fitness = 0.78
         mock_ind.strategy_gene.generation = 5
         mock_ind.strategy_gene.individual_id = 3
         mock_ind.strategy_gene.indicators = []
@@ -482,6 +483,7 @@ class TestSummaryReportCPCV:
         mock_ind = MagicMock()
         mock_ind.id = 'test_strat_2'
         mock_ind.fitness = 0.60
+        mock_ind.raw_fitness = 0.62
         mock_ind.strategy_gene.generation = 2
         mock_ind.strategy_gene.individual_id = 1
         mock_ind.strategy_gene.indicators = []

@@ -129,6 +129,10 @@ class StrategyGene:
     entry_conditions: List[ConditionGene] = field(default_factory=list)
     exit_conditions: List[ConditionGene] = field(default_factory=list)
     
+    # Independent short conditions (optional; when empty, inverted long conditions are used)
+    short_entry_conditions: List[ConditionGene] = field(default_factory=list)
+    short_exit_conditions: List[ConditionGene] = field(default_factory=list)
+    
     # Risk management
     timeframe: str = '5m'
     stoploss: float = -0.10
@@ -225,6 +229,28 @@ class StrategyGene:
             'trailing_stop_positive': self.trailing_stop_positive,
             'trailing_stop_positive_offset': self.trailing_stop_positive_offset,
             'can_short': self.can_short,
+            'short_entry_conditions': [
+                {
+                    'indicator': cond.indicator,
+                    'operator': cond.operator,
+                    'threshold': cond.threshold,
+                    'logic': cond.logic,
+                    'threshold_upper': cond.threshold_upper,
+                    'lookback': cond.lookback
+                }
+                for cond in self.short_entry_conditions
+            ],
+            'short_exit_conditions': [
+                {
+                    'indicator': cond.indicator,
+                    'operator': cond.operator,
+                    'threshold': cond.threshold,
+                    'logic': cond.logic,
+                    'threshold_upper': cond.threshold_upper,
+                    'lookback': cond.lookback
+                }
+                for cond in self.short_exit_conditions
+            ],
             'preferred_regime': self.preferred_regime,
             'regime_mode': self.regime_mode,
             'regime_gene': self.regime_gene.to_dict() if self.regime_gene else None,
@@ -279,12 +305,42 @@ class StrategyGene:
                 lookback=cond.get('lookback', 3)
             ))
         
+        short_entry_conditions = []
+        for cond in data.get('short_entry_conditions', []):
+            ind_ref = cond['indicator']
+            if ind_ref.startswith('CDL_'):
+                ind_ref = cls._strip_cdl_suffixes(ind_ref)
+            short_entry_conditions.append(ConditionGene(
+                indicator=ind_ref,
+                operator=cond['operator'],
+                threshold=cond['threshold'],
+                logic=cond.get('logic', 'AND'),
+                threshold_upper=cond.get('threshold_upper', 0.0),
+                lookback=cond.get('lookback', 3)
+            ))
+        
+        short_exit_conditions = []
+        for cond in data.get('short_exit_conditions', []):
+            ind_ref = cond['indicator']
+            if ind_ref.startswith('CDL_'):
+                ind_ref = cls._strip_cdl_suffixes(ind_ref)
+            short_exit_conditions.append(ConditionGene(
+                indicator=ind_ref,
+                operator=cond['operator'],
+                threshold=cond['threshold'],
+                logic=cond.get('logic', 'AND'),
+                threshold_upper=cond.get('threshold_upper', 0.0),
+                lookback=cond.get('lookback', 3)
+            ))
+        
         return cls(
             generation=data['generation'],
             individual_id=data['individual_id'],
             indicators=indicators,
             entry_conditions=entry_conditions,
             exit_conditions=exit_conditions,
+            short_entry_conditions=short_entry_conditions,
+            short_exit_conditions=short_exit_conditions,
             timeframe=data.get('timeframe', '5m'),
             informative_timeframes=data.get('informative_timeframes', []),
             stoploss=data.get('stoploss', -0.10),
@@ -475,7 +531,9 @@ class StrategyGene:
         return (
             len(self.indicators) +
             len(self.entry_conditions) +
-            len(self.exit_conditions)
+            len(self.exit_conditions) +
+            len(self.short_entry_conditions) +
+            len(self.short_exit_conditions)
         )
     
     def get_base_indicators(self) -> List['IndicatorGene']:

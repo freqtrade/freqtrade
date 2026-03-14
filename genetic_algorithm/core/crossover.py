@@ -55,6 +55,8 @@ def _enforce_max_indicators(gene: StrategyGene, config: dict) -> None:
     # Remove orphaned conditions (reference indicators we just trimmed)
     gene.entry_conditions = [c for c in gene.entry_conditions if c.indicator in remaining_refs]
     gene.exit_conditions = [c for c in gene.exit_conditions if c.indicator in remaining_refs]
+    gene.short_entry_conditions = [c for c in gene.short_entry_conditions if c.indicator in remaining_refs]
+    gene.short_exit_conditions = [c for c in gene.short_exit_conditions if c.indicator in remaining_refs]
     
     # Ensure at least one entry condition remains
     if not gene.entry_conditions and gene.indicators:
@@ -337,6 +339,13 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
     # Uniform crossover for exit conditions
     child1_gene.exit_conditions, child2_gene.exit_conditions = _uniform_crossover_lists(
         parent1.strategy_gene.exit_conditions, parent2.strategy_gene.exit_conditions, swap_prob)
+    
+    # Uniform crossover for independent short conditions (if either parent has them)
+    if parent1.strategy_gene.short_entry_conditions or parent2.strategy_gene.short_entry_conditions:
+        child1_gene.short_entry_conditions, child2_gene.short_entry_conditions = _uniform_crossover_lists(
+            parent1.strategy_gene.short_entry_conditions, parent2.strategy_gene.short_entry_conditions, swap_prob)
+        child1_gene.short_exit_conditions, child2_gene.short_exit_conditions = _uniform_crossover_lists(
+            parent1.strategy_gene.short_exit_conditions, parent2.strategy_gene.short_exit_conditions, swap_prob)
     
     # Randomly inherit scalar parameters
     for attr in ['timeframe', 'stoploss']:

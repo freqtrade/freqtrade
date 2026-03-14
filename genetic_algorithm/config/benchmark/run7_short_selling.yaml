@@ -1,0 +1,209 @@
+# ============================================================================
+# BENCHMARK RUN 7: Independent Short Selling
+# ============================================================================
+# Purpose: Test the new independent short conditions feature.
+#          Measures whether evolving separate short entry/exit conditions
+#          (rather than inverting longs) produces strategies that can
+#          profit in both directions. Compare vs Run 1 (long-only baseline).
+#
+# What's enabled:  Core GA + short selling (independent conditions) +
+#                  walk-forward
+# What's disabled: Island model, Monte Carlo, CPCV
+# Budget: ~18 min
+# ============================================================================
+
+genetic_algorithm:
+  random_seed: 42
+  population_size: 15
+  generations: 10
+  max_runtime_minutes: 25
+  mutation_rate: 0.22
+  crossover_rate: 0.75
+  crossover_method: 'uniform'
+  elite_size: 2
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 8
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.15
+  max_mutation_rate: 0.35
+  fitness_sharing: true
+  sharing_radius: 0.25
+  diversity_threshold: 0.20
+  allow_self_crossover: false
+  random_immigrants: 2
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.15
+  sortino_ratio: 0.10
+  profit_factor: 0.10
+  drawdown: 0.15
+  win_rate: 0.10
+  trade_frequency: 0.10
+
+fitness_penalties:
+  min_trades: 3
+  max_drawdown: 0.40
+  min_win_rate: 0.25
+  complexity_weight: 0.005
+  unused_indicator_weight: 0.02
+
+backtesting:
+  timerange: "20250301-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: true
+  enable_cache: true
+  timeout: 120
+
+# === SHORT SELLING ENABLED ===
+short_selling:
+  enabled: true
+  independent_conditions: true
+
+walk_forward:
+  enabled: true
+  train_days: 60
+  validation_days: 20
+  step_days: 20
+  mode: 'rolling'
+  aggregation: 'mean'
+  min_train_trades: 3
+  max_windows: 6
+
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.15
+
+holdout_monitoring:
+  enabled: false
+
+regime_aware:
+  enabled: false
+
+monte_carlo:
+  enabled: false
+
+deflated_sharpe:
+  enabled: true
+  min_trades: 5
+  benchmark_sr: 0.0
+  skewness_correction: true
+
+parsimony:
+  enabled: true
+  max_indicators: 5
+  max_conditions: 6
+
+cpcv:
+  enabled: false
+
+strategy_constraints:
+  min_trades: 3
+  max_drawdown: 0.40
+  min_win_rate: 0.25
+  timeframes: ["15m"]
+  stoploss_range: [-0.25, -0.03]
+  roi_range: [0.01, 0.20]
+  max_open_trades_range: [1, 5]
+  min_exit_conditions: 1
+
+multi_timeframe:
+  enabled: false
+
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "BBANDS"
+    - "ADX"
+    - "MACD"
+    - "SMA"
+    - "SUPERTREND"
+    - "STOCH"
+  max_per_strategy: 4
+  min_per_strategy: 2
+  min_entry_conditions: 2
+
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 40]
+    sell_threshold: [60, 80]
+  MACD:
+    fast_period: [8, 21]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [15, 30]
+    std_dev: [1.5, 3.0]
+  EMA:
+    period: [5, 50]
+  SMA:
+    period: [10, 100]
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [20, 40]
+    d_threshold: [60, 80]
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+  SUPERTREND:
+    period: [7, 14]
+    multiplier: [2.0, 4.0]
+
+trade_visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: false
+
+parallel_evaluation:
+  enabled: true
+  num_workers: null
+  worker_log_level: 'WARNING'
+  backtest_timeout: 60
+
+output:
+  dir: 'genetic_algorithm/output/benchmark/run7_short_selling'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 1
+
+storage:
+  database: "genetic_algorithm/data/benchmark_run7.db"
+  strategy_dir: "user_data/strategies/benchmark_run7"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_benchmark_run7"
+  checkpoint_interval: 5
+  keep_history: true
+
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/benchmark_run7.log"
+  console: true
+
+hall_of_fame:
+  enabled: true
+  max_size: 20
+  inject_count: 0
+  min_fitness: 0.10
+  directory: "genetic_algorithm/data/hall_of_fame_benchmark"
+
+overfit_analysis:
+  thresholds:
+    holdout_degradation_warning: 0.25
+    holdout_degradation_overfit: 0.50
+    wf_gap_warning: 0.15
+    wf_gap_overfit: 0.30
+    mc_robustness_warning: 0.70
+    mc_robustness_overfit: 0.50
+    composite_warning: 0.25
+    composite_overfit: 0.50

@@ -42,7 +42,7 @@ class ParetoArchive:
     distance (most redundant) are removed first.
     """
 
-    def __init__(self, max_size: int = 100, decay_rate: float = 0.95):
+    def __init__(self, max_size: int = 100, decay_rate: float = 0.99, min_size: int = 3):
         """
         Args:
             max_size: Maximum archive capacity.
@@ -50,8 +50,14 @@ class ParetoArchive:
                 each generation. A value < 1.0 lets long-lived archive
                 members gradually lose their "novelty bonus", making room
                 for fresh solutions. Set to 1.0 to disable decay.
+                Default 0.99 (was 0.95 — reduced to prevent premature
+                archive collapse observed in benchmarks).
+            min_size: Minimum archive floor. If the rank-1 Pareto front is
+                smaller than this, rank-2 members are included to prevent
+                archive collapse to a single individual.
         """
         self.max_size = max(1, max_size)
+        self.min_size = max(1, min_size)
         self.decay_rate = max(0.0, min(1.0, decay_rate))
         self.members: List[Individual] = []
         self._generation_added: Dict[int, int] = {}  # id(ind) -> generation
@@ -100,11 +106,20 @@ class ParetoArchive:
         if not fronts:
             return
 
-        # Step 4: keep rank-1
+        # Step 4: keep rank-1 (and rank-2 if needed to meet min_size)
         rank1 = fronts[0]
+        candidates = list(rank1)
+        if len(candidates) < self.min_size and len(fronts) > 1:
+            # Include rank-2 members to prevent archive collapse
+            rank2 = fronts[1]
+            candidates.extend(rank2)
+            logger.info(
+                f"[ARCHIVE] rank-1 too small ({len(rank1)}), "
+                f"added {len(rank2)} rank-2 members (min_size={self.min_size})"
+            )
 
         # Step 5: prune to capacity
-        self.members = self._prune(rank1)
+        self.members = self._prune(candidates)
 
         # Track generation for new entrants
         for m in new_candidates:
@@ -144,6 +159,7 @@ class ParetoArchive:
         """Serialize archive for checkpoint storage."""
         return {
             'max_size': self.max_size,
+            'min_size': self.min_size,
             'decay_rate': self.decay_rate,
             'members': [m.to_dict() for m in self.members],
         }
@@ -153,7 +169,8 @@ class ParetoArchive:
         """Restore archive from checkpoint data."""
         archive = cls(
             max_size=data.get('max_size', 100),
-            decay_rate=data.get('decay_rate', 0.95),
+            decay_rate=data.get('decay_rate', 0.99),
+            min_size=data.get('min_size', 3),
         )
         for m_data in data.get('members', []):
             archive.members.append(Individual.from_dict(m_data))

@@ -279,6 +279,9 @@ class RunManager:
                 handle.current_generation = data.get("generation", handle.current_generation)
                 # Stats are now flattened at the top-level of data
                 handle.generation_stats.append(data.get("_stats", data))
+                # Prevent unbounded memory growth for long-running evolutions
+                if len(handle.generation_stats) > 500:
+                    handle.generation_stats = handle.generation_stats[-250:]
                 best = data.get("best_individual", {})
                 if best:
                     handle.best_individual_id = best.get("id")

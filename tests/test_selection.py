@@ -337,7 +337,7 @@ class TestNSGA2TournamentSelection:
         population.add_individual(ind)
         
         result = nsga2_tournament_selection(population, tournament_size=2)
-        assert result == ind
+        assert result is ind
 
 
 # =============================================================================
