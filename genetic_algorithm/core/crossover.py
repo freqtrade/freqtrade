@@ -14,6 +14,7 @@ from genetic_algorithm.core.strategy_gene import StrategyGene
 from genetic_algorithm.core.mutation import clamp_condition_thresholds
 from genetic_algorithm.strategies.operator_registry import (
     is_valid_operator, resolve_indicator_type, get_standard_operators,
+    CDL_POSITIVE_ONLY_TYPES, CDL_NEGATIVE_ONLY_TYPES,
 )
 
 
@@ -32,17 +33,35 @@ def _deduplicate_indicators(gene: StrategyGene) -> None:
 def _fix_invalid_operators(gene: StrategyGene) -> None:
     """Fix conditions whose operator is invalid for their indicator type.
     
-    After crossover, a condition may reference an operator that came from a
-    different indicator context.  Replace with a random valid operator.
+    After crossover or mutation, a condition may reference an operator that
+    came from a different indicator context.  Replace with a random valid
+    operator, or REMOVE the condition entirely if the indicator shouldn't
+    be used for that signal direction (e.g. CDL_DOJI as exit, CDL_EVENINGSTAR
+    as entry).
     """
-    for cond in gene.entry_conditions + gene.exit_conditions:
-        # Resolve the actual indicator type for this condition
+    def _resolve(cond):
         ind_type = resolve_indicator_type(cond.indicator)
-        # Also check against actual indicators in the strategy
         for ind in gene.indicators:
             if (ind.instance_id and ind.instance_id == cond.indicator) or ind.type == ind_type:
-                ind_type = ind.type
-                break
+                return ind.type
+        return ind_type
+
+    # Remove exit conditions for positive-only CDL patterns (CDL_DOJI, CDL_HAMMER, etc.)
+    # These patterns can only signal "pattern detected" (>0), never "pattern absent" (<0).
+    # They are not meaningful as exit signals.
+    gene.exit_conditions = [
+        cond for cond in gene.exit_conditions
+        if _resolve(cond) not in CDL_POSITIVE_ONLY_TYPES
+    ]
+    # Remove entry conditions for negative-only CDL patterns (CDL_EVENINGSTAR, etc.)
+    gene.entry_conditions = [
+        cond for cond in gene.entry_conditions
+        if _resolve(cond) not in CDL_NEGATIVE_ONLY_TYPES
+    ]
+
+    # Fix operators on remaining conditions
+    for cond in gene.entry_conditions + gene.exit_conditions:
+        ind_type = _resolve(cond)
         if not is_valid_operator(ind_type, cond.operator):
             valid_ops = get_standard_operators(ind_type)
             if valid_ops:

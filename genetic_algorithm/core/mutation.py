@@ -352,12 +352,27 @@ def mutate_indicators(individual: Individual, mutation_rate: float,
                 mutations_applied.append(f"replace_{old_type}_with_{new_type}")
                 
                 # Update conditions that referenced the old indicator (by type or instance_id)
+                # AND validate/fix operators for the new indicator type.
                 for condition in mutated_gene.entry_conditions:
                     if condition.indicator == old_type or (old_instance_id and condition.indicator == old_instance_id):
                         condition.indicator = new_type
-                for condition in mutated_gene.exit_conditions:
+                        # Fix operator if invalid for the new indicator type
+                        if not is_valid_operator(new_type, condition.operator):
+                            valid_ops = get_valid_operators(new_type)
+                            if valid_ops:
+                                condition.operator = random.choice(valid_ops)
+                for condition in list(mutated_gene.exit_conditions):
                     if condition.indicator == old_type or (old_instance_id and condition.indicator == old_instance_id):
-                        condition.indicator = new_type
+                        # Check if new indicator is suitable for exit at all
+                        replacement = _create_random_condition(new_type, False, indicator_config)
+                        if replacement:
+                            condition.indicator = new_type
+                            condition.operator = replacement.operator
+                            condition.threshold = replacement.threshold
+                        else:
+                            # New indicator can't generate exit conditions (e.g. CDL_DOJI)
+                            # Remove this exit condition entirely
+                            mutated_gene.exit_conditions.remove(condition)
     
     # Create new individual with mutation record
     new_individual = Individual(strategy_gene=mutated_gene, parent_ids=[individual.id])
@@ -532,11 +547,36 @@ def _create_random_condition(indicator_type: str, is_entry: bool,
     }
     
     # Candlestick patterns: create threshold-based conditions
-    CDL_BULLISH = ['CDL_ENGULFING', 'CDL_HAMMER', 'CDL_MORNINGSTAR', 'CDL_PIERCING',
-                   'CDL_3WHITESOLDIERS', 'CDL_HARAMI', 'CDL_DOJI']
-    CDL_BEARISH = ['CDL_EVENINGSTAR', 'CDL_SHOOTINGSTAR', 'CDL_DARKCLOUD', 'CDL_3BLACKCROWS']
+    # Positive-only patterns (TA-Lib returns 0 or +100, never negative)
+    CDL_POSITIVE_ONLY = ['CDL_HAMMER', 'CDL_MORNINGSTAR', 'CDL_PIERCING',
+                         'CDL_3WHITESOLDIERS', 'CDL_DOJI']
+    # Negative-only patterns (TA-Lib returns 0 or -100, never positive)
+    CDL_NEGATIVE_ONLY = ['CDL_EVENINGSTAR', 'CDL_SHOOTINGSTAR', 'CDL_DARKCLOUD', 'CDL_3BLACKCROWS']
+    # Bidirectional patterns (TA-Lib returns -100, 0, or +100)
+    CDL_BIDIRECTIONAL = ['CDL_ENGULFING', 'CDL_HARAMI']
     
-    if indicator_type in CDL_BULLISH:
+    if indicator_type in CDL_POSITIVE_ONLY:
+        # Only '>' makes sense (pattern detected). '<' is always false.
+        # Not suitable for exit conditions (can't signal "exit" reliably).
+        if is_entry:
+            return ConditionGene(
+                indicator=indicator_type, operator='>', threshold=0,
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
+            )
+        else:
+            return None  # Not a valid exit signal
+    
+    if indicator_type in CDL_NEGATIVE_ONLY:
+        # Only '<' makes sense (bearish pattern detected). '>' is always false.
+        if not is_entry:
+            return ConditionGene(
+                indicator=indicator_type, operator='<', threshold=0,
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
+            )
+        else:
+            return None  # Not a valid entry signal
+    
+    if indicator_type in CDL_BIDIRECTIONAL:
         if is_entry:
             return ConditionGene(
                 indicator=indicator_type, operator='>', threshold=0,
@@ -545,18 +585,6 @@ def _create_random_condition(indicator_type: str, is_entry: bool,
         else:
             return ConditionGene(
                 indicator=indicator_type, operator='<', threshold=0,
-                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
-            )
-    
-    if indicator_type in CDL_BEARISH:
-        if is_entry:
-            return ConditionGene(
-                indicator=indicator_type, operator='<', threshold=0,
-                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
-            )
-        else:
-            return ConditionGene(
-                indicator=indicator_type, operator='>', threshold=0,
                 logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
     

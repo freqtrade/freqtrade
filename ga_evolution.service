@@ -13,7 +13,7 @@ Environment="VIRTUAL_ENV=/home/periklis/projects/trading/freqtradeForkGA/.venv"
 # Main command — uses server-optimized config, non-interactive
 ExecStart=/home/periklis/projects/trading/freqtradeForkGA/.venv/bin/python \
     genetic_algorithm/run_ga.py \
-    --config genetic_algorithm/config/ga_config_server_production_R6.yaml \
+    --config genetic_algorithm/config/ga_config_server_production_R7.yaml \
     --no-monitor --yes
 
 # On crash: attempt to resume from latest checkpoint

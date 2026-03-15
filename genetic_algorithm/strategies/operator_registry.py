@@ -60,15 +60,32 @@ _STANDARD_OPERATORS: Dict[str, FrozenSet[str]] = {
     'VROC': frozenset({'<', '>', 'cross_above', 'cross_below'}),
 }
 
-# Candlestick patterns — only threshold comparison operators make sense
+# Candlestick patterns — bidirectional patterns output -100/0/+100
 _CDL_STANDARD_OPERATORS = frozenset({'<', '>'})
 
-# Known candlestick pattern types
-CDL_TYPES = frozenset({
-    'CDL_ENGULFING', 'CDL_HAMMER', 'CDL_DOJI', 'CDL_MORNINGSTAR', 'CDL_EVENINGSTAR',
-    'CDL_SHOOTINGSTAR', 'CDL_HARAMI', 'CDL_PIERCING', 'CDL_DARKCLOUD',
-    'CDL_3WHITESOLDIERS', 'CDL_3BLACKCROWS',
+# Unidirectional positive-only patterns (only output 0 or +100, NEVER negative)
+# CDL_DOJI is indecision — TA-Lib returns 0 or +100 only, so '<' is always false.
+_CDL_POSITIVE_ONLY_OPERATORS = frozenset({'>'})
+
+# Patterns that only output positive values (0 or +100)
+CDL_POSITIVE_ONLY_TYPES = frozenset({
+    'CDL_DOJI', 'CDL_HAMMER', 'CDL_MORNINGSTAR', 'CDL_PIERCING',
+    'CDL_3WHITESOLDIERS',
 })
+
+# Patterns that only output negative values (0 or -100)
+CDL_NEGATIVE_ONLY_TYPES = frozenset({
+    'CDL_EVENINGSTAR', 'CDL_SHOOTINGSTAR', 'CDL_DARKCLOUD', 'CDL_3BLACKCROWS',
+})
+_CDL_NEGATIVE_ONLY_OPERATORS = frozenset({'<'})
+
+# Bidirectional patterns output -100/0/+100
+CDL_BIDIRECTIONAL_TYPES = frozenset({
+    'CDL_ENGULFING', 'CDL_HARAMI',
+})
+
+# All known candlestick pattern types
+CDL_TYPES = CDL_POSITIVE_ONLY_TYPES | CDL_NEGATIVE_ONLY_TYPES | CDL_BIDIRECTIONAL_TYPES
 
 
 def get_valid_operators(indicator_type: str) -> List[str]:
@@ -87,8 +104,11 @@ def get_valid_operators(indicator_type: str) -> List[str]:
     """
     if indicator_type in _STANDARD_OPERATORS:
         return sorted(_STANDARD_OPERATORS[indicator_type] | ADVANCED_OPERATORS)
-    if indicator_type in CDL_TYPES:
-        # CDL patterns don't support advanced operators (no meaningful numeric column)
+    if indicator_type in CDL_POSITIVE_ONLY_TYPES:
+        return sorted(_CDL_POSITIVE_ONLY_OPERATORS)
+    if indicator_type in CDL_NEGATIVE_ONLY_TYPES:
+        return sorted(_CDL_NEGATIVE_ONLY_OPERATORS)
+    if indicator_type in CDL_BIDIRECTIONAL_TYPES:
         return sorted(_CDL_STANDARD_OPERATORS)
     return []
 
@@ -100,7 +120,11 @@ def get_standard_operators(indicator_type: str) -> List[str]:
     """
     if indicator_type in _STANDARD_OPERATORS:
         return sorted(_STANDARD_OPERATORS[indicator_type])
-    if indicator_type in CDL_TYPES:
+    if indicator_type in CDL_POSITIVE_ONLY_TYPES:
+        return sorted(_CDL_POSITIVE_ONLY_OPERATORS)
+    if indicator_type in CDL_NEGATIVE_ONLY_TYPES:
+        return sorted(_CDL_NEGATIVE_ONLY_OPERATORS)
+    if indicator_type in CDL_BIDIRECTIONAL_TYPES:
         return sorted(_CDL_STANDARD_OPERATORS)
     return []
 
@@ -113,7 +137,11 @@ def is_valid_operator(indicator_type: str, operator: str) -> bool:
     """
     if indicator_type in _STANDARD_OPERATORS:
         return operator in (_STANDARD_OPERATORS[indicator_type] | ADVANCED_OPERATORS)
-    if indicator_type in CDL_TYPES:
+    if indicator_type in CDL_POSITIVE_ONLY_TYPES:
+        return operator in _CDL_POSITIVE_ONLY_OPERATORS
+    if indicator_type in CDL_NEGATIVE_ONLY_TYPES:
+        return operator in _CDL_NEGATIVE_ONLY_OPERATORS
+    if indicator_type in CDL_BIDIRECTIONAL_TYPES:
         return operator in _CDL_STANDARD_OPERATORS
     return False
 

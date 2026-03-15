@@ -160,10 +160,19 @@ class TestRegistryCompleteness:
                 assert adv_op in valid, f"{t} missing advanced operator '{adv_op}'"
 
     def test_cdl_types_limited_operators(self):
-        """CDL patterns should only have < and >."""
-        for cdl in CDL_TYPES:
+        """CDL patterns should only support operators matching their directionality."""
+        from genetic_algorithm.strategies.operator_registry import (
+            CDL_POSITIVE_ONLY_TYPES, CDL_NEGATIVE_ONLY_TYPES, CDL_BIDIRECTIONAL_TYPES,
+        )
+        for cdl in CDL_POSITIVE_ONLY_TYPES:
             ops = get_valid_operators(cdl)
-            assert set(ops) == {'<', '>'}, f"{cdl} has unexpected operators: {ops}"
+            assert set(ops) == {'>'}, f"{cdl} should only have '>', got: {ops}"
+        for cdl in CDL_NEGATIVE_ONLY_TYPES:
+            ops = get_valid_operators(cdl)
+            assert set(ops) == {'<'}, f"{cdl} should only have '<', got: {ops}"
+        for cdl in CDL_BIDIRECTIONAL_TYPES:
+            ops = get_valid_operators(cdl)
+            assert set(ops) == {'<', '>'}, f"{cdl} should have both '<' and '>', got: {ops}"
 
     def test_unknown_type_returns_empty(self):
         assert get_valid_operators('UNKNOWN_INDICATOR') == []
@@ -218,7 +227,7 @@ class TestIsValidOperator:
         ('CCI', 'cross_below', True),
         ('ADX', 'cross_above', True),
         ('ADX', 'cross_below', True),
-        ('CDL_HAMMER', '<', True),
+        ('CDL_HAMMER', '<', False),    # positive-only: only > is valid
         ('CDL_HAMMER', '>', True),
         ('CDL_HAMMER', 'cross_above', False),
         ('CDL_HAMMER', 'increasing', False),
@@ -745,8 +754,8 @@ class TestCDLDojiOperator:
         )
         assert cond.operator == '>', "CDL_DOJI entry condition should use '>' operator"
 
-    def test_cdl_doji_handler_with_gt_and_lt(self):
-        """CDL_DOJI handler in _generate_single_condition covers > and <."""
+    def test_cdl_doji_handler_with_gt(self):
+        """CDL_DOJI handler generates code for > (the only valid operator)."""
         from genetic_algorithm.strategies.generator import StrategyGenerator
         config = {
             'trading': {'pairs': ['BTC/USDT'], 'timeframe': '5m'},
@@ -755,11 +764,15 @@ class TestCDLDojiOperator:
         gen = StrategyGenerator(config)
         ind = IndicatorGene(type='CDL_DOJI', parameters={}, instance_id='CDL_DOJI_0')
 
-        for op, expected_substr in [('>', '> 0'), ('<', '< 0')]:
-            cond = ConditionGene(indicator='CDL_DOJI_0', operator=op, threshold=0)
-            code = gen._generate_single_condition(cond, [ind])
-            assert code is not None, f"CDL_DOJI with '{op}' should generate code"
-            assert expected_substr in code, f"CDL_DOJI '{op}' code should contain '{expected_substr}'"
+        cond = ConditionGene(indicator='CDL_DOJI_0', operator='>', threshold=0)
+        code = gen._generate_single_condition(cond, [ind])
+        assert code is not None, "CDL_DOJI with '>' should generate code"
+        assert '> 0' in code, f"CDL_DOJI '>' code should contain '> 0'"
+
+    def test_cdl_doji_lt_is_invalid_operator(self):
+        """CDL_DOJI '<' should be flagged as invalid by the registry."""
+        assert not is_valid_operator('CDL_DOJI', '<'), \
+            "CDL_DOJI '<' should be invalid (TA-Lib returns 0 or +100, never negative)"
 
 
 class TestATRThresholdClamp:
@@ -1005,6 +1018,226 @@ class TestWalkForwardConfigValidation:
             with open(config_path) as f:
                 full_config = yaml.safe_load(f)
             validate_walk_forward_config(full_config['walk_forward'])
+
+    def test_r7_walk_forward_config_valid(self):
+        """The exact R7 walk-forward config should pass validation."""
+        import yaml
+        from genetic_algorithm.utils.timerange import validate_walk_forward_config
+        config_path = Path(__file__).parent.parent / 'config' / 'ga_config_server_production_R7.yaml'
+        if config_path.exists():
+            with open(config_path) as f:
+                full_config = yaml.safe_load(f)
+            validate_walk_forward_config(full_config['walk_forward'])
+
+
+# ============================================================================
+# R7 Fixes — CDL_DOJI exit removal, operator validation after mutation
+# ============================================================================
+
+class TestFixInvalidOperatorsRemovesCDLExits:
+    """Test that _fix_invalid_operators removes CDL_DOJI from exit conditions."""
+
+    def test_cdl_doji_exit_removed(self):
+        """CDL_DOJI exit conditions should be removed entirely, not just fixed."""
+        from genetic_algorithm.core.crossover import _fix_invalid_operators
+        from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
+
+        gene = StrategyGene(
+            generation=0, individual_id=0,
+            indicators=[
+                IndicatorGene(type='EMA', parameters={'period': 20}, instance_id='EMA_0'),
+                IndicatorGene(type='CDL_DOJI', parameters={}, instance_id='CDL_DOJI_0'),
+            ],
+            entry_conditions=[
+                ConditionGene(indicator='EMA_0', operator='cross_above', threshold=0),
+                ConditionGene(indicator='CDL_DOJI_0', operator='>', threshold=0),
+            ],
+            exit_conditions=[
+                ConditionGene(indicator='CDL_DOJI_0', operator='<', threshold=0),
+            ],
+            timeframe='15m',
+        )
+        _fix_invalid_operators(gene)
+        # CDL_DOJI exit should be completely removed
+        assert len(gene.exit_conditions) == 0, \
+            f"CDL_DOJI exit should be removed, got {[(c.indicator, c.operator) for c in gene.exit_conditions]}"
+        # CDL_DOJI entry should remain (it's a valid entry indicator)
+        assert len(gene.entry_conditions) == 2
+
+    def test_cdl_doji_gt_exit_also_removed(self):
+        """Even CDL_DOJI > is removed from exits — not a meaningful exit signal."""
+        from genetic_algorithm.core.crossover import _fix_invalid_operators
+        from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
+
+        gene = StrategyGene(
+            generation=0, individual_id=0,
+            indicators=[
+                IndicatorGene(type='EMA', parameters={'period': 20}, instance_id='EMA_0'),
+                IndicatorGene(type='CDL_DOJI', parameters={}, instance_id='CDL_DOJI_0'),
+            ],
+            entry_conditions=[
+                ConditionGene(indicator='EMA_0', operator='cross_above', threshold=0),
+            ],
+            exit_conditions=[
+                ConditionGene(indicator='EMA_0', operator='cross_below', threshold=0),
+                ConditionGene(indicator='CDL_DOJI_0', operator='>', threshold=0),
+            ],
+            timeframe='15m',
+        )
+        _fix_invalid_operators(gene)
+        assert len(gene.exit_conditions) == 1
+        assert gene.exit_conditions[0].indicator == 'EMA_0'
+
+    def test_cdl_eveningstar_entry_removed(self):
+        """CDL_EVENINGSTAR (negative-only) should be removed from entries."""
+        from genetic_algorithm.core.crossover import _fix_invalid_operators
+        from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
+
+        gene = StrategyGene(
+            generation=0, individual_id=0,
+            indicators=[
+                IndicatorGene(type='EMA', parameters={'period': 20}, instance_id='EMA_0'),
+                IndicatorGene(type='CDL_EVENINGSTAR', parameters={}, instance_id='CDL_EVENINGSTAR_0'),
+            ],
+            entry_conditions=[
+                ConditionGene(indicator='EMA_0', operator='cross_above', threshold=0),
+                ConditionGene(indicator='CDL_EVENINGSTAR_0', operator='<', threshold=0),
+            ],
+            exit_conditions=[
+                ConditionGene(indicator='CDL_EVENINGSTAR_0', operator='<', threshold=0),
+            ],
+            timeframe='15m',
+        )
+        _fix_invalid_operators(gene)
+        # Entry: CDL_EVENINGSTAR removed
+        assert len(gene.entry_conditions) == 1
+        assert gene.entry_conditions[0].indicator == 'EMA_0'
+        # Exit: CDL_EVENINGSTAR kept (valid for exit)
+        assert len(gene.exit_conditions) == 1
+
+    def test_bidirectional_cdl_kept_in_both(self):
+        """CDL_ENGULFING (bidirectional) should be kept in both entry and exit."""
+        from genetic_algorithm.core.crossover import _fix_invalid_operators
+        from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
+
+        gene = StrategyGene(
+            generation=0, individual_id=0,
+            indicators=[
+                IndicatorGene(type='CDL_ENGULFING', parameters={}, instance_id='CDL_ENGULFING_0'),
+            ],
+            entry_conditions=[
+                ConditionGene(indicator='CDL_ENGULFING_0', operator='>', threshold=0),
+            ],
+            exit_conditions=[
+                ConditionGene(indicator='CDL_ENGULFING_0', operator='<', threshold=0),
+            ],
+            timeframe='15m',
+        )
+        _fix_invalid_operators(gene)
+        assert len(gene.entry_conditions) == 1
+        assert len(gene.exit_conditions) == 1
+
+
+class TestMutateIndicatorsOperatorValidation:
+    """Test that mutate_indicators validates operators after replacing indicators."""
+
+    def test_replace_rsi_with_cdl_doji_removes_exit(self):
+        """When RSI is replaced with CDL_DOJI, exit conditions using CDL_DOJI should be removed."""
+        import random
+        from genetic_algorithm.core.mutation import mutate_indicators
+        from genetic_algorithm.core.individual import Individual
+        from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene
+
+        random.seed(42)
+        gene = StrategyGene(
+            generation=0, individual_id=0,
+            indicators=[
+                IndicatorGene(type='RSI', parameters={'period': 14}, instance_id='RSI_0'),
+                IndicatorGene(type='EMA', parameters={'period': 20}, instance_id='EMA_0'),
+            ],
+            entry_conditions=[
+                ConditionGene(indicator='RSI_0', operator='cross_below', threshold=30),
+                ConditionGene(indicator='EMA_0', operator='cross_above', threshold=0),
+            ],
+            exit_conditions=[
+                ConditionGene(indicator='RSI_0', operator='cross_above', threshold=70),
+            ],
+            timeframe='15m',
+        )
+        individual = Individual(strategy_gene=gene)
+
+        config = {
+            'indicators': {
+                'available': ['RSI', 'EMA', 'CDL_DOJI'],
+                'max_per_strategy': 4,
+                'min_per_strategy': 2,
+            }
+        }
+
+        # Run many times to hit the replace path with CDL_DOJI
+        found_replacement = False
+        for _ in range(200):
+            random.seed(random.randint(0, 100000))
+            try:
+                result = mutate_indicators(individual, 1.0, config)
+                sg = result.strategy_gene
+                # Check if any exit condition references CDL_DOJI with '<'
+                for cond in sg.exit_conditions:
+                    ind_type = cond.indicator.replace('_0', '').replace('_1', '')
+                    if ind_type == 'CDL_DOJI' and cond.operator == '<':
+                        found_replacement = True
+                        break
+            except Exception:
+                continue
+            if found_replacement:
+                break
+
+        assert not found_replacement, \
+            "mutate_indicators should never create CDL_DOJI:< exit conditions"
+
+
+class TestR7ConfigValidation:
+    """Validate R7 config fitness weights and thresholds."""
+
+    def test_r7_weights_sum_to_one(self):
+        """R7 fitness weights should sum to 1.0."""
+        import yaml
+        config_path = Path(__file__).parent.parent / 'config' / 'ga_config_server_production_R7.yaml'
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        weights = config['fitness_weights']
+        total = sum(weights.values())
+        assert abs(total - 1.0) < 0.001, f"Weights sum to {total}, expected 1.0"
+
+    def test_r7_min_trades_aligned(self):
+        """R7 min_trades should match between penalties and constraints."""
+        import yaml
+        config_path = Path(__file__).parent.parent / 'config' / 'ga_config_server_production_R7.yaml'
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        penalty_min = config['fitness_penalties']['min_trades']
+        constraint_min = config['strategy_constraints']['min_trades']
+        assert penalty_min == constraint_min, \
+            f"min_trades mismatch: penalties={penalty_min}, constraints={constraint_min}"
+
+    def test_r7_no_cdl_doji_in_available(self):
+        """R7 should not include CDL_DOJI in available indicators."""
+        import yaml
+        config_path = Path(__file__).parent.parent / 'config' / 'ga_config_server_production_R7.yaml'
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        available = config['indicators']['available']
+        assert 'CDL_DOJI' not in available
+
+    def test_r7_trade_frequency_thresholds_present(self):
+        """R7 should include explicit trade_frequency_thresholds."""
+        import yaml
+        config_path = Path(__file__).parent.parent / 'config' / 'ga_config_server_production_R7.yaml'
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        tf = config.get('trade_frequency_thresholds', {})
+        assert tf.get('ideal_min', 0) > 0
+        assert tf.get('ideal_max', 0) > tf.get('ideal_min', 0)
 
 
 # ============================================================================

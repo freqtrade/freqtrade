@@ -3,9 +3,10 @@ Data Service — Unified data access layer.
 
 Serves data from:
   1. Active runs (via RunManager, in-memory state)
-  2. Past runs (from disk — generation snapshots, checkpoints, outputs)
-  3. Hall of Fame (from hall_of_fame.json)
-  4. Config templates (from config/*.yaml)
+  2. External runs (CLI-started GA processes discovered via log files)
+  3. Past runs (from disk — generation snapshots, checkpoints, outputs)
+  4. Hall of Fame (from hall_of_fame.json)
+  5. Config templates (from config/*.yaml)
 
 File-first approach: JSON/YAML/CSV files are the source of truth.
 A SQLite index can be layered on top later for cross-run queries.
@@ -15,9 +16,11 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import re
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
@@ -39,6 +42,15 @@ CHECKPOINTS_DIR = Path("genetic_algorithm/data/checkpoints")
 HOF_DIR = Path("genetic_algorithm/data/hall_of_fame")
 CONFIG_DIR = Path("genetic_algorithm/config")
 OUTPUT_DIR = Path("genetic_algorithm/output")
+LOGS_DIR = Path("genetic_algorithm/logs")
+
+# Regex patterns for parsing GA log output
+_RE_GENERATION = re.compile(r"GENERATION\s+(\d+)/(\d+)")
+_RE_STATS = re.compile(
+    r"\[STATS\]\s+Best:\s+([\d.]+)\s+\|\s+Avg:\s+([\d.]+)\s+\|\s+Diversity:\s+([\d.]+)"
+)
+_RE_NEW_BEST = re.compile(r"\[NEW BEST\]\s+(\S+)\s+with fitness\s+([\d.]+)")
+_RE_CONFIG_FLAG = re.compile(r"--config\s+(\S+)")
 
 
 class DataService:
@@ -56,9 +68,13 @@ class DataService:
     # ── Runs ───────────────────────────────────────────────────────
 
     def list_runs(self) -> List[RunSummary]:
-        """List all runs: active (from RunManager) + past (from disk)."""
+        """List all runs: active (from RunManager) + external CLI runs + past (from disk)."""
         active = self.run_manager.list_runs()
         active_ids = {r.run_id for r in active}
+
+        # Discover externally-started GA processes (CLI / nohup / systemd)
+        external = self._discover_external_runs(active_ids)
+        all_ids = active_ids | {r.run_id for r in external}
 
         # Scan disk for past runs
         past: List[RunSummary] = []
@@ -67,20 +83,48 @@ class DataService:
                 if not run_dir.is_dir():
                     continue
                 rid = run_dir.name
-                if rid in active_ids:
+                if rid in all_ids:
                     continue
                 summary = self._load_run_summary_from_disk(rid, run_dir)
                 if summary:
                     past.append(summary)
 
-        return active + past
+        return active + external + past
 
     def get_run_detail(self, run_id: str) -> Optional[RunDetail]:
-        """Get full detail for a run (active or past)."""
+        """Get full detail for a run (active, external, or past)."""
         handle = self.run_manager.get_run(run_id)
         if handle:
             return self._run_detail_from_handle(handle)
+
+        # Check if it's an external run (ext_<config_stem>_<pid>)
+        if run_id.startswith("ext_"):
+            return self._external_run_detail(run_id)
+
         return self._load_run_detail_from_disk(run_id)
+
+    def _external_run_detail(self, run_id: str) -> Optional[RunDetail]:
+        """Build a RunDetail for an externally-started GA process."""
+        externals = self._discover_external_runs(set())
+        for summary in externals:
+            if summary.run_id == run_id:
+                return RunDetail(
+                    run_id=summary.run_id,
+                    status=summary.status,
+                    config_name=summary.config_name,
+                    current_generation=summary.current_generation,
+                    total_generations=summary.total_generations,
+                    best_fitness=summary.best_fitness,
+                    best_profit=summary.best_profit,
+                    population_size=summary.population_size,
+                    started_at=summary.started_at,
+                    elapsed_seconds=summary.elapsed_seconds,
+                    pairs=summary.pairs,
+                    config={},
+                    generation_stats=[],
+                    best_individual_id=None,
+                    mode="external",
+                )
 
     # ── Generations ────────────────────────────────────────────────
 
@@ -345,6 +389,208 @@ class DataService:
             return None
         with open(path) as f:
             return yaml.safe_load(f)
+
+    # ── External Run Discovery ────────────────────────────────────
+
+    def _discover_external_runs(self, exclude_ids: set) -> List[RunSummary]:
+        """
+        Discover GA processes started outside the dashboard (CLI, nohup, systemd).
+
+        Scans /proc for running ``run_ga.py`` processes, resolves which config
+        and log file they use, then parses the log to extract live progress.
+        This is completely read-only — the running GA process is never touched.
+        """
+        external: List[RunSummary] = []
+        try:
+            running = self._find_ga_processes()
+        except Exception:
+            logger.debug("Failed to scan for external GA processes", exc_info=True)
+            return external
+
+        for pid, config_path, started_at in running:
+            run_id = f"ext_{Path(config_path).stem}_{pid}"
+            if run_id in exclude_ids:
+                continue
+
+            # Load the config to get metadata
+            config = self._load_external_config(config_path)
+            if not config:
+                continue
+
+            ga_cfg = config.get("genetic_algorithm", {})
+            log_file = config.get("logging", {}).get("file")
+
+            # Parse the log file for live progress
+            current_gen, total_gens, best_fitness, best_profit, best_id = (
+                self._parse_ga_log(log_file)
+            )
+
+            # Use config values as fallback for total_gens
+            if total_gens == 0:
+                total_gens = ga_cfg.get("generations", 0)
+
+            summary = RunSummary(
+                run_id=run_id,
+                status=RunStatus.RUNNING,
+                config_name=Path(config_path).stem,
+                current_generation=current_gen,
+                total_generations=total_gens,
+                best_fitness=best_fitness,
+                best_profit=best_profit,
+                population_size=ga_cfg.get("population_size", 0),
+                started_at=started_at,
+                elapsed_seconds=(time.time() - started_at) if started_at else None,
+                pairs=config.get("backtesting", {}).get("pairs", []),
+            )
+            external.append(summary)
+
+        return external
+
+    @staticmethod
+    def _find_ga_processes() -> List[Tuple[int, str, Optional[float]]]:
+        """
+        Find running ``run_ga.py`` processes via /proc (Linux-only).
+
+        Returns list of (pid, config_path, start_time_epoch).
+        Only returns the *main* GA process, filtering out worker forks
+        (children whose parent is also a ``run_ga.py`` process).
+        """
+        candidates: Dict[int, Tuple[str, Optional[float]]] = {}
+        proc = Path("/proc")
+        if not proc.exists():
+            return []
+
+        for entry in proc.iterdir():
+            if not entry.name.isdigit():
+                continue
+            pid = int(entry.name)
+            try:
+                cmdline_path = entry / "cmdline"
+                cmdline = cmdline_path.read_text().replace("\x00", " ").strip()
+                if "run_ga.py" not in cmdline:
+                    continue
+
+                # Extract --config path
+                m = _RE_CONFIG_FLAG.search(cmdline)
+                if not m:
+                    continue
+                config_path = m.group(1)
+
+                # Get process start time from /proc/[pid]/stat
+                start_time: Optional[float] = None
+                try:
+                    stat_path = entry / "stat"
+                    stat_content = stat_path.read_text()
+                    # Field 22 (0-indexed: 21) is starttime in clock ticks
+                    parts = stat_content.rsplit(")", 1)[-1].split()
+                    # Index 19 after the closing ')' = field 22 overall
+                    clock_ticks = int(parts[19])
+                    # Convert to epoch using system boot time
+                    with open("/proc/stat") as f:
+                        for line in f:
+                            if line.startswith("btime"):
+                                boot_time = int(line.split()[1])
+                                break
+                        else:
+                            boot_time = 0
+                    hz = os.sysconf("SC_CLK_TCK")
+                    start_time = boot_time + clock_ticks / hz
+                except Exception:
+                    pass
+
+                candidates[pid] = (config_path, start_time)
+            except (PermissionError, FileNotFoundError, ProcessLookupError):
+                continue
+
+        # Filter out worker forks: keep only PIDs whose parent is NOT
+        # another run_ga.py process.
+        ga_pids = set(candidates.keys())
+        results = []
+        for pid, (config_path, start_time) in candidates.items():
+            try:
+                stat_content = (proc / str(pid) / "stat").read_text()
+                ppid = int(stat_content.rsplit(")", 1)[-1].split()[1])
+            except Exception:
+                ppid = 0
+            if ppid not in ga_pids:
+                results.append((pid, config_path, start_time))
+
+        return results
+
+    @staticmethod
+    def _load_external_config(config_path: str) -> Optional[Dict[str, Any]]:
+        """Load a GA config YAML file, returning None on failure."""
+        p = Path(config_path)
+        if not p.exists():
+            return None
+        try:
+            with open(p) as f:
+                return yaml.safe_load(f) or {}
+        except Exception:
+            return None
+
+    @staticmethod
+    def _parse_ga_log(log_file: Optional[str]) -> Tuple[int, int, Optional[float], Optional[float], Optional[str]]:
+        """
+        Parse a GA log file to extract current progress.
+
+        Reads the last ~8KB of the file for efficiency (avoids reading
+        multi-MB logs). Scans for GENERATION, [STATS], and [NEW BEST] lines.
+
+        Returns:
+            (current_generation, total_generations, best_fitness, best_profit, best_id)
+        """
+        current_gen = 0
+        total_gens = 0
+        best_fitness: Optional[float] = None
+        best_profit: Optional[float] = None
+        best_id: Optional[str] = None
+
+        if not log_file:
+            return current_gen, total_gens, best_fitness, best_profit, best_id
+
+        log_path = Path(log_file)
+        if not log_path.exists():
+            return current_gen, total_gens, best_fitness, best_profit, best_id
+
+        try:
+            file_size = log_path.stat().st_size
+            # Read last 8KB for efficiency
+            read_size = min(file_size, 8192)
+            with open(log_path, "r", errors="replace") as f:
+                if file_size > read_size:
+                    f.seek(file_size - read_size)
+                    # Skip partial first line
+                    f.readline()
+                tail = f.read()
+
+            # Also read first 2KB for initial GENERATION line (total_gens)
+            if file_size > read_size:
+                with open(log_path, "r", errors="replace") as f:
+                    head = f.read(2048)
+                    m = _RE_GENERATION.search(head)
+                    if m:
+                        total_gens = int(m.group(2))
+
+            for line in tail.splitlines():
+                m = _RE_GENERATION.search(line)
+                if m:
+                    current_gen = int(m.group(1))
+                    total_gens = int(m.group(2))
+
+                m = _RE_STATS.search(line)
+                if m:
+                    best_fitness = float(m.group(1))
+
+                m = _RE_NEW_BEST.search(line)
+                if m:
+                    best_id = m.group(1)
+                    best_fitness = float(m.group(2))
+
+        except Exception:
+            logger.debug("Failed to parse GA log %s", log_file, exc_info=True)
+
+        return current_gen, total_gens, best_fitness, best_profit, best_id
 
     # ── Private helpers ────────────────────────────────────────────
 

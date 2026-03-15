@@ -489,13 +489,17 @@ class StrategyGenerator:
             return None
         
         elif indicator.type == 'CDL_DOJI':
-            # Doji indicates indecision, can be used as a filter
-            return ConditionGene(
-                indicator=indicator.type,
-                operator='>',  # Doji detected (value > 0)
-                threshold=0,
-                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
-            )
+            # Doji indicates indecision — TA-Lib returns 0 or +100, never negative.
+            # Only '>' is valid. Not suitable for exit conditions (return None).
+            if is_entry:
+                return ConditionGene(
+                    indicator=indicator.type,
+                    operator='>',  # Doji detected (value > 0)
+                    threshold=0,
+                    logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
+                )
+            # CDL_DOJI is not a reliable exit signal — skip
+            return None
         
         # For other indicators, return a generic condition
         return ConditionGene(
@@ -1759,9 +1763,11 @@ class {name}(IStrategy):
         
         elif indicator_type == 'CDL_DOJI':
             if condition.operator == '>':
-                return "(dataframe['cdl_doji'] > 0)"  # Doji detected (bullish signal)
+                return "(dataframe['cdl_doji'] > 0)"  # Doji detected
             elif condition.operator == '<':
-                return "(dataframe['cdl_doji'] < 0)"  # Doji detected (bearish signal)
+                # CDL_DOJI never returns negative — '< 0' is always false.
+                # Treat as '!= 0' to prevent dead conditions in legacy genes.
+                return "(dataframe['cdl_doji'] != 0)"  # Fallback: any doji
             else:
                 return "(dataframe['cdl_doji'] != 0)"  # Any doji detected
         

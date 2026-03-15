@@ -1,0 +1,312 @@
+# ============================================================================
+# PRODUCTION RUN: R7 — CDL_DOJI Fix & Trade-Count Scaling
+# ============================================================================
+# Based on: R6 Post-Bugfix Evolution
+# Changes from R6:
+#   - FIX: mutate_indicators replace operation now validates operators when
+#     indicator type changes (root cause of CDL_DOJI:< dead exit conditions)
+#   - FIX: _fix_invalid_operators now REMOVES positive-only CDL patterns from
+#     exit conditions and negative-only from entry conditions entirely
+#   - FIX: evolution.py calls _fix_invalid_operators after every mutation,
+#     preventing invalid operator/indicator combos from ever being evaluated
+#   - FIX: trade count thresholds now scale with num_pairs automatically;
+#     min_trades raised from 15 → 50 (10 per pair) for statistical significance
+#   - trade_frequency weight 0.03 → 0.06 (penalize ultra-low-trade strategies)
+#   - sharing_radius 0.22 → 0.28 (wider niching to prevent premature convergence)
+#   - random_immigrants 10 → 15 (15% of population for diversity injection)
+#   - diversity_threshold 0.15 → 0.20 (trigger corrective action earlier)
+#   - trade_frequency_thresholds: scaled for 5-pair backtests
+#   - Removed CDL_DOJI from available indicators — only valid for entry signals,
+#     the GA wastes slots trying to use it as exit. Better to use that slot for
+#     indicators that work both ways (STOCH, BBANDS, EMA, etc.)
+#   - Fresh output/checkpoint/HoF dirs (clean slate)
+#
+# Server: i5-9500T 6 cores / 16 GB RAM / NVMe
+# Expected runtime: ~14-22 hours
+#
+# Usage:
+#   cd /home/periklis/projects/trading/freqtradeForkGA
+#   source .venv/bin/activate
+#   python genetic_algorithm/run_ga.py \
+#     --config genetic_algorithm/config/ga_config_server_production_R7.yaml \
+#     --no-monitor --yes
+# ============================================================================
+
+# === Genetic Algorithm Parameters ===
+genetic_algorithm:
+  random_seed: null  # Different seed each run for exploration
+  population_size: 100
+  generations: 50
+  max_runtime_minutes: 1440  # 24h safety cap
+  mutation_rate: 0.20
+  crossover_rate: 0.75
+  crossover_method: 'uniform'
+  elite_size: 10  # ~10% of population
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 25
+  adaptive_mutation: true
+  max_adaptation_factor: 2.5
+  adaptation_step: 0.12
+  max_mutation_rate: 0.65
+  fitness_sharing: true
+  sharing_radius: 0.28     # was 0.22 — wider niching to prevent premature convergence
+  diversity_threshold: 0.20  # was 0.15 — trigger diversity correction earlier
+  allow_self_crossover: false
+  random_immigrants: 15  # was 10 — 15% of population for stronger diversity injection
+  mode: 'single_objective'
+
+# === Fitness Function Weights ===
+# R7: increase trade_frequency weight to penalize ultra-low-trade "no-exit" strategies
+fitness_weights:
+  profit: 0.36         # was 0.38 — slight reduction to make room for trade_frequency
+  sharpe_ratio: 0.12
+  sortino_ratio: 0.10
+  profit_factor: 0.08
+  drawdown: 0.12
+  win_rate: 0.05
+  trade_frequency: 0.06   # was 0.03 — doubled; low-trade strategies were unfairly favored
+  drawdown_duration: 0.02
+  consecutive_losses: 0.02
+  monthly_stability: 0.02
+  cross_pair: 0.05     # was 0.06 — slightly reduced
+
+# === Fitness Penalties ===
+fitness_penalties:
+  min_trades: 50         # was 15 — 10 per pair × 5 pairs for statistical significance
+  max_drawdown: 0.35
+  min_win_rate: 0.30
+  complexity_weight: 0.008
+  unused_indicator_weight: 0.02
+  pair_loss_threshold: -5.0
+
+# === Trade Frequency Thresholds ===
+# These scale automatically with num_pairs in the code, but overriding here
+# with explicit 5-pair values for clarity.
+trade_frequency_thresholds:
+  very_few: 5      # per pair (→ 25 total with 5 pairs via auto-scaling)
+  few: 10          # per pair (→ 50 total)
+  ideal_min: 15    # per pair (→ 75 total) — was 10; 15 min per pair over 3 years
+  ideal_max: 80    # per pair (→ 400 total) — was 50; raised for more tolerance
+  moderate_excess: 150  # per pair (→ 750 total) — was 100
+
+# === Backtesting Configuration ===
+backtesting:
+  timerange: "20230301-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+    - "ETH/USDT"
+    - "SOL/USDT"
+    - "BNB/USDT"
+    - "XRP/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: false
+  enable_cache: true
+  timeout: 180
+
+# === Walk-Forward Validation ===
+walk_forward:
+  enabled: true
+  train_days: 90
+  validation_days: 30
+  step_days: 30
+  mode: 'rolling'
+  aggregation: 'trimmed_mean'
+  min_train_trades: 10
+  max_windows: 10
+  embargo_days: 2
+
+# === Holdout Validation ===
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.15
+
+# === Holdout Monitoring ===
+holdout_monitoring:
+  enabled: true
+  interval: 3
+  top_n: 5
+  early_stop: true
+  early_stop_threshold: 0.60
+  early_stop_checks: 3
+  trend_early_stop: true
+  trend_checks: 3
+  fitness_penalty: true
+  penalty_factor: 0.8
+
+# === Regime-Aware (disabled) ===
+regime_aware:
+  enabled: false
+
+# === Monte Carlo Robustness ===
+monte_carlo:
+  enabled: true
+  num_permutations: 25
+  methods:
+    - 'bootstrap'
+    - 'shuffle'
+    - 'slippage'
+  confidence_level: 0.95
+  slippage_range: [0.0005, 0.002]
+  min_robustness: 0.60
+
+# === Deflated Sharpe Ratio ===
+deflated_sharpe:
+  enabled: true
+  min_trades: 10
+  benchmark_sr: 0.0
+  skewness_correction: true
+
+# === Parsimony Pressure ===
+parsimony:
+  enabled: true
+  max_indicators: 5
+  max_conditions: 6
+
+# === CPCV ===
+cpcv:
+  enabled: false
+
+# === Strategy Constraints ===
+strategy_constraints:
+  min_trades: 50         # was 15 — aligned with fitness penalty min_trades
+  max_drawdown: 0.35
+  min_win_rate: 0.30
+  timeframes: ["15m"]
+  stoploss_range: [-0.15, -0.03]
+  roi_range: [0.01, 0.12]
+  max_open_trades_range: [1, 4]
+  min_exit_conditions: 1
+
+# === Multi-Timeframe (disabled) ===
+multi_timeframe:
+  enabled: false
+
+# === Available Indicators ===
+# R7: Removed CDL_DOJI — only valid for entry signals, wastes indicator slots.
+# Kept CMF and VROC which work bidirectionally.
+# 12 indicators (was 13).
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "BBANDS"
+    - "ADX"
+    - "MACD"
+    - "SMA"
+    - "SUPERTREND"
+    - "STOCH"
+    - "ATR"
+    - "CCI"
+    - "CMF"
+    - "VROC"
+  max_per_strategy: 4
+  min_per_strategy: 2
+  min_entry_conditions: 2
+
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 38]
+    sell_threshold: [62, 80]
+  MACD:
+    fast_period: [8, 18]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [14, 30]
+    std_dev: [1.5, 3.0]
+  EMA:
+    period: [5, 50]
+  SMA:
+    period: [10, 100]
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [18, 38]
+    d_threshold: [62, 82]
+  ATR:
+    period: [10, 20]
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-200, -80]
+    sell_threshold: [80, 200]
+  SUPERTREND:
+    period: [7, 14]
+    multiplier: [2.0, 4.0]
+  CMF:
+    period: [14, 21]
+    threshold: [-0.2, 0.2]
+  VROC:
+    period: [10, 25]
+    threshold: [-20, 20]
+
+# === Visualization ===
+trade_visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: false
+
+# === Parallel Evaluation ===
+parallel_evaluation:
+  enabled: true
+  num_workers: 5  # 90% of 6 cores
+  worker_log_level: 'WARNING'
+  backtest_timeout: 180
+
+# === Output ===
+output:
+  dir: 'genetic_algorithm/output/production/R7'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 1
+
+# === Storage & Checkpoints ===
+storage:
+  database: "genetic_algorithm/data/production_R7.db"
+  strategy_dir: "user_data/strategies/production_R7"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_production_R7"
+  checkpoint_interval: 3
+  keep_history: true
+
+# === Logging ===
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/production_R7.log"
+  console: true
+
+# === Hall of Fame ===
+hall_of_fame:
+  enabled: true
+  max_size: 50
+  inject_count: 3
+  min_fitness: 0.10
+  directory: "genetic_algorithm/data/hall_of_fame_production_R7"
+
+# === Advanced ===
+advanced:
+  parallel_evaluation: false
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: false
+  llm:
+    enabled: false
+
+# === Overfit Analysis Thresholds ===
+overfit_analysis:
+  thresholds:
+    holdout_degradation_warning: 0.25
+    holdout_degradation_overfit: 0.50
+    wf_gap_warning: 0.15
+    wf_gap_overfit: 0.30
+    mc_robustness_warning: 0.70
+    mc_robustness_overfit: 0.50
+    composite_warning: 0.25
+    composite_overfit: 0.50

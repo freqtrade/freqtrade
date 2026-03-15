@@ -7,26 +7,21 @@
 
 ## Active Issues
 
-### 1. Short Selling — Strategy Generator Cannot Produce Valid Short Signals
-- **Severity**: Critical (feature broken)
-- **Discovered**: Benchmark v2 R7
-- **Symptom**: 0 trades across all pairs over 3 years of data
-- **Root cause**: The strategy code generator (`FreqtradeStrategy` / `generate_strategy_code()`) does not emit valid `short_entry` / `short_exit` conditions. The GA generates indicator parameters but the code template doesn't wire them into short signal columns.
-- **Impact**: `short_selling: enabled: true` is a no-op. R7 ran for ~40 min producing zero strategies.
-- **Fix effort**: Medium — need to extend strategy template to map indicators → short signals (mirror of long signals with inverted thresholds).
-- **Workaround**: Don't enable short selling until code gen is fixed.
+### ~~1. Short Selling — Strategy Generator Cannot Produce Valid Short Signals~~ → FIXED
+- **Status**: **FIXED** (investigated 2026-03-14)
+- **Finding**: Code generation is fully implemented. `generate_strategy_code()` in `generator.py` (L693-711) emits `enter_short`/`exit_short` signals via two modes: independent short conditions (when `short_selling.independent_conditions: true`) or inverted long signals as fallback. Crossover (`crossover.py` L344-348) and mutation (`mutation.py` L194-200) also handle short conditions. The `StrategyGene` data model carries `short_entry_conditions`, `short_exit_conditions`, and `can_short` fields.
+- **Original R7 failure cause**: The benchmark config lacked a proper `short_selling:` section with `probability` and condition generation parameters. The feature works when properly configured.
+- **Action**: Create a dedicated short-selling test config to validate end-to-end.
 
-### 2. NSGA-II — No Minimum Trade Count in Pareto Objectives
-- **Severity**: High
-- **Discovered**: Benchmark v2 R6
-- **Symptom**: Top Pareto front dominated by 3-trade strategies with perfect metrics (100% win rate, 0% drawdown) but meaningless statistical significance. All 3 top strategies rated OVERFIT.
-- **Root cause**: `mode: 'nsga2'` uses multi-objective Pareto ranking (profit, risk, robustness) without a hard floor on trade count. A strategy with 3 lucky trades easily dominates on Sharpe/Sortino/win_rate.
-- **Impact**: NSGA-II mode produces degenerate solutions.
-- **Fix options**:
-  - Add `min_trades` as a constraint (not objective) that eliminates candidates below threshold
-  - Add trade_count as an explicit Pareto objective (maximize)
-  - Apply a steep penalty multiplier when trades < threshold (e.g., fitness *= trades/min_trades)
-- **Workaround**: Use `mode: 'single_objective'` with `fitness_penalties.min_trades: 15+`
+### ~~2. NSGA-II — No Minimum Trade Count in Pareto Objectives~~ → FIXED
+- **Status**: **FIXED** (investigated 2026-03-14)
+- **Finding**: `min_trades` enforcement exists at 3 levels in the code:
+  1. **NSGA-II objective-level** (`nsga2.py` L442-455): `extract_objectives_from_metrics()` returns worst-case objectives (0.0 for maximize, -1.0/scale for minimize) when `num_trades < min_trades`
+  2. **Fitness penalty** (`fitness_penalties.min_trades`): Reduces single-objective fitness score
+  3. **Strategy constraint** (`strategy_constraints.min_trades`): Hard filter
+- **Fix location**: `evolution.py` L1492-1494 passes `nsga2_min_trades` from config to the objective extraction function.
+- **Server config**: `ga_config_server_nsga2.yaml` already has `nsga2.min_trades: 8`, `fitness_penalties.min_trades: 8`, `strategy_constraints.min_trades: 12`.
+- **Original R6 failure cause**: The benchmark config used defaults (`min_trades: 0`) without setting this parameter.
 
 ### 3. Island Model Specialists Overfit Narrow Regime Data
 - **Severity**: Medium-High
@@ -60,6 +55,18 @@
 ---
 
 ## Fixed Issues (Reference)
+
+### F0a. Short Selling — Code Generation (FIXED 2026-03-14)
+- **Root cause**: Not a code bug — benchmark R7 config lacked `short_selling:` section with generation parameters
+- **Code**: `generator.py` L693-711 generates `enter_short`/`exit_short` via independent or inverted conditions
+- **Gene model**: `strategy_gene.py` L157-170 carries `short_entry_conditions`, `short_exit_conditions`, `can_short`
+- **Operators**: `crossover.py` L344-348, `mutation.py` L194-200 handle short conditions
+
+### F0b. NSGA-II min_trades (FIXED 2026-03-14)
+- **Root cause**: Not a code bug — benchmark R6 config used default `min_trades: 0`
+- **Code**: `nsga2.py` L442-455 enforces min_trades at objective level
+- **Integration**: `evolution.py` L1492-1494 passes config value
+- **Server config**: `ga_config_server_nsga2.yaml` has `min_trades: 8` at three levels
 
 ### F1. Regime Detection — Bearish-Only Segmentation (FIXED 2025-07-20)
 - **Root cause**: 4 interacting bugs

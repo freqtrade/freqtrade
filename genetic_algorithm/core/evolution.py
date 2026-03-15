@@ -28,7 +28,7 @@ from genetic_algorithm.core.population import (
 )
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.selection import select_parents
-from genetic_algorithm.core.crossover import crossover, _enforce_min_entry_conditions
+from genetic_algorithm.core.crossover import crossover, _enforce_min_entry_conditions, _fix_invalid_operators
 from genetic_algorithm.core.mutation import mutate
 from genetic_algorithm.strategies.generator import StrategyGenerator
 from genetic_algorithm.evaluation.fitness import FitnessEvaluator
@@ -1915,7 +1915,8 @@ class GeneticAlgorithm:
                 try:
                     child = mutate(child, self.mutation_rate, self.config)
                     mutation_count += 1
-                    # Enforce min_entry_conditions after mutation
+                    # Validate operators and enforce min conditions after mutation
+                    _fix_invalid_operators(child.strategy_gene)
                     _enforce_min_entry_conditions(child.strategy_gene, self.config)
                     # Tag GA-origin for tracking
                     if 'origin' not in child.metrics:

@@ -63,11 +63,14 @@ class FitnessEvaluator:
         
         # Trade frequency thresholds
         tf_config = config.get('trade_frequency_thresholds', {})
-        self.tf_very_few = tf_config.get('very_few', 5)
-        self.tf_few = tf_config.get('few', 10)
-        self.tf_ideal_min = tf_config.get('ideal_min', 10)
-        self.tf_ideal_max = tf_config.get('ideal_max', 50)
-        self.tf_moderate_excess = tf_config.get('moderate_excess', 100)
+        # Scale thresholds by number of pairs for multi-pair backtests
+        num_pairs = len(self.backtest_config.get('pairs', ['BTC/USDT']))
+        pair_scale = max(1.0, num_pairs / 1.0)  # 1.0 for single pair baseline
+        self.tf_very_few = int(tf_config.get('very_few', 5) * pair_scale)
+        self.tf_few = int(tf_config.get('few', 10) * pair_scale)
+        self.tf_ideal_min = int(tf_config.get('ideal_min', 10) * pair_scale)
+        self.tf_ideal_max = int(tf_config.get('ideal_max', 50) * pair_scale)
+        self.tf_moderate_excess = int(tf_config.get('moderate_excess', 100) * pair_scale)
         
         # Validate walk-forward config if enabled
         if self.walk_forward_config.get('enabled', False):
@@ -967,9 +970,9 @@ class FitnessEvaluator:
         win_rate = metrics.get('win_rate', 0)
         
         # Soft penalty for low trade count (gradual instead of harsh)
-        # Raised default from 5→15 based on benchmark analysis: strategies with
-        # 5-10 trades got inflated fitness despite being statistically meaningless.
-        min_trades = penalties.get('min_trades', 15)
+        # Scales with number of pairs: min_trades * num_pairs ensures statistical significance
+        # across all traded pairs. Default 10 per pair → 50 for 5-pair backtests.
+        min_trades = penalties.get('min_trades', 10 * max(1, len(self.backtest_config.get('pairs', ['BTC/USDT']))))
         if num_trades < min_trades:
             if num_trades == 0:
                 fitness *= 0.01  # Near-zero fitness for no trades
