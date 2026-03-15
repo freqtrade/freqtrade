@@ -5,15 +5,15 @@ Documentation=https://github.com/your-repo/freqtradeForkGA
 
 [Service]
 Type=simple
-User=kali
-WorkingDirectory=/home/kali/trading/freqtradeForkGA
-Environment="PATH=/home/kali/trading/freqtradeForkGA/.venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="VIRTUAL_ENV=/home/kali/trading/freqtradeForkGA/.venv"
+User=periklis
+WorkingDirectory=/home/periklis/projects/trading/freqtradeForkGA
+Environment="PATH=/home/periklis/projects/trading/freqtradeForkGA/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="VIRTUAL_ENV=/home/periklis/projects/trading/freqtradeForkGA/.venv"
 
 # Main command — uses server-optimized config, non-interactive
-ExecStart=/home/kali/trading/freqtradeForkGA/.venv/bin/python \
+ExecStart=/home/periklis/projects/trading/freqtradeForkGA/.venv/bin/python \
     genetic_algorithm/run_ga.py \
-    --config genetic_algorithm/config/ga_config_server_6core.yaml \
+    --config genetic_algorithm/config/ga_config_server_production_R6.yaml \
     --no-monitor --yes
 
 # On crash: attempt to resume from latest checkpoint
@@ -28,11 +28,11 @@ TimeoutStopSec=60
 
 # Resource limits
 MemoryMax=14G
-CPUQuota=500%
+CPUQuota=540%
 
 # Logging
-StandardOutput=append:/home/kali/trading/freqtradeForkGA/genetic_algorithm/logs/ga_server.log
-StandardError=append:/home/kali/trading/freqtradeForkGA/genetic_algorithm/logs/ga_server_error.log
+StandardOutput=append:/home/periklis/projects/trading/freqtradeForkGA/genetic_algorithm/logs/ga_server.log
+StandardError=append:/home/periklis/projects/trading/freqtradeForkGA/genetic_algorithm/logs/ga_server_error.log
 
 [Install]
 WantedBy=multi-user.target

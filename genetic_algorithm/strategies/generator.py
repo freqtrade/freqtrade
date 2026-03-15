@@ -13,6 +13,9 @@ from genetic_algorithm.core.strategy_gene import (
     StrategyGene, IndicatorGene, ConditionGene, RegimeGene, is_higher_timeframe
 )
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
+from genetic_algorithm.strategies.operator_registry import (
+    is_valid_operator, resolve_indicator_type, get_valid_operators,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +217,7 @@ class StrategyGenerator:
                         'CDL_3WHITESOLDIERS', 'CDL_3BLACKCROWS']
         valid_indicators = [ind for ind in indicators 
                           if ind.type in ['RSI', 'MACD', 'STOCH', 'CCI', 'ADX', 'BBANDS', 'EMA', 'SMA',
-                                          'SUPERTREND', 'ICHIMOKU', 'DONCHIAN', 'VWAP', 'PSAR', 'CMF', 'VROC'] + PATTERN_TYPES]
+                                          'SUPERTREND', 'ICHIMOKU', 'DONCHIAN', 'VWAP', 'PSAR', 'CMF', 'VROC', 'ATR'] + PATTERN_TYPES]
         
         if not valid_indicators:
             # If no valid indicators, use first available indicator and create a basic condition
@@ -332,6 +335,18 @@ class StrategyGenerator:
                 indicator='ADX',
                 operator='>',
                 threshold=random.randint(*threshold_range),
+                logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
+            )
+        
+        elif indicator.type == 'ATR':
+            # ATR: volatility filter — compare ATR to a fraction of close price
+            # ATR values are typically 0.1%-5% of close, so threshold is a ratio
+            atr_threshold_range = ind_config.get('threshold_pct', [0.005, 0.03])
+            threshold = random.uniform(*atr_threshold_range)
+            return ConditionGene(
+                indicator='ATR',
+                operator='>' if is_entry else '<',
+                threshold=round(threshold, 4),
                 logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
         
@@ -477,7 +492,7 @@ class StrategyGenerator:
             # Doji indicates indecision, can be used as a filter
             return ConditionGene(
                 indicator=indicator.type,
-                operator='!=',  # Doji detected
+                operator='>',  # Doji detected (value > 0)
                 threshold=0,
                 logic=random.choices(['AND', 'OR'], weights=[0.75, 0.25])[0]
             )
@@ -722,6 +737,7 @@ from pandas import DataFrame
 import pandas as pd
 import talib.abstract as ta
 import numpy as np
+import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 class {strategy_name}(IStrategy):
     """Auto-generated GA strategy"""
@@ -1389,46 +1405,45 @@ class {name}(IStrategy):
     
     def _condition_has_valid_indicator(self, condition: ConditionGene, indicators: List[IndicatorGene]) -> bool:
         """
-        Check if a condition references an indicator that exists in the strategy.
+        Check if a condition references a valid indicator and has a valid operator.
+        
+        Validates both:
+        1. The condition's indicator exists in the strategy
+        2. The condition's operator is valid for that indicator type
         
         Args:
             condition: Condition to validate
             indicators: List of indicators in the strategy
             
         Returns:
-            True if the condition's indicator exists, False otherwise
+            True if the condition is valid, False otherwise
         """
         # Extract indicator type from condition reference
         indicator_ref = condition.indicator
-        
-        # CDL_* patterns have underscore in type name, not instance ID
-        # Instance IDs look like 'RSI_0', 'EMA_1' (type + number)
-        # BUT patterns can also have instance IDs like 'CDL_HAMMER_0'
-        if indicator_ref.startswith('CDL_'):
-            # Check for instance ID suffix on CDL patterns
-            parts = indicator_ref.rsplit('_', 1)
-            if len(parts) == 2 and parts[1].isdigit():
-                indicator_type = parts[0]  # e.g., 'CDL_HAMMER_0' -> 'CDL_HAMMER'
-            else:
-                indicator_type = indicator_ref  # e.g., 'CDL_HAMMER' stays as-is
-        elif '_' in indicator_ref:
-            parts = indicator_ref.rsplit('_', 1)
-            if len(parts) == 2 and parts[1].isdigit():
-                indicator_type = parts[0]  # e.g., 'RSI_0' -> 'RSI'
-            else:
-                indicator_type = indicator_ref
-        else:
-            indicator_type = indicator_ref
+        indicator_type = resolve_indicator_type(indicator_ref)
         
         # Check if any indicator in the list matches this type
+        indicator_exists = False
+        actual_type = indicator_type  # May be refined by matching indicator
         for ind in indicators:
             # Match by instance_id if available, otherwise by type
             if ind.instance_id and ind.instance_id == indicator_ref:
-                return True
+                indicator_exists = True
+                actual_type = ind.type
+                break
             elif ind.type == indicator_type:
-                return True
+                indicator_exists = True
+                actual_type = ind.type
+                break
         
-        return False
+        if not indicator_exists:
+            return False
+        
+        # Validate operator is supported for this indicator type
+        if not is_valid_operator(actual_type, condition.operator):
+            return False
+        
+        return True
     
     def _generate_single_condition(self, condition: ConditionGene, indicators: List[IndicatorGene]) -> str:
         """Generate a single condition expression.
@@ -1551,6 +1566,10 @@ class {name}(IStrategy):
                 return f"(dataframe['{macd_col}'] > dataframe['{signal_col}'])"
             elif condition.operator == 'cross_below':
                 return f"(dataframe['{macd_col}'] < dataframe['{signal_col}'])"
+            elif condition.operator == '>':
+                return f"(dataframe['{macd_col}'] > {condition.threshold})"
+            elif condition.operator == '<':
+                return f"(dataframe['{macd_col}'] < {condition.threshold})"
         
         elif indicator_type == 'STOCH':
             slowk_col = f"slowk{tf_suffix}"
@@ -1572,6 +1591,10 @@ class {name}(IStrategy):
                 return f"(dataframe['{col}'] < {condition.threshold})"
             elif condition.operator == '>':
                 return f"(dataframe['{col}'] > {condition.threshold})"
+            elif condition.operator == 'cross_above':
+                return f"(qtpylib.crossed_above(dataframe['{col}'], {condition.threshold}))"
+            elif condition.operator == 'cross_below':
+                return f"(qtpylib.crossed_below(dataframe['{col}'], {condition.threshold}))"
         
         elif indicator_type == 'ADX':
             # Use actual ADX period if available (try instance_id first, then type)
@@ -1581,6 +1604,26 @@ class {name}(IStrategy):
                 return f"(dataframe['{col}'] > {condition.threshold})"
             elif condition.operator == '<':
                 return f"(dataframe['{col}'] < {condition.threshold})"
+            elif condition.operator == 'cross_above':
+                return f"(qtpylib.crossed_above(dataframe['{col}'], {condition.threshold}))"
+            elif condition.operator == 'cross_below':
+                return f"(qtpylib.crossed_below(dataframe['{col}'], {condition.threshold}))"
+        
+        elif indicator_type == 'ATR':
+            # ATR conditions — compare ATR value against threshold
+            # ATR threshold is a ratio of close price for portability
+            period = indicator_periods.get(indicator_ref, indicator_periods.get('ATR', 14))
+            col = f"atr_{period}{tf_suffix}"
+            close = f"close{tf_suffix}" if tf_suffix else "close"
+            threshold = condition.threshold if condition.threshold not in (None, 0) else 0.01
+            if condition.operator == '>':
+                return f"(dataframe['{col}'] > dataframe['{close}'] * {threshold})"
+            elif condition.operator == '<':
+                return f"(dataframe['{col}'] < dataframe['{close}'] * {threshold})"
+            elif condition.operator == 'cross_above':
+                return f"(qtpylib.crossed_above(dataframe['{col}'], dataframe['{close}'] * {threshold}))"
+            elif condition.operator == 'cross_below':
+                return f"(qtpylib.crossed_below(dataframe['{col}'], dataframe['{close}'] * {threshold}))"
         
         elif indicator_type == 'BBANDS':
             # Bollinger Bands conditions
@@ -1670,18 +1713,18 @@ class {name}(IStrategy):
                 return f"(dataframe['{close}'] < dataframe['psar'])"
         
         elif indicator_type == 'CMF':
-            threshold = condition.threshold if condition.threshold else 0.1
+            threshold = condition.threshold if condition.threshold is not None else 0.1
             if condition.operator in ['>', 'cross_above']:
                 return f"(dataframe['cmf'] > {threshold})"
             elif condition.operator in ['<', 'cross_below']:
                 return f"(dataframe['cmf'] < {threshold})"
         
         elif indicator_type == 'VROC':
-            threshold = condition.threshold if condition.threshold else 100
+            threshold = condition.threshold if condition.threshold is not None else 100
             if condition.operator in ['>', 'cross_above']:
                 return f"(dataframe['vroc'] > {threshold})"
             elif condition.operator in ['<', 'cross_below']:
-                return f"(dataframe['vroc'] < -{threshold})"
+                return f"(dataframe['vroc'] < -{abs(threshold)})"
         
         # === CANDLESTICK PATTERN CONDITIONS ===
         # Patterns return: >0 bullish, <0 bearish, ==0 no pattern
@@ -1715,7 +1758,12 @@ class {name}(IStrategy):
             return "(dataframe['cdl_shootingstar'] != 0)"  # Shooting star detected
         
         elif indicator_type == 'CDL_DOJI':
-            return "(dataframe['cdl_doji'] != 0)"  # Doji detected
+            if condition.operator == '>':
+                return "(dataframe['cdl_doji'] > 0)"  # Doji detected (bullish signal)
+            elif condition.operator == '<':
+                return "(dataframe['cdl_doji'] < 0)"  # Doji detected (bearish signal)
+            else:
+                return "(dataframe['cdl_doji'] != 0)"  # Any doji detected
         
         elif indicator_type == 'CDL_PIERCING':
             return "(dataframe['cdl_piercing'] != 0)"  # Piercing line detected

@@ -1,0 +1,297 @@
+# ============================================================================
+# PRODUCTION RUN: R6 — Post-Bugfix Evolution
+# ============================================================================
+# Based on: R5 Multi-Pair (server production)
+# Changes from R5:
+#   - ALL operator/handler bugs fixed (operator_registry, generator, mutation)
+#   - profit weight 0.30 → 0.38 (stronger profit signal)
+#   - cross_pair weight 0.10 → 0.06 (was over-penalizing diverse strategies)
+#   - walk-forward aggregation: harmonic_mean → trimmed_mean (less brutal)
+#   - Monte Carlo permutations: 50 → 25 (faster evals, still robust)
+#   - embargo_days: 2 (prevent look-ahead leak at window boundaries)
+#   - population_size: 80 → 100 (exploit larger valid operator space)
+#   - convergence_patience: 20 → 25 (larger pop needs more patience)
+#   - Added CDL_DOJI, CMF, VROC to available indicators (handlers now work)
+#   - Fresh output/checkpoint/HoF dirs (clean slate, no buggy-era artifacts)
+#
+# Server: i5-9500T 6 cores / 16 GB RAM / NVMe
+# Expected runtime: ~14-22 hours
+#
+# Usage:
+#   cd /home/periklis/projects/trading/freqtradeForkGA
+#   source .venv/bin/activate
+#   python genetic_algorithm/run_ga.py \
+#     --config genetic_algorithm/config/ga_config_server_production_R6.yaml \
+#     --no-monitor --yes
+# ============================================================================
+
+# === Genetic Algorithm Parameters ===
+genetic_algorithm:
+  random_seed: null  # Different seed each run for exploration
+  population_size: 100
+  generations: 50
+  max_runtime_minutes: 1440  # 24h safety cap
+  mutation_rate: 0.20
+  crossover_rate: 0.75
+  crossover_method: 'uniform'
+  elite_size: 10  # ~10% of population
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 25
+  adaptive_mutation: true
+  max_adaptation_factor: 2.5
+  adaptation_step: 0.12
+  max_mutation_rate: 0.65
+  fitness_sharing: true
+  sharing_radius: 0.22
+  diversity_threshold: 0.15
+  allow_self_crossover: false
+  random_immigrants: 10  # ~10% of population
+  mode: 'single_objective'
+
+# === Fitness Function Weights ===
+# R6 tuning: stronger profit signal, reduced cross-pair penalty
+fitness_weights:
+  profit: 0.38         # was 0.30 — strongest signal for profitable strategies
+  sharpe_ratio: 0.12
+  sortino_ratio: 0.10
+  profit_factor: 0.08
+  drawdown: 0.12
+  win_rate: 0.05
+  trade_frequency: 0.03  # was 0.05 — slightly less pressure to over-trade
+  drawdown_duration: 0.02
+  consecutive_losses: 0.02
+  monthly_stability: 0.02  # was 0.04 — reduced; was fighting profit signal
+  cross_pair: 0.06     # was 0.10 — over-penalized valid pair-specialist strategies
+
+# === Fitness Penalties ===
+fitness_penalties:
+  min_trades: 15
+  max_drawdown: 0.35
+  min_win_rate: 0.30
+  complexity_weight: 0.008
+  unused_indicator_weight: 0.02
+  pair_loss_threshold: -5.0
+
+# === Backtesting Configuration ===
+backtesting:
+  timerange: "20230301-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+    - "ETH/USDT"
+    - "SOL/USDT"
+    - "BNB/USDT"
+    - "XRP/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: false
+  enable_cache: true
+  timeout: 180
+
+# === Walk-Forward Validation ===
+walk_forward:
+  enabled: true
+  train_days: 90
+  validation_days: 30
+  step_days: 30
+  mode: 'rolling'
+  aggregation: 'trimmed_mean'  # was 'harmonic_mean' — less brutal on outlier windows
+  min_train_trades: 10
+  max_windows: 10
+  embargo_days: 2  # NEW: prevent look-ahead leak at window boundaries
+
+# === Holdout Validation ===
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.15
+
+# === Holdout Monitoring ===
+holdout_monitoring:
+  enabled: true
+  interval: 3
+  top_n: 5
+  early_stop: true
+  early_stop_threshold: 0.60
+  early_stop_checks: 3
+  trend_early_stop: true
+  trend_checks: 3
+  fitness_penalty: true
+  penalty_factor: 0.8
+
+# === Regime-Aware (disabled — using multi-pair regularization instead) ===
+regime_aware:
+  enabled: false
+
+# === Monte Carlo Robustness ===
+monte_carlo:
+  enabled: true
+  num_permutations: 25  # was 50 — still robust, ~2x faster evaluations
+  methods:
+    - 'bootstrap'
+    - 'shuffle'
+    - 'slippage'
+  confidence_level: 0.95
+  slippage_range: [0.0005, 0.002]
+  min_robustness: 0.60
+
+# === Deflated Sharpe Ratio ===
+deflated_sharpe:
+  enabled: true
+  min_trades: 10
+  benchmark_sr: 0.0
+  skewness_correction: true
+
+# === Parsimony Pressure ===
+parsimony:
+  enabled: true
+  max_indicators: 5
+  max_conditions: 6
+
+# === CPCV ===
+cpcv:
+  enabled: false
+
+# === Strategy Constraints ===
+strategy_constraints:
+  min_trades: 15
+  max_drawdown: 0.35
+  min_win_rate: 0.30
+  timeframes: ["15m"]
+  stoploss_range: [-0.15, -0.03]
+  roi_range: [0.01, 0.12]
+  max_open_trades_range: [1, 4]
+  min_exit_conditions: 1
+
+# === Multi-Timeframe (disabled for now) ===
+multi_timeframe:
+  enabled: false
+
+# === Available Indicators ===
+# R6: added CDL_DOJI, CMF, VROC — handlers now fully implemented & tested
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "BBANDS"
+    - "ADX"
+    - "MACD"
+    - "SMA"
+    - "SUPERTREND"
+    - "STOCH"
+    - "ATR"
+    - "CCI"
+    - "CDL_DOJI"
+    - "CMF"
+    - "VROC"
+  max_per_strategy: 4
+  min_per_strategy: 2
+  min_entry_conditions: 2
+
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 38]
+    sell_threshold: [62, 80]
+  MACD:
+    fast_period: [8, 18]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [14, 30]
+    std_dev: [1.5, 3.0]
+  EMA:
+    period: [5, 50]
+  SMA:
+    period: [10, 100]
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [18, 38]
+    d_threshold: [62, 82]
+  ATR:
+    period: [10, 20]
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-200, -80]
+    sell_threshold: [80, 200]
+  SUPERTREND:
+    period: [7, 14]
+    multiplier: [2.0, 4.0]
+  CDL_DOJI:
+    # Candlestick pattern — no configurable parameters
+    # Uses operators: > (pattern present), < (pattern absent)
+  CMF:
+    period: [14, 21]
+    threshold: [-0.2, 0.2]
+  VROC:
+    period: [10, 25]
+    threshold: [-20, 20]
+
+# === Visualization ===
+trade_visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: false
+
+# === Parallel Evaluation ===
+parallel_evaluation:
+  enabled: true
+  num_workers: 5  # 90% of 6 cores — leave 1 for OS/SSH/dashboard
+  worker_log_level: 'WARNING'
+  backtest_timeout: 180
+
+# === Output ===
+output:
+  dir: 'genetic_algorithm/output/production/R6'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 1
+
+# === Storage & Checkpoints ===
+storage:
+  database: "genetic_algorithm/data/production_R6.db"
+  strategy_dir: "user_data/strategies/production_R6"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_production_R6"
+  checkpoint_interval: 3  # Frequent for remote safety
+  keep_history: true
+
+# === Logging ===
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/production_R6.log"
+  console: true
+
+# === Hall of Fame ===
+hall_of_fame:
+  enabled: true
+  max_size: 50
+  inject_count: 3  # Re-inject top 3 from HoF each generation
+  min_fitness: 0.10
+  directory: "genetic_algorithm/data/hall_of_fame_production_R6"
+
+# === Advanced ===
+advanced:
+  parallel_evaluation: false
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: false
+  llm:
+    enabled: false
+
+# === Overfit Analysis Thresholds ===
+overfit_analysis:
+  thresholds:
+    holdout_degradation_warning: 0.25
+    holdout_degradation_overfit: 0.50
+    wf_gap_warning: 0.15
+    wf_gap_overfit: 0.30
+    mc_robustness_warning: 0.70
+    mc_robustness_overfit: 0.50
+    composite_warning: 0.25
+    composite_overfit: 0.50

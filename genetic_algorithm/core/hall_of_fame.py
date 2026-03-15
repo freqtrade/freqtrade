@@ -15,6 +15,9 @@ from dataclasses import dataclass, field
 
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.strategy_gene import StrategyGene
+from genetic_algorithm.strategies.operator_registry import (
+    is_valid_operator, resolve_indicator_type, get_standard_operators
+)
 
 logger = logging.getLogger(__name__)
 
@@ -230,6 +233,9 @@ class HallOfFame:
         """
         Create Individual objects from hall of fame entries for re-injection.
         
+        Validates operator/indicator compatibility using the central operator
+        registry, replacing any invalid operators with valid alternatives.
+        
         Args:
             count: Maximum number of individuals to return.
             
@@ -240,6 +246,8 @@ class HallOfFame:
         for entry in self.entries[:count]:
             try:
                 gene = StrategyGene.from_dict(entry.strategy_gene_dict)
+                # Validate and fix operator/indicator compatibility
+                self._fix_invalid_operators(gene)
                 ind = Individual(strategy_gene=gene)
                 ind.metadata = {'source': 'hall_of_fame', 'original_fitness': entry.fitness}
                 individuals.append(ind)
@@ -248,6 +256,30 @@ class HallOfFame:
                 continue
         
         return individuals
+
+    @staticmethod
+    def _fix_invalid_operators(gene: StrategyGene) -> None:
+        """Fix any invalid operator/indicator combos in a restored gene."""
+        import random
+        indicator_map = {ind.instance_id: ind for ind in gene.indicators if ind.instance_id}
+        
+        for cond_list in (gene.entry_conditions, gene.exit_conditions):
+            for cond in cond_list:
+                ind_obj = indicator_map.get(cond.indicator)
+                if ind_obj is not None:
+                    ind_type = ind_obj.type
+                else:
+                    # Fall back to parsing the indicator reference string
+                    ind_type = resolve_indicator_type(cond.indicator)
+                if not is_valid_operator(ind_type, cond.operator):
+                    valid_ops = get_standard_operators(ind_type)
+                    if not valid_ops:
+                        continue
+                    old_op = cond.operator
+                    cond.operator = random.choice(valid_ops)
+                    logger.debug(
+                        f"[HOF FIX] {ind_type} operator '{old_op}' -> '{cond.operator}'"
+                    )
     
     def get_summary(self) -> Dict[str, Any]:
         """Return a summary of the hall of fame."""

@@ -12,6 +12,9 @@ from typing import Tuple
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.strategy_gene import StrategyGene
 from genetic_algorithm.core.mutation import clamp_condition_thresholds
+from genetic_algorithm.strategies.operator_registry import (
+    is_valid_operator, resolve_indicator_type, get_standard_operators,
+)
 
 
 def _deduplicate_indicators(gene: StrategyGene) -> None:
@@ -24,6 +27,27 @@ def _deduplicate_indicators(gene: StrategyGene) -> None:
             seen.add(key)
             deduped.append(ind)
     gene.indicators = deduped
+
+
+def _fix_invalid_operators(gene: StrategyGene) -> None:
+    """Fix conditions whose operator is invalid for their indicator type.
+    
+    After crossover, a condition may reference an operator that came from a
+    different indicator context.  Replace with a random valid operator.
+    """
+    for cond in gene.entry_conditions + gene.exit_conditions:
+        # Resolve the actual indicator type for this condition
+        ind_type = resolve_indicator_type(cond.indicator)
+        # Also check against actual indicators in the strategy
+        for ind in gene.indicators:
+            if (ind.instance_id and ind.instance_id == cond.indicator) or ind.type == ind_type:
+                ind_type = ind.type
+                break
+        if not is_valid_operator(ind_type, cond.operator):
+            valid_ops = get_standard_operators(ind_type)
+            if valid_ops:
+                cond.operator = random.choice(valid_ops)
+            # else: unknown indicator, leave as-is (will be caught later)
 
 
 def _enforce_max_indicators(gene: StrategyGene, config: dict) -> None:
@@ -268,6 +292,7 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
     for g in (child1_gene, child2_gene):
         _deduplicate_indicators(g)
         _enforce_max_indicators(g, config)
+        _fix_invalid_operators(g)
         g.entry_conditions = _deduplicate_conditions(g.entry_conditions)
         g.exit_conditions = _deduplicate_conditions(g.exit_conditions)
         clamp_condition_thresholds(g.entry_conditions)
@@ -398,6 +423,7 @@ def uniform_crossover(parent1: Individual, parent2: Individual,
     for g in (child1_gene, child2_gene):
         _deduplicate_indicators(g)
         _enforce_max_indicators(g, config)
+        _fix_invalid_operators(g)
         g.entry_conditions = _deduplicate_conditions(g.entry_conditions)
         g.exit_conditions = _deduplicate_conditions(g.exit_conditions)
         clamp_condition_thresholds(g.entry_conditions)
@@ -487,6 +513,7 @@ def component_crossover(parent1: Individual, parent2: Individual,
     for g in (child1_gene, child2_gene):
         _deduplicate_indicators(g)
         _enforce_max_indicators(g, config)
+        _fix_invalid_operators(g)
         g.entry_conditions = _deduplicate_conditions(g.entry_conditions)
         g.exit_conditions = _deduplicate_conditions(g.exit_conditions)
         clamp_condition_thresholds(g.entry_conditions)

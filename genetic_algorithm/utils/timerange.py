@@ -244,7 +244,7 @@ def validate_walk_forward_config(config: Dict[str, Any]) -> None:
     
     # Validate aggregation method
     aggregation = config.get('aggregation', 'mean')
-    valid_aggregations = ['mean', 'min', 'harmonic_mean', 'weighted']
+    valid_aggregations = ['mean', 'min', 'harmonic_mean', 'weighted', 'trimmed_mean']
     if aggregation not in valid_aggregations:
         raise ValueError(f"Walk-forward aggregation must be one of {valid_aggregations}, got '{aggregation}'")
     
@@ -266,7 +266,7 @@ def aggregate_validation_scores(
     
     Args:
         scores: List of validation fitness scores (one per window)
-        method: Aggregation method - 'mean', 'min', 'harmonic_mean', or 'weighted'
+        method: Aggregation method - 'mean', 'min', 'harmonic_mean', 'weighted', or 'trimmed_mean'
         weights: Optional weights for 'weighted' method (must sum to 1.0)
         
     Returns:
@@ -307,6 +307,21 @@ def aggregate_validation_scores(
         reciprocal_sum = sum(1.0 / s for s in valid_scores)
         return len(valid_scores) / reciprocal_sum
     
+    elif method == 'trimmed_mean':
+        # Trim top and bottom ~10% of scores, then average the rest.
+        # More robust to outlier windows than plain mean, less brutal than harmonic_mean.
+        sorted_scores = sorted(valid_scores)
+        n = len(sorted_scores)
+        if n <= 2:
+            # Not enough scores to trim — fall back to plain mean
+            return sum(sorted_scores) / n
+        trim_count = max(1, n // 10)  # trim at least 1 from each end
+        trimmed = sorted_scores[trim_count : n - trim_count]
+        if not trimmed:
+            # Edge case: all scores trimmed (very small n) — use full list
+            return sum(sorted_scores) / n
+        return sum(trimmed) / len(trimmed)
+
     elif method == 'weighted':
         if weights is None:
             raise ValueError("Weights must be provided for 'weighted' aggregation")
@@ -331,7 +346,7 @@ def aggregate_validation_scores(
     
     else:
         raise ValueError(f"Unknown aggregation method: {method}. "
-                        f"Must be 'mean', 'min', 'harmonic_mean', or 'weighted'")
+                        f"Must be 'mean', 'min', 'harmonic_mean', 'weighted', or 'trimmed_mean'")
 
 
 if __name__ == '__main__':

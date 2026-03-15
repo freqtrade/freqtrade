@@ -12,6 +12,9 @@ from typing import Dict, Any, Optional
 from genetic_algorithm.core.individual import Individual
 from genetic_algorithm.core.strategy_gene import StrategyGene, IndicatorGene, ConditionGene, RegimeGene, is_higher_timeframe
 from genetic_algorithm.utils.indicator_factory import create_random_indicator
+from genetic_algorithm.strategies.operator_registry import (
+    get_valid_operators, is_valid_operator, resolve_indicator_type, get_standard_operators,
+)
 
 # Set up logger for mutation operations
 logger = logging.getLogger(__name__)
@@ -25,6 +28,7 @@ _THRESHOLD_CLAMPS = {
     'CMF':   (-1,  1),
     'VROC':  (-500, 500),
     'ADX':   (0,   100),
+    'ATR':   (0.001, 0.1),
 }
 
 
@@ -131,6 +135,7 @@ def _mutate_condition_threshold(condition, ind_config, is_entry, i, mutations_ap
         'ROC':   ([-5, 0], [0, 5]),
         'VROC':  ([-200, -50], [50, 200]),
         'CMF':   ([-0.2, -0.05], [0.05, 0.2]),
+        'ATR':   ([0.005, 0.02], [0.005, 0.02]),  # volatility ratio of close price
     }
 
     defaults = _DEFAULT_RANGES.get(base_indicator)
@@ -404,8 +409,14 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
         mutation_type = random.choice(['operator', 'logic', 'threshold'])
         
         if mutation_type == 'operator':
-            condition.operator = random.choice(['<', '>', 'cross_above', 'cross_below',
-                                                'increasing', 'decreasing', 'between', 'value_above_ago'])
+            # Use registry to pick only valid operators for this indicator type
+            ind_type = resolve_indicator_type(condition.indicator)
+            valid_ops = get_valid_operators(ind_type)
+            if not valid_ops:
+                # Unknown indicator — fall back to standard operators
+                valid_ops = ['<', '>', 'cross_above', 'cross_below',
+                             'increasing', 'decreasing', 'between', 'value_above_ago']
+            condition.operator = random.choice(valid_ops)
             # Set sane defaults for new operators
             if condition.operator == 'between':
                 # Set a reasonable upper threshold
@@ -556,9 +567,11 @@ def _create_random_condition(indicator_type: str, is_entry: bool,
     operator = entry_op if is_entry else exit_op
     
     # MACD, BBANDS, EMA, SMA, ATR, PSAR, SUPERTREND, ICHIMOKU, DONCHIAN, VWAP use threshold 0
-    if indicator_type in ['MACD', 'BBANDS', 'EMA', 'SMA', 'ATR', 'PSAR', 'SUPERTREND', 
+    if indicator_type in ['MACD', 'BBANDS', 'EMA', 'SMA', 'PSAR', 'SUPERTREND', 
                           'ICHIMOKU', 'DONCHIAN', 'VWAP']:
         threshold = 0
+    elif indicator_type == 'ATR':
+        threshold = random.uniform(0.005, 0.03)
     else:
         threshold_key = entry_key if is_entry else exit_key
         default_range = entry_default if is_entry else exit_default
@@ -802,7 +815,10 @@ def mutate_condition_reassign(individual: Individual, mutation_rate: float,
             if replacement.operator == 'between':
                 cond.threshold_upper = replacement.threshold_upper
         else:
-            # Fallback: keep operator, reset threshold to 0
+            # Fallback: pick a valid operator for the new indicator type
+            valid_ops = get_standard_operators(new_type)
+            if valid_ops:
+                cond.operator = random.choice(valid_ops)
             cond.threshold = 0
 
         mutations_applied.append(

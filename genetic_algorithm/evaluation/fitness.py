@@ -905,7 +905,14 @@ class FitnessEvaluator:
         metrics['dsr_penalty'] = dsr_info.get('dsr_penalty', 1.0)
         
         # Register this evaluation for future DSR calculations
-        self._dsr_tracker.register_evaluation()
+        # Use a structural hash so re-evaluations of the same strategy
+        # (e.g. across walk-forward windows) count as ONE trial.
+        strategy_hash = None
+        if strategy_gene is not None:
+            import hashlib, json as _json
+            gene_fp = _json.dumps(strategy_gene.to_dict(), sort_keys=True, default=str)
+            strategy_hash = hashlib.sha256(gene_fp.encode()).hexdigest()[:16]
+        self._dsr_tracker.register_evaluation(strategy_hash=strategy_hash)
         
         # Apply penalties and return
         penalized_fitness = self._apply_penalties(fitness, metrics, strategy_gene)
