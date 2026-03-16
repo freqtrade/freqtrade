@@ -141,6 +141,19 @@ class HyperOptimizer:
         # self.backtesting.exchange = None  # type: ignore
         self.backtesting.pairlists = None  # type: ignore
 
+        # FreqAI: predictions are already cached in pickle file,
+        # nullify the entire freqai object to allow parallel hyperopt (-j > 1).
+        # FreqAI models may contain unpicklable objects (e.g. CUDA tensors,
+        # CatBoost internals) that cause cloudpickle to fail when sending
+        # the strategy to worker processes.
+        strategy = self.backtesting.strategy
+        if hasattr(strategy, "freqai") and strategy.freqai is not None:
+            try:
+                strategy.freqai.shutdown()
+            except Exception:
+                logger.debug("FreqAI shutdown failed during hyperopt cleanup, ignoring.")
+            strategy.freqai = None  # type: ignore
+
     def get_strategy_name(self) -> str:
         return self.backtesting.strategy.get_strategy_name()
 
