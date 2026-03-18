@@ -1,0 +1,251 @@
+# ============================================================================
+# WAVE 2 — E8: Standard GA with Strict Anti-Overfit Settings
+# ============================================================================
+# Purpose: Test whether strict penalties and conservative mutation can match
+#          the island model's SAFE ratio from E3, but with the simpler
+#          standard GA approach. This tests the hypothesis:
+#          "Is island model necessary, or can we get SAFE results from
+#           a well-tuned standard GA with strong validation?"
+#
+# Key differences from E1 (baseline):
+#   - Tighter drawdown constraint (0.20 vs 0.30)
+#   - Higher min_trades (15 vs 10)
+#   - fitness_penalty from holdout monitoring ON
+#   - Lower mutation (0.15 vs 0.20) — less exploration, more exploitation
+#   - Early stop on holdout degradation enabled
+#   - Longer WF training windows (120 days vs 90)
+#
+# Expected: Fewer but higher-quality SAFE strategies than E1.
+#           Maybe lower absolute fitness than E3 but comparable holdout.
+# ============================================================================
+
+genetic_algorithm:
+  random_seed: 88
+  population_size: 15
+  generations: 12
+  max_runtime_minutes: 300
+  mutation_rate: 0.15           # Conservative mutation
+  crossover_rate: 0.80
+  crossover_method: 'uniform'
+  elite_size: 3                 # Stronger elitism (E1 was 2)
+  tournament_size: 4            # Stronger selection pressure
+  selection_method: 'tournament'
+  convergence_patience: 6       # Earlier convergence detection
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.10
+  max_mutation_rate: 0.35       # Cap lower than E1 (was 0.45)
+  fitness_sharing: true
+  sharing_radius: 0.30
+  diversity_threshold: 0.20
+  allow_self_crossover: false
+  random_immigrants: 1          # Fewer immigrants (E1 was 2)
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.25                  # Reduce profit weight (E1 was 0.30)
+  sharpe_ratio: 0.18            # Emphasize risk-adjusted returns
+  sortino_ratio: 0.14
+  profit_factor: 0.10
+  drawdown: 0.18                # Increase drawdown weight (E1 was 0.15)
+  win_rate: 0.05
+  trade_frequency: 0.04
+  monthly_stability: 0.06       # More stability weight
+  cross_pair: 0.00              # No cross-pair for simplicity
+
+fitness_penalties:
+  min_trades: 15                # Much stricter (E1 was 10)
+  max_drawdown: 0.20            # Tighter (E1 was 0.30)
+  min_win_rate: 0.35            # Stricter (E1 was 0.30)
+  complexity_weight: 0.020      # Penalize complexity slightly more
+  unused_indicator_weight: 0.025
+  pair_loss_threshold: -5.0     # Tighter (E1 was -8.0)
+
+backtesting:
+  timerange: "20230301-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+    - "SOL/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: false
+  enable_cache: true
+  timeout: 120
+
+walk_forward:
+  enabled: true
+  train_days: 120               # Longer training (E1 was 90)
+  validation_days: 30
+  step_days: 30
+  mode: 'rolling'
+  aggregation: 'trimmed_mean'
+  min_train_trades: 12          # Stricter (E1 was 8)
+  max_windows: 8
+  embargo_days: 3               # Longer embargo (E1 was 2)
+
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.20             # Larger holdout (E1 was 0.15)
+
+holdout_monitoring:
+  enabled: true
+  interval: 2                   # Check more frequently (E1 was 3)
+  top_n: 5
+  early_stop: true              # ENABLE early stop (E1 had false)
+  early_stop_threshold: 0.50    # Stop if holdout degradation > 50%
+  early_stop_checks: 3
+  trend_early_stop: true        # Also stop on deteriorating trend
+  trend_checks: 3
+  fitness_penalty: true         # Penalize strategies that fail holdout
+  penalty_factor: 0.60          # Stronger penalty (default was 0.70)
+
+regime_aware:
+  enabled: false                # Standard GA — no regime detection
+
+monte_carlo:
+  enabled: true
+  num_permutations: 15          # More permutations (E1 was 10)
+  methods:
+    - 'bootstrap'
+    - 'shuffle'
+  confidence_level: 0.95
+  min_robustness: 0.55          # Slightly higher bar (E1 was 0.50)
+
+deflated_sharpe:
+  enabled: true
+  min_trades: 12
+  benchmark_sr: 0.0
+  skewness_correction: true
+
+parsimony:
+  enabled: true
+  max_indicators: 3             # Fewer indicators (E1 was 4)
+  max_conditions: 4             # Fewer conditions (E1 was 5)
+
+cpcv:
+  enabled: false
+
+strategy_constraints:
+  min_trades: 15
+  max_drawdown: 0.20
+  min_win_rate: 0.35
+  timeframes: ["15m"]
+  stoploss_range: [-0.08, -0.03]  # Tighter stoploss range
+  roi_range: [0.01, 0.06]         # Tighter ROI range
+  max_open_trades_range: [1, 3]   # Max 3 (E1 was 4)
+  min_exit_conditions: 1
+
+multi_timeframe:
+  enabled: false
+
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "BBANDS"
+    - "ADX"
+    - "MACD"
+    - "SMA"
+    - "SUPERTREND"
+    - "STOCH"
+    - "ATR"
+    - "CCI"
+    - "CMF"
+    - "VROC"
+  max_per_strategy: 3
+  min_per_strategy: 2
+  min_entry_conditions: 2
+
+  RSI:
+    period: [7, 21]
+    buy_threshold: [22, 35]     # Narrower ranges
+    sell_threshold: [65, 80]
+  MACD:
+    fast_period: [8, 18]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [14, 30]
+    std_dev: [1.8, 2.8]         # Narrower std range
+  EMA:
+    period: [8, 40]
+  SMA:
+    period: [15, 80]
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [18, 35]
+    d_threshold: [65, 82]
+  ATR:
+    period: [10, 20]
+  ADX:
+    period: [10, 20]
+    threshold: [22, 38]
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-180, -80]
+    sell_threshold: [80, 180]
+  SUPERTREND:
+    period: [7, 14]
+    multiplier: [2.0, 4.0]
+  CMF:
+    period: [14, 21]
+    threshold: [-0.15, 0.15]
+  VROC:
+    period: [10, 25]
+    threshold: [-15, 15]
+
+trade_visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: false
+
+parallel_evaluation:
+  enabled: false
+
+output:
+  dir: 'genetic_algorithm/output/exploration/wave2/E8_strict_anti_overfit'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 1
+
+storage:
+  database: "genetic_algorithm/data/wave2_E8_strict_anti_overfit.db"
+  strategy_dir: "user_data/strategies/wave2_E8_strict_anti_overfit"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_wave2_E8"
+  checkpoint_interval: 3
+  keep_history: true
+
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/wave2_E8_strict_anti_overfit.log"
+  console: true
+
+hall_of_fame:
+  enabled: true
+  max_size: 20
+  inject_count: 2
+  min_fitness: 0.05
+  directory: "genetic_algorithm/data/hall_of_fame_wave2_E8"
+
+advanced:
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: false
+  llm:
+    enabled: false
+
+overfit_analysis:
+  thresholds:
+    holdout_degradation_warning: 0.20   # Stricter thresholds
+    holdout_degradation_overfit: 0.40
+    wf_gap_warning: 0.12
+    wf_gap_overfit: 0.25
+    mc_robustness_warning: 0.75
+    mc_robustness_overfit: 0.55
+    composite_warning: 0.20
+    composite_overfit: 0.40

@@ -1271,6 +1271,10 @@ class IslandModelEvolution:
         )
 
         # Disable walk-forward (regime segments replace it)
+        if cfg.get('walk_forward', {}).get('enabled', False):
+            self.logger.warning(
+                f"[Island {ic.name}] Walk-forward disabled — regime segments replace it"
+            )
         cfg['walk_forward'] = {'enabled': False}
 
         # Configure regime-aware evaluation scoped to island's segments

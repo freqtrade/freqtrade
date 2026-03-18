@@ -109,7 +109,7 @@ def create_random_indicator(indicator_type: str, indicator_config: Dict[str, Any
     
     elif indicator_type == 'VWAP':
         # Volume Weighted Average Price - intraday mean reversion anchor
-        parameters = {}  # No parameters, uses volume and typical price
+        parameters['period'] = random.randint(*ind_config.get('period', [10, 30]))
     
     elif indicator_type == 'CMF':
         # Chaikin Money Flow - volume-based momentum

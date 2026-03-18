@@ -1,0 +1,219 @@
+# ============================================================================
+# WAVE 13 — E107: E51 (rank) + diversity=0.15 + elite=3
+# ============================================================================
+# Base: E51 (rank+elite=3+patience=8) — fitness champion (0.7218)
+# Changes: seed=1070, elite_diversity_threshold=0.15
+# Group A: E51 champion recipe with diversity enforcement
+# Hypothesis: Rank selection + diversity should improve on E95's 5/5 SAFE
+# ============================================================================
+
+genetic_algorithm:
+  random_seed: 1070
+  population_size: 15
+  generations: 12
+  max_runtime_minutes: 300
+  mutation_rate: 0.15
+  crossover_rate: 0.80
+  crossover_method: 'uniform'
+  elite_size: 3
+  tournament_size: 4
+  selection_method: 'rank'
+  convergence_patience: 8
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.10
+  max_mutation_rate: 0.35
+  fitness_sharing: true
+  sharing_radius: 0.30
+  diversity_threshold: 0.20
+  elite_diversity_threshold: 0.15
+  allow_self_crossover: false
+  random_immigrants: 1
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.25
+  sharpe_ratio: 0.18
+  sortino_ratio: 0.14
+  profit_factor: 0.10
+  drawdown: 0.18
+  win_rate: 0.05
+  trade_frequency: 0.04
+  monthly_stability: 0.06
+  cross_pair: 0.00
+
+fitness_penalties:
+  min_trades: 15
+  max_drawdown: 0.20
+  min_win_rate: 0.35
+  complexity_weight: 0.020
+  unused_indicator_weight: 0.025
+  pair_loss_threshold: -5.0
+
+backtesting:
+  timerange: "20230301-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+    - "SOL/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: false
+  enable_cache: true
+  timeout: 120
+
+walk_forward:
+  enabled: true
+  train_days: 120
+  validation_days: 30
+  step_days: 30
+  mode: 'rolling'
+  aggregation: 'trimmed_mean'
+  min_train_trades: 12
+  max_windows: 8
+  embargo_days: 3
+
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.20
+
+holdout_monitoring:
+  enabled: true
+  interval: 2
+  top_n: 5
+  early_stop: true
+  early_stop_threshold: 0.50
+  early_stop_checks: 3
+  trend_early_stop: true
+  trend_checks: 3
+  fitness_penalty: true
+  penalty_factor: 0.60
+
+regime_aware:
+  enabled: false
+
+monte_carlo:
+  enabled: true
+  num_permutations: 15
+  methods:
+    - 'bootstrap'
+    - 'shuffle'
+  confidence_level: 0.95
+  min_robustness: 0.55
+
+deflated_sharpe:
+  enabled: true
+  min_trades: 12
+  benchmark_sr: 0.0
+  skewness_correction: true
+
+parsimony:
+  enabled: true
+  max_indicators: 3
+  max_conditions: 4
+
+cpcv:
+  enabled: false
+
+strategy_constraints:
+  min_trades: 15
+  max_drawdown: 0.20
+  min_win_rate: 0.35
+  timeframes: ["15m"]
+  stoploss_range: [-0.08, -0.03]
+  roi_range: [0.01, 0.06]
+  max_open_trades_range: [1, 3]
+  min_exit_conditions: 1
+
+multi_timeframe:
+  enabled: false
+
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "BBANDS"
+    - "ADX"
+    - "MACD"
+    - "SMA"
+    - "SUPERTREND"
+    - "STOCH"
+    - "ATR"
+    - "CCI"
+    - "CMF"
+    - "VROC"
+  max_per_strategy: 3
+  min_per_strategy: 2
+  min_entry_conditions: 2
+
+  RSI:
+    period: [7, 21]
+    buy_threshold: [22, 35]
+    sell_threshold: [65, 80]
+  MACD:
+    fast_period: [8, 18]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [14, 30]
+    std_dev: [1.8, 2.8]
+  EMA:
+    period: [8, 40]
+  SMA:
+    period: [15, 80]
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [18, 35]
+    d_threshold: [65, 82]
+  ATR:
+    period: [10, 20]
+  ADX:
+    period: [10, 20]
+    threshold: [22, 38]
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-180, -80]
+    sell_threshold: [80, 180]
+  SUPERTREND:
+    period: [7, 14]
+    multiplier: [2.0, 4.0]
+  CMF:
+    period: [14, 21]
+    threshold: [-0.15, 0.15]
+  VROC:
+    period: [10, 25]
+    threshold: [-15, 15]
+
+trade_visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: false
+
+parallel_evaluation:
+  enabled: false
+
+output:
+  dir: 'genetic_algorithm/output/exploration/wave13/E107_E51_div015_elite3'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 1
+
+storage:
+  database: "genetic_algorithm/data/wave13_E107.db"
+  strategy_dir: "user_data/strategies/wave13_E107"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_wave13_E107"
+  checkpoint_interval: 3
+  keep_history: true
+
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/wave13_E107.log"
+  console: true
+
+hall_of_fame:
+  enabled: true
+  max_size: 20

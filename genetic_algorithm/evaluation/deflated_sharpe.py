@@ -337,14 +337,30 @@ class DSRTracker:
 
     @property
     def n_trials(self) -> int:
-        """Number of unique strategies evaluated so far."""
-        return max(len(self._strategy_hashes), self._total_evaluated)
+        """Number of unique strategies evaluated so far.
+        
+        Uses unique strategy hashes when available. Falls back to
+        _total_evaluated only when NO hashes have been registered
+        (i.e., hashing is completely unavailable). This prevents
+        double-counting when some evaluations have hashes and some don't.
+        """
+        if self._strategy_hashes:
+            return max(1, len(self._strategy_hashes))
+        return max(1, self._total_evaluated)
 
     def register_evaluation(self, strategy_hash: str = None):
-        """Record that a strategy was evaluated."""
-        self._total_evaluated += 1
+        """Record that a strategy was evaluated.
+        
+        Only counts unique strategies — re-evaluations of the same
+        strategy (e.g. across walk-forward windows) are not double-counted.
+        When a hash is provided, the hash-based set is used (deduplicates).
+        When no hash is available, increments a fallback counter.
+        """
         if strategy_hash:
             self._strategy_hashes.add(strategy_hash)
+        else:
+            # No hash available — count as a unique unknown evaluation
+            self._total_evaluated += 1
 
     def compute_penalty(
         self,

@@ -10,8 +10,10 @@ Configuration can be adjusted in the USER CONFIGURATION section below.
 """
 
 import sys
+import os
 import logging
 import argparse
+import json
 from pathlib import Path
 from datetime import datetime
 
@@ -44,6 +46,16 @@ TIMESTAMP_FORMAT = "%Y%m%d_%H%M%S"
 # ============================================================================
 
 
+def _prune_old_logs(log_dir: Path, keep: int = 20):
+    """Remove old log files, keeping only the most recent `keep` files."""
+    try:
+        log_files = sorted(log_dir.glob('ga_run_*.log'), key=lambda f: f.stat().st_mtime)
+        for old_log in log_files[:-keep]:
+            old_log.unlink()
+    except Exception:
+        pass  # Best-effort cleanup
+
+
 def setup_logging(monitor_active: bool = False):
     """Set up logging for the GA run.
     
@@ -56,7 +68,11 @@ def setup_logging(monitor_active: bool = False):
     
     log_file = LOG_DIR / f'ga_run_{datetime.now().strftime(TIMESTAMP_FORMAT)}.log'
     
-    handlers = [logging.FileHandler(log_file)]
+    from logging.handlers import RotatingFileHandler
+    file_handler = RotatingFileHandler(
+        log_file, maxBytes=20_000_000, backupCount=5  # 20MB per file, keep 5 backups
+    )
+    handlers = [file_handler]
     if not monitor_active:
         handlers.insert(0, logging.StreamHandler())
     
@@ -66,6 +82,9 @@ def setup_logging(monitor_active: bool = False):
         handlers=handlers,
         force=True,  # Override any prior basicConfig calls
     )
+    
+    # Prune old log files: keep only the most recent 20
+    _prune_old_logs(LOG_DIR, keep=20)
     
     # When monitor is active, ensure NO StreamHandlers leak to the console.
     # This covers cases where libraries add their own handlers to the root logger.
@@ -145,6 +164,12 @@ def print_configuration(config: dict):
     print()
 
 
+def _safe_metric(metrics, key, default=0):
+    """Get a metric value, returning default if None or missing."""
+    val = metrics.get(key, default)
+    return val if val is not None else default
+
+
 def print_top_strategies(top_strategies: list, strategy_generator: StrategyGenerator):
     """
     Print detailed information about top strategies.
@@ -166,12 +191,12 @@ def print_top_strategies(top_strategies: list, strategy_generator: StrategyGener
         
         # Performance metrics (consolidated print statements)
         print(f"  Performance Metrics:\n"
-              f"    Profit:           {metrics.get('profit', 0):.2f}%\n"
-              f"    Sharpe Ratio:     {metrics.get('sharpe_ratio', 0):.2f}\n"
-              f"    Max Drawdown:     {metrics.get('max_drawdown', 0):.2%}\n"
-              f"    Win Rate:         {metrics.get('win_rate', 0):.2%}\n"
-              f"    Total Trades:     {metrics.get('num_trades', 0)}\n"
-              f"    Profit Factor:    {metrics.get('profit_factor', 0):.2f}\n")
+              f"    Profit:           {_safe_metric(metrics, 'profit'):.2f}%\n"
+              f"    Sharpe Ratio:     {_safe_metric(metrics, 'sharpe_ratio'):.2f}\n"
+              f"    Max Drawdown:     {_safe_metric(metrics, 'max_drawdown'):.2%}\n"
+              f"    Win Rate:         {_safe_metric(metrics, 'win_rate'):.2%}\n"
+              f"    Total Trades:     {_safe_metric(metrics, 'num_trades')}\n"
+              f"    Profit Factor:    {_safe_metric(metrics, 'profit_factor'):.2f}\n")
         
         # Strategy parameters (consolidated)
         print(f"  Strategy Parameters:\n"
@@ -240,7 +265,7 @@ def save_top_strategies(top_strategies: list, strategy_generator: StrategyGenera
             f.write(strategy_code)
         
         print(f"  ✓ Saved Rank {rank}: {filename}")
-        print(f"      Fitness: {individual.fitness:.4f}, Profit: {individual.metrics.get('profit', 0):.2f}%")
+        print(f"      Fitness: {individual.fitness:.4f}, Profit: {_safe_metric(individual.metrics, 'profit'):.2f}%")
     
     print()
     print(f"All strategies saved to: {output_dir.absolute()}")
@@ -296,26 +321,26 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict,
             f.write(f"Rank {rank}: Gen{gene.generation}_Ind{gene.individual_id}\n")
             f.write(f"  Raw Fitness: {(individual.raw_fitness if individual.raw_fitness is not None else 0):.4f}\n")
             f.write(f"  Shared Fitness: {individual.fitness:.4f}\n")
-            f.write(f"  Profit: {metrics.get('profit', 0):.2f}%\n")
-            f.write(f"  Sharpe Ratio: {metrics.get('sharpe_ratio', 0):.2f}\n")
-            f.write(f"  Max Drawdown: {metrics.get('max_drawdown', 0):.2%}\n")
-            f.write(f"  Win Rate: {metrics.get('win_rate', 0):.2%}\n")
-            f.write(f"  Total Trades: {metrics.get('num_trades', 0)}\n")
+            f.write(f"  Profit: {_safe_metric(metrics, 'profit'):.2f}%\n")
+            f.write(f"  Sharpe Ratio: {_safe_metric(metrics, 'sharpe_ratio'):.2f}\n")
+            f.write(f"  Max Drawdown: {_safe_metric(metrics, 'max_drawdown'):.2%}\n")
+            f.write(f"  Win Rate: {_safe_metric(metrics, 'win_rate'):.2%}\n")
+            f.write(f"  Total Trades: {_safe_metric(metrics, 'num_trades')}\n")
             
             # Holdout metrics (if available)
             holdout_fitness = metrics.get('holdout_fitness')
             if holdout_fitness is not None:
                 f.write(f"  Holdout Fitness: {holdout_fitness:.4f}\n")
-                f.write(f"  Holdout Profit: {metrics.get('holdout_profit', 0):.2f}%\n")
-                f.write(f"  Holdout Drawdown: {metrics.get('holdout_drawdown', 0):.2%}\n")
-                f.write(f"  Holdout Degradation: {metrics.get('holdout_degradation', 0):.1%}\n")
+                f.write(f"  Holdout Profit: {_safe_metric(metrics, 'holdout_profit'):.2f}%\n")
+                f.write(f"  Holdout Drawdown: {_safe_metric(metrics, 'holdout_drawdown'):.2%}\n")
+                f.write(f"  Holdout Degradation: {_safe_metric(metrics, 'holdout_degradation'):.1%}\n")
             
             # Monte Carlo metrics (if available)
             mc_robustness = metrics.get('mc_robustness')
             if mc_robustness is not None:
                 f.write(f"  MC Robustness: {mc_robustness:.1%}\n")
-                f.write(f"  MC Mean Profit: {metrics.get('mc_mean_profit', 0):.2f}%\n")
-                f.write(f"  MC Profit P5: {metrics.get('mc_profit_p5', 0):.2f}%\n")
+                f.write(f"  MC Mean Profit: {_safe_metric(metrics, 'mc_mean_profit'):.2f}%\n")
+                f.write(f"  MC Profit P5: {_safe_metric(metrics, 'mc_profit_p5'):.2f}%\n")
             
             # Walk-forward gap (if available)
             train_val_gap = metrics.get('train_val_gap')
@@ -377,6 +402,48 @@ def save_summary_report(top_strategies: list, output_dir: Path, config: dict,
         print(f"Detailed JSON results saved to: {json_path.absolute()}")
     except Exception as e:
         logging.getLogger(__name__).warning(f"Failed to save detailed results JSON: {e}")
+
+
+def _save_evolution_stats(output_dir: Path, config: dict, generation_stats, generation_holdout_history=None):
+    """Save evolution_stats.json for post-run visualisation."""
+    stats_file = config.get('output', {}).get('stats_file', 'evolution_stats.json')
+    stats_path = output_dir / stats_file
+
+    generations = []
+    for s in generation_stats:
+        entry = {
+            'generation': s.generation,
+            'size': s.size,
+            'best_fitness': s.best_fitness,
+            'avg_fitness': s.avg_fitness,
+            'worst_fitness': s.worst_fitness,
+            'median_fitness': s.median_fitness,
+            'diversity': s.diversity_score,
+            'genetic_diversity': s.genetic_diversity,
+            'best_raw_fitness': s.best_raw_fitness,
+            'avg_raw_fitness': s.avg_raw_fitness,
+        }
+        if s.holdout_avg_degradation is not None:
+            entry['holdout_avg_degradation'] = s.holdout_avg_degradation
+            entry['holdout_best_degradation'] = s.holdout_best_degradation
+        generations.append(entry)
+
+    payload = {
+        'config': {
+            'population_size': config.get('genetic_algorithm', {}).get('population_size'),
+            'generations': config.get('genetic_algorithm', {}).get('generations'),
+            'mutation_rate': config.get('genetic_algorithm', {}).get('mutation_rate'),
+            'selection': config.get('genetic_algorithm', {}).get('selection_method'),
+        },
+        'generations': generations,
+    }
+
+    # Atomic write
+    tmp_path = stats_path.with_suffix('.tmp')
+    with open(tmp_path, 'w') as f:
+        json.dump(payload, f, indent=2, default=str)
+    tmp_path.rename(stats_path)
+    logging.getLogger(__name__).info(f"Evolution stats saved to {stats_path}")
 
 
 def validate_config(config: dict) -> bool:
@@ -729,12 +796,22 @@ def main():
             print("\n\nCancelled by user.")
             return 0
     
+    # Derive per-experiment output directory from config (or env override, or default)
+    _output_cfg = config.get('output', {})
+    output_dir = Path(
+        os.environ.get('GA_OUTPUT_DIR')
+        or _output_cfg.get('dir')
+        or str(OUTPUT_DIR)
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     print("\n" + "=" * 80)
     print("STARTING EVOLUTION")
     print("=" * 80)
     print()
     
     # Initialize and run GA
+    tmp_config_path = None
     try:
         # Create temporary config file with updated parameters
         import tempfile
@@ -742,11 +819,54 @@ def main():
             yaml.dump(config, tmp_config)
             tmp_config_path = tmp_config.name
         
-        # ── Island Model branch ──
-        island_cfg = config.get('island_model', {})
-        if island_cfg.get('enabled', False):
+        # ── Generic Island Model branch ──
+        gim_cfg = config.get('generic_island_model', {})
+        if gim_cfg.get('enabled', False):
+            from genetic_algorithm.core.generic_island_model import GenericIslandModelEvolution
+            
+            n_islands = gim_cfg.get('num_islands', 15)
+            n_gens = gim_cfg.get('generations', config.get('genetic_algorithm', {}).get('generations', 20))
+            pop_per = gim_cfg.get('population_per_island', 10)
+            topo = gim_cfg.get('migration', {}).get('topology', 'ring')
+            
+            print("  ┌───────────────────────────────────────┐")
+            print("  │   GENERIC ISLAND MODEL EVOLUTION      │")
+            print(f"  │   Islands: {n_islands:<4} Pop/island: {pop_per:<9}│")
+            print(f"  │   Generations: {n_gens:<4} Topology: {topo:<10}│")
+            print("  └───────────────────────────────────────┘")
+            print()
+            
+            generic_island_evo = GenericIslandModelEvolution(
+                config_path=tmp_config_path,
+                visualize=args.visualize,
+                interactive=not args.no_interactive,
+            )
+            
+            logger.info("Starting generic island model evolution...")
+            results = generic_island_evo.evolve()
+            
+            # Use global deduplication results if available, else pool all
+            if '__global__' in results:
+                top_strategies = results['__global__'][:TOP_STRATEGIES_COUNT]
+            else:
+                top_strategies = []
+                for island_name, individuals in results.items():
+                    top_strategies.extend(individuals)
+                top_strategies.sort(
+                    key=lambda x: x.raw_fitness if x.raw_fitness else 0,
+                    reverse=True,
+                )
+                top_strategies = top_strategies[:TOP_STRATEGIES_COUNT]
+            
+            ga = None
+            first_island_name = [k for k in generic_island_evo.islands.keys()][0]
+            strategy_generator = generic_island_evo.islands[first_island_name].strategy_generator
+
+        # ── Island Model branch (regime-locked) ──
+        elif config.get('island_model', {}).get('enabled', False):
             from genetic_algorithm.core.island_model import IslandModelEvolution
             
+            island_cfg = config.get('island_model', {})
             print("  ┌───────────────────────────────────────┐")
             print("  │   ISLAND MODEL EVOLUTION              │")
             n_islands = len(island_cfg.get('islands', []))
@@ -781,9 +901,6 @@ def main():
             # Get a strategy_generator from the first island GA for saving
             first_island_name = list(island_evo.islands.keys())[0]
             strategy_generator = island_evo.islands[first_island_name].strategy_generator
-            
-            # Clean up temporary config
-            Path(tmp_config_path).unlink(missing_ok=True)
         else:
             # ── Standard single-population GA ──
             ga = GeneticAlgorithm(
@@ -818,9 +935,6 @@ def main():
             # Get top N strategies
             top_strategies = top_individuals[:TOP_STRATEGIES_COUNT]
             strategy_generator = ga.strategy_generator
-            
-            # Clean up temporary config
-            Path(tmp_config_path).unlink(missing_ok=True)
         
     except KeyboardInterrupt:
         print("\n\n" + "=" * 80)
@@ -836,6 +950,10 @@ def main():
         traceback.print_exc()
         logger.exception("Evolution failed")
         return 1
+    finally:
+        # Always clean up temporary config file, even on crash
+        if tmp_config_path:
+            Path(tmp_config_path).unlink(missing_ok=True)
     
     # Print results
     print("\n\n" + "=" * 80)
@@ -854,258 +972,284 @@ def main():
         print(f"✓ Top strategies collected: {len(top_strategies)}")
     print()
     
-    # === Out-of-Sample Holdout Validation ===
-    holdout_config = config.get('holdout_validation', {})
-    holdout_enabled = holdout_config.get('enabled', False)
+    # === Post-Evolution Analysis (wrapped in try-except to prevent silent crashes) ===
+    try:
+        # === Out-of-Sample Holdout Validation ===
+        holdout_config = config.get('holdout_validation', {})
+        holdout_enabled = holdout_config.get('enabled', False)
     
-    if holdout_enabled and top_strategies:
-        holdout_pct = holdout_config.get('holdout_pct', 0.15)
-        original_timerange = config.get('backtesting', {}).get('timerange', '')
+        if holdout_enabled and top_strategies:
+            holdout_pct = holdout_config.get('holdout_pct', 0.15)
+            original_timerange = config.get('backtesting', {}).get('timerange', '')
         
-        if original_timerange:
-            from genetic_algorithm.evaluation.fitness import FitnessEvaluator
+            if original_timerange:
+                from genetic_algorithm.evaluation.fitness import FitnessEvaluator
             
-            evolution_tr, holdout_tr = FitnessEvaluator.split_timerange_for_holdout(
-                original_timerange, holdout_pct
-            )
-            
-            print("=" * 80)
-            print("OUT-OF-SAMPLE HOLDOUT VALIDATION")
-            print("=" * 80)
-            print(f"  Holdout period: {holdout_tr} ({holdout_pct:.0%} of data)")
-            print(f"  Evaluating top {len(top_strategies)} strategies on unseen data...")
-            print()
-            
-            holdout_evaluator = FitnessEvaluator(config)
-            
-            for rank, individual in enumerate(top_strategies, 1):
-                gene = individual.strategy_gene
-                holdout_fitness, holdout_metrics = holdout_evaluator.evaluate_holdout(
-                    gene, holdout_tr
+                evolution_tr, holdout_tr = FitnessEvaluator.split_timerange_for_holdout(
+                    original_timerange, holdout_pct
                 )
-                
-                # Store holdout results in individual metrics
-                individual.metrics['holdout_fitness'] = holdout_fitness
-                individual.metrics['holdout_profit'] = holdout_metrics.get('profit', 0)
-                individual.metrics['holdout_sharpe'] = holdout_metrics.get('sharpe_ratio', 0)
-                individual.metrics['holdout_drawdown'] = holdout_metrics.get('max_drawdown', 0)
-                individual.metrics['holdout_trades'] = holdout_metrics.get('num_trades', 0)
-                
-                # Calculate degradation from evolution fitness to holdout fitness
-                evo_fitness = individual.fitness
-                if evo_fitness is not None and holdout_fitness is not None and evo_fitness > 0:
-                    degradation = (evo_fitness - holdout_fitness) / evo_fitness
-                else:
-                    degradation = 0
-                individual.metrics['holdout_degradation'] = degradation
-
-                evo_fitness_str = f"{evo_fitness:.4f}" if evo_fitness is not None else "N/A"
-                holdout_fitness_str = f"{holdout_fitness:.4f}" if holdout_fitness is not None else "N/A"
-                status = "✓" if degradation < 0.3 else "⚠️"
-                print(f"  {status} Rank {rank}: "
-                      f"Evo fitness={evo_fitness_str} → Holdout fitness={holdout_fitness_str} "
-                      f"(degradation={degradation:.1%})")
-                print(f"      Holdout: profit={holdout_metrics.get('profit', 0):.2f}%, "
-                      f"trades={holdout_metrics.get('num_trades', 0)}, "
-                      f"drawdown={holdout_metrics.get('max_drawdown', 0):.1%}")
             
-            print()
-            print("  Legend: ✓ = <30% degradation (robust), ⚠️  = ≥30% degradation (potential overfit)")
-            print()
-        else:
-            print("⚠️  Holdout validation skipped: no timerange configured")
-            print()
-    
-    # === CPCV / PBO Validation ===
-    cpcv_config = config.get('cpcv', {})
-    cpcv_enabled = cpcv_config.get('enabled', False)
+                print("=" * 80)
+                print("OUT-OF-SAMPLE HOLDOUT VALIDATION")
+                print("=" * 80)
+                print(f"  Holdout period: {holdout_tr} ({holdout_pct:.0%} of data)")
+                print(f"  Evaluating top {len(top_strategies)} strategies on unseen data...")
+                print()
+            
+                holdout_evaluator = FitnessEvaluator(config)
+            
+                for rank, individual in enumerate(top_strategies, 1):
+                    gene = individual.strategy_gene
+                    holdout_fitness, holdout_metrics = holdout_evaluator.evaluate_holdout(
+                        gene, holdout_tr
+                    )
+                
+                    # Store holdout results in individual metrics
+                    individual.metrics['holdout_fitness'] = holdout_fitness
+                    individual.metrics['holdout_profit'] = holdout_metrics.get('profit', 0)
+                    individual.metrics['holdout_sharpe'] = holdout_metrics.get('sharpe_ratio', 0)
+                    individual.metrics['holdout_drawdown'] = holdout_metrics.get('max_drawdown', 0)
+                    individual.metrics['holdout_trades'] = holdout_metrics.get('num_trades', 0)
+                
+                    # Calculate degradation from evolution fitness to holdout fitness
+                    evo_fitness = individual.fitness
+                    if evo_fitness is not None and holdout_fitness is not None and evo_fitness > 0:
+                        degradation = (evo_fitness - holdout_fitness) / evo_fitness
+                    else:
+                        degradation = 0
+                    individual.metrics['holdout_degradation'] = degradation
 
-    if cpcv_enabled and top_strategies:
-        if ga is None:
-            print("\n  \u26a0\ufe0f  CPCV skipped: not supported in island model mode (yet)\n")
-        else:
-            from genetic_algorithm.evaluation.cpcv import CPCVValidator
-            from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
-            import numpy as np
-
-            print("=" * 80)
-            print("COMBINATORIAL PURGED CROSS-VALIDATION (CPCV)")
-            print("=" * 80)
-            n_groups = cpcv_config.get('n_groups', 6)
-            pbo_threshold = cpcv_config.get('pbo_threshold', 0.5)
-            print(f"  Groups: {n_groups}, PBO threshold: {pbo_threshold}")
-            print(f"  Evaluating top {len(top_strategies)} strategies...")
-            print()
-
-            cpcv_validator = CPCVValidator(config)
-            cpcv_backtester = DirectBacktester(config)
-
-            # Compute the time blocks for splitting backtest results
-            timerange = config.get('backtesting', {}).get('timerange', '')
-            strategy_block_results = {}
-
-            for rank, individual in enumerate(top_strategies, 1):
-                gene = individual.strategy_gene
-                strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
-                strategy_code = strategy_generator.generate_strategy_code(gene)
-                strategy_id = f"rank_{rank}"
-
-                # Parse timerange to create block boundaries
-                if timerange and '-' in timerange:
-                    from datetime import datetime as dt, timedelta
-                    start_str, end_str = timerange.split('-')
-                    start_date = dt.strptime(start_str, '%Y%m%d')
-                    end_date = dt.strptime(end_str, '%Y%m%d')
-                    total_days = (end_date - start_date).days
-                    block_days = total_days // n_groups
-
-                    block_profits = []
-                    for block_idx in range(n_groups):
-                        block_start = start_date + timedelta(days=block_idx * block_days)
-                        block_end = (start_date + timedelta(days=(block_idx + 1) * block_days)
-                                     if block_idx < n_groups - 1 else end_date)
-                        block_tr = f"{block_start.strftime('%Y%m%d')}-{block_end.strftime('%Y%m%d')}"
-
-                        # Run backtest on this block
-                        bt_result = cpcv_backtester.backtest_strategy(
-                            strategy_code, strategy_name,
-                            timerange_override=block_tr,
-                            strategy_max_open_trades=gene.max_open_trades,
-                        )
-                        block_profit = bt_result.profit_percent if bt_result.success else 0.0
-                        block_profits.append(block_profit)
-
-                    strategy_block_results[strategy_id] = np.array(block_profits)
-                    logger.info(f"  Rank {rank}: block profits = {[f'{p:.2f}' for p in block_profits]}")
-                else:
-                    logger.warning(f"  Rank {rank}: skipped — no timerange configured")
-
-            # Run CPCV validation
-            if len(strategy_block_results) >= 2:
-                cpcv_result = cpcv_validator.validate_strategies(
-                    strategy_block_results, timerange=timerange,
-                )
-
-                pbo = cpcv_result.get('pbo', 0.0)
-                penalty = cpcv_result.get('penalty', 1.0)
-                skipped = cpcv_result.get('skipped', False)
-
-                if not skipped:
-                    status = "✓" if pbo < pbo_threshold else "⚠️"
-                    print(f"  {status} PBO = {pbo:.3f} (threshold: {pbo_threshold})")
-                    print(f"      Penalty multiplier: {penalty:.3f}")
-                    print(f"      Paths evaluated: {cpcv_result.get('n_paths', 0)}")
-
-                    per_strategy_oos = cpcv_result.get('per_strategy_oos', {})
-                    for sid, oos_info in per_strategy_oos.items():
-                        print(f"      {sid}: mean_oos={oos_info['mean_oos']:.3f}, "
-                              f"std_oos={oos_info['std_oos']:.3f}")
-
-                    # Store PBO in individual metrics
-                    for rank, individual in enumerate(top_strategies, 1):
-                        individual.metrics['cpcv_pbo'] = pbo
-                        individual.metrics['cpcv_penalty'] = penalty
-                        oos_key = f"rank_{rank}"
-                        if oos_key in per_strategy_oos:
-                            individual.metrics['cpcv_mean_oos'] = per_strategy_oos[oos_key]['mean_oos']
-                else:
-                    print(f"  ⚠️  CPCV skipped: {cpcv_result.get('reason', 'unknown')}")
+                    evo_fitness_str = f"{evo_fitness:.4f}" if evo_fitness is not None else "N/A"
+                    holdout_fitness_str = f"{holdout_fitness:.4f}" if holdout_fitness is not None else "N/A"
+                    status = "✓" if degradation < 0.3 else "⚠️"
+                    print(f"  {status} Rank {rank}: "
+                          f"Evo fitness={evo_fitness_str} → Holdout fitness={holdout_fitness_str} "
+                          f"(degradation={degradation:.1%})")
+                    print(f"      Holdout: profit={holdout_metrics.get('profit', 0):.2f}%, "
+                          f"trades={holdout_metrics.get('num_trades', 0)}, "
+                          f"drawdown={holdout_metrics.get('max_drawdown', 0):.1%}")
+            
+                print()
+                print("  Legend: ✓ = <30% degradation (robust), ⚠️  = ≥30% degradation (potential overfit)")
+                print()
             else:
-                print("  ⚠️  CPCV skipped: need >= 2 strategies with block results")
+                print("⚠️  Holdout validation skipped: no timerange configured")
+                print()
+    
+        # === CPCV / PBO Validation ===
+        cpcv_config = config.get('cpcv', {})
+        cpcv_enabled = cpcv_config.get('enabled', False)
 
-            print()
-            print("  Legend: ✓ = PBO below threshold (low overfit risk), ⚠️ = PBO above threshold")
-            print()
+        if cpcv_enabled and top_strategies:
+            if ga is None:
+                print("\n  \u26a0\ufe0f  CPCV skipped: not supported in island model mode (yet)\n")
+            else:
+                from genetic_algorithm.evaluation.cpcv import CPCVValidator
+                from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
+                import numpy as np
 
-    # === Monte-Carlo Robustness Validation ===
-    mc_config = config.get('monte_carlo', {})
-    mc_enabled = mc_config.get('enabled', False)
+                print("=" * 80)
+                print("COMBINATORIAL PURGED CROSS-VALIDATION (CPCV)")
+                print("=" * 80)
+                n_groups = cpcv_config.get('n_groups', 6)
+                pbo_threshold = cpcv_config.get('pbo_threshold', 0.5)
+                print(f"  Groups: {n_groups}, PBO threshold: {pbo_threshold}")
+                print(f"  Evaluating top {len(top_strategies)} strategies...")
+                print()
 
-    if mc_enabled and top_strategies:
-        if ga is None:
-            print("\n  \u26a0\ufe0f  Monte-Carlo skipped: not supported in island model mode (yet)\n")
-        else:
-            from genetic_algorithm.evaluation.monte_carlo import run_monte_carlo
-            from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
+                cpcv_validator = CPCVValidator(config)
+                cpcv_backtester = DirectBacktester(config)
 
-            print("=" * 80)
-            print("MONTE-CARLO ROBUSTNESS ANALYSIS")
-            print("=" * 80)
-            num_perms = mc_config.get('num_permutations', 100)
-            print(f"  Running {num_perms} permutations per strategy...")
-            print()
+                # Compute the time blocks for splitting backtest results
+                timerange = config.get('backtesting', {}).get('timerange', '')
+                strategy_block_results = {}
 
-            mc_backtester = DirectBacktester(config)
+                for rank, individual in enumerate(top_strategies, 1):
+                    gene = individual.strategy_gene
+                    strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
+                    strategy_code = strategy_generator.generate_strategy_code(gene)
+                    strategy_id = f"rank_{rank}"
 
-            for rank, individual in enumerate(top_strategies, 1):
-                gene = individual.strategy_gene
-                strategy_code = strategy_generator.generate_strategy_code(gene)
-                strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
+                    # Parse timerange to create block boundaries
+                    if timerange and '-' in timerange:
+                        from datetime import datetime as dt, timedelta
+                        start_str, end_str = timerange.split('-')
+                        start_date = dt.strptime(start_str, '%Y%m%d')
+                        end_date = dt.strptime(end_str, '%Y%m%d')
+                        total_days = (end_date - start_date).days
+                        block_days = total_days // n_groups
 
-                bt_result = mc_backtester.backtest_strategy_with_trades(
-                    strategy_code, strategy_name,
-                    strategy_max_open_trades=gene.max_open_trades
-                )
+                        block_profits = []
+                        for block_idx in range(n_groups):
+                            block_start = start_date + timedelta(days=block_idx * block_days)
+                            block_end = (start_date + timedelta(days=(block_idx + 1) * block_days)
+                                         if block_idx < n_groups - 1 else end_date)
+                            block_tr = f"{block_start.strftime('%Y%m%d')}-{block_end.strftime('%Y%m%d')}"
 
-                if bt_result.success and bt_result.trades:
-                    mc_result = run_monte_carlo(bt_result.trades, mc_config)
-                    individual.metrics['mc_robustness'] = mc_result.robustness_score
-                    individual.metrics['mc_mean_profit'] = mc_result.mean_profit
-                    individual.metrics['mc_profit_p5'] = mc_result.profit_p5
-                    individual.metrics['mc_profit_std'] = mc_result.profit_std
+                            # Run backtest on this block
+                            bt_result = cpcv_backtester.backtest_strategy(
+                                strategy_code, strategy_name,
+                                timerange_override=block_tr,
+                                strategy_max_open_trades=gene.max_open_trades,
+                            )
+                            block_profit = bt_result.profit_percent if bt_result.success else 0.0
+                            block_profits.append(block_profit)
 
-                    status = "✓" if mc_result.robustness_score >= 0.8 else "⚠️"
-                    print(f"  {status} Rank {rank}: robustness={mc_result.robustness_score:.1%}, "
-                          f"mean_profit={mc_result.mean_profit:.2f}%, "
-                          f"p5={mc_result.profit_p5:.2f}%, p95={mc_result.profit_p95:.2f}%")
+                        strategy_block_results[strategy_id] = np.array(block_profits)
+                        logger.info(f"  Rank {rank}: block profits = {[f'{p:.2f}' for p in block_profits]}")
+                    else:
+                        logger.warning(f"  Rank {rank}: skipped — no timerange configured")
+
+                # Run CPCV validation
+                if len(strategy_block_results) >= 2:
+                    cpcv_result = cpcv_validator.validate_strategies(
+                        strategy_block_results, timerange=timerange,
+                    )
+
+                    pbo = cpcv_result.get('pbo', 0.0)
+                    penalty = cpcv_result.get('penalty', 1.0)
+                    skipped = cpcv_result.get('skipped', False)
+
+                    if not skipped:
+                        status = "✓" if pbo < pbo_threshold else "⚠️"
+                        print(f"  {status} PBO = {pbo:.3f} (threshold: {pbo_threshold})")
+                        print(f"      Penalty multiplier: {penalty:.3f}")
+                        print(f"      Paths evaluated: {cpcv_result.get('n_paths', 0)}")
+
+                        per_strategy_oos = cpcv_result.get('per_strategy_oos', {})
+                        for sid, oos_info in per_strategy_oos.items():
+                            print(f"      {sid}: mean_oos={oos_info['mean_oos']:.3f}, "
+                                  f"std_oos={oos_info['std_oos']:.3f}")
+
+                        # Store PBO in individual metrics
+                        for rank, individual in enumerate(top_strategies, 1):
+                            individual.metrics['cpcv_pbo'] = pbo
+                            individual.metrics['cpcv_penalty'] = penalty
+                            oos_key = f"rank_{rank}"
+                            if oos_key in per_strategy_oos:
+                                individual.metrics['cpcv_mean_oos'] = per_strategy_oos[oos_key]['mean_oos']
+                    else:
+                        print(f"  ⚠️  CPCV skipped: {cpcv_result.get('reason', 'unknown')}")
                 else:
-                    individual.metrics['mc_robustness'] = 0.0
-                    print(f"  ⚠️  Rank {rank}: backtest failed or no trades — skipped")
+                    print("  ⚠️  CPCV skipped: need >= 2 strategies with block results")
 
-            print()
-            print("  Legend: ✓ = ≥80% permutations profitable (robust), ⚠️ = <80% (fragile)")
-            print()
+                print()
+                print("  Legend: ✓ = PBO below threshold (low overfit risk), ⚠️ = PBO above threshold")
+                print()
 
-    # Display top strategies
-    print_top_strategies(top_strategies, strategy_generator)
+        # === Monte-Carlo Robustness Validation ===
+        mc_config = config.get('monte_carlo', {})
+        mc_enabled = mc_config.get('enabled', False)
+
+        if mc_enabled and top_strategies:
+            if ga is None:
+                print("\n  \u26a0\ufe0f  Monte-Carlo skipped: not supported in island model mode (yet)\n")
+            else:
+                from genetic_algorithm.evaluation.monte_carlo import run_monte_carlo
+                from genetic_algorithm.evaluation.direct_backtester import DirectBacktester
+
+                print("=" * 80)
+                print("MONTE-CARLO ROBUSTNESS ANALYSIS")
+                print("=" * 80)
+                num_perms = mc_config.get('num_permutations', 100)
+                print(f"  Running {num_perms} permutations per strategy...")
+                print()
+
+                mc_backtester = DirectBacktester(config)
+
+                for rank, individual in enumerate(top_strategies, 1):
+                    gene = individual.strategy_gene
+                    strategy_code = strategy_generator.generate_strategy_code(gene)
+                    strategy_name = f"GAStrategy_Gen{gene.generation}_Ind{gene.individual_id}"
+
+                    bt_result = mc_backtester.backtest_strategy_with_trades(
+                        strategy_code, strategy_name,
+                        strategy_max_open_trades=gene.max_open_trades
+                    )
+
+                    if bt_result.success and bt_result.trades:
+                        mc_result = run_monte_carlo(bt_result.trades, mc_config)
+                        individual.metrics['mc_robustness'] = mc_result.robustness_score
+                        individual.metrics['mc_mean_profit'] = mc_result.mean_profit
+                        individual.metrics['mc_profit_p5'] = mc_result.profit_p5
+                        individual.metrics['mc_profit_std'] = mc_result.profit_std
+
+                        status = "✓" if mc_result.robustness_score >= 0.8 else "⚠️"
+                        print(f"  {status} Rank {rank}: robustness={mc_result.robustness_score:.1%}, "
+                              f"mean_profit={mc_result.mean_profit:.2f}%, "
+                              f"p5={mc_result.profit_p5:.2f}%, p95={mc_result.profit_p95:.2f}%")
+                    else:
+                        individual.metrics['mc_robustness'] = 0.0
+                        print(f"  ⚠️  Rank {rank}: backtest failed or no trades — skipped")
+
+                print()
+                print("  Legend: ✓ = ≥80% permutations profitable (robust), ⚠️ = <80% (fragile)")
+                print()
+
+        # Display top strategies
+        print_top_strategies(top_strategies, strategy_generator)
     
-    # Save strategies
-    save_top_strategies(top_strategies, strategy_generator, OUTPUT_DIR)
+        # Save strategies
+        save_top_strategies(top_strategies, strategy_generator, output_dir)
     
-    # Save summary report (with holdout/MC metrics and overfitting analysis)
-    # Collect generation_stats from island GAs when in island mode
-    _gen_stats = getattr(ga, 'generation_stats', None) if ga is not None else None
-    _gen_holdout = getattr(ga, 'generation_holdout_history', None) if ga is not None else None
-    if _gen_stats is None and ga is None and 'island_evo' in dir():
-        # Aggregate generation_stats from all island GAs
-        _gen_stats = []
-        for _iname, _iga in island_evo.islands.items():
-            for s in getattr(_iga, 'generation_stats', []):
-                _gen_stats.append(s)
-    save_summary_report(
-        top_strategies, OUTPUT_DIR, config,
-        generation_stats=_gen_stats,
-        generation_holdout_history=_gen_holdout,
-    )
+        # Save summary report (with holdout/MC metrics and overfitting analysis)
+        # Collect generation_stats from island GAs when in island mode
+        _gen_stats = getattr(ga, 'generation_stats', None) if ga is not None else None
+        _gen_holdout = getattr(ga, 'generation_holdout_history', None) if ga is not None else None
+        if _gen_stats is None and ga is None and 'island_evo' in dir():
+            # Aggregate generation_stats from all island GAs
+            _gen_stats = []
+            for _iname, _iga in island_evo.islands.items():
+                for s in getattr(_iga, 'generation_stats', []):
+                    _gen_stats.append(s)
+        if _gen_stats is None and ga is None and 'generic_island_evo' in dir():
+            _gen_stats = []
+            for _iname, _iga in generic_island_evo.islands.items():
+                for s in getattr(_iga, 'generation_stats', []):
+                    _gen_stats.append(s)
+        save_summary_report(
+            top_strategies, output_dir, config,
+            generation_stats=_gen_stats,
+            generation_holdout_history=_gen_holdout,
+        )
+
+        # Save evolution_stats.json (for visualize_evolution.py)
+        if _gen_stats and config.get('output', {}).get('save_stats', False):
+            _save_evolution_stats(output_dir, config, _gen_stats, _gen_holdout)
     
-    # Final summary
-    print("\n" + "=" * 80)
-    print("NEXT STEPS")
-    print("=" * 80)
-    print()
-    print("1. Review the top strategies in the output above")
-    print(f"2. Check saved strategy files in: {OUTPUT_DIR.absolute()}")
-    print("3. Copy promising strategies to: user_data/strategies/")
-    print("4. Backtest with full data: freqtrade backtesting --strategy <StrategyName>")
-    print("5. Test in dry-run mode: freqtrade trade --dry-run --strategy <StrategyName>")
-    print("6. Deploy to live trading when confident")
-    print()
-    print("=" * 80)
-    print("✓ GA RUN COMPLETE!")
-    print("=" * 80)
-    print()
+        # Final summary
+        print("\n" + "=" * 80)
+        print("NEXT STEPS")
+        print("=" * 80)
+        print()
+        print("1. Review the top strategies in the output above")
+        print(f"2. Check saved strategy files in: {output_dir.absolute()}")
+        print("3. Copy promising strategies to: user_data/strategies/")
+        print("4. Backtest with full data: freqtrade backtesting --strategy <StrategyName>")
+        print("5. Test in dry-run mode: freqtrade trade --dry-run --strategy <StrategyName>")
+        print("6. Deploy to live trading when confident")
+        print()
+        print("=" * 80)
+        print("✓ GA RUN COMPLETE!")
+        print("=" * 80)
+        print()
+        logger.info("GA RUN COMPLETE")
     
+    except Exception as e:
+        import traceback
+        print()
+        print('=' * 80)
+        print('ERROR IN POST-EVOLUTION ANALYSIS')
+        print('=' * 80)
+        print(f'\n{e}')
+        traceback.print_exc()
+        sys.stdout.flush()
+        sys.stderr.flush()
+        # Still return 1 to indicate failure, but evolution results are saved
+        return 1
+
     return 0
+
 
 
 def _start_dashboard_only(args):

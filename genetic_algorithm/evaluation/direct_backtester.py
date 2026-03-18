@@ -175,8 +175,19 @@ class BacktestCache:
         # Store in disk cache
         cache_file = self.cache_dir / f"{cache_key}.json"
         try:
-            with open(cache_file, 'w') as f:
-                json.dump(result.to_dict(), f)
+            fd, tmp_path = tempfile.mkstemp(
+                suffix='.json', dir=str(self.cache_dir), prefix=f".{cache_key[:16]}_"
+            )
+            try:
+                with os.fdopen(fd, 'w') as f:
+                    json.dump(result.to_dict(), f)
+                os.replace(tmp_path, str(cache_file))  # atomic on POSIX
+            except Exception:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
             logger.debug(f"Cached result: {cache_key[:8]}...")
         except Exception as e:
             logger.warning(f"Failed to save cache file: {e}")
@@ -264,10 +275,10 @@ class DirectBacktester:
             
             data_handler = get_datahandler(datadir)
             
-            # Find the widest data range across ALL configured timeframes (union).
+            # Find the common data range across ALL configured pairs and timeframes.
             # For each timeframe, compute the intersection across pairs (common range
-            # that all pairs share), then take the union across timeframes so that
-            # any timeframe with more history contributes to the effective range.
+            # that all pairs share), then intersect across timeframes to guarantee
+            # every pair has data for every timeframe in the final range.
             overall_min = None
             overall_max = None
             
@@ -299,10 +310,11 @@ class DirectBacktester:
                         f"Data range for timeframe {timeframe}: "
                         f"{format_date(tf_min)}-{format_date(tf_max)}"
                     )
-                    # Union across timeframes: keep the earliest start and latest end
-                    if overall_min is None or tf_min < overall_min:
+                    # Intersection across timeframes: keep the latest start
+                    # and earliest end so ALL timeframes have data in range
+                    if overall_min is None or tf_min > overall_min:
                         overall_min = tf_min
-                    if overall_max is None or tf_max > overall_max:
+                    if overall_max is None or tf_max < overall_max:
                         overall_max = tf_max
                 else:
                     logger.warning(f"No data on disk for timeframe {timeframe} across all pairs")
@@ -813,7 +825,7 @@ class DirectBacktester:
                             per_pair = {}
                             for pair, group in trades_df.groupby('pair'):
                                 # profit_ratio is per-trade profit as a ratio
-                                pair_profit = group['profit_ratio'].sum() * 100 if 'profit_ratio' in group.columns else 0.0
+                                pair_profit = group['profit_ratio'].mean() * 100 if 'profit_ratio' in group.columns else 0.0
                                 per_pair[pair] = pair_profit
                             result.per_pair_profit = per_pair
                             logger.debug(f"Per-pair profits: {per_pair}")
@@ -1002,13 +1014,17 @@ class DirectBacktester:
         
         # Fee noise injection: jitter fee per evaluation to prevent overfitting
         # to the exact fee level. Configured via 'fee_noise_std' (default 0 = off).
-        import random
+        import random as _random_module
         # Mild fee noise enabled by default (0.0002) — benchmark analysis showed
         # this preserves diversity (-9% decline vs -21% without) by making fitness
         # evaluations slightly stochastic, acting as a natural regularizer.
         fee_noise_std = ga_cfg.get('fee_noise_std', 0.0002)
         if fee_noise_std > 0:
-            noise = random.gauss(0, fee_noise_std)
+            # Use a seeded RNG derived from config seed + strategy name hash
+            # to ensure reproducibility even in parallel workers
+            _fee_rng_seed = hash((ga_cfg.get('random_seed', 42), strategy_name[:64])) & 0xFFFFFFFF
+            _fee_rng = _random_module.Random(_fee_rng_seed)
+            noise = _fee_rng.gauss(0, fee_noise_std)
             fee = max(0.0, fee + noise)
             logger.debug(f"Fee after noise injection: {fee:.6f} (noise={noise:+.6f})")
         

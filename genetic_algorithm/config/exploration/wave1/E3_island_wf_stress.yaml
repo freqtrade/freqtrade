@@ -1,0 +1,271 @@
+# ============================================================================
+# WAVE 1 — E3: Island Model + Walk-Forward STRESS TEST
+# ============================================================================
+# Purpose: DELIBERATELY trigger Known Issue #4 (island model incompatible
+#          with walk-forward). We want to document the exact failure mode:
+#          - Does it crash? Silently produce wrong results? Warn?
+#          - What happens to fitness values and SAFE scores?
+#
+# This is a diagnostic experiment — we expect BAD results.
+# The output tells us what guard rails to add.
+#
+# Key differences from E1:
+#   - Island model ON (3 specialists + master)
+#   - walk_forward: enabled: true  ← KNOWN CONFLICT
+#   - Smaller islands (pop 4 each = 16 total)
+#
+# Expected: Crash, or misleading fitness values due to conflicting
+#           data partitioning between island regime segmentation and WF splits.
+# ============================================================================
+
+genetic_algorithm:
+  random_seed: 42               # Fixed seed for reproducibility of the bug
+  population_size: 4            # Per-island population (overridden by island config)
+  generations: 8                # Short run — we just need to see the failure
+  max_runtime_minutes: 180
+  mutation_rate: 0.20
+  crossover_rate: 0.75
+  crossover_method: 'uniform'
+  elite_size: 1
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 8
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.15
+  max_mutation_rate: 0.40
+  fitness_sharing: true
+  sharing_radius: 0.25
+  diversity_threshold: 0.15
+  allow_self_crossover: false
+  random_immigrants: 1
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.15
+  sortino_ratio: 0.12
+  profit_factor: 0.08
+  drawdown: 0.15
+  win_rate: 0.06
+  trade_frequency: 0.04
+  monthly_stability: 0.04
+  cross_pair: 0.06
+
+fitness_penalties:
+  min_trades: 5
+  max_drawdown: 0.30
+  min_win_rate: 0.25
+  complexity_weight: 0.015
+  unused_indicator_weight: 0.02
+  pair_loss_threshold: -8.0
+
+backtesting:
+  timerange: "20230301-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+    - "SOL/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: false
+  enable_cache: true
+  timeout: 120
+
+# DELIBERATELY ENABLED — this is the stress test
+walk_forward:
+  enabled: true
+  train_days: 90
+  validation_days: 30
+  step_days: 30
+  mode: 'rolling'
+  aggregation: 'trimmed_mean'
+  min_train_trades: 5
+  max_windows: 6
+  embargo_days: 2
+
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.15
+
+holdout_monitoring:
+  enabled: true
+  interval: 2
+  top_n: 3
+  early_stop: false
+  fitness_penalty: false
+
+regime_aware:
+  enabled: true
+  method: 'ensemble'
+  benchmark_pair: 'BTC/USDT'
+  detection_timeframe: '4h'
+  period_days: 60
+  min_period_days: 30
+  embargo_days: 3
+  segments_per_regime: 4
+  holdout_ratio: 0.20
+  aggregation: 'harmonic_mean'
+  min_segment_trades: 3
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.0
+    sideways: 1.0
+
+monte_carlo:
+  enabled: false                # Issue #5: MC also incompatible with islands
+
+deflated_sharpe:
+  enabled: true
+  min_trades: 5
+  benchmark_sr: 0.0
+  skewness_correction: true
+
+parsimony:
+  enabled: true
+  max_indicators: 4
+  max_conditions: 5
+
+cpcv:
+  enabled: false
+
+strategy_constraints:
+  min_trades: 5
+  max_drawdown: 0.30
+  min_win_rate: 0.25
+  timeframes: ["15m"]
+  stoploss_range: [-0.12, -0.03]
+  roi_range: [0.01, 0.10]
+  max_open_trades_range: [1, 4]
+  min_exit_conditions: 1
+
+multi_timeframe:
+  enabled: false
+
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "BBANDS"
+    - "ADX"
+    - "MACD"
+    - "SMA"
+    - "SUPERTREND"
+    - "STOCH"
+    - "ATR"
+    - "CCI"
+  max_per_strategy: 4
+  min_per_strategy: 2
+  min_entry_conditions: 2
+
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 38]
+    sell_threshold: [62, 80]
+  MACD:
+    fast_period: [8, 18]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [14, 30]
+    std_dev: [1.5, 3.0]
+  EMA:
+    period: [5, 50]
+  SMA:
+    period: [10, 100]
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [18, 38]
+    d_threshold: [62, 82]
+  ATR:
+    period: [10, 20]
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-200, -80]
+    sell_threshold: [80, 200]
+  SUPERTREND:
+    period: [7, 14]
+    multiplier: [2.0, 4.0]
+
+trade_visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: false
+
+parallel_evaluation:
+  enabled: false
+
+output:
+  dir: 'genetic_algorithm/output/exploration/wave1/E3_island_wf_stress'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 1
+
+storage:
+  database: "genetic_algorithm/data/wave1_E3_island_wf_stress.db"
+  strategy_dir: "user_data/strategies/wave1_E3_island_wf_stress"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_wave1_E3"
+  checkpoint_interval: 2
+  keep_history: true
+
+logging:
+  level: "DEBUG"                # DEBUG to capture exact failure mode
+  file: "genetic_algorithm/logs/wave1_E3_island_wf_stress.log"
+  console: true
+
+hall_of_fame:
+  enabled: false                # No point archiving broken strategies
+
+advanced:
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: false
+  llm:
+    enabled: false
+
+  island_model:
+    enabled: true
+
+# ── Island Model ──
+island_model:
+  enabled: true
+  parallel_islands: false       # Sequential — easier to debug failure mode
+
+  islands:
+    - name: 'bullish'
+      population_size: 4
+      data_regime: 'bullish'
+    - name: 'bearish'
+      population_size: 4
+      data_regime: 'bearish'
+    - name: 'sideways'
+      population_size: 4
+      data_regime: 'sideways'
+    - name: 'master'
+      population_size: 4
+      data_regime: 'balanced'
+
+  migration:
+    specialist:
+      interval: 3
+      count: 1
+      topology: 'fully_connected'
+    master:
+      interval: 2
+      count: 1
+      send_count: 1
+
+  regime_detection:
+    pair: 'BTC/USDT'
+    timeframe: '4h'
+    timerange: '20230301-20260228'
+    method: 'ensemble'
+    period_days: 60
+    holdout_ratio: 0.20

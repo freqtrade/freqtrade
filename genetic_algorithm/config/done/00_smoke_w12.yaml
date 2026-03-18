@@ -1,0 +1,181 @@
+# ============================================================================
+# WAVE 12 — Smoke Test: Verify all 17 code fixes work in production
+# ============================================================================
+# Based on: ga_config_smoke.yaml
+# Changes: pop=5, gen=3, elite_diversity_threshold=0.15
+# Pass criteria: Completes without crash, produces hall_of_fame output
+# ============================================================================
+
+genetic_algorithm:
+  random_seed: 4200
+  population_size: 5
+  generations: 3
+  mutation_rate: 0.20
+  crossover_rate: 0.7
+  crossover_method: 'uniform'
+  elite_size: 2
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 4
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.15
+  max_mutation_rate: 0.35
+  fitness_sharing: true
+  sharing_radius: 0.25
+  diversity_threshold: 0.20
+  elite_diversity_threshold: 0.15
+  allow_self_crossover: false
+  random_immigrants: 2
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.15
+  sortino_ratio: 0.10
+  profit_factor: 0.10
+  drawdown: 0.15
+  win_rate: 0.10
+  trade_frequency: 0.10
+
+fitness_penalties:
+  min_trades: 3
+  max_drawdown: 0.40
+  min_win_rate: 0.25
+  complexity_weight: 0.005
+  unused_indicator_weight: 0.02
+
+backtesting:
+  timerange: "20250301-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: true
+  enable_cache: true
+  timeout: 120
+
+walk_forward:
+  enabled: true
+  train_days: 60
+  validation_days: 20
+  step_days: 20
+  mode: 'rolling'
+  aggregation: 'mean'
+  min_train_trades: 3
+  max_windows: 8
+
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.15
+
+regime_aware:
+  enabled: true
+  method: 'adx_di_hysteresis'
+  benchmark_pair: null
+  detection_timeframe: '1h'
+  period_days: 20
+  min_period_days: 15
+  embargo_days: 2
+  segments_per_regime: 3
+  holdout_ratio: 0.10
+  aggregation: 'harmonic_mean'
+  cvar_alpha: 0.20
+  regime_weights:
+    bullish: 1.0
+    bearish: 1.0
+    sideways: 1.0
+
+strategy_constraints:
+  min_trades: 3
+  max_drawdown: 0.40
+  min_win_rate: 0.25
+  timeframes: ["5m", "1h", "4h"]
+  stoploss_range: [-0.25, -0.03]
+  roi_range: [0.01, 0.20]
+  max_open_trades_range: [1, 5]
+  min_exit_conditions: 1
+
+multi_timeframe:
+  enabled: false
+
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "BBANDS"
+    - "ADX"
+    - "MACD"
+    - "CDL_ENGULFING"
+    - "CDL_HAMMER"
+    - "CDL_MORNINGSTAR"
+  max_per_strategy: 4
+  min_entry_conditions: 2
+
+trade_visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: true
+  default_mode: "simple"
+  refresh_rate: 4
+  history_window: 20
+
+parallel_evaluation:
+  enabled: true
+  num_workers: null
+  worker_log_level: 'WARNING'
+  backtest_timeout: 60
+
+holdout_monitoring:
+  enabled: true
+  interval: 2
+  top_n: 2
+  early_stop: true
+  early_stop_threshold: 0.60
+  early_stop_checks: 2
+  trend_early_stop: true
+  trend_checks: 3
+  fitness_penalty: true
+  penalty_factor: 0.8
+
+parsimony:
+  enabled: true
+  max_indicators: 5
+  max_conditions: 6
+
+output:
+  dir: 'genetic_algorithm/output/exploration/wave12/smoke_w12'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 1
+
+storage:
+  database: "genetic_algorithm/data/wave12_smoke.db"
+  strategy_dir: "user_data/strategies/wave12_smoke"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_wave12_smoke"
+  checkpoint_interval: 1
+  keep_history: true
+
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/wave12_smoke.log"
+  console: true
+
+hall_of_fame:
+  enabled: true
+  max_size: 10
+
+overfit_analysis:
+  thresholds:
+    holdout_degradation_warning: 0.25
+    holdout_degradation_overfit: 0.50
+    wf_gap_warning: 0.15
+    wf_gap_overfit: 0.30
+    mc_robustness_warning: 0.70
+    mc_robustness_overfit: 0.50
+    composite_warning: 0.25
+    composite_overfit: 0.50

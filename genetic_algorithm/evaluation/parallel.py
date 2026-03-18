@@ -107,15 +107,18 @@ def _init_worker(config: Dict[str, Any]):
     
     # ── Silence worker logging FIRST (before any imports trigger log calls) ──
     # Strip ALL console StreamHandlers inherited from the parent process (fork)
-    # and set levels to WARNING so init messages from DirectBacktester etc.
+    # and set levels so init messages from DirectBacktester etc.
     # never reach the terminal and corrupt the rich Live display.
+    worker_log_level = getattr(
+        logging, config.get('worker_log_level', 'WARNING').upper(), logging.WARNING
+    )
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.WARNING)
+    root_logger.setLevel(worker_log_level)
     for h in list(root_logger.handlers):
         if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler):
             root_logger.removeHandler(h)
-    logging.getLogger('GeneticAlgorithm').setLevel(logging.WARNING)
-    logging.getLogger('freqtrade').setLevel(logging.WARNING)
+    logging.getLogger('GeneticAlgorithm').setLevel(worker_log_level)
+    logging.getLogger('freqtrade').setLevel(worker_log_level)
     
     # Import here to avoid circular imports and ensure each process has its own imports
     from genetic_algorithm.evaluation.fitness import FitnessEvaluator
@@ -226,13 +229,16 @@ def _init_wf_worker(config: Dict[str, Any]):
     global _wf_worker_evaluator
     
     # Silence worker logging FIRST (before imports trigger log calls)
+    worker_log_level = getattr(
+        logging, config.get('worker_log_level', 'WARNING').upper(), logging.WARNING
+    )
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.WARNING)
+    root_logger.setLevel(worker_log_level)
     for h in list(root_logger.handlers):
         if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler):
             root_logger.removeHandler(h)
-    logging.getLogger('GeneticAlgorithm').setLevel(logging.WARNING)
-    logging.getLogger('freqtrade').setLevel(logging.WARNING)
+    logging.getLogger('GeneticAlgorithm').setLevel(worker_log_level)
+    logging.getLogger('freqtrade').setLevel(worker_log_level)
     
     from genetic_algorithm.evaluation.fitness import FitnessEvaluator
     

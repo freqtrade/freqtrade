@@ -79,6 +79,7 @@ class LLMProviderRouter(LLMProvider):
             name = merged.get('provider', 'unknown')
             try:
                 provider = LLMProviderFactory.create(merged)
+                provider._used_by_router = True
                 self._providers.append(provider)
                 self._provider_names.append(name)
                 self._provider_stats[name] = {

@@ -217,14 +217,14 @@ class TestDSRTracker:
     def test_initialization(self):
         tracker = DSRTracker({})
         assert tracker.enabled  # Default enabled
-        assert tracker.n_trials == 0
+        assert tracker.n_trials == 1  # min floor of 1 (prevents div-by-zero)
 
     def test_register_evaluation(self):
         tracker = DSRTracker({})
         tracker.register_evaluation("hash1")
         tracker.register_evaluation("hash2")
-        tracker.register_evaluation("hash1")  # Duplicate
-        assert tracker.n_trials == 3  # _total_evaluated
+        tracker.register_evaluation("hash1")  # Duplicate — not counted again
+        assert tracker.n_trials == 2  # Only unique strategy hashes
         assert len(tracker._strategy_hashes) == 2
 
     def test_disabled(self):
@@ -237,7 +237,7 @@ class TestDSRTracker:
         tracker = DSRTracker({})
         tracker.register_evaluation("hash1")
         tracker.reset()
-        assert tracker.n_trials == 0
+        assert tracker.n_trials == 1  # min floor of 1 after reset
 
 
 # ═══════════════════════════════════════════════════════════════════

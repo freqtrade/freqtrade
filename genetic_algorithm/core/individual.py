@@ -94,6 +94,11 @@ class Individual:
         """
         Set objectives for multi-objective optimization (NSGA-II).
         
+        Does NOT overwrite .fitness / .raw_fitness — those are set by
+        set_fitness() with the proper weighted scalar and are used by
+        holdout degradation, reporting, and convergence tracking.
+        NSGA-II selection uses .rank and .crowding_distance instead.
+        
         Args:
             objectives: List of objective values (all to be maximized)
             metrics: Dictionary of performance metrics
@@ -105,8 +110,10 @@ class Individual:
         self.metrics = metrics
         self.metrics.update(preserved)
         self.evaluated = True
-        # Also set fitness to first objective for backwards compatibility
-        if objectives:
+        # Set scalar fitness only if it wasn't already set by set_fitness().
+        # This handles the edge case where set_objectives() is called without
+        # a prior set_fitness() (e.g., deserialization).
+        if self.fitness is None and objectives:
             self.fitness = objectives[0]
             self.raw_fitness = objectives[0]
     

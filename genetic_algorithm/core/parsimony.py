@@ -168,6 +168,9 @@ def _apply_removal(
             # Must still have at least min_entry_conditions
             if len(trial.entry_conditions) < min_entry_conditions:
                 return None
+            # Must still have at least 1 exit condition
+            if len(trial.exit_conditions) < 1:
+                return None
 
         elif kind == 'entry_condition':
             del trial.entry_conditions[index]

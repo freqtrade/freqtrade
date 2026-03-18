@@ -472,21 +472,24 @@ class StrategyGene:
         def _make_key(ind_type: str, tf: Optional[str]) -> str:
             return f"{ind_type}_{tf}" if tf else ind_type
         
-        # Assign instance IDs to indicators
+        # Reset instance IDs and strip any cascaded numeric suffixes
+        # before re-assigning, to prevent CDL_MORNINGSTAR_0_0_0 corruption
+        for ind in self.indicators:
+            if ind.type.startswith('CDL_'):
+                ind.type = self._strip_cdl_suffixes(ind.type)
+            ind.instance_id = None
+        
+        # Assign fresh instance IDs to indicators
         for ind in self.indicators:
             key = _make_key(ind.type, ind.timeframe)
             if key not in type_tf_counts:
                 type_tf_counts[key] = 0
             
-            # Assign instance ID if not already set
-            if not ind.instance_id:
-                if ind.timeframe:
-                    ind.instance_id = f"{ind.type}_{ind.timeframe}_{type_tf_counts[key]}"
-                else:
-                    ind.instance_id = f"{ind.type}_{type_tf_counts[key]}"
-                type_tf_counts[key] += 1
+            if ind.timeframe:
+                ind.instance_id = f"{ind.type}_{ind.timeframe}_{type_tf_counts[key]}"
             else:
-                type_tf_counts[key] += 1
+                ind.instance_id = f"{ind.type}_{type_tf_counts[key]}"
+            type_tf_counts[key] += 1
         
         # Create mapping from type to instance IDs
         type_to_instances: Dict[str, List[str]] = {}
@@ -497,6 +500,7 @@ class StrategyGene:
         
         # Update condition references: if a condition references a type name
         # and there's only one instance of that type, update it to use the instance_id
+        _ambig_counter = 0
         for cond in self.entry_conditions + self.exit_conditions:
             # If condition references a type name directly
             if cond.indicator in type_to_instances:
@@ -505,13 +509,19 @@ class StrategyGene:
                 if len(instances) == 1:
                     cond.indicator = instances[0]
                 # If there are multiple instances and we're using type reference,
-                # default to the first instance for backward compatibility.
-                # Note: This is a pragmatic choice. In the future, we could:
-                # - Keep type references as-is and let strategy code handle them
-                # - Use heuristics to pick the "best" instance based on parameters
-                # - Require explicit instance references in all conditions
+                # distribute conditions across instances round-robin to avoid
+                # silently mapping all conditions to the first instance.
                 elif len(instances) > 1:
-                    cond.indicator = instances[0]
+                    import logging as _logging
+                    _logger = _logging.getLogger(__name__)
+                    _logger.debug(
+                        f"Condition references type '{cond.indicator}' with "
+                        f"{len(instances)} instances: {instances}. "
+                        f"Assigning to '{instances[_ambig_counter % len(instances)]}' "
+                        f"(round-robin)."
+                    )
+                    cond.indicator = instances[_ambig_counter % len(instances)]
+                    _ambig_counter += 1
         
         # Deduplicate conditions after ID reassignment
         self.deduplicate_conditions()

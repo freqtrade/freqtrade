@@ -1,0 +1,248 @@
+# ============================================================================
+# WAVE 1 — E1: Baseline Control
+# ============================================================================
+# Purpose: Control group. Standard single-objective evolution with all
+#          validation features enabled. All other experiments compare to this.
+#
+# Key settings:
+#   - Single-objective, tournament selection
+#   - Walk-forward ON, Monte Carlo ON, holdout ON
+#   - Conservative mutation (0.20)
+#   - Uniform crossover
+#   - No island model, no NSGA-II, no LLM
+#
+# Expected runtime: ~2-3 hours (pop 15, 12 gens, 1 worker, 2 pairs)
+# ============================================================================
+
+genetic_algorithm:
+  random_seed: null
+  population_size: 15
+  generations: 12
+  max_runtime_minutes: 240      # 4h safety cap
+  mutation_rate: 0.20
+  crossover_rate: 0.75
+  crossover_method: 'uniform'
+  elite_size: 2
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 8
+  adaptive_mutation: true
+  max_adaptation_factor: 2.5
+  adaptation_step: 0.15
+  max_mutation_rate: 0.45
+  fitness_sharing: true
+  sharing_radius: 0.25
+  diversity_threshold: 0.15
+  allow_self_crossover: false
+  random_immigrants: 2
+  mode: 'single_objective'
+
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.15
+  sortino_ratio: 0.12
+  profit_factor: 0.08
+  drawdown: 0.15
+  win_rate: 0.06
+  trade_frequency: 0.04
+  monthly_stability: 0.04
+  cross_pair: 0.06
+
+fitness_penalties:
+  min_trades: 10
+  max_drawdown: 0.30
+  min_win_rate: 0.30
+  complexity_weight: 0.015
+  unused_indicator_weight: 0.02
+  pair_loss_threshold: -8.0
+
+backtesting:
+  timerange: "20230301-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+    - "SOL/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: false
+  enable_cache: true
+  timeout: 120
+
+walk_forward:
+  enabled: true
+  train_days: 90
+  validation_days: 30
+  step_days: 30
+  mode: 'rolling'
+  aggregation: 'trimmed_mean'
+  min_train_trades: 8
+  max_windows: 8
+  embargo_days: 2
+
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.15
+
+holdout_monitoring:
+  enabled: true
+  interval: 3
+  top_n: 3
+  early_stop: false             # Don't early-stop during exploration
+  early_stop_threshold: 0.60
+  early_stop_checks: 3
+  trend_early_stop: false
+  trend_checks: 3
+  fitness_penalty: true
+  penalty_factor: 0.7
+
+regime_aware:
+  enabled: false
+
+monte_carlo:
+  enabled: true
+  num_permutations: 10          # Reduced for speed (vs 25 in production)
+  methods:
+    - 'bootstrap'
+    - 'shuffle'
+  confidence_level: 0.95
+  min_robustness: 0.50
+
+deflated_sharpe:
+  enabled: true
+  min_trades: 8
+  benchmark_sr: 0.0
+  skewness_correction: true
+
+parsimony:
+  enabled: true
+  max_indicators: 4
+  max_conditions: 5
+
+cpcv:
+  enabled: false
+
+strategy_constraints:
+  min_trades: 10
+  max_drawdown: 0.30
+  min_win_rate: 0.30
+  timeframes: ["15m"]
+  stoploss_range: [-0.12, -0.03]
+  roi_range: [0.01, 0.10]
+  max_open_trades_range: [1, 4]
+  min_exit_conditions: 1
+
+multi_timeframe:
+  enabled: false
+
+indicators:
+  available:
+    - "RSI"
+    - "EMA"
+    - "BBANDS"
+    - "ADX"
+    - "MACD"
+    - "SMA"
+    - "SUPERTREND"
+    - "STOCH"
+    - "ATR"
+    - "CCI"
+    - "CDL_DOJI"
+    - "CMF"
+    - "VROC"
+  max_per_strategy: 4
+  min_per_strategy: 2
+  min_entry_conditions: 2
+
+  RSI:
+    period: [7, 21]
+    buy_threshold: [20, 38]
+    sell_threshold: [62, 80]
+  MACD:
+    fast_period: [8, 18]
+    slow_period: [21, 50]
+    signal_period: [5, 14]
+  BBANDS:
+    period: [14, 30]
+    std_dev: [1.5, 3.0]
+  EMA:
+    period: [5, 50]
+  SMA:
+    period: [10, 100]
+  STOCH:
+    k_period: [5, 21]
+    d_period: [3, 14]
+    k_threshold: [18, 38]
+    d_threshold: [62, 82]
+  ATR:
+    period: [10, 20]
+  ADX:
+    period: [10, 20]
+    threshold: [20, 40]
+  CCI:
+    period: [10, 30]
+    buy_threshold: [-200, -80]
+    sell_threshold: [80, 200]
+  SUPERTREND:
+    period: [7, 14]
+    multiplier: [2.0, 4.0]
+  CDL_DOJI: {}
+  CMF:
+    period: [14, 21]
+    threshold: [-0.2, 0.2]
+  VROC:
+    period: [10, 25]
+    threshold: [-20, 20]
+
+trade_visualization:
+  enabled: false
+
+terminal_monitor:
+  enabled: false
+
+parallel_evaluation:
+  enabled: false
+
+output:
+  dir: 'genetic_algorithm/output/exploration/wave1/E1_baseline_control'
+  save_stats: true
+  stats_file: 'evolution_stats.json'
+  save_snapshots: true
+  snapshot_interval: 1
+
+storage:
+  database: "genetic_algorithm/data/wave1_E1_baseline_control.db"
+  strategy_dir: "user_data/strategies/wave1_E1_baseline_control"
+  checkpoint_dir: "genetic_algorithm/data/checkpoints_wave1_E1"
+  checkpoint_interval: 3
+  keep_history: true
+
+logging:
+  level: "INFO"
+  file: "genetic_algorithm/logs/wave1_E1_baseline_control.log"
+  console: true
+
+hall_of_fame:
+  enabled: true
+  max_size: 20
+  inject_count: 2
+  min_fitness: 0.05
+  directory: "genetic_algorithm/data/hall_of_fame_wave1_E1"
+
+advanced:
+  enable_dry_run: false
+  enable_ml_fitness: false
+  enable_llm: false
+  llm:
+    enabled: false
+
+overfit_analysis:
+  thresholds:
+    holdout_degradation_warning: 0.25
+    holdout_degradation_overfit: 0.50
+    wf_gap_warning: 0.15
+    wf_gap_overfit: 0.30
+    mc_robustness_warning: 0.70
+    mc_robustness_overfit: 0.50
+    composite_warning: 0.25
+    composite_overfit: 0.50

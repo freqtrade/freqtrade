@@ -428,9 +428,13 @@ def mutate_conditions(individual: Individual, mutation_rate: float,
             ind_type = resolve_indicator_type(condition.indicator)
             valid_ops = get_valid_operators(ind_type)
             if not valid_ops:
-                # Unknown indicator — fall back to standard operators
-                valid_ops = ['<', '>', 'cross_above', 'cross_below',
-                             'increasing', 'decreasing', 'between', 'value_above_ago']
+                # Unknown indicator — use CDL operators for candlestick patterns,
+                # otherwise fall back to standard numeric operators.
+                if ind_type.startswith('CDL_'):
+                    valid_ops = ['<', '>']
+                else:
+                    valid_ops = ['<', '>', 'cross_above', 'cross_below',
+                                 'increasing', 'decreasing', 'between', 'value_above_ago']
             condition.operator = random.choice(valid_ops)
             # Set sane defaults for new operators
             if condition.operator == 'between':
@@ -640,6 +644,13 @@ def mutate_structure(individual: Individual, mutation_rate: float,
     if random.random() < mutation_rate:
         available_timeframes = strategy_constraints.get('timeframes', ['5m', '15m', '1h'])
         mutated_gene.timeframe = random.choice(available_timeframes)
+        # After changing base timeframe, remove informative timeframes that
+        # are no longer strictly higher than the new base.
+        if mutated_gene.informative_timeframes:
+            mutated_gene.informative_timeframes = [
+                tf for tf in mutated_gene.informative_timeframes
+                if is_higher_timeframe(tf, mutated_gene.timeframe)
+            ]
         mutations_applied.append(f"timeframe_{mutated_gene.timeframe}")
     
     # Mutate stoploss
@@ -1321,6 +1332,8 @@ def mutate(individual: Individual, mutation_rate: float,
     
     for method in methods:
         if random.random() < mutation_rate:
+            # Snapshot pre-mutation state so we can roll back on failure
+            pre_mutation = mutated
             try:
                 if method == 'parameters':
                     mutated = mutate_parameters(mutated, mutation_rate, config)
@@ -1343,11 +1356,8 @@ def mutate(individual: Individual, mutation_rate: float,
                 elif method == 'regime':
                     mutated = mutate_regime(mutated, mutation_rate, config)
             except (ValueError, KeyError, AttributeError, TypeError) as e:
-                # Log the error but continue with the current mutated state
-                # This ensures that a failed mutation doesn't crash the evolution
-                logger.warning(f"Mutation method '{method}' failed: {e}. Continuing with current state.")
-                # If this is the first mutation attempt, return the original individual
-                if mutated is individual:
-                    logger.debug(f"Returning original individual due to failed mutation")
+                # Roll back to pre-mutation state to prevent partial corruption
+                mutated = pre_mutation
+                logger.warning(f"Mutation method '{method}' failed: {e}. Rolling back to pre-'{method}' state.")
     
     return mutated

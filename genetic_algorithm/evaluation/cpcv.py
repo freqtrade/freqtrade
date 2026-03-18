@@ -69,6 +69,18 @@ def generate_cpcv_paths(
     Returns:
         List of (train_group_indices, test_group_indices) tuples
     """
+    if n_test_groups > n_groups:
+        logger.error(
+            f"CPCV: n_test_groups ({n_test_groups}) > n_groups ({n_groups}) — invalid config"
+        )
+        return []
+    if n_test_groups < 1:
+        logger.error(f"CPCV: n_test_groups must be >= 1, got {n_test_groups}")
+        return []
+    if n_groups < 2:
+        logger.error(f"CPCV: n_groups must be >= 2, got {n_groups}")
+        return []
+
     all_groups = list(range(n_groups))
     all_paths = []
 

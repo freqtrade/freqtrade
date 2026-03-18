@@ -122,10 +122,10 @@ genetic_algorithm/logs/
 genetic_algorithm/data/cache/
 genetic_algorithm/data/candle_cache/
 genetic_algorithm/data/checkpoints/
-genetic_algorithm/data/checkpoints_feature_test/
+genetic_algorithm/data/checkpoints_*/
 genetic_algorithm/data/hall_of_fame/
-genetic_algorithm/data/hall_of_fame_feature_test/
-genetic_algorithm/data/hall_of_fame_island_*/
+genetic_algorithm/data/hall_of_fame_*/
+genetic_algorithm/data/incoming_migrants/
 genetic_algorithm/data/runs/
 genetic_algorithm/benchmark_results/
 genetic_algorithm/genetic_algorithm/

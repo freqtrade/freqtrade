@@ -8,6 +8,7 @@ Hall of fame members can be re-injected into future evolution runs.
 
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -122,7 +123,7 @@ class HallOfFame:
             logger.info("No existing hall of fame found. Starting fresh.")
     
     def _save(self) -> None:
-        """Save hall of fame to disk."""
+        """Save hall of fame to disk (atomic write via tmp+rename)."""
         data = {
             'version': 1,
             'last_updated': time.time(),
@@ -130,8 +131,10 @@ class HallOfFame:
             'entries': [e.to_dict() for e in self.entries],
         }
         try:
-            with open(self.filepath, 'w') as f:
-                json.dump(data, f, indent=2, default=str)
+            tmp_path = self.filepath.with_suffix('.tmp')
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, default=str, ensure_ascii=False)
+            os.replace(tmp_path, self.filepath)
         except IOError as e:
             logger.error(f"Failed to save hall of fame: {e}")
     

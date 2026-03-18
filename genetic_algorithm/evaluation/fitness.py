@@ -8,6 +8,7 @@ and walk-forward optimization for preventing overfitting.
 
 import logging
 import hashlib
+import math
 from collections import OrderedDict
 from typing import Tuple, Dict, Any, List, Optional
 
@@ -60,6 +61,7 @@ class FitnessEvaluator:
         self.sortino_min = fitness_bounds.get('sortino_min', -5)
         self.sortino_max = fitness_bounds.get('sortino_max', 12)
         self.profit_factor_max = fitness_bounds.get('profit_factor_max', 10)
+        self.profit_factor_norm = fitness_bounds.get('profit_factor_normalization', 3.0)
         
         # Trade frequency thresholds
         tf_config = config.get('trade_frequency_thresholds', {})
@@ -81,9 +83,9 @@ class FitnessEvaluator:
         self.backtester = DirectBacktester(config)
         self.strategy_generator = StrategyGenerator(config)
         
-        # Walk-forward cache: (strategy_hash, window_index) -> BacktestResult
+        # Walk-forward cache: (strategy_hash, train_timerange) -> BacktestResult
         # Uses OrderedDict for LRU eviction — most-recently-used entries at the end.
-        self._wf_cache: OrderedDict[Tuple[str, int], BacktestResult] = OrderedDict()
+        self._wf_cache: OrderedDict[Tuple[str, str], BacktestResult] = OrderedDict()
         self._wf_cache_hits = 0
         self._wf_cache_misses = 0
         self._wf_cache_max_size = self.walk_forward_config.get('cache_max_size', 10000)
@@ -364,7 +366,7 @@ class FitnessEvaluator:
                     progress_callback(window.window_index, len(windows))
                 
                 # Check cache first
-                cache_key = (strategy_hash, window.window_index)
+                cache_key = (strategy_hash, window.train_timerange)
                 if cache_key in self._wf_cache:
                     self._wf_cache_hits += 1
                     # Promote to end for LRU ordering
@@ -726,13 +728,15 @@ class FitnessEvaluator:
         win_rate = metrics.get('win_rate', 0)
         trades = metrics.get('num_trades', 0)
         
-        # NaN/Inf protection: replace invalid values with 0
+        # NaN/Inf protection: replace invalid values with minimum bounds
+        # Using minimum bounds (not 0) prevents NaN Sharpe from scoring as 0.33
+        # after normalization: (0 - (-5)) / 15 = 0.33 is wrong for a failed strategy
         if math.isnan(profit) or math.isinf(profit):
             profit = 0
         if math.isnan(sharpe) or math.isinf(sharpe):
-            sharpe = 0
+            sharpe = self.sharpe_min
         if math.isnan(sortino) or math.isinf(sortino):
-            sortino = 0
+            sortino = self.sortino_min
         if math.isnan(profit_factor) or math.isinf(profit_factor):
             profit_factor = 0
         if math.isnan(drawdown) or math.isinf(drawdown):
@@ -756,7 +760,7 @@ class FitnessEvaluator:
         norm_sharpe = (sharpe - self.sharpe_min) / sharpe_range if sharpe_range > 0 else 0
         sortino_range = self.sortino_max - self.sortino_min
         norm_sortino = (sortino - self.sortino_min) / sortino_range if sortino_range > 0 else 0
-        norm_profit_factor = min(1.0, profit_factor / 3.0)  # >3.0 is excellent
+        norm_profit_factor = min(1.0, profit_factor / self.profit_factor_norm)  # configurable via fitness_bounds.profit_factor_normalization
         norm_drawdown = 1 - drawdown  # Lower drawdown is better
         norm_win_rate = win_rate  # Already 0-1
         norm_trades = self._normalize_trade_frequency(trades)
@@ -863,31 +867,37 @@ class FitnessEvaluator:
         
         # ==================================================================================
         # BONUS STACKING STRATEGY:
-        # Multiple bonuses are tracked and capped to avoid excessive amplification.
-        # Maximum total bonus: 1.3x (30% boost) to prevent lucky strategies from dominating.
+        # Smooth sigmoid-based bonuses replace hard step functions to eliminate
+        # fitness landscape discontinuities that mislead the GA optimizer.
+        # Maximum total bonus: ~1.3x (soft cap via tanh saturation).
         # ==================================================================================
+        
+        def _sigmoid_bonus(value, threshold, max_bonus, steepness=5.0):
+            """Smooth logistic bonus: 0 far below threshold, max_bonus far above."""
+            try:
+                return max_bonus / (1.0 + math.exp(-steepness * (value - threshold)))
+            except OverflowError:
+                return 0.0 if value < threshold else max_bonus
         
         total_bonus = 1.0
         
-        # Robustness bonus: reward consistency (good Sortino and profit factor together)
-        if sortino > 1.0 and profit_factor > 1.5:
-            robustness_bonus = 0.05 * min(sortino, 3.0)  # Up to 15% bonus
-            total_bonus += robustness_bonus
+        # Robustness bonus: reward consistency (smooth blend of Sortino + profit factor)
+        sortino_bonus = _sigmoid_bonus(sortino, 1.0, 0.10, steepness=3.0)
+        pf_bonus = _sigmoid_bonus(profit_factor, 1.5, 0.05, steepness=3.0)
+        total_bonus += sortino_bonus * pf_bonus / 0.05  # Scales 0-0.10 when both good
         
-        # Bonus for positive profit (encourage profitable strategies)
-        if profit > 0:
-            total_bonus += 0.05  # 5% bonus for any positive profit
+        # Profit bonus: smooth ramp centred around 5% profit (replaces 0% and 10% cliffs)
+        profit_bonus = _sigmoid_bonus(profit, 5.0, 0.15, steepness=0.3)
+        total_bonus += profit_bonus
         
-        # Extra bonus for significantly profitable strategies
-        if profit > 10:
-            total_bonus += 0.10  # Additional 10% bonus for >10% profit
+        # Risk-adjusted excellence: smooth product of Sharpe and low-drawdown sigmoids
+        sharpe_factor = _sigmoid_bonus(sharpe, 2.0, 1.0, steepness=2.0)
+        dd_factor = _sigmoid_bonus(-drawdown, -0.15, 1.0, steepness=20.0)
+        total_bonus += sharpe_factor * dd_factor * 0.10  # Up to 10% when both excellent
         
-        # Risk-adjusted excellence bonus: reward exceptional risk-adjusted returns
-        if sharpe > 2.0 and drawdown < 0.15:
-            total_bonus += 0.10  # 10% bonus for excellent risk management
-        
-        # Cap total bonus at 1.3x (30% max boost)
-        total_bonus = min(total_bonus, 1.3)
+        # Soft cap via tanh saturation instead of hard min()
+        excess = total_bonus - 1.0
+        total_bonus = 1.0 + 0.3 * math.tanh(excess / 0.3)  # Saturates near 1.3x
         fitness *= total_bonus
         
         # ==================================================================================
@@ -925,28 +935,22 @@ class FitnessEvaluator:
     
     def _normalize_trade_frequency(self, num_trades: int) -> float:
         """
-        Normalize trade frequency to 0-1 range.
+        Normalize trade frequency to 0-1 range using a smooth bell curve.
         
-        Uses configurable thresholds from self.tf_* attributes.
-        Too few trades = unreliable, too many trades = overtrading and high fees.
+        Uses a Gaussian centred on the ideal trade range.  This replaces the
+        piecewise step function to provide continuous gradients for the GA.
         """
-        if num_trades == 0:
+        if num_trades <= 0:
             return 0.0
-        elif num_trades < self.tf_very_few:
-            # Very few trades - heavily penalized
-            return num_trades / (self.tf_very_few * 2)
-        elif self.tf_very_few <= num_trades < self.tf_few:
-            # Few trades - some penalty
-            return 0.5 + (num_trades - self.tf_very_few) / (self.tf_few - self.tf_very_few) * 0.5
-        elif self.tf_ideal_min <= num_trades <= self.tf_ideal_max:
-            # Ideal range - full score
-            return 1.0
-        elif self.tf_ideal_max < num_trades <= self.tf_moderate_excess:
-            # Moderate overtrading - slight penalty
-            return 1.0 - (num_trades - self.tf_ideal_max) / (self.tf_moderate_excess - self.tf_ideal_max) * 0.5
-        else:
-            # Excessive trading - significant penalty
-            return max(0.3, 0.5 - (num_trades - self.tf_moderate_excess) / 200)
+        
+        ideal_mean = (self.tf_ideal_min + self.tf_ideal_max) / 2.0
+        # σ chosen so ideal_min..ideal_max spans ~2σ (95% of peak)
+        sigma = max((self.tf_ideal_max - self.tf_ideal_min) / 2.0, 1.0)
+        
+        z = (num_trades - ideal_mean) / sigma
+        score = math.exp(-z * z / 2.0)
+        
+        return max(0.15, min(1.0, score))
     
     def _apply_penalties(self, fitness: float, metrics: Dict[str, float], strategy_gene: StrategyGene = None) -> float:
         """
@@ -964,54 +968,62 @@ class FitnessEvaluator:
             Fitness with penalties applied
         """
         penalties = self.fitness_penalties
+        original_fitness = fitness
         
         num_trades = metrics.get('num_trades', 0)
         max_drawdown = metrics.get('max_drawdown', 0)
         win_rate = metrics.get('win_rate', 0)
         
-        # Soft penalty for low trade count (gradual instead of harsh)
-        # Scales with number of pairs: min_trades * num_pairs ensures statistical significance
-        # across all traded pairs. Default 10 per pair → 50 for 5-pair backtests.
+        # Smooth penalty for low trade count using logistic S-curve.
+        # Replaces the hard 0.01 cliff at 0 trades with a continuous ramp.
         min_trades = penalties.get('min_trades', 10 * max(1, len(self.backtest_config.get('pairs', ['BTC/USDT']))))
         if num_trades < min_trades:
-            if num_trades == 0:
-                fitness *= 0.01  # Near-zero fitness for no trades
+            if num_trades <= 0:
+                fitness *= 0.01  # Zero trades: near-zero fitness
             else:
-                # Gradual penalty: 40% at 1 trade, increasing to full at min_trades
-                # Formula: 0.4 + (num_trades / min_trades) * 0.6
-                # E.g., with min_trades=15: 1 trade=44%, 5=60%, 10=80%, 15+=100%
-                trade_penalty = 0.4 + (num_trades / min_trades) * 0.6
+                # Logistic S-curve: midpoint at min_trades/2, smooth ramp 0→1
+                try:
+                    trade_penalty = 1.0 / (1.0 + math.exp(-8.0 * (num_trades - min_trades / 2.0) / min_trades))
+                except OverflowError:
+                    trade_penalty = 1.0 if num_trades >= min_trades else 0.0
+                # Floor at 5% to avoid near-zero for strategies with very few trades
+                trade_penalty = max(0.05, trade_penalty)
                 fitness *= trade_penalty
         
-        # Penalty for excessive drawdown
+        # Smooth penalty for excessive drawdown (sigmoid onset around threshold).
+        # Gives a gentle signal even slightly below threshold instead of a hard gate.
         max_dd_threshold = penalties.get('max_drawdown', 0.30)
-        if max_drawdown > max_dd_threshold:
-            # Progressive penalty: worse drawdown = worse penalty
-            dd_excess = max_drawdown - max_dd_threshold
-            dd_penalty = max(0.3, 1.0 - dd_excess * 2)
-            fitness *= dd_penalty
+        try:
+            dd_penalty_value = 0.7 / (1.0 + math.exp(-20.0 * (max_drawdown - max_dd_threshold)))
+        except OverflowError:
+            dd_penalty_value = 0.7 if max_drawdown > max_dd_threshold else 0.0
+        dd_penalty = 1.0 - dd_penalty_value  # 1.0 when DD is low, ~0.3 when DD is extreme
+        fitness *= dd_penalty
         
-        # Penalty for low win rate (but not too harsh)
+        # Smooth win rate penalty (replaces binary gate at num_trades >= 5).
+        # Penalty strength scales with trade confidence (more trades = more trust).
         min_win_rate = penalties.get('min_win_rate', 0.30)
-        if win_rate < min_win_rate and num_trades >= 5:  # Only penalize if enough trades
-            # Gradual penalty for low win rate
-            wr_penalty = max(0.6, win_rate / min_win_rate)
+        if num_trades >= 2:
+            # Confidence factor: full confidence at 10+ trades, partial below
+            confidence = min(1.0, (num_trades - 1) / 9.0)
+            # Sigmoid penalty centred at min_win_rate
+            try:
+                wr_raw = 0.4 / (1.0 + math.exp(15.0 * (win_rate - min_win_rate)))
+            except OverflowError:
+                wr_raw = 0.0 if win_rate > min_win_rate else 0.4
+            wr_penalty = 1.0 - wr_raw * confidence  # 0.6–1.0 range, scaled by confidence
             fitness *= wr_penalty
         
         # Complexity penalty: penalize overly complex strategies
-        # Applied additively (after multiplicative penalties) to allow fine-tuning
-        # Additive approach chosen because:
-        # - Complexity is a count (discrete), not a rate
-        # - Easier to interpret and tune (linear relationship)
-        # - Avoids compound effects with other multiplicative penalties
+        # Applied multiplicatively for consistency with other penalties
         if strategy_gene is not None:
             complexity_weight = penalties.get('complexity_weight', 0.01)
             if complexity_weight > 0:
                 complexity = strategy_gene.calculate_complexity()
-                complexity_penalty = complexity_weight * complexity
-                # Subtract penalty from fitness
-                fitness = max(0, fitness - complexity_penalty)
-                logger.debug(f"Applied complexity penalty: {complexity_penalty:.4f} "
+                # Cap penalty at 30% reduction to avoid crushing low-fitness strategies
+                complexity_mult = max(0.7, 1.0 - complexity_weight * complexity)
+                fitness *= complexity_mult
+                logger.debug(f"Applied complexity penalty: x{complexity_mult:.3f} "
                            f"(complexity={complexity}, weight={complexity_weight})")
         
         # Per-pair robustness penalty: penalize strategies with large losses on any single pair
@@ -1049,9 +1061,10 @@ class FitnessEvaluator:
                     unused_count = total_indicators - used_count
                     if unused_count > 0:
                         unused_ratio = unused_count / total_indicators
-                        unused_penalty = unused_ratio * unused_penalty_weight * total_indicators
-                        fitness = max(0, fitness - unused_penalty)
-                        logger.debug(f"Applied unused-indicator penalty: {unused_penalty:.4f} "
+                        # Cap at 20% reduction for consistency with other multiplicative penalties
+                        unused_mult = max(0.8, 1.0 - unused_ratio * unused_penalty_weight * total_indicators)
+                        fitness *= unused_mult
+                        logger.debug(f"Applied unused-indicator penalty: x{unused_mult:.3f} "
                                    f"({unused_count}/{total_indicators} unused)")
         
         # Dead exit condition penalty: penalize strategies where ALL exit
@@ -1073,11 +1086,20 @@ class FitnessEvaluator:
                         dead_count += 1
                     elif cond.operator in ('>', 'greater_than') and cond.threshold >= hi:
                         dead_count += 1
-            if bounded_count > 0 and dead_count == bounded_count:
-                # ALL bounded exit conditions are impossible → heavy penalty
-                fitness *= 0.7
-                logger.debug(f"Applied dead-exit penalty: all {dead_count} bounded exit conditions "
-                           f"use impossible thresholds (fitness x0.7)")
+            if bounded_count > 0 and dead_count > 0:
+                # Proportional penalty based on ratio of dead conditions
+                dead_ratio = dead_count / bounded_count
+                dead_penalty = 1.0 - dead_ratio * 0.3  # 0.7 when all dead, 1.0 when none
+                fitness *= dead_penalty
+                logger.debug(f"Applied dead-exit penalty: {dead_count}/{bounded_count} bounded exit "
+                           f"conditions use impossible thresholds (fitness x{dead_penalty:.3f})")
+        
+        # Combined penalty floor: prevent penalty compounding from destroying
+        # viable strategies. With N multiplicative penalties, the product can
+        # approach zero even for decent strategies. Floor at 10% of original.
+        min_penalized = penalties.get('min_penalty_floor', 0.10)
+        if min_penalized > 0 and original_fitness > 0:
+            fitness = max(fitness, original_fitness * min_penalized)
         
         return fitness
     

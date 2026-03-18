@@ -590,10 +590,11 @@ class TestDSRTrialsCounting:
         tracker.register_evaluation(strategy_hash='abc123')
         # Same hash registered 3 times → should count as 1 unique trial
         assert len(tracker._strategy_hashes) == 1
-        assert tracker._total_evaluated == 3
-        # n_trials uses max(unique, total) so it's 3 due to fallback
-        # But unique strategies is just 1
-        assert len(tracker._strategy_hashes) == 1
+        # _total_evaluated is NOT incremented when a hash is provided
+        # (walk-forward re-evaluations of the same strategy don't inflate n_trials)
+        assert tracker._total_evaluated == 0
+        # n_trials = unique hashes + untracked = 1
+        assert tracker.n_trials == 1
 
     def test_different_hashes_count_separately(self):
         from genetic_algorithm.evaluation.deflated_sharpe import DSRTracker

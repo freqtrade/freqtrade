@@ -197,8 +197,13 @@ def _top_up_conditions(gene: StrategyGene, needed: int, is_entry: bool,
     conditions = gene.entry_conditions if is_entry else gene.exit_conditions
     attempts = 0
     added = 0
+    # Filter out CDL-only indicators which can't produce standard conditions
+    usable_indicators = [ind for ind in available_indicators
+                         if not ind.type.startswith('CDL_')]
+    if not usable_indicators:
+        usable_indicators = available_indicators  # Fall back to all if none are usable
     while added < needed and attempts < 10:
-        ind = random.choice(available_indicators)
+        ind = random.choice(usable_indicators)
         ind_type = ind.type  # _create_random_condition expects the type (e.g. 'RSI')
         ind_ref = ind.instance_id or ind_type  # conditions reference instance_id
         try:
@@ -245,28 +250,27 @@ def single_point_crossover(parent1: Individual, parent2: Individual,
     child2_gene = parent2.strategy_gene.copy()
     
     # Crossover indicators
-    if len(parent1.strategy_gene.indicators) > 1 and len(parent2.strategy_gene.indicators) > 1:
-        point = random.randint(1, min(len(parent1.strategy_gene.indicators),
-                                     len(parent2.strategy_gene.indicators)) - 1)
+    min_ind_len = min(len(parent1.strategy_gene.indicators), len(parent2.strategy_gene.indicators))
+    if min_ind_len >= 2:
+        point = random.randint(1, min_ind_len - 1)
         child1_gene.indicators = ([copy.deepcopy(ind) for ind in parent1.strategy_gene.indicators[:point]] + 
                                  [copy.deepcopy(ind) for ind in parent2.strategy_gene.indicators[point:]])
         child2_gene.indicators = ([copy.deepcopy(ind) for ind in parent2.strategy_gene.indicators[:point]] + 
                                  [copy.deepcopy(ind) for ind in parent1.strategy_gene.indicators[point:]])
     
     # Crossover entry conditions
-    if len(parent1.strategy_gene.entry_conditions) > 1 and len(parent2.strategy_gene.entry_conditions) > 1:
-        point = random.randint(1, min(len(parent1.strategy_gene.entry_conditions),
-                                     len(parent2.strategy_gene.entry_conditions)) - 1)
+    min_entry_len = min(len(parent1.strategy_gene.entry_conditions), len(parent2.strategy_gene.entry_conditions))
+    if min_entry_len >= 2:
+        point = random.randint(1, min_entry_len - 1)
         child1_gene.entry_conditions = ([copy.deepcopy(cond) for cond in parent1.strategy_gene.entry_conditions[:point]] + 
                                        [copy.deepcopy(cond) for cond in parent2.strategy_gene.entry_conditions[point:]])
         child2_gene.entry_conditions = ([copy.deepcopy(cond) for cond in parent2.strategy_gene.entry_conditions[:point]] + 
                                        [copy.deepcopy(cond) for cond in parent1.strategy_gene.entry_conditions[point:]])
     
     # Crossover exit conditions
-    if (len(parent1.strategy_gene.exit_conditions) > 1 and 
-        len(parent2.strategy_gene.exit_conditions) > 1):
-        point = random.randint(1, min(len(parent1.strategy_gene.exit_conditions),
-                                     len(parent2.strategy_gene.exit_conditions)) - 1)
+    min_exit_len = min(len(parent1.strategy_gene.exit_conditions), len(parent2.strategy_gene.exit_conditions))
+    if min_exit_len >= 2:
+        point = random.randint(1, min_exit_len - 1)
         child1_gene.exit_conditions = ([copy.deepcopy(cond) for cond in parent1.strategy_gene.exit_conditions[:point]] + 
                                       [copy.deepcopy(cond) for cond in parent2.strategy_gene.exit_conditions[point:]])
         child2_gene.exit_conditions = ([copy.deepcopy(cond) for cond in parent2.strategy_gene.exit_conditions[:point]] + 

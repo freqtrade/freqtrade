@@ -1,0 +1,142 @@
+# ============================================================================
+# WAVE 15 — E130: Best Topology + Holdout + Walk-Forward Combined
+# ============================================================================
+# Purpose: Full validation stack: holdout monitoring (tuned) + walk-forward.
+#          This is the maximum anti-overfit setup. Compare composite score
+#          and SAFE counts against E128 (holdout only) and E129 (WF only).
+#
+# Key features:
+#   - Generic island model with ring topology
+#   - Holdout monitoring ON (tuned: floor=30%, grace=2)
+#   - Walk-forward ON per island
+#   - Both validation layers combined
+#
+# Expected runtime: ~4 hours
+# ============================================================================
+
+genetic_algorithm:
+  random_seed: null
+  population_size: 10
+  generations: 15
+  max_runtime_minutes: 300
+  mutation_rate: 0.20
+  crossover_rate: 0.75
+  crossover_method: 'uniform'
+  elite_size: 1
+  tournament_size: 3
+  selection_method: 'tournament'
+  convergence_patience: 10
+  adaptive_mutation: true
+  max_adaptation_factor: 2.0
+  adaptation_step: 0.15
+  max_mutation_rate: 0.40
+  fitness_sharing: true
+  sharing_radius: 0.20
+  diversity_threshold: 0.12
+  allow_self_crossover: false
+  random_immigrants: 1
+  mode: 'single_objective'
+
+generic_island_model:
+  enabled: true
+  num_islands: 15
+  population_per_island: 10
+  parallel_islands: false
+  specialization:
+    rotate_seeds: true
+    indicator_pools: true
+    indicator_overlap: 0.5
+    pair_rotation: false
+  migration:
+    topology: 'ring'
+    interval: 3
+    count: 2
+    merge_rounds: false
+  walk_forward:
+    enabled: true
+
+fitness_weights:
+  profit: 0.30
+  sharpe_ratio: 0.15
+  sortino_ratio: 0.12
+  profit_factor: 0.08
+  drawdown: 0.15
+  win_rate: 0.06
+  trade_frequency: 0.04
+  monthly_stability: 0.04
+  cross_pair: 0.06
+
+fitness_penalties:
+  min_trades: 5
+  max_drawdown: 0.30
+  min_win_rate: 0.25
+  complexity_weight: 0.015
+  unused_indicator_weight: 0.02
+  pair_loss_threshold: -8.0
+
+backtesting:
+  timerange: "20230301-20260228"
+  stake_amount: 100
+  pairs:
+    - "BTC/USDT"
+    - "ETH/USDT"
+    - "SOL/USDT"
+  max_open_trades: 3
+  fee: 0.001
+  exchange: "binance"
+  auto_download_data: false
+  enable_cache: true
+  timeout: 120
+
+walk_forward:
+  enabled: true
+  n_splits: 4
+  train_ratio: 0.70
+  anchored: true
+  min_train_trades: 5
+
+holdout_validation:
+  enabled: true
+  holdout_pct: 0.15
+
+holdout_monitoring:
+  enabled: true
+  interval: 3
+  top_n: 3
+  early_stop: true
+  early_stop_threshold: 0.60
+  early_stop_checks: 2
+  fitness_penalty: true
+  penalty_factor: 0.7
+  trend_early_stop: true
+  trend_checks: 3
+  trend_min_degradation: 0.30
+  trend_slope_threshold: 0.05
+  trend_grace_checks: 2
+
+regime_aware:
+  enabled: false
+
+monte_carlo:
+  enabled: false
+
+deflated_sharpe:
+  enabled: true
+  min_trades: 5
+  benchmark_sr: 0.0
+  skewness_correction: true
+
+parsimony:
+  enabled: true
+  max_indicators: 4
+  max_conditions: 5
+
+strategy_constraints:
+  min_trades: 5
+  max_drawdown: 0.30
+  min_win_rate: 0.25
+  timeframes: ["15m"]
+  stoploss_range: [-0.12, -0.03]
+  roi_range: [0.01, 0.10]
+  max_open_trades_range: [1, 4]
+  min_exit_conditions: 1

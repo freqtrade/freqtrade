@@ -176,17 +176,24 @@ advanced:
 
   llm:
     enabled: true
-    provider: "groq"           # Groq (groq.com) — fast LPU inference
-    api_key: ""                # Uses GROQ_API_KEY from .env / environment
-    model: "llama-3.3-70b-versatile"  # Fast, capable model
     temperature: 0.7
-    max_retries: 2             # Fail fast on test
-    timeout: 30
-    min_call_interval: 1.0     # 1s between API calls (rate limiting)
+    max_retries: 3
+    timeout: 60
+    min_call_interval: 3.0     # 3s between API calls (avoid Groq rate limits)
+    retry_delay: 5.0           # 5s before retry on 429
 
     # Ratios — what fraction of seed/immigrant slots to fill with LLM
     seed_ratio: 0.4            # 40% of initial population from LLM (≈5 of 12)
     immigrant_ratio: 0.5       # 50% of immigrants from LLM (≈1-2 of 3)
+
+    # Multi-provider router — falls back to next on rate limits/errors
+    providers_list:
+      - provider: anthropic
+        model: claude-3-haiku-20240307
+        api_key: ""            # Uses ANTHROPIC_API_KEY from .env
+      - provider: groq
+        model: llama-3.1-8b-instant
+        api_key: ""            # Uses GROQ_API_KEY from .env
 
   island_model:
     enabled: false

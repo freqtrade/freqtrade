@@ -289,6 +289,14 @@ class GeneticAlgorithm:
         self.checkpoint_dir = Path(storage_config.get('checkpoint_dir', 'genetic_algorithm/data/checkpoints'))
         self.checkpoint_interval = storage_config.get('checkpoint_interval', 5)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Clean up stale .tmp files from previous crashes
+        for tmp_file in self.checkpoint_dir.glob('*.tmp'):
+            try:
+                tmp_file.unlink()
+                self.logger.debug(f"Cleaned up stale temp file: {tmp_file}")
+            except Exception as e:
+                self.logger.warning(f"Failed to clean temp file {tmp_file}: {e}")
 
     def _setup_holdout(self):
         """Initialise holdout monitoring configuration."""
@@ -307,6 +315,9 @@ class GeneticAlgorithm:
         self._holdout_degradation_history: list = []
         self.holdout_trend_early_stop = holdout_mon_config.get('trend_early_stop', True)
         self.holdout_trend_checks = holdout_mon_config.get('trend_checks', 3)
+        self.holdout_trend_min_degradation = holdout_mon_config.get('trend_min_degradation', 0.30)
+        self.holdout_trend_slope_threshold = holdout_mon_config.get('trend_slope_threshold', 0.05)
+        self.holdout_trend_grace_checks = holdout_mon_config.get('trend_grace_checks', 2)
         self.generation_holdout_history: list = []
 
     def _setup_llm(self):
@@ -337,7 +348,7 @@ class GeneticAlgorithm:
     def _setup_diagnostics(self):
         """Initialise run diagnostics and terminal monitor."""
         output_config = self.config.get('output', {})
-        output_dir = Path(output_config.get('directory', 'genetic_algorithm/output'))
+        output_dir = Path(output_config.get('dir', output_config.get('directory', 'genetic_algorithm/output')))
         self.diagnostics = RunDiagnostics(output_dir)
         self.monitor = create_monitor(self.config)
     
@@ -593,8 +604,27 @@ class GeneticAlgorithm:
                 'genetic_algorithm': self.config.get('genetic_algorithm', {}),
                 'backtesting': self.config.get('backtesting', {}),
                 'walk_forward': self.config.get('walk_forward', {}),
+            },
+            
+            # Random state for reproducible resume
+            'random_state': {
+                'python': random.getstate(),
             }
         }
+        
+        # Save numpy random state if available (convert ndarray to list for JSON)
+        try:
+            import numpy as np
+            np_state = np.random.get_state()
+            checkpoint['random_state']['numpy'] = (
+                np_state[0],
+                np_state[1].tolist(),
+                int(np_state[2]),
+                int(np_state[3]),
+                float(np_state[4]),
+            )
+        except ImportError:
+            pass
         
         Path(filepath).parent.mkdir(parents=True, exist_ok=True)
         
@@ -700,6 +730,35 @@ class GeneticAlgorithm:
         # Resume from the NEXT generation
         start_generation = saved_gen + 1
         self.logger.info(f"[CHECKPOINT] Will resume from generation {start_generation + 1}/{self.generations}")
+        
+        # Restore random state for reproducible resume
+        random_state = checkpoint.get('random_state', {})
+        if 'python' in random_state:
+            try:
+                # JSON deserializes tuples as lists — convert back
+                py_state = random_state['python']
+                random.setstate((
+                    py_state[0],
+                    tuple(py_state[1]),
+                    py_state[2],
+                ))
+                self.logger.debug("[CHECKPOINT] Restored Python random state")
+            except Exception as e:
+                self.logger.warning(f"[CHECKPOINT] Failed to restore Python random state: {e}")
+        if 'numpy' in random_state:
+            try:
+                import numpy as np
+                np_state = random_state['numpy']
+                np.random.set_state((
+                    np_state[0],
+                    np.array(np_state[1], dtype=np.uint32),
+                    int(np_state[2]),
+                    int(np_state[3]),
+                    float(np_state[4]),
+                ))
+                self.logger.debug("[CHECKPOINT] Restored NumPy random state")
+            except Exception as e:
+                self.logger.warning(f"[CHECKPOINT] Failed to restore NumPy random state: {e}")
         
         return population, start_generation
     
@@ -1108,7 +1167,7 @@ class GeneticAlgorithm:
         # Parse training timerange into date boundaries
         try:
             from genetic_algorithm.utils.timerange import parse_timerange
-            timerange_str = self.backtest_config.get('timerange', '')
+            timerange_str = self.config.get('backtesting', {}).get('timerange', '')
             if not timerange_str:
                 self.logger.warning("[CPCV] No timerange configured, skipping")
                 return
@@ -1318,15 +1377,33 @@ class GeneticAlgorithm:
 
             # Trend-based early stopping: detect consecutive worsening
             self._holdout_degradation_history.append(avg_degrad)
-            if self.holdout_trend_early_stop and len(self._holdout_degradation_history) >= self.holdout_trend_checks + 1:
+            n_checks = len(self._holdout_degradation_history)
+            if (
+                self.holdout_trend_early_stop
+                and n_checks >= self.holdout_trend_checks + 1
+                and n_checks > self.holdout_trend_grace_checks
+            ):
                 recent = self._holdout_degradation_history[-(self.holdout_trend_checks + 1):]
-                consecutive_worse = all(
-                    recent[i + 1] > recent[i] for i in range(len(recent) - 1)
-                )
-                if consecutive_worse:
+
+                # Compute slope of degradation trend (percentage points per check)
+                n = len(recent)
+                x_mean = (n - 1) / 2.0
+                y_mean = sum(recent) / n
+                numer = sum((i - x_mean) * (y - y_mean) for i, y in enumerate(recent))
+                denom = sum((i - x_mean) ** 2 for i in range(n))
+                slope = numer / denom if denom > 0 else 0.0
+
+                # Trigger only if:
+                # 1) Absolute degradation exceeds the minimum floor
+                # 2) Slope exceeds the threshold (degradation worsening fast enough)
+                if (
+                    avg_degrad >= self.holdout_trend_min_degradation
+                    and slope >= self.holdout_trend_slope_threshold
+                ):
                     self.logger.warning(
-                        f"  [HOLDOUT-TREND] ⚠ Degradation worsened for {self.holdout_trend_checks} "
-                        f"consecutive checks: {[f'{d:.1f}%' for d in recent]}. "
+                        f"  [HOLDOUT-TREND] ⚠ Degradation trend detected over {self.holdout_trend_checks} "
+                        f"checks: {[f'{d:.1f}%' for d in recent]}, "
+                        f"slope={slope:.3f}, degradation={avg_degrad:.1f}%. "
                         f"Triggering early stop."
                     )
                     # Force the consecutive_bad counter high enough to trigger early stop
@@ -1653,7 +1730,31 @@ class GeneticAlgorithm:
             key=lambda x: x.raw_fitness,
             reverse=True,
         )
-        elites = ranked_by_raw[:self.elite_size]
+
+        # Diversity-aware elitism: greedily pick top candidates while
+        # ensuring no two elites are near-duplicates (distance < threshold).
+        # When a candidate is too close to an already-selected elite, skip
+        # it and try the next-best individual from the ranked list.
+        from genetic_algorithm.core.population import calculate_strategy_distance
+        diversity_threshold = self.config.get('elite_diversity_threshold', 0.15)
+        elites: list = []
+        for candidate in ranked_by_raw:
+            if len(elites) >= self.elite_size:
+                break
+            too_close = False
+            for elite in elites:
+                if calculate_strategy_distance(candidate, elite) < diversity_threshold:
+                    too_close = True
+                    break
+            if not too_close:
+                elites.append(candidate)
+        # If not enough diverse candidates, fill remaining slots from top
+        if len(elites) < self.elite_size:
+            for candidate in ranked_by_raw:
+                if len(elites) >= self.elite_size:
+                    break
+                if candidate not in elites:
+                    elites.append(candidate)
         
         for individual in elites:
             gene_copy = individual.strategy_gene.copy()
@@ -1740,8 +1841,8 @@ class GeneticAlgorithm:
         if self.llm_enabled and self.strategy_designer.enabled:
             llm_immigrant_count = max(1, int(immigrant_count * self.strategy_designer.immigrant_ratio))
             
-            # Gather context for guided generation
-            top_inds = sorted(population.individuals, 
+            # Gather context for guided generation (filter out unevaluated individuals with None fitness)
+            top_inds = sorted([ind for ind in population.individuals if ind.fitness is not None],
                             key=lambda x: x.fitness, reverse=True)[:5]
             top_summaries = self.strategy_designer.get_top_performer_summaries(top_inds)
             weaknesses = self.strategy_designer.get_population_weaknesses(top_inds)
@@ -1874,7 +1975,16 @@ class GeneticAlgorithm:
                     f"→ tournament_size {self.tournament_size} → {effective_tournament_size}"
                 )
         
+        max_offspring_attempts = self.population_size * 10
+        _offspring_loop_iter = 0
         while len(next_gen) < self.population_size:
+            _offspring_loop_iter += 1
+            if _offspring_loop_iter > max_offspring_attempts:
+                self.logger.warning(
+                    f"[OFFSPRING] Reached max attempts ({max_offspring_attempts}). "
+                    f"Population has {len(next_gen)}/{self.population_size} individuals."
+                )
+                break
             # Select parents using configured method
             parent1, parent2 = select_parents(
                 population, num_parents=2,
@@ -1926,6 +2036,15 @@ class GeneticAlgorithm:
                 except (ValueError, KeyError, AttributeError, TypeError) as e:
                     self.logger.debug(f"[MUTATION] Failed: {e}")
                     mutation_failures += 1
+                    # Fallback: add unmutated clone to guarantee progress
+                    try:
+                        clone = create_child(child.strategy_gene, len(next_gen))
+                        _fix_invalid_operators(clone.strategy_gene)
+                        clone.metrics['origin'] = 'ga_offspring_unmutated'
+                        next_gen.add_individual(clone)
+                        offspring_added += 1
+                    except Exception:
+                        pass  # Last resort: skip this child entirely
                     continue
             
             offspring_count += 2
@@ -2003,6 +2122,74 @@ class GeneticAlgorithm:
         if crossover_failures > 0 or mutation_failures > 0:
             self.logger.warning(f"[FAILURES] Crossover: {crossover_failures}, Mutation: {mutation_failures}")
         
+        # ── NSGA-II environmental selection ──
+        # In NSGA-II mode, use Pareto-based (μ+λ) survivor selection instead
+        # of returning offspring directly.  Merge parent + offspring populations,
+        # apply non-dominated sorting + crowding distance, and keep the best μ.
+        if self.mode == 'nsga2':
+            next_gen = self._nsga2_environmental_selection(population, next_gen)
+        
+        return next_gen
+    
+    def _nsga2_environmental_selection(self, parents: 'Population', offspring: 'Population') -> 'Population':
+        """
+        NSGA-II (μ+λ) environmental selection.
+
+        Merges parent and offspring populations, performs non-dominated sorting
+        and crowding distance assignment, then selects the top μ individuals
+        using Pareto rank as primary criterion and crowding distance as
+        tie-breaker.  This preserves Pareto-front diversity across generations.
+
+        Args:
+            parents: Current generation population (μ evaluated individuals)
+            offspring: Newly created offspring population (λ individuals)
+
+        Returns:
+            Next-generation population of size self.population_size
+        """
+        # Merge parents + offspring — only include evaluated individuals
+        combined = [ind for ind in parents.individuals if ind.objectives is not None]
+        combined += [ind for ind in offspring.individuals if ind.objectives is not None]
+
+        # Also keep unevaluated offspring (they still need evaluation next gen)
+        unevaluated = [ind for ind in offspring.individuals if ind.objectives is None]
+
+        if not combined:
+            self.logger.warning("[NSGA-II ENV] No evaluated individuals — returning offspring as-is")
+            return offspring
+
+        # Non-dominated sorting on the combined population
+        fronts = fast_non_dominated_sort(combined)
+        for front in fronts:
+            crowding_distance_assignment(front)
+
+        # Fill next generation front-by-front
+        next_gen = Population(size=self.population_size, generation=offspring.generation)
+        for front in fronts:
+            if len(next_gen) + len(front) <= self.population_size:
+                # Entire front fits — add all
+                for ind in front:
+                    ind.strategy_gene.generation = offspring.generation
+                    next_gen.add_individual(ind)
+            else:
+                # Partial front — sort by crowding distance (descending) and fill
+                front_sorted = sorted(front, key=lambda x: x.crowding_distance, reverse=True)
+                remaining = self.population_size - len(next_gen)
+                for ind in front_sorted[:remaining]:
+                    ind.strategy_gene.generation = offspring.generation
+                    next_gen.add_individual(ind)
+                break
+
+        # If we still have room, add unevaluated offspring
+        for ind in unevaluated:
+            if len(next_gen) >= self.population_size:
+                break
+            next_gen.add_individual(ind)
+
+        self.logger.info(
+            f"[NSGA-II ENV] (μ+λ) selection: {len(combined)} combined → "
+            f"{len(next_gen)} survivors across {len(fronts)} fronts"
+        )
         return next_gen
     
     def check_convergence(self, stats: PopulationStats) -> bool:
@@ -2309,9 +2496,9 @@ class GeneticAlgorithm:
                 pre_penalty_raw = best.raw_fitness
                 if pre_penalty_raw is not None and pre_penalty_raw > self.best_fitness_ever:
                     self.best_fitness_ever = pre_penalty_raw
-                    # Halve the stuck counter instead of zeroing — preserves
-                    # exploratory momentum from the elevated mutation rate.
-                    self.no_improvement_count = max(0, self.no_improvement_count // 2)
+                    # Reset the stuck counter so adaptive mutation cools down
+                    # properly via the exponential decay branch.
+                    self.no_improvement_count = 0
                     self._new_best_this_gen = True
                 self.logger.info(f"[NEW BEST] {best.id} with fitness {best.fitness:.4f}")
                 self.monitor.on_new_best(best)

@@ -58,6 +58,16 @@ _STANDARD_OPERATORS: Dict[str, FrozenSet[str]] = {
     'VWAP': frozenset({'<', '>', 'cross_above', 'cross_below'}),
     'CMF':  frozenset({'<', '>', 'cross_above', 'cross_below'}),
     'VROC': frozenset({'<', '>', 'cross_above', 'cross_below'}),
+
+    # --- Additional oscillators / overlays ---
+    'MFI':   frozenset({'<', '>', 'cross_above', 'cross_below'}),
+    'OBV':   frozenset({'<', '>', 'cross_above', 'cross_below'}),
+    'TEMA':  frozenset({'<', '>', 'cross_above', 'cross_below'}),
+    'KAMA':  frozenset({'<', '>', 'cross_above', 'cross_below'}),
+    'WILLR': frozenset({'<', '>', 'cross_above', 'cross_below'}),
+    'ROC':   frozenset({'<', '>', 'cross_above', 'cross_below'}),
+    'AROON': frozenset({'<', '>', 'cross_above', 'cross_below'}),
+    'SAR':   frozenset({'<', '>', 'cross_above', 'cross_below'}),
 }
 
 # Candlestick patterns — bidirectional patterns output -100/0/+100

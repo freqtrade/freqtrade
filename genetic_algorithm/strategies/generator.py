@@ -256,12 +256,18 @@ class StrategyGenerator:
                 condition.logic = primary_logic
                 conditions.append(condition)
         
-        # Ensure at least one condition
-        if not conditions and valid_indicators:
-            indicator = valid_indicators[0]
+        # Ensure at least min_conds conditions (retry with different indicators)
+        retry_limit = len(valid_indicators) * 2
+        retries = 0
+        while len(conditions) < min_conds and retries < retry_limit:
+            retries += 1
+            indicator = random.choice(valid_indicators)
             condition = self._generate_condition_for_indicator(indicator, is_entry)
             if condition:
-                condition.logic = 'AND'
+                key = (condition.indicator, condition.operator)
+                if any((c.indicator, c.operator) == key for c in conditions):
+                    continue
+                condition.logic = primary_logic
                 conditions.append(condition)
         
         return conditions if conditions else [ConditionGene(
@@ -876,8 +882,10 @@ class {name}(IStrategy):
         regime_tfs = regime_gene.regime_timeframes or ['4h', '1d']
         combination = regime_gene.combination or 'weighted_voting'
 
-        # Default weights: higher TF gets higher weight
-        tf_weights = {'30m': 0.5, '1h': 1.0, '4h': 2.0, '1d': 3.0}
+        # Default weights: higher TF gets higher weight (configurable via regime.timeframe_weights)
+        default_tf_weights = {'30m': 0.5, '1h': 1.0, '4h': 2.0, '1d': 3.0}
+        regime_config = getattr(self, 'config', {}).get('regime', {})
+        tf_weights = {**default_tf_weights, **regime_config.get('timeframe_weights', {})}
 
         lines = []
         lines.append("        # --- Regime detection: compute trend_score per timeframe ---")
@@ -906,19 +914,19 @@ class {name}(IStrategy):
             # Compute trend_score
             lines.append(f"                _direction = (_pdi - _mdi) / _di_sum")
             lines.append(f"                _strength = (_adx / 50.0).clip(0, 1)")
-            lines.append(f"                _ri['regime_trend_{tf}'] = (_direction * _strength).clip(-1, 1)")
+            lines.append(f"                _ri['regime_trend'] = (_direction * _strength).clip(-1, 1)")
             # Compute volatility_score
             lines.append(f"                _rets = _ri['close'].pct_change()")
             lines.append(f"                _vol = _rets.ewm(span=20, adjust=False).std()")
             lines.append(f"                _vol_min = _vol.rolling(window=60, min_periods=30).min()")
             lines.append(f"                _vol_max = _vol.rolling(window=60, min_periods=30).max()")
             lines.append(f"                _vol_range = _vol_max - _vol_min")
-            lines.append(f"                _ri['regime_vol_{tf}'] = ((_vol - _vol_min) / _vol_range.replace(0, np.nan)).clip(0, 1)")
-            # Merge into base dataframe
-            lines.append(f"                dataframe = merge_informative_pair(dataframe, _ri[['date', 'regime_trend_{tf}', 'regime_vol_{tf}']].copy(), self.timeframe, '{tf}', ffill=True)")
+            lines.append(f"                _ri['regime_vol'] = ((_vol - _vol_min) / _vol_range.replace(0, np.nan)).clip(0, 1)")
+            # Merge into base dataframe (merge_informative_pair adds _{tf} suffix automatically)
+            lines.append(f"                dataframe = merge_informative_pair(dataframe, _ri[['date', 'regime_trend', 'regime_vol']].copy(), self.timeframe, '{tf}', ffill=True)")
             lines.append(f"            else:")
-            lines.append(f"                dataframe['regime_trend_{tf}_{tf}'] = 0.0")
-            lines.append(f"                dataframe['regime_vol_{tf}_{tf}'] = 0.5")
+            lines.append(f"                dataframe['regime_trend_{tf}'] = 0.0")
+            lines.append(f"                dataframe['regime_vol_{tf}'] = 0.5")
 
         # Composite score: weighted average of per-TF scores
         lines.append("")
@@ -929,7 +937,7 @@ class {name}(IStrategy):
             w = tf_weights.get(tf, 1.0)
             total_w += w
             # After merge_informative_pair, columns are suffixed with _{tf}
-            weight_parts.append(f"dataframe['regime_trend_{tf}_{tf}'].fillna(0) * {w}")
+            weight_parts.append(f"dataframe['regime_trend_{tf}'].fillna(0) * {w}")
 
         if weight_parts:
             composite_expr = " + ".join(weight_parts)
@@ -942,7 +950,7 @@ class {name}(IStrategy):
         vol_parts = []
         for tf in regime_tfs:
             w = tf_weights.get(tf, 1.0)
-            vol_parts.append(f"dataframe['regime_vol_{tf}_{tf}'].fillna(0.5) * {w}")
+            vol_parts.append(f"dataframe['regime_vol_{tf}'].fillna(0.5) * {w}")
 
         if vol_parts:
             vol_expr = " + ".join(vol_parts)
@@ -1118,7 +1126,6 @@ class {name}(IStrategy):
             # pandas .iloc[] inside a Python for-loop.
             lines = [
                 f"{prefix}# SuperTrend ({period}, {multiplier}) — vectorized",
-                f"{prefix}import numpy as np",
                 f"{prefix}_hl2 = ({d}['high'] + {d}['low']) / 2",
                 f"{prefix}_atr_st = ta.ATR({d}, timeperiod={period})",
                 f"{prefix}_st_upper = (_hl2 + ({multiplier} * _atr_st)).values.copy()",
@@ -1176,7 +1183,8 @@ class {name}(IStrategy):
             lines = [
                 f"{prefix}# VWAP (rolling {vwap_period}-period)",
                 f"{prefix}_tp = ({d}['high'] + {d}['low'] + {d}['close']) / 3",
-                f"{prefix}{d}['vwap'] = (_tp * {d}['volume']).rolling({vwap_period}).sum() / {d}['volume'].rolling({vwap_period}).sum()",
+                f"{prefix}_vol_sum = {d}['volume'].rolling({vwap_period}).sum().replace(0, np.nan)",
+                f"{prefix}{d}['vwap'] = (_tp * {d}['volume']).rolling({vwap_period}).sum() / _vol_sum",
             ]
             return '\n'.join(lines)
         
@@ -1184,9 +1192,10 @@ class {name}(IStrategy):
             period = ind.parameters.get('period', 20)
             lines = [
                 f"{prefix}# Chaikin Money Flow",
-                f"{prefix}_mfv = (({d}['close'] - {d}['low']) - ({d}['high'] - {d}['close'])) / ({d}['high'] - {d}['low'])",
+                f"{prefix}_cmf_denom = ({d}['high'] - {d}['low']).replace(0, np.nan)",
+                f"{prefix}_mfv = (({d}['close'] - {d}['low']) - ({d}['high'] - {d}['close'])) / _cmf_denom",
                 f"{prefix}_mfv = _mfv.fillna(0) * {d}['volume']",
-                f"{prefix}{d}['cmf'] = _mfv.rolling({period}).sum() / {d}['volume'].rolling({period}).sum()",
+                f"{prefix}{d}['cmf'] = _mfv.rolling({period}).sum() / {d}['volume'].rolling({period}).sum().replace(0, np.nan)",
             ]
             return '\n'.join(lines)
         

@@ -23,6 +23,7 @@ _ENV_KEY_MAP = {
     'openai': 'OPENAI_API_KEY',
     'anthropic': 'ANTHROPIC_API_KEY',
     'claude': 'ANTHROPIC_API_KEY',
+    'openrouter': 'OPENROUTER_API_KEY',
 }
 
 
@@ -66,6 +67,9 @@ class LLMProvider(ABC):
         self.max_retries = config.get('max_retries', 3)
         self.retry_delay = config.get('retry_delay', 2.0)
         
+        # Flag set by the router so 429s bubble up for failover
+        self._used_by_router = False
+        
         # API key: config value → env var → empty
         self.api_key = config.get('api_key', '') or ''
         if not self.api_key:
@@ -88,6 +92,42 @@ class LLMProvider(ABC):
             Generated text response
         """
         pass
+
+    def _parse_retry_after(self, response, attempt: int) -> float:
+        """Extract wait time from rate-limit response headers.
+
+        Checks ``Retry-After`` (seconds or date), then Groq-style
+        ``x-ratelimit-reset-tokens`` (e.g. ``"23m2.4s"``), falling back
+        to exponential backoff.
+        """
+        import re as _re
+
+        # Standard Retry-After header (seconds)
+        retry_after = response.headers.get('retry-after', '')
+        if retry_after:
+            try:
+                return min(max(float(retry_after), 1.0), 120.0)
+            except ValueError:
+                pass
+
+        # Groq-style x-ratelimit-reset-tokens: "23m2.4s" or "190ms"
+        reset_tokens = response.headers.get('x-ratelimit-reset-tokens', '')
+        if reset_tokens:
+            total = 0.0
+            m = _re.search(r'(\d+)m(?!\s*s)', reset_tokens)  # minutes (not ms)
+            if m:
+                total += int(m.group(1)) * 60
+            s = _re.search(r'([\d.]+)s$', reset_tokens)
+            if s:
+                total += float(s.group(1))
+            ms = _re.search(r'(\d+)ms', reset_tokens)
+            if ms:
+                total += int(ms.group(1)) / 1000
+            if total > 0:
+                return min(total + 1.0, 120.0)  # cap at 2 minutes
+
+        # Fallback: exponential backoff
+        return self.retry_delay * (2 ** attempt)
 
     @property
     def last_used_provider(self) -> str:
@@ -207,9 +247,13 @@ class OpenAICompatibleProvider(LLMProvider):
                 logger.warning(f"HTTP {e.response.status_code} from {self.provider_name} "
                              f"(attempt {attempt+1}/{self.max_retries})")
                 if e.response.status_code == 429:
-                    # Rate limit — bubble up immediately so the router can
-                    # failover to the next provider without wasting retries.
-                    raise
+                    if self._used_by_router:
+                        # Router will failover to the next provider
+                        raise
+                    # Single provider — retry with backoff, respecting Retry-After
+                    backoff = self._parse_retry_after(e.response, attempt)
+                    logger.info(f"Rate limited, waiting {backoff:.1f}s before retry")
+                    time.sleep(backoff)
                 elif e.response.status_code >= 500:
                     time.sleep(self.retry_delay)
                 else:
@@ -257,7 +301,7 @@ class AnthropicProvider(LLMProvider):
         if not self.base_url:
             self.base_url = 'https://api.anthropic.com/v1'
         if not self.model:
-            self.model = 'claude-3-haiku-20240307'  # Cheapest model
+            self.model = 'claude-sonnet-4-20250514'
     
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         """Generate using Anthropic Messages API."""
@@ -318,6 +362,17 @@ class GroqProvider(OpenAICompatibleProvider):
         super().__init__(config)
 
 
+class OpenRouterProvider(OpenAICompatibleProvider):
+    """OpenRouter API provider — routes to multiple LLM providers via OpenAI-compatible API."""
+
+    def __init__(self, config: Dict[str, Any]):
+        if not config.get('base_url'):
+            config['base_url'] = 'https://openrouter.ai/api/v1'
+        if not config.get('model'):
+            config['model'] = 'anthropic/claude-sonnet-4'
+        super().__init__(config)
+
+
 class LocalProvider(OpenAICompatibleProvider):
     """Local LLM server (Ollama, llama.cpp, vLLM, etc.)"""
     
@@ -343,6 +398,7 @@ PROVIDER_REGISTRY: Dict[str, type] = {
     'openai': OpenAIProvider,
     'anthropic': AnthropicProvider,
     'claude': AnthropicProvider,
+    'openrouter': OpenRouterProvider,
     'local': LocalProvider,
     'ollama': LocalProvider,
 }
