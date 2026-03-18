@@ -30,6 +30,7 @@ Usage:
 """
 
 import copy
+import glob
 import hashlib
 import json
 import logging
@@ -227,6 +228,20 @@ class GenericIslandModelEvolution:
         self.hall_of_fame = HallOfFame(
             max_size=self.config.get('hall_of_fame', {}).get('max_size', 50)
         )
+
+        # External migration (cross-machine strategy exchange)
+        ext_cfg = gim_cfg.get('external_migration', {})
+        self.external_migration_enabled: bool = ext_cfg.get('enabled', False)
+        self.external_migration_dir: Path = Path(
+            ext_cfg.get('directory', 'genetic_algorithm/data/incoming_migrants')
+        )
+        self.external_export_dir: Path = Path(
+            ext_cfg.get('export_directory', 'genetic_algorithm/data/outgoing_migrants')
+        )
+        self.external_migration_interval: int = ext_cfg.get(
+            'interval', self.migration.interval
+        )
+        self.external_migration_count: int = ext_cfg.get('count', 3)
 
         # Thread safety
         self._hof_lock = threading.Lock()
@@ -633,6 +648,16 @@ class GenericIslandModelEvolution:
                 and (gen + 1) % self.migration.interval == 0
             ):
                 self._migrate(gen)
+
+            # External migration (cross-machine strategy exchange)
+            if (
+                self.external_migration_enabled
+                and gen > 0
+                and self.external_migration_interval > 0
+                and (gen + 1) % self.external_migration_interval == 0
+            ):
+                self._load_external_migrants(gen)
+                self._export_for_external_migration(gen)
 
             # Merge rounds (global pool-and-redistribute)
             if (
@@ -1168,6 +1193,143 @@ class GenericIslandModelEvolution:
             replaced += 1
 
         return replaced
+
+    # ------------------------------------------------------------------
+    # External migration (cross-machine)
+    # ------------------------------------------------------------------
+
+    def _load_external_migrants(self, generation: int) -> int:
+        """
+        Load strategy individuals from the incoming_migrants directory.
+
+        Other machines (or scripts) drop JSON files here containing
+        serialized individuals. Each file is loaded, injected into a
+        randomly chosen island, and then deleted to prevent re-processing.
+
+        Returns the total number of migrants injected.
+        """
+        if not self.external_migration_dir.exists():
+            return 0
+
+        pattern = str(self.external_migration_dir / '*.json')
+        files = sorted(glob.glob(pattern))
+        if not files:
+            return 0
+
+        self.logger.info(
+            "[EXT-MIGRATION] Gen %d — found %d incoming migrant files",
+            generation + 1, len(files),
+        )
+
+        total_injected = 0
+        island_names = [ic.name for ic in self.island_configs]
+
+        for fpath in files:
+            try:
+                with open(fpath, 'r') as f:
+                    data = json.load(f)
+
+                individuals_data = data if isinstance(data, list) else data.get('individuals', [data])
+
+                migrants = []
+                for ind_data in individuals_data:
+                    try:
+                        ind = Individual.from_dict(ind_data)
+                        ind.evaluated = False  # Force re-evaluation
+                        migrants.append(ind)
+                    except Exception as e:
+                        self.logger.warning(
+                            "[EXT-MIGRATION] Failed to parse individual from %s: %s",
+                            fpath, e,
+                        )
+
+                if migrants:
+                    # Distribute migrants across random islands
+                    for migrant in migrants:
+                        target = random.choice(island_names)
+                        replaced = self._inject_migrants(target, [migrant], generation)
+                        if replaced > 0:
+                            total_injected += replaced
+                            self.logger.info(
+                                "[EXT-MIGRATION]   → injected into %s (fitness=%.4f)",
+                                target, migrant.raw_fitness or 0,
+                            )
+
+                # Remove processed file
+                os.remove(fpath)
+                self.logger.debug("[EXT-MIGRATION] Processed and removed %s", fpath)
+
+            except (json.JSONDecodeError, IOError) as e:
+                self.logger.warning(
+                    "[EXT-MIGRATION] Failed to read %s: %s", fpath, e,
+                )
+
+        if total_injected > 0:
+            self.logger.info(
+                "[EXT-MIGRATION] Gen %d — injected %d external migrants total",
+                generation + 1, total_injected,
+            )
+
+        return total_injected
+
+    def _export_for_external_migration(self, generation: int) -> int:
+        """
+        Export top individuals to the outgoing_migrants directory.
+
+        A separate script (distribute_migrate.sh) picks these up and
+        SCPs them to other machines' incoming_migrants directories.
+
+        Returns the number of individuals exported.
+        """
+        self.external_export_dir.mkdir(parents=True, exist_ok=True)
+
+        # Collect top-N globally across all islands (deduplicated)
+        seen_hashes = set()
+        top_individuals = []
+
+        for ic in self.island_configs:
+            for ind in self._get_top_individuals(ic.name, self.external_migration_count):
+                h = self._gene_hash(ind)
+                if h not in seen_hashes:
+                    seen_hashes.add(h)
+                    top_individuals.append(ind)
+
+        # Sort by raw fitness and take top-N
+        top_individuals.sort(
+            key=lambda x: x.raw_fitness if x.raw_fitness else 0,
+            reverse=True,
+        )
+        top_individuals = top_individuals[:self.external_migration_count]
+
+        if not top_individuals:
+            return 0
+
+        # Write as a single JSON file with timestamp
+        export_data = {
+            'source': os.uname().nodename,
+            'generation': generation,
+            'timestamp': time.time(),
+            'individuals': [ind.to_dict() for ind in top_individuals],
+        }
+
+        filename = f"migrants_gen{generation:04d}_{int(time.time())}.json"
+        export_path = self.external_export_dir / filename
+
+        try:
+            tmp_path = export_path.with_suffix('.tmp')
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                json.dump(export_data, f, indent=2, default=str)
+            os.replace(tmp_path, export_path)
+
+            self.logger.info(
+                "[EXT-MIGRATION] Gen %d — exported %d individuals to %s",
+                generation + 1, len(top_individuals), export_path,
+            )
+        except IOError as e:
+            self.logger.error("[EXT-MIGRATION] Failed to export: %s", e)
+            return 0
+
+        return len(top_individuals)
 
     @staticmethod
     def _gene_hash(ind: Individual) -> str:
