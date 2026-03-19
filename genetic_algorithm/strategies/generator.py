@@ -162,7 +162,10 @@ class StrategyGenerator:
         
         # Enforce min_entry_conditions — random generation can under-produce
         min_entry = self.indicator_config.get('min_entry_conditions', 2)
-        while len(strategy.entry_conditions) < min_entry:
+        max_attempts = min_entry * 20  # Prevent infinite loop when indicators can't generate entry conditions
+        attempts = 0
+        while len(strategy.entry_conditions) < min_entry and attempts < max_attempts:
+            attempts += 1
             valid_inds = [ind for ind in strategy.indicators
                          if ind.type in ['RSI', 'MACD', 'STOCH', 'CCI', 'ADX', 'BBANDS', 'EMA', 'SMA',
                                           'SUPERTREND', 'ICHIMOKU', 'DONCHIAN', 'VWAP', 'PSAR', 'CMF', 'VROC',
