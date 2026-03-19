@@ -1306,7 +1306,7 @@ class GenericIslandModelEvolution:
 
         # Write as a single JSON file with timestamp
         export_data = {
-            'source': os.uname().nodename,
+            'source': os.environ.get('COMPUTERNAME', os.environ.get('HOSTNAME', 'unknown')),
             'generation': generation,
             'timestamp': time.time(),
             'individuals': [ind.to_dict() for ind in top_individuals],

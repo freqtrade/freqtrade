@@ -721,7 +721,6 @@ class DirectBacktester:
             from freqtrade.optimize.backtesting import Backtesting
             from freqtrade.exchange.exchange import Exchange
             import io
-            import sys
             
             # Create configuration
             config_dict = self._create_backtest_config(
