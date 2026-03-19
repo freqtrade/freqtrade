@@ -432,7 +432,49 @@ The returned pairlist is sorted by remote `buzz_score`, then by `mentions`, when
 
 `number_assets` defines the maximum number of pairs returned by the pairlist in whitelist `mode`. In blacklist `mode`, this setting is ignored.
 
-`api_url` must point to a remote endpoint that returns a JSON list of sentiment rows with at least a `symbol` field. `api_key` is passed to that endpoint via the `X-API-Key` header.
+`api_url` must point to a remote endpoint implementing the following contract:
+
+- Method: `GET`
+- Query parameters sent by Freqtrade:
+  - `days`: sentiment lookback window
+  - `limit`: maximum number of remote tokens to evaluate
+- Header sent when `api_key` is configured:
+  - `X-API-Key`
+- Response:
+  - `200 OK`
+  - `Content-Type: application/json`
+  - top-level JSON array
+
+Each row in the response array must contain:
+
+- `symbol` (required): token symbol, used to resolve the exchange pair
+- `buzz_score` (optional): numeric ranking score, defaults to `0`
+- `mentions` (optional): numeric mention count, defaults to `0`
+- `bullish_pct` (optional): numeric bullish percentage, used when `min_bullish_pct` is set
+- `trend` (optional): one of `rising`, `stable`, or `falling`
+
+Unknown fields are ignored.
+
+Example response:
+
+```json
+[
+    {
+        "symbol": "BTC",
+        "buzz_score": 91.4,
+        "mentions": 1240,
+        "bullish_pct": 67,
+        "trend": "rising"
+    },
+    {
+        "symbol": "ETH",
+        "buzz_score": 84.2,
+        "mentions": 932,
+        "bullish_pct": 61,
+        "trend": "stable"
+    }
+]
+```
 
 `max_tokens` controls how many remote sentiment rows are evaluated before matching them to exchange pairs. If your remote sentiment API returns more than `100` rows, values above `100` are capped.
 
