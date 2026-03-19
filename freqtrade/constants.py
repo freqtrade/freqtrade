@@ -60,6 +60,7 @@ AVAILABLE_PAIRLISTS = [
     "PercentChangePairList",
     "ProducerPairList",
     "RemotePairList",
+    "RedditSentimentPairList",
     "MarketCapPairList",
     "CrossMarketPairList",
     "AgeFilter",

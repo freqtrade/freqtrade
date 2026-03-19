@@ -2809,6 +2809,7 @@ def test_api_pairlists_available(botclient, tmp_path):
     assert len(response["pairlists"]) > 0
 
     assert len([r for r in response["pairlists"] if r["name"] == "AgeFilter"]) == 1
+    assert len([r for r in response["pairlists"] if r["name"] == "RedditSentimentPairList"]) == 1
     assert len([r for r in response["pairlists"] if r["name"] == "VolumePairList"]) == 1
     assert len([r for r in response["pairlists"] if r["name"] == "StaticPairList"]) == 1
 
