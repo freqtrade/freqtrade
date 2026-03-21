@@ -113,7 +113,7 @@ def log_to_pg(status, balance, open_trades, total_trades, profit, pct):
 
 
 def get_market_analysis() -> str:
-    """Check all pairs against actual 5m strategy conditions."""
+    """Rich market analysis matching actual strategy conditions."""
     try:
         import ccxt
         ex = ccxt.mexc({'enableRateLimit': True})
@@ -126,10 +126,10 @@ def get_market_analysis() -> str:
 
         def ema(data, period):
             k = 2 / (period + 1)
-            result = [data[0]]
+            r = [data[0]]
             for i in range(1, len(data)):
-                result.append(data[i] * k + result[-1] * (1 - k))
-            return result
+                r.append(data[i] * k + r[-1] * (1 - k))
+            return r
 
         for pair in pairs:
             try:
@@ -160,95 +160,124 @@ def get_market_analysis() -> str:
                 price = closes[-1]
 
                 vol_avg = sum(volumes[-20:]) / 20
+                vol_recent = sum(volumes[-3:]) / 3
+                vol_earlier = sum(volumes[-6:-3]) / 3 if len(volumes) >= 6 else vol_recent
 
-                # Check actual strategy conditions
-                checks = {
-                    'trend': e21[-1] > e55[-1],
-                    'ema_align': e9[-1] > e21[-1],
-                    'above_ema': price > e9[-1],
-                    'ema_rising': e21[-1] > e21[-4],
-                    'rsi_ok': 45 < rsi < 65,
-                    'rsi_up': rsi > 50,
-                    'volume': volumes[-1] > vol_avg,
-                    'green': closes[-1] > opens[-1],
-                }
+                # Recent low and freshness
+                recent_low = min(lows[-12:])
+                rise = (price - recent_low) / recent_low * 100
 
-                passed = sum(1 for v in checks.values() if v)
-                total = len(checks)
+                # Trend age
+                age = 0
+                for i in range(len(e9)-1, 0, -1):
+                    if e9[i] > e21[i]:
+                        age += 1
+                    else:
+                        break
+
                 name = pair.split('/')[0]
 
-                # What's blocking
-                blockers = []
-                if not checks['trend']:
-                    blockers.append("bearish")
-                if not checks['ema_align']:
-                    blockers.append("no momentum")
-                if not checks['above_ema']:
-                    blockers.append("below EMA")
-                if not checks['rsi_ok']:
+                # Determine market phase for this pair
+                if e21[-1] > e55[-1] and e9[-1] > e21[-1] and price > e9[-1]:
+                    phase = "🟢 uptrend"
+                elif e21[-1] > e55[-1]:
+                    phase = "🟡 pullback"
+                elif e9[-1] > e21[-1]:
+                    phase = "🔵 bouncing"
+                else:
+                    phase = "🔴 downtrend"
+
+                # What needs to happen for entry
+                needs = []
+                if not (e21[-1] > e55[-1]):
+                    needs.append("trend flip")
+                if not (e9[-1] > e21[-1]):
+                    needs.append("EMA cross up")
+                if not (price > e9[-1]):
+                    needs.append("price recovery")
+                if not (45 < rsi < 65):
                     if rsi >= 65:
-                        blockers.append("overbought")
-                    elif rsi <= 45:
-                        blockers.append("oversold")
-                if not checks['volume']:
-                    blockers.append("low vol")
+                        needs.append("RSI cool down")
+                    else:
+                        needs.append("RSI recover")
+                if not (vol_recent > vol_earlier * 1.05):
+                    needs.append("volume surge")
+                if rise >= 0.8:
+                    needs.append("fresh setup")
+
+                ready = len(needs) == 0
 
                 results.append({
                     'name': name,
-                    'score': passed,
-                    'max': total,
-                    'chg': chg,
                     'price': price,
+                    'chg': chg,
                     'rsi': rsi,
-                    'blockers': blockers,
-                    'trend': checks['trend'],
-                    'ready': passed >= 7,
+                    'phase': phase,
+                    'age': age,
+                    'rise': rise,
+                    'vol_rising': vol_recent > vol_earlier * 1.05,
+                    'needs': needs,
+                    'ready': ready,
+                    'needs_count': len(needs),
                 })
             except Exception:
                 continue
 
         if not results:
-            return "⚠️ Cannot check market data"
+            return "⚠️ Cannot check market"
 
-        # Sort by score
-        results.sort(key=lambda x: x['score'], reverse=True)
+        results.sort(key=lambda x: x['needs_count'])
 
-        msg = "*Market Scan (5m):*\n"
+        # Market mood
+        uptrends = sum(1 for r in results if "uptrend" in r['phase'])
+        pullbacks = sum(1 for r in results if "pullback" in r['phase'])
+        downtrends = sum(1 for r in results if "downtrend" in r['phase'])
 
-        # Show top 6 pairs
-        for r in results[:6]:
-            filled = r['score']
-            empty = r['max'] - filled
-            bar = "🟩" * filled + "⬜" * empty
+        if uptrends >= 6:
+            mood = "🟢 *Market: BULLISH* — conditions favorable"
+        elif uptrends + pullbacks >= 6:
+            mood = "🟡 *Market: MIXED* — watching for entries"
+        elif downtrends >= 8:
+            mood = "🔴 *Market: BEARISH* — protecting capital"
+        else:
+            mood = "🟡 *Market: CHOPPY* — selective trading"
 
+        msg = f"{mood}\n\n"
+
+        # Top pairs table
+        msg += "*Pair   Phase       RSI  24h   Needs*\n"
+
+        for r in results[:8]:
             if r['ready']:
                 status = "🔥"
-            elif filled >= 6:
+            elif r['needs_count'] <= 2:
                 status = "👀"
-            elif r['trend']:
-                status = "📈"
             else:
-                status = "📉"
+                status = "  "
 
-            bl = ", ".join(r['blockers'][:2]) if r['blockers'] else "✅ ready"
-            msg += f"{status} `{r['name']:5}` {bar} RSI:{r['rsi']:.0f} {r['chg']:+.1f}% _{bl}_\n"
+            needs_str = ", ".join(r['needs'][:2]) if r['needs'] else "✅ READY"
+            msg += f"{status}`{r['name']:5}` {r['phase']:11} {r['rsi']:>3.0f}  {r['chg']:+4.1f}%  _{needs_str}_\n"
 
-        # Bottom line
-        ready = [r for r in results if r['ready']]
-        close = [r for r in results if r['score'] >= 6 and not r['ready']]
-        bullish = [r for r in results if r['trend']]
+        # Ready / almost ready summary
+        ready_pairs = [r for r in results if r['ready']]
+        almost = [r for r in results if r['needs_count'] <= 2 and not r['ready']]
 
         msg += "\n"
-        if ready:
-            names = ", ".join(r['name'] for r in ready)
-            msg += f"🔥 *{names} ready to trade!*"
-        elif close:
-            names = ", ".join(r['name'] for r in close)
-            msg += f"👀 *{names} almost ready* — watching closely"
-        elif bullish:
-            msg += f"📈 {len(bullish)} pairs bullish but entry conditions not met yet"
+        if ready_pairs:
+            names = ", ".join(r['name'] for r in ready_pairs)
+            msg += f"🔥 *{names} — all conditions met, trade incoming!*"
+        elif almost:
+            for r in almost:
+                msg += f"👀 *{r['name']}* needs: {', '.join(r['needs'])}\n"
         else:
-            msg += "📉 Market bearish — protecting capital, waiting for reversal"
+            # Most common blocker
+            all_needs = []
+            for r in results:
+                all_needs.extend(r['needs'])
+            if all_needs:
+                from collections import Counter
+                top_blocker = Counter(all_needs).most_common(1)[0]
+                msg += f"⏳ Main blocker: *{top_blocker[0]}* ({top_blocker[1]}/{len(results)} pairs)"
 
         return msg
 
