@@ -111,6 +111,13 @@ class TrendRider5mStrategy(IStrategy):
         dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
         dataframe["atr_pct"] = dataframe["atr"] / dataframe["close"] * 100
         dataframe["volume_sma"] = dataframe["volume"].rolling(window=20).mean()
+        
+        # Volume direction: is volume accelerating?
+        dataframe["vol_recent"] = dataframe["volume"].rolling(window=3).mean()
+        dataframe["vol_earlier"] = dataframe["volume"].shift(3).rolling(window=3).mean()
+        dataframe["vol_rising"] = np.where(
+            dataframe["vol_recent"] > dataframe["vol_earlier"] * 1.05, 1.0, 0.0
+        )
 
         dataframe["ema21_slope"] = (
             (dataframe["ema21"] - dataframe["ema21"].shift(3))
@@ -177,30 +184,11 @@ class TrendRider5mStrategy(IStrategy):
                 & (dataframe["rise_from_low"] < 0.8)          # FRESHNESS: enter early, not late
                 & (dataframe["atr_pct"] < 1.2)                # calmer markets
                 & (dataframe["volume"] > dataframe["volume_sma"])  # above avg volume
+                & (dataframe["vol_rising"] == 1)               # volume accelerating
             ),
             "enter_long",
         ] = 1
 
-        # MODE 2: BREAKOUT — catch the START of a big move
-        # Different conditions: momentum just igniting, not yet extended
-        dataframe.loc[
-            (
-                (dataframe["ema21"] > dataframe["ema55"])      # bull regime
-                & (dataframe["ema9"] > dataframe["ema21"])     # trend aligned
-                & (dataframe["close"] > dataframe["ema9"])     # price above
-                & (dataframe["rsi"] > 50)                      # momentum starting
-                & (dataframe["rsi"] < 70)                      # not yet overbought
-                & (qtpylib.crossed_above(dataframe["rsi"], 55))  # RSI JUST crossed 55
-                & (dataframe["macdhist"] > 0)                  # MACD positive
-                & (dataframe["macdhist"] > dataframe["macdhist"].shift(1))  # MACD accelerating
-                & (dataframe["volume"] > dataframe["volume_sma"] * 1.5)    # volume surge
-                & (dataframe["green_candle"] == 1)             # buying candle
-                & (dataframe["adx"] > 25)                      # strong trend only
-                & (dataframe["atr_pct"] < 1.5)                # not chaotic
-                & (dataframe["volume"] > 0)
-            ),
-            ["enter_long", "enter_tag"],
-        ] = (1, "breakout")
 
         return dataframe
 

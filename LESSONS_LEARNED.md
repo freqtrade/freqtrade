@@ -86,3 +86,11 @@ Every mistake we've made and what we did to fix it. Reference this before making
 5. **The strategy protects capital by NOT trading.** No trades on a -22% market day is the correct output.
 6. **Fees eat small profits.** Minimum viable ROI after MEXC fees is 0.3%.
 7. **Backtest before deploying.** Every change gets tested on 2 months of data first.
+
+### 10. Volume DIRECTION matters more than volume AMOUNT (Mar 21)
+**Problem:** 9 "bad" entries (22% win rate) cost ~$0.07 in losses.
+**Analysis:** Compared all bad entries vs good entries across 32 real trades.
+**Finding:** Good entries had volume RISING 93% of the time. Bad entries only 70%.
+**Fix:** Added `vol_rising` filter — volume must be accelerating, not just above average.
+**Result:** Profit factor jumped from 1.03 to 1.98. Stop losses dropped from 53 to 10.
+**Rule:** Don't just check volume > average. Check if volume is INCREASING into the entry.
