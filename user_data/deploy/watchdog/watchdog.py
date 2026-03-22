@@ -242,27 +242,32 @@ def get_market_analysis() -> str:
         else:
             mood = "🟡 *Market: CHOPPY* — selective trading"
 
-        msg = f"{mood}\n\n"
+        # Show only the closest pair with actual vs needed values
+        results.sort(key=lambda x: x['needs_count'])
+        best = results[0] if results else None
 
-        ready_pairs = [r for r in results if r['ready']]
-        almost = [r for r in results if r['needs_count'] <= 2 and not r['ready']]
+        if not best:
+            return mood
 
-        if ready_pairs:
-            for r in ready_pairs:
-                msg += f"🔥 *{r['name']}* {r['chg']:+.1f}% — READY TO TRADE\n"
-        
-        if almost:
-            for r in almost:
-                msg += f"👀 *{r['name']}* {r['chg']:+.1f}% — needs {', '.join(r['needs'])}\n"
+        msg = f"{mood}\n"
 
-        if not ready_pairs and not almost:
-            all_needs = []
-            for r in results:
-                all_needs.extend(r['needs'])
-            if all_needs:
-                from collections import Counter
-                top = Counter(all_needs).most_common(1)[0]
-                msg += f"⏳ Waiting for *{top[0]}*\n"
+        if best['ready']:
+            msg += f"🔥 *{best['name']} READY* {best['chg']:+.1f}%\n"
+        else:
+            msg += f"Closest: *{best['name']}* {best['chg']:+.1f}%\n"
+
+        # Show actual values vs required
+        msg += f"```\n"
+        msg += f"         Now    Need\n"
+        msg += f"RSI:     {best['rsi']:>5.0f}   45-65\n"
+        msg += f"Rise:    {best['rise']:>4.1f}%   <0.8%\n"
+        msg += f"Trend:   {'yes' if 'trend flip' not in best['needs'] else 'no':>5}   yes\n"
+        msg += f"VolUp:   {'yes' if best['vol_rising'] else 'no':>5}   yes\n"
+        msg += f"Phase:   {best['phase'].split(' ')[1]}\n"
+        msg += f"```"
+
+        if best['needs'] and not best['ready']:
+            msg += f"\nNeeds: {', '.join(best['needs'])}"
 
         return msg
 
@@ -355,11 +360,9 @@ def main():
                         trades_str = f"\n*Open trades:*\n{trades_str}"
 
                     send_tg(
-                        f"📊 *Hourly Update*\n"
-                        f"💰 Balance: *${bal:.2f}*\n"
-                        f"📂 Trades: {open_count} open | {total_trades} closed | P&L: {total_profit:+.4f}"
+                        f"💰 *${bal:.2f}* | {total_profit:+.4f} P&L | {total_trades} trades\n"
                         f"{trades_str}\n"
-                        f"\n{market_msg}"
+                        f"{market_msg}"
                     )
 
                 # 6. Daily report at 8AM
