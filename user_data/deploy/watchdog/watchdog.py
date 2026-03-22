@@ -244,40 +244,25 @@ def get_market_analysis() -> str:
 
         msg = f"{mood}\n\n"
 
-        # Top pairs table
-        msg += "*Pair   Phase       RSI  24h   Needs*\n"
-
-        for r in results[:8]:
-            if r['ready']:
-                status = "🔥"
-            elif r['needs_count'] <= 2:
-                status = "👀"
-            else:
-                status = "  "
-
-            needs_str = ", ".join(r['needs'][:2]) if r['needs'] else "✅ READY"
-            msg += f"{status}`{r['name']:5}` {r['phase']:11} {r['rsi']:>3.0f}  {r['chg']:+4.1f}%  _{needs_str}_\n"
-
-        # Ready / almost ready summary
         ready_pairs = [r for r in results if r['ready']]
         almost = [r for r in results if r['needs_count'] <= 2 and not r['ready']]
 
-        msg += "\n"
         if ready_pairs:
-            names = ", ".join(r['name'] for r in ready_pairs)
-            msg += f"🔥 *{names} — all conditions met, trade incoming!*"
-        elif almost:
+            for r in ready_pairs:
+                msg += f"🔥 *{r['name']}* {r['chg']:+.1f}% — READY TO TRADE\n"
+        
+        if almost:
             for r in almost:
-                msg += f"👀 *{r['name']}* needs: {', '.join(r['needs'])}\n"
-        else:
-            # Most common blocker
+                msg += f"👀 *{r['name']}* {r['chg']:+.1f}% — needs {', '.join(r['needs'])}\n"
+
+        if not ready_pairs and not almost:
             all_needs = []
             for r in results:
                 all_needs.extend(r['needs'])
             if all_needs:
                 from collections import Counter
-                top_blocker = Counter(all_needs).most_common(1)[0]
-                msg += f"⏳ Main blocker: *{top_blocker[0]}* ({top_blocker[1]}/{len(results)} pairs)"
+                top = Counter(all_needs).most_common(1)[0]
+                msg += f"⏳ Waiting for *{top[0]}*\n"
 
         return msg
 
