@@ -2803,6 +2803,7 @@ Most other exchanges provide OHLCV data with sufficient history, so downloading 
 <div class="admonition note">
 <p class="admonition-title">Kraken user</p>
 <p>Kraken users should read <a href="../exchanges/#historic-kraken-data">this</a> before starting to download data.</p>
+<p>Kraken Futures uses standard OHLCV downloads and does not require <code>--dl-trades</code>.</p>
 </div>
 <p>Example call:</p>
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>download-data<span class="w"> </span>--exchange<span class="w"> </span>kraken<span class="w"> </span>--pairs<span class="w"> </span>XRP/EUR<span class="w"> </span>ETH/EUR<span class="w"> </span>--days<span class="w"> </span><span class="m">20</span><span class="w"> </span>--dl-trades

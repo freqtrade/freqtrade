@@ -1394,6 +1394,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#kraken-futures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kraken Futures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#kucoin" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2426,6 +2437,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#kraken-futures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kraken Futures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#kucoin" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2970,6 +2992,31 @@ It will also take a long time, as freqtrade will need to download every single t
 <p class="admonition-title">rateLimit tuning</p>
 <p>Please pay attention that rateLimit configuration entry holds delay in milliseconds between requests, NOT requests/sec rate.
 So, in order to mitigate Kraken API "Rate limit exceeded" exception, this configuration should be increased, NOT decreased.</p>
+</div>
+<h2 id="kraken-futures">Kraken Futures<a class="headerlink" href="#kraken-futures" title="Permanent link">&para;</a></h2>
+<p>Kraken Futures uses the exchange id <code>krakenfutures</code> and supports isolated futures mode.</p>
+<div class="highlight"><pre><span></span><code>&quot;exchange&quot;: {
+    &quot;name&quot;: &quot;krakenfutures&quot;,
+    &quot;key&quot;: &quot;your_exchange_key&quot;,
+    &quot;secret&quot;: &quot;your_exchange_secret&quot;
+},
+&quot;trading_mode&quot;: &quot;futures&quot;,
+&quot;margin_mode&quot;: &quot;isolated&quot;,
+&quot;stake_currency&quot;: &quot;USD&quot;
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Stoploss on Exchange</p>
+<p>Kraken Futures supports <code>stoploss_on_exchange</code> with both <code>limit</code> and <code>market</code> stop orders.
+Use <code>order_types.stoploss_price_type</code> to select the trigger price source (<code>mark</code>, <code>last</code>, or <code>index</code>).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Collateral</p>
+<p>Kraken Futures is USD-settled. Use USD as your stake currency.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Flex (Multi-collateral) Accounts</p>
+<p>Kraken Futures flex accounts allow collateral in multiple currencies, while trading remains USD-settled.
+Freqtrade derives the <code>USD</code> balance from Kraken margin fields, so keep <code>stake_currency</code> set to <code>USD</code>.</p>
 </div>
 <h2 id="kucoin">Kucoin<a class="headerlink" href="#kucoin" title="Permanent link">&para;</a></h2>
 <p>Kucoin requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:</p>
