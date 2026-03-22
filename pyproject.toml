@@ -308,6 +308,12 @@ max-complexity = 12
   "S101",  # allow assert in tests
 ]
 
+"user_data/strategies/**.py" = [
+  "RUF001",  # Allow Cyrillic: ambiguous unicode in strings
+  "RUF002",  # Allow Cyrillic in docstrings
+  "RUF003",  # Allow Cyrillic in comments
+]
+
 [tool.ruff.lint.flake8-bugbear]
 # Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]

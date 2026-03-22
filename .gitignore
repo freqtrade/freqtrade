@@ -1,118 +1,67 @@
-# Freqtrade rules
+# === Freqtrade: конфиги и базы (секреты) ===
 config*.json
+!config_examples/*.example.json
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
 logfile.txt
-user_data/*
-!user_data/strategy/sample_strategy.py
-!user_data/notebooks
-!user_data/models
-!user_data/freqaimodels
-user_data/freqaimodels/*
-user_data/models/*
-user_data/notebooks/*
+*.log
+.env
+
+# === user_data: исключаем тяжёлое и секретное ===
+user_data/config.json
+user_data/**/config.json
+user_data/data/
+user_data/logs/
+user_data/models/
+user_data/backtest_results/
+user_data/hyperopt_results/
+user_data/plot/
+user_data/positions.db
+user_data/tradesv3.sqlite*
+user_data/hyperopt.lock
+
+# === user_data: включаем код (стратегии, hyperopts, freqaimodels) ===
+# Всё в strategies/, hyperopts/, freqaimodels/, notebooks/ — отслеживается
+
+# === Freqtrade артефакты ===
 freqtrade-plot.html
 freqtrade-profit-plot.html
 freqtrade/rpc/api_server/ui/*
 build_helpers/ta-lib/*
+docker-compose-*.yml
 
-# Macos related
-.DS_Store
-
-# Byte-compiled / optimized / DLL files
+# === Python ===
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 env/
+.venv
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
+.eggs/
 *.egg
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
+.pytest_cache/
+.mypy_cache/
 .tox/
 .coverage
 .coverage.*
-.cache
-nosetests.xml
-coverage.xml
+htmlcov/
 *.cover
-.hypothesis/
+.ipynb_checkpoints/
 
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# memray
-memray-*
-
-# Sphinx documentation
-docs/_build/
-# Mkdocs documentation
-site/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-*.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-.env
-.venv
+# === IDE и ОС ===
 .idea
 .vscode
+.DS_Store
+*.log
 
-.pytest_cache/
-.mypy_cache/
-
-#exceptions
+# === Прочее ===
+*.manifest
+*.spec
+pip-log.txt
+.python-version
 !*.gitkeep
-!config_examples/config_binance.example.json
-!config_examples/config_full.example.json
-!config_examples/config_kraken.example.json
-!config_examples/config_freqai.example.json
-
-docker-compose-*.yml

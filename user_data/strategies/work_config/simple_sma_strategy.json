@@ -1,0 +1,33 @@
+{
+  "strategy_name": "BollingerRSIScalping",
+  "params": {
+    "roi": {
+      "0": 0.1,
+      "30": 0.05,
+      "60": 0.02
+    },
+    "stoploss": {
+      "stoploss": -0.1
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.05,
+      "trailing_stop_positive_offset": 0.1,
+      "trailing_only_offset_is_reached": true
+    },
+    "max_open_trades": {
+      "max_open_trades": 5
+    },
+    "buy": {
+      "buy_fast_sma": 15,
+      "buy_slow_sma": 36
+    },
+    "sell": {
+      "sell_fast_sma": 10,
+      "sell_slow_sma": 30
+    },
+    "protection": {}
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2025-05-30 12:16:50.970194+00:00"
+}
