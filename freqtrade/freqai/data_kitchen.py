@@ -69,6 +69,7 @@ class FreqaiDataKitchen:
         self.config = config
         self.freqai_config: dict[str, Any] = config["freqai"]
         self.full_df: DataFrame = DataFrame()
+        self.full_df_parts: list[DataFrame] = []
         self.append_df: DataFrame = DataFrame()
         self.data_path = Path()
         self.label_list: list = []
@@ -239,16 +240,14 @@ class FreqaiDataKitchen:
         filtered_df = filtered_df.replace([np.inf, -np.inf], np.nan)
 
         drop_index = pd.isnull(filtered_df).any(axis=1)  # get the rows that have NaNs,
-        drop_index = drop_index.replace(True, 1).replace(False, 0).infer_objects(copy=False)
+        drop_index = drop_index.astype(int)
         if training_filter:
             # we don't care about total row number (total no. datapoints) in training, we only care
             # about removing any row with NaNs
             # if labels has multiple columns (user wants to train multiple modelEs), we detect here
             labels = unfiltered_df.filter(label_list or [], axis=1)
             drop_index_labels = pd.isnull(labels).any(axis=1)
-            drop_index_labels = (
-                drop_index_labels.replace(True, 1).replace(False, 0).infer_objects(copy=False)
-            )
+            drop_index_labels = drop_index_labels.astype(int)
             dates = unfiltered_df["date"]
             filtered_df = filtered_df[
                 (drop_index == 0) & (drop_index_labels == 0)
@@ -287,7 +286,7 @@ class FreqaiDataKitchen:
             # replacing all NaNs with zeros to avoid issues in 'prediction', but any prediction
             # that was based on a single NaN is ultimately protected from buys with do_predict
             drop_index = ~drop_index
-            self.do_predict = np.array(drop_index.replace(True, 1).replace(False, 0))
+            self.do_predict = np.array(drop_index.astype(int))
             if (len(self.do_predict) - self.do_predict.sum()) > 0:
                 logger.info(
                     "dropped %s of %s prediction data points due to NaNs.",
@@ -463,17 +462,19 @@ class FreqaiDataKitchen:
         """
         Append backtest prediction from current backtest period to all previous periods
         """
-
-        if self.full_df.empty:
-            self.full_df = append_df
-        else:
-            self.full_df = pd.concat([self.full_df, append_df], axis=0, ignore_index=True)
+        self.full_df_parts.append(append_df)
 
     def fill_predictions(self, dataframe):
         """
         Back fill values to before the backtesting range so that the dataframe matches size
         when it goes back to the strategy. These rows are not included in the backtest.
         """
+        # Concatenate all parts at once (collected as list in append_predictions)
+        # instead of repeatedly concatenating, which is O(n^2).
+        if self.full_df_parts:
+            self.full_df = pd.concat(self.full_df_parts, axis=0, ignore_index=True)
+            self.full_df_parts = []
+
         to_keep = [
             col for col in dataframe.columns if not col.startswith("&") and not col.startswith("%%")
         ]
@@ -768,12 +769,15 @@ class FreqaiDataKitchen:
             informative_df = self.merge_features(informative_df, generic_df, tf, tf, suffix)
 
             indicators = [col for col in informative_df if col.startswith("%")]
+            shifted_parts = []
             for n in range(self.freqai_config["feature_parameters"]["include_shifted_candles"] + 1):
                 if n == 0:
                     continue
                 df_shift = informative_df[indicators].shift(n)
                 df_shift = df_shift.add_suffix("_shift-" + str(n))
-                informative_df = pd.concat((informative_df, df_shift), axis=1)
+                shifted_parts.append(df_shift)
+            if shifted_parts:
+                informative_df = pd.concat([informative_df] + shifted_parts, axis=1)
 
             dataframe = self.merge_features(
                 dataframe.copy(), informative_df, self.config["timeframe"], tf, f"{pair}_{tf}"
