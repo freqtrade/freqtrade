@@ -35,7 +35,7 @@ torch.multiprocessing.set_sharing_strategy("file_system")
 
 SB3_MODELS = ["PPO", "A2C", "DQN"]
 SB3_CONTRIB_MODELS = ["TRPO", "ARS", "RecurrentPPO", "MaskablePPO", "QRDQN"]
-
+CUSTOM_MODELS = ["IQN"]
 
 class BaseReinforcementLearningModel(IFreqaiModel):
     """
@@ -61,15 +61,19 @@ class BaseReinforcementLearningModel(IFreqaiModel):
             import_str = "stable_baselines3"
         elif self.model_type in SB3_CONTRIB_MODELS:
             import_str = "sb3_contrib"
+        elif self.model_type in CUSTOM_MODELS:
+            import_str = f"{self.model_type}"
         else:
             raise OperationalException(
-                f"{self.model_type} not available in stable_baselines3 or "
-                f"sb3_contrib. please choose one of {SB3_MODELS} or "
-                f"{SB3_CONTRIB_MODELS}"
+                f"{self.model_type} not available in stable_baselines3, "
+                f"sb3_contrib, or custom models. Please choose one of {SB3_MODELS}, "
+                f"{SB3_CONTRIB_MODELS}, or {CUSTOM_MODELS}"
             )
 
-        mod = importlib.import_module(import_str, self.model_type)
-        self.MODELCLASS = getattr(mod, self.model_type)
+        if self.model_type not in CUSTOM_MODELS:
+            mod = importlib.import_module(import_str, self.model_type)
+            self.MODELCLASS = getattr(mod, self.model_type)
+        
         self.policy_type = self.freqai_info["rl_config"]["policy_type"]
         self.unset_outlier_removal()
         self.net_arch = self.rl_config.get("net_arch", [128, 128])

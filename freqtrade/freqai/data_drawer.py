@@ -617,6 +617,10 @@ class FreqaiDataDrawer:
             zipfile = torch.load(dk.data_path / f"{dk.model_filename}_model.zip")
             model = zipfile["pytrainer"]
             model = model.load_from_checkpoint(zipfile)
+        elif self.model_type == "IQN":
+            import torch
+            
+            model = torch.jit.load(dk.data_path / f"best_model.zip")
 
         if not model:
             raise OperationalException(
