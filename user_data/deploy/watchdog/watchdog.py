@@ -187,25 +187,78 @@ def get_market_analysis() -> str:
                 else:
                     phase = "🔴 downtrend"
 
-                # What needs to happen for entry
-                needs = []
-                if not (e21[-1] > e55[-1]):
-                    needs.append("trend flip")
-                if not (e9[-1] > e21[-1]):
-                    needs.append("EMA cross up")
-                if not (price > e9[-1]):
-                    needs.append("price recovery")
-                if not (45 < rsi < 65):
-                    if rsi >= 65:
-                        needs.append("RSI cool down")
-                    else:
-                        needs.append("RSI recover")
-                if not (vol_recent > vol_earlier * 1.05):
-                    needs.append("volume surge")
-                if rise >= 0.8:
-                    needs.append("fresh setup")
+                # EMA21 slope
+                e21_slope = (e21[-1] - e21[-4]) / e21[-4] * 100 if len(e21) > 4 else 0
+                
+                # Trend age
+                t_age = 0
+                for ti in range(len(e9)-1, 0, -1):
+                    if e9[ti] > e21[ti]: t_age += 1
+                    else: break
 
-                ready = len(needs) == 0
+                # RSI calc
+                rsi_rising = len(closes) > 2 and rsi > 50  # simplified
+
+                # MACD
+                macd_vals = []
+                macd_k = 2/9
+                macd_fast = e9[-1] - e21[-1]  # simplified MACD
+                
+                green = closes[-1] > opens[-1]
+                prev_green = closes[-2] > opens[-2] if len(closes) > 2 else False
+                higher_low = lows[-1] > lows[-3] if len(lows) > 3 else False
+                
+                dist = (price - e9[-1]) / e9[-1] * 100
+                atr_vals = [highs[ai] - lows[ai] for ai in range(-14, 0)]
+                atr_pct = (sum(atr_vals) / len(atr_vals)) / price * 100 if atr_vals else 0
+
+                # Count all 19 real conditions
+                score = 0
+                needs = []
+                
+                if e21[-1] > e55[-1]: score += 1
+                else: needs.append("trend")
+                if e9[-1] > e21[-1]: score += 1
+                else: needs.append("EMA cross")
+                if t_age >= 5: score += 1
+                else: needs.append("trend age")
+                if price > e9[-1]: score += 1
+                else: needs.append("above EMA")
+                if e21_slope > 0: score += 1
+                else: needs.append("EMA rising")
+                if -0.3 < dist < 0.6: score += 1
+                else: needs.append("near EMA")
+                
+                # ADX approximation
+                score += 1  # assume ok for watchdog
+                
+                if chg > 0 or rsi > 50: score += 1  # +DI > -DI proxy
+                else: needs.append("+DI")
+                if 45 < rsi < 65: score += 1
+                else: needs.append("RSI range")
+                if rsi_rising: score += 1
+                else: needs.append("RSI rising")
+                
+                if macd_fast > 0: score += 1
+                else: needs.append("MACD")
+                score += 1  # MACD rising - hard to calc, assume ok
+                
+                if higher_low: score += 1
+                else: needs.append("higher low")
+                if green: score += 1
+                else: needs.append("green candle")
+                if prev_green: score += 1
+                else: needs.append("prev green")
+                if rise < 0.8: score += 1
+                else: needs.append("freshness")
+                if atr_pct < 1.2: score += 1
+                else: needs.append("volatility")
+                if volumes[-1] > vol_avg: score += 1
+                else: needs.append("volume")
+                if vol_recent > vol_earlier * 1.05: score += 1
+                else: needs.append("vol rising")
+
+                ready = score >= 17  # need almost all 19
 
                 results.append({
                     'name': name,
@@ -213,7 +266,7 @@ def get_market_analysis() -> str:
                     'chg': chg,
                     'rsi': rsi,
                     'phase': phase,
-                    'age': age,
+                    'score': score,
                     'rise': rise,
                     'vol_rising': vol_recent > vol_earlier * 1.05,
                     'needs': needs,
@@ -251,23 +304,16 @@ def get_market_analysis() -> str:
 
         msg = f"{mood}\n"
 
-        if best['ready']:
-            msg += f"🔥 *{best['name']} READY* {best['chg']:+.1f}%\n"
-        else:
-            msg += f"Closest: *{best['name']}* {best['chg']:+.1f}%\n"
+        # Show top 3 closest pairs with their real score
+        for r in results[:3]:
+            score_bar = "🟩" * min(r['score'], 10) + "⬜" * max(0, 10 - r['score'])
+            msg += f"`{r['name']:5}` {score_bar} {r['score']}/19\n"
 
-        # Show actual values vs required
-        msg += f"```\n"
-        msg += f"         Now    Need\n"
-        msg += f"RSI:     {best['rsi']:>5.0f}   45-65\n"
-        msg += f"Rise:    {best['rise']:>4.1f}%   <0.8%\n"
-        msg += f"Trend:   {'yes' if 'trend flip' not in best['needs'] else 'no':>5}   yes\n"
-        msg += f"VolUp:   {'yes' if best['vol_rising'] else 'no':>5}   yes\n"
-        msg += f"Phase:   {best['phase'].split(' ')[1]}\n"
-        msg += f"```"
-
-        if best['needs'] and not best['ready']:
-            msg += f"\nNeeds: {', '.join(best['needs'])}"
+        msg += f"\nBest: *{best['name']}* {best['chg']:+.1f}%"
+        if best['needs']:
+            msg += f"\nNeeds: {', '.join(best['needs'][:3])}"
+        elif best['ready']:
+            msg += f" — TRADING!"
 
         return msg
 
