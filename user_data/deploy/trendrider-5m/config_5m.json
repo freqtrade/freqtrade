@@ -63,7 +63,7 @@
         }
     ],
     "telegram": {
-        "enabled": true,
+        "enabled": false,
         "token": "8272000103:AAErikRTrml-LzGype0LM4eY_Vi634ZHMi8",
         "chat_id": "5216799062",
         "notification_settings": {
@@ -82,7 +82,7 @@
         }
     },
     "api_server": {
-        "enabled": true,
+        "enabled": false,
         "listen_ip_address": "0.0.0.0",
         "listen_port": 8080,
         "verbosity": "error",
@@ -108,14 +108,14 @@
         "webhookentry": {
             "chat_id": "5216799062",
             "parse_mode": "Markdown",
-            "text": "\u26a1 *5m BUY {pair}*\n\ud83d\udcb0 {stake_amount:.2f} USDT @ {open_rate:.4f}\n\ud83d\udee1 Stop: -2.5% | Smart exit"
+            "text": "\ud83d\udcc8 *BUY {pair}*\n\ud83d\udcb0 {stake_amount:.2f} USDT @ {open_rate}\n\ud83d\udee1 Stop: -0.9%"
         },
         "webhookentrycancel": null,
         "webhookentryfill": null,
         "webhookexit": {
             "chat_id": "5216799062",
             "parse_mode": "Markdown",
-            "text": "\u26a1 *5m SELL {pair}*\nP&L: {profit_ratio:.2%} ({profit_amount:.4f} USDT)\nReason: {exit_reason}"
+            "text": "{'\u2705' if {profit_ratio} > 0 else '\u274c'} *SELL {pair}*\nP&L: {profit_ratio:.2%} ({profit_amount:.4f} USDT)\nReason: {exit_reason}"
         },
         "webhookexitfill": null,
         "webhookexitcancel": null,
