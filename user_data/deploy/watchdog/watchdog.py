@@ -334,9 +334,35 @@ def main():
             hour = now.strftime("%H")
             today = now.strftime("%Y-%m-%d")
 
-            # 1. Check bot (skip API check if disabled)
+            # 1. Check bot (use DB when API disabled)
             if BOT_API == "disabled":
-                status = {"state": "running", "balance": 0, "open_trades": [], "profit": {}}
+                db_bal = 0
+                db_trades = 0
+                db_pnl = 0
+                try:
+                    import psycopg2
+                    dbc = psycopg2.connect(DB_URL.replace("postgres://", "postgresql://"))
+                    dbc_cur = dbc.cursor()
+                    dbc_cur.execute("SELECT balance FROM bot_status WHERE balance > 0 ORDER BY timestamp DESC LIMIT 1")
+                    row = dbc_cur.fetchone()
+                    if row:
+                        db_bal = float(row[0])
+                    dbc_cur.execute("SELECT COUNT(*), SUM(close_profit_abs) FROM trades WHERE close_date IS NOT NULL")
+                    row = dbc_cur.fetchone()
+                    db_trades = row[0] or 0
+                    db_pnl = float(row[1] or 0)
+                    dbc_cur.execute("SELECT COUNT(*) FROM trades WHERE close_date IS NULL")
+                    db_open = dbc_cur.fetchone()[0] or 0
+                    dbc_cur.close()
+                    dbc.close()
+                except Exception:
+                    pass
+                status = {
+                    "state": "running",
+                    "balance": db_bal,
+                    "open_trades": [{}] * db_open if db_open else [],
+                    "profit": {"trade_count": db_trades, "profit_all_coin": db_pnl},
+                }
             else:
                 status = check_bot()
 
