@@ -34,6 +34,7 @@ from freqtrade.enums import (
     ExitCheckTuple,
     ExitType,
     MarketDirection,
+    OrderRole,
     SignalDirection,
     State,
     TradingMode,
@@ -229,7 +230,7 @@ class RPC:
                         )
                     except (ExchangeError, PricingError):
                         current_rate = nan
-                    if len(trade.select_filled_orders(trade.entry_side)) > 0:
+                    if len(trade.select_filled_orders(OrderRole.entry)) > 0:
                         current_profit = current_profit_abs = current_profit_fiat = nan
                         if not isnan(current_rate):
                             prof = trade.calculate_profit(current_rate)
@@ -549,7 +550,7 @@ class RPC:
                     losing_profit += profit_abs
             else:
                 # Get current rate for open trades
-                if len(trade.select_filled_orders(trade.entry_side)) == 0:
+                if len(trade.select_filled_orders(OrderRole.entry)) == 0:
                     # Skip trades with no filled orders
                     continue
                 try:

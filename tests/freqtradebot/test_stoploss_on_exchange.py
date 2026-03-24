@@ -5,7 +5,7 @@ from unittest.mock import ANY, MagicMock
 import pytest
 from sqlalchemy import select
 
-from freqtrade.enums import ExitCheckTuple, ExitType, RPCMessageType
+from freqtrade.enums import ConditionalExitKind, ExitCheckTuple, ExitType, RPCMessageType
 from freqtrade.exceptions import ExchangeError, InsufficientFundsError, InvalidOrderException
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Order, Trade
@@ -25,7 +25,7 @@ from tests.freqtradebot.test_freqtradebot import patch_RPCManager
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_short, fee) -> None:
+def test_add_conditional_exit(mocker, default_conf_usdt, limit_order, is_short, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     mocker.patch.multiple(
@@ -59,8 +59,76 @@ def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_sho
     assert trade.is_open is True
 
 
+def test_cancel_conditional_exit_orders_forwards_to_stoploss(mocker, default_conf_usdt) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    trade = MagicMock()
+    forwarded_result = MagicMock()
+    forward_mock = mocker.patch.object(
+        freqtrade,
+        "cancel_stoploss_orders",
+        return_value=forwarded_result,
+    )
+
+    result = freqtrade.cancel_conditional_exit_orders(
+        trade,
+        ConditionalExitKind.stoploss,
+        allow_nonblocking=True,
+    )
+
+    forward_mock.assert_called_once_with(trade, allow_nonblocking=True)
+    assert result is forwarded_result
+
+
+def test_manage_trade_conditional_exit_orders_forwards_to_stoploss(
+    mocker, default_conf_usdt
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    trade = MagicMock()
+    conditional_exit_orders = [{"id": "1"}]
+    forwarded_result = object()
+    forward_mock = mocker.patch.object(
+        freqtrade,
+        "manage_stoploss_orders",
+        return_value=forwarded_result,
+    )
+
+    result = freqtrade.manage_trade_conditional_exit_orders(
+        trade,
+        conditional_exit_orders,
+        ConditionalExitKind.stoploss,
+    )
+
+    forward_mock.assert_called_once_with(trade, conditional_exit_orders)
+    assert result is forwarded_result
+
+
+def test_handle_trailing_conditional_exit_order_forwards_to_stoploss(
+    mocker, default_conf_usdt
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    trade = MagicMock()
+    order = {"id": "abc"}
+    forward_mock = mocker.patch.object(
+        freqtrade,
+        "handle_trailing_stoploss_order",
+        return_value=None,
+    )
+
+    result = freqtrade.handle_trailing_conditional_exit_order(
+        trade,
+        order,
+        ConditionalExitKind.stoploss,
+    )
+
+    forward_mock.assert_called_once_with(trade, order)
+    assert result is None
+
+
 @pytest.mark.parametrize("is_short", [False, True])
-def test_handle_stoploss_on_exchange(
+def test_handle_conditional_exit_orders(
     mocker, default_conf_usdt, fee, caplog, is_short, limit_order
 ) -> None:
     stop_order_dict = {"id": "13434334"}
@@ -94,7 +162,7 @@ def test_handle_stoploss_on_exchange(
     assert trade.is_open
     assert trade.has_open_sl_orders is False
 
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     assert stoploss.call_count == 1
     assert trade.open_sl_orders[-1].order_id == "13434334"
 
@@ -105,7 +173,7 @@ def test_handle_stoploss_on_exchange(
     hanging_stoploss_order = MagicMock(return_value={"id": "13434334", "status": "open"})
     mocker.patch.object(freqtrade.exchange, "fetch_stoploss_order", hanging_stoploss_order)
 
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     hanging_stoploss_order.assert_called_once_with("13434334", trade.pair)
     assert len(trade.open_sl_orders) == 1
     assert trade.open_sl_orders[-1].order_id == "13434334"
@@ -122,7 +190,7 @@ def test_handle_stoploss_on_exchange(
 
     stop_order_dict.update({"id": "103_1"})
 
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     assert stoploss.call_count == 1
     assert len(trade.open_sl_orders) == 1
     assert trade.open_sl_orders[-1].order_id == "103_1"
@@ -151,7 +219,7 @@ def test_handle_stoploss_on_exchange(
     )
     mocker.patch.object(freqtrade.exchange, "fetch_stoploss_order", stoploss_order_hit)
     freqtrade.strategy.order_filled = MagicMock(return_value=None)
-    assert freqtrade.handle_stoploss_on_exchange(trade) is True
+    assert freqtrade.handle_conditional_exit_orders(trade) is True
     assert log_has_re(r"STOP_LOSS_LIMIT is hit for Trade\(id=1, .*\)\.", caplog)
     assert len(trade.open_sl_orders) == 0
     assert trade.is_open is False
@@ -160,7 +228,7 @@ def test_handle_stoploss_on_exchange(
 
     mocker.patch.object(freqtrade.exchange, "create_stoploss", side_effect=ExchangeError())
     trade.is_open = True
-    freqtrade.handle_stoploss_on_exchange(trade)
+    freqtrade.handle_conditional_exit_orders(trade)
     assert log_has("Unable to place a stoploss order on exchange.", caplog)
     assert len(trade.open_sl_orders) == 0
 
@@ -175,7 +243,7 @@ def test_handle_stoploss_on_exchange(
         ),
         create_stoploss=stoploss,
     )
-    freqtrade.handle_stoploss_on_exchange(trade)
+    freqtrade.handle_conditional_exit_orders(trade)
     assert len(trade.open_sl_orders) == 1
     assert stoploss.call_count == 1
 
@@ -185,13 +253,13 @@ def test_handle_stoploss_on_exchange(
     trade.open_sl_orders[-1].ft_is_open = False
     stoploss.reset_mock()
     mocker.patch.multiple(freqtrade.exchange, fetch_order=MagicMock(), create_stoploss=stoploss)
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     assert trade.has_open_sl_orders is False
     assert stoploss.call_count == 0
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_handle_stoploss_on_exchange_emergency(
+def test_handle_conditional_exit_emergency(
     mocker, default_conf_usdt, fee, is_short, limit_order
 ) -> None:
     stop_order_dict = {"id": "13434334"}
@@ -244,6 +312,7 @@ def test_handle_stoploss_on_exchange_emergency(
     trade.orders.append(
         Order(
             ft_order_side="stoploss",
+            ft_conditional_exit_kind="stoploss",
             ft_pair=trade.pair,
             ft_is_open=True,
             ft_amount=trade.amount,
@@ -262,14 +331,14 @@ def test_handle_stoploss_on_exchange_emergency(
         fetch_stoploss_order=stoploss_order_cancelled,
         create_stoploss=stoploss,
     )
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     assert trade.has_open_sl_orders is False
     assert trade.is_open is False
     assert trade.exit_reason == str(ExitType.EMERGENCY_EXIT)
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_handle_stoploss_on_exchange_partial(
+def test_handle_conditional_exit_partial(
     mocker, default_conf_usdt, fee, is_short, limit_order
 ) -> None:
     stop_order_dict = {"id": "101", "status": "open"}
@@ -298,7 +367,7 @@ def test_handle_stoploss_on_exchange_partial(
     trade.is_short = is_short
     trade.is_open = True
 
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     assert stoploss.call_count == 1
     assert trade.has_open_sl_orders is True
     assert trade.open_sl_orders[-1].order_id == "101"
@@ -319,7 +388,7 @@ def test_handle_stoploss_on_exchange_partial(
         }
     )
     mocker.patch.multiple(freqtrade.exchange, fetch_stoploss_order=stoploss_order_hit)
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     # Stoploss filled partially ...
     assert trade.amount == 15
 
@@ -327,7 +396,7 @@ def test_handle_stoploss_on_exchange_partial(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_handle_stoploss_on_exchange_partial_cancel_here(
+def test_handle_conditional_exit_partial_cancel_here(
     mocker, default_conf_usdt, fee, is_short, limit_order, caplog, time_machine
 ) -> None:
     stop_order_dict = {"id": "101", "status": "open"}
@@ -358,7 +427,7 @@ def test_handle_stoploss_on_exchange_partial_cancel_here(
     trade.is_short = is_short
     trade.is_open = True
 
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     assert stoploss.call_count == 1
     assert trade.has_open_sl_orders is True
     assert trade.open_sl_orders[-1].order_id == "101"
@@ -397,7 +466,7 @@ def test_handle_stoploss_on_exchange_partial_cancel_here(
     )
     time_machine.shift(timedelta(minutes=15))
 
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     # Canceled Stoploss filled partially ...
     assert log_has_re("Cancelling current stoploss on exchange.*", caplog)
 
@@ -441,6 +510,7 @@ def test_handle_sle_cancel_cant_recreate(
     trade.orders.append(
         Order(
             ft_order_side="stoploss",
+            ft_conditional_exit_kind="stoploss",
             ft_pair=trade.pair,
             ft_is_open=True,
             ft_amount=trade.amount,
@@ -451,7 +521,7 @@ def test_handle_sle_cancel_cant_recreate(
     )
     assert trade
 
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     assert log_has_re(r"All Stoploss orders are cancelled, but unable to recreate one\.", caplog)
     assert trade.has_open_sl_orders is False
     assert trade.is_open is True
@@ -491,7 +561,7 @@ def test_create_stoploss_order_invalid_order(
     trade.is_short = is_short
     caplog.clear()
     rpc_mock.reset_mock()
-    freqtrade.create_stoploss_order(trade, 200)
+    freqtrade.create_conditional_exit_order(trade, 200, ConditionalExitKind.stoploss)
     assert trade.has_open_sl_orders is False
     assert trade.exit_reason == ExitType.EMERGENCY_EXIT.value
     assert log_has("Unable to place a stoploss order on exchange. ", caplog)
@@ -542,13 +612,13 @@ def test_create_stoploss_order_insufficient_funds(
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     caplog.clear()
-    freqtrade.create_stoploss_order(trade, 200)
+    freqtrade.create_conditional_exit_order(trade, 200, ConditionalExitKind.stoploss)
     # stoploss_orderid was empty before
     assert trade.has_open_sl_orders is False
     assert mock_insuf.call_count == 1
     mock_insuf.reset_mock()
 
-    freqtrade.create_stoploss_order(trade, 200)
+    freqtrade.create_conditional_exit_order(trade, 200, ConditionalExitKind.stoploss)
     # No change to stoploss-orderid
     assert trade.has_open_sl_orders is False
     assert mock_insuf.call_count == 1
@@ -562,7 +632,7 @@ def test_create_stoploss_order_insufficient_funds(
     ],
 )
 @pytest.mark.usefixtures("init_persistence")
-def test_handle_stoploss_on_exchange_trailing(
+def test_handle_conditional_exit_trailing(
     mocker,
     default_conf_usdt,
     fee,
@@ -632,6 +702,7 @@ def test_handle_stoploss_on_exchange_trailing(
     trade.orders.append(
         Order(
             ft_order_side="stoploss",
+            ft_conditional_exit_kind="stoploss",
             ft_pair=trade.pair,
             ft_is_open=True,
             ft_amount=trade.amount,
@@ -662,7 +733,7 @@ def test_handle_stoploss_on_exchange_trailing(
 
     # stoploss initially at 5%
     assert freqtrade.handle_trade(trade) is False
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
 
     assert len(trade.open_sl_orders) == 1
 
@@ -693,7 +764,7 @@ def test_handle_stoploss_on_exchange_trailing(
 
     # stoploss should not be updated as the interval is 60 seconds
     assert freqtrade.handle_trade(trade) is False
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     assert len(trade.open_sl_orders) == 1
     cancel_order_mock.assert_not_called()
     stoploss_order_mock.assert_not_called()
@@ -704,7 +775,7 @@ def test_handle_stoploss_on_exchange_trailing(
     assert freqtrade.handle_trade(trade) is False
     assert trade.stop_loss == stop_price[1]
 
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
 
     cancel_order_mock.assert_called_once_with("13434334", "ETH/USDT")
     stoploss_order_mock.assert_called_once_with(
@@ -741,7 +812,7 @@ def test_handle_stoploss_on_exchange_trailing(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_handle_stoploss_on_exchange_trailing_error(
+def test_handle_conditional_exit_trailing_error(
     mocker, default_conf_usdt, fee, caplog, limit_order, is_short, time_machine
 ) -> None:
     time_machine.move_to(dt_now() - timedelta(minutes=601))
@@ -795,6 +866,7 @@ def test_handle_stoploss_on_exchange_trailing_error(
     trade.orders.append(
         Order(
             ft_order_side="stoploss",
+            ft_conditional_exit_kind="stoploss",
             ft_pair=trade.pair,
             ft_is_open=True,
             ft_amount=trade.amount,
@@ -810,7 +882,7 @@ def test_handle_stoploss_on_exchange_trailing_error(
         freqtrade.exchange, "fetch_stoploss_order", return_value=stoploss_order_hanging
     )
     time_machine.shift(timedelta(minutes=50))
-    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
+    freqtrade.handle_trailing_stoploss_order(trade, stoploss_order_hanging)
     assert log_has_re(r"Could not cancel stoploss order abcd for pair ETH/USDT.*", caplog)
 
     # Still try to create order
@@ -823,14 +895,12 @@ def test_handle_stoploss_on_exchange_trailing_error(
     cancel_mock = mocker.patch.object(freqtrade.exchange, "cancel_stoploss_order")
     mocker.patch.object(freqtrade.exchange, "create_stoploss", side_effect=ExchangeError())
     time_machine.shift(timedelta(minutes=50))
-    freqtrade.handle_trailing_stoploss_on_exchange(trade, stoploss_order_hanging)
+    freqtrade.handle_trailing_stoploss_order(trade, stoploss_order_hanging)
     assert cancel_mock.call_count == 2
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/USDT\..*", caplog)
 
 
-def test_stoploss_on_exchange_price_rounding(
-    mocker, default_conf_usdt, fee, open_trade_usdt
-) -> None:
+def test_conditional_exit_price_rounding(mocker, default_conf_usdt, fee, open_trade_usdt) -> None:
     patch_RPCManager(mocker)
     mocker.patch.multiple(
         EXMS,
@@ -848,7 +918,7 @@ def test_stoploss_on_exchange_price_rounding(
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     open_trade_usdt.stop_loss = 222.55
 
-    freqtrade.handle_trailing_stoploss_on_exchange(open_trade_usdt, {})
+    freqtrade.handle_trailing_stoploss_order(open_trade_usdt, {})
     assert price_mock.call_count == 1
     assert adjust_mock.call_count == 1
     assert adjust_mock.call_args_list[0][0][0] == 222
@@ -856,7 +926,7 @@ def test_stoploss_on_exchange_price_rounding(
 
 @pytest.mark.parametrize("is_short", [False, True])
 @pytest.mark.usefixtures("init_persistence")
-def test_handle_stoploss_on_exchange_custom_stop(
+def test_handle_conditional_exit_custom_stop(
     mocker, default_conf_usdt, fee, is_short, limit_order
 ) -> None:
     enter_order = limit_order[entry_side(is_short)]
@@ -908,6 +978,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
     trade.orders.append(
         Order(
             ft_order_side="stoploss",
+            ft_conditional_exit_kind="stoploss",
             ft_pair=trade.pair,
             ft_is_open=True,
             ft_amount=trade.amount,
@@ -940,7 +1011,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
     )
 
     assert freqtrade.handle_trade(trade) is False
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
 
     # price jumped 2x
     mocker.patch(
@@ -964,7 +1035,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
 
     # stoploss should not be updated as the interval is 60 seconds
     assert freqtrade.handle_trade(trade) is False
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
     cancel_order_mock.assert_not_called()
     stoploss_order_mock.assert_not_called()
 
@@ -977,7 +1048,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
     cancel_order_mock.assert_not_called()
     stoploss_order_mock.assert_not_called()
 
-    assert freqtrade.handle_stoploss_on_exchange(trade) is False
+    assert freqtrade.handle_conditional_exit_orders(trade) is False
 
     cancel_order_mock.assert_called_once_with("13434334", "ETH/USDT")
     # Long uses modified ask - offset, short modified bid + offset
@@ -998,7 +1069,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
+def test_execute_trade_exit_down_conditional_exit_dry_run(
     default_conf_usdt,
     ticker_usdt,
     fee,
@@ -1110,6 +1181,7 @@ def test_execute_trade_exit_sloe_cancel_exception(
     trade.orders.append(
         Order(
             ft_order_side="stoploss",
+            ft_conditional_exit_kind="stoploss",
             ft_pair=trade.pair,
             ft_is_open=True,
             ft_amount=trade.amount,
@@ -1127,7 +1199,7 @@ def test_execute_trade_exit_sloe_cancel_exception(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_execute_trade_exit_with_stoploss_on_exchange(
+def test_execute_trade_exit_with_conditional_exit(
     default_conf_usdt, ticker_usdt, fee, ticker_usdt_sell_up, is_short, mocker
 ) -> None:
     default_conf_usdt["exchange"]["name"] = "binance"
@@ -1183,7 +1255,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
 
 
 @pytest.mark.parametrize("is_short", [False, True])
-def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
+def test_may_execute_trade_exit_after_conditional_exit_hit(
     default_conf_usdt, ticker_usdt, fee, mocker, is_short
 ) -> None:
     default_conf_usdt["exchange"]["name"] = "binance"

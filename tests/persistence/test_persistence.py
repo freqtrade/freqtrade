@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 
 from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT
-from freqtrade.enums import ConditionalTriggerType, OrderRole, TradingMode
+from freqtrade.enums import ConditionalExitKind, ConditionalTriggerType, OrderRole, TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange.exchange_utils import TICK_SIZE
 from freqtrade.persistence import LocalTrade, Order, Trade, init_db
@@ -2075,45 +2075,55 @@ def test_select_order(fee, is_short):
     trades = Trade.get_trades().all()
 
     # Open buy order, no sell order
-    order = trades[0].select_order(trades[0].entry_side, True)
+    order = trades[0].select_order(OrderRole.entry, True)
     assert order is not None
-    order = trades[0].select_order(trades[0].entry_side, False)
+    order = trades[0].select_order(OrderRole.entry, False)
     assert order is None
-    order = trades[0].select_order(trades[0].exit_side, None)
+    order = trades[0].select_order(OrderRole.exit, None)
     assert order is None
 
     # closed buy order, and open sell order
-    order = trades[1].select_order(trades[1].entry_side, True)
+    order = trades[1].select_order(OrderRole.entry, True)
     assert order is None
-    order = trades[1].select_order(trades[1].entry_side, False)
+    order = trades[1].select_order(OrderRole.entry, False)
     assert order is not None
-    order = trades[1].select_order(trades[1].entry_side, None)
+    order = trades[1].select_order(OrderRole.entry, None)
     assert order is not None
-    order = trades[1].select_order(trades[1].exit_side, True)
+    order = trades[1].select_order(OrderRole.exit, True)
     assert order is None
-    order = trades[1].select_order(trades[1].exit_side, False)
+    order = trades[1].select_order(OrderRole.exit, False)
     assert order is not None
 
     # Has open buy order
-    order = trades[3].select_order(trades[3].entry_side, True)
+    order = trades[3].select_order(OrderRole.entry, True)
     assert order is not None
-    order = trades[3].select_order(trades[3].entry_side, False)
+    order = trades[3].select_order(OrderRole.entry, False)
     assert order is None
 
     # Open sell order
-    order = trades[4].select_order(trades[4].entry_side, True)
+    order = trades[4].select_order(OrderRole.entry, True)
     assert order is None
-    order = trades[4].select_order(trades[4].entry_side, False)
+    order = trades[4].select_order(OrderRole.entry, False)
     assert order is not None
 
     trades[4].orders[1].ft_order_side = trades[4].exit_side
-    order = trades[4].select_order(trades[4].exit_side, True)
+    trades[4].orders[1].ft_conditional_exit_kind = None
+    order = trades[4].select_order(OrderRole.exit, True)
     assert order is not None
 
     trades[4].orders[1].ft_order_side = "stoploss"
-    order = trades[4].select_order("stoploss", None)
+    trades[4].orders[1].ft_conditional_exit_kind = "stoploss"
+    order = trades[4].select_order(OrderRole.conditional_exit, None)
     assert order is not None
     assert order.ft_order_side == "stoploss"
+    assert order.conditional_exit_kind == ConditionalExitKind.stoploss
+
+    order = trades[4].select_order(
+        OrderRole.conditional_exit,
+        None,
+        conditional_exit_kind=ConditionalExitKind.stoploss,
+    )
+    assert order is not None
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -2136,27 +2146,34 @@ def test_order_role_helpers(fee, is_short):
 
     assert trades[4].get_order_role(conditional_exit_order) == OrderRole.conditional_exit
     assert conditional_exit_order.ft_is_conditional_exit is True
+    assert conditional_exit_order.conditional_exit_kind == ConditionalExitKind.stoploss
     assert trades[4].is_position_exit_order(conditional_exit_order) is True
     assert conditional_exit_order.ft_conditional_trigger_type == ConditionalTriggerType.stop_loss
-    assert trades[4].order_has_role(conditional_exit_order, "stoploss") is True
     assert trades[4].order_has_role(conditional_exit_order, OrderRole.conditional_exit) is True
 
-    assert trades[1].select_order_by_role(OrderRole.entry, False) == entry_order
-    assert trades[1].select_order_by_role(OrderRole.exit, False) == exit_order
-    assert (
-        trades[4].select_order_by_role(OrderRole.conditional_exit, True) == conditional_exit_order
-    )
+    assert trades[1].select_order(OrderRole.entry, False) == entry_order
+    assert trades[1].select_order(OrderRole.exit, False) == exit_order
+    assert trades[4].select_order(OrderRole.conditional_exit, True) == conditional_exit_order
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_select_filled_orders_by_role(fee):
+def test_select_filled_orders_for_roles(fee):
     create_mock_trades(fee)
 
     trades = Trade.get_trades().all()
 
-    assert len(trades[1].select_filled_orders_by_role(OrderRole.entry)) == 1
-    assert len(trades[1].select_filled_orders_by_role(OrderRole.exit)) == 1
-    assert len(trades[4].select_filled_orders_by_role(OrderRole.conditional_exit)) == 0
+    assert len(trades[1].select_filled_orders(OrderRole.entry)) == 1
+    assert len(trades[1].select_filled_orders(OrderRole.exit)) == 1
+    assert len(trades[4].select_filled_orders(OrderRole.conditional_exit)) == 0
+    assert (
+        len(
+            trades[4].select_filled_orders(
+                OrderRole.conditional_exit,
+                conditional_exit_kind=ConditionalExitKind.stoploss,
+            )
+        )
+        == 0
+    )
 
 
 def test_Trade_object_idem():
@@ -2690,16 +2707,16 @@ def test_select_filled_orders(fee):
     trades = Trade.get_trades().all()
 
     # Closed buy order, no sell order
-    orders = trades[0].select_filled_orders("buy")
+    orders = trades[0].select_filled_orders(OrderRole.entry)
     assert isinstance(orders, list)
     assert len(orders) == 0
 
-    orders = trades[0].select_filled_orders("sell")
+    orders = trades[0].select_filled_orders(OrderRole.exit)
     assert orders is not None
     assert len(orders) == 0
 
     # closed buy order, and closed sell order
-    orders = trades[1].select_filled_orders("buy")
+    orders = trades[1].select_filled_orders(OrderRole.entry)
     assert isinstance(orders, list)
     assert len(orders) == 1
     order = orders[0]
@@ -2709,23 +2726,23 @@ def test_select_filled_orders(fee):
     assert order.ft_order_side == "buy"
     assert order.status == "closed"
 
-    orders = trades[1].select_filled_orders("sell")
+    orders = trades[1].select_filled_orders(OrderRole.exit)
     assert isinstance(orders, list)
     assert len(orders) == 1
 
     # Has open buy order
-    orders = trades[3].select_filled_orders("buy")
+    orders = trades[3].select_filled_orders(OrderRole.entry)
     assert isinstance(orders, list)
     assert len(orders) == 0
-    orders = trades[3].select_filled_orders("sell")
+    orders = trades[3].select_filled_orders(OrderRole.exit)
     assert isinstance(orders, list)
     assert len(orders) == 0
 
     # Open sell order
-    orders = trades[4].select_filled_orders("buy")
+    orders = trades[4].select_filled_orders(OrderRole.entry)
     assert isinstance(orders, list)
     assert len(orders) == 1
-    orders = trades[4].select_filled_orders("sell")
+    orders = trades[4].select_filled_orders(OrderRole.exit)
     assert isinstance(orders, list)
     assert len(orders) == 0
 
@@ -2737,7 +2754,7 @@ def test_select_filled_orders_usdt(fee):
     trades = Trade.get_trades().all()
 
     # Closed buy order, no sell order
-    orders = trades[0].select_filled_orders("buy")
+    orders = trades[0].select_filled_orders(OrderRole.entry)
     assert isinstance(orders, list)
     assert len(orders) == 1
     assert orders[0].amount == 2.0
@@ -2747,7 +2764,7 @@ def test_select_filled_orders_usdt(fee):
     assert orders[0].stake_amount == 20
     assert orders[0].stake_amount_filled == 20
 
-    orders = trades[3].select_filled_orders("buy")
+    orders = trades[3].select_filled_orders(OrderRole.entry)
     assert isinstance(orders, list)
     assert len(orders) == 0
     orders = trades[3].select_filled_or_open_orders()
@@ -2781,6 +2798,7 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
 
     order1 = Order.parse_from_ccxt_object(limit_sell_order_usdt_open, "mocked", "sell")
     order1.ft_order_side = "stoploss"
+    order1.ft_conditional_exit_kind = "stoploss"
     order1.stop_price = order1.price * 0.9
     order1.ft_trade_id = 1
     order1.session.add(order1)

@@ -1,6 +1,7 @@
 # flake8: noqa: F401
 from freqtrade.enums.backteststate import BacktestState
 from freqtrade.enums.candletype import CandleType
+from freqtrade.enums.conditionalexitkind import ConditionalExitKind
 from freqtrade.enums.conditionaltriggertype import ConditionalTriggerType
 from freqtrade.enums.exitchecktuple import ExitCheckTuple
 from freqtrade.enums.exittype import ExitType

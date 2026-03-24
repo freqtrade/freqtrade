@@ -30,6 +30,7 @@ from freqtrade.enums import (
     ExitCheckTuple,
     ExitType,
     MarginMode,
+    OrderRole,
     RunMode,
     TradingMode,
 )
@@ -1313,7 +1314,8 @@ class Backtesting:
         Handle similar order for the given trade.
         """
         if trade.has_open_orders:
-            oo = trade.select_order(side, True)
+            order_role = OrderRole.entry if side == trade.entry_side else OrderRole.exit
+            oo = trade.select_order(order_role, True)
             if oo:
                 if (price == oo.price) and (side == oo.side) and (amount == oo.amount):
                     # logger.info(
@@ -1498,7 +1500,7 @@ class Backtesting:
 
         for trade in list(LocalTrade.bt_trades_open_pp[pair]):
             # 3. Process entry orders.
-            order = trade.select_order(trade.entry_side, is_open=True)
+            order = trade.select_order(OrderRole.entry, is_open=True)
             if self._try_close_open_order(order, trade, current_time, row):
                 self.wallets.update()
 
@@ -1507,7 +1509,7 @@ class Backtesting:
                 self._check_trade_exit(trade, row, current_time)  # Place exit order if necessary
 
             # 5. Process exit orders.
-            order = trade.select_order(trade.exit_side, is_open=True)
+            order = trade.select_order(OrderRole.exit, is_open=True)
             if order:
                 self._process_exit_order(order, trade, current_time, row, pair)
 

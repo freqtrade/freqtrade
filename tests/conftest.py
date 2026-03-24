@@ -2657,7 +2657,7 @@ def open_trade():
     )
     trade.orders = [
         Order(
-            ft_order_side="buy",
+            ft_order_side=trade.entry_side,
             ft_pair=trade.pair,
             ft_is_open=True,
             ft_amount=trade.amount,
@@ -2666,7 +2666,7 @@ def open_trade():
             status="closed",
             symbol=trade.pair,
             order_type="market",
-            side="buy",
+            side=trade.entry_side,
             price=trade.open_rate,
             average=trade.open_rate,
             filled=trade.amount,
@@ -2694,7 +2694,7 @@ def open_trade_usdt():
     )
     trade.orders = [
         Order(
-            ft_order_side="buy",
+            ft_order_side=trade.entry_side,
             ft_pair=trade.pair,
             ft_is_open=False,
             ft_amount=trade.amount,
@@ -2703,7 +2703,7 @@ def open_trade_usdt():
             status="closed",
             symbol=trade.pair,
             order_type="market",
-            side="buy",
+            side=trade.entry_side,
             price=trade.open_rate,
             average=trade.open_rate,
             filled=trade.amount,
@@ -2713,7 +2713,7 @@ def open_trade_usdt():
             order_filled_date=trade.open_date,
         ),
         Order(
-            ft_order_side="exit",
+            ft_order_side=trade.exit_side,
             ft_pair=trade.pair,
             ft_is_open=True,
             ft_amount=trade.amount,
@@ -2722,7 +2722,7 @@ def open_trade_usdt():
             status="open",
             symbol=trade.pair,
             order_type="limit",
-            side="sell",
+            side=trade.exit_side,
             price=trade.open_rate,
             average=trade.open_rate,
             filled=trade.amount,

@@ -6,6 +6,7 @@ import talib.abstract as ta
 from pandas import DataFrame
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
+from freqtrade.enums import OrderRole
 from freqtrade.persistence import Trade
 from freqtrade.strategy import (
     BooleanParameter,
@@ -208,7 +209,7 @@ class StrategyTestV3(IStrategy):
         **kwargs,
     ) -> float | None:
         if current_profit < -0.0075:
-            orders = trade.select_filled_orders(trade.entry_side)
+            orders = trade.select_filled_orders(OrderRole.entry)
             return round(orders[0].stake_amount, 0)
 
         return None

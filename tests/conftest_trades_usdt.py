@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
+from freqtrade.enums import ConditionalExitKind
 from freqtrade.persistence.models import Order, Trade
 
 
@@ -290,7 +291,12 @@ def mock_trade_usdt_5(fee, is_short: bool):
     )
     o = Order.parse_from_ccxt_object(mock_order_usdt_5(is_short), "XRP/USDT", entry_side(is_short))
     trade.orders.append(o)
-    o = Order.parse_from_ccxt_object(mock_order_usdt_5_stoploss(is_short), "XRP/USDT", "stoploss")
+    o = Order.parse_from_ccxt_object(
+        mock_order_usdt_5_stoploss(is_short),
+        "XRP/USDT",
+        "stoploss",
+        conditional_exit_kind=ConditionalExitKind.stoploss,
+    )
     trade.orders.append(o)
     return trade
 

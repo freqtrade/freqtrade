@@ -12,6 +12,7 @@ from pandas import DataFrame
 from sqlalchemy import select
 
 from freqtrade.constants import CANCEL_REASON, UNLIMITED_STAKE_AMOUNT
+from freqtrade.enums import OrderRole
 from freqtrade.enums import (
     CandleType,
     ExitCheckTuple,
@@ -32,6 +33,7 @@ from freqtrade.exceptions import (
 )
 from freqtrade.freqtradebot import FreqtradeBot
 from freqtrade.persistence import Order, PairLocks, Trade
+from freqtrade.persistence.trade_model import ProfitStruct
 from freqtrade.plugins.protections.iprotection import ProtectionReturn
 from freqtrade.util.datetime_helpers import dt_now, dt_utc
 from freqtrade.worker import Worker
@@ -1395,6 +1397,10 @@ def test_update_trade_state_exception(
     # TODO: should not be magicmock
     trade = MagicMock()
     trade.amount = 123
+    trade.is_open = False
+    trade.pair = "ADA/USDT"
+    trade.trade_direction = "short" if is_short else "long"
+    trade.calculate_profit.return_value = ProfitStruct(0.0, 0.0, 0.0, 0.0)
     open_order_id = "123"
 
     # Test raise of OperationalException exception
@@ -4639,7 +4645,7 @@ def test_update_trades_without_assigned_fees(mocker, default_conf_usdt, fee, is_
     for trade in trades:
         if trade.is_open:
             # Exclude Trade 4 - as the order is still open.
-            if trade.select_order(entry_side(is_short), False):
+            if trade.select_order(OrderRole.entry, False):
                 assert trade.fee_open_cost is not None
                 assert trade.fee_open_currency is not None
             else:
@@ -4711,7 +4717,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     trade = trades[1]
     reset_open_orders(trade)
     assert not trade.has_open_orders
-    assert trade.has_open_sl_orders is False
+    assert trade.has_open_conditional_exit_orders is False
 
     freqtrade.handle_insufficient_funds(trade)
     order = trade.orders[0]
@@ -4722,7 +4728,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_uts.call_count == 0
     # No change to orderid - as update_trade_state is mocked
     assert not trade.has_open_orders
-    assert trade.has_open_sl_orders is False
+    assert trade.has_open_conditional_exit_orders is False
 
     caplog.clear()
     mock_fo.reset_mock()
@@ -4733,7 +4739,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
 
     # This part in not relevant anymore
     # assert not trade.has_open_orders
-    assert trade.has_open_sl_orders is False
+    assert trade.has_open_conditional_exit_orders is False
 
     freqtrade.handle_insufficient_funds(trade)
     order = mock_order_4(is_short=is_short)
@@ -4742,7 +4748,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_uts.call_count == 1
     # Found open buy order
     assert trade.has_open_orders is True
-    assert trade.has_open_sl_orders is False
+    assert trade.has_open_conditional_exit_orders is False
 
     caplog.clear()
     mock_fo.reset_mock()
@@ -4751,7 +4757,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     trade = trades[4]
     reset_open_orders(trade)
     assert not trade.has_open_orders
-    assert trade.has_open_sl_orders
+    assert trade.has_open_conditional_exit_orders
 
     freqtrade.handle_insufficient_funds(trade)
     order = mock_order_5_stoploss(is_short=is_short)
@@ -4760,7 +4766,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_uts.call_count == 2
     # stoploss order is "refound" and added to the trade
     assert not trade.has_open_orders
-    assert trade.has_open_sl_orders is True
+    assert trade.has_open_conditional_exit_orders is True
 
     caplog.clear()
     mock_fo.reset_mock()
@@ -4771,7 +4777,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     reset_open_orders(trade)
     # This part in not relevant anymore
     # assert not trade.has_open_orders
-    assert trade.has_open_sl_orders is False
+    assert trade.has_open_conditional_exit_orders is False
 
     freqtrade.handle_insufficient_funds(trade)
     order = mock_order_6_sell(is_short=is_short)
@@ -4780,7 +4786,7 @@ def test_handle_insufficient_funds(mocker, default_conf_usdt, fee, is_short, cap
     assert mock_uts.call_count == 1
     # sell-orderid is "refound" and added to the trade
     assert trade.open_orders_ids[0] == order["id"]
-    assert trade.has_open_sl_orders is False
+    assert trade.has_open_conditional_exit_orders is False
 
     caplog.clear()
 
@@ -5410,7 +5416,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert len(trades) == 1
     assert trade.is_open
     assert not trade.fee_updated("buy")
-    order = trade.select_order("buy", False)
+    order = trade.select_order(OrderRole.entry, False)
     assert order
     assert order.order_id == "650"
 
@@ -5444,7 +5450,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert not trade.fee_updated("buy")
 
     # Make sure the closed order is found as the first order.
-    order = trade.select_order("buy", False)
+    order = trade.select_order(OrderRole.entry, False)
     assert order.order_id == "650"
 
     # Now close the order so it should update.
@@ -5485,7 +5491,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert len(orders) == 2
 
     # Make sure the closed order is found as the second order.
-    order = trade.select_order("buy", False)
+    order = trade.select_order(OrderRole.entry, False)
     assert order.order_id == "651"
 
     # Assert that the trade is not found as open and without fees
@@ -5528,7 +5534,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert len(orders) == 3
 
     # Make sure the closed order is found as the second order.
-    order = trade.select_order("buy", False)
+    order = trade.select_order(OrderRole.entry, False)
     assert order.order_id == "652"
     closed_sell_dca_order_1 = {
         "ft_pair": pair,
@@ -5571,7 +5577,7 @@ def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     assert len(orders) == 4
 
     # Make sure the closed order is found as the second order.
-    order = trade.select_order("sell", False)
+    order = trade.select_order(OrderRole.exit, False)
     assert order.order_id == "653"
 
 
@@ -5706,7 +5712,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert orders
     assert len(orders) == 2
     # Make sure the closed order is found as the second order.
-    order = trade.select_order("sell", False)
+    order = trade.select_order(OrderRole.exit, False)
     assert order.order_id == "601"
 
     amount = 50
@@ -5753,7 +5759,7 @@ def test_position_adjust2(mocker, default_conf_usdt, fee) -> None:
     assert len(orders) == 3
 
     # Make sure the closed order is found as the second order.
-    order = trade.select_order("sell", False)
+    order = trade.select_order(OrderRole.exit, False)
     assert order.order_id == "602"
     assert trade.is_open is False
 
@@ -5856,7 +5862,9 @@ def test_position_adjust3(mocker, default_conf_usdt, fee, data) -> None:
         assert pytest.approx(trade.close_profit_abs) == result[4]
         assert pytest.approx(trade.close_profit) == result[5]
 
-        order_obj = trade.select_order(order[0], False)
+        order_obj = trade.select_order(
+            OrderRole.entry if order[0] == "buy" else OrderRole.exit, False
+        )
         assert order_obj.order_id == f"60{idx}"
 
     trade = Trade.session.scalars(select(Trade)).first()

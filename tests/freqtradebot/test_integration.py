@@ -7,6 +7,7 @@ from sqlalchemy import select
 from freqtrade.enums import ExitCheckTuple, ExitType, TradingMode
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import Order
+from freqtrade.enums import ConditionalExitKind
 from freqtrade.rpc.rpc import RPC
 from tests.conftest import EXMS, get_patched_freqtradebot, log_has_re, patch_get_signal
 
@@ -68,7 +69,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, 
 
     mocker.patch.multiple(
         "freqtrade.freqtradebot.FreqtradeBot",
-        create_stoploss_order=MagicMock(return_value=True),
+        create_conditional_exit_order=MagicMock(return_value=True),
         _notify_exit=MagicMock(),
     )
     mocker.patch("freqtrade.strategy.interface.IStrategy.should_exit", should_sell_mock)
@@ -102,7 +103,12 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, 
     for idx, trade in enumerate(trades):
         stop_order = stop_orders[idx]
         stop_order["id"] = f"stop{idx}"
-        oobj = Order.parse_from_ccxt_object(stop_order, trade.pair, "stoploss")
+        oobj = Order.parse_from_ccxt_object(
+            stop_order,
+            trade.pair,
+            "stoploss",
+            conditional_exit_kind=ConditionalExitKind.stoploss,
+        )
         oobj.ft_is_open = True
 
         trade.orders.append(oobj)
@@ -167,7 +173,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
 
     mocker.patch.multiple(
         "freqtrade.freqtradebot.FreqtradeBot",
-        create_stoploss_order=MagicMock(return_value=True),
+        create_conditional_exit_order=MagicMock(return_value=True),
         _notify_exit=MagicMock(),
     )
     should_sell_mock = MagicMock(
@@ -803,7 +809,7 @@ def test_dca_handle_similar_open_order(
     # Should Create a new exit order
     freqtrade.exchange.amount_to_contract_precision = MagicMock(return_value=2)
     freqtrade.strategy.adjust_trade_position = MagicMock(return_value=-2)
-    msg = r"Skipping cancelling stoploss on exchange for.*"
+    msg = r"Skipping cancelling stop\s?loss on exchange for.*"
 
     mocker.patch(f"{EXMS}._dry_is_price_crossed", return_value=False)
     assert not log_has_re(msg, caplog)

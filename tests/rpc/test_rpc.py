@@ -403,6 +403,7 @@ def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
     trades[2].orders.append(
         Order(
             ft_order_side="stoploss",
+            ft_conditional_exit_kind="stoploss",
             ft_pair=trades[2].pair,
             ft_is_open=True,
             ft_amount=trades[2].amount,

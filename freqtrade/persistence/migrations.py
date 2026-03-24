@@ -263,6 +263,11 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: list):
     ft_price = get_column_def(cols_order, "ft_price", "coalesce(price, 0.0)")
     ft_cancel_reason = get_column_def(cols_order, "ft_cancel_reason", "null")
     ft_order_tag = get_column_def(cols_order, "ft_order_tag", "null")
+    ft_conditional_exit_kind = get_column_def(
+        cols_order,
+        "ft_conditional_exit_kind",
+        "case when ft_order_side = 'stoploss' then 'stoploss' else null end",
+    )
 
     # sqlite does not support literals for booleans
     with engine.begin() as connection:
@@ -272,14 +277,14 @@ def migrate_orders_table(engine, table_back_name: str, cols_order: list):
             insert into orders (id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, average, remaining, cost,
             stop_price, order_date, order_filled_date, order_update_date, ft_fee_base, funding_fee,
-            ft_amount, ft_price, ft_cancel_reason, ft_order_tag
+            ft_amount, ft_price, ft_cancel_reason, ft_order_tag, ft_conditional_exit_kind
             )
             select id, ft_trade_id, ft_order_side, ft_pair, ft_is_open, order_id,
             status, symbol, order_type, side, price, amount, filled, {average} average, remaining,
             cost, {stop_price} stop_price, order_date, order_filled_date,
             order_update_date, {ft_fee_base} ft_fee_base, {funding_fee} funding_fee,
             {ft_amount} ft_amount, {ft_price} ft_price, {ft_cancel_reason} ft_cancel_reason,
-            {ft_order_tag} ft_order_tag
+            {ft_order_tag} ft_order_tag, {ft_conditional_exit_kind} ft_conditional_exit_kind
             from {table_back_name}
             """
             )
@@ -398,10 +403,25 @@ def check_migrate(engine: Engine, decl_base, previous_tables: list[str]) -> None
     # or not has_column(cols_orders, 'funding_fee')):
     migrating = False
     if not has_column(cols_trades, "record_version"):
-        # if not has_column(cols_orders, "ft_order_tag"):
         migrating = True
         logger.info(
             f"Running database migration for trades - "
+            f"backup: {table_back_name}, {order_table_bak_name}"
+        )
+        migrate_trades_and_orders_table(
+            decl_base,
+            inspector,
+            engine,
+            table_back_name,
+            cols_trades,
+            order_table_bak_name,
+            cols_orders,
+        )
+
+    elif not has_column(cols_orders, "ft_conditional_exit_kind"):
+        migrating = True
+        logger.info(
+            f"Running database migration for orders - "
             f"backup: {table_back_name}, {order_table_bak_name}"
         )
         migrate_trades_and_orders_table(
