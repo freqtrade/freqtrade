@@ -4,10 +4,9 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy import select
 
-from freqtrade.enums import ExitCheckTuple, ExitType, TradingMode
+from freqtrade.enums import ConditionalExitKind, ExitCheckTuple, ExitType, TradingMode
 from freqtrade.persistence import Trade
 from freqtrade.persistence.models import Order
-from freqtrade.enums import ConditionalExitKind
 from freqtrade.rpc.rpc import RPC
 from tests.conftest import EXMS, get_patched_freqtradebot, log_has_re, patch_get_signal
 

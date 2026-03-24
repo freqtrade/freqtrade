@@ -12,11 +12,11 @@ from pandas import DataFrame
 from sqlalchemy import select
 
 from freqtrade.constants import CANCEL_REASON, UNLIMITED_STAKE_AMOUNT
-from freqtrade.enums import OrderRole
 from freqtrade.enums import (
     CandleType,
     ExitCheckTuple,
     ExitType,
+    OrderRole,
     RPCMessageType,
     RunMode,
     SignalDirection,
