@@ -416,6 +416,6 @@ Your original strategy will remain available in the `user_data/strategies_orig_u
 
 !!! Warning "Conversion results"
     Strategy updater will work on a "best effort" approach. Please do your due diligence and verify the results of the conversion.
-    We also recommend to run a python formatter (e.g. `black`) to format results in a sane manner.
+    We also recommend to run a python formatter (e.g. `ruff format`) to format results in a sane manner.
 
 --8<-- "commands/strategy-updater.md"

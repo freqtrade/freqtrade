@@ -137,25 +137,6 @@ def test_remote_pairlist_init_no_pairlist_url(mocker, rpl_config):
         get_patched_freqtradebot(mocker, rpl_config)
 
 
-def test_remote_pairlist_init_no_number_assets(mocker, rpl_config):
-    rpl_config["pairlists"] = [
-        {
-            "method": "RemotePairList",
-            "pairlist_url": "http://example.com/pairlist",
-            "keep_pairlist_on_failure": True,
-        }
-    ]
-
-    get_patched_exchange(mocker, rpl_config)
-
-    with pytest.raises(
-        OperationalException,
-        match=r"`number_assets` not specified. "
-        'Please check your configuration for "pairlist.config.number_assets"',
-    ):
-        get_patched_freqtradebot(mocker, rpl_config)
-
-
 def test_fetch_pairlist_mock_response_valid(mocker, rpl_config):
     rpl_config["pairlists"] = [
         {
@@ -341,3 +322,60 @@ def test_remote_pairlist_whitelist(mocker, rpl_config, processing_mode, markets,
 
     whitelist = remote_pairlist.filter_pairlist(rpl_config["exchange"]["pair_whitelist"], {})
     assert whitelist == (["XRP/USDT"] if processing_mode == "filter" else ["ETH/USDT", "XRP/USDT"])
+
+
+@pytest.mark.parametrize(
+    "number_assets, result",
+    [
+        (1, ["ETH/USDT"]),
+        (2, ["ETH/USDT", "XRP/USDT"]),
+        (500, ["ETH/USDT", "XRP/USDT"]),
+        (None, ["ETH/USDT", "XRP/USDT"]),
+    ],
+)
+def test_remote_pairlist_whitelist_number_assets(
+    mocker, rpl_config, number_assets, result, markets, tickers
+):
+    mock_response = MagicMock()
+
+    mock_response.json.return_value = {
+        "pairs": ["ETH/USDT", "XRP/USDT", "TKN/USDT"],
+        "refresh_period": 60,
+    }
+
+    mock_response.headers = {"content-type": "application/json"}
+
+    rpl_config["pairlists"] = [
+        {
+            "method": "RemotePairList",
+            "mode": "whitelist",
+            "pairlist_url": "http://example.com/pairlist",
+            "number_assets": number_assets,
+        },
+    ]
+
+    mocker.patch.multiple(
+        EXMS,
+        markets=PropertyMock(return_value=markets),
+        exchange_has=MagicMock(return_value=True),
+        get_tickers=tickers,
+    )
+
+    mocker.patch(
+        "freqtrade.plugins.pairlist.RemotePairList.requests.get", return_value=mock_response
+    )
+
+    exchange = get_patched_exchange(mocker, rpl_config)
+
+    pairlistmanager = PairListManager(exchange, rpl_config)
+
+    remote_pairlist = RemotePairList(
+        exchange, pairlistmanager, rpl_config, rpl_config["pairlists"][0], 0
+    )
+
+    pairs, _ = remote_pairlist.fetch_pairlist()
+
+    assert pairs == ["ETH/USDT", "XRP/USDT", "TKN/USDT"]
+
+    whitelist = remote_pairlist.filter_pairlist(rpl_config["exchange"]["pair_whitelist"], {})
+    assert whitelist == result

@@ -516,6 +516,8 @@ def test_calculate_sqn_cases(profits, starting_balance, expected_sqn, descriptio
         (1000, 1500, 365, 0.5),
         (1000, 1500, 100, 3.3927),  # sub year
         (0.01000000, 0.01762792, 120, 4.6087),  # sub year BTC values
+        (1000, 1010, 0, 0.0),  # zero days
+        (-100, 100, 365, 0.0),  # negative starting balance
     ],
 )
 def test_calculate_cagr(start, end, days, expected):

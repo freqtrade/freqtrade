@@ -555,7 +555,7 @@ class FreqtradeBot(LoggingMixin):
                     if trade.base_currency
                     else 0
                 )
-                if total < trade.amount:
+                if total < trade.amount or (total == 0 and trade.amount == 0):
                     if trade.fully_canceled_entry_order_count == len(trade.orders):
                         logger.warning(
                             f"Trade only had fully canceled entry orders. "

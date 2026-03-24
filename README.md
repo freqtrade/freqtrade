@@ -50,6 +50,7 @@ Please read the [exchange-specific notes](https://www.freqtrade.io/en/stable/exc
 - [X] [Hyperliquid](https://hyperliquid.xyz/) (A decentralized exchange, or DEX)
 - [X] [OKX](https://okx.com/)
 - [X] [Bybit](https://bybit.com/)
+- [X] [Kraken](https://www.kraken.com/features/futures)
 
 Please make sure to read the [exchange specific notes](https://www.freqtrade.io/en/stable/exchanges/), as well as the [trading with leverage](https://www.freqtrade.io/en/stable/leverage/) documentation before diving in.
 

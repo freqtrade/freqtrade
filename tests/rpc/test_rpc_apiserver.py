@@ -2967,6 +2967,15 @@ def test_sysinfo(botclient):
     result = rc.json()
     assert "cpu_pct" in result
     assert "ram_pct" in result
+    assert "cpu_load" in result
+    assert "cpu_count" in result
+    assert "cpu_load_avg" in result
+    assert "1m" in result["cpu_load_avg"]
+    assert "5m" in result["cpu_load_avg"]
+    assert "15m" in result["cpu_load_avg"]
+
+    assert isinstance(result["cpu_load"], list)
+    assert isinstance(result["cpu_load"][0], dict)
 
 
 def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):

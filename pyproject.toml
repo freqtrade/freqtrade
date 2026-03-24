@@ -77,29 +77,28 @@ dependencies = [
 # Requirements used for submodules
 plot = ["plotly>=4.0"]
 hyperopt = [
-  "scipy",
-  "scikit-learn",
-  "optuna > 4.0.0",
   "cmaes",
   "filelock",
+  "optuna > 4.0.0",
+  "scikit-learn",
+  "scipy",
 ]
 freqai = [
-  "scikit-learn",
+  "datasieve>=0.1.5",
   "joblib",
   "lightgbm",
-  "xgboost",
+  "scikit-learn",
   "tensorboard",
-  "datasieve>=0.1.5",
+  "xgboost",
 ]
 freqai_rl = [
-  "torch; sys_platform != 'darwin' or platform_machine != 'x86_64'",
   "gymnasium",
-  "stable-baselines3; sys_platform != 'darwin' or platform_machine != 'x86_64'",
   "sb3-contrib; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+  "stable-baselines3; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+  "torch; sys_platform != 'darwin' or platform_machine != 'x86_64'",
   "tqdm",
 ]
 develop = [
-  "isort",
   "mypy",
   "pre-commit",
   "pytest-asyncio",
@@ -119,10 +118,10 @@ develop = [
   "types-tabulate",
 ]
 jupyter = [
-  "jupyter",
-  "nbstripout",
   "ipykernel",
+  "jupyter",
   "nbconvert",
+  "nbstripout",
 ]
 all = [
   "freqtrade[plot,hyperopt,freqai,freqai_rl,jupyter]",
@@ -153,43 +152,13 @@ namespaces = true
 [tool.setuptools.dynamic]
 version = {attr = "freqtrade.__version__"}
 
-[tool.black]
-line-length = 100
-exclude = '''
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-  )/
-  # Exclude vendor directory
-  | vendor
-)
-'''
-
-[tool.isort]
-line_length = 100
-profile = "black"
-# multi_line_output=3
-lines_after_imports=2
-skip_glob = ["**/.env*", "**/env/*", "**/.venv/*", "**/docs/*", "**/user_data/*"]
-known_first_party = ["freqtrade_client"]
-
-[tool.pytest.ini_options]
-# TODO: should be migrated to [tool.pytest] as support for this was added in 9.0
+[tool.pytest]
 log_format = "%(asctime)s %(levelname)s %(message)s"
 log_date_format = "%Y-%m-%d %H:%M:%S"
+addopts = ["--dist", "loadscope"]
 
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "--dist loadscope"
 
 [tool.mypy]
 ignore_missing_imports = true

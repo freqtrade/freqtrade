@@ -210,7 +210,8 @@ def test_list_exchanges(capsys):
     captured = capsys.readouterr()
     assert re.search(r"Exchanges available for Freqtrade.*", captured.out)
     assert re.search(r".*binance.*", captured.out)
-    assert not re.search(r".*kraken.*", captured.out)
+    assert re.search(r"\bkrakenfutures\b", captured.out)
+    assert not re.search(r"\bmyokx\b", captured.out)
 
 
 def test_list_timeframes(mocker, capsys):

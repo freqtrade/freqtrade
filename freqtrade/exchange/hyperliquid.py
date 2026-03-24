@@ -169,27 +169,29 @@ class Hyperliquid(Exchange):
         if self.unified_account:
             params["type"] = "spot"
         balances = super().get_balances(params)
-        dexes = self._get_configured_hip3_dexes()
-        for dex in dexes:
-            try:
-                dex_balance = super().get_balances(params={"dex": dex})
+        if not self.unified_account:
+            # In unified accounts, the balance already includes all DEXes
+            dexes = self._get_configured_hip3_dexes()
+            for dex in dexes:
+                try:
+                    dex_balance = super().get_balances(params={"dex": dex})
 
-                for currency, amount_info in dex_balance.items():
-                    if currency in ["info", "free", "used", "total", "datetime", "timestamp"]:
-                        continue
+                    for currency, amount_info in dex_balance.items():
+                        if currency in ["info", "free", "used", "total", "datetime", "timestamp"]:
+                            continue
 
-                    if currency not in balances:
-                        balances[currency] = amount_info
-                    else:
-                        balances[currency]["free"] += amount_info["free"]
-                        balances[currency]["used"] += amount_info["used"]
-                        balances[currency]["total"] += amount_info["total"]
+                        if currency not in balances:
+                            balances[currency] = amount_info
+                        else:
+                            balances[currency]["free"] += amount_info["free"]
+                            balances[currency]["used"] += amount_info["used"]
+                            balances[currency]["total"] += amount_info["total"]
 
-            except Exception as e:
-                logger.error(f"Could not fetch balance for HIP-3 DEX '{dex}': {e}")
+                except Exception as e:
+                    logger.error(f"Could not fetch balance for HIP-3 DEX '{dex}': {e}")
 
-        if dexes:
-            self._log_exchange_response("fetch_balance", balances, add_info="combined")
+            if dexes:
+                self._log_exchange_response("fetch_balance", balances, add_info="combined")
         return balances
 
     def fetch_positions(

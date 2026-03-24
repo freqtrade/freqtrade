@@ -304,6 +304,8 @@ The optional `mode` option specifies if the pairlist should be used as a `blackl
 
 The optional `processing_mode` option in the RemotePairList configuration determines how the retrieved pairlist is processed. It can have two values: "filter" or "append". The default value is "filter".
 
+The optional `number_assets` option in the RemotePairList configuration determines how many pairs will be returned if used in whitelist `mode`. By default, all pairs will be returned. In blacklist `mode`, this option will be ignored.
+
 In "filter" mode, the retrieved pairlist is used as a filter. Only the pairs present in both the original pairlist and the retrieved pairlist are included in the final pairlist. Other pairs are filtered out.
 
 In "append" mode, the retrieved pairlist is added to the original pairlist. All pairs from both lists are included in the final pairlist without any filtering.

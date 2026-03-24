@@ -696,6 +696,9 @@ However, freqtrade also offers a custom callback for both order types, which all
     Backtesting fills orders if their price falls within the candle's low/high range.
     The below callbacks will be called once per (detail) candle for orders that don't fill immediately (which use custom pricing).
 
+!!! Tip "Replacing orders"
+    If you'd like to replace an order with a different price instead of just cancelling it, you might want to look at [`adjust_order_price()`](#adjust-order-price) instead, which will allow you to both cancel the order, as well as replace it with a new price.
+
 ### Custom order timeout example
 
 Called for every open order until that order is either filled or cancelled.

@@ -1,4 +1,4 @@
-numpy==2.4.2
+numpy==2.4.3
 pandas==2.3.3
 bottleneck==1.6.0
 numexpr==2.14.1
@@ -7,20 +7,20 @@ ft-pandas-ta==0.3.16
 ta-lib==0.6.8
 technical==1.5.4
 
-ccxt==4.5.42
+ccxt==4.5.44
 cryptography==46.0.5
 aiohttp==3.13.3
-SQLAlchemy==2.0.47
+SQLAlchemy==2.0.48
 python-telegram-bot==22.6
 # can't be hard-pinned due to telegram-bot pinning httpx with ~
 httpx>=0.24.1
 humanize==4.15.0
-cachetools==7.0.1
+cachetools==7.0.5
 requests==2.32.5
 urllib3==2.6.3
 certifi==2026.2.25
 jsonschema==4.26.0
-tabulate==0.9.0
+tabulate==0.10.0
 pycoingecko==3.2.0
 jinja2==3.1.6
 joblib==1.5.3
@@ -40,7 +40,7 @@ sdnotify==0.3.2
 fastapi==0.135.1
 pydantic==2.12.5
 uvicorn==0.41.0
-pyjwt==2.11.0
+pyjwt==2.12.1
 aiofiles==25.1.0
 psutil==7.2.2
 
@@ -49,7 +49,7 @@ questionary==2.1.1
 prompt-toolkit==3.0.52
 # Extensions to datetime library
 python-dateutil==2.9.0.post0
-pytz==2025.2
+pytz==2026.1.post1
 
 #Futures
 schedule==1.2.2

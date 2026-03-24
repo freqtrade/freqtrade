@@ -428,22 +428,28 @@ class FreqaiDataKitchen:
         Get backtest prediction from current backtest period
         """
 
-        append_df = DataFrame()
+        # Build dict first and construct DataFrame once to avoid
+        # column-by-column assignment which causes DataFrame fragmentation
+        # and PerformanceWarning on large prediction sets.
+        append_dict: dict[str, Any] = {}
+
         for label in predictions.columns:
-            append_df[label] = predictions[label]
-            if append_df[label].dtype == object:
+            append_dict[label] = predictions[label]
+            if predictions[label].dtype == object:
                 continue
-            if "labels_mean" in self.data:
-                append_df[f"{label}_mean"] = self.data["labels_mean"][label]
-            if "labels_std" in self.data:
-                append_df[f"{label}_std"] = self.data["labels_std"][label]
+            if "labels_mean" in self.data and label in self.data["labels_mean"]:
+                append_dict[f"{label}_mean"] = self.data["labels_mean"][label]
+            if "labels_std" in self.data and label in self.data["labels_std"]:
+                append_dict[f"{label}_std"] = self.data["labels_std"][label]
 
         for extra_col in self.data["extra_returns_per_train"]:
-            append_df[f"{extra_col}"] = self.data["extra_returns_per_train"][extra_col]
+            append_dict[f"{extra_col}"] = self.data["extra_returns_per_train"][extra_col]
 
-        append_df["do_predict"] = do_predict
+        append_dict["do_predict"] = do_predict
         if self.freqai_config["feature_parameters"].get("DI_threshold", 0) > 0:
-            append_df["DI_values"] = self.DI_values
+            append_dict["DI_values"] = self.DI_values
+
+        append_df = DataFrame(append_dict)
 
         user_cols = [col for col in dataframe_backtest.columns if col.startswith("%%")]
         cols = ["date"]

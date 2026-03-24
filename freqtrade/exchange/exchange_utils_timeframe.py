@@ -29,6 +29,21 @@ def timeframe_to_msecs(timeframe: str) -> int:
     return ccxt.Exchange.parse_timeframe(timeframe) * 1000
 
 
+def timeframe_to_floor_freq(timeframe: str) -> str:
+    """
+    Translates the timeframe interval value written in the human readable
+    form ('1m', '5m', '1h', '1d', '1w', etc.) to the desired floor frequency used by pandas
+        ("1m", "5m", "1h", "1d", "1w", etc.).
+        Will use minute for most higher timeframes.
+    """
+    timeframe_seconds = timeframe_to_seconds(timeframe)
+    timeframe_minutes = timeframe_seconds // 60
+    if timeframe_minutes <= 1:
+        return "1s"
+    else:
+        return "1min"
+
+
 def timeframe_to_resample_freq(timeframe: str) -> str:
     """
     Translates the timeframe interval value written in the human readable

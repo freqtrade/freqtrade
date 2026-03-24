@@ -61,5 +61,7 @@ updates:
   groups:
     actions:
       patterns:
-        # Combine updates for github provided actions
         - "actions/*"
+    docker:
+      patterns:
+        - "docker/*"

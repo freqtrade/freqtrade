@@ -77,9 +77,13 @@ router_public = APIRouter()
 router = APIRouter()
 
 
-@router_public.api_route("/ping", methods=["GET", "HEAD"], response_model=Ping, tags=["Info"])
+@router_public.get("/ping", response_model=Ping, tags=["Info"])
+@router_public.head("/ping", response_model=Ping, tags=["Info"])
 def ping():
-    """simple ping"""
+    """simple ping to check if API is responsive
+
+    Performs no internal checks, just returns pong.
+    """
     return {"status": "pong"}
 
 

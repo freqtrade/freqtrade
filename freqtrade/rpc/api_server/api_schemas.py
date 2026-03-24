@@ -697,9 +697,25 @@ class MarketResponse(BaseModel):
     exchange_id: str
 
 
+class CpuInfo(BaseModel):
+    cpu: int
+    pct: float
+
+
 class SysInfo(BaseModel):
-    cpu_pct: list[float]
-    ram_pct: float
+    """Information about the system running the bot based on psutil output/measurements
+
+    Note: cpu_pct is deprecated and may be removed in a future release. Use cpu_load instead.
+    """
+
+    cpu_pct: list[float] = Field(
+        default=[], deprecated=True, description="Use cpu_load object instead"
+    )
+    cpu_load: list[CpuInfo]
+    cpu_load_avg: dict[str, float]
+    cpu_count: int = Field(description="Number of logical CPUs as provided by psutil")
+    cpu_avg: float = Field(description="Average CPU load across all cores as provided by psutil")
+    ram_pct: float = Field(description="RAM usage percentage as provided by psutil")
 
 
 class Health(BaseModel):

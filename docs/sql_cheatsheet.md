@@ -104,7 +104,7 @@ WHERE id=31;
 ### Remove trade from the database
 
 !!! Tip "Use RPC Methods to delete trades"
-    Consider using `/delete <tradeid>` via telegram or rest API. That's the recommended way to deleting trades.
+    Consider using `/delete <tradeid>` via telegram or rest API. That's the recommended way to deleting trades, as it will also remove the corresponding orders and custom data, and it will also trigger the necessary events in the bot to keep everything in sync.
 
 If you'd still like to remove a trade from the database directly, you can use the below query.
 
@@ -113,9 +113,14 @@ If you'd still like to remove a trade from the database directly, you can use th
 
 ```sql
 DELETE FROM trades WHERE id = <tradeid>;
+DELETE FROM orders WHERE ft_trade_id = <tradeid>;
+DELETE FROM trade_custom_data WHERE ft_trade_id = <tradeid>;
+
 
 DELETE FROM trades WHERE id = 31;
+DELETE FROM orders WHERE ft_trade_id = 31;
+DELETE FROM trade_custom_data WHERE ft_trade_id = 31;
 ```
 
 !!! Warning
-    This will remove this trade from the database. Please make sure you got the correct id and **NEVER** run this query without the `where` clause.
+    This will remove the specified trade from the database. Please make sure you got the correct id and **NEVER** run this query without the `where` clause.

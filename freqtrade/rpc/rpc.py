@@ -1738,8 +1738,24 @@ class RPC:
 
     @staticmethod
     def _rpc_sysinfo() -> dict[str, Any]:
+        cpu_pct = psutil.cpu_percent(interval=0.1, percpu=True)
+        load_avg = psutil.getloadavg()
         return {
-            "cpu_pct": psutil.cpu_percent(interval=1, percpu=True),
+            "cpu_pct": cpu_pct,  # Deprecated, use cpu_load instead
+            "cpu_load": [
+                {
+                    "cpu": idx,
+                    "pct": pct,
+                }
+                for idx, pct in enumerate(cpu_pct)
+            ],
+            "cpu_avg": sum(cpu_pct) / len(cpu_pct) if cpu_pct else 0.0,
+            "cpu_load_avg": {
+                "1m": load_avg[0],
+                "5m": load_avg[1],
+                "15m": load_avg[2],
+            },
+            "cpu_count": len(cpu_pct),
             "ram_pct": psutil.virtual_memory().percent,
         }
 

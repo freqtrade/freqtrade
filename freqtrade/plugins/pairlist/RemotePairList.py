@@ -31,12 +31,6 @@ class RemotePairList(IPairList):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        if "number_assets" not in self._pairlistconfig:
-            raise OperationalException(
-                "`number_assets` not specified. Please check your configuration "
-                'for "pairlist.config.number_assets"'
-            )
-
         if "pairlist_url" not in self._pairlistconfig:
             raise OperationalException(
                 "`pairlist_url` not specified. Please check your configuration "
@@ -45,7 +39,7 @@ class RemotePairList(IPairList):
 
         self._mode = self._pairlistconfig.get("mode", "whitelist")
         self._processing_mode = self._pairlistconfig.get("processing_mode", "filter")
-        self._number_pairs = self._pairlistconfig["number_assets"]
+        self._number_pairs: int | None = self._pairlistconfig.get("number_assets", None)
         self._refresh_period: int = self._pairlistconfig.get("refresh_period", 1800)
         self._keep_pairlist_on_failure = self._pairlistconfig.get("keep_pairlist_on_failure", True)
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1, ttl=self._refresh_period)
@@ -76,7 +70,7 @@ class RemotePairList(IPairList):
         """
         Short whitelist method description - used for startup-messages
         """
-        return f"{self.name} - {self._pairlistconfig['number_assets']} pairs from RemotePairlist."
+        return f"{self.name} - {self._number_pairs or 'all'} pairs from RemotePairlist."
 
     @staticmethod
     def description() -> str:
@@ -93,7 +87,7 @@ class RemotePairList(IPairList):
             },
             "number_assets": {
                 "type": "number",
-                "default": 30,
+                "default": None,
                 "description": "Number of assets",
                 "help": "Number of assets to use from the pairlist.",
             },
@@ -248,7 +242,8 @@ class RemotePairList(IPairList):
 
         pairlist = expand_pairlist(pairlist, list(self._exchange.get_markets().keys()))
         pairlist = self._whitelist_for_active_markets(pairlist)
-        pairlist = pairlist[: self._number_pairs]
+        if self._number_pairs and (self._mode == "whitelist"):
+            pairlist = pairlist[: self._number_pairs]
 
         if pairlist:
             self._pair_cache["pairlist"] = pairlist.copy()
@@ -305,5 +300,6 @@ class RemotePairList(IPairList):
             if filtered:
                 self.log_once(f"Blacklist - Filtered out pairs: {filtered}", logger.info)
 
-        merged_list = merged_list[: self._number_pairs]
+        if self._number_pairs and (self._mode == "whitelist"):
+            merged_list = merged_list[: self._number_pairs]
         return merged_list

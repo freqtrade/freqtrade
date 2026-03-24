@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from ipaddress import ip_address
 from typing import Any
 
@@ -100,6 +101,19 @@ class FTJSONResponse(JSONResponse):
         return orjson.dumps(content, option=orjson.OPT_SERIALIZE_NUMPY)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    if not ApiServer._message_stream:
+        # Creates the MessageStream class on startup so it has access to the same event loop
+        # as uvicorn
+        ApiServer._message_stream = MessageStream()
+    yield
+    # Shutdown logic
+    if ApiServer._message_stream:
+        ApiServer._message_stream = None
+
+
 class ApiServer(RPCHandler):
     __instance = None
     __initialized = False
@@ -137,6 +151,7 @@ class ApiServer(RPCHandler):
             redoc_url=None,
             default_response_class=FTJSONResponse,
             openapi_tags=_OPENAPI_TAGS,
+            lifespan=lifespan,
         )
         self.configure_app(self.app, self._config)
         self.start_api()
@@ -261,24 +276,6 @@ class ApiServer(RPCHandler):
         )
 
         app.add_exception_handler(RPCException, self.handle_rpc_exception)
-        app.add_event_handler(event_type="startup", func=self._api_startup_event)
-        app.add_event_handler(event_type="shutdown", func=self._api_shutdown_event)
-
-    async def _api_startup_event(self):
-        """
-        Creates the MessageStream class on startup
-        so it has access to the same event loop
-        as uvicorn
-        """
-        if not ApiServer._message_stream:
-            ApiServer._message_stream = MessageStream()
-
-    async def _api_shutdown_event(self):
-        """
-        Removes the MessageStream class on shutdown
-        """
-        if ApiServer._message_stream:
-            ApiServer._message_stream = None
 
     def start_api(self):
         """

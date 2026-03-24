@@ -269,6 +269,8 @@ If `--convert` is also provided, the resample step will happen automatically and
 !!! Note "Kraken user"
     Kraken users should read [this](exchanges.md#historic-kraken-data) before starting to download data.
 
+    Kraken Futures uses standard OHLCV downloads and does not require `--dl-trades`.
+
 Example call:
 
 ```bash

@@ -13,12 +13,6 @@ repos:
         pass_filenames: false
         additional_dependencies: ["python-rapidjson", "jsonschema"]
 
-  - repo: https://github.com/pycqa/flake8
-    rev: "7.3.0"
-    hooks:
-      - id: flake8
-        additional_dependencies: [Flake8-pyproject]
-        # stages: [push]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.19.1"
@@ -29,22 +23,15 @@ repos:
           - types-cachetools==6.2.0.20251022
           - types-filelock==3.2.7
           - types-requests==2.32.4.20260107
-          - types-tabulate==0.9.0.20241207
-          - types-python-dateutil==2.9.0.20260124
-          - scipy-stubs==1.17.1.0
-          - SQLAlchemy==2.0.47
-        # stages: [push]
-
-  - repo: https://github.com/pycqa/isort
-    rev: "8.0.1"
-    hooks:
-      - id: isort
-        name: isort (python)
+          - types-tabulate==0.10.0.20260308
+          - types-python-dateutil==2.9.0.20260305
+          - scipy-stubs==1.17.1.2
+          - SQLAlchemy==2.0.48
         # stages: [push]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.15.5'
+    rev: 'v0.15.7'
     hooks:
       - id: ruff
       - id: ruff-format

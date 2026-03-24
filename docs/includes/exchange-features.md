@@ -15,6 +15,7 @@
 | [Hyperliquid](exchanges.md#hyperliquid) | spot | | ❌ (not supported) |
 | [Hyperliquid](exchanges.md#hyperliquid) | futures | isolated, cross | limit |
 | [Kraken](exchanges.md#kraken) | spot | | market, limit |
+| [Kraken](exchanges.md#kraken-futures) | futures | isolated | market, limit |
 | [OKX](exchanges.md#okx) | spot | | limit |
 | [OKX](exchanges.md#okx) | futures | isolated | limit |
 | [Bitvavo](exchanges.md#bitvavo) | spot | | ❌ (not supported) |
