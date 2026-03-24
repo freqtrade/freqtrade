@@ -1469,7 +1469,7 @@ class LocalTrade:
 
     def select_order(
         self,
-        order_role: OrderRole | None = None,
+        order_role: OrderRole | str | None = None,
         is_open: bool | None = None,
         only_filled: bool = False,
         conditional_exit_kind: ConditionalExitKind | None = None,
@@ -1496,7 +1496,7 @@ class LocalTrade:
     def select_orders(
         self,
         *,
-        order_role: OrderRole | None = None,
+        order_role: OrderRole | str | None = None,
         is_open: bool | None = None,
         conditional_exit_kind: ConditionalExitKind | None = None,
         only_filled: bool = False,
@@ -1510,8 +1510,11 @@ class LocalTrade:
         :return: List of matching order objects.
         """
         orders = self.orders
-        if order_role is not None:
-            orders = [o for o in orders if self.order_has_role(o, order_role)]
+        normalized_order_role, invalid_order_role = self._normalize_order_role(order_role)
+        if invalid_order_role:
+            return []
+        if normalized_order_role is not None:
+            orders = [o for o in orders if self.order_has_role(o, normalized_order_role)]
         if conditional_exit_kind is not None:
             orders = [o for o in orders if o.conditional_exit_kind == conditional_exit_kind]
         if is_open is not None:
@@ -1522,7 +1525,7 @@ class LocalTrade:
 
     def select_filled_orders(
         self,
-        order_role: OrderRole | None = None,
+        order_role: OrderRole | str | None = None,
         conditional_exit_kind: ConditionalExitKind | None = None,
     ) -> list["Order"]:
         """
@@ -1538,6 +1541,28 @@ class LocalTrade:
             conditional_exit_kind=conditional_exit_kind,
             only_filled=True,
         )
+
+    def _normalize_order_role(
+        self,
+        order_role: OrderRole | str | None,
+    ) -> tuple[OrderRole | None, bool]:
+        """
+        Normalize semantic role / legacy side input to OrderRole.
+        :param order_role: Requested role or legacy side string.
+        :return: Tuple(normalized role, invalid flag).
+        """
+        if order_role is None:
+            return None, False
+        if isinstance(order_role, OrderRole):
+            return order_role, False
+        if order_role == self.entry_side:
+            return OrderRole.entry, False
+        if order_role == self.exit_side:
+            return OrderRole.exit, False
+        try:
+            return OrderRole(order_role), False
+        except ValueError:
+            return None, True
 
     def select_filled_or_open_orders(self) -> list["Order"]:
         """
