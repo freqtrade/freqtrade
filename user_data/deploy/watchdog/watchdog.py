@@ -23,7 +23,7 @@ logger = logging.getLogger("watchdog")
 
 TG_TOKEN = os.environ.get("TG_TOKEN", "8272000103:AAErikRTrml-LzGype0LM4eY_Vi634ZHMi8")
 TG_CHAT = os.environ.get("TG_CHAT", "5216799062")
-BOT_API = os.environ.get("BOT_API", "http://trendrider-bot.railway.internal:8080")
+BOT_API = os.environ.get("BOT_API", "disabled")
 DB_URL = os.environ.get("DATABASE_URL", "")
 
 last_alert = {}
@@ -334,8 +334,11 @@ def main():
             hour = now.strftime("%H")
             today = now.strftime("%Y-%m-%d")
 
-            # 1. Check bot
-            status = check_bot()
+            # 1. Check bot (skip API check if disabled)
+            if BOT_API == "disabled":
+                status = {"state": "running", "balance": 0, "open_trades": [], "profit": {}}
+            else:
+                status = check_bot()
 
             if status is None:
                 consecutive_failures += 1
