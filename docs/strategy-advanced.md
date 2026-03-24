@@ -22,18 +22,19 @@ Freqtrade will attempt to reverse this action on retrieval, so from a strategy p
 
 ```python
 from freqtrade.persistence import Trade
+from freqtrade.enums import OrderRole
 from datetime import timedelta
 
 class AwesomeStrategy(IStrategy):
 
     def bot_loop_start(self, **kwargs) -> None:
         for trade in Trade.get_open_order_trades():
-            fills = trade.select_filled_orders(trade.entry_side)
+            fills = trade.select_filled_orders(OrderRole.entry)
             if trade.pair == 'ETH/USDT':
                 trade_entry_type = trade.get_custom_data(key='entry_type')
                 if trade_entry_type is None:
                     trade_entry_type = 'breakout' if 'entry_1' in trade.enter_tag else 'dip'
-                elif fills > 1:
+                elif len(fills) > 1:
                     trade_entry_type = 'buy_up'
                 trade.set_custom_data(key='entry_type', value=trade_entry_type)
         return super().bot_loop_start(**kwargs)

@@ -1034,7 +1034,8 @@ class DigDeeperStrategy(IStrategy):
         if last_candle["close"] < previous_candle["close"]:
             return None
 
-        filled_entries = trade.select_filled_orders(trade.entry_side)
+        # Requires: from freqtrade.enums import OrderRole
+        filled_entries = trade.select_filled_orders(OrderRole.entry)
         count_of_entries = trade.nr_of_successful_entries
         # Allow up to 3 additional increasingly larger buys (4 in total)
         # Initial buy is 1x

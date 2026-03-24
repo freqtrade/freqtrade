@@ -53,14 +53,20 @@ The following attributes / properties are available for each individual trade - 
 | `nr_of_successful_entries` | int | Number of successful (filled) entry orders. |
 | `nr_of_successful_exits` | int | Number of successful (filled) exit orders. |
 | `has_open_position` | boolean | True if there is an open position (amount > 0) for this trade. Only false while the initial entry order is unfilled. |
-| `has_open_orders` | boolean | Has the trade open orders (excluding stoploss orders). |
+| `has_open_orders` | boolean | Has the trade open standard orders (excluding conditional exit orders). |
+| `has_open_conditional_exit_orders` | boolean | True if there are open conditional exit orders for this trade (currently stoploss-style orders, implemented as stoploss orders or trigger orders depending on exchange). |
 | `has_open_sl_orders` | boolean | True if there are open stoploss orders for this trade. |
-| `open_orders` | Order[] | All open orders for this trade excluding stoploss orders. |
+| `open_orders` | Order[] | All open standard orders for this trade excluding conditional exit orders. |
+| `open_conditional_exit_orders` | Order[] | All open conditional exit orders for this trade (currently stoploss-style orders, implemented as stoploss orders or trigger orders depending on exchange). |
 | `open_sl_orders` | Order[] | All open stoploss orders for this trade. |
 | `fully_canceled_entry_order_count` | int | Number of fully canceled entry orders. |
 | `canceled_exit_order_count` | int | Number of canceled exit orders. |
 
-### Stop Loss related attributes
+### Conditional exit related attributes
+
+#### Stoploss attributes
+
+Stoploss is the stop-based conditional-exit subtype. See the parameters below which are specific to stoploss-style conditional exits.
 
 |  Attribute | DataType | Description |
 |------------|-------------|-------------|
@@ -191,7 +197,8 @@ Most properties here can be None as they are dependent on the exchange response.
 | `trade` | Trade | Trade object this order is attached to |
 | `ft_pair` | string | Pair this order is for |
 | `ft_is_open` | boolean | is the order still open? |
-| `ft_order_side` | string | Order side ('buy', 'sell', or 'stoploss') |
+| `ft_order_side` | string | Order side ('buy', 'sell', or conditional-exit side; currently stoploss-style orders use 'stoploss'). |
+| `ft_conditional_exit_kind` | string | Semantic subtype for conditional exit orders (currently `stoploss`). Available in JSON/ccxt-style serialization when set. |
 | `ft_cancel_reason` | string | Reason why the order was canceled |
 | `ft_order_tag` | string | Custom order tag |
 | `order_id` | string | Exchange order ID |
