@@ -127,6 +127,170 @@ def test_handle_trailing_conditional_exit_order_forwards_to_stoploss(
     assert result is None
 
 
+def test_cancel_conditional_exit_orders_invalid_kind_warns(
+    mocker, default_conf_usdt, caplog
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    trade = MagicMock()
+    forward_mock = mocker.patch.object(freqtrade, "cancel_stoploss_orders")
+
+    result = freqtrade.cancel_conditional_exit_orders(trade, "invalid-kind")
+
+    assert result is trade
+    forward_mock.assert_not_called()
+    assert log_has_re(r"Conditional exit kind .* is invalid\.", caplog)
+
+
+def test_cancel_conditional_exit_orders_unsupported_kind_warns(
+    mocker, default_conf_usdt, caplog
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    trade = MagicMock()
+    forward_mock = mocker.patch.object(freqtrade, "cancel_stoploss_orders")
+
+    class UnsupportedKind:
+        value = "unsupported"
+
+    mocker.patch(
+        "freqtrade.freqtradebot.ConditionalExitKind.from_value",
+        return_value=UnsupportedKind(),
+    )
+
+    result = freqtrade.cancel_conditional_exit_orders(trade, ConditionalExitKind.stoploss)
+
+    assert result is trade
+    forward_mock.assert_not_called()
+    assert log_has_re(r"Conditional exit kind unsupported is not supported yet\.", caplog)
+
+
+def test_create_conditional_exit_order_invalid_kind_warns(
+    mocker, default_conf_usdt, open_trade_usdt, caplog
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    create_stoploss_mock = mocker.patch.object(freqtrade.exchange, "create_stoploss")
+
+    result = freqtrade.create_conditional_exit_order(open_trade_usdt, 200, "invalid-kind")
+
+    assert result is False
+    create_stoploss_mock.assert_not_called()
+    assert log_has_re(r"Conditional exit kind .* is invalid\.", caplog)
+
+
+def test_create_conditional_exit_order_unsupported_kind_warns(
+    mocker, default_conf_usdt, open_trade_usdt, caplog
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    create_stoploss_mock = mocker.patch.object(freqtrade.exchange, "create_stoploss")
+
+    class UnsupportedKind:
+        value = "unsupported"
+
+    mocker.patch(
+        "freqtrade.freqtradebot.ConditionalExitKind.from_value",
+        return_value=UnsupportedKind(),
+    )
+
+    result = freqtrade.create_conditional_exit_order(
+        open_trade_usdt,
+        200,
+        ConditionalExitKind.stoploss,
+    )
+
+    assert result is False
+    create_stoploss_mock.assert_not_called()
+    assert log_has_re(r"Conditional exit kind unsupported is not supported yet\.", caplog)
+
+
+def test_manage_trade_conditional_exit_orders_invalid_kind_warns(
+    mocker, default_conf_usdt, caplog
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    trade = MagicMock()
+    manage_mock = mocker.patch.object(freqtrade, "manage_stoploss_orders")
+
+    result = freqtrade.manage_trade_conditional_exit_orders(trade, [], "invalid-kind")
+
+    assert result is None
+    manage_mock.assert_not_called()
+    assert log_has_re(r"Conditional exit kind .* is invalid\.", caplog)
+
+
+def test_manage_trade_conditional_exit_orders_unsupported_kind_warns(
+    mocker, default_conf_usdt, caplog
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    trade = MagicMock()
+    manage_mock = mocker.patch.object(freqtrade, "manage_stoploss_orders")
+
+    class UnsupportedKind:
+        value = "unsupported"
+
+    mocker.patch(
+        "freqtrade.freqtradebot.ConditionalExitKind.from_value",
+        return_value=UnsupportedKind(),
+    )
+
+    result = freqtrade.manage_trade_conditional_exit_orders(
+        trade,
+        [],
+        ConditionalExitKind.stoploss,
+    )
+
+    assert result is None
+    manage_mock.assert_not_called()
+    assert log_has_re(r"Conditional exit kind unsupported is not supported yet\.", caplog)
+
+
+def test_handle_trailing_conditional_exit_order_invalid_kind_warns(
+    mocker, default_conf_usdt, caplog
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    trade = MagicMock()
+    order = {"id": "abc"}
+    trailing_mock = mocker.patch.object(freqtrade, "handle_trailing_stoploss_order")
+
+    result = freqtrade.handle_trailing_conditional_exit_order(trade, order, "invalid-kind")
+
+    assert result is None
+    trailing_mock.assert_not_called()
+    assert log_has_re(r"Conditional exit kind .* is invalid\.", caplog)
+
+
+def test_handle_trailing_conditional_exit_order_unsupported_kind_warns(
+    mocker, default_conf_usdt, caplog
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    trade = MagicMock()
+    order = {"id": "abc"}
+    trailing_mock = mocker.patch.object(freqtrade, "handle_trailing_stoploss_order")
+
+    class UnsupportedKind:
+        value = "unsupported"
+
+    mocker.patch(
+        "freqtrade.freqtradebot.ConditionalExitKind.from_value",
+        return_value=UnsupportedKind(),
+    )
+
+    result = freqtrade.handle_trailing_conditional_exit_order(
+        trade,
+        order,
+        ConditionalExitKind.stoploss,
+    )
+
+    assert result is None
+    trailing_mock.assert_not_called()
+    assert log_has_re(r"Conditional exit kind unsupported is not supported yet\.", caplog)
+
+
 @pytest.mark.parametrize("is_short", [False, True])
 def test_handle_conditional_exit_orders(
     mocker, default_conf_usdt, fee, caplog, is_short, limit_order
@@ -898,6 +1062,44 @@ def test_handle_conditional_exit_trailing_error(
     freqtrade.handle_trailing_stoploss_order(trade, stoploss_order_hanging)
     assert cancel_mock.call_count == 2
     assert log_has_re(r"Could not create trailing stoploss order for pair ETH/USDT\..*", caplog)
+
+
+def test_handle_trailing_stoploss_order_skips_recreate_when_trade_closed(
+    mocker, default_conf_usdt, caplog
+) -> None:
+    patch_RPCManager(mocker)
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    freqtrade.strategy.order_types["stoploss_on_exchange_interval"] = 0
+
+    trade = MagicMock()
+    trade.pair = "ETH/USDT"
+    trade.stoploss_or_liquidation = 200.0
+    trade.is_short = False
+    trade.exit_side = "sell"
+    trade.conditional_exit_last_update_utc = dt_now() - timedelta(minutes=5)
+    trade.is_open = True
+
+    order = {"id": "abc", "status_stop": "open"}
+
+    mocker.patch.object(freqtrade.exchange, "price_to_precision", return_value=200.0)
+    mocker.patch.object(freqtrade.exchange, "stoploss_adjust", return_value=True)
+
+    def close_trade_on_cancel(_trade):
+        _trade.is_open = False
+        return _trade
+
+    cancel_mock = mocker.patch.object(
+        freqtrade,
+        "cancel_stoploss_orders",
+        side_effect=close_trade_on_cancel,
+    )
+    create_mock = mocker.patch.object(freqtrade, "create_conditional_exit_order")
+
+    freqtrade.handle_trailing_stoploss_order(trade, order)
+
+    cancel_mock.assert_called_once_with(trade)
+    create_mock.assert_not_called()
+    assert log_has_re(r"Trade .* is closed, not creating trailing stoploss order\.", caplog)
 
 
 def test_conditional_exit_price_rounding(mocker, default_conf_usdt, fee, open_trade_usdt) -> None:

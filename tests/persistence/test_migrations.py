@@ -13,7 +13,7 @@ from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence import Trade, init_db
 from freqtrade.persistence.base import ModelBase
-from freqtrade.persistence.migrations import get_last_sequence_ids, set_sequence_ids
+from freqtrade.persistence.migrations import check_migrate, get_last_sequence_ids, set_sequence_ids
 from freqtrade.persistence.models import PairLock
 from freqtrade.persistence.trade_model import Order
 from tests.conftest import log_has
@@ -414,6 +414,40 @@ def test_migrate_set_sequence_ids():
     set_sequence_ids(engine, 22, 55, 6)
 
     assert engine.begin.call_count == 0
+
+
+def test_check_migrate_orders_only_branch(mocker, caplog):
+    caplog.set_level(logging.INFO)
+
+    engine = MagicMock()
+    engine.name = "sqlite"
+    decl_base = MagicMock()
+
+    inspector = MagicMock()
+    inspector.get_columns.side_effect = lambda table: {
+        "trades": [{"name": "record_version"}],
+        "orders": [{"name": "id"}],
+        "pairlocks": [{"name": "id"}, {"name": "side"}],
+    }[table]
+    inspector.get_table_names.return_value = ["trades", "orders", "pairlocks"]
+
+    mocker.patch("freqtrade.persistence.migrations.inspect", return_value=inspector)
+    migrate_orders_mock = mocker.patch(
+        "freqtrade.persistence.migrations.migrate_trades_and_orders_table"
+    )
+    migrate_pairlocks_mock = mocker.patch(
+        "freqtrade.persistence.migrations.migrate_pairlocks_table"
+    )
+    mocker.patch("freqtrade.persistence.migrations.set_sqlite_to_wal")
+    mocker.patch("freqtrade.persistence.migrations.fix_old_dry_orders")
+    mocker.patch("freqtrade.persistence.migrations.fix_wrong_max_stake_amount")
+
+    check_migrate(engine, decl_base, previous_tables=["trades", "orders", "pairlocks"])
+
+    migrate_orders_mock.assert_called_once()
+    migrate_pairlocks_mock.assert_not_called()
+    assert "Running database migration for orders - backup:" in caplog.text
+    assert log_has("Database migration finished.", caplog)
 
 
 def test_migrate_pairlocks(mocker, default_conf, fee, caplog):

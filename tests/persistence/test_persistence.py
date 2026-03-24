@@ -2164,6 +2164,11 @@ def test_select_filled_orders_for_roles(fee):
 
     assert len(trades[1].select_filled_orders(OrderRole.entry)) == 1
     assert len(trades[1].select_filled_orders(OrderRole.exit)) == 1
+    assert len(trades[1].select_filled_orders(trades[1].entry_side)) == 1
+    assert len(trades[1].select_filled_orders(trades[1].exit_side)) == 1
+    assert len(trades[1].select_filled_orders("entry")) == 1
+    assert len(trades[1].select_filled_orders("exit")) == 1
+    assert len(trades[1].select_filled_orders("invalid-side")) == 0
     assert len(trades[4].select_filled_orders(OrderRole.conditional_exit)) == 0
     assert (
         len(
@@ -2174,6 +2179,37 @@ def test_select_filled_orders_for_roles(fee):
         )
         == 0
     )
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_conditional_exit_properties_and_helpers(fee):
+    create_mock_trades(fee)
+    trades = Trade.get_trades().all()
+
+    # Trade with open conditional-exit order in mock data.
+    trade = trades[4]
+    conditional_order = trade.orders[1]
+
+    assert len(trade.open_conditional_exit_orders) == 1
+    assert len(trade.conditional_exit_orders) == 1
+    assert trade.has_open_sl_orders is True
+
+    # Invalid stored kind should be handled safely.
+    conditional_order.ft_conditional_exit_kind = "invalid-kind"
+    assert conditional_order.conditional_exit_kind is None
+    assert conditional_order.ft_conditional_trigger_type is None
+
+    # order_has_role fallback branch for unknown role input.
+    assert trade.order_has_role(conditional_order, "unknown-role") is False
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_nr_of_successful_exits(fee):
+    create_mock_trades(fee)
+    trades = Trade.get_trades().all()
+
+    # In mock data, trade index 1 has one filled exit order.
+    assert trades[1].nr_of_successful_exits == 1
 
 
 def test_Trade_object_idem():

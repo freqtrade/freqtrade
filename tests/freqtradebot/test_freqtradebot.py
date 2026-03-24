@@ -4864,6 +4864,7 @@ def test_handle_onexchange_order_changed_amount(
     default_conf_usdt["dry_run"] = False
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     mock_uts = mocker.spy(freqtrade, "update_trade_state")
+    cancel_sl_mock = mocker.spy(freqtrade, "cancel_stoploss_orders")
 
     entry_order = limit_order[entry_side(is_short)]
     mock_fo = mocker.patch(
@@ -4905,9 +4906,11 @@ def test_handle_onexchange_order_changed_amount(
         # Trade amount is updated
         assert trade.amount == entry_order["amount"] * factor
         assert log_has_re(r".*Adjusting trade amount to.*", caplog)
+        assert cancel_sl_mock.call_count == 1
     else:
         assert log_has_re(r".*Refusing to adjust as the difference.*", caplog)
         assert trade.amount == entry_order["amount"]
+        assert cancel_sl_mock.call_count == 0
 
     assert len(trade.orders) == 1
     assert trade.is_open is True
