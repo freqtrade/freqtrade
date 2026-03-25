@@ -14,6 +14,7 @@ from sqlalchemy import select
 from freqtrade.constants import CANCEL_REASON, UNLIMITED_STAKE_AMOUNT
 from freqtrade.enums import (
     CandleType,
+    ConditionalExitKind,
     ExitCheckTuple,
     ExitType,
     OrderRole,
@@ -1213,6 +1214,35 @@ def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog
     n = freqtrade.exit_positions(trades)
     assert n == 1
     assert gra.call_count == 0
+
+
+def test_exit_positions_uses_trailing_kind_when_enabled(mocker, default_conf_usdt) -> None:
+    default_conf_usdt["trailing_stop"] = True
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    freqtrade.strategy.order_types["stoploss_on_exchange"] = True
+
+    trade = MagicMock()
+    trade.has_open_orders = True
+    trade.has_open_conditional_exit_orders = False
+    trade.fee_open_currency = None
+    trade.has_open_position = False
+    trade.is_open = True
+
+    handle_conditional_exit_orders = mocker.patch.object(
+        freqtrade,
+        "handle_conditional_exit_orders",
+        return_value=False,
+    )
+    handle_trade = mocker.patch.object(freqtrade, "handle_trade", return_value=False)
+
+    result = freqtrade.exit_positions([trade])
+
+    assert result == 0
+    handle_conditional_exit_orders.assert_called_once_with(
+        trade,
+        conditional_exit_kind=ConditionalExitKind.trailing,
+    )
+    handle_trade.assert_not_called()
 
 
 @pytest.mark.usefixtures("init_persistence")

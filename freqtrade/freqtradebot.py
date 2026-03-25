@@ -587,8 +587,11 @@ class FreqtradeBot(LoggingMixin):
                             "This may however lead to further issues."
                         )
                 if prev_trade_amount != trade.amount:
-                    # Cancel stoploss on exchange if the amount changed
-                    trade = self.cancel_stoploss_orders(trade)
+                    # Cancel conditional exit orders on exchange if the amount changed
+                    trade = self.cancel_conditional_exit_orders(
+                        trade,
+                        conditional_exit_kind=self._get_default_conditional_exit_kind(),
+                    )
             Trade.commit()
 
         except ExchangeError:
@@ -1050,7 +1053,10 @@ class FreqtradeBot(LoggingMixin):
         if pos_adjust:
             if order_status == "closed":
                 logger.info(f"DCA order closed, trade should be up to date: {trade}")
-                trade = self.cancel_stoploss_orders(trade)
+                trade = self.cancel_conditional_exit_orders(
+                    trade,
+                    conditional_exit_kind=self._get_default_conditional_exit_kind(),
+                )
             else:
                 logger.info(f"DCA order {order_status}, will wait for resolution: {trade}")
 
@@ -1075,28 +1081,62 @@ class FreqtradeBot(LoggingMixin):
         :param allow_nonblocking: If True, skip cancellation on exchanges where
                                    stop loss orders do not block assets.
         """
+        return self._cancel_conditional_exit_orders_impl(
+            trade,
+            trade.open_sl_orders,
+            allow_nonblocking=allow_nonblocking,
+        )
+
+    def cancel_trailing_orders(self, trade: Trade, allow_nonblocking: bool = False) -> Trade:
+        """
+        Cancels trailing conditional-exit orders for the given trade.
+        Also cancels legacy open stoploss orders to support migration scenarios.
+        :param trade: Trade for which to cancel trailing orders.
+        :param allow_nonblocking: If True, skip cancellation on exchanges where
+                                   stop loss orders do not block assets.
+        """
+        # Include legacy stoploss orders so trailing mode can clean up pre-migration state.
+        trailing_orders = trade.open_trailing_orders + trade.open_sl_orders
+        return self._cancel_conditional_exit_orders_impl(
+            trade,
+            trailing_orders,
+            allow_nonblocking=allow_nonblocking,
+        )
+
+    def _cancel_conditional_exit_orders_impl(
+        self,
+        trade: Trade,
+        orders: list[Order],
+        allow_nonblocking: bool = False,
+    ) -> Trade:
+        """Cancel provided conditional-exit orders with shared error handling."""
         if allow_nonblocking and not self.exchange.get_option("stoploss_blocks_assets", True):
             logger.info(f"Skipping cancelling stop loss on exchange for {trade}.")
             return trade
-        for conditional_exit_order in trade.open_sl_orders:
+
+        seen_order_ids: set[str] = set()
+        for order in orders:
+            if order.order_id in seen_order_ids:
+                continue
+            seen_order_ids.add(order.order_id)
             try:
                 logger.info(
                     f"Cancelling conditional exit order on exchange for {trade} "
-                    f"order: {conditional_exit_order.order_id}"
+                    f"order: {order.order_id}"
                 )
                 co = self.exchange.cancel_stoploss_order_with_result(
-                    conditional_exit_order.order_id, trade.pair, trade.amount
+                    order.order_id, trade.pair, trade.amount
                 )
                 self.update_trade_state(
                     trade,
-                    conditional_exit_order.order_id,
+                    order.order_id,
                     co,
                     conditional_exit=True,
                 )
             except InvalidOrderException:
                 logger.exception(
                     "Could not cancel stoploss order %s for pair %s",
-                    conditional_exit_order.order_id,
+                    order.order_id,
                     trade.pair,
                 )
         return trade
@@ -1108,22 +1148,44 @@ class FreqtradeBot(LoggingMixin):
         allow_nonblocking: bool = False,
     ) -> Trade:
         """
-        Compatibility dispatcher for conditional-exit cancellation by kind.
+        Route conditional-exit cancellation to the kind-specific canceler.
         """
+        normalized_kind = self._get_supported_conditional_exit_kind(conditional_exit_kind)
+        if normalized_kind is None:
+            return trade
+
+        if normalized_kind == ConditionalExitKind.stoploss:
+            return self.cancel_stoploss_orders(trade, allow_nonblocking=allow_nonblocking)
+
+        if normalized_kind == ConditionalExitKind.trailing:
+            return self.cancel_trailing_orders(trade, allow_nonblocking=allow_nonblocking)
+
+        return trade
+
+    def _get_supported_conditional_exit_kind(
+        self,
+        conditional_exit_kind: ConditionalExitKind | str | None,
+    ) -> ConditionalExitKind | None:
         normalized_kind = ConditionalExitKind.from_value(conditional_exit_kind)
         if normalized_kind is None:
             logger.warning(f"Conditional exit kind {conditional_exit_kind!r} is invalid.")
-            return trade
+            return None
 
-        cancel_handlers: dict[ConditionalExitKind, Any] = {
-            ConditionalExitKind.stoploss: self.cancel_stoploss_orders,
-        }
-        cancel_handler = cancel_handlers.get(normalized_kind)
-        if cancel_handler is None:
+        if normalized_kind not in (ConditionalExitKind.stoploss, ConditionalExitKind.trailing):
             logger.warning(f"Conditional exit kind {normalized_kind.value} is not supported yet.")
-            return trade
+            return None
 
-        return cancel_handler(trade, allow_nonblocking=allow_nonblocking)
+        return normalized_kind
+
+    def _get_default_conditional_exit_kind(self) -> ConditionalExitKind:
+        return (
+            ConditionalExitKind.trailing
+            if (
+                self.config.get("trailing_stop", False)
+                or self.config.get("use_custom_stoploss", False)
+            )
+            else ConditionalExitKind.stoploss
+        )
 
     def get_valid_enter_price_and_stake(
         self,
@@ -1344,9 +1406,13 @@ class FreqtradeBot(LoggingMixin):
 
             try:
                 try:
+                    conditional_exit_kind = self._get_default_conditional_exit_kind()
                     if self.strategy.order_types.get(
                         "stoploss_on_exchange"
-                    ) and self.handle_conditional_exit_orders(trade):
+                    ) and self.handle_conditional_exit_orders(
+                        trade,
+                        conditional_exit_kind=conditional_exit_kind,
+                    ):
                         trades_closed += 1
                         Trade.commit()
                         continue
@@ -1452,23 +1518,12 @@ class FreqtradeBot(LoggingMixin):
         Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
         :return: True if the order succeeded, and False in case of problems.
         """
-        normalized_kind = ConditionalExitKind.from_value(conditional_exit_kind)
+        normalized_kind = self._get_supported_conditional_exit_kind(conditional_exit_kind)
         if normalized_kind is None:
-            logger.warning(f"Conditional exit kind {conditional_exit_kind!r} is invalid.")
             return False
-
-        conditional_exit_handlers: dict[ConditionalExitKind, tuple[str, Any]] = {
-            ConditionalExitKind.stoploss: ("stoploss", self.exchange.create_stoploss),
-        }
-        handler_config = conditional_exit_handlers.get(normalized_kind)
-        if handler_config is None:
-            logger.warning(f"Conditional exit kind {normalized_kind.value} is not supported yet.")
-            return False
-
-        order_side, create_conditional_exit = handler_config
 
         try:
-            conditional_exit_order = create_conditional_exit(
+            conditional_exit_order = self.exchange.create_stoploss(
                 pair=trade.pair,
                 amount=trade.amount,
                 stop_price=trigger_price,
@@ -1480,7 +1535,7 @@ class FreqtradeBot(LoggingMixin):
             order_obj = Order.parse_from_ccxt_object(
                 conditional_exit_order,
                 trade.pair,
-                order_side,
+                "stoploss",
                 trade.amount,
                 trigger_price,
                 conditional_exit_kind=normalized_kind,
@@ -1501,7 +1556,11 @@ class FreqtradeBot(LoggingMixin):
             logger.exception("Unable to place a stoploss order on exchange.")
         return False
 
-    def handle_conditional_exit_orders(self, trade: Trade) -> bool:
+    def handle_conditional_exit_orders(
+        self,
+        trade: Trade,
+        conditional_exit_kind: ConditionalExitKind = ConditionalExitKind.stoploss,
+    ) -> bool:
         """
         Check if trade is fulfilled and ensure exchange-native conditional exit orders exist.
         Currently this manages stop loss-style exit orders.
@@ -1510,10 +1569,75 @@ class FreqtradeBot(LoggingMixin):
         # Therefore fetching account liquidations for open pairs may make sense.
         """
 
-        logger.debug("Handling conditional exit orders on exchange %s ...", trade)
+        normalized_kind = self._get_supported_conditional_exit_kind(conditional_exit_kind)
+        if normalized_kind is None:
+            return False
 
-        conditional_exit_orders = []
-        for conditional_exit_order in trade.open_sl_orders:
+        logger.debug(
+            "Handling conditional exit orders on exchange %s (kind=%s) ...",
+            trade,
+            normalized_kind.value,
+        )
+
+        conditional_exit_orders, exit_triggered = self._sync_conditional_exit_orders(
+            trade,
+            normalized_kind,
+        )
+        if exit_triggered:
+            return True
+
+        if (
+            not trade.has_open_position
+            or not trade.is_open
+            or (trade.has_open_orders and self.exchange.get_option("stoploss_blocks_assets", True))
+        ):
+            # The trade can be closed already (sell-order fill confirmation came in this iteration)
+            return False
+
+        if not conditional_exit_orders:
+            trigger_price = trade.stoploss_or_liquidation
+
+            if self.create_conditional_exit_order(
+                trade=trade,
+                trigger_price=trigger_price,
+                conditional_exit_kind=normalized_kind,
+            ):
+                # The above will return False if the placement failed and the trade was force-sold.
+                # in which case the trade will be closed - which we must check below.
+                return False
+
+        if normalized_kind == ConditionalExitKind.stoploss:
+            self.manage_stoploss_orders(trade, conditional_exit_orders)
+
+        if normalized_kind == ConditionalExitKind.trailing:
+            self.manage_trailing_orders(trade, conditional_exit_orders)
+
+        return False
+
+    def _sync_conditional_exit_orders(
+        self,
+        trade: Trade,
+        normalized_kind: ConditionalExitKind,
+    ) -> tuple[list[CcxtOrder], bool]:
+        conditional_exit_orders: list[CcxtOrder] = []
+
+        kind_lookup: list[ConditionalExitKind] = [normalized_kind]
+        if normalized_kind == ConditionalExitKind.trailing:
+            # Backward compatibility for existing open stoploss orders after enabling trailing kind.
+            kind_lookup.append(ConditionalExitKind.stoploss)
+
+        open_conditional_exit_orders = []
+        for kind in kind_lookup:
+            open_conditional_exit_orders.extend(
+                trade.select_conditional_exit_orders(is_open=True, kind=kind)
+            )
+
+        seen_order_ids: set[str] = set()
+        for conditional_exit_order in open_conditional_exit_orders:
+            if conditional_exit_order.order_id in seen_order_ids:
+                continue
+            seen_order_ids.add(conditional_exit_order.order_id)
+
             remote_order = None
             try:
                 remote_order = (
@@ -1537,33 +1661,15 @@ class FreqtradeBot(LoggingMixin):
                 trade.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
                 self._notify_exit(trade, "stoploss", True)
                 self.handle_protections(trade.pair, trade.trade_direction)
-                return True
+                return (conditional_exit_orders, True)
 
-        if (
-            not trade.has_open_position
-            or not trade.is_open
-            or (trade.has_open_orders and self.exchange.get_option("stoploss_blocks_assets", True))
-        ):
-            # The trade can be closed already (sell-order fill confirmation came in this iteration)
-            return False
+        return (conditional_exit_orders, False)
 
-        if len(conditional_exit_orders) == 0:
-            trigger_price = trade.stoploss_or_liquidation
-
-            if self.create_conditional_exit_order(
-                trade=trade,
-                trigger_price=trigger_price,
-                conditional_exit_kind=ConditionalExitKind.stoploss,
-            ):
-                # The above will return False if the placement failed and the trade was force-sold.
-                # in which case the trade will be closed - which we must check below.
-                return False
-
-        self.manage_stoploss_orders(trade, conditional_exit_orders)
-
-        return False
-
-    def manage_stoploss_orders(self, trade: Trade, conditional_exit_orders: list[CcxtOrder]):
+    def manage_stoploss_orders(
+        self,
+        trade: Trade,
+        conditional_exit_orders: list[CcxtOrder],
+    ):
         """
         Perform required actions according to existing conditional exit orders of trade.
         Currently this manages stop loss exit orders.
@@ -1572,70 +1678,95 @@ class FreqtradeBot(LoggingMixin):
         :param conditional_exit_orders: Current on-exchange conditional exit orders.
         :return: None
         """
-        canceled_trigger_orders = [
-            o for o in conditional_exit_orders if o["status"] in ("canceled", "cancelled")
-        ]
-        if (
-            trade.is_open
-            and len(conditional_exit_orders) > 0
-            and len(conditional_exit_orders) == len(canceled_trigger_orders)
+        if self._recreate_if_all_canceled(
+            trade,
+            conditional_exit_orders,
+            ConditionalExitKind.stoploss,
+            "Stoploss",
         ):
-            if self.create_conditional_exit_order(
-                trade=trade,
-                trigger_price=trade.stoploss_or_liquidation,
-                conditional_exit_kind=ConditionalExitKind.stoploss,
-            ):
-                return False
-            else:
-                logger.warning("All Stoploss orders are cancelled, but unable to recreate one.")
-
-        active_trigger_orders = [
-            o for o in conditional_exit_orders if o not in canceled_trigger_orders
-        ]
-        if len(active_trigger_orders) > 0:
-            latest_active_trigger_order = active_trigger_orders[-1]
-            # Finally we check if stoploss on exchange should be moved up because of trailing.
-            # Triggered Orders are now real orders - so don't replace stoploss anymore
-            if (
-                trade.is_open
-                and latest_active_trigger_order.get("status_stop") != "triggered"
-                and (
-                    self.config.get("trailing_stop", False)
-                    or self.config.get("use_custom_stoploss", False)
-                )
-            ):
-                # if trailing stoploss is enabled we check if stoploss value has changed
-                # in which case we cancel stoploss order and put another one with new
-                # value immediately
-                self.handle_trailing_stoploss_order(trade, latest_active_trigger_order)
+            return
 
         return
 
-    def manage_trade_conditional_exit_orders(
+    def manage_trailing_orders(
+        self,
+        trade: Trade,
+        conditional_exit_orders: list[CcxtOrder],
+    ):
+        """
+        Manage trailing conditional-exit orders independent from stoploss manager.
+        """
+        if self._recreate_if_all_canceled(
+            trade,
+            conditional_exit_orders,
+            ConditionalExitKind.trailing,
+            "trailing",
+        ):
+            return
+
+        canceled_trigger_orders = [
+            o
+            for o in conditional_exit_orders
+            if o["status"] in constants.CANCELED_EXCHANGE_STATES
+        ]
+        active_trigger_orders = [
+            o for o in conditional_exit_orders if o not in canceled_trigger_orders
+        ]
+        if len(active_trigger_orders) == 0:
+            return
+
+        latest_active_trigger_order = active_trigger_orders[-1]
+        if (
+            trade.is_open
+            and latest_active_trigger_order.get("status_stop") != "triggered"
+            and (
+                self.config.get("trailing_stop", False)
+                or self.config.get("use_custom_stoploss", False)
+            )
+        ):
+            self.handle_trailing_stoploss_order(
+                trade,
+                latest_active_trigger_order,
+            )
+
+        return
+
+    def _recreate_if_all_canceled(
         self,
         trade: Trade,
         conditional_exit_orders: list[CcxtOrder],
         conditional_exit_kind: ConditionalExitKind,
-    ):
-        """
-        Compatibility dispatcher for conditional-exit management by kind.
-        """
-        normalized_kind = ConditionalExitKind.from_value(conditional_exit_kind)
-        if normalized_kind is None:
-            logger.warning(f"Conditional exit kind {conditional_exit_kind!r} is invalid.")
-            return
+        kind_label: str,
+    ) -> bool:
+        """Recreate a conditional-exit order if all known on-exchange orders are canceled."""
+        canceled_trigger_orders = [
+            o
+            for o in conditional_exit_orders
+            if o["status"] in constants.CANCELED_EXCHANGE_STATES
+        ]
+        all_canceled = (
+            trade.is_open
+            and len(conditional_exit_orders) > 0
+            and len(conditional_exit_orders) == len(canceled_trigger_orders)
+        )
+        if not all_canceled:
+            return False
 
-        manage_handlers: dict[ConditionalExitKind, Any] = {
-            ConditionalExitKind.stoploss: self.manage_stoploss_orders,
-        }
-        manage_handler = manage_handlers.get(normalized_kind)
-        if manage_handler is None:
-            logger.warning(f"Conditional exit kind {normalized_kind.value} is not supported yet.")
-            return
+        if self.create_conditional_exit_order(
+            trade=trade,
+            trigger_price=trade.stoploss_or_liquidation,
+            conditional_exit_kind=conditional_exit_kind,
+        ):
+            return True
 
-        return manage_handler(trade, conditional_exit_orders)
+        logger.warning(f"All {kind_label} orders are cancelled, but unable to recreate one.")
+        return True
 
-    def handle_trailing_stoploss_order(self, trade: Trade, order: CcxtOrder) -> None:
+    def handle_trailing_stoploss_order(
+        self,
+        trade: Trade,
+        order: CcxtOrder,
+    ) -> None:
         """
         Check whether a conditional exit order should be updated because trailing moved.
         Currently this updates stop loss exit orders.
@@ -1664,7 +1795,11 @@ class FreqtradeBot(LoggingMixin):
                     f"(orderid:{order['id']}) in order to add another one ..."
                 )
 
-                self.cancel_stoploss_orders(trade)
+                conditional_exit_kind = ConditionalExitKind.trailing
+                self.cancel_conditional_exit_orders(
+                    trade,
+                    conditional_exit_kind=conditional_exit_kind,
+                )
                 if not trade.is_open:
                     logger.warning(
                         f"Trade {trade} is closed, not creating trailing stoploss order."
@@ -1675,35 +1810,11 @@ class FreqtradeBot(LoggingMixin):
                 if not self.create_conditional_exit_order(
                     trade=trade,
                     trigger_price=stoploss_norm,
-                    conditional_exit_kind=ConditionalExitKind.stoploss,
+                    conditional_exit_kind=conditional_exit_kind,
                 ):
                     logger.warning(
                         f"Could not create trailing stoploss order for pair {trade.pair}."
                     )
-
-    def handle_trailing_conditional_exit_order(
-        self,
-        trade: Trade,
-        order: CcxtOrder,
-        conditional_exit_kind: ConditionalExitKind,
-    ) -> None:
-        """
-        Compatibility dispatcher for conditional-exit trailing updates by kind.
-        """
-        normalized_kind = ConditionalExitKind.from_value(conditional_exit_kind)
-        if normalized_kind is None:
-            logger.warning(f"Conditional exit kind {conditional_exit_kind!r} is invalid.")
-            return
-
-        trailing_handlers: dict[ConditionalExitKind, Any] = {
-            ConditionalExitKind.stoploss: self.handle_trailing_stoploss_order,
-        }
-        trailing_handler = trailing_handlers.get(normalized_kind)
-        if trailing_handler is None:
-            logger.warning(f"Conditional exit kind {normalized_kind.value} is not supported yet.")
-            return
-
-        return trailing_handler(trade, order)
 
     def manage_open_orders(self) -> None:
         """
@@ -2117,7 +2228,7 @@ class FreqtradeBot(LoggingMixin):
             exit_reason_prev = trade.exit_reason
             trade.exit_reason = trade.exit_reason + f", {reason}" if trade.exit_reason else reason
             # Order might be filled above in odd timing issues.
-            if order.get("status") in ("canceled", "cancelled"):
+            if order.get("status") in constants.CANCELED_EXCHANGE_STATES:
                 trade.exit_reason = None
             else:
                 trade.exit_reason = exit_reason_prev
@@ -2241,8 +2352,12 @@ class FreqtradeBot(LoggingMixin):
 
         limit = self.get_valid_price(custom_exit_price, proposed_limit_rate)
 
-        # First cancelling stoploss on exchange ...
-        trade = self.cancel_stoploss_orders(trade, allow_nonblocking=True)
+        # First cancelling conditional exit orders on exchange ...
+        trade = self.cancel_conditional_exit_orders(
+            trade,
+            conditional_exit_kind=self._get_default_conditional_exit_kind(),
+            allow_nonblocking=True,
+        )
 
         amount = self._safe_exit_amount(trade, trade.pair, sub_trade_amt or trade.amount)
         time_in_force = self.strategy.order_time_in_force["exit"]
@@ -2502,8 +2617,11 @@ class FreqtradeBot(LoggingMixin):
                         # Reset fee_open_currency so fee checking can work
                         # Only necessary for additional entries
                         trade.fee_open_currency = None
-                    # Don't cancel stoploss in recovery modes immediately
-                    trade = self.cancel_stoploss_orders(trade)
+                    # Don't cancel conditional exits in recovery modes immediately
+                    trade = self.cancel_conditional_exit_orders(
+                        trade,
+                        conditional_exit_kind=self._get_default_conditional_exit_kind(),
+                    )
                 trade.adjust_stop_loss(trade.open_rate, self.strategy.stoploss, initial=True)
             if (
                 trade.is_entry_order(order)
@@ -2529,7 +2647,10 @@ class FreqtradeBot(LoggingMixin):
                     current_rate, trade, datetime.now(UTC), profit, 0, after_fill=True
                 )
             if not trade.is_open:
-                self.cancel_stoploss_orders(trade)
+                self.cancel_conditional_exit_orders(
+                    trade,
+                    conditional_exit_kind=self._get_default_conditional_exit_kind(),
+                )
             # Updating wallets when order is closed
             self.wallets.update()
         return trade

@@ -3,6 +3,7 @@ from enum import StrEnum
 
 class ConditionalExitKind(StrEnum):
     stoploss = "stoploss"
+    trailing = "trailing"
 
     @classmethod
     def from_value(cls, value: "ConditionalExitKind | str | None") -> "ConditionalExitKind | None":
@@ -14,7 +15,3 @@ class ConditionalExitKind(StrEnum):
             return cls(value)
         except ValueError:
             return None
-
-    @classmethod
-    def is_valid(cls, value: "ConditionalExitKind | str | None") -> bool:
-        return cls.from_value(value) is not None

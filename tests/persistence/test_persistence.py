@@ -2128,6 +2128,24 @@ def test_select_order(fee, is_short):
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short", [True, False])
+def test_select_order_string_role_compatibility(fee, is_short):
+    create_mock_trades(fee, is_short)
+
+    trades = Trade.get_trades().all()
+    trade = trades[1]
+
+    enum_entry = trade.select_order(OrderRole.entry, False)
+    enum_exit = trade.select_order(OrderRole.exit, False)
+
+    assert trade.select_order("entry", False) == enum_entry
+    assert trade.select_order("exit", False) == enum_exit
+    assert trade.select_order(trade.entry_side, False) == enum_entry
+    assert trade.select_order(trade.exit_side, False) == enum_exit
+    assert trade.select_order("unknown-role", False) is None
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [True, False])
 def test_order_role_helpers(fee, is_short):
     create_mock_trades(fee, is_short)
 
@@ -2164,11 +2182,6 @@ def test_select_filled_orders_for_roles(fee):
 
     assert len(trades[1].select_filled_orders(OrderRole.entry)) == 1
     assert len(trades[1].select_filled_orders(OrderRole.exit)) == 1
-    assert len(trades[1].select_filled_orders(trades[1].entry_side)) == 1
-    assert len(trades[1].select_filled_orders(trades[1].exit_side)) == 1
-    assert len(trades[1].select_filled_orders("entry")) == 1
-    assert len(trades[1].select_filled_orders("exit")) == 1
-    assert len(trades[1].select_filled_orders("invalid-side")) == 0
     assert len(trades[4].select_filled_orders(OrderRole.conditional_exit)) == 0
     assert (
         len(
@@ -2193,11 +2206,20 @@ def test_conditional_exit_properties_and_helpers(fee):
     assert len(trade.open_conditional_exit_orders) == 1
     assert len(trade.conditional_exit_orders) == 1
     assert trade.has_open_sl_orders is True
+    assert trade.has_open_trailing_orders is False
 
     # Invalid stored kind should be handled safely.
     conditional_order.ft_conditional_exit_kind = "invalid-kind"
     assert conditional_order.conditional_exit_kind is None
     assert conditional_order.ft_conditional_trigger_type is None
+
+    conditional_order.ft_conditional_exit_kind = "trailing"
+    assert conditional_order.conditional_exit_kind == ConditionalExitKind.trailing
+    assert conditional_order.ft_conditional_trigger_type == ConditionalTriggerType.stop_loss
+    assert trade.has_open_sl_orders is False
+    assert trade.has_open_trailing_orders is True
+    assert len(trade.open_trailing_orders) == 1
+    assert len(trade.trailing_orders) == 1
 
     # order_has_role fallback branch for unknown role input.
     assert trade.order_has_role(conditional_order, "unknown-role") is False
@@ -2781,6 +2803,24 @@ def test_select_filled_orders(fee):
     orders = trades[4].select_filled_orders(OrderRole.exit)
     assert isinstance(orders, list)
     assert len(orders) == 0
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("is_short", [True, False])
+def test_select_filled_orders_string_role_compatibility(fee, is_short):
+    create_mock_trades(fee, is_short)
+
+    trades = Trade.get_trades().all()
+    trade = trades[1]
+
+    enum_entry = trade.select_filled_orders(OrderRole.entry)
+    enum_exit = trade.select_filled_orders(OrderRole.exit)
+
+    assert trade.select_filled_orders("entry") == enum_entry
+    assert trade.select_filled_orders("exit") == enum_exit
+    assert trade.select_filled_orders(trade.entry_side) == enum_entry
+    assert trade.select_filled_orders(trade.exit_side) == enum_exit
+    assert trade.select_filled_orders("unknown-role") == []
 
 
 @pytest.mark.usefixtures("init_persistence")

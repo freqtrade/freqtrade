@@ -203,7 +203,10 @@ class Order(ModelBase):
         """
         Exchange trigger type for conditional exit orders.
         """
-        if self.conditional_exit_kind == ConditionalExitKind.stoploss:
+        if self.conditional_exit_kind in (
+            ConditionalExitKind.stoploss,
+            ConditionalExitKind.trailing,
+        ):
             return ConditionalTriggerType.stop_loss
         return None
 
@@ -707,7 +710,7 @@ class LocalTrade:
         if kind is not None and normalized_kind is None:
             return []
 
-        return self.select_orders(
+        return self._filter_orders(
             order_role=OrderRole.conditional_exit,
             is_open=is_open,
             conditional_exit_kind=normalized_kind,
@@ -736,6 +739,30 @@ class LocalTrade:
         All stoploss orders for this trade
         """
         return self.select_conditional_exit_orders(kind=ConditionalExitKind.stoploss)
+
+    @property
+    def open_trailing_orders(self) -> list[Order]:
+        """
+        All open trailing conditional-exit orders for this trade
+        """
+        return self.select_conditional_exit_orders(
+            is_open=True,
+            kind=ConditionalExitKind.trailing,
+        )
+
+    @property
+    def has_open_trailing_orders(self) -> bool:
+        """
+        True if there are open trailing conditional-exit orders for this trade
+        """
+        return len(self.open_trailing_orders) > 0
+
+    @property
+    def trailing_orders(self) -> list[Order]:
+        """
+        All trailing conditional-exit orders for this trade
+        """
+        return self.select_conditional_exit_orders(kind=ConditionalExitKind.trailing)
 
     @property
     def open_orders_ids(self) -> list[str]:
@@ -1482,8 +1509,12 @@ class LocalTrade:
         :param conditional_exit_kind: Optional conditional exit kind filter.
         :return: latest Order object if it exists, else None
         """
-        orders = self.select_orders(
-            order_role=order_role,
+        normalized_role = self._normalize_order_role(order_role)
+        if order_role is not None and normalized_role is None:
+            return None
+
+        orders = self._filter_orders(
+            order_role=normalized_role,
             is_open=is_open,
             conditional_exit_kind=conditional_exit_kind,
             only_filled=only_filled,
@@ -1493,28 +1524,18 @@ class LocalTrade:
         else:
             return None
 
-    def select_orders(
+    def _filter_orders(
         self,
         *,
-        order_role: OrderRole | str | None = None,
+        order_role: OrderRole | None = None,
         is_open: bool | None = None,
         conditional_exit_kind: ConditionalExitKind | None = None,
         only_filled: bool = False,
     ) -> list[Order]:
-        """
-        Select orders using semantic role and optional status/kind filters.
-        :param order_role: Semantic order role filter.
-        :param is_open: Filter by open status.
-        :param conditional_exit_kind: Optional conditional exit kind filter.
-        :param only_filled: Restrict to filled, non-open exchange states (requires is_open=False).
-        :return: List of matching order objects.
-        """
+        """Internal batch filter for order selection."""
         orders = self.orders
-        normalized_order_role, invalid_order_role = self._normalize_order_role(order_role)
-        if invalid_order_role:
-            return []
-        if normalized_order_role is not None:
-            orders = [o for o in orders if self.order_has_role(o, normalized_order_role)]
+        if order_role is not None:
+            orders = [o for o in orders if self.order_has_role(o, order_role)]
         if conditional_exit_kind is not None:
             orders = [o for o in orders if o.conditional_exit_kind == conditional_exit_kind]
         if is_open is not None:
@@ -1522,6 +1543,21 @@ class LocalTrade:
         if is_open is False and only_filled:
             orders = [o for o in orders if o.filled and o.status in NON_OPEN_EXCHANGE_STATES]
         return orders
+
+    def _normalize_order_role(self, order_role: OrderRole | str | None) -> OrderRole | None:
+        """Normalize role-like input to OrderRole.
+
+        Supports OrderRole values, enum value strings ("entry"/"exit"/"conditional_exit")
+        and side strings ("buy"/"sell") for compatibility with strategy examples.
+        """
+        normalized_role = OrderRole.from_value(order_role)
+        if normalized_role is not None:
+            return normalized_role
+        if order_role == self.entry_side:
+            return OrderRole.entry
+        if order_role == self.exit_side:
+            return OrderRole.exit
+        return None
 
     def select_filled_orders(
         self,
@@ -1535,34 +1571,16 @@ class LocalTrade:
         :param conditional_exit_kind: Optional conditional exit kind filter.
         :return: array of Order objects
         """
-        return self.select_orders(
-            order_role=order_role,
+        normalized_role = self._normalize_order_role(order_role)
+        if order_role is not None and normalized_role is None:
+            return []
+
+        return self._filter_orders(
+            order_role=normalized_role,
             is_open=False,
             conditional_exit_kind=conditional_exit_kind,
             only_filled=True,
         )
-
-    def _normalize_order_role(
-        self,
-        order_role: OrderRole | str | None,
-    ) -> tuple[OrderRole | None, bool]:
-        """
-        Normalize semantic role / legacy side input to OrderRole.
-        :param order_role: Requested role or legacy side string.
-        :return: Tuple(normalized role, invalid flag).
-        """
-        if order_role is None:
-            return None, False
-        if isinstance(order_role, OrderRole):
-            return order_role, False
-        if order_role == self.entry_side:
-            return OrderRole.entry, False
-        if order_role == self.exit_side:
-            return OrderRole.exit, False
-        try:
-            return OrderRole(order_role), False
-        except ValueError:
-            return None, True
 
     def select_filled_or_open_orders(self) -> list["Order"]:
         """
@@ -1642,16 +1660,7 @@ class LocalTrade:
         :return: int count of buy orders that have been filled for this trade.
         """
 
-        return len(
-            [
-                o
-                for o in self.orders
-                if o.ft_order_side == "buy"
-                and o.ft_is_open is False
-                and o.filled
-                and o.status in NON_OPEN_EXCHANGE_STATES
-            ]
-        )
+        return len([o for o in self.select_filled_orders() if o.ft_order_side == "buy"])
 
     @property
     def nr_of_successful_sells(self) -> int:
@@ -1660,16 +1669,7 @@ class LocalTrade:
         WARNING: Please use nr_of_successful_exits for short support.
         :return: int count of sell orders that have been filled for this trade.
         """
-        return len(
-            [
-                o
-                for o in self.orders
-                if o.ft_order_side == "sell"
-                and o.ft_is_open is False
-                and o.filled
-                and o.status in NON_OPEN_EXCHANGE_STATES
-            ]
-        )
+        return len([o for o in self.select_filled_orders() if o.ft_order_side == "sell"])
 
     @property
     def sell_reason(self) -> str | None:
