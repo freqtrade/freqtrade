@@ -2410,6 +2410,10 @@
 <td><code>batch_size</code></td>
 <td>The size of the batches to use during training. <br><br> <strong>Datatype:</strong> int. <br> Default: <code>64</code>.</td>
 </tr>
+<tr>
+<td><code>early_stopping_patience</code></td>
+<td>Number of epochs with no improvement in validation loss before training is stopped early. This helps prevent overfitting by halting training when the model stops improving. Set to <code>0</code> to disable early stopping. Requires a test/validation split (<code>test_size &gt; 0</code>). <br><br> <strong>Datatype:</strong> int. <br> Default: <code>0</code> (disabled).</td>
+</tr>
 </tbody>
 </table>
 <h3 id="additional-parameters">Additional parameters<a class="headerlink" href="#additional-parameters" title="Permanent link">&para;</a></h3>
