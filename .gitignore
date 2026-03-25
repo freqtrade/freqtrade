@@ -8,21 +8,8 @@ logfile.txt
 *.log
 .env
 
-# === user_data: исключаем тяжёлое и секретное ===
-user_data/config.json
-user_data/**/config.json
-user_data/data/
-user_data/logs/
-user_data/models/
-user_data/backtest_results/
-user_data/hyperopt_results/
-user_data/plot/
-user_data/positions.db
-user_data/tradesv3.sqlite*
-user_data/hyperopt.lock
-
-# === user_data: включаем код (стратегии, hyperopts, freqaimodels) ===
-# Всё в strategies/, hyperopts/, freqaimodels/, notebooks/ — отслеживается
+# === user_data: Изолируем полностью (у неё свой репозиторий) ===
+user_data/
 
 # === Freqtrade артефакты ===
 freqtrade-plot.html
