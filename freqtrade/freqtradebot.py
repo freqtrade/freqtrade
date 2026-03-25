@@ -1705,9 +1705,7 @@ class FreqtradeBot(LoggingMixin):
             return
 
         canceled_trigger_orders = [
-            o
-            for o in conditional_exit_orders
-            if o["status"] in constants.CANCELED_EXCHANGE_STATES
+            o for o in conditional_exit_orders if o["status"] in constants.CANCELED_EXCHANGE_STATES
         ]
         active_trigger_orders = [
             o for o in conditional_exit_orders if o not in canceled_trigger_orders
@@ -1740,9 +1738,7 @@ class FreqtradeBot(LoggingMixin):
     ) -> bool:
         """Recreate a conditional-exit order if all known on-exchange orders are canceled."""
         canceled_trigger_orders = [
-            o
-            for o in conditional_exit_orders
-            if o["status"] in constants.CANCELED_EXCHANGE_STATES
+            o for o in conditional_exit_orders if o["status"] in constants.CANCELED_EXCHANGE_STATES
         ]
         all_canceled = (
             trade.is_open

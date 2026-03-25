@@ -237,8 +237,6 @@ def test_create_conditional_exit_order_trailing_kind(
     assert created_order.conditional_exit_kind == ConditionalExitKind.trailing
 
 
-
-
 @pytest.mark.parametrize("is_short", [False, True])
 def test_handle_conditional_exit_orders(
     mocker, default_conf_usdt, fee, caplog, is_short, limit_order
