@@ -1,12 +1,12 @@
 import logging
 from functools import reduce
-import pandas as pd
+
 import talib.abstract as ta
 from pandas import DataFrame
 from technical import qtpylib
 
-from freqtrade.strategy import IStrategy, DecimalParameter, IntParameter
-from freqtrade.strategy import merge_informative_pair
+from freqtrade.strategy import DecimalParameter, IntParameter, IStrategy
+
 
 logger = logging.getLogger(__name__)
 
@@ -267,7 +267,7 @@ class FreqAI_PriceDirection(IStrategy):
         conditions.append(dataframe["rsi"] > self.sell_rsi_threshold.value)
 
         # Или EMA crossover вниз
-        conditions.append((qtpylib.crossed_below(dataframe["ema_20"], dataframe["ema_50"])))
+        conditions.append(qtpylib.crossed_below(dataframe["ema_20"], dataframe["ema_50"]))
 
         if conditions:
             dataframe.loc[
