@@ -2247,6 +2247,11 @@ More details about look-ahead bias can be found in <a href="../strategy-customiz
 <p>To ensure that the model can be reused, freqAI will call your strategy with a dataframe of length 1. 
 If your strategy requires more data than this to generate the same features, you can't reuse backtest predictions for live deployment and need to update your <code>identifier</code> for each new backtest.</p>
 </div>
+<div class="admonition danger">
+<p class="admonition-title">Security notice</p>
+<p>Loading saved models from disk can cause security issues if using remote model files (files you downloaded from the internet or received from an untrusted source) due to having the necessity to have <code>weights_only=False</code>, which can cause security problems.
+As long as you only load models that you have trained yourself, there is no risk.</p>
+</div>
 <h3 id="backtest-live-collected-predictions">Backtest live collected predictions<a class="headerlink" href="#backtest-live-collected-predictions" title="Permanent link">&para;</a></h3>
 <p>FreqAI allow you to reuse live historic predictions through the backtest parameter <code>--freqai-backtest-live-models</code>. This can be useful when you want to reuse predictions generated in dry/run for comparison or other study.</p>
 <p>The <code>--timerange</code> parameter must not be informed, as it will be automatically calculated through the data in the historic predictions file.</p>

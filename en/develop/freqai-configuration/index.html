@@ -2521,6 +2521,11 @@ We do provide an explicit docker-compose file for this in <code>docker/docker-co
 This docker-compose file also contains a (disabled) section to enable GPU resources within docker containers. This obviously assumes the system has GPU resources available.</p>
 <p>PyTorch dropped support for macOS x64 (intel based Apple devices) in version 2.3. Subsequently, freqtrade also dropped support for PyTorch on this platform.</p>
 </div>
+<div class="admonition danger">
+<p class="admonition-title">Security notice</p>
+<p>Loading saved models from disk can cause security issues if using remote model files (files you downloaded from the internet or received from an untrusted source) due to having the necessity to have <code>weights_only=False</code>, which can cause security problems.
+As long as you only load models that you have trained yourself, there is no risk.</p>
+</div>
 <h3 id="structure">Structure<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h3>
 <h4 id="model">Model<a class="headerlink" href="#model" title="Permanent link">&para;</a></h4>
 <p>You can construct your own Neural Network architecture in PyTorch by simply defining your <code>nn.Module</code> class inside your custom <a href="#using-different-prediction-models"><code>IFreqaiModel</code> file</a> and then using that class in your <code>def train()</code> function. Here is an example of logistic regression model implementation using PyTorch (should be used with nn.BCELoss criterion) for classification tasks.</p>
