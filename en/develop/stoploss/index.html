@@ -2402,9 +2402,10 @@ This same logic will reapply a stoploss order on the exchange should you cancel 
 <h3 id="stoploss_price_type">stoploss_price_type<a class="headerlink" href="#stoploss_price_type" title="Permanent link">&para;</a></h3>
 <div class="admonition warning">
 <p class="admonition-title">Only applies to futures</p>
-<p><code>stoploss_price_type</code> only applies to futures markets (on exchanges where it's available).
+<p><code>stoploss_price_type</code> only applies to futures markets (on exchanges where it's available).<br />
 Freqtrade will perform a validation of this setting on startup, failing to start if an invalid setting for your exchange has been selected.
-Supported price types are gonna differs between each exchanges. Please check with your exchange on which price types it supports.</p>
+Supported price types are gonna differs between each exchanges. Please check with your exchange on which price types it supports.<br />
+In spot markets, this setting is ignored and not validated, as most exchanges only support one price type for stoploss orders on spot markets.</p>
 </div>
 <p>Stoploss on exchange on futures markets can trigger on different price types.
 The naming for these prices in exchange terminology often varies, but is usually something around "last" (or "contract price" ), "mark" and "index".</p>
