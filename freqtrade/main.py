@@ -63,7 +63,7 @@ def main(sysargv: list[str] | None = None) -> None:
             )
 
     except SystemExit as e:  # pragma: no cover
-        return_code = e
+        return_code = e.code
     except KeyboardInterrupt:
         logger.info("SIGINT received, aborting ...")
         return_code = 0
