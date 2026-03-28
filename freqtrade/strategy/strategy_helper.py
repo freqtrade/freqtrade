@@ -1,185 +1,171 @@
-import pandas as pd
+from math import isnan
 
-from freqtrade.exchange import timeframe_to_minutes
+from pandas import DataFrame
 
 
 def merge_informative_pair(
-    dataframe: pd.DataFrame,
-    informative: pd.DataFrame,
+    dataframe: DataFrame,
+    informative: DataFrame,
     timeframe: str,
     timeframe_inf: str,
     ffill: bool = True,
     append_timeframe: bool = True,
     date_column: str = "date",
     suffix: str | None = None,
-) -> pd.DataFrame:
+) -> DataFrame:
     """
-    Correctly merge informative samples to the original dataframe, avoiding lookahead bias.
+    Safely merge the informative sample(s) into the dataframe, avoiding lookahead bias.
 
-    Since dates are candle open dates, merging a 15m candle that starts at 15:00, and a
-    1h candle that starts at 15:00 will result in all candles to know the close at 16:00
-    which they should not know.
+    Because we're using a merge_asof, this is not a simple inner join.
+    For every row in the dataframe, the most recent row from the informative dataframe
+    that is older than the current row is used.
 
-    Moves the date of the informative pair by 1 time interval forward.
-    This way, the 14:00 1h candle is merged to 15:00 15m candle, since the 14:00 1h candle is the
-    last candle that's closed at 15:00, 15:15, 15:30 or 15:45.
-
-    Assuming inf_tf = '1d' - then the resulting columns will be:
-    date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d
-
-    :param dataframe: Original dataframe
-    :param informative: Informative pair, most likely loaded via dp.get_pair_dataframe
+    :param dataframe: DataFrame with the base pair
+    :param informative: DataFrame with the informative pair
     :param timeframe: Timeframe of the original pair sample.
     :param timeframe_inf: Timeframe of the informative pair sample.
-    :param ffill: Forwardfill missing values - optional but usually required
+    :param ffill: Forwardfill missing values - often desired so the most recent value is used.
     :param append_timeframe: Rename columns by appending timeframe.
-    :param date_column: A custom date column name.
-    :param suffix: A string suffix to add at the end of the informative columns. If specified,
-                   append_timeframe must be false.
+    :param date_column: A column that will be used as the date column in the informative dataframe.
+           Defaults to 'date'.
+    :param suffix: A suffix to add to all columns of the informative dataframe. Useful when
+                   combining multiple informative pairs with the same timeframe.
+                   Incompatible with ``append_timeframe=True``.
     :return: Merged dataframe
-    :raise: ValueError if the secondary timeframe is shorter than the dataframe timeframe
+    :raise: ValueError if suffix and append_timeframe are both specified.
     """
-    informative = informative.copy()
     minutes_inf = timeframe_to_minutes(timeframe_inf)
     minutes = timeframe_to_minutes(timeframe)
     if minutes == minutes_inf:
-        # No need to forwardshift if the timeframes are identical
-        informative["date_merge"] = informative[date_column]
+        # No need to adjust if the timeframes are the same
+        informative_columns = list(informative.columns)
+        if append_timeframe:
+            for i, name in enumerate(informative_columns):
+                if name != date_column:
+                    informative_columns[i] = f"{name}_{timeframe_inf}"
+        elif suffix:
+            for i, name in enumerate(informative_columns):
+                if name != date_column:
+                    informative_columns[i] = f"{name}_{suffix}"
+        informative.columns = informative_columns
+        merged = dataframe.merge(informative, on=date_column, how="left")
+        if ffill:
+            merged = merged.ffill()
+        return merged
     elif minutes < minutes_inf:
-        # Subtract "small" timeframe so merging is not delayed by 1 small candle
-        # Detailed explanation in https://github.com/freqtrade/freqtrade/issues/4073
-        if not informative.empty:
-            if timeframe_inf == "1M":
-                informative["date_merge"] = (
-                    informative[date_column] + pd.offsets.MonthBegin(1)
-                ) - pd.to_timedelta(minutes, "m")
-            else:
-                informative["date_merge"] = (
-                    informative[date_column]
-                    + pd.to_timedelta(minutes_inf, "m")
-                    - pd.to_timedelta(minutes, "m")
-                )
-        else:
-            informative["date_merge"] = informative[date_column]
-    else:
         raise ValueError(
-            "Tried to merge a faster timeframe to a slower timeframe."
-            "This would create new rows, and can throw off your regular indicators."
+            "Informative timeframe must be equal or higher than the dataframe timeframe!"
         )
 
-    # Rename columns to be unique
-    date_merge = "date_merge"
-    if suffix and append_timeframe:
-        raise ValueError("You can not specify `append_timeframe` as True and a `suffix`.")
-    elif append_timeframe:
-        date_merge = f"date_merge_{timeframe_inf}"
-        informative.columns = [f"{col}_{timeframe_inf}" for col in informative.columns]
-
-    elif suffix:
-        date_merge = f"date_merge_{suffix}"
-        informative.columns = [f"{col}_{suffix}" for col in informative.columns]
-
-    # Combine the 2 dataframes
-    # all indicators on the informative sample MUST be calculated before this point
-    if ffill:
-        # https://pandas.pydata.org/docs/user_guide/merging.html#timeseries-friendly-merging
-        # merge_ordered - ffill method is 2.5x faster than separate ffill()
-        dataframe = pd.merge_ordered(
-            dataframe,
-            informative,
-            fill_method="ffill",
-            left_on="date",
-            right_on=date_merge,
-            how="left",
-        )
-
-        if len(dataframe) > 1 and len(informative) > 0 and pd.isnull(dataframe.at[0, date_merge]):
-            # If the start dates of the dataframes are not aligned, the first rows will be NaN
-            # We can fill these with the last available informative candle before the start date
-            # while still avoiding lookahead bias - as only past data is used.
-            first_valid_idx = dataframe[date_merge].first_valid_index()
-            if first_valid_idx:
-                first_valid_date_merge = dataframe.at[first_valid_idx, date_merge]
-                matching_informative_raws = informative[
-                    informative[date_merge] < first_valid_date_merge
-                ]
-                if not matching_informative_raws.empty:
-                    dataframe.loc[: first_valid_idx - 1] = dataframe.loc[
-                        : first_valid_idx - 1
-                    ].fillna(matching_informative_raws.iloc[-1])
     else:
-        dataframe = pd.merge(
-            dataframe, informative, left_on="date", right_on=date_merge, how="left"
+        # Informative timeframe is higher than the base timeframe - use asof merge
+        informative_columns = list(informative.columns)
+        if suffix and append_timeframe:
+            raise ValueError("You can not specify 'suffix' and 'append_timeframe' simultaneously.")
+        if append_timeframe:
+            for i, name in enumerate(informative_columns):
+                if name != date_column:
+                    informative_columns[i] = f"{name}_{timeframe_inf}"
+        elif suffix:
+            for i, name in enumerate(informative_columns):
+                if name != date_column:
+                    informative_columns[i] = f"{name}_{suffix}"
+        informative.columns = informative_columns
+        # Sort the dataframe and informative to ensure merge_asof works as expected
+        dataframe = dataframe.sort_values(date_column)
+        informative = informative.sort_values(date_column)
+        # Shift the informative dataframe by 1 candle to avoid lookahead bias
+        informative[date_column] = informative[date_column] + informative[date_column].diff().fillna(
+            informative[date_column].diff().median()
         )
-    dataframe = dataframe.drop(date_merge, axis=1)
+        import pandas as pd
 
-    return dataframe
+        merged = pd.merge_asof(dataframe, informative, on=date_column)
+        if ffill:
+            merged = merged.ffill()
+        return merged
 
 
 def stoploss_from_open(
-    open_relative_stop: float, current_profit: float, is_short: bool = False, leverage: float = 1.0
+    open_relative_stop: float,
+    current_profit: float,
+    *,
+    is_short: bool = False,
+    leverage: float = 1.0,
 ) -> float:
     """
-    Given the current profit, and a desired stop loss value relative to the trade entry price,
-    return a stop loss value that is relative to the current price, and which can be
-    returned from `custom_stoploss`.
+    Given the initial (open) candle stoploss, and current profit, return a stoploss value
+    relative to current price that is appropriate.
 
-    The requested stop can be positive for a stop above the open price, or negative for
-    a stop below the open price. The return value is always >= 0.
-    `open_relative_stop` will be considered as adjusted for leverage if leverage is provided..
+    In normal situations, this function would be used to maintain a stoploss relative to the
+    entry point, even when the price has moved significantly in your favor.
 
-    Returns 0 if the resulting stop price would be above/below (longs/shorts) the current price
+    Both open_relative_stop and current_profit should be given as relative values
+    (expected profit/loss), not as the values returned from custom_stoploss.
 
-    :param open_relative_stop: Desired stop loss percentage, relative to the open price,
-                               adjusted for leverage
-    :param current_profit: The current profit percentage
-    :param is_short: When true, perform the calculation for short instead of long
-    :param leverage: Leverage to use for the calculation
-    :return: Stop loss value relative to current price
+    :param open_relative_stop: Desired stoploss relative to the open price
+    :param current_profit: Current profit of the trade
+    :param is_short: When true, perform the calculation using short formula
+    :param leverage: Leverage used in the trade
+    :return: Stop loss value relative to the current price
     """
-
-    # formula is undefined for current_profit -1 (longs) or 1 (shorts), return maximum value
-    _current_profit = current_profit / leverage
-    if (_current_profit == -1 and not is_short) or (is_short and _current_profit == 1):
-        return 1
-
-    if is_short is True:
-        stoploss = -1 + ((1 - open_relative_stop / leverage) / (1 - _current_profit))
+    # Use this theoretical trade to scale out the open stoploss
+    if is_short:
+        if current_profit == -1:
+            return 1
+        current_price_norm = 1 / (1 + current_profit / leverage)
+        desired_stop = 1 / (1 + open_relative_stop / leverage)
     else:
-        stoploss = 1 - ((1 + open_relative_stop / leverage) / (1 + _current_profit))
+        if current_profit == -1:
+            return 1
+        current_price_norm = 1 + current_profit / leverage
+        desired_stop = 1 + open_relative_stop / leverage
 
-    # negative stoploss values indicate the requested stop price is higher/lower
-    # (long/short) than the current price
-    return max(stoploss * leverage, 0.0)
+    # The current price is current_price_norm relative to the open.
+    # The stop needs to be desired_stop relative to the open.
+    # Stop relative to current price is therefore:
+    if is_short:
+        stoploss = 1 - desired_stop / current_price_norm
+    else:
+        stoploss = 1 - desired_stop / current_price_norm
+
+    if isnan(stoploss):
+        return 0
+    return max(stoploss, 0.0)
 
 
 def stoploss_from_absolute(
-    stop_rate: float, current_rate: float, is_short: bool = False, leverage: float = 1.0
+    stop_rate: float,
+    current_rate: float,
+    *,
+    is_short: bool = False,
+    leverage: float = 1.0,
 ) -> float:
     """
-    Given current price and desired stop price, return a stop loss value that is relative to current
-    price.
+    Given current price and desired stop price, return a stoploss value (as used in custom_stoploss)
+    that maintains the desired stop price.
 
-    The requested stop can be positive for a stop above the open price, or negative for
-    a stop below the open price. The return value is always >= 0.
-
-    Returns 0 if the resulting stop price would be above the current price.
-
-    :param stop_rate: Stop loss price.
-    :param current_rate: Current asset price.
-    :param is_short: When true, perform the calculation for short instead of long
-    :param leverage: Leverage to use for the calculation
-    :return: Positive stop loss value relative to current price
+    :param stop_rate: Stop loss target rate
+    :param current_rate: Current asset price
+    :param is_short: When true, perform the calculation using short formula
+    :param leverage: Leverage used in the trade
+    :return: Stop loss value relative to the current price
     """
-
-    # formula is undefined for current_rate 0, return maximum value
     if current_rate == 0:
         return 1
-
-    stoploss = 1 - (stop_rate / current_rate)
     if is_short:
-        stoploss = -stoploss
-
-    # negative stoploss values indicate the requested stop price is higher/lower
-    # (long/short) than the current price
+        stoploss = (stop_rate / current_rate) - 1
+    else:
+        stoploss = 1 - (stop_rate / current_rate)
+    if isnan(stoploss):
+        return 0
     return max(stoploss, 0.0) * leverage
+
+
+def timeframe_to_minutes(timeframe: str) -> int:
+    """
+    Same as timeframe_to_seconds, but returns minutes.
+    """
+    from freqtrade.exchange import timeframe_to_seconds as _tts
+
+    return _tts(timeframe) // 60
