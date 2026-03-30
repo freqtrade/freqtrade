@@ -63,7 +63,7 @@ def json_load(datafile: TextIO) -> Any:
     return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
 
 
-def file_load_json(file: Path):
+def file_load_json(file: Path) -> Any | None:
     if file.suffix != ".gz":
         gzipfile = file.with_suffix(file.suffix + ".gz")
     else:
@@ -100,7 +100,11 @@ def pair_to_filename(pair: str) -> str:
     return pair
 
 
-def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):
+def deep_merge_dicts(
+    source: dict[str, Any],
+    destination: dict[str, Any],
+    allow_null_overrides: bool = True,
+) -> dict[str, Any]:
     """
     Values from Source override destination, destination is returned (and modified!!)
     Sample:
@@ -120,7 +124,7 @@ def deep_merge_dicts(source, destination, allow_null_overrides: bool = True):
     return destination
 
 
-def round_dict(d, n):
+def round_dict(d: dict[str, Any], n: int) -> dict[str, Any]:
     """
     Rounds float values in the dict to n digits after the decimal point.
     """
@@ -130,7 +134,7 @@ def round_dict(d, n):
 DictMap = dict[str, Any] | Mapping[str, Any]
 
 
-def safe_value_nested(obj: DictMap, keys: str, default_value=None):
+def safe_value_nested(obj: DictMap, keys: str, default_value: Any = None) -> Any:
     """
     Search a nested dict for a value.
     :param obj: dict to search in
@@ -151,7 +155,9 @@ def safe_value_nested(obj: DictMap, keys: str, default_value=None):
     return nested_obj
 
 
-def safe_value_fallback(obj: DictMap, key1: str, key2: str | None = None, default_value=None):
+def safe_value_fallback(
+    obj: DictMap, key1: str, key2: str | None = None, default_value: Any = None
+) -> Any:
     """
     Search a value in obj, return this if it's not None.
     Then search key2 in obj - return that if it's not none - then use default_value.
@@ -165,7 +171,9 @@ def safe_value_fallback(obj: DictMap, key1: str, key2: str | None = None, defaul
     return default_value
 
 
-def safe_value_fallback2(dict1: DictMap, dict2: DictMap, key1: str, key2: str, default_value=None):
+def safe_value_fallback2(
+    dict1: DictMap, dict2: DictMap, key1: str, key2: str, default_value: Any = None
+) -> Any:
     """
     Search a value in dict1, return this if it's not None.
     Fall back to dict2 - return key2 from dict2 if it's not None.
@@ -195,7 +203,7 @@ def chunks(lst: list[Any], n: int) -> Iterator[list[Any]]:
         yield (lst[chunk : chunk + n])
 
 
-def parse_db_uri_for_logging(uri: str):
+def parse_db_uri_for_logging(uri: str) -> str:
     """
     Helper method to parse the DB URI and return the same DB URI with the password censored
     if it contains it. Otherwise, return the DB URI unchanged
@@ -230,7 +238,7 @@ def json_to_dataframe(data: str) -> pd.DataFrame:
     return dataframe
 
 
-def remove_entry_exit_signals(dataframe: pd.DataFrame):
+def remove_entry_exit_signals(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Remove Entry and Exit signals from a DataFrame
 
