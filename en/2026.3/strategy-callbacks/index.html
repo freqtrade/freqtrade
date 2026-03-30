@@ -1,0 +1,3297 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Freqtrade is a free and open source crypto trading bot written in Python, designed to support all major exchanges and be controlled via Telegram or builtin Web UI">
+      
+      
+      
+        <link rel="canonical" href="https://www.freqtrade.io/en/stable/strategy-callbacks/">
+      
+      
+        <link rel="prev" href="../strategy-customization/">
+      
+      
+        <link rel="next" href="../stoploss/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+    
+    
+      
+        <title>Strategy Callbacks - Freqtrade</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/ft.extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-VH170LG9M5"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-VH170LG9M5",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-VH170LG9M5",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#strategy-callbacks" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Freqtrade" class="md-header__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Freqtrade
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Strategy Callbacks
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="tear"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+
+  <!-- Main navigation -->
+  
+  
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Freqtrade" class="md-nav__button md-logo" aria-label="Freqtrade" data-md-component="logo">
+      
+  <img src="../images/logo.png" alt="logo">
+
+    </a>
+    Freqtrade
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/freqtrade/freqtrade" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker_quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart with Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-basics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Freqtrade Basics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-101/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Strategy Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Strategy Customization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Strategy Callbacks
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Strategy Callbacks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#imports-necessary-for-a-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Imports necessary for a strategy
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stoploss/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stoploss
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bot-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Start the bot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Control the bot
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Control the bot
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telegram-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telegram
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freq-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    freqUI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Hook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-download/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Downloading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backtesting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backtesting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hyperopt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hyperopt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FreqAI
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    FreqAI
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-parameter-table/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parameter table
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-feature-engineering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature engineering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running FreqAI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-reinforcement-learning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reinforcement Learning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../freqai-developers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leverage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short / Leverage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utility Sub-commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plotting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plotting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exchanges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exchange-specific Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" >
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Analysis
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data Analysis
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jupyter Notebooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_analysis_example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Strategy analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-backtesting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backtest analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_22" >
+        
+          
+          <label class="md-nav__link" for="__nav_22" id="__nav_22_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_22_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_22">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Post-installation Tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../trade-object/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Trade Object
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lookahead-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lookahead analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recursive-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recursive analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy-advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-hyperopt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Hyperopt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-orderflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orderflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../producer-consumer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Producer/Consumer mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql_cheatsheet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL Cheat-sheet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strategy_migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Strategy migration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../updating/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Updating Freqtrade
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deprecated/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deprecated Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributors Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+  <!-- Table of contents -->
+  
+  
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#imports-necessary-for-a-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Imports necessary for a strategy
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      </div>
+    </div>
+  </div>
+  
+
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/freqtrade/freqtrade/edit/develop/docs/strategy-callbacks.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="strategy-callbacks">Strategy Callbacks<a class="headerlink" href="#strategy-callbacks" title="Permanent link">&para;</a></h1>
+<p>While the main strategy functions (<code>populate_indicators()</code>, <code>populate_entry_trend()</code>, <code>populate_exit_trend()</code>) should be used in a vectorized way, and are only called <a href="../bot-basics/#backtesting-hyperopt-execution-logic">once during backtesting</a>, callbacks are called "whenever needed".</p>
+<p>As such, you should avoid doing heavy calculations in callbacks to avoid delays during operations.
+Depending on the callback used, they may be called when entering / exiting a trade, or throughout the duration of a trade.</p>
+<p>Currently available callbacks:</p>
+<ul>
+<li><a href="#bot-start"><code>bot_start()</code></a></li>
+<li><a href="#bot-loop-start"><code>bot_loop_start()</code></a></li>
+<li><a href="#stake-size-management"><code>custom_stake_amount()</code></a></li>
+<li><a href="#custom-exit-signal"><code>custom_exit()</code></a></li>
+<li><a href="#custom-stoploss"><code>custom_stoploss()</code></a></li>
+<li><a href="#custom-roi"><code>custom_roi()</code></a></li>
+<li><a href="#custom-order-price-rules"><code>custom_entry_price()</code> and <code>custom_exit_price()</code></a></li>
+<li><a href="#custom-order-timeout-rules"><code>check_entry_timeout()</code> and <code>check_exit_timeout()</code></a></li>
+<li><a href="#trade-entry-buy-order-confirmation"><code>confirm_trade_entry()</code></a></li>
+<li><a href="#trade-exit-sell-order-confirmation"><code>confirm_trade_exit()</code></a></li>
+<li><a href="#adjust-trade-position"><code>adjust_trade_position()</code></a></li>
+<li><a href="#adjust-entry-price"><code>adjust_entry_price()</code></a></li>
+<li><a href="#leverage-callback"><code>leverage()</code></a></li>
+<li><a href="#order-filled-callback"><code>order_filled()</code></a></li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Callback calling sequence</p>
+<p>You can find the callback calling sequence in <a href="../bot-basics/#bot-execution-logic">bot-basics</a></p>
+</div>
+<h2 id="imports-necessary-for-a-strategy">Imports necessary for a strategy<a class="headerlink" href="#imports-necessary-for-a-strategy" title="Permanent link">&para;</a></h2>
+<p>When creating a strategy, you will need to import the necessary modules and classes. The following imports are required for a strategy:</p>
+<p>By default, we recommend the following imports as a base line for your strategy:
+This will cover all imports necessary for freqtrade functions to work.
+Obviously you can add more imports as needed for your strategy.</p>
+<p>``` python</p>
+<h1 id="flake8-noqa-f401">flake8: noqa: F401<a class="headerlink" href="#flake8-noqa-f401" title="Permanent link">&para;</a></h1>
+<h1 id="isort-skip_file">isort: skip_file<a class="headerlink" href="#isort-skip_file" title="Permanent link">&para;</a></h1>
+<h1 id="-do-not-remove-these-imports-">--- Do not remove these imports ---<a class="headerlink" href="#-do-not-remove-these-imports-" title="Permanent link">&para;</a></h1>
+<p>import numpy as np
+import pandas as pd
+from datetime import datetime, timedelta, timezone
+from pandas import DataFrame
+from typing import Dict, Optional, Union, Tuple</p>
+<p>from freqtrade.strategy import (
+    IStrategy,
+    Trade, 
+    Order,
+    PairLocks,
+    informative,  # @informative decorator
+    # Hyperopt Parameters
+    BooleanParameter,
+    CategoricalParameter,
+    DecimalParameter,
+    IntParameter,
+    RealParameter,
+    # timeframe helpers
+    timeframe_to_minutes,
+    timeframe_to_next_date,
+    timeframe_to_prev_date,
+    # Strategy helper functions
+    merge_informative_pair,
+    stoploss_from_absolute,
+    stoploss_from_open,
+)</p>
+<h1 id="-">--------------------------------<a class="headerlink" href="#-" title="Permanent link">&para;</a></h1>
+<h1 id="add-your-lib-to-import-here">Add your lib to import here<a class="headerlink" href="#add-your-lib-to-import-here" title="Permanent link">&para;</a></h1>
+<p>import talib.abstract as ta
+from technical import qtpylib
+```</p>
+<h2 id="exit-logic-comparisons">Exit logic comparisons<a class="headerlink" href="#exit-logic-comparisons" title="Permanent link">&para;</a></h2>
+<p>Freqtrade allows your strategy to implement different exit logic using signal-based or callback-based functions.
+This section aims to compare each different function, helping you to choose the one that best fits your needs.</p>
+<ul>
+<li><strong><code>populate_exit_trend()</code></strong> - Vectorized signal-based exit logic using indicators in the main dataframe
+  ✅ <strong>Use</strong> to define exit signals based on indicators or other data that can be calculated in a vectorized manner.
+  🚫 <strong>Don't use</strong> to customize exit conditions for each individual trade, or if trade data is necessary to make an exit decision.</li>
+<li><strong><code>custom_exit()</code></strong> - Custom exit logic that will fully exit a trade immediately, called for every open trade at every bot loop iteration until a trade is closed.
+  ✅ <strong>Use</strong> to specify exit conditions for each individual trade (including any additional adjusted orders using <code>adjust_trade_position()</code>), or if trade data is necessary to make an exit decision, e.g. using profit data to exit.
+  🚫 <strong>Don't use</strong> when you want to exit using vectorised indicator-based data (use a <code>populate_exit_trend()</code> signal instead), or as a proxy for <code>custom_stoploss()</code>, and be aware that rate-based exits in backtesting can be inaccurate.</li>
+<li><strong><code>custom_stoploss()</code></strong> - Custom trailing stoploss, called for every open trade every iteration until a trade is closed. The value returned here is also used for <a href="../stoploss/#stop-loss-on-exchangefreqtrade">stoploss on exchange</a>.<br />
+  ✅ <strong>Use</strong> to customize the stoploss logic to set a dynamic stoploss based on trade data or other conditions.
+  🚫 <strong>Don't use</strong> to exit a trade immediately based on a specific condition. Use <code>custom_exit()</code> for that purpose.</li>
+<li><strong><code>custom_roi()</code></strong> - Custom ROI, called for every open trade every iteration until a trade is closed.
+  ✅ <strong>Use</strong> to specify a minimum ROI threshold ("take-profit") to exit a trade at this ROI level at some point within the trade duration, based on profit or other conditions.
+  🚫 <strong>Don't use</strong> to exit a trade immediately based on a specific condition. Use <code>custom_exit()</code>.
+  🚫 <strong>Don't use</strong> for static ROI. Use <code>minimal_roi</code>.</li>
+</ul>
+<h2 id="bot-start">Bot start<a class="headerlink" href="#bot-start" title="Permanent link">&para;</a></h2>
+<p>A simple callback which is called once when the strategy is loaded.
+This can be used to perform actions that must only be performed once and runs after dataprovider and wallet are set</p>
+<p>``` python
+import requests</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def bot_start(self, **kwargs) -&gt; None:
+    &quot;&quot;&quot;
+    Called only once after bot instantiation.
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    &quot;&quot;&quot;
+    if self.config[&quot;runmode&quot;].value in (&quot;live&quot;, &quot;dry_run&quot;):
+        # Assign this to the class by using self.*
+        # can then be used by populate_* methods
+        self.custom_remote_data = requests.get(&quot;https://some_remote_source.example.com&quot;)
+</code></pre></div>
+
+<p>```</p>
+<p>During hyperopt, this runs only once at startup.</p>
+<h2 id="bot-loop-start">Bot loop start<a class="headerlink" href="#bot-loop-start" title="Permanent link">&para;</a></h2>
+<p>A simple callback which is called once at the start of every bot throttling iteration in dry/live mode (roughly every 5
+seconds, unless configured differently) or once per candle in backtest/hyperopt mode.
+This can be used to perform calculations which are pair independent (apply to all pairs), loading of external data, etc.</p>
+<p>``` python</p>
+<h1 id="default-imports">Default imports<a class="headerlink" href="#default-imports" title="Permanent link">&para;</a></h1>
+<p>import requests</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def bot_loop_start(self, current_time: datetime, **kwargs) -&gt; None:
+    &quot;&quot;&quot;
+    Called at the start of the bot iteration (one loop).
+    Might be used to perform pair-independent tasks
+    (e.g. gather some remote resource for comparison)
+    :param current_time: datetime object, containing the current datetime
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    &quot;&quot;&quot;
+    if self.config[&quot;runmode&quot;].value in (&quot;live&quot;, &quot;dry_run&quot;):
+        # Assign this to the class by using self.*
+        # can then be used by populate_* methods
+        self.remote_data = requests.get(&quot;https://some_remote_source.example.com&quot;)
+</code></pre></div>
+
+<p>```</p>
+<h2 id="stake-size-management">Stake size management<a class="headerlink" href="#stake-size-management" title="Permanent link">&para;</a></h2>
+<p>Called before entering a trade, makes it possible to manage your position size when placing a new trade.</p>
+<p>```python</p>
+<h1 id="default-imports_1">Default imports<a class="headerlink" href="#default-imports_1" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float | None, max_stake: float,
+                            leverage: float, entry_tag: str | None, side: str,
+                            **kwargs) -&gt; float:</p>
+<div class="codehilite"><pre><span></span><code>    dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+    current_candle = dataframe.iloc[-1].squeeze()
+
+    if current_candle[&quot;fastk_rsi_1h&quot;] &gt; current_candle[&quot;fastd_rsi_1h&quot;]:
+        if self.config[&quot;stake_amount&quot;] == &quot;unlimited&quot;:
+            # Use entire available wallet during favorable conditions when in compounding mode.
+            return max_stake
+        else:
+            # Compound profits during favorable conditions instead of using a static stake.
+            return self.wallets.get_total_stake_amount() / self.config[&quot;max_open_trades&quot;]
+
+    # Use default stake amount.
+    return proposed_stake
+</code></pre></div>
+
+<p>```</p>
+<p>Freqtrade will fall back to the <code>proposed_stake</code> value should your code raise an exception. The exception itself will be logged.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You do not <em>have</em> to ensure that <code>min_stake &lt;= returned_value &lt;= max_stake</code>. Trades will succeed as the returned value will be clamped to supported range and this action will be logged.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Returning <code>0</code> or <code>None</code> will prevent trades from being placed.</p>
+</div>
+<h2 id="custom-exit-signal">Custom exit signal<a class="headerlink" href="#custom-exit-signal" title="Permanent link">&para;</a></h2>
+<p>Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.</p>
+<p>Allows to define custom exit signals, indicating that specified position should be closed (full exit). This is very useful when we need to customize exit conditions for each individual trade, or if you need trade data to make an exit decision.</p>
+<p>For example you could implement a 1:2 risk-reward ROI with <code>custom_exit()</code>.</p>
+<p>Using <code>custom_exit()</code> signals in place of stoploss though <em>is not recommended</em>. It is a inferior method to using <code>custom_stoploss()</code> in this regard - which also allows you to keep the stoploss on exchange.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Returning a (none-empty) <code>string</code> or <code>True</code> from this method is equal to setting exit signal on a candle at specified time. This method is not called when exit signal is set already, or if exit signals are disabled (<code>use_exit_signal=False</code>). <code>string</code> max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
+<code>custom_exit()</code> will ignore <code>exit_profit_only</code>, and will always be called unless <code>use_exit_signal=False</code>, even if there is a new enter signal.</p>
+</div>
+<p>An example of how we can use different indicators depending on the current profit and also exit trades that were open longer than one day:</p>
+<p>``` python</p>
+<h1 id="default-imports_2">Default imports<a class="headerlink" href="#default-imports_2" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):
+    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs):
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()</p>
+<div class="codehilite"><pre><span></span><code>    # Above 20% profit, sell when rsi &lt; 80
+    if current_profit &gt; 0.2:
+        if last_candle[&quot;rsi&quot;] &lt; 80:
+            return &quot;rsi_below_80&quot;
+
+    # Between 2% and 10%, sell if EMA-long above EMA-short
+    if 0.02 &lt; current_profit &lt; 0.1:
+        if last_candle[&quot;emalong&quot;] &gt; last_candle[&quot;emashort&quot;]:
+            return &quot;ema_long_below_80&quot;
+
+    # Sell any positions at a loss if they are held for more than one day.
+    if current_profit &lt; 0.0 and (current_time - trade.open_date_utc).days &gt;= 1:
+        return &quot;unclog&quot;
+</code></pre></div>
+
+<p>```</p>
+<p>See <a href="../strategy-advanced/#dataframe-access">Dataframe access</a> for more information about dataframe use in strategy callbacks.</p>
+<h2 id="custom-stoploss">Custom stoploss<a class="headerlink" href="#custom-stoploss" title="Permanent link">&para;</a></h2>
+<p>Called for open trade every iteration (roughly every 5 seconds) until a trade is closed.</p>
+<p>The usage of the custom stoploss method must be enabled by setting <code>use_custom_stoploss=True</code> on the strategy object.</p>
+<p>The stoploss price can only ever move upwards - if the stoploss value returned from <code>custom_stoploss</code> would result in a lower stoploss price than was previously set, it will be ignored. The traditional <code>stoploss</code> value serves as an absolute lower level and will be instated as the initial stoploss (before this method is called for the first time for a trade), and is still mandatory.<br />
+As custom stoploss acts as regular, changing stoploss, it will behave similar to <code>trailing_stop</code> - and trades exiting due to this will have the exit_reason of <code>"trailing_stop_loss"</code>.</p>
+<p>The method must return a stoploss value (float / number) as a percentage of the current price.
+E.g. If the <code>current_rate</code> is 200 USD, then returning <code>0.02</code> will set the stoploss price 2% lower, at 196 USD.
+During backtesting, <code>current_rate</code> (and <code>current_profit</code>) are provided against the candle's high (or low for short trades) - while the resulting stoploss is evaluated against the candle's low (or high for short trades).</p>
+<p>The absolute value of the return value is used (the sign is ignored), so returning <code>0.05</code> or <code>-0.05</code> have the same result, a stoploss 5% below the current price.
+Returning <code>None</code> will be interpreted as "no desire to change", and is the only safe way to return when you'd like to not modify the stoploss.
+<code>NaN</code> and <code>inf</code> values are considered invalid and will be ignored (identical to <code>None</code>).</p>
+<p>Stoploss on exchange works similar to <code>trailing_stop</code>, and the stoploss on exchange is updated as configured in <code>stoploss_on_exchange_interval</code> (<a href="../stoploss/#stop-loss-on-exchangefreqtrade">More details about stoploss on exchange</a>).</p>
+<p>If you're on futures markets, please take note of the <a href="../stoploss/#stoploss-and-leverage">stoploss and leverage</a> section, as the stoploss value returned from <code>custom_stoploss</code> is the risk for this trade - not the relative price movement.</p>
+<div class="admonition note">
+<p class="admonition-title">Use of dates</p>
+<p>All time-based calculations should be done based on <code>current_time</code> - using <code>datetime.now()</code> or <code>datetime.utcnow()</code> is discouraged, as this will break backtesting support.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Trailing stoploss</p>
+<p>It's recommended to disable <code>trailing_stop</code> when using custom stoploss values. Both can work in tandem, but you might encounter the trailing stop to move the price higher while your custom function would not want this, causing conflicting behavior.</p>
+</div>
+<h3 id="adjust-stoploss-after-position-adjustments">Adjust stoploss after position adjustments<a class="headerlink" href="#adjust-stoploss-after-position-adjustments" title="Permanent link">&para;</a></h3>
+<p>Depending on your strategy, you may encounter the need to adjust the stoploss in both directions after a <a href="#adjust-trade-position">position adjustment</a>.
+For this, freqtrade will make an additional call with <code>after_fill=True</code> after an order fills, which will allow the strategy to move the stoploss in any direction (also widening the gap between stoploss and current price, which is otherwise forbidden).</p>
+<div class="admonition note">
+<p class="admonition-title">backwards compatibility</p>
+<p>This call will only be made if the <code>after_fill</code> parameter is part of the function definition of your <code>custom_stoploss</code> function.
+As such, this will not impact (and with that, surprise) existing, running strategies.</p>
+</div>
+<h3 id="custom-stoploss-examples">Custom stoploss examples<a class="headerlink" href="#custom-stoploss-examples" title="Permanent link">&para;</a></h3>
+<p>The next section will show some examples on what's possible with the custom stoploss function.
+Of course, many more things are possible, and all examples can be combined at will.</p>
+<h4 id="trailing-stop-via-custom-stoploss">Trailing stop via custom stoploss<a class="headerlink" href="#trailing-stop-via-custom-stoploss" title="Permanent link">&para;</a></h4>
+<p>To simulate a regular trailing stoploss of 4% (trailing 4% behind the maximum reached price) you would use the following very simple method:</p>
+<p>``` python</p>
+<h1 id="default-imports_3">Default imports<a class="headerlink" href="#default-imports_3" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                    current_rate: float, current_profit: float, after_fill: bool, 
+                    **kwargs) -&gt; float | None:
+    &quot;&quot;&quot;
+    Custom stoploss logic, returning the new distance relative to current_rate (as ratio).
+    e.g. returning -0.05 would create a stoploss 5% below current_rate.
+    The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.
+
+    For full documentation please go to https://www.freqtrade.io/en/stable/strategy-advanced/
+
+    When not implemented by a strategy, returns the initial stoploss value.
+    Only called when use_custom_stoploss is set to True.
+
+    :param pair: Pair that&#39;s currently analyzed
+    :param trade: trade object.
+    :param current_time: datetime object, containing the current datetime
+    :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
+    :param current_profit: Current profit (as ratio), calculated based on current_rate.
+    :param after_fill: True if the stoploss is called after the order was filled.
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    :return float: New stoploss value, relative to the current_rate
+    &quot;&quot;&quot;
+    return -0.04 * trade.leverage
+</code></pre></div>
+
+<p>```</p>
+<h4 id="time-based-trailing-stop">Time based trailing stop<a class="headerlink" href="#time-based-trailing-stop" title="Permanent link">&para;</a></h4>
+<p>Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.</p>
+<p>``` python</p>
+<h1 id="default-imports_4">Default imports<a class="headerlink" href="#default-imports_4" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                    current_rate: float, current_profit: float, after_fill: bool, 
+                    **kwargs) -&gt; float | None:
+
+    # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
+    if current_time - timedelta(minutes=120) &gt; trade.open_date_utc:
+        return -0.05 * trade.leverage
+    elif current_time - timedelta(minutes=60) &gt; trade.open_date_utc:
+        return -0.10 * trade.leverage
+    return None
+</code></pre></div>
+
+<p>```</p>
+<h4 id="time-based-trailing-stop-with-after-fill-adjustments">Time based trailing stop with after-fill adjustments<a class="headerlink" href="#time-based-trailing-stop-with-after-fill-adjustments" title="Permanent link">&para;</a></h4>
+<p>Use the initial stoploss for the first 60 minutes, after this change to 10% trailing stoploss, and after 2 hours (120 minutes) we use a 5% trailing stoploss.
+If an additional order fills, set stoploss to -10% below the new <code>open_rate</code> (<a href="#position-adjust-calculations">Averaged across all entries</a>).</p>
+<p>``` python</p>
+<h1 id="default-imports_5">Default imports<a class="headerlink" href="#default-imports_5" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                    current_rate: float, current_profit: float, after_fill: bool, 
+                    **kwargs) -&gt; float | None:
+
+    if after_fill: 
+        # After an additional order, start with a stoploss of 10% below the new open rate
+        return stoploss_from_open(0.10, current_profit, is_short=trade.is_short, leverage=trade.leverage)
+    # Make sure you have the longest interval first - these conditions are evaluated from top to bottom.
+    if current_time - timedelta(minutes=120) &gt; trade.open_date_utc:
+        return -0.05 * trade.leverage
+    elif current_time - timedelta(minutes=60) &gt; trade.open_date_utc:
+        return -0.10 * trade.leverage
+    return None
+</code></pre></div>
+
+<p>```</p>
+<h4 id="different-stoploss-per-pair">Different stoploss per pair<a class="headerlink" href="#different-stoploss-per-pair" title="Permanent link">&para;</a></h4>
+<p>Use a different stoploss depending on the pair.
+In this example, we'll trail the highest price with 10% trailing stoploss for <code>ETH/BTC</code> and <code>XRP/BTC</code>, with 5% trailing stoploss for <code>LTC/BTC</code> and with 15% for all other pairs.</p>
+<p>``` python</p>
+<h1 id="default-imports_6">Default imports<a class="headerlink" href="#default-imports_6" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                    current_rate: float, current_profit: float, after_fill: bool,
+                    **kwargs) -&gt; float | None:
+
+    if pair in (&quot;ETH/BTC&quot;, &quot;XRP/BTC&quot;):
+        return -0.10 * trade.leverage
+    elif pair in (&quot;LTC/BTC&quot;):
+        return -0.05 * trade.leverage
+    return -0.15 * trade.leverage
+</code></pre></div>
+
+<p>```</p>
+<h4 id="trailing-stoploss-with-positive-offset">Trailing stoploss with positive offset<a class="headerlink" href="#trailing-stoploss-with-positive-offset" title="Permanent link">&para;</a></h4>
+<p>Use the initial stoploss until the profit is above 4%, then use a trailing stoploss of 50% of the current profit with a minimum of 2.5% and a maximum of 5%.</p>
+<p>Please note that the stoploss can only increase, values lower than the current stoploss are ignored.</p>
+<p>``` python</p>
+<h1 id="default-imports_7">Default imports<a class="headerlink" href="#default-imports_7" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                    current_rate: float, current_profit: float, after_fill: bool,
+                    **kwargs) -&gt; float | None:
+
+    if current_profit &lt; 0.04:
+        return None # return None to keep using the initial stoploss
+
+    # After reaching the desired offset, allow the stoploss to trail by half the profit
+    desired_stoploss = current_profit / 2
+
+    # Use a minimum of 2.5% and a maximum of 5%
+    return max(min(desired_stoploss, 0.05), 0.025) * trade.leverage
+</code></pre></div>
+
+<p>```</p>
+<h4 id="stepped-stoploss">Stepped stoploss<a class="headerlink" href="#stepped-stoploss" title="Permanent link">&para;</a></h4>
+<p>Instead of continuously trailing behind the current price, this example sets fixed stoploss price levels based on the current profit.</p>
+<ul>
+<li>Use the regular stoploss until 20% profit is reached</li>
+<li>Once profit is &gt; 20% - set stoploss to 7% above open price.</li>
+<li>Once profit is &gt; 25% - set stoploss to 15% above open price.</li>
+<li>Once profit is &gt; 40% - set stoploss to 25% above open price.</li>
+</ul>
+<p>``` python</p>
+<h1 id="default-imports_8">Default imports<a class="headerlink" href="#default-imports_8" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                    current_rate: float, current_profit: float, after_fill: bool,
+                    **kwargs) -&gt; float | None:
+
+    # evaluate highest to lowest, so that highest possible stop is used
+    if current_profit &gt; 0.40:
+        return stoploss_from_open(0.25, current_profit, is_short=trade.is_short, leverage=trade.leverage)
+    elif current_profit &gt; 0.25:
+        return stoploss_from_open(0.15, current_profit, is_short=trade.is_short, leverage=trade.leverage)
+    elif current_profit &gt; 0.20:
+        return stoploss_from_open(0.07, current_profit, is_short=trade.is_short, leverage=trade.leverage)
+
+    # return maximum stoploss value, keeping current stoploss price unchanged
+    return None
+</code></pre></div>
+
+<p>```</p>
+<h4 id="custom-stoploss-using-an-indicator-from-dataframe-example">Custom stoploss using an indicator from dataframe example<a class="headerlink" href="#custom-stoploss-using-an-indicator-from-dataframe-example" title="Permanent link">&para;</a></h4>
+<p>Absolute stoploss value may be derived from indicators stored in dataframe. Example uses parabolic SAR below the price as stoploss.</p>
+<p>``` python</p>
+<h1 id="default-imports_9">Default imports<a class="headerlink" href="#default-imports_9" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code>def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    # &lt;...&gt;
+    dataframe[&quot;sar&quot;] = ta.SAR(dataframe)
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                    current_rate: float, current_profit: float, after_fill: bool,
+                    **kwargs) -&gt; float | None:
+
+    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+    last_candle = dataframe.iloc[-1].squeeze()
+
+    # Use parabolic sar as absolute stoploss price
+    stoploss_price = last_candle[&quot;sar&quot;]
+
+    # Convert absolute price to percentage relative to current_rate
+    if stoploss_price &lt; current_rate:
+        return stoploss_from_absolute(stoploss_price, current_rate, is_short=trade.is_short)
+
+    # return maximum stoploss value, keeping current stoploss price unchanged
+    return None
+</code></pre></div>
+
+<p>```</p>
+<p>See <a href="../strategy-advanced/#dataframe-access">Dataframe access</a> for more information about dataframe use in strategy callbacks.</p>
+<h3 id="common-helpers-for-stoploss-calculations">Common helpers for stoploss calculations<a class="headerlink" href="#common-helpers-for-stoploss-calculations" title="Permanent link">&para;</a></h3>
+<h4 id="stoploss-relative-to-open-price">Stoploss relative to open price<a class="headerlink" href="#stoploss-relative-to-open-price" title="Permanent link">&para;</a></h4>
+<p>Stoploss values returned from <code>custom_stoploss()</code> must specify a percentage relative to <code>current_rate</code>, but sometimes you may want to specify a stoploss relative to the <em>entry</em> price instead.
+<code>stoploss_from_open()</code> is a helper function to calculate a stoploss value that can be returned from <code>custom_stoploss</code> which will be equivalent to the desired trade profit above the entry point.</p>
+<details class="example">
+<summary>Returning a stoploss relative to the open price from the custom stoploss function</summary>
+<p>Say the open price was $100, and <code>current_price</code> is $121 (<code>current_profit</code> will be <code>0.21</code>).  </p>
+<p>If we want a stop price at 7% above the open price we can call <code>stoploss_from_open(0.07, current_profit, False)</code> which will return <code>0.1157024793</code>.  11.57% below $121 is $107, which is the same as 7% above $100.</p>
+<p>This function will consider leverage - so at 10x leverage, the actual stoploss would be 0.7% above $100 (0.7% * 10x = 7%).</p>
+<p>``` python</p>
+<h1 id="default-imports_10">Default imports<a class="headerlink" href="#default-imports_10" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+use_custom_stoploss = True
+
+def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                    current_rate: float, current_profit: float, after_fill: bool,
+                    **kwargs) -&gt; float | None:
+
+    # once the profit has risen above 10%, keep the stoploss at 7% above the open price
+    if current_profit &gt; 0.10:
+        return stoploss_from_open(0.07, current_profit, is_short=trade.is_short, leverage=trade.leverage)
+
+    return 1
+</code></pre></div>
+
+<p>```</p>
+<p>Full examples can be found in the <a href="./#custom-stoploss">Custom stoploss</a> section of the Documentation.</p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Providing invalid input to <code>stoploss_from_open()</code> may produce "CustomStoploss function did not return valid stoploss" warnings.
+This may happen if <code>current_profit</code> parameter is below specified <code>open_relative_stop</code>. Such situations may arise when closing trade
+is blocked by <code>confirm_trade_exit()</code> method. Warnings can be solved by never blocking stop loss sells by checking <code>exit_reason</code> in
+<code>confirm_trade_exit()</code>, or by using <code>return stoploss_from_open(...) or 1</code> idiom, which will request to not change stop loss when
+<code>current_profit &lt; open_relative_stop</code>.</p>
+</div>
+<h4 id="stoploss-percentage-from-absolute-price">Stoploss percentage from absolute price<a class="headerlink" href="#stoploss-percentage-from-absolute-price" title="Permanent link">&para;</a></h4>
+<p>Stoploss values returned from <code>custom_stoploss()</code> always specify a percentage relative to <code>current_rate</code>. In order to set a stoploss at specified absolute price level, we need to use <code>stop_rate</code> to calculate what percentage relative to the <code>current_rate</code> will give you the same result as if the percentage was specified from the open price.</p>
+<p>The helper function <code>stoploss_from_absolute()</code> can be used to convert from an absolute price, to a current price relative stop which can be returned from <code>custom_stoploss()</code>.</p>
+<details class="example">
+<summary>Returning a stoploss using absolute price from the custom stoploss function</summary>
+<p>If we want to trail a stop price at 2xATR below current price we can call <code>stoploss_from_absolute(current_rate + (side * candle["atr"] * 2), current_rate=current_rate, is_short=trade.is_short, leverage=trade.leverage)</code>.
+For futures, we need to adjust the direction (up or down), as well as adjust for leverage, since the <a href="./#custom-stoploss"><code>custom_stoploss</code></a> callback  returns the <a href="../stoploss/#stoploss-and-leverage">"risk for this trade"</a> - not the relative price movement.</p>
+<p>``` python</p>
+<h1 id="default-imports_11">Default imports<a class="headerlink" href="#default-imports_11" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code>use_custom_stoploss = True
+
+def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    dataframe[&quot;atr&quot;] = ta.ATR(dataframe, timeperiod=14)
+    return dataframe
+
+def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                    current_rate: float, current_profit: float, after_fill: bool,
+                    **kwargs) -&gt; float | None:
+    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+    trade_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
+    candle = dataframe.iloc[-1].squeeze()
+    side = 1 if trade.is_short else -1
+    return stoploss_from_absolute(current_rate + (side * candle[&quot;atr&quot;] * 2), 
+                                  current_rate=current_rate, 
+                                  is_short=trade.is_short,
+                                  leverage=trade.leverage)
+</code></pre></div>
+
+<p>```</p>
+</details>
+<hr />
+<h2 id="custom-roi">Custom ROI<a class="headerlink" href="#custom-roi" title="Permanent link">&para;</a></h2>
+<p>Called for open trade every iteration (roughly every 5 seconds) until a trade is closed.</p>
+<p>The usage of the custom ROI method must be enabled by setting <code>use_custom_roi=True</code> on the strategy object.</p>
+<p>This method allows you to define a custom minimum ROI threshold for exiting a trade, expressed as a ratio (e.g., <code>0.05</code> for 5% profit). If both <code>minimal_roi</code> and <code>custom_roi</code> are defined, the lower of the two thresholds will trigger an exit. For example, if <code>minimal_roi</code> is set to <code>{"0": 0.10}</code> (10% at 0 minutes) and <code>custom_roi</code> returns <code>0.05</code>, the trade will exit when the profit reaches 5%. Also, if <code>custom_roi</code> returns <code>0.10</code> and <code>minimal_roi</code> is set to <code>{"0": 0.05}</code> (5% at 0 minutes), the trade will be closed when the profit reaches 5%.</p>
+<p>The method must return a float representing the new ROI threshold as a ratio, or <code>None</code> to fall back to the <code>minimal_roi</code> logic. Returning <code>NaN</code> or <code>inf</code> values is considered invalid and will be treated as <code>None</code>, causing the bot to use the <code>minimal_roi</code> configuration.</p>
+<h3 id="custom-roi-examples">Custom ROI examples<a class="headerlink" href="#custom-roi-examples" title="Permanent link">&para;</a></h3>
+<p>The following examples illustrate how to use the <code>custom_roi</code> function to implement different ROI logics.</p>
+<h4 id="custom-roi-per-side">Custom ROI per side<a class="headerlink" href="#custom-roi-per-side" title="Permanent link">&para;</a></h4>
+<p>Use different ROI thresholds depending on the <code>side</code>. In this example, 5% for long entries and 2% for short entries.</p>
+<p>```python</p>
+<h1 id="default-imports_12">Default imports<a class="headerlink" href="#default-imports_12" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code>use_custom_roi = True
+
+# ... populate_* methods
+
+def custom_roi(self, pair: str, trade: Trade, current_time: datetime, trade_duration: int,
+               entry_tag: str | None, side: str, **kwargs) -&gt; float | None:
+    &quot;&quot;&quot;
+    Custom ROI logic, returns a new minimum ROI threshold (as a ratio, e.g., 0.05 for +5%).
+    Only called when use_custom_roi is set to True.
+
+    If used at the same time as minimal_roi, an exit will be triggered when the lower
+    threshold is reached. Example: If minimal_roi = {&quot;0&quot;: 0.01} and custom_roi returns 0.05,
+    an exit will be triggered if profit reaches 5%.
+
+    :param pair: Pair that&#39;s currently analyzed.
+    :param trade: trade object.
+    :param current_time: datetime object, containing the current datetime.
+    :param trade_duration: Current trade duration in minutes.
+    :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+    :param side: &#39;long&#39; or &#39;short&#39; - indicating the direction of the current trade.
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    :return float: New ROI value as a ratio, or None to fall back to minimal_roi logic.
+    &quot;&quot;&quot;
+    return 0.05 if side == &quot;long&quot; else 0.02
+</code></pre></div>
+
+<p>```</p>
+<h4 id="custom-roi-per-pair">Custom ROI per pair<a class="headerlink" href="#custom-roi-per-pair" title="Permanent link">&para;</a></h4>
+<p>Use different ROI thresholds depending on the <code>pair</code>.</p>
+<p>```python</p>
+<h1 id="default-imports_13">Default imports<a class="headerlink" href="#default-imports_13" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code>use_custom_roi = True
+
+# ... populate_* methods
+
+def custom_roi(self, pair: str, trade: Trade, current_time: datetime, trade_duration: int,
+               entry_tag: str | None, side: str, **kwargs) -&gt; float | None:
+
+    stake = trade.stake_currency
+    roi_map = {
+        f&quot;BTC/{stake}&quot;: 0.02, # 2% for BTC
+        f&quot;ETH/{stake}&quot;: 0.03, # 3% for ETH
+        f&quot;XRP/{stake}&quot;: 0.04, # 4% for XRP
+    }
+
+    return roi_map.get(pair, 0.01) # 1% for any other pair
+</code></pre></div>
+
+<p>```</p>
+<h4 id="custom-roi-per-entry-tag">Custom ROI per entry tag<a class="headerlink" href="#custom-roi-per-entry-tag" title="Permanent link">&para;</a></h4>
+<p>Use different ROI thresholds depending on the <code>entry_tag</code> provided with the buy signal.</p>
+<p>```python</p>
+<h1 id="default-imports_14">Default imports<a class="headerlink" href="#default-imports_14" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code>use_custom_roi = True
+
+# ... populate_* methods
+
+def custom_roi(self, pair: str, trade: Trade, current_time: datetime, trade_duration: int,
+               entry_tag: str | None, side: str, **kwargs) -&gt; float | None:
+
+    roi_by_tag = {
+        &quot;breakout&quot;: 0.08,       # 8% if tag is &quot;breakout&quot;
+        &quot;rsi_overbought&quot;: 0.05, # 5% if tag is &quot;rsi_overbought&quot;
+        &quot;mean_reversion&quot;: 0.03, # 3% if tag is &quot;mean_reversion&quot;
+    }
+
+    return roi_by_tag.get(entry_tag, 0.01)  # 1% if tag is unknown
+</code></pre></div>
+
+<p>```</p>
+<h4 id="custom-roi-based-on-atr">Custom ROI based on ATR<a class="headerlink" href="#custom-roi-based-on-atr" title="Permanent link">&para;</a></h4>
+<p>ROI value may be derived from indicators stored in dataframe. This example uses the ATR ratio as ROI.</p>
+<p>``` python</p>
+<h1 id="default-imports_15">Default imports<a class="headerlink" href="#default-imports_15" title="Permanent link">&para;</a></h1>
+<h1 id="_1">&lt;...&gt;<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<p>import talib.abstract as ta</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code>use_custom_roi = True
+
+def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+    # &lt;...&gt;
+    dataframe[&quot;atr&quot;] = ta.ATR(dataframe, timeperiod=10)
+
+def custom_roi(self, pair: str, trade: Trade, current_time: datetime, trade_duration: int,
+               entry_tag: str | None, side: str, **kwargs) -&gt; float | None:
+
+    dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+    last_candle = dataframe.iloc[-1].squeeze()
+    atr_ratio = last_candle[&quot;atr&quot;] / last_candle[&quot;close&quot;]
+
+    return atr_ratio # Returns the ATR value as ratio
+</code></pre></div>
+
+<p>```</p>
+<hr />
+<h2 id="custom-order-price-rules">Custom order price rules<a class="headerlink" href="#custom-order-price-rules" title="Permanent link">&para;</a></h2>
+<p>By default, freqtrade use the orderbook to automatically set an order price (<a href="../configuration/#prices-used-for-orders">Relevant documentation</a>), you also have the option to create custom order prices based on your strategy.</p>
+<p>You can use this feature by creating a <code>custom_entry_price()</code> function in your strategy file to customize entry prices and <code>custom_exit_price()</code> for exits.</p>
+<p>Each of these methods are called right before placing an order on the exchange.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your custom pricing function return None or an invalid value, price will fall back to <code>proposed_rate</code>, which is based on the regular pricing configuration.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using <code>custom_entry_price()</code>, the Trade object will be available as soon as the first entry order associated with the trade is created, for the first entry, <code>trade</code> parameter value will be <code>None</code>.</p>
+</div>
+<h3 id="custom-order-entry-and-exit-price-example">Custom order entry and exit price example<a class="headerlink" href="#custom-order-entry-and-exit-price-example" title="Permanent link">&para;</a></h3>
+<p>``` python</p>
+<h1 id="default-imports_16">Default imports<a class="headerlink" href="#default-imports_16" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def custom_entry_price(self, pair: str, trade: Trade | None, current_time: datetime, proposed_rate: float,
+                       entry_tag: str | None, side: str, **kwargs) -&gt; float:
+
+    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                            timeframe=self.timeframe)
+    new_entryprice = dataframe[&quot;bollinger_10_lowerband&quot;].iat[-1]
+
+    return new_entryprice
+
+def custom_exit_price(self, pair: str, trade: Trade,
+                      current_time: datetime, proposed_rate: float,
+                      current_profit: float, exit_tag: str | None, **kwargs) -&gt; float:
+
+    dataframe, last_updated = self.dp.get_analyzed_dataframe(pair=pair,
+                                                            timeframe=self.timeframe)
+    new_exitprice = dataframe[&quot;bollinger_10_upperband&quot;].iat[-1]
+
+    return new_exitprice
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Modifying entry and exit prices will only work for limit orders. Depending on the price chosen, this can result in a lot of unfilled orders. By default the maximum allowed distance between the current price and the custom price is 2%, this value can be changed in config with the <code>custom_price_max_distance_ratio</code> parameter.
+<strong>Example</strong>:
+If the new_entryprice is 97, the proposed_rate is 100 and the <code>custom_price_max_distance_ratio</code> is set to 2%, The retained valid custom entry price will be 98, which is 2% below the current (proposed) rate.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Backtesting</p>
+<p>Custom prices are supported in backtesting (starting with 2021.12), and orders will fill if the price falls within the candle's low/high range.
+Orders that don't fill immediately are subject to regular timeout handling, which happens once per (detail) candle.
+<code>custom_exit_price()</code> is only called for sells of type exit_signal, Custom exit and partial exits. All other exit-types will use regular backtesting prices.</p>
+</div>
+<h2 id="custom-order-timeout-rules">Custom order timeout rules<a class="headerlink" href="#custom-order-timeout-rules" title="Permanent link">&para;</a></h2>
+<p>Simple, time-based order-timeouts can be configured either via strategy or in the configuration in the <code>unfilledtimeout</code> section.</p>
+<p>However, freqtrade also offers a custom callback for both order types, which allows you to decide based on custom criteria if an order did time out or not.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Backtesting fills orders if their price falls within the candle's low/high range.
+The below callbacks will be called once per (detail) candle for orders that don't fill immediately (which use custom pricing).</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Replacing orders</p>
+<p>If you'd like to replace an order with a different price instead of just cancelling it, you might want to look at <a href="#adjust-order-price"><code>adjust_order_price()</code></a> instead, which will allow you to both cancel the order, as well as replace it with a new price.</p>
+</div>
+<h3 id="custom-order-timeout-example">Custom order timeout example<a class="headerlink" href="#custom-order-timeout-example" title="Permanent link">&para;</a></h3>
+<p>Called for every open order until that order is either filled or cancelled.
+<code>check_entry_timeout()</code> is called for trade entries, while <code>check_exit_timeout()</code> is called for trade exit orders.</p>
+<p>A simple example, which applies different unfilled-timeouts depending on the price of the asset can be seen below.
+It applies a tight timeout for higher priced assets, while allowing more time to fill on cheap coins.</p>
+<p>The function must return either <code>True</code> (cancel order) or <code>False</code> (keep order alive).</p>
+<p>``` python
+    # Default imports</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+# Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
+unfilledtimeout = {
+    &quot;entry&quot;: 60 * 25,
+    &quot;exit&quot;: 60 * 25
+}
+
+def check_entry_timeout(self, pair: str, trade: Trade, order: Order,
+                        current_time: datetime, **kwargs) -&gt; bool:
+    if trade.open_rate &gt; 100 and trade.open_date_utc &lt; current_time - timedelta(minutes=5):
+        return True
+    elif trade.open_rate &gt; 10 and trade.open_date_utc &lt; current_time - timedelta(minutes=3):
+        return True
+    elif trade.open_rate &lt; 1 and trade.open_date_utc &lt; current_time - timedelta(hours=24):
+       return True
+    return False
+
+
+def check_exit_timeout(self, pair: str, trade: Trade, order: Order,
+                       current_time: datetime, **kwargs) -&gt; bool:
+    if trade.open_rate &gt; 100 and trade.open_date_utc &lt; current_time - timedelta(minutes=5):
+        return True
+    elif trade.open_rate &gt; 10 and trade.open_date_utc &lt; current_time - timedelta(minutes=3):
+        return True
+    elif trade.open_rate &lt; 1 and trade.open_date_utc &lt; current_time - timedelta(hours=24):
+       return True
+    return False
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the above example, <code>unfilledtimeout</code> must be set to something bigger than 24h, otherwise that type of timeout will apply first.</p>
+</div>
+<h3 id="custom-order-timeout-example-using-additional-data">Custom order timeout example (using additional data)<a class="headerlink" href="#custom-order-timeout-example-using-additional-data" title="Permanent link">&para;</a></h3>
+<p>``` python
+    # Default imports</p>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+# Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.
+unfilledtimeout = {
+    &quot;entry&quot;: 60 * 25,
+    &quot;exit&quot;: 60 * 25
+}
+
+def check_entry_timeout(self, pair: str, trade: Trade, order: Order,
+                        current_time: datetime, **kwargs) -&gt; bool:
+    ob = self.dp.orderbook(pair, 1)
+    current_price = ob[&quot;bids&quot;][0][0]
+    # Cancel buy order if price is more than 2% above the order.
+    if current_price &gt; order.price * 1.02:
+        return True
+    return False
+
+
+def check_exit_timeout(self, pair: str, trade: Trade, order: Order,
+                       current_time: datetime, **kwargs) -&gt; bool:
+    ob = self.dp.orderbook(pair, 1)
+    current_price = ob[&quot;asks&quot;][0][0]
+    # Cancel sell order if price is more than 2% below the order.
+    if current_price &lt; order.price * 0.98:
+        return True
+    return False
+</code></pre></div>
+
+<p>```</p>
+<hr />
+<h2 id="bot-order-confirmation">Bot order confirmation<a class="headerlink" href="#bot-order-confirmation" title="Permanent link">&para;</a></h2>
+<p>Confirm trade entry / exits.
+This are the last methods that will be called before an order is placed.</p>
+<h3 id="trade-entry-buy-order-confirmation">Trade entry (buy order) confirmation<a class="headerlink" href="#trade-entry-buy-order-confirmation" title="Permanent link">&para;</a></h3>
+<p><code>confirm_trade_entry()</code> can be used to abort a trade entry at the latest second (maybe because the price is not what we expect).</p>
+<p>``` python</p>
+<h1 id="default-imports_17">Default imports<a class="headerlink" href="#default-imports_17" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
+                        time_in_force: str, current_time: datetime, entry_tag: str | None,
+                        side: str, **kwargs) -&gt; bool:
+    &quot;&quot;&quot;
+    Called right before placing a entry order.
+    Timing for this function is critical, so avoid doing heavy computations or
+    network requests in this method.
+
+    For full documentation please go to https://www.freqtrade.io/en/stable/strategy-advanced/
+
+    When not implemented by a strategy, returns True (always confirming).
+
+    :param pair: Pair that&#39;s about to be bought/shorted.
+    :param order_type: Order type (as configured in order_types). usually limit or market.
+    :param amount: Amount in target (base) currency that&#39;s going to be traded.
+    :param rate: Rate that&#39;s going to be used when using limit orders 
+                 or current rate for market orders.
+    :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+    :param current_time: datetime object, containing the current datetime
+    :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+    :param side: &quot;long&quot; or &quot;short&quot; - indicating the direction of the proposed trade
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    :return bool: When True is returned, then the buy-order is placed on the exchange.
+        False aborts the process
+    &quot;&quot;&quot;
+    return True
+</code></pre></div>
+
+<p>```</p>
+<h3 id="trade-exit-sell-order-confirmation">Trade exit (sell order) confirmation<a class="headerlink" href="#trade-exit-sell-order-confirmation" title="Permanent link">&para;</a></h3>
+<p><code>confirm_trade_exit()</code> can be used to abort a trade exit (sell) at the latest second (maybe because the price is not what we expect).</p>
+<p><code>confirm_trade_exit()</code> may be called multiple times within one iteration for the same trade if different exit-reasons apply.
+The exit-reasons (if applicable) will be in the following sequence:</p>
+<ul>
+<li><code>exit_signal</code> / <code>custom_exit</code></li>
+<li><code>stop_loss</code></li>
+<li><code>roi</code></li>
+<li><code>trailing_stop_loss</code></li>
+</ul>
+<p>``` python</p>
+<h1 id="default-imports_18">Default imports<a class="headerlink" href="#default-imports_18" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+                       rate: float, time_in_force: str, exit_reason: str,
+                       current_time: datetime, **kwargs) -&gt; bool:
+    &quot;&quot;&quot;
+    Called right before placing a regular exit order.
+    Timing for this function is critical, so avoid doing heavy computations or
+    network requests in this method.
+
+    For full documentation please go to https://www.freqtrade.io/en/stable/strategy-advanced/
+
+    When not implemented by a strategy, returns True (always confirming).
+
+    :param pair: Pair for trade that&#39;s about to be exited.
+    :param trade: trade object.
+    :param order_type: Order type (as configured in order_types). usually limit or market.
+    :param amount: Amount in base currency.
+    :param rate: Rate that&#39;s going to be used when using limit orders
+                 or current rate for market orders.
+    :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).
+    :param exit_reason: Exit reason.
+        Can be any of [&quot;roi&quot;, &quot;stop_loss&quot;, &quot;stoploss_on_exchange&quot;, &quot;trailing_stop_loss&quot;,
+                       &quot;exit_signal&quot;, &quot;force_exit&quot;, &quot;emergency_exit&quot;]
+    :param current_time: datetime object, containing the current datetime
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    :return bool: When True, then the exit-order is placed on the exchange.
+        False aborts the process
+    &quot;&quot;&quot;
+    if exit_reason == &quot;force_exit&quot; and trade.calc_profit_ratio(rate) &lt; 0:
+        # Reject force-sells with negative profit
+        # This is just a sample, please adjust to your needs
+        # (this does not necessarily make sense, assuming you know when you&#39;re force-selling)
+        return False
+    return True
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code>confirm_trade_exit()</code> can prevent stoploss exits, causing significant losses as this would ignore stoploss exits.
+<code>confirm_trade_exit()</code> will not be called for Liquidations - as liquidations are forced by the exchange, and therefore cannot be rejected.</p>
+</div>
+<h2 id="adjust-trade-position">Adjust trade position<a class="headerlink" href="#adjust-trade-position" title="Permanent link">&para;</a></h2>
+<p>The <code>position_adjustment_enable</code> strategy property enables the usage of <code>adjust_trade_position()</code> callback in the strategy.
+For performance reasons, it's disabled by default and freqtrade will show a warning message on startup if enabled.
+<code>adjust_trade_position()</code> can be used to perform additional orders, for example to manage risk with DCA (Dollar Cost Averaging) or to increase or decrease positions.</p>
+<p>Additional orders also result in additional fees and those orders don't count towards <code>max_open_trades</code>.</p>
+<p>This callback is also called when there is an open order (either buy or sell) waiting for execution - and will cancel the existing open order to place a new order if the amount, price or direction is different. Also partially filled orders will be canceled, and will be replaced with the new amount as returned by the callback.</p>
+<p><code>adjust_trade_position()</code> is called very frequently for the duration of a trade, so you must keep your implementation as performant as possible.</p>
+<p>Position adjustments will always be applied in the direction of the trade, so a positive value will always increase your position (negative values will decrease your position), no matter if it's a long or short trade.
+Adjustment orders can be assigned with a tag by returning a 2 element Tuple, with the first element being the adjustment amount, and the 2<sup>nd</sup> element the tag (e.g. <code>return 250, "increase_favorable_conditions"</code>).</p>
+<p>Modifications to leverage are not possible, and the stake-amount returned is assumed to be before applying leverage.</p>
+<p>The combined stake currently allocated to the position is held in <code>trade.stake_amount</code>. Therefore <code>trade.stake_amount</code> will always be updated on every additional entry and partial exit made through <code>adjust_trade_position()</code>.</p>
+<div class="admonition danger">
+<p class="admonition-title">Loose Logic</p>
+<p>On dry and live run, this function will be called every <code>throttle_process_secs</code> (default to 5s). If you have a loose logic, (e.g. increase position if RSI of the last candle is below 30), your bot will do extra re-entry every 5 secs until you either it run out of money, hit the <code>max_position_adjustment</code> limit, or a new candle with RSI more than 30 arrived.</p>
+<p>Same thing also can happen with partial exit.<br />
+So be sure to have a strict logic and/or check for the last filled order and if an order is already open.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Performance with many position adjustments</p>
+<p>Position adjustments can be a good approach to increase a strategy's output - but it can also have drawbacks if using this feature extensively.<br />
+Each of the orders will be attached to the trade object for the duration of the trade - hence increasing memory usage.
+Trades with long duration and 10s or even 100ds of position adjustments are therefore not recommended, and should be closed at regular intervals to not affect performance.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Backtesting</p>
+<p>During backtesting this callback is called for each candle in <code>timeframe</code> or <code>timeframe_detail</code>, so run-time performance will be affected.
+This can also cause deviating results between live and backtesting, since backtesting can adjust the trade only once per candle, whereas live could adjust the trade multiple times per candle.</p>
+</div>
+<h3 id="increase-position">Increase position<a class="headerlink" href="#increase-position" title="Permanent link">&para;</a></h3>
+<p>The strategy is expected to return a positive <strong>stake_amount</strong> (in stake currency) between <code>min_stake</code> and <code>max_stake</code> if and when an additional entry order should be made (position is increased -&gt; buy order for long trades, sell order for short trades).</p>
+<p>If there are not enough funds in the wallet (the return value is above <code>max_stake</code>) then the signal will be ignored.
+<code>max_entry_position_adjustment</code> property is used to limit the number of additional entries per trade (on top of the first entry order) that the bot can execute. By default, the value is -1 which means the bot have no limit on number of adjustment entries.</p>
+<p>Additional entries are ignored once you have reached the maximum amount of extra entries that you have set on <code>max_entry_position_adjustment</code>, but the callback is called anyway looking for partial exits.</p>
+<div class="admonition note">
+<p class="admonition-title">About stake size</p>
+<p>Using fixed stake size means it will be the amount used for the first order, just like without position adjustment.
+If you wish to buy additional orders with DCA, then make sure to leave enough funds in the wallet for that.
+Using <code>"unlimited"</code> stake amount with DCA orders requires you to also implement the <code>custom_stake_amount()</code> callback to avoid allocating all funds to the initial order.</p>
+</div>
+<h3 id="decrease-position">Decrease position<a class="headerlink" href="#decrease-position" title="Permanent link">&para;</a></h3>
+<p>The strategy is expected to return a negative stake_amount (in stake currency) for a partial exit.
+Returning the full owned stake at that point (<code>-trade.stake_amount</code>) results in a full exit.<br />
+Returning a value more than the above (so remaining stake_amount would become negative) will result in the bot ignoring the signal.</p>
+<p>For a partial exit, it's important to know that the formula used to calculate the amount of the coin for the partial exit order is <code>amount to be exited partially = negative_stake_amount * trade.amount / trade.stake_amount</code>, where <code>negative_stake_amount</code> is the value returned from the <code>adjust_trade_position</code> function. As seen in the formula, the formula doesn't care about current profit/loss of the position. It only cares about <code>trade.amount</code> and <code>trade.stake_amount</code> which aren't affected by the price movement at all.</p>
+<p>For example, let's say you buy 2 SHITCOIN/USDT at open rate of 50, which means the trade's stake amount is 100 USDT. Now the price raises to 200 and you want to sell half of it. In that case, you have to return -50% of <code>trade.stake_amount</code> (0.5 * 100 USDT) which equals to -50. The bot will calculate the amount it needed to sell, which is <code>50 * 2 / 100</code> which equals 1 SHITCOIN/USDT. If you return -200 (50% of 2 * 200), the bot will ignore it since <code>trade.stake_amount</code> is only 100 USDT but you asked to sell 200 USDT which means you are asking to sell 4 SHITCOIN/USDT.</p>
+<p>Back to the example above, since current rate is 200, the current USDT value of your trade is now 400 USDT. Let's say you want to partially sell 100 USDT to take out the initial investment and leave the profit in the trade hoping that the price keeps rising. In that case, you have to do a different approach. First, you need to calculate the exact amount you needed to sell. In this case, since you want to sell 100 USDT worth based of current rate, the exact amount you need to partially sell is <code>100 * 2 / 400</code> which equals 0.5 SHITCOIN/USDT. Since we know now the exact amount we want to sell (0.5), the value you need to return in the <code>adjust_trade_position</code> function is <code>-amount to be exited partially * trade.stake_amount / trade.amount</code>, which equals -25. The bot will sell 0.5 SHITCOIN/USDT, keeping 1.5 in trade. You will receive 100 USDT from the partial exit.</p>
+<div class="admonition warning">
+<p class="admonition-title">Stoploss calculation</p>
+<p>Stoploss is still calculated from the initial opening price, not averaged price.
+Regular stoploss rules still apply (cannot move down).</p>
+<p>While <code>/stopentry</code> command stops the bot from entering new trades, the position adjustment feature will continue buying new orders on existing trades.</p>
+</div>
+<p>``` python</p>
+<h1 id="default-imports_19">Default imports<a class="headerlink" href="#default-imports_19" title="Permanent link">&para;</a></h1>
+<p>class DigDeeperStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code>position_adjustment_enable = True
+
+# Attempts to handle large drops with DCA. High stoploss is required.
+stoploss = -0.30
+
+# ... populate_* methods
+
+# Example specific variables
+max_entry_position_adjustment = 3
+# This number is explained a bit further down
+max_dca_multiplier = 5.5
+
+# This is called when placing the initial order (opening trade)
+def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                        proposed_stake: float, min_stake: float | None, max_stake: float,
+                        leverage: float, entry_tag: str | None, side: str,
+                        **kwargs) -&gt; float:
+
+    # We need to leave most of the funds for possible further DCA orders
+    # This also applies to fixed stakes
+    return proposed_stake / self.max_dca_multiplier
+
+def adjust_trade_position(self, trade: Trade, current_time: datetime,
+                          current_rate: float, current_profit: float,
+                          min_stake: float | None, max_stake: float,
+                          current_entry_rate: float, current_exit_rate: float,
+                          current_entry_profit: float, current_exit_profit: float,
+                          **kwargs
+                          ) -&gt; float | None | tuple[float | None, str | None]:
+    &quot;&quot;&quot;
+    Custom trade adjustment logic, returning the stake amount that a trade should be
+    increased or decreased.
+    This means extra entry or exit orders with additional fees.
+    Only called when `position_adjustment_enable` is set to True.
+
+    For full documentation please go to https://www.freqtrade.io/en/stable/strategy-advanced/
+
+    When not implemented by a strategy, returns None
+
+    :param trade: trade object.
+    :param current_time: datetime object, containing the current datetime
+    :param current_rate: Current entry rate (same as current_entry_profit)
+    :param current_profit: Current profit (as ratio), calculated based on current_rate 
+                           (same as current_entry_profit).
+    :param min_stake: Minimal stake size allowed by exchange (for both entries and exits)
+    :param max_stake: Maximum stake allowed (either through balance, or by exchange limits).
+    :param current_entry_rate: Current rate using entry pricing.
+    :param current_exit_rate: Current rate using exit pricing.
+    :param current_entry_profit: Current profit using entry pricing.
+    :param current_exit_profit: Current profit using exit pricing.
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    :return float: Stake amount to adjust your trade,
+                   Positive values to increase position, Negative values to decrease position.
+                   Return None for no action.
+                   Optionally, return a tuple with a 2nd element with an order reason
+    &quot;&quot;&quot;
+    if trade.has_open_orders:
+        # Only act if no orders are open
+        return
+
+    if current_profit &gt; 0.05 and trade.nr_of_successful_exits == 0:
+        # Take half of the profit at +5%
+        return -(trade.stake_amount / 2), &quot;half_profit_5%&quot;
+
+    if current_profit &gt; -0.05:
+        return None
+
+    # Obtain pair dataframe (just to show how to access it)
+    dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
+    # Only buy when not actively falling price.
+    last_candle = dataframe.iloc[-1].squeeze()
+    previous_candle = dataframe.iloc[-2].squeeze()
+    if last_candle[&quot;close&quot;] &lt; previous_candle[&quot;close&quot;]:
+        return None
+
+    filled_entries = trade.select_filled_orders(trade.entry_side)
+    count_of_entries = trade.nr_of_successful_entries
+    # Allow up to 3 additional increasingly larger buys (4 in total)
+    # Initial buy is 1x
+    # If that falls to -5% profit, we buy 1.25x more, average profit should increase to roughly -2.2%
+    # If that falls down to -5% again, we buy 1.5x more
+    # If that falls once again down to -5%, we buy 1.75x more
+    # Total stake for this trade would be 1 + 1.25 + 1.5 + 1.75 = 5.5x of the initial allowed stake.
+    # That is why max_dca_multiplier is 5.5
+    # Hope you have a deep wallet!
+    try:
+        # This returns first order stake size
+        stake_amount = filled_entries[0].stake_amount_filled
+        # This then calculates current safety order size
+        stake_amount = stake_amount * (1 + (count_of_entries * 0.25))
+        return stake_amount, &quot;1/3rd_increase&quot;
+    except Exception as exception:
+        return None
+
+    return None
+</code></pre></div>
+
+<p>```</p>
+<h3 id="position-adjust-calculations">Position adjust calculations<a class="headerlink" href="#position-adjust-calculations" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Entry rates are calculated using weighted averages.</li>
+<li>Exits will not influence the average entry rate.</li>
+<li>Partial exit relative profit is relative to the average entry price at this point.</li>
+<li>Final exit relative profit is calculated based on the total invested capital. (See example below)</li>
+</ul>
+<details class="example">
+<summary>Calculation example</summary>
+<p><em>This example assumes 0 fees for simplicity, and a long position on an imaginary coin.</em>  </p>
+<ul>
+<li>Buy 100@8$ </li>
+<li>Buy 100@9$ -&gt; Avg price: 8.5$</li>
+<li>Sell 100@10$ -&gt; Avg price: 8.5$, realized profit 150$, 17.65%</li>
+<li>Buy 150@11$ -&gt; Avg price: 10$, realized profit 150$, 17.65%</li>
+<li>Sell 100@12$ -&gt; Avg price: 10$, total realized profit 350$, 20%</li>
+<li>Sell 150@14$ -&gt; Avg price: 10$, total realized profit 950$, 40%  &lt;- <em>This will be the last "Exit" message</em></li>
+</ul>
+<p>The total profit for this trade was 950$ on a 3350$ investment (<code>100@8$ + 100@9$ + 150@11$</code>). As such - the final relative profit is 28.35% (<code>950 / 3350</code>).</p>
+</details>
+<h2 id="adjust-order-price">Adjust order Price<a class="headerlink" href="#adjust-order-price" title="Permanent link">&para;</a></h2>
+<p>The <code>adjust_order_price()</code> callback may be used by strategy developer to refresh/replace limit orders upon arrival of new candles.<br />
+This callback is called once every iteration unless the order has been (re)placed within the current candle - limiting the maximum (re)placement of each order to once per candle.
+This also means that the first call will be at the start of the next candle after the initial order was placed.</p>
+<p>Be aware that <code>custom_entry_price()</code>/<code>custom_exit_price()</code> is still the one dictating initial limit order price target at the time of the signal.</p>
+<p>Orders can be cancelled out of this callback by returning <code>None</code>.</p>
+<p>Returning <code>current_order_rate</code> will keep the order on the exchange "as is".
+Returning any other price will cancel the existing order, and replace it with a new order.</p>
+<p>If the cancellation of the original order fails, then the order will not be replaced - though the order will most likely have been canceled on exchange. Having this happen on initial entries will result in the deletion of the order, while on position adjustment orders, it'll result in the trade size remaining as is.<br />
+If the order has been partially filled, the order will not be replaced. You can however use <a href="#adjust-trade-position"><code>adjust_trade_position()</code></a> to adjust the trade size to the expected position size, should this be necessary / desired.</p>
+<div class="admonition warning">
+<p class="admonition-title">Regular timeout</p>
+<p>Entry <code>unfilledtimeout</code> mechanism (as well as <code>check_entry_timeout()</code>/<code>check_exit_timeout()</code>) takes precedence over this callback.
+Orders that are cancelled via the above methods will not have this callback called. Be sure to update timeout values to match your expectations.</p>
+</div>
+<p>```python</p>
+<h1 id="default-imports_20">Default imports<a class="headerlink" href="#default-imports_20" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):</p>
+<div class="codehilite"><pre><span></span><code># ... populate_* methods
+
+def adjust_order_price(
+    self,
+    trade: Trade,
+    order: Order | None,
+    pair: str,
+    current_time: datetime,
+    proposed_rate: float,
+    current_order_rate: float,
+    entry_tag: str | None,
+    side: str,
+    is_entry: bool,
+    **kwargs,
+) -&gt; float | None:
+    &quot;&quot;&quot;
+    Exit and entry order price re-adjustment logic, returning the user desired limit price.
+    This only executes when a order was already placed, still open (unfilled fully or partially)
+    and not timed out on subsequent candles after entry trigger.
+
+    For full documentation please go to https://www.freqtrade.io/en/stable/strategy-callbacks/
+
+    When not implemented by a strategy, returns current_order_rate as default.
+    If current_order_rate is returned then the existing order is maintained.
+    If None is returned then order gets canceled but not replaced by a new one.
+
+    :param pair: Pair that&#39;s currently analyzed
+    :param trade: Trade object.
+    :param order: Order object
+    :param current_time: datetime object, containing the current datetime
+    :param proposed_rate: Rate, calculated based on pricing settings in entry_pricing.
+    :param current_order_rate: Rate of the existing order in place.
+    :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+    :param side: &#39;long&#39; or &#39;short&#39; - indicating the direction of the proposed trade
+    :param is_entry: True if the order is an entry order, False if it&#39;s an exit order.
+    :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.
+    :return float or None: New entry price value if provided
+    &quot;&quot;&quot;
+
+    # Limit entry orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.
+    if (
+        is_entry
+        and pair == &quot;BTC/USDT&quot; 
+        and entry_tag == &quot;long_sma200&quot; 
+        and side == &quot;long&quot; 
+        and (current_time - timedelta(minutes=10)) &lt;= trade.open_date_utc
+    ):
+        # just cancel the order if it has been filled more than half of the amount
+        if order.filled &gt; order.remaining:
+            return None
+        else:
+            dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+            current_candle = dataframe.iloc[-1].squeeze()
+            # desired price
+            return current_candle[&quot;sma_200&quot;]
+    # default: maintain existing order
+    return current_order_rate
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition danger">
+<p class="admonition-title">Incompatibility with <code>adjust_*_price()</code></p>
+<p>If you have both <code>adjust_order_price()</code> and <code>adjust_entry_price()</code>/<code>adjust_exit_price()</code> implemented, only <code>adjust_order_price()</code> will be used.
+If you need to adjust entry/exit prices, you can either implement the logic in <code>adjust_order_price()</code>, or use the split <code>adjust_entry_price()</code> / <code>adjust_exit_price()</code> callbacks, but not both.
+Mixing these is not supported and will raise an error during bot startup.</p>
+</div>
+<h3 id="adjust-entry-price">Adjust Entry Price<a class="headerlink" href="#adjust-entry-price" title="Permanent link">&para;</a></h3>
+<p>The <code>adjust_entry_price()</code> callback may be used by strategy developer to refresh/replace entry limit orders upon arrival.
+It's a sub-set of <code>adjust_order_price()</code> and is called only for entry orders.
+All remaining behavior is identical to <code>adjust_order_price()</code>.</p>
+<p>The trade open-date (<code>trade.open_date_utc</code>) will remain at the time of the very first order placed.
+Please make sure to be aware of this - and eventually adjust your logic in other callbacks to account for this, and use the date of the first filled order instead.</p>
+<h3 id="adjust-exit-price">Adjust Exit Price<a class="headerlink" href="#adjust-exit-price" title="Permanent link">&para;</a></h3>
+<p>The <code>adjust_exit_price()</code> callback may be used by strategy developer to refresh/replace exit limit orders upon arrival.
+It's a sub-set of <code>adjust_order_price()</code> and is called only for exit orders.
+All remaining behavior is identical to <code>adjust_order_price()</code>.</p>
+<h2 id="leverage-callback">Leverage Callback<a class="headerlink" href="#leverage-callback" title="Permanent link">&para;</a></h2>
+<p>When trading in markets that allow leverage, this method must return the desired Leverage (Defaults to 1 -&gt; No leverage).</p>
+<p>Assuming a capital of 500USDT, a trade with leverage=3 would result in a position with 500 x 3 = 1500 USDT.</p>
+<p>Values that are above <code>max_leverage</code> will be adjusted to <code>max_leverage</code>.
+For markets / exchanges that don't support leverage, this method is ignored.</p>
+<p>``` python</p>
+<h1 id="default-imports_21">Default imports<a class="headerlink" href="#default-imports_21" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):
+    def leverage(self, pair: str, current_time: datetime, current_rate: float,
+                 proposed_leverage: float, max_leverage: float, entry_tag: str | None, side: str,
+                 **kwargs) -&gt; float:
+        """
+        Customize leverage for each new trade. This method is only called in futures mode.</p>
+<div class="codehilite"><pre><span></span><code>    :param pair: Pair that&#39;s currently analyzed
+    :param current_time: datetime object, containing the current datetime
+    :param current_rate: Rate, calculated based on pricing settings in exit_pricing.
+    :param proposed_leverage: A leverage proposed by the bot.
+    :param max_leverage: Max leverage allowed on this pair
+    :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.
+    :param side: &quot;long&quot; or &quot;short&quot; - indicating the direction of the proposed trade
+    :return: A leverage amount, which is between 1.0 and max_leverage.
+    &quot;&quot;&quot;
+    return 1.0
+</code></pre></div>
+
+<p>```</p>
+<p>All profit calculations include leverage. Stoploss / ROI also include leverage in their calculation.
+Defining a stoploss of 10% at 10x leverage would trigger the stoploss with a 1% move to the downside.</p>
+<h2 id="order-filled-callback">Order filled Callback<a class="headerlink" href="#order-filled-callback" title="Permanent link">&para;</a></h2>
+<p>The <code>order_filled()</code> callback may be used to perform specific actions based on the current trade state after an order is filled.
+It will be called independent of the order type (entry, exit, stoploss or position adjustment).</p>
+<p>Assuming that your strategy needs to store the high value of the candle at trade entry, this is possible with this callback as the following example show.</p>
+<p>``` python</p>
+<h1 id="default-imports_22">Default imports<a class="headerlink" href="#default-imports_22" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):
+    def order_filled(self, pair: str, trade: Trade, order: Order, current_time: datetime, <strong>kwargs) -&gt; None:
+        """
+        Called right after an order fills. 
+        Will be called for all order types (entry, exit, stoploss, position adjustment).
+        :param pair: Pair for trade
+        :param trade: trade object.
+        :param order: Order object.
+        :param current_time: datetime object, containing the current datetime
+        :param </strong>kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        """
+        # Obtain pair dataframe (just to show how to access it)
+        dataframe, _ = self.dp.get_analyzed_dataframe(trade.pair, self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()</p>
+<div class="codehilite"><pre><span></span><code>    if (trade.nr_of_successful_entries == 1) and (order.ft_order_side == trade.entry_side):
+        trade.set_custom_data(key=&quot;entry_candle_high&quot;, value=last_candle[&quot;high&quot;])
+
+    return None
+</code></pre></div>
+
+<p>```</p>
+<div class="admonition tip">
+<p class="admonition-title">Learn more about storing data</p>
+<p>You can learn more about storing data on the <a href="../strategy-advanced/#storing-information-persistent">Storing custom trade data</a> section.
+Please keep in mind that this is considered advanced usage, and should be used with care.</p>
+</div>
+<h2 id="plot-annotations-callback">Plot annotations callback<a class="headerlink" href="#plot-annotations-callback" title="Permanent link">&para;</a></h2>
+<p>The plot annotations callback is called whenever freqUI requests data to display a chart.
+This callback has no meaning in the trade cycle context and is only used for charting purposes.</p>
+<p>The strategy can then return a list of <code>AnnotationType</code> objects to be displayed on the chart.
+Depending on the content returned - the chart can display horizontal areas, vertical areas, boxes or lines.</p>
+<h3 id="annotation-types">Annotation types<a class="headerlink" href="#annotation-types" title="Permanent link">&para;</a></h3>
+<p>Currently two types of annotations are supported, <code>area</code> and <code>line</code>.</p>
+<h4 id="area">Area<a class="headerlink" href="#area" title="Permanent link">&para;</a></h4>
+<p><code>json
+{
+    "type": "area", // Type of the annotation, currently only "area" is supported
+    "start": "2024-01-01 15:00:00", // Start date of the area
+    "end": "2024-01-01 16:00:00",  // End date of the area
+    "y_start": 94000.2,  // Price / y axis value
+    "y_end": 98000, // Price / y axis value
+    "color": "",
+    "z_level": 5, // z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.
+    "label": "some label"
+}</code></p>
+<h4 id="line">Line<a class="headerlink" href="#line" title="Permanent link">&para;</a></h4>
+<p>``` json
+{
+    "type": "line", // Type of the annotation, currently only "line" is supported
+    "start": "2024-01-01 15:00:00", // Start date of the line
+    "end": "2024-01-01 16:00:00",  // End date of the line
+    "y_start": 94000.2,  // Price / y axis value
+    "y_end": 98000, // Price / y axis value
+    "color": "",
+    "z_level": 5, // z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.
+    "label": "some label",
+    "width": 2, // Optional, line width in pixels. Defaults to 1
+    "line_style": "dashed", // Optional, can be "solid", "dashed" or "dotted". Defaults to "solid"</p>
+<p>}
+```</p>
+<h4 id="point">Point<a class="headerlink" href="#point" title="Permanent link">&para;</a></h4>
+<p>``` json
+{
+    "type": "point", // Type of the annotation, currently only "point" is supported
+    "x": "2024-01-01 15:00:00", // Start date of the point
+    "y": 94000.2,  // Price / y axis value
+    "color": "",
+    "z_level": 5, // z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.
+    "label": "some label",
+    "size": 2, // Optional, line width in pixels. Defaults to 10
+    "shape": "circle", // Optional, can be "circle", "rect", "roundRect", "triangle", "pin", "arrow", "none".
+    "rotate": 0, // Optional, rotation of the shape/symbol in degrees. Defaults to 0</p>
+<p>}
+```</p>
+<p>The below example will mark the chart with areas for the hours 8 and 15, with a grey color, highlighting the market open and close hours.
+This is obviously a very basic example.</p>
+<p>``` python</p>
+<h1 id="default-imports_23">Default imports<a class="headerlink" href="#default-imports_23" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):
+    def plot_annotations(
+        self, pair: str, start_date: datetime, end_date: datetime, dataframe: DataFrame, <strong>kwargs
+    ) -&gt; list[AnnotationType]:
+        """
+        Retrieve area annotations for a chart.
+        Must be returned as array, with type, label, color, start, end, y_start, y_end.
+        All settings except for type are optional - though it usually makes sense to include either
+        "start and end" or "y_start and y_end" for either horizontal or vertical plots
+        (or all 4 for boxes).
+        :param pair: Pair that's currently analyzed
+        :param start_date: Start date of the chart data being requested
+        :param end_date: End date of the chart data being requested
+        :param dataframe: DataFrame with the analyzed data for the chart
+        :param </strong>kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return: List of AnnotationType objects
+        """
+        annotations = []
+        while start_dt &lt; end_date:
+            start_dt += timedelta(hours=1)
+            if start_dt.hour in (8, 15):
+                annotations.append(
+                    {
+                        "type": "area",
+                        "label": "Trade open and close hours",
+                        "start": start_dt,
+                        "end": start_dt + timedelta(hours=1),
+                        # Omitting y_start and y_end will result in a vertical area spanning the whole height of the main Chart
+                        "color": "rgba(133, 133, 133, 0.4)",
+                    }
+                )</p>
+<div class="codehilite"><pre><span></span><code>    return annotations
+</code></pre></div>
+
+<p>```</p>
+<p>Entries will be validated, and won't be passed to the UI if they don't correspond to the expected schema and will log an error if they don't.</p>
+<div class="admonition warning">
+<p class="admonition-title">Many annotations</p>
+<p>Using too many annotations can cause the UI to hang, especially when plotting large amounts of historic data.
+Use the annotation feature with care.</p>
+</div>
+<h3 id="plot-annotations-example">Plot annotations example<a class="headerlink" href="#plot-annotations-example" title="Permanent link">&para;</a></h3>
+<p><img alt="FreqUI - plot Annotations" src="../assets/freqUI-chart-annotations-dark.png#only-dark" />
+<img alt="FreqUI - plot Annotations" src="../assets/freqUI-chart-annotations-light.png#only-light" /></p>
+<details class="info">
+<summary>Code used for the plot above</summary>
+<p>This is an example code and should be treated as such.</p>
+<p>``` python</p>
+<h1 id="default-imports_24">Default imports<a class="headerlink" href="#default-imports_24" title="Permanent link">&para;</a></h1>
+<p>class AwesomeStrategy(IStrategy):
+    def plot_annotations(
+        self, pair: str, start_date: datetime, end_date: datetime, dataframe: DataFrame, **kwargs
+    ) -&gt; list[AnnotationType]:
+        annotations = []
+        while start_dt &lt; end_date:
+            start_dt += timedelta(hours=1)
+            if (start_dt.hour % 4) == 0:
+                annotations.append(
+                    {
+                        "type": "area",
+                        "label": "4h",
+                        "start": start_dt,
+                        "end": start_dt + timedelta(hours=1),
+                        "color": "rgba(133, 133, 133, 0.4)",
+                    }
+                )
+            elif (start_dt.hour % 2) == 0:
+            price = dataframe.loc[dataframe["date"] == start_dt, "close"].mean()
+                annotations.append(
+                    {
+                        "type": "area",
+                        "label": "2h",
+                        "start": start_dt,
+                        "end": start_dt + timedelta(hours=1),
+                        "y_end": price * 1.01,
+                        "y_start": price * 0.99,
+                        "color": "rgba(0, 255, 0, 0.4)",
+                        "z_level": 5,
+                    }
+                )</p>
+<div class="codehilite"><pre><span></span><code>    return annotations
+</code></pre></div>
+
+<p>```</p>
+</details>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+    
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../strategy-customization/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Strategy Customization">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Strategy Customization
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../stoploss/" class="md-footer__link md-footer__link--next" aria-label="Next: Stoploss">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Stoploss
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "search.share", "content.code.copy", "content.action.edit", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
