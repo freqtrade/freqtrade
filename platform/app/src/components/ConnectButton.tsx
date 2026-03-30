@@ -1,10 +1,10 @@
 "use client";
 
-import { useWeb3Modal } from "@web3modal/wagmi/react";
+import { useAppKit } from "@reown/appkit/react";
 import { useAccount, useDisconnect } from "wagmi";
 
 export function ConnectButton() {
-  const { open } = useWeb3Modal();
+  const { open } = useAppKit();
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
 
@@ -32,9 +32,4 @@ export function ConnectButton() {
       Connect Wallet
     </button>
   );
-}
-
-export function useWallet() {
-  const { address, isConnected } = useAccount();
-  return { address, isConnected };
 }
