@@ -1,0 +1,30 @@
+{
+  "name": "trendrider-platform",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.6.0",
+    "@tanstack/react-query": "^5.95.2",
+    "@types/node": "^20.19.37",
+    "@types/react": "^18.3.28",
+    "autoprefixer": "^10.4.27",
+    "bcryptjs": "^3.0.3",
+    "ethers": "^6.16.0",
+    "jsonwebtoken": "^9.0.3",
+    "next": "^14.2.5",
+    "postcss": "8.4",
+    "prisma": "^7.6.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "siwe": "^3.0.0",
+    "tailwindcss": "3.4",
+    "typescript": "^5.9.3",
+    "viem": "^2.47.6",
+    "wagmi": "^3.6.0"
+  }
+}

@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  walletAddress  String   @unique
+  displayName    String?
+  isWhitelisted  Boolean  @default(false)
+  isAdmin        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  lastLogin      DateTime?
+  config         UserConfig?
+  trades         UserTrade[]
+  botInstance    BotInstance?
+}
+
+model UserConfig {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id])
+  mexcApiKeyEncrypted   String?
+  mexcApiSecretEncrypted String?
+  stakeAmount           Float    @default(1.0)
+  maxOpenTrades         Int      @default(10)
+  pairs                 Json     @default("[]")
+  botStatus             String   @default("stopped")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model UserTrade {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  tradeId     Int
+  pair        String
+  openRate    Float
+  closeRate   Float?
+  profitPct   Float?
+  profitAbs   Float?
+  exitReason  String?
+  openDate    DateTime
+  closeDate   DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model BotInstance {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  railwayServiceId String?
+  status           String   @default("stopped")
+  startedAt        DateTime?
+  stoppedAt        DateTime?
+  lastHeartbeat    DateTime?
+}
