@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "user_data"
+		}
+	],
+	"settings": {
+		"python.defaultInterpreterPath": "/home/dm/freqtrade/.venv/bin/python",
+		"python.terminal.activateEnvironment": true,
+		"python.terminal.activateEnvInCurrentTerminal": true,
+		"python.analysis.extraPaths": [
+			"/home/dm/freqtrade"
+		],
+		"git.autoRepositoryDetection": true
+	}
+}
