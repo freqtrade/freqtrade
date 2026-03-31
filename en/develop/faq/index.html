@@ -2768,12 +2768,12 @@ While this makes the iteration slightly slower (due to the REST Api call) - it w
 <h3 id="im-getting-the-exchange-xxx-does-not-support-market-orders-message-and-cannot-run-my-strategy">I'm getting the "Exchange XXX does not support market orders." message and cannot run my strategy<a class="headerlink" href="#im-getting-the-exchange-xxx-does-not-support-market-orders-message-and-cannot-run-my-strategy" title="Permanent link">&para;</a></h3>
 <p>As the message says, your exchange does not support market orders and you have one of the <a href="../configuration/#understand-order_types">order types</a> set to "market". Your strategy was probably written with other exchanges in mind and sets "market" orders for "stoploss" orders, which is correct and preferable for most of the exchanges supporting market orders (but not for Gate.io).</p>
 <p>To fix this, redefine order types in the strategy to use "limit" instead of "market":</p>
-<p><code>python
-    order_types = {
-        ...
-        "stoploss": "limit",
-        ...
-    }</code></p>
+<div class="highlight"><pre><span></span><code>    <span class="n">order_types</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">...</span>
+        <span class="s2">&quot;stoploss&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+        <span class="o">...</span>
+    <span class="p">}</span>
+</code></pre></div>
 <p>The same fix should be applied in the configuration file, if order types are defined in your custom config rather than in the strategy.</p>
 <h3 id="im-trying-to-start-the-bot-live-but-get-an-api-permission-error">I'm trying to start the bot live, but get an API permission error<a class="headerlink" href="#im-trying-to-start-the-bot-live-but-get-an-api-permission-error" title="Permanent link">&para;</a></h3>
 <p>Errors like <code>Invalid API-key, IP, or permissions for action</code> mean exactly what they actually say.<br />
@@ -2784,36 +2784,33 @@ Futures will usually have to be enabled specifically.</p>
 <p>By default, the bot writes its log into stderr stream. This is implemented this way so that you can easily separate the bot's diagnostics messages from Backtesting, Edge and Hyperopt results, output from other various Freqtrade utility sub-commands, as well as from the output of your custom <code>print()</code>'s you may have inserted into your strategy. So if you need to search the log messages with the grep utility, you need to redirect stderr to stdout and disregard stdout.</p>
 <ul>
 <li>In unix shells, this normally can be done as simple as:
-<code>shell
-$ freqtrade --some-options 2&gt;&amp;1 &gt;/dev/null | grep 'something'</code>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>freqtrade<span class="w"> </span>--some-options<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;something&#39;</span>
+</code></pre></div>
 (note, <code>2&gt;&amp;1</code> and <code>&gt;/dev/null</code> should be written in this order)</li>
 </ul>
 <ul>
 <li>Bash interpreter also supports so called process substitution syntax, you can grep the log for a string with it as:
-<code>shell
-$ freqtrade --some-options 2&gt; &gt;(grep 'something') &gt;/dev/null</code>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>freqtrade<span class="w"> </span>--some-options<span class="w"> </span><span class="m">2</span>&gt;<span class="w"> </span>&gt;<span class="o">(</span>grep<span class="w"> </span><span class="s1">&#39;something&#39;</span><span class="o">)</span><span class="w"> </span>&gt;/dev/null
+</code></pre></div>
 or
-<code>shell
-$ freqtrade --some-options 2&gt; &gt;(grep -v 'something' 1&gt;&amp;2)</code></li>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>freqtrade<span class="w"> </span>--some-options<span class="w"> </span><span class="m">2</span>&gt;<span class="w"> </span>&gt;<span class="o">(</span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s1">&#39;something&#39;</span><span class="w"> </span><span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span><span class="o">)</span>
+</code></pre></div></li>
 </ul>
 <ul>
 <li>You can also write the copy of Freqtrade log messages to a file with the <code>--logfile</code> option:
-<code>shell
-$ freqtrade --logfile /path/to/mylogfile.log --some-options</code>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>freqtrade<span class="w"> </span>--logfile<span class="w"> </span>/path/to/mylogfile.log<span class="w"> </span>--some-options
+</code></pre></div>
 and then grep it as:
-<code>shell
-$ cat /path/to/mylogfile.log | grep 'something'</code>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span>/path/to/mylogfile.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;something&#39;</span>
+</code></pre></div>
 or even on the fly, as the bot works and the log file grows:
-<code>shell
-$ tail -f /path/to/mylogfile.log | grep 'something'</code>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </span>/path/to/mylogfile.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;something&#39;</span>
+</code></pre></div>
 from a separate terminal window.</li>
 </ul>
 <p>On Windows, the <code>--logfile</code> option is also supported by Freqtrade and you can use the <code>findstr</code> command to search the log for the string of interest:
-```</p>
-<blockquote>
-<p>type \path\to\mylogfile.log | findstr "something"
-```</p>
-</blockquote>
+<div class="highlight"><pre><span></span><code>&gt; type \path\to\mylogfile.log | findstr &quot;something&quot;
+</code></pre></div></p>
 <h2 id="hyperopt-module">Hyperopt module<a class="headerlink" href="#hyperopt-module" title="Permanent link">&para;</a></h2>
 <h3 id="why-does-freqtrade-not-have-gpu-support">Why does freqtrade not have GPU support?<a class="headerlink" href="#why-does-freqtrade-not-have-gpu-support" title="Permanent link">&para;</a></h3>
 <p>First of all, most indicator libraries don't have GPU support - as such, there would be little benefit for indicator calculations.
@@ -2831,8 +2828,8 @@ have to run it for 10000 or more. But it will take an eternity to
 compute.</p>
 <p>Since hyperopt uses Bayesian search, running for too many epochs may not produce greater results.</p>
 <p>It's therefore recommended to run between 500-1000 epochs over and over until you hit at least 10000 epochs in total (or are satisfied with the result). You can best judge by looking at the results - if the bot keeps discovering better strategies, it's best to keep on going.</p>
-<p><code>bash
-freqtrade hyperopt --hyperopt-loss SharpeHyperOptLossDaily --strategy SampleStrategy -e 1000</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>hyperopt<span class="w"> </span>--hyperopt-loss<span class="w"> </span>SharpeHyperOptLossDaily<span class="w"> </span>--strategy<span class="w"> </span>SampleStrategy<span class="w"> </span>-e<span class="w"> </span><span class="m">1000</span>
+</code></pre></div>
 <h3 id="why-does-it-take-a-long-time-to-run-hyperopt">Why does it take a long time to run hyperopt?<a class="headerlink" href="#why-does-it-take-a-long-time-to-run-hyperopt" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Discovering a great strategy with Hyperopt takes time. Study <a href="http://www.freqtrade.io">www.freqtrade.io</a>, the Freqtrade Documentation page, join the Freqtrade <a href="https://discord.gg/p7nuUNVfP7">discord community</a>. While you patiently wait for the most advanced, free crypto bot in the world, to hand you a possible golden strategy specially designed just for you.</li>

@@ -2105,11 +2105,11 @@ It's also currently not been tested with freqAI - and combining these two featur
 <h2 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h2>
 <h3 id="enable-public-trades">Enable Public Trades<a class="headerlink" href="#enable-public-trades" title="Permanent link">&para;</a></h3>
 <p>In your <code>config.json</code> file, set the <code>use_public_trades</code> option to true under the <code>exchange</code> section.</p>
-<p><code>json
-"exchange": {
-   ...
-   "use_public_trades": true,
-}</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">   </span><span class="err">...</span>
+<span class="w">   </span><span class="nt">&quot;use_public_trades&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
 <h3 id="configure-orderflow-processing">Configure Orderflow Processing<a class="headerlink" href="#configure-orderflow-processing" title="Permanent link">&para;</a></h3>
 <p>Define your desired settings for orderflow processing within the orderflow section of config.json. Here, you can adjust factors like:</p>
 <ul>
@@ -2120,65 +2120,64 @@ It's also currently not been tested with freqAI - and combining these two featur
 <li><code>imbalance_volume</code>: Filters out imbalances with volume below this threshold.</li>
 <li><code>imbalance_ratio</code>: Filters out imbalances with a ratio (difference between ask and bid volume) lower than this value.</li>
 </ul>
-<p><code>json
-"orderflow": {
-    "cache_size": 1000, 
-    "max_candles": 1500, 
-    "scale": 0.5, 
-    "stacked_imbalance_range": 3, //  needs at least this amount of imbalance next to each other
-    "imbalance_volume": 1, //  filters out below
-    "imbalance_ratio": 3 //  filters out ratio lower than
-  },</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;orderflow&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;cache_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">&quot;max_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1500</span><span class="p">,</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">&quot;scale&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">&quot;stacked_imbalance_range&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="c1">//  needs at least this amount of imbalance next to each other</span>
+<span class="w">    </span><span class="nt">&quot;imbalance_volume&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="c1">//  filters out below</span>
+<span class="w">    </span><span class="nt">&quot;imbalance_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="c1">//  filters out ratio lower than</span>
+<span class="w">  </span><span class="p">},</span>
+</code></pre></div>
 <h2 id="downloading-trade-data-for-backtesting">Downloading Trade Data for Backtesting<a class="headerlink" href="#downloading-trade-data-for-backtesting" title="Permanent link">&para;</a></h2>
 <p>To download historical trade data for backtesting, use the --dl-trades flag with the freqtrade download-data command.</p>
-<p><code>bash
-freqtrade download-data -p BTC/USDT:USDT --timerange 20230101- --trading-mode futures --timeframes 5m --dl-trades</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>download-data<span class="w"> </span>-p<span class="w"> </span>BTC/USDT:USDT<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20230101</span>-<span class="w"> </span>--trading-mode<span class="w"> </span>futures<span class="w"> </span>--timeframes<span class="w"> </span>5m<span class="w"> </span>--dl-trades
+</code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Data availability</p>
 <p>Not all exchanges provide public trade data. For supported exchanges, freqtrade will warn you if public trade data is not available if you start downloading data with the <code>--dl-trades</code> flag.</p>
 </div>
 <h2 id="accessing-orderflow-data">Accessing Orderflow Data<a class="headerlink" href="#accessing-orderflow-data" title="Permanent link">&para;</a></h2>
 <p>Once activated, several new columns become available in your dataframe:</p>
-<p>``` python</p>
-<p>dataframe["trades"] # Contains information about each individual trade.
-dataframe["orderflow"] # Represents a footprint chart dict (see below)
-dataframe["imbalances"] # Contains information about imbalances in the order flow.
-dataframe["bid"] # Total bid volume 
-dataframe["ask"] # Total ask volume
-dataframe["delta"] # Difference between ask and bid volume.
-dataframe["min_delta"] # Minimum delta within the candle
-dataframe["max_delta"] # Maximum delta within the candle
-dataframe["total_trades"] # Total number of trades
-dataframe["stacked_imbalances_bid"] # List of price levels of stacked bid imbalance range beginnings
-dataframe["stacked_imbalances_ask"] # List of price levels of stacked ask imbalance range beginnings
-```</p>
+<div class="highlight"><pre><span></span><code><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;trades&quot;</span><span class="p">]</span> <span class="c1"># Contains information about each individual trade.</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;orderflow&quot;</span><span class="p">]</span> <span class="c1"># Represents a footprint chart dict (see below)</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;imbalances&quot;</span><span class="p">]</span> <span class="c1"># Contains information about imbalances in the order flow.</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bid&quot;</span><span class="p">]</span> <span class="c1"># Total bid volume </span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;ask&quot;</span><span class="p">]</span> <span class="c1"># Total ask volume</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;delta&quot;</span><span class="p">]</span> <span class="c1"># Difference between ask and bid volume.</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;min_delta&quot;</span><span class="p">]</span> <span class="c1"># Minimum delta within the candle</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;max_delta&quot;</span><span class="p">]</span> <span class="c1"># Maximum delta within the candle</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;total_trades&quot;</span><span class="p">]</span> <span class="c1"># Total number of trades</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;stacked_imbalances_bid&quot;</span><span class="p">]</span> <span class="c1"># List of price levels of stacked bid imbalance range beginnings</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;stacked_imbalances_ask&quot;</span><span class="p">]</span> <span class="c1"># List of price levels of stacked ask imbalance range beginnings</span>
+</code></pre></div>
 <p>You can access these columns in your strategy code for further analysis. Here's an example:</p>
-<p>``` python
-def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
-    # Calculating cumulative delta
-    dataframe["cum_delta"] = cumulative_delta(dataframe["delta"])
-    # Accessing total trades
-    total_trades = dataframe["total_trades"]
-    ...</p>
-<p>def cumulative_delta(delta: Series):
-    cumdelta = delta.cumsum()
-    return cumdelta</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+    <span class="c1"># Calculating cumulative delta</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;cum_delta&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cumulative_delta</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;delta&quot;</span><span class="p">])</span>
+    <span class="c1"># Accessing total trades</span>
+    <span class="n">total_trades</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;total_trades&quot;</span><span class="p">]</span>
+    <span class="o">...</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cumulative_delta</span><span class="p">(</span><span class="n">delta</span><span class="p">:</span> <span class="n">Series</span><span class="p">):</span>
+    <span class="n">cumdelta</span> <span class="o">=</span> <span class="n">delta</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cumdelta</span>
+</code></pre></div>
 <h3 id="footprint-chart-dataframeorderflow">Footprint chart (<code>dataframe["orderflow"]</code>)<a class="headerlink" href="#footprint-chart-dataframeorderflow" title="Permanent link">&para;</a></h3>
 <p>This column provides a detailed breakdown of buy and sell orders at different price levels, offering valuable insights into order flow dynamics. The <code>scale</code> parameter in your configuration determines the price bin size for this representation</p>
 <p>The <code>orderflow</code> column contains a dict with the following structure:</p>
-<p><code>output
-{
-    "price": {
-        "bid_amount": 0.0,
-        "ask_amount": 0.0,
-        "bid": 0,
-        "ask": 0,
-        "delta": 0.0,
-        "total_volume": 0.0,
-        "total_trades": 0
-    }
-}</code></p>
+<div class="highlight"><pre><span></span><code><span class="go">{</span>
+<span class="go">    &quot;price&quot;: {</span>
+<span class="go">        &quot;bid_amount&quot;: 0.0,</span>
+<span class="go">        &quot;ask_amount&quot;: 0.0,</span>
+<span class="go">        &quot;bid&quot;: 0,</span>
+<span class="go">        &quot;ask&quot;: 0,</span>
+<span class="go">        &quot;delta&quot;: 0.0,</span>
+<span class="go">        &quot;total_volume&quot;: 0.0,</span>
+<span class="go">        &quot;total_trades&quot;: 0</span>
+<span class="go">    }</span>
+<span class="go">}</span>
+</code></pre></div>
 <h4 id="orderflow-column-explanation">Orderflow column explanation<a class="headerlink" href="#orderflow-column-explanation" title="Permanent link">&para;</a></h4>
 <ul>
 <li>key: Price bin - binned at <code>scale</code> intervals</li>
@@ -2206,13 +2205,13 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFr
 <h3 id="imbalances-dataframeimbalances">Imbalances (<code>dataframe["imbalances"]</code>)<a class="headerlink" href="#imbalances-dataframeimbalances" title="Permanent link">&para;</a></h3>
 <p>This column provides a dict with information about imbalances in the order flow. An imbalance occurs when there is a significant difference between the ask and bid volume at a given price level.</p>
 <p>Each row looks as follows - with price as index, and the corresponding bid and ask imbalance values as columns</p>
-<p><code>output
-{
-    "price": {
-        "bid_imbalance": False,
-        "ask_imbalance": False
-    }
-}</code></p>
+<div class="highlight"><pre><span></span><code><span class="go">{</span>
+<span class="go">    &quot;price&quot;: {</span>
+<span class="go">        &quot;bid_imbalance&quot;: False,</span>
+<span class="go">        &quot;ask_imbalance&quot;: False</span>
+<span class="go">    }</span>
+<span class="go">}</span>
+</code></pre></div>
 
 
 

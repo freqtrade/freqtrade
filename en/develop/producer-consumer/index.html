@@ -1966,29 +1966,29 @@
 </div>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Enable subscribing to an instance by adding the <code>external_message_consumer</code> section to the consumer's config file.</p>
-<p><code>json
-{
-    //...
-   "external_message_consumer": {
-        "enabled": true,
-        "producers": [
-            {
-                "name": "default", // This can be any name you'd like, default is "default"
-                "host": "127.0.0.1", // The host from your producer's api_server config
-                "port": 8080, // The port from your producer's api_server config
-                "secure": false, // Use a secure websockets connection, default false
-                "ws_token": "sercet_Ws_t0ken" // The ws_token from your producer's api_server config
-            }
-        ],
-        // The following configurations are optional, and usually not required
-        // "wait_timeout": 300,
-        // "ping_timeout": 10,
-        // "sleep_time": 10,
-        // "remove_entry_exit_signals": false,
-        // "message_size_limit": 8
-    }
-    //...
-}</code></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="c1">//...</span>
+<span class="w">   </span><span class="nt">&quot;external_message_consumer&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;producers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// This can be any name you&#39;d like, default is &quot;default&quot;</span>
+<span class="w">                </span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// The host from your producer&#39;s api_server config</span>
+<span class="w">                </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">,</span><span class="w"> </span><span class="c1">// The port from your producer&#39;s api_server config</span>
+<span class="w">                </span><span class="nt">&quot;secure&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="c1">// Use a secure websockets connection, default false</span>
+<span class="w">                </span><span class="nt">&quot;ws_token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sercet_Ws_t0ken&quot;</span><span class="w"> </span><span class="c1">// The ws_token from your producer&#39;s api_server config</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="c1">// The following configurations are optional, and usually not required</span>
+<span class="w">        </span><span class="c1">// &quot;wait_timeout&quot;: 300,</span>
+<span class="w">        </span><span class="c1">// &quot;ping_timeout&quot;: 10,</span>
+<span class="w">        </span><span class="c1">// &quot;sleep_time&quot;: 10,</span>
+<span class="w">        </span><span class="c1">// &quot;remove_entry_exit_signals&quot;: false,</span>
+<span class="w">        </span><span class="c1">// &quot;message_size_limit&quot;: 8</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">//...</span>
+<span class="p">}</span>
+</code></pre></div>
 <table>
 <thead>
 <tr>
@@ -2060,103 +2060,99 @@
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="example-producer-strategy">Example - Producer Strategy<a class="headerlink" href="#example-producer-strategy" title="Permanent link">&para;</a></h3>
 <p>A simple strategy with multiple indicators. No special considerations are required in the strategy itself.</p>
-<p>```py
-class ProducerStrategy(IStrategy):
-    #...
-    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
-        """
-        Calculate indicators in the standard freqtrade way which can then be broadcast to other instances
-        """
-        dataframe['rsi'] = ta.RSI(dataframe)
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
-        dataframe['bb_lowerband'] = bollinger['lower']
-        dataframe['bb_middleband'] = bollinger['mid']
-        dataframe['bb_upperband'] = bollinger['upper']
-        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)</p>
-<div class="codehilite"><pre><span></span><code>    return dataframe
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ProducerStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="c1">#...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate indicators in the standard freqtrade way which can then be broadcast to other instances</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+        <span class="n">bollinger</span> <span class="o">=</span> <span class="n">qtpylib</span><span class="o">.</span><span class="n">bollinger_bands</span><span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">typical_price</span><span class="p">(</span><span class="n">dataframe</span><span class="p">),</span> <span class="n">window</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">stds</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_lowerband&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s1">&#39;mid&#39;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_upperband&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">TEMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
 
-def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    Populates the entry signal for the given dataframe
-    &quot;&quot;&quot;
-    dataframe.loc[
-        (
-            (qtpylib.crossed_above(dataframe[&#39;rsi&#39;], self.buy_rsi.value)) &amp;
-            (dataframe[&#39;tema&#39;] &lt;= dataframe[&#39;bb_middleband&#39;]) &amp;
-            (dataframe[&#39;tema&#39;] &gt; dataframe[&#39;tema&#39;].shift(1)) &amp;
-            (dataframe[&#39;volume&#39;] &gt; 0)
-        ),
-        &#39;enter_long&#39;] = 1
+        <span class="k">return</span> <span class="n">dataframe</span>
 
-    return dataframe
+    <span class="k">def</span><span class="w"> </span><span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Populates the entry signal for the given dataframe</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+            <span class="p">(</span>
+                <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_rsi</span><span class="o">.</span><span class="n">value</span><span class="p">))</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="p">),</span>
+            <span class="s1">&#39;enter_long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
-
-<p>```</p>
 <div class="admonition tip">
 <p class="admonition-title">FreqAI</p>
 <p>You can use this to setup <a href="../freqai/">FreqAI</a> on a powerful machine, while you run consumers on simple machines like raspberries, which can interpret the signals generated from the producer in different ways.</p>
 </div>
 <h3 id="example-consumer-strategy">Example - Consumer Strategy<a class="headerlink" href="#example-consumer-strategy" title="Permanent link">&para;</a></h3>
 <p>A logically equivalent strategy which calculates no indicators itself, but will have the same analyzed dataframes available to make trading decisions based on the indicators calculated in the producer. In this example the consumer has the same entry criteria, however this is not necessary. The consumer may use different logic to enter/exit trades, and only use the indicators as specified.</p>
-<p>```py
-class ConsumerStrategy(IStrategy):
-    #...
-    process_only_new_candles = False # required for consumers</p>
-<div class="codehilite"><pre><span></span><code>_columns_to_expect = [&#39;rsi_default&#39;, &#39;tema_default&#39;, &#39;bb_middleband_default&#39;]
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ConsumerStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
+    <span class="c1">#...</span>
+    <span class="n">process_only_new_candles</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># required for consumers</span>
 
-def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    Use the websocket api to get pre-populated indicators from another freqtrade instance.
-    Use `self.dp.get_producer_df(pair)` to get the dataframe
-    &quot;&quot;&quot;
-    pair = metadata[&#39;pair&#39;]
-    timeframe = self.timeframe
+    <span class="n">_columns_to_expect</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;rsi_default&#39;</span><span class="p">,</span> <span class="s1">&#39;tema_default&#39;</span><span class="p">,</span> <span class="s1">&#39;bb_middleband_default&#39;</span><span class="p">]</span>
 
-    producer_pairs = self.dp.get_producer_pairs()
-    # You can specify which producer to get pairs from via:
-    # self.dp.get_producer_pairs(&quot;my_other_producer&quot;)
+    <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Use the websocket api to get pre-populated indicators from another freqtrade instance.</span>
+<span class="sd">        Use `self.dp.get_producer_df(pair)` to get the dataframe</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pair</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">]</span>
+        <span class="n">timeframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span>
 
-    # This func returns the analyzed dataframe, and when it was analyzed
-    producer_dataframe, _ = self.dp.get_producer_df(pair)
-    # You can get other data if the producer makes it available:
-    # self.dp.get_producer_df(
-    #   pair,
-    #   timeframe=&quot;1h&quot;,
-    #   candle_type=CandleType.SPOT,
-    #   producer_name=&quot;my_other_producer&quot;
-    # )
+        <span class="n">producer_pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_producer_pairs</span><span class="p">()</span>
+        <span class="c1"># You can specify which producer to get pairs from via:</span>
+        <span class="c1"># self.dp.get_producer_pairs(&quot;my_other_producer&quot;)</span>
 
-    if not producer_dataframe.empty:
-        # If you plan on passing the producer&#39;s entry/exit signal directly,
-        # specify ffill=False or it will have unintended results
-        merged_dataframe = merge_informative_pair(dataframe, producer_dataframe,
-                                                  timeframe, timeframe,
-                                                  append_timeframe=False,
-                                                  suffix=&quot;default&quot;)
-        return merged_dataframe
-    else:
-        dataframe[self._columns_to_expect] = 0
+        <span class="c1"># This func returns the analyzed dataframe, and when it was analyzed</span>
+        <span class="n">producer_dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_producer_df</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
+        <span class="c1"># You can get other data if the producer makes it available:</span>
+        <span class="c1"># self.dp.get_producer_df(</span>
+        <span class="c1">#   pair,</span>
+        <span class="c1">#   timeframe=&quot;1h&quot;,</span>
+        <span class="c1">#   candle_type=CandleType.SPOT,</span>
+        <span class="c1">#   producer_name=&quot;my_other_producer&quot;</span>
+        <span class="c1"># )</span>
 
-    return dataframe
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">producer_dataframe</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="c1"># If you plan on passing the producer&#39;s entry/exit signal directly,</span>
+            <span class="c1"># specify ffill=False or it will have unintended results</span>
+            <span class="n">merged_dataframe</span> <span class="o">=</span> <span class="n">merge_informative_pair</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">producer_dataframe</span><span class="p">,</span>
+                                                      <span class="n">timeframe</span><span class="p">,</span> <span class="n">timeframe</span><span class="p">,</span>
+                                                      <span class="n">append_timeframe</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                      <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">merged_dataframe</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_columns_to_expect</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
 
-def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    Populates the entry signal for the given dataframe
-    &quot;&quot;&quot;
-    # Use the dataframe columns as if we calculated them ourselves
-    dataframe.loc[
-        (
-            (qtpylib.crossed_above(dataframe[&#39;rsi_default&#39;], self.buy_rsi.value)) &amp;
-            (dataframe[&#39;tema_default&#39;] &lt;= dataframe[&#39;bb_middleband_default&#39;]) &amp;
-            (dataframe[&#39;tema_default&#39;] &gt; dataframe[&#39;tema_default&#39;].shift(1)) &amp;
-            (dataframe[&#39;volume&#39;] &gt; 0)
-        ),
-        &#39;enter_long&#39;] = 1
+        <span class="k">return</span> <span class="n">dataframe</span>
 
-    return dataframe
+    <span class="k">def</span><span class="w"> </span><span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Populates the entry signal for the given dataframe</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Use the dataframe columns as if we calculated them ourselves</span>
+        <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+            <span class="p">(</span>
+                <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi_default&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_rsi</span><span class="o">.</span><span class="n">value</span><span class="p">))</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema_default&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband_default&#39;</span><span class="p">])</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema_default&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema_default&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="p">),</span>
+            <span class="s1">&#39;enter_long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
-
-<p>```</p>
 <div class="admonition tip">
 <p class="admonition-title">Using upstream signals</p>
 <p>By setting <code>remove_entry_exit_signals=false</code>, you can also use the producer's signals directly. They should be available as <code>enter_long_default</code> (assuming <code>suffix="default"</code> was used) - and can be used as either signal directly, or as additional indicator.</p>

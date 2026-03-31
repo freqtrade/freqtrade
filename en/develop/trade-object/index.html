@@ -1530,6 +1530,106 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#get_open_trade_count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_open_trade_count
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_total_closed_profit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_total_closed_profit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#total_open_trades_stakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        total_open_trades_stakes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#class-methods-not-supported-in-backtestinghyperopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class methods not supported in backtesting/hyperopt
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Class methods not supported in backtesting/hyperopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_overall_performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_overall_performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_trading_volume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_trading_volume
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#order-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Order Object
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Order Object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#order-available-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Order - Available attributes
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1983,6 +2083,106 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#get_open_trade_count" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_open_trade_count
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_total_closed_profit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_total_closed_profit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#total_open_trades_stakes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        total_open_trades_stakes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#class-methods-not-supported-in-backtestinghyperopt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class methods not supported in backtesting/hyperopt
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Class methods not supported in backtesting/hyperopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_overall_performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_overall_performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_trading_volume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_trading_volume
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#order-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Order Object
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Order Object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#order-available-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Order - Available attributes
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2341,12 +2541,12 @@ During backtesting, it's limited to usage in <a href="../strategy-callbacks/">st
 <h3 id="get_trades_proxy">get_trades_proxy<a class="headerlink" href="#get_trades_proxy" title="Permanent link">&para;</a></h3>
 <p>When your strategy needs some information on existing (open or close) trades - it's best to use <code>Trade.get_trades_proxy()</code>.</p>
 <p>Usage:</p>
-<p>``` python
-from freqtrade.persistence import Trade
-from datetime import timedelta</p>
-<h1 id="_1">...<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
-<p>trade_hist = Trade.get_trades_proxy(pair='ETH/USDT', is_open=False, open_date=current_date - timedelta(days=2))</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.persistence</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trade</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">timedelta</span>
+
+<span class="c1"># ...</span>
+<span class="n">trade_hist</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_trades_proxy</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="s1">&#39;ETH/USDT&#39;</span><span class="p">,</span> <span class="n">is_open</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">open_date</span><span class="o">=</span><span class="n">current_date</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+</code></pre></div>
 <p><code>get_trades_proxy()</code> supports the following keyword arguments. All arguments are optional - calling <code>get_trades_proxy()</code> without arguments will return a list of all trades in the database.</p>
 <ul>
 <li><code>pair</code> e.g. <code>pair='ETH/USDT'</code></li>
@@ -2356,46 +2556,45 @@ from datetime import timedelta</p>
 </ul>
 <h3 id="get_open_trade_count">get_open_trade_count<a class="headerlink" href="#get_open_trade_count" title="Permanent link">&para;</a></h3>
 <p>Get the number of currently open trades</p>
-<p>``` python
-from freqtrade.persistence import Trade</p>
-<h1 id="_2">...<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h1>
-<p>open_trades = Trade.get_open_trade_count()
-```</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.persistence</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trade</span>
+<span class="c1"># ...</span>
+<span class="n">open_trades</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_open_trade_count</span><span class="p">()</span>
+</code></pre></div>
 <h3 id="get_total_closed_profit">get_total_closed_profit<a class="headerlink" href="#get_total_closed_profit" title="Permanent link">&para;</a></h3>
 <p>Retrieve the total profit the bot has generated so far.
 Aggregates <code>close_profit_abs</code> for all closed trades.</p>
-<p>``` python
-from freqtrade.persistence import Trade</p>
-<h1 id="_3">...<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h1>
-<p>profit = Trade.get_total_closed_profit()
-```</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.persistence</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trade</span>
+
+<span class="c1"># ...</span>
+<span class="n">profit</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_total_closed_profit</span><span class="p">()</span>
+</code></pre></div>
 <h3 id="total_open_trades_stakes">total_open_trades_stakes<a class="headerlink" href="#total_open_trades_stakes" title="Permanent link">&para;</a></h3>
 <p>Retrieve the total stake_amount that's currently in trades.</p>
-<p>``` python
-from freqtrade.persistence import Trade</p>
-<h1 id="_4">...<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h1>
-<p>profit = Trade.total_open_trades_stakes()
-```</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.persistence</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trade</span>
+
+<span class="c1"># ...</span>
+<span class="n">profit</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">total_open_trades_stakes</span><span class="p">()</span>
+</code></pre></div>
 <h2 id="class-methods-not-supported-in-backtestinghyperopt">Class methods not supported in backtesting/hyperopt<a class="headerlink" href="#class-methods-not-supported-in-backtestinghyperopt" title="Permanent link">&para;</a></h2>
 <p>The following class methods are not supported in backtesting/hyperopt mode.</p>
 <h3 id="get_overall_performance">get_overall_performance<a class="headerlink" href="#get_overall_performance" title="Permanent link">&para;</a></h3>
 <p>Retrieve the overall performance - similar to the <code>/performance</code> telegram command.</p>
-<p>``` python
-from freqtrade.persistence import Trade</p>
-<h1 id="_5">...<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h1>
-<p>if self.config['runmode'].value in ('live', 'dry_run'):
-    performance = Trade.get_overall_performance()
-```</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.persistence</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trade</span>
+
+<span class="c1"># ...</span>
+<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;runmode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+    <span class="n">performance</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_overall_performance</span><span class="p">()</span>
+</code></pre></div>
 <p>Sample return value: ETH/BTC had 5 trades, with a total profit of 1.5% (ratio of 0.015).</p>
-<p><code>json
-{"pair": "ETH/BTC", "profit": 0.015, "count": 5}</code></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;pair&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ETH/BTC&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;profit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.015</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">}</span>
+</code></pre></div>
 <h3 id="get_trading_volume">get_trading_volume<a class="headerlink" href="#get_trading_volume" title="Permanent link">&para;</a></h3>
 <p>Get total trading volume based on orders.</p>
-<p>``` python
-from freqtrade.persistence import Trade</p>
-<h1 id="_6">...<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h1>
-<p>volume = Trade.get_trading_volume()
-```</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.persistence</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trade</span>
+
+<span class="c1"># ...</span>
+<span class="n">volume</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_trading_volume</span><span class="p">()</span>
+</code></pre></div>
 <h2 id="order-object">Order Object<a class="headerlink" href="#order-object" title="Permanent link">&para;</a></h2>
 <p>An <code>Order</code> object represents an order on the exchange (or a simulated order in dry-run mode).
 An <code>Order</code> object will always be tied to it's corresponding <a href="#trade-object"><code>Trade</code></a>, and only really makes sense in the context of a trade.</p>

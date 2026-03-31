@@ -2105,111 +2105,111 @@
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Enable webhooks by adding a webhook-section to your configuration file, and setting <code>webhook.enabled</code> to <code>true</code>.</p>
 <p>Sample configuration (tested using IFTTT).</p>
-<p><code>json
-  "webhook": {
-        "enabled": true,
-        "url": "https://maker.ifttt.com/trigger/&lt;YOUREVENT&gt;/with/key/&lt;YOURKEY&gt;/",
-        "entry": {
-            "value1": "Buying {pair}",
-            "value2": "limit {limit:8f}",
-            "value3": "{stake_amount:8f} {stake_currency}"
-        },
-        "entry_cancel": {
-            "value1": "Cancelling Open Buy Order for {pair}",
-            "value2": "limit {limit:8f}",
-            "value3": "{stake_amount:8f} {stake_currency}"
-        },
-         "entry_fill": {
-            "value1": "Buy Order for {pair} filled",
-            "value2": "at {open_rate:8f}",
-            "value3": ""
-        },
-        "exit": {
-            "value1": "Exiting {pair}",
-            "value2": "limit {limit:8f}",
-            "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
-        },
-        "exit_cancel": {
-            "value1": "Cancelling Open Exit Order for {pair}",
-            "value2": "limit {limit:8f}",
-            "value3": "profit: {profit_amount:8f} {stake_currency} ({profit_ratio})"
-        },
-        "exit_fill": {
-            "value1": "Exit Order for {pair} filled",
-            "value2": "at {close_rate:8f}.",
-            "value3": ""
-        },
-        "status": {
-            "value1": "Status: {status}",
-            "value2": "",
-            "value3": ""
-        }
-    },</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">&quot;webhook&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://maker.ifttt.com/trigger/&lt;YOUREVENT&gt;/with/key/&lt;YOURKEY&gt;/&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;entry&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;value1&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Buying {pair}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value2&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;limit {limit:8f}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value3&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{stake_amount:8f} {stake_currency}&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;entry_cancel&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;value1&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Cancelling Open Buy Order for {pair}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value2&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;limit {limit:8f}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value3&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{stake_amount:8f} {stake_currency}&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">         </span><span class="nt">&quot;entry_fill&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;value1&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Buy Order for {pair} filled&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value2&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;at {open_rate:8f}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value3&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;value1&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Exiting {pair}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value2&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;limit {limit:8f}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value3&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;profit: {profit_amount:8f} {stake_currency} ({profit_ratio})&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;exit_cancel&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;value1&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Cancelling Open Exit Order for {pair}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value2&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;limit {limit:8f}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value3&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;profit: {profit_amount:8f} {stake_currency} ({profit_ratio})&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;exit_fill&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;value1&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Exit Order for {pair} filled&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value2&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;at {close_rate:8f}.&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value3&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;value1&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Status: {status}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value2&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;value3&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+</code></pre></div>
 <p>The url in <code>webhook.url</code> should point to the correct url for your webhook. If you're using <a href="https://ifttt.com">IFTTT</a> (as shown in the sample above) please insert your event and key to the url.</p>
 <p>You can set the POST body format to Form-Encoded (default), JSON-Encoded, or raw data. Use <code>"format": "form"</code>, <code>"format": "json"</code>, or <code>"format": "raw"</code> respectively. Example configuration for Mattermost Cloud integration:</p>
-<p><code>json
-  "webhook": {
-        "enabled": true,
-        "url": "https://&lt;YOURSUBDOMAIN&gt;.cloud.mattermost.com/hooks/&lt;YOURHOOK&gt;",
-        "format": "json",
-        "status": {
-            "text": "Status: {status}"
-        }
-    },</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">&quot;webhook&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://&lt;YOURSUBDOMAIN&gt;.cloud.mattermost.com/hooks/&lt;YOURHOOK&gt;&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Status: {status}&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+</code></pre></div>
 <p>The result would be a POST request with e.g. <code>{"text":"Status: running"}</code> body and <code>Content-Type: application/json</code> header which results <code>Status: running</code> message in the Mattermost channel.</p>
 <p>When using the Form-Encoded or JSON-Encoded configuration you can configure any number of payload values, and both the key and value will be output in the POST request. However, when using the raw data format you can only configure one value and it <strong>must</strong> be named <code>"data"</code>. In this instance the data key will not be output in the POST request, only the value. For example:</p>
-<p><code>json
-  "webhook": {
-        "enabled": true,
-        "url": "https://&lt;YOURHOOKURL&gt;",
-        "format": "raw",
-        "webhookstatus": {
-            "data": "Status: {status}"
-        }
-    },</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">&quot;webhook&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://&lt;YOURHOOKURL&gt;&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;raw&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;webhookstatus&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Status: {status}&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+</code></pre></div>
 <p>The result would be a POST request with e.g. <code>Status: running</code> body and <code>Content-Type: text/plain</code> header.</p>
 <h3 id="nested-webhook-configuration">Nested Webhook Configuration<a class="headerlink" href="#nested-webhook-configuration" title="Permanent link">&para;</a></h3>
 <p>Some webhook targets require a nested structure.
 This can be accomplished by setting the content as dictionary or list instead of as text directly.  </p>
 <p>This is only supported for the JSON format.</p>
-<p><code>json
-"webhook": {
-    "enabled": true,
-    "url": "https://&lt;yourhookurl&gt;",
-    "format": "json",
-    "status": {
-        "msgtype": "text",
-        "text": {
-            "content": "Status update: {status}"
-        }
-    }
-}</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;webhook&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://&lt;yourhookurl&gt;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;msgtype&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Status update: {status}&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>The result would be a POST request with e.g. <code>{"msgtype":"text","text":{"content":"Status update: running"}}</code> body and <code>Content-Type: application/json</code> header.</p>
 <h2 id="additional-configurations">Additional configurations<a class="headerlink" href="#additional-configurations" title="Permanent link">&para;</a></h2>
 <p>The <code>webhook.retries</code> parameter can be set for the maximum number of retries the webhook request should attempt if it is unsuccessful (i.e. HTTP response status is not 200). By default this is set to <code>0</code> which is disabled. An additional <code>webhook.retry_delay</code> parameter can be set to specify the time in seconds between retry attempts. By default this is set to <code>0.1</code> (i.e. 100ms). Note that increasing the number of retries or retry delay may slow down the trader if there are connectivity issues with the webhook.
 You can also specify <code>webhook.timeout</code> - which defines how long the bot will wait until it assumes the other host as unresponsive (defaults to 10s).</p>
 <p>Example configuration for retries:</p>
-<p><code>json
-  "webhook": {
-        "enabled": true,
-        "url": "https://&lt;YOURHOOKURL&gt;",
-        "timeout": 10,
-        "retries": 3,
-        "retry_delay": 0.2,
-        "status": {
-            "status": "Status: {status}"
-        }
-    },</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">&quot;webhook&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://&lt;YOURHOOKURL&gt;&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;timeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;retries&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;retry_delay&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Status: {status}&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+</code></pre></div>
 <p>Custom messages can be sent to Webhook endpoints via the <code>self.dp.send_msg()</code> function from within the strategy. To enable this, set the <code>allow_custom_messages</code> option to <code>true</code>:</p>
-<p><code>json
-  "webhook": {
-        "enabled": true,
-        "url": "https://&lt;YOURHOOKURL&gt;",
-        "allow_custom_messages": true,
-        "strategy_msg": {
-            "status": "StrategyMessage: {msg}"
-        }
-    },</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">&quot;webhook&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://&lt;YOURHOOKURL&gt;&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;allow_custom_messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;strategy_msg&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;StrategyMessage: {msg}&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+</code></pre></div>
 <p>Different payloads can be configured for different events. Not all fields are necessary, but you should configure at least one of the dicts, otherwise the webhook will never be called.</p>
 <h2 id="webhook-message-types">Webhook Message types<a class="headerlink" href="#webhook-message-types" title="Permanent link">&para;</a></h2>
 <h3 id="entry-entry-fill">Entry / Entry fill<a class="headerlink" href="#entry-entry-fill" title="Permanent link">&para;</a></h3>
@@ -2314,51 +2314,51 @@ Possible parameters are:</p>
 <h2 id="discord">Discord<a class="headerlink" href="#discord" title="Permanent link">&para;</a></h2>
 <p>A special form of webhooks is available for discord.
 You can configure this as follows:</p>
-<p><code>json
-"discord": {
-    "enabled": true,
-    "webhook_url": "https://discord.com/api/webhooks/&lt;Your webhook URL ...&gt;",
-    "exit_fill": [
-        {"Trade ID": "{trade_id}"},
-        {"Exchange": "{exchange}"},
-        {"Pair": "{pair}"},
-        {"Direction": "{direction}"},
-        {"Open rate": "{open_rate}"},
-        {"Close rate": "{close_rate}"},
-        {"Amount": "{amount}"},
-        {"Open date": "{open_date:%Y-%m-%d %H:%M:%S}"},
-        {"Close date": "{close_date:%Y-%m-%d %H:%M:%S}"},
-        {"Profit": "{profit_amount} {stake_currency}"},
-        {"Profitability": "{profit_ratio:.2%}"},
-        {"Enter tag": "{enter_tag}"},
-        {"Exit Reason": "{exit_reason}"},
-        {"Strategy": "{strategy}"},
-        {"Timeframe": "{timeframe}"},
-    ],
-    "entry_fill": [
-        {"Trade ID": "{trade_id}"},
-        {"Exchange": "{exchange}"},
-        {"Pair": "{pair}"},
-        {"Direction": "{direction}"},
-        {"Open rate": "{open_rate}"},
-        {"Amount": "{amount}"},
-        {"Open date": "{open_date:%Y-%m-%d %H:%M:%S}"},
-        {"Enter tag": "{enter_tag}"},
-        {"Strategy": "{strategy} {timeframe}"},
-    ]
-}</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;discord&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;webhook_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://discord.com/api/webhooks/&lt;Your webhook URL ...&gt;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;exit_fill&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Trade ID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{trade_id}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{exchange}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Pair&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{pair}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Direction&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{direction}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Open rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{open_rate}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Close rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{close_rate}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Amount&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{amount}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Open date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{open_date:%Y-%m-%d %H:%M:%S}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Close date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{close_date:%Y-%m-%d %H:%M:%S}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Profit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{profit_amount} {stake_currency}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Profitability&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{profit_ratio:.2%}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Enter tag&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{enter_tag}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Exit Reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{exit_reason}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{strategy}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{timeframe}&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;entry_fill&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Trade ID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{trade_id}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{exchange}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Pair&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{pair}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Direction&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{direction}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Open rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{open_rate}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Amount&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{amount}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Open date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{open_date:%Y-%m-%d %H:%M:%S}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Enter tag&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{enter_tag}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;Strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{strategy} {timeframe}&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>The above represents the default (<code>exit_fill</code> and <code>entry_fill</code> are optional and will default to the above configuration) - modifications are obviously possible.
 To disable either of the two default values (<code>entry_fill</code> / <code>exit_fill</code>), you can assign them an empty array (<code>exit_fill: []</code>).</p>
 <p>Available fields correspond to the fields for webhooks and are documented in the corresponding webhook sections.</p>
 <p>The notifications will look as follows by default.</p>
 <p><img alt="discord-notification" src="../assets/discord_notification.png" /></p>
 <p>Custom messages can be sent from a strategy to Discord endpoints via the dataprovider.send_msg() function. To enable this, set the <code>allow_custom_messages</code> option to <code>true</code>:</p>
-<p><code>json
-  "discord": {
-        "enabled": true,
-        "webhook_url": "https://discord.com/api/webhooks/&lt;Your webhook URL ...&gt;",
-        "allow_custom_messages": true,
-    },</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="nt">&quot;discord&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;webhook_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://discord.com/api/webhooks/&lt;Your webhook URL ...&gt;&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;allow_custom_messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+</code></pre></div>
 
 
 

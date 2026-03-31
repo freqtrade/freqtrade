@@ -2045,122 +2045,124 @@ This is done by not looking at the strategy code itself, but at changed indicato
 </ul>
 <p>These are set to avoid users accidentally generating false positives.</p>
 <h2 id="lookahead-analysis-command-reference">Lookahead-analysis command reference<a class="headerlink" href="#lookahead-analysis-command-reference" title="Permanent link">&para;</a></h2>
-<p>``` output
-usage: freqtrade lookahead-analysis [-h] [-v] [--no-color] [--logfile FILE]
-                                    [-V] [-c PATH] [-d PATH] [--userdir PATH]
-                                    [-s NAME] [--strategy-path PATH]
-                                    [--recursive-strategy-search]
-                                    [--freqaimodel NAME]
-                                    [--freqaimodel-path PATH] [-i TIMEFRAME]
-                                    [--timerange TIMERANGE]
-                                    [--data-format-ohlcv {json,jsongz,feather,parquet}]
-                                    [--max-open-trades INT]
-                                    [--stake-amount STAKE_AMOUNT]
-                                    [--fee FLOAT] [-p PAIRS [PAIRS ...]]
-                                    [--enable-protections]
-                                    [--enable-dynamic-pairlist]
-                                    [--dry-run-wallet DRY_RUN_WALLET]
-                                    [--timeframe-detail TIMEFRAME_DETAIL]
-                                    [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                                    [--export {none,trades,signals}]
-                                    [--backtest-filename PATH]
-                                    [--backtest-directory PATH]
-                                    [--freqai-backtest-live-models]
-                                    [--minimum-trade-amount INT]
-                                    [--targeted-trade-amount INT]
-                                    [--lookahead-analysis-exportfilename LOOKAHEAD_ANALYSIS_EXPORTFILENAME]
-                                    [--allow-limit-orders]</p>
-<p>options:
-  -h, --help            show this help message and exit
-  -i, --timeframe TIMEFRAME
-                        Specify timeframe (<code>1m</code>, <code>5m</code>, <code>30m</code>, <code>1h</code>, <code>1d</code>).
-  --timerange TIMERANGE
-                        Specify what timerange of data to use.
-  --data-format-ohlcv {json,jsongz,feather,parquet}
-                        Storage format for downloaded candle (OHLCV) data.
-                        (default: <code>feather</code>).
-  --max-open-trades INT
-                        Override the value of the <code>max_open_trades</code>
-                        configuration setting.
-  --stake-amount STAKE_AMOUNT
-                        Override the value of the <code>stake_amount</code> configuration
-                        setting.
-  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
-                        entry and exit).
-  -p, --pairs PAIRS [PAIRS ...]
-                        Limit command to these pairs. Pairs are space-
-                        separated.
-  --enable-protections, --enableprotections
-                        Enable protections for backtesting. Will slow
-                        backtesting down by a considerable amount, but will
-                        include configured protections
-  --enable-dynamic-pairlist
-                        Enables dynamic pairlist refreshes in backtesting. The
-                        pairlist will be generated for each new candle if
-                        you're using a pairlist handler that supports this
-                        feature, for example, ShuffleFilter.
-  --dry-run-wallet, --starting-balance DRY_RUN_WALLET
-                        Starting balance, used for backtesting / hyperopt and
-                        dry-runs.
-  --timeframe-detail TIMEFRAME_DETAIL
-                        Specify detail timeframe for backtesting (<code>1m</code>, <code>5m</code>,
-                        <code>30m</code>, <code>1h</code>, <code>1d</code>).
-  --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
-                        Provide a space-separated list of strategies to
-                        backtest. Please note that timeframe needs to be set
-                        either in config or via command line.
-  --export {none,trades,signals}
-                        Export backtest results (default: trades).
-  --backtest-filename, --export-filename PATH
-                        Use this filename for backtest results.Example:
-                        <code>--backtest-
-                        filename=backtest_results_2020-09-27_16-20-48.json</code>.
-                        Assumes either <code>user_data/backtest_results/</code> or
-                        <code>--export-directory</code> as base directory.
-  --backtest-directory, --export-directory PATH
-                        Directory to use for backtest results. Example:
-                        <code>--export-directory=user_data/backtest_results/</code>.
-  --freqai-backtest-live-models
-                        Run backtest with ready models.
-  --minimum-trade-amount INT
-                        Minimum trade amount for lookahead-analysis
-  --targeted-trade-amount INT
-                        Targeted trade amount for lookahead analysis
-  --lookahead-analysis-exportfilename LOOKAHEAD_ANALYSIS_EXPORTFILENAME
-                        Use this csv-filename to store lookahead-analysis-
-                        results
-  --allow-limit-orders  Allow limit orders in lookahead analysis (could cause
-                        false positives in lookahead analysis results).</p>
-<p>Common arguments:
-  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --no-color            Disable colorization of hyperopt results. May be
-                        useful if you are redirecting output to a file.
-  --logfile, --log-file FILE
-                        Log to the file specified. Special values are:
-                        'syslog', 'journald'. See the documentation for more
-                        details.
-  -V, --version         show program's version number and exit
-  -c, --config PATH     Specify configuration file (default:
-                        <code>userdir/config.json</code> or <code>config.json</code> whichever
-                        exists). Multiple --config options may be used. Can be
-                        set to <code>-</code> to read config from stdin.
-  -d, --datadir, --data-dir PATH
-                        Path to the base directory of the exchange with
-                        historical backtesting data. To see futures data, use
-                        trading-mode additionally.
-  --userdir, --user-data-dir PATH
-                        Path to userdata directory.</p>
-<p>Strategy arguments:
-  -s, --strategy NAME   Specify strategy class name which will be used by the
-                        bot.
-  --strategy-path PATH  Specify additional strategy lookup path.
-  --recursive-strategy-search
-                        Recursively search for a strategy in the strategies
-                        folder.
-  --freqaimodel NAME    Specify a custom freqaimodels.
-  --freqaimodel-path PATH
-                        Specify additional lookup path for freqaimodels.</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code><span class="go">usage: freqtrade lookahead-analysis [-h] [-v] [--no-color] [--logfile FILE]</span>
+<span class="go">                                    [-V] [-c PATH] [-d PATH] [--userdir PATH]</span>
+<span class="go">                                    [-s NAME] [--strategy-path PATH]</span>
+<span class="go">                                    [--recursive-strategy-search]</span>
+<span class="go">                                    [--freqaimodel NAME]</span>
+<span class="go">                                    [--freqaimodel-path PATH] [-i TIMEFRAME]</span>
+<span class="go">                                    [--timerange TIMERANGE]</span>
+<span class="go">                                    [--data-format-ohlcv {json,jsongz,feather,parquet}]</span>
+<span class="go">                                    [--max-open-trades INT]</span>
+<span class="go">                                    [--stake-amount STAKE_AMOUNT]</span>
+<span class="go">                                    [--fee FLOAT] [-p PAIRS [PAIRS ...]]</span>
+<span class="go">                                    [--enable-protections]</span>
+<span class="go">                                    [--enable-dynamic-pairlist]</span>
+<span class="go">                                    [--dry-run-wallet DRY_RUN_WALLET]</span>
+<span class="go">                                    [--timeframe-detail TIMEFRAME_DETAIL]</span>
+<span class="go">                                    [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]</span>
+<span class="go">                                    [--export {none,trades,signals}]</span>
+<span class="go">                                    [--backtest-filename PATH]</span>
+<span class="go">                                    [--backtest-directory PATH]</span>
+<span class="go">                                    [--freqai-backtest-live-models]</span>
+<span class="go">                                    [--minimum-trade-amount INT]</span>
+<span class="go">                                    [--targeted-trade-amount INT]</span>
+<span class="go">                                    [--lookahead-analysis-exportfilename LOOKAHEAD_ANALYSIS_EXPORTFILENAME]</span>
+<span class="go">                                    [--allow-limit-orders]</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -i, --timeframe TIMEFRAME</span>
+<span class="go">                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).</span>
+<span class="go">  --timerange TIMERANGE</span>
+<span class="go">                        Specify what timerange of data to use.</span>
+<span class="go">  --data-format-ohlcv {json,jsongz,feather,parquet}</span>
+<span class="go">                        Storage format for downloaded candle (OHLCV) data.</span>
+<span class="go">                        (default: `feather`).</span>
+<span class="go">  --max-open-trades INT</span>
+<span class="go">                        Override the value of the `max_open_trades`</span>
+<span class="go">                        configuration setting.</span>
+<span class="go">  --stake-amount STAKE_AMOUNT</span>
+<span class="go">                        Override the value of the `stake_amount` configuration</span>
+<span class="go">                        setting.</span>
+<span class="go">  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade</span>
+<span class="go">                        entry and exit).</span>
+<span class="go">  -p, --pairs PAIRS [PAIRS ...]</span>
+<span class="go">                        Limit command to these pairs. Pairs are space-</span>
+<span class="go">                        separated.</span>
+<span class="go">  --enable-protections, --enableprotections</span>
+<span class="go">                        Enable protections for backtesting. Will slow</span>
+<span class="go">                        backtesting down by a considerable amount, but will</span>
+<span class="go">                        include configured protections</span>
+<span class="go">  --enable-dynamic-pairlist</span>
+<span class="go">                        Enables dynamic pairlist refreshes in backtesting. The</span>
+<span class="go">                        pairlist will be generated for each new candle if</span>
+<span class="go">                        you&#39;re using a pairlist handler that supports this</span>
+<span class="go">                        feature, for example, ShuffleFilter.</span>
+<span class="go">  --dry-run-wallet, --starting-balance DRY_RUN_WALLET</span>
+<span class="go">                        Starting balance, used for backtesting / hyperopt and</span>
+<span class="go">                        dry-runs.</span>
+<span class="go">  --timeframe-detail TIMEFRAME_DETAIL</span>
+<span class="go">                        Specify detail timeframe for backtesting (`1m`, `5m`,</span>
+<span class="go">                        `30m`, `1h`, `1d`).</span>
+<span class="go">  --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]</span>
+<span class="go">                        Provide a space-separated list of strategies to</span>
+<span class="go">                        backtest. Please note that timeframe needs to be set</span>
+<span class="go">                        either in config or via command line.</span>
+<span class="go">  --export {none,trades,signals}</span>
+<span class="go">                        Export backtest results (default: trades).</span>
+<span class="go">  --backtest-filename, --export-filename PATH</span>
+<span class="go">                        Use this filename for backtest results.Example:</span>
+<span class="go">                        `--backtest-</span>
+<span class="go">                        filename=backtest_results_2020-09-27_16-20-48.json`.</span>
+<span class="go">                        Assumes either `user_data/backtest_results/` or</span>
+<span class="go">                        `--export-directory` as base directory.</span>
+<span class="go">  --backtest-directory, --export-directory PATH</span>
+<span class="go">                        Directory to use for backtest results. Example:</span>
+<span class="go">                        `--export-directory=user_data/backtest_results/`.</span>
+<span class="go">  --freqai-backtest-live-models</span>
+<span class="go">                        Run backtest with ready models.</span>
+<span class="go">  --minimum-trade-amount INT</span>
+<span class="go">                        Minimum trade amount for lookahead-analysis</span>
+<span class="go">  --targeted-trade-amount INT</span>
+<span class="go">                        Targeted trade amount for lookahead analysis</span>
+<span class="go">  --lookahead-analysis-exportfilename LOOKAHEAD_ANALYSIS_EXPORTFILENAME</span>
+<span class="go">                        Use this csv-filename to store lookahead-analysis-</span>
+<span class="go">                        results</span>
+<span class="go">  --allow-limit-orders  Allow limit orders in lookahead analysis (could cause</span>
+<span class="go">                        false positives in lookahead analysis results).</span>
+
+<span class="go">Common arguments:</span>
+<span class="go">  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).</span>
+<span class="go">  --no-color            Disable colorization of hyperopt results. May be</span>
+<span class="go">                        useful if you are redirecting output to a file.</span>
+<span class="go">  --logfile, --log-file FILE</span>
+<span class="go">                        Log to the file specified. Special values are:</span>
+<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        details.</span>
+<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -c, --config PATH     Specify configuration file (default:</span>
+<span class="go">                        `userdir/config.json` or `config.json` whichever</span>
+<span class="go">                        exists). Multiple --config options may be used. Can be</span>
+<span class="go">                        set to `-` to read config from stdin.</span>
+<span class="go">  -d, --datadir, --data-dir PATH</span>
+<span class="go">                        Path to the base directory of the exchange with</span>
+<span class="go">                        historical backtesting data. To see futures data, use</span>
+<span class="go">                        trading-mode additionally.</span>
+<span class="go">  --userdir, --user-data-dir PATH</span>
+<span class="go">                        Path to userdata directory.</span>
+
+<span class="go">Strategy arguments:</span>
+<span class="go">  -s, --strategy NAME   Specify strategy class name which will be used by the</span>
+<span class="go">                        bot.</span>
+<span class="go">  --strategy-path PATH  Specify additional strategy lookup path.</span>
+<span class="go">  --recursive-strategy-search</span>
+<span class="go">                        Recursively search for a strategy in the strategies</span>
+<span class="go">                        folder.</span>
+<span class="go">  --freqaimodel NAME    Specify a custom freqaimodels.</span>
+<span class="go">  --freqaimodel-path PATH</span>
+<span class="go">                        Specify additional lookup path for freqaimodels.</span>
+</code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The above output was reduced to options that <code>lookahead-analysis</code> adds on top of regular backtesting commands.</p>

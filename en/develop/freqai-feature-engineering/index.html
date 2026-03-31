@@ -1090,6 +1090,78 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#migrating-a-custom-ifreqaimodel-to-the-new-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrating a custom IFreqaiModel to the new Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outlier-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outlier detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Outlier detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identifying-outliers-with-the-dissimilarity-index-di" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifying outliers with the Dissimilarity Index (DI)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#identifying-outliers-using-a-support-vector-machine-svm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifying outliers using a Support Vector Machine (SVM)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#identifying-outliers-with-dbscan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifying outliers with DBSCAN
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-dimensionality-reduction-with-principal-component-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data dimensionality reduction with Principal Component Analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1983,6 +2055,78 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#migrating-a-custom-ifreqaimodel-to-the-new-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrating a custom IFreqaiModel to the new Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outlier-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outlier detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Outlier detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identifying-outliers-with-the-dissimilarity-index-di" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifying outliers with the Dissimilarity Index (DI)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#identifying-outliers-using-a-support-vector-machine-svm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifying outliers using a Support Vector Machine (SVM)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#identifying-outliers-with-dbscan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identifying outliers with DBSCAN
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-dimensionality-reduction-with-principal-component-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data dimensionality reduction with Principal Component Analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2044,155 +2188,157 @@
 </table>
 <p>Meanwhile, high level feature engineering is handled within <code>"feature_parameters":{}</code> in the FreqAI config. Within this file, it is possible to decide large scale feature expansions on top of the <code>base_features</code> such as "including correlated pairs" or "including informative timeframes" or even "including recent candles."</p>
 <p>It is advisable to start from the template <code>feature_engineering_*</code> functions in the source provided example strategy (found in <code>templates/FreqaiExampleStrategy.py</code>) to ensure that the feature definitions are following the correct conventions. Here is an example of how to set the indicators and labels in the strategy:</p>
-<p><code>``python
-    def feature_engineering_expand_all(self, dataframe: DataFrame, period, metadata, **kwargs) -&gt; DataFrame:
-        """
-        *Only functional with FreqAI enabled strategies*
-        This function will automatically expand the defined features on the config defined</code>indicator_periods_candles<code>,</code>include_timeframes<code>,</code>include_shifted_candles<code>, and</code>include_corr_pairs<code>. In other words, a single feature defined in this function
-        will automatically expand to a total of</code>indicator_periods_candles<code>*</code>include_timeframes<code>*</code>include_shifted_candles<code>*</code>include_corr_pairs` numbers of features added to the model.</p>
-<div class="codehilite"><pre><span></span><code>    All features must be prepended with `%` to be recognized by FreqAI internals.
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_expand_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        This function will automatically expand the defined features on the config defined</span>
+<span class="sd">        `indicator_periods_candles`, `include_timeframes`, `include_shifted_candles`, and</span>
+<span class="sd">        `include_corr_pairs`. In other words, a single feature defined in this function</span>
+<span class="sd">        will automatically expand to a total of</span>
+<span class="sd">        `indicator_periods_candles` * `include_timeframes` * `include_shifted_candles` *</span>
+<span class="sd">        `include_corr_pairs` numbers of features added to the model.</span>
 
-    Access metadata such as the current pair/timeframe/period with:
+<span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
 
-    `metadata[&quot;pair&quot;]` `metadata[&quot;tf&quot;]`  `metadata[&quot;period&quot;]`
+<span class="sd">        Access metadata such as the current pair/timeframe/period with:</span>
 
-    :param df: strategy dataframe which will receive the features
-    :param period: period of the indicator - usage example:
-    :param metadata: metadata of current pair
-    dataframe[&quot;%-ema-period&quot;] = ta.EMA(dataframe, timeperiod=period)
-    &quot;&quot;&quot;
+<span class="sd">        `metadata[&quot;pair&quot;]` `metadata[&quot;tf&quot;]`  `metadata[&quot;period&quot;]`</span>
 
-    dataframe[&quot;%-rsi-period&quot;] = ta.RSI(dataframe, timeperiod=period)
-    dataframe[&quot;%-mfi-period&quot;] = ta.MFI(dataframe, timeperiod=period)
-    dataframe[&quot;%-adx-period&quot;] = ta.ADX(dataframe, timeperiod=period)
-    dataframe[&quot;%-sma-period&quot;] = ta.SMA(dataframe, timeperiod=period)
-    dataframe[&quot;%-ema-period&quot;] = ta.EMA(dataframe, timeperiod=period)
+<span class="sd">        :param df: strategy dataframe which will receive the features</span>
+<span class="sd">        :param period: period of the indicator - usage example:</span>
+<span class="sd">        :param metadata: metadata of current pair</span>
+<span class="sd">        dataframe[&quot;%-ema-period&quot;] = ta.EMA(dataframe, timeperiod=period)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
-    bollinger = qtpylib.bollinger_bands(
-        qtpylib.typical_price(dataframe), window=period, stds=2.2
-    )
-    dataframe[&quot;bb_lowerband-period&quot;] = bollinger[&quot;lower&quot;]
-    dataframe[&quot;bb_middleband-period&quot;] = bollinger[&quot;mid&quot;]
-    dataframe[&quot;bb_upperband-period&quot;] = bollinger[&quot;upper&quot;]
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">si-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-mfi-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-a</span><span class="s2">dx-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-s</span><span class="s2">ma-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-e</span><span class="s2">ma-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
 
-    dataframe[&quot;%-bb_width-period&quot;] = (
-        dataframe[&quot;bb_upperband-period&quot;]
-        - dataframe[&quot;bb_lowerband-period&quot;]
-    ) / dataframe[&quot;bb_middleband-period&quot;]
-    dataframe[&quot;%-close-bb_lower-period&quot;] = (
-        dataframe[&quot;close&quot;] / dataframe[&quot;bb_lowerband-period&quot;]
-    )
+        <span class="n">bollinger</span> <span class="o">=</span> <span class="n">qtpylib</span><span class="o">.</span><span class="n">bollinger_bands</span><span class="p">(</span>
+            <span class="n">qtpylib</span><span class="o">.</span><span class="n">typical_price</span><span class="p">(</span><span class="n">dataframe</span><span class="p">),</span> <span class="n">window</span><span class="o">=</span><span class="n">period</span><span class="p">,</span> <span class="n">stds</span><span class="o">=</span><span class="mf">2.2</span>
+        <span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;lower&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_middleband-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;mid&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_upperband-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;upper&quot;</span><span class="p">]</span>
 
-    dataframe[&quot;%-roc-period&quot;] = ta.ROC(dataframe, timeperiod=period)
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-bb_width-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_upperband-period&quot;</span><span class="p">]</span>
+            <span class="o">-</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband-period&quot;</span><span class="p">]</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_middleband-period&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-c</span><span class="s2">lose-bb_lower-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband-period&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
 
-    dataframe[&quot;%-relative_volume-period&quot;] = (
-        dataframe[&quot;volume&quot;] / dataframe[&quot;volume&quot;].rolling(period).mean()
-    )
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">oc-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ROC</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
 
-    return dataframe
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">elative_volume-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">period</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="p">)</span>
 
-def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata, **kwargs) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    *Only functional with FreqAI enabled strategies*
-    This function will automatically expand the defined features on the config defined
-    `include_timeframes`, `include_shifted_candles`, and `include_corr_pairs`.
-    In other words, a single feature defined in this function
-    will automatically expand to a total of
-    `include_timeframes` * `include_shifted_candles` * `include_corr_pairs`
-    numbers of features added to the model.
+        <span class="k">return</span> <span class="n">dataframe</span>
 
-    Features defined here will *not* be automatically duplicated on user defined
-    `indicator_periods_candles`
+    <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_expand_basic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        This function will automatically expand the defined features on the config defined</span>
+<span class="sd">        `include_timeframes`, `include_shifted_candles`, and `include_corr_pairs`.</span>
+<span class="sd">        In other words, a single feature defined in this function</span>
+<span class="sd">        will automatically expand to a total of</span>
+<span class="sd">        `include_timeframes` * `include_shifted_candles` * `include_corr_pairs`</span>
+<span class="sd">        numbers of features added to the model.</span>
 
-    Access metadata such as the current pair/timeframe with:
+<span class="sd">        Features defined here will *not* be automatically duplicated on user defined</span>
+<span class="sd">        `indicator_periods_candles`</span>
 
-    `metadata[&quot;pair&quot;]` `metadata[&quot;tf&quot;]`
+<span class="sd">        Access metadata such as the current pair/timeframe with:</span>
 
-    All features must be prepended with `%` to be recognized by FreqAI internals.
+<span class="sd">        `metadata[&quot;pair&quot;]` `metadata[&quot;tf&quot;]`</span>
 
-    :param df: strategy dataframe which will receive the features
-    :param metadata: metadata of current pair
-    dataframe[&quot;%-pct-change&quot;] = dataframe[&quot;close&quot;].pct_change()
-    dataframe[&quot;%-ema-200&quot;] = ta.EMA(dataframe, timeperiod=200)
-    &quot;&quot;&quot;
-    dataframe[&quot;%-pct-change&quot;] = dataframe[&quot;close&quot;].pct_change()
-    dataframe[&quot;%-raw_volume&quot;] = dataframe[&quot;volume&quot;]
-    dataframe[&quot;%-raw_price&quot;] = dataframe[&quot;close&quot;]
-    return dataframe
+<span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
 
-def feature_engineering_standard(self, dataframe: DataFrame, metadata, **kwargs) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    *Only functional with FreqAI enabled strategies*
-    This optional function will be called once with the dataframe of the base timeframe.
-    This is the final function to be called, which means that the dataframe entering this
-    function will contain all the features and columns created by all other
-    freqai_feature_engineering_* functions.
+<span class="sd">        :param df: strategy dataframe which will receive the features</span>
+<span class="sd">        :param metadata: metadata of current pair</span>
+<span class="sd">        dataframe[&quot;%-pct-change&quot;] = dataframe[&quot;close&quot;].pct_change()</span>
+<span class="sd">        dataframe[&quot;%-ema-200&quot;] = ta.EMA(dataframe, timeperiod=200)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-pct-change&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">aw_volume&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">aw_price&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dataframe</span>
 
-    This function is a good place to do custom exotic feature extractions (e.g. tsfresh).
-    This function is a good place for any feature that should not be auto-expanded upon
-    (e.g. day of the week).
+    <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_standard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        This optional function will be called once with the dataframe of the base timeframe.</span>
+<span class="sd">        This is the final function to be called, which means that the dataframe entering this</span>
+<span class="sd">        function will contain all the features and columns created by all other</span>
+<span class="sd">        freqai_feature_engineering_* functions.</span>
 
-    Access metadata such as the current pair with:
+<span class="sd">        This function is a good place to do custom exotic feature extractions (e.g. tsfresh).</span>
+<span class="sd">        This function is a good place for any feature that should not be auto-expanded upon</span>
+<span class="sd">        (e.g. day of the week).</span>
 
-    `metadata[&quot;pair&quot;]`
+<span class="sd">        Access metadata such as the current pair with:</span>
 
-    All features must be prepended with `%` to be recognized by FreqAI internals.
+<span class="sd">        `metadata[&quot;pair&quot;]`</span>
 
-    :param df: strategy dataframe which will receive the features
-    :param metadata: metadata of current pair
-    usage example: dataframe[&quot;%-day_of_week&quot;] = (dataframe[&quot;date&quot;].dt.dayofweek + 1) / 7
-    &quot;&quot;&quot;
-    dataframe[&quot;%-day_of_week&quot;] = (dataframe[&quot;date&quot;].dt.dayofweek + 1) / 7
-    dataframe[&quot;%-hour_of_day&quot;] = (dataframe[&quot;date&quot;].dt.hour + 1) / 25
-    return dataframe
+<span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
 
-def set_freqai_targets(self, dataframe: DataFrame, metadata, **kwargs) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    *Only functional with FreqAI enabled strategies*
-    Required function to set the targets for the model.
-    All targets must be prepended with `&amp;` to be recognized by the FreqAI internals.
+<span class="sd">        :param df: strategy dataframe which will receive the features</span>
+<span class="sd">        :param metadata: metadata of current pair</span>
+<span class="sd">        usage example: dataframe[&quot;%-day_of_week&quot;] = (dataframe[&quot;date&quot;].dt.dayofweek + 1) / 7</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">ay_of_week&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-ho</span><span class="s2">ur_of_day&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">25</span>
+        <span class="k">return</span> <span class="n">dataframe</span>
 
-    Access metadata such as the current pair with:
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_freqai_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        Required function to set the targets for the model.</span>
+<span class="sd">        All targets must be prepended with `&amp;` to be recognized by the FreqAI internals.</span>
 
-    `metadata[&quot;pair&quot;]`
+<span class="sd">        Access metadata such as the current pair with:</span>
 
-    :param df: strategy dataframe which will receive the targets
-    :param metadata: metadata of current pair
-    usage example: dataframe[&quot;&amp;-target&quot;] = dataframe[&quot;close&quot;].shift(-1) / dataframe[&quot;close&quot;]
-    &quot;&quot;&quot;
-    dataframe[&quot;&amp;-s_close&quot;] = (
-        dataframe[&quot;close&quot;]
-        .shift(-self.freqai_info[&quot;feature_parameters&quot;][&quot;label_period_candles&quot;])
-        .rolling(self.freqai_info[&quot;feature_parameters&quot;][&quot;label_period_candles&quot;])
-        .mean()
-        / dataframe[&quot;close&quot;]
-        - 1
-        )
+<span class="sd">        `metadata[&quot;pair&quot;]`</span>
 
-    return dataframe
+<span class="sd">        :param df: strategy dataframe which will receive the targets</span>
+<span class="sd">        :param metadata: metadata of current pair</span>
+<span class="sd">        usage example: dataframe[&quot;&amp;-target&quot;] = dataframe[&quot;close&quot;].shift(-1) / dataframe[&quot;close&quot;]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+            <span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+            <span class="o">-</span> <span class="mi">1</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
-
-<p>```</p>
 <p>In the presented example, the user does not wish to pass the <code>bb_lowerband</code> as a feature to the model,
 and has therefore not prepended it with <code>%</code>. The user does, however, wish to pass <code>bb_width</code> to the
 model for training/prediction and has therefore prepended it with <code>%</code>.</p>
 <p>After having defined the <code>base features</code>, the next step is to expand upon them using the powerful <code>feature_parameters</code> in the configuration file:</p>
-<p><code>json
-    "freqai": {
-        //...
-        "feature_parameters" : {
-            "include_timeframes": ["5m","15m","4h"],
-            "include_corr_pairlist": [
-                "ETH/USD",
-                "LINK/USD",
-                "BNB/USD"
-            ],
-            "label_period_candles": 24,
-            "include_shifted_candles": 2,
-            "indicator_periods_candles": [10, 20]
-        },
-        //...
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">//...</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;include_timeframes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;5m&quot;</span><span class="p">,</span><span class="s2">&quot;15m&quot;</span><span class="p">,</span><span class="s2">&quot;4h&quot;</span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;include_corr_pairlist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;ETH/USD&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;LINK/USD&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;BNB/USD&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;label_period_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">24</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;include_shifted_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;indicator_periods_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="c1">//...</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>The <code>include_timeframes</code> in the config above are the timeframes (<code>tf</code>) of each call to <code>feature_engineering_expand_*()</code> in the strategy. In the presented case, the user is asking for the <code>5m</code>, <code>15m</code>, and <code>4h</code> timeframes of the <code>rsi</code>, <code>mfi</code>, <code>roc</code>, and <code>bb_width</code> to be included in the feature set.</p>
 <p>You can ask for each of the defined features to be included also for informative pairs using the <code>include_corr_pairlist</code>. This means that the feature set will include all the features from <code>feature_engineering_expand_*()</code> on all the <code>include_timeframes</code> for each of the correlated pairs defined in the config (<code>ETH/USD</code>, <code>LINK/USD</code>, and <code>BNB/USD</code> in the presented example).</p>
 <p><code>include_shifted_candles</code> indicates the number of previous candles to include in the feature set. For example, <code>include_shifted_candles: 2</code> tells FreqAI to include the past 2 candles for each of the features in the feature set.</p>
@@ -2204,19 +2350,19 @@ model for training/prediction and has therefore prepended it with <code>%</code>
 </div>
 <h3 id="gain-finer-control-over-feature_engineering_-functions-with-metadata">Gain finer control over <code>feature_engineering_*</code> functions with <code>metadata</code><a class="headerlink" href="#gain-finer-control-over-feature_engineering_-functions-with-metadata" title="Permanent link">&para;</a></h3>
 <p>All <code>feature_engineering_*</code> and <code>set_freqai_targets()</code> functions are passed a <code>metadata</code> dictionary which contains information about the <code>pair</code>, <code>tf</code> (timeframe), and <code>period</code> that FreqAI is automating for feature building. As such, a user can use <code>metadata</code> inside <code>feature_engineering_*</code> functions as criteria for blocking/reserving features for certain timeframes, periods, pairs etc.</p>
-<p><code>python
-def feature_engineering_expand_all(self, dataframe: DataFrame, period, metadata, **kwargs) -&gt; DataFrame:
-    if metadata["tf"] == "1h":
-        dataframe["%-roc-period"] = ta.ROC(dataframe, timeperiod=period)</code></p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_expand_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;tf&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;1h&quot;</span><span class="p">:</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">oc-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ROC</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+</code></pre></div>
 <p>This will block <code>ta.ROC()</code> from being added to any timeframes other than <code>"1h"</code>.</p>
 <h3 id="returning-additional-info-from-training">Returning additional info from training<a class="headerlink" href="#returning-additional-info-from-training" title="Permanent link">&para;</a></h3>
 <p>Important metrics can be returned to the strategy at the end of each model training by assigning them to <code>dk.data['extra_returns_per_train']['my_new_value'] = XYZ</code> inside the custom prediction model class. </p>
 <p>FreqAI takes the <code>my_new_value</code> assigned in this dictionary and expands it to fit the dataframe that is returned to the strategy. You can then use the returned metrics in your strategy through <code>dataframe['my_new_value']</code>. An example of how return values can be used in FreqAI are the <code>&amp;*_mean</code> and <code>&amp;*_std</code> values that are used to <a href="../freqai-configuration/#creating-a-dynamic-target-threshold">created a dynamic target threshold</a>.</p>
 <p>Another example, where the user wants to use live metrics from the trade database, is shown below:</p>
-<p><code>json
-    "freqai": {
-        "extra_returns_per_train": {"total_profit": 4}
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;extra_returns_per_train&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;total_profit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>You need to set the standard dictionary in the config so that FreqAI can return proper dataframe shapes. These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs a default initial value, the pre-set values are what will be returned.</p>
 <h3 id="weighting-features-for-temporal-importance">Weighting features for temporal importance<a class="headerlink" href="#weighting-features-for-temporal-importance" title="Permanent link">&para;</a></h3>
 <p>FreqAI allows you to set a <code>weight_factor</code> to weight recent data more strongly than past data via an exponential function:</p>
@@ -2235,67 +2381,66 @@ def feature_engineering_expand_all(self, dataframe: DataFrame, period, metadata,
 <p class="admonition-title">More information available</p>
 <p>FreqAI uses the <a href="https://github.com/emergentmethods/datasieve"><code>DataSieve</code></a> pipeline, which follows the SKlearn pipeline API, but adds, among other features, coherence between the X, y, and sample_weight vector point removals, feature removal, feature name following. </p>
 </div>
-<p>```python
-from datasieve.transforms import SKLearnWrapper, DissimilarityIndex
-from datasieve.pipeline import Pipeline
-from sklearn.preprocessing import QuantileTransformer, StandardScaler
-from freqai.base_models import BaseRegressionModel</p>
-<p>class MyFreqaiModel(BaseRegressionModel):
-    """
-    Some cool custom model
-    """
-    def fit(self, data_dictionary: Dict, dk: FreqaiDataKitchen, **kwargs) -&gt; Any:
-        """
-        My custom fit function
-        """
-        model = cool_model.fit()
-        return model</p>
-<div class="codehilite"><pre><span></span><code>def define_data_pipeline(self) -&gt; Pipeline:
-    &quot;&quot;&quot;
-    User defines their custom feature pipeline here (if they wish)
-    &quot;&quot;&quot;
-    feature_pipeline = Pipeline([
-        (&#39;qt&#39;, SKLearnWrapper(QuantileTransformer(output_distribution=&#39;normal&#39;))),
-        (&#39;di&#39;, ds.DissimilarityIndex(di_threshold=1))
-    ])
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasieve.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">SKLearnWrapper</span><span class="p">,</span> <span class="n">DissimilarityIndex</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasieve.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileTransformer</span><span class="p">,</span> <span class="n">StandardScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">freqai.base_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseRegressionModel</span>
 
-    return feature_pipeline
 
-def define_label_pipeline(self) -&gt; Pipeline:
-    &quot;&quot;&quot;
-    User defines their custom label pipeline here (if they wish)
-    &quot;&quot;&quot;
-    label_pipeline = Pipeline([
-        (&#39;qt&#39;, SKLearnWrapper(StandardScaler())),
-    ])
+<span class="k">class</span><span class="w"> </span><span class="nc">MyFreqaiModel</span><span class="p">(</span><span class="n">BaseRegressionModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Some cool custom model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_dictionary</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">dk</span><span class="p">:</span> <span class="n">FreqaiDataKitchen</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        My custom fit function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">cool_model</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">model</span>
 
-    return label_pipeline
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_data_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pipeline</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        User defines their custom feature pipeline here (if they wish)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">feature_pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
+            <span class="p">(</span><span class="s1">&#39;qt&#39;</span><span class="p">,</span> <span class="n">SKLearnWrapper</span><span class="p">(</span><span class="n">QuantileTransformer</span><span class="p">(</span><span class="n">output_distribution</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">))),</span>
+            <span class="p">(</span><span class="s1">&#39;di&#39;</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">DissimilarityIndex</span><span class="p">(</span><span class="n">di_threshold</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">feature_pipeline</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">define_label_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pipeline</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        User defines their custom label pipeline here (if they wish)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">label_pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
+            <span class="p">(</span><span class="s1">&#39;qt&#39;</span><span class="p">,</span> <span class="n">SKLearnWrapper</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">())),</span>
+        <span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">label_pipeline</span>
 </code></pre></div>
-
-<p>```</p>
 <p>Here, you are defining the exact pipeline that will be used for your feature set during training and prediction. You can use <em>most</em> SKLearn transformation steps by wrapping them in the <code>SKLearnWrapper</code> class as shown above. In addition, you can use any of the transformations available in the <a href="https://github.com/emergentmethods/datasieve"><code>DataSieve</code> library</a>. </p>
 <p>You can easily add your own transformation by creating a class that inherits from the datasieve <code>BaseTransform</code> and implementing your <code>fit()</code>, <code>transform()</code> and <code>inverse_transform()</code> methods:</p>
-<p>```python
-from datasieve.transforms.base_transform import BaseTransform</p>
-<h1 id="import-whatever-else-you-need">import whatever else you need<a class="headerlink" href="#import-whatever-else-you-need" title="Permanent link">&para;</a></h1>
-<p>class MyCoolTransform(BaseTransform):
-    def <strong>init</strong>(self, **kwargs):
-        self.param1 = kwargs.get('param1', 1)</p>
-<div class="codehilite"><pre><span></span><code>def fit(self, X, y=None, sample_weight=None, feature_list=None, **kwargs):
-    # do something with X, y, sample_weight, or/and feature_list
-    return X, y, sample_weight, feature_list
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datasieve.transforms.base_transform</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTransform</span>
+<span class="c1"># import whatever else you need</span>
 
-def transform(self, X, y=None, sample_weight=None,
-              feature_list=None, outlier_check=False, **kwargs):
-    # do something with X, y, sample_weight, or/and feature_list
-    return X, y, sample_weight, feature_list
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCoolTransform</span><span class="p">(</span><span class="n">BaseTransform</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param1</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;param1&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
-def inverse_transform(self, X, y=None, sample_weight=None, feature_list=None, **kwargs):
-    # do/dont do something with X, y, sample_weight, or/and feature_list
-    return X, y, sample_weight, feature_list
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">feature_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># do something with X, y, sample_weight, or/and feature_list</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">,</span> <span class="n">feature_list</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">feature_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outlier_check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># do something with X, y, sample_weight, or/and feature_list</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">,</span> <span class="n">feature_list</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">inverse_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">feature_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># do/dont do something with X, y, sample_weight, or/and feature_list</span>
+        <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">,</span> <span class="n">feature_list</span>
 </code></pre></div>
-
-<p>```</p>
 <div class="admonition note">
 <p class="admonition-title">Hint</p>
 <p>You can define this custom class in the same file as your <code>IFreqaiModel</code>.</p>
@@ -2308,12 +2453,12 @@ def inverse_transform(self, X, y=None, sample_weight=None, feature_list=None, **
 <h3 id="identifying-outliers-with-the-dissimilarity-index-di">Identifying outliers with the Dissimilarity Index (DI)<a class="headerlink" href="#identifying-outliers-with-the-dissimilarity-index-di" title="Permanent link">&para;</a></h3>
 <p>The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. </p>
 <p>You can tell FreqAI to remove outlier data points from the training/test data sets using the DI by including the following statement in the config:</p>
-<p><code>json
-    "freqai": {
-        "feature_parameters" : {
-            "DI_threshold": 1
-        }
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;DI_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>Which will add <code>DissimilarityIndex</code> step to your <code>feature_pipeline</code> and set the threshold to 1. The DI allows predictions which are outliers (not existent in the model feature space) to be thrown out due to low levels of certainty. To do so, FreqAI measures the distance between each training data point (feature vector), <span class="arithmatex">\(X_{a}\)</span>, and all other training data points:</p>
 <div class="arithmatex">\[ d_{ab} = \sqrt{\sum_{j=1}^p(X_{a,j}-X_{b,j})^2} \]</div>
 <p>where <span class="arithmatex">\(d_{ab}\)</span> is the distance between the normalized points <span class="arithmatex">\(a\)</span> and <span class="arithmatex">\(b\)</span>, and <span class="arithmatex">\(p\)</span> is the number of features, i.e., the length of the vector <span class="arithmatex">\(X\)</span>. The characteristic distance, <span class="arithmatex">\(\overline{d}\)</span>, for a set of training data points is simply the mean of the average distances:</p>
@@ -2327,36 +2472,36 @@ def inverse_transform(self, X, y=None, sample_weight=None, feature_list=None, **
 <p><img alt="DI" src="../assets/freqai_DI.jpg" /></p>
 <h3 id="identifying-outliers-using-a-support-vector-machine-svm">Identifying outliers using a Support Vector Machine (SVM)<a class="headerlink" href="#identifying-outliers-using-a-support-vector-machine-svm" title="Permanent link">&para;</a></h3>
 <p>You can tell FreqAI to remove outlier data points from the training/test data sets using a Support Vector Machine (SVM) by including the following statement in the config:</p>
-<p><code>json
-    "freqai": {
-        "feature_parameters" : {
-            "use_SVM_to_remove_outliers": true
-        }
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;use_SVM_to_remove_outliers&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>Which will add <code>SVMOutlierExtractor</code> step to your <code>feature_pipeline</code>. The SVM will be trained on the training data and any data point that the SVM deems to be beyond the feature space will be removed.</p>
 <p>You can elect to provide additional parameters for the SVM, such as <code>shuffle</code>, and <code>nu</code> via the <code>feature_parameters.svm_params</code> dictionary in the config.</p>
 <p>The parameter <code>shuffle</code> is by default set to <code>False</code> to ensure consistent results. If it is set to <code>True</code>, running the SVM multiple times on the same data set might result in different outcomes due to <code>max_iter</code> being to low for the algorithm to reach the demanded <code>tol</code>. Increasing <code>max_iter</code> solves this issue but causes the procedure to take longer time.</p>
 <p>The parameter <code>nu</code>, <em>very</em> broadly, is the amount of data points that should be considered outliers and should be between 0 and 1.</p>
 <h3 id="identifying-outliers-with-dbscan">Identifying outliers with DBSCAN<a class="headerlink" href="#identifying-outliers-with-dbscan" title="Permanent link">&para;</a></h3>
 <p>You can configure FreqAI to use DBSCAN to cluster and remove outliers from the training/test data set or incoming outliers from predictions, by activating <code>use_DBSCAN_to_remove_outliers</code> in the config:</p>
-<p><code>json
-    "freqai": {
-        "feature_parameters" : {
-            "use_DBSCAN_to_remove_outliers": true
-        }
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;use_DBSCAN_to_remove_outliers&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>Which will add the <code>DataSieveDBSCAN</code> step to your <code>feature_pipeline</code>. This is an unsupervised machine learning algorithm that clusters data without needing to know how many clusters there should be.</p>
 <p>Given a number of data points <span class="arithmatex">\(N\)</span>, and a distance <span class="arithmatex">\(\varepsilon\)</span>, DBSCAN clusters the data set by setting all data points that have <span class="arithmatex">\(N-1\)</span> other data points within a distance of <span class="arithmatex">\(\varepsilon\)</span> as <em>core points</em>. A data point that is within a distance of <span class="arithmatex">\(\varepsilon\)</span> from a <em>core point</em> but that does not have <span class="arithmatex">\(N-1\)</span> other data points within a distance of <span class="arithmatex">\(\varepsilon\)</span> from itself is considered an <em>edge point</em>. A cluster is then the collection of <em>core points</em> and <em>edge points</em>. Data points that have no other data points at a distance <span class="arithmatex">\(&lt;\varepsilon\)</span> are considered outliers. The figure below shows a cluster with <span class="arithmatex">\(N = 3\)</span>.</p>
 <p><img alt="dbscan" src="../assets/freqai_dbscan.jpg" /></p>
 <p>FreqAI uses <code>sklearn.cluster.DBSCAN</code> (details are available on scikit-learn's webpage <a href="https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html">here</a> (external website)) with <code>min_samples</code> (<span class="arithmatex">\(N\)</span>) taken as &frac14; of the no. of time points (candles) in the feature set. <code>eps</code> (<span class="arithmatex">\(\varepsilon\)</span>) is computed automatically as the elbow point in the <em>k-distance graph</em> computed from the nearest neighbors in the pairwise distances of all data points in the feature set.</p>
 <h3 id="data-dimensionality-reduction-with-principal-component-analysis">Data dimensionality reduction with Principal Component Analysis<a class="headerlink" href="#data-dimensionality-reduction-with-principal-component-analysis" title="Permanent link">&para;</a></h3>
 <p>You can reduce the dimensionality of your features by activating the principal_component_analysis in the config:</p>
-<p><code>json
-    "freqai": {
-        "feature_parameters" : {
-            "principal_component_analysis": true
-        }
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;principal_component_analysis&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>This will perform PCA on the features and reduce their dimensionality so that the explained variance of the data set is &gt;= 0.999. Reducing data dimensionality makes training the model faster and hence allows for more up-to-date models.</p>
 
 

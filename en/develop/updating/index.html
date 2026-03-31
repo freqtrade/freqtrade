@@ -1784,6 +1784,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#problems-updating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems updating
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1918,6 +1929,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#problems-updating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Problems updating
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1959,25 +1981,25 @@ To ensure ongoing compatibility, please make sure to update your bot regularly.<
 <p class="admonition-title">Legacy installations using the <code>master</code> image</p>
 <p>We're switching from master to stable for the release Images - please adjust your docker-file and replace <code>freqtradeorg/freqtrade:master</code> with <code>freqtradeorg/freqtrade:stable</code></p>
 </div>
-<p><code>bash
-docker compose pull
-docker compose up -d</code></p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>pull
+docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+</code></pre></div>
 <h2 id="installation-via-setup-script">Installation via setup script<a class="headerlink" href="#installation-via-setup-script" title="Permanent link">&para;</a></h2>
-<p><code>bash
-./setup.sh --update</code></p>
+<div class="highlight"><pre><span></span><code>./setup.sh<span class="w"> </span>--update
+</code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Make sure to run this command with your virtual environment disabled!</p>
 </div>
 <h2 id="plain-native-installation">Plain native installation<a class="headerlink" href="#plain-native-installation" title="Permanent link">&para;</a></h2>
 <p>Please ensure that you're also updating dependencies - otherwise things might break without you noticing.</p>
-<p>``` bash
-git pull
-pip install -U -r requirements.txt
-pip install -e .</p>
-<h1 id="ensure-frequi-is-at-the-latest-version">Ensure freqUI is at the latest version<a class="headerlink" href="#ensure-frequi-is-at-the-latest-version" title="Permanent link">&para;</a></h1>
-<p>freqtrade install-ui 
-```</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>pull
+pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+
+<span class="c1"># Ensure freqUI is at the latest version</span>
+freqtrade<span class="w"> </span>install-ui<span class="w"> </span>
+</code></pre></div>
 <h2 id="problems-updating">Problems updating<a class="headerlink" href="#problems-updating" title="Permanent link">&para;</a></h2>
 <p>Update-problems usually come missing dependencies (you didn't follow the above instructions) - or from dependencies which fail to install.
 We try to make sure that heavy dependencies have wheels available for major platforms, but sometimes this is not possible.</p>

@@ -2393,122 +2393,124 @@
 To learn how to get data for the pairs and exchange you're interested in, head over to the <a href="../data-download/">Data Downloading</a> section of the documentation.</p>
 <p>Backtesting is also available in <a href="../freq-ui/#backtesting">webserver mode</a>, which allows you to run backtests via the web interface.</p>
 <h2 id="backtesting-command-reference">Backtesting command reference<a class="headerlink" href="#backtesting-command-reference" title="Permanent link">&para;</a></h2>
-<p>``` output
-usage: freqtrade backtesting [-h] [-v] [--no-color] [--logfile FILE] [-V]
-                             [-c PATH] [-d PATH] [--userdir PATH] [-s NAME]
-                             [--strategy-path PATH]
-                             [--recursive-strategy-search]
-                             [--freqaimodel NAME] [--freqaimodel-path PATH]
-                             [-i TIMEFRAME] [--timerange TIMERANGE]
-                             [--data-format-ohlcv {json,jsongz,feather,parquet}]
-                             [--max-open-trades INT]
-                             [--stake-amount STAKE_AMOUNT] [--fee FLOAT]
-                             [-p PAIRS [PAIRS ...]] [--eps]
-                             [--enable-protections]
-                             [--enable-dynamic-pairlist]
-                             [--dry-run-wallet DRY_RUN_WALLET]
-                             [--timeframe-detail TIMEFRAME_DETAIL]
-                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]
-                             [--export {none,trades,signals}]
-                             [--backtest-filename PATH]
-                             [--backtest-directory PATH]
-                             [--breakdown {day,week,month,year,weekday} [{day,week,month,year,weekday} ...]]
-                             [--cache {none,day,week,month}]
-                             [--freqai-backtest-live-models] [--notes TEXT]</p>
-<p>options:
-  -h, --help            show this help message and exit
-  -i, --timeframe TIMEFRAME
-                        Specify timeframe (<code>1m</code>, <code>5m</code>, <code>30m</code>, <code>1h</code>, <code>1d</code>).
-  --timerange TIMERANGE
-                        Specify what timerange of data to use.
-  --data-format-ohlcv {json,jsongz,feather,parquet}
-                        Storage format for downloaded candle (OHLCV) data.
-                        (default: <code>feather</code>).
-  --max-open-trades INT
-                        Override the value of the <code>max_open_trades</code>
-                        configuration setting.
-  --stake-amount STAKE_AMOUNT
-                        Override the value of the <code>stake_amount</code> configuration
-                        setting.
-  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
-                        entry and exit).
-  -p, --pairs PAIRS [PAIRS ...]
-                        Limit command to these pairs. Pairs are space-
-                        separated.
-  --eps, --enable-position-stacking
-                        Allow buying the same pair multiple times (position
-                        stacking). Only applicable to backtesting and
-                        hyperopt. Results archived by this cannot be
-                        reproduced in dry/live trading.
-  --enable-protections, --enableprotections
-                        Enable protections for backtesting. Will slow
-                        backtesting down by a considerable amount, but will
-                        include configured protections
-  --enable-dynamic-pairlist
-                        Enables dynamic pairlist refreshes in backtesting. The
-                        pairlist will be generated for each new candle if
-                        you're using a pairlist handler that supports this
-                        feature, for example, ShuffleFilter.
-  --dry-run-wallet, --starting-balance DRY_RUN_WALLET
-                        Starting balance, used for backtesting / hyperopt and
-                        dry-runs.
-  --timeframe-detail TIMEFRAME_DETAIL
-                        Specify detail timeframe for backtesting (<code>1m</code>, <code>5m</code>,
-                        <code>30m</code>, <code>1h</code>, <code>1d</code>).
-  --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]
-                        Provide a space-separated list of strategies to
-                        backtest. Please note that timeframe needs to be set
-                        either in config or via command line.
-  --export {none,trades,signals}
-                        Export backtest results (default: trades).
-  --backtest-filename, --export-filename PATH
-                        DEPRECATED: This option is deprecated for backtesting
-                        and will be removed in a future release. Using a
-                        custom filename for backtest results is no longer
-                        supported. Use <code>--backtest-directory</code> to specify the
-                        directory.
-  --backtest-directory, --export-directory PATH
-                        Directory to use for backtest results. Example:
-                        <code>--export-directory=user_data/backtest_results/</code>.
-  --breakdown {day,week,month,year,weekday} [{day,week,month,year,weekday} ...]
-                        Show backtesting breakdown per [day, week, month,
-                        year, weekday].
-  --cache {none,day,week,month}
-                        Load a cached backtest result no older than specified
-                        age (default: day).
-  --freqai-backtest-live-models
-                        Run backtest with ready models.
-  --notes TEXT          Add notes to the backtest results.</p>
-<p>Common arguments:
-  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --no-color            Disable colorization of hyperopt results. May be
-                        useful if you are redirecting output to a file.
-  --logfile, --log-file FILE
-                        Log to the file specified. Special values are:
-                        'syslog', 'journald'. See the documentation for more
-                        details.
-  -V, --version         show program's version number and exit
-  -c, --config PATH     Specify configuration file (default:
-                        <code>userdir/config.json</code> or <code>config.json</code> whichever
-                        exists). Multiple --config options may be used. Can be
-                        set to <code>-</code> to read config from stdin.
-  -d, --datadir, --data-dir PATH
-                        Path to the base directory of the exchange with
-                        historical backtesting data. To see futures data, use
-                        trading-mode additionally.
-  --userdir, --user-data-dir PATH
-                        Path to userdata directory.</p>
-<p>Strategy arguments:
-  -s, --strategy NAME   Specify strategy class name which will be used by the
-                        bot.
-  --strategy-path PATH  Specify additional strategy lookup path.
-  --recursive-strategy-search
-                        Recursively search for a strategy in the strategies
-                        folder.
-  --freqaimodel NAME    Specify a custom freqaimodels.
-  --freqaimodel-path PATH
-                        Specify additional lookup path for freqaimodels.</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code><span class="go">usage: freqtrade backtesting [-h] [-v] [--no-color] [--logfile FILE] [-V]</span>
+<span class="go">                             [-c PATH] [-d PATH] [--userdir PATH] [-s NAME]</span>
+<span class="go">                             [--strategy-path PATH]</span>
+<span class="go">                             [--recursive-strategy-search]</span>
+<span class="go">                             [--freqaimodel NAME] [--freqaimodel-path PATH]</span>
+<span class="go">                             [-i TIMEFRAME] [--timerange TIMERANGE]</span>
+<span class="go">                             [--data-format-ohlcv {json,jsongz,feather,parquet}]</span>
+<span class="go">                             [--max-open-trades INT]</span>
+<span class="go">                             [--stake-amount STAKE_AMOUNT] [--fee FLOAT]</span>
+<span class="go">                             [-p PAIRS [PAIRS ...]] [--eps]</span>
+<span class="go">                             [--enable-protections]</span>
+<span class="go">                             [--enable-dynamic-pairlist]</span>
+<span class="go">                             [--dry-run-wallet DRY_RUN_WALLET]</span>
+<span class="go">                             [--timeframe-detail TIMEFRAME_DETAIL]</span>
+<span class="go">                             [--strategy-list STRATEGY_LIST [STRATEGY_LIST ...]]</span>
+<span class="go">                             [--export {none,trades,signals}]</span>
+<span class="go">                             [--backtest-filename PATH]</span>
+<span class="go">                             [--backtest-directory PATH]</span>
+<span class="go">                             [--breakdown {day,week,month,year,weekday} [{day,week,month,year,weekday} ...]]</span>
+<span class="go">                             [--cache {none,day,week,month}]</span>
+<span class="go">                             [--freqai-backtest-live-models] [--notes TEXT]</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -i, --timeframe TIMEFRAME</span>
+<span class="go">                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).</span>
+<span class="go">  --timerange TIMERANGE</span>
+<span class="go">                        Specify what timerange of data to use.</span>
+<span class="go">  --data-format-ohlcv {json,jsongz,feather,parquet}</span>
+<span class="go">                        Storage format for downloaded candle (OHLCV) data.</span>
+<span class="go">                        (default: `feather`).</span>
+<span class="go">  --max-open-trades INT</span>
+<span class="go">                        Override the value of the `max_open_trades`</span>
+<span class="go">                        configuration setting.</span>
+<span class="go">  --stake-amount STAKE_AMOUNT</span>
+<span class="go">                        Override the value of the `stake_amount` configuration</span>
+<span class="go">                        setting.</span>
+<span class="go">  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade</span>
+<span class="go">                        entry and exit).</span>
+<span class="go">  -p, --pairs PAIRS [PAIRS ...]</span>
+<span class="go">                        Limit command to these pairs. Pairs are space-</span>
+<span class="go">                        separated.</span>
+<span class="go">  --eps, --enable-position-stacking</span>
+<span class="go">                        Allow buying the same pair multiple times (position</span>
+<span class="go">                        stacking). Only applicable to backtesting and</span>
+<span class="go">                        hyperopt. Results archived by this cannot be</span>
+<span class="go">                        reproduced in dry/live trading.</span>
+<span class="go">  --enable-protections, --enableprotections</span>
+<span class="go">                        Enable protections for backtesting. Will slow</span>
+<span class="go">                        backtesting down by a considerable amount, but will</span>
+<span class="go">                        include configured protections</span>
+<span class="go">  --enable-dynamic-pairlist</span>
+<span class="go">                        Enables dynamic pairlist refreshes in backtesting. The</span>
+<span class="go">                        pairlist will be generated for each new candle if</span>
+<span class="go">                        you&#39;re using a pairlist handler that supports this</span>
+<span class="go">                        feature, for example, ShuffleFilter.</span>
+<span class="go">  --dry-run-wallet, --starting-balance DRY_RUN_WALLET</span>
+<span class="go">                        Starting balance, used for backtesting / hyperopt and</span>
+<span class="go">                        dry-runs.</span>
+<span class="go">  --timeframe-detail TIMEFRAME_DETAIL</span>
+<span class="go">                        Specify detail timeframe for backtesting (`1m`, `5m`,</span>
+<span class="go">                        `30m`, `1h`, `1d`).</span>
+<span class="go">  --strategy-list STRATEGY_LIST [STRATEGY_LIST ...]</span>
+<span class="go">                        Provide a space-separated list of strategies to</span>
+<span class="go">                        backtest. Please note that timeframe needs to be set</span>
+<span class="go">                        either in config or via command line.</span>
+<span class="go">  --export {none,trades,signals}</span>
+<span class="go">                        Export backtest results (default: trades).</span>
+<span class="go">  --backtest-filename, --export-filename PATH</span>
+<span class="go">                        DEPRECATED: This option is deprecated for backtesting</span>
+<span class="go">                        and will be removed in a future release. Using a</span>
+<span class="go">                        custom filename for backtest results is no longer</span>
+<span class="go">                        supported. Use `--backtest-directory` to specify the</span>
+<span class="go">                        directory.</span>
+<span class="go">  --backtest-directory, --export-directory PATH</span>
+<span class="go">                        Directory to use for backtest results. Example:</span>
+<span class="go">                        `--export-directory=user_data/backtest_results/`.</span>
+<span class="go">  --breakdown {day,week,month,year,weekday} [{day,week,month,year,weekday} ...]</span>
+<span class="go">                        Show backtesting breakdown per [day, week, month,</span>
+<span class="go">                        year, weekday].</span>
+<span class="go">  --cache {none,day,week,month}</span>
+<span class="go">                        Load a cached backtest result no older than specified</span>
+<span class="go">                        age (default: day).</span>
+<span class="go">  --freqai-backtest-live-models</span>
+<span class="go">                        Run backtest with ready models.</span>
+<span class="go">  --notes TEXT          Add notes to the backtest results.</span>
+
+<span class="go">Common arguments:</span>
+<span class="go">  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).</span>
+<span class="go">  --no-color            Disable colorization of hyperopt results. May be</span>
+<span class="go">                        useful if you are redirecting output to a file.</span>
+<span class="go">  --logfile, --log-file FILE</span>
+<span class="go">                        Log to the file specified. Special values are:</span>
+<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        details.</span>
+<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -c, --config PATH     Specify configuration file (default:</span>
+<span class="go">                        `userdir/config.json` or `config.json` whichever</span>
+<span class="go">                        exists). Multiple --config options may be used. Can be</span>
+<span class="go">                        set to `-` to read config from stdin.</span>
+<span class="go">  -d, --datadir, --data-dir PATH</span>
+<span class="go">                        Path to the base directory of the exchange with</span>
+<span class="go">                        historical backtesting data. To see futures data, use</span>
+<span class="go">                        trading-mode additionally.</span>
+<span class="go">  --userdir, --user-data-dir PATH</span>
+<span class="go">                        Path to userdata directory.</span>
+
+<span class="go">Strategy arguments:</span>
+<span class="go">  -s, --strategy NAME   Specify strategy class name which will be used by the</span>
+<span class="go">                        bot.</span>
+<span class="go">  --strategy-path PATH  Specify additional strategy lookup path.</span>
+<span class="go">  --recursive-strategy-search</span>
+<span class="go">                        Recursively search for a strategy in the strategies</span>
+<span class="go">                        folder.</span>
+<span class="go">  --freqaimodel NAME    Specify a custom freqaimodels.</span>
+<span class="go">  --freqaimodel-path PATH</span>
+<span class="go">                        Specify additional lookup path for freqaimodels.</span>
+</code></pre></div>
 <h2 id="test-your-strategy-with-backtesting">Test your strategy with Backtesting<a class="headerlink" href="#test-your-strategy-with-backtesting" title="Permanent link">&para;</a></h2>
 <p>Now you have good Entry and exit strategies and some historic data, you want to test it against
 real data. This is what we call <a href="https://en.wikipedia.org/wiki/Backtesting">backtesting</a>.</p>
@@ -2537,37 +2539,37 @@ This amount must be higher than <code>stake_amount</code>, otherwise the bot wil
 Profits from early trades will result in subsequent higher stake amounts, resulting in compounding of profits over the backtesting period.</p>
 <h3 id="example-backtesting-commands">Example backtesting commands<a class="headerlink" href="#example-backtesting-commands" title="Permanent link">&para;</a></h3>
 <p>With 5 min candle (OHLCV) data (per default)</p>
-<p><code>bash
-freqtrade backtesting --strategy AwesomeStrategy</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy
+</code></pre></div>
 <p>Where <code>--strategy AwesomeStrategy</code> / <code>-s AwesomeStrategy</code> refers to the class name of the strategy, which is within a python file in the <code>user_data/strategies</code> directory.</p>
 <hr />
 <p>With 1 min candle (OHLCV) data</p>
-<p><code>bash
-freqtrade backtesting --strategy AwesomeStrategy --timeframe 1m</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--timeframe<span class="w"> </span>1m
+</code></pre></div>
 <hr />
 <p>Providing a custom starting balance of 1000 (in stake currency)</p>
-<p><code>bash
-freqtrade backtesting --strategy AwesomeStrategy --dry-run-wallet 1000</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--dry-run-wallet<span class="w"> </span><span class="m">1000</span>
+</code></pre></div>
 <hr />
 <p>Using a different on-disk historical candle (OHLCV) data source</p>
 <p>Assume you downloaded the history data from the Binance exchange and kept it in the <code>user_data/data/binance-20180101</code> directory. 
 You can then use this data for backtesting as follows:</p>
-<p><code>bash
-freqtrade backtesting --strategy AwesomeStrategy --datadir user_data/data/binance-20180101</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--datadir<span class="w"> </span>user_data/data/binance-20180101<span class="w"> </span>
+</code></pre></div>
 <hr />
 <p>Comparing multiple Strategies</p>
-<p><code>bash
-freqtrade backtesting --strategy-list SampleStrategy1 AwesomeStrategy --timeframe 5m</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy-list<span class="w"> </span>SampleStrategy1<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--timeframe<span class="w"> </span>5m
+</code></pre></div>
 <p>Where <code>SampleStrategy1</code> and <code>AwesomeStrategy</code> refer to class names of strategies.</p>
 <hr />
 <p>Prevent exporting trades to file</p>
-<p><code>bash
-freqtrade backtesting --strategy backtesting --export none --config config.json</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>backtesting<span class="w"> </span>--export<span class="w"> </span>none<span class="w"> </span>--config<span class="w"> </span>config.json<span class="w"> </span>
+</code></pre></div>
 <p>Only use this if you're sure you'll not want to plot or analyze your results further.</p>
 <hr />
 <p>Exporting trades to file specifying a custom directory</p>
-<p><code>bash
-freqtrade backtesting --strategy backtesting --export trades --backtest-directory=user_data/custom-backtest-results</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>backtesting<span class="w"> </span>--export<span class="w"> </span>trades<span class="w"> </span>--backtest-directory<span class="o">=</span>user_data/custom-backtest-results
+</code></pre></div>
 <hr />
 <p>Please also read about the <a href="../strategy-customization/#strategy-startup-period">strategy startup period</a>.</p>
 <hr />
@@ -2576,8 +2578,8 @@ freqtrade backtesting --strategy backtesting --export trades --backtest-director
 To account for this in backtesting, you can use the <code>--fee</code> command line option to supply this value to backtesting.
 This fee must be a ratio, and will be applied twice (once for trade entry, and once for trade exit).</p>
 <p>For example, if the commission fee per order is 0.1% (i.e., 0.001 written as ratio), then you would run backtesting as the following:</p>
-<p><code>bash
-freqtrade backtesting --fee 0.001</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--fee<span class="w"> </span><span class="m">0</span>.001
+</code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Only supply this option (or the corresponding configuration parameter) if you want to experiment with different fee values. By default, Backtesting fetches the default fee from the exchange pair/market info.</p>
@@ -2586,8 +2588,8 @@ freqtrade backtesting --fee 0.001</code></p>
 <p>Running backtest with smaller test-set by using timerange</p>
 <p>Use the <code>--timerange</code> argument to change how much of the test-set you want to use.</p>
 <p>For example, running backtesting with the <code>--timerange=20190501-</code> option will use all available data starting with May 1<sup>st</sup>, 2019 from your input data.</p>
-<p><code>bash
-freqtrade backtesting --timerange=20190501-</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--timerange<span class="o">=</span><span class="m">20190501</span>-
+</code></pre></div>
 <p>You can also specify particular date ranges.</p>
 <p>The full timerange specification:</p>
 <ul>
@@ -2599,8 +2601,7 @@ freqtrade backtesting --timerange=20190501-</code></p>
 <h2 id="understand-the-backtesting-result">Understand the backtesting result<a class="headerlink" href="#understand-the-backtesting-result" title="Permanent link">&para;</a></h2>
 <p>The most important in the backtesting is to understand the result.</p>
 <p>A backtesting result will look like that:</p>
-<p>```
-                                                 BACKTESTING REPORT                                                <br />
+<div class="highlight"><pre><span></span><code>                                                 BACKTESTING REPORT                                                  
 ┏━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃          Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃    Avg Duration ┃  Win  Draw  Loss  Win% ┃
 ┡━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -2614,7 +2615,7 @@ freqtrade backtesting --timerange=20190501-</code></p>
 │ ADA/USDT:USDT │      8 │        -1.76 │         -52.098 │        -5.21 │        11:38:00 │    6     0     2  75.0 │
 │         TOTAL │     77 │         0.22 │          54.774 │         5.48 │        22:12:00 │   67     0    10  87.0 │
 └───────────────┴────────┴──────────────┴─────────────────┴──────────────┴─────────────────┴────────────────────────┘
-                                               LEFT OPEN TRADES REPORT                                              <br />
+                                               LEFT OPEN TRADES REPORT                                                
 ┏━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃          Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃     Avg Duration ┃  Win  Draw  Loss  Win% ┃
 ┡━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -2623,14 +2624,14 @@ freqtrade backtesting --timerange=20190501-</code></p>
 │ DOT/USDT:USDT │      1 │        -5.29 │         -19.125 │        -1.91 │         11:30:00 │    0     0     1     0 │
 │         TOTAL │      3 │        -4.56 │         -44.420 │        -4.44 │  6 days, 2:03:00 │    0     0     3     0 │
 └───────────────┴────────┴──────────────┴─────────────────┴──────────────┴──────────────────┴────────────────────────┘
-                                                ENTER TAG STATS                                              <br />
+                                                ENTER TAG STATS                                                
 ┏━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Enter Tag ┃ Entries ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
 ┡━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
 │     OTHER │      77 │         0.22 │          54.774 │         5.48 │     22:12:00 │   67     0    10  87.0 │
 │     TOTAL │      77 │         0.22 │          54.774 │         5.48 │     22:12:00 │   67     0    10  87.0 │
 └───────────┴─────────┴──────────────┴─────────────────┴──────────────┴──────────────┴────────────────────────┘
-                                                EXIT REASON STATS                                               <br />
+                                                EXIT REASON STATS                                                 
 ┏━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Exit Reason ┃ Exits ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃    Avg Duration ┃  Win  Draw  Loss  Win% ┃
 ┡━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -2640,7 +2641,7 @@ freqtrade backtesting --timerange=20190501-</code></p>
 │   stop_loss │     3 │       -10.14 │        -111.768 │       -11.18 │  1 day, 3:05:00 │    0     0     3     0 │
 │       TOTAL │    77 │         0.22 │          54.774 │         5.48 │        22:12:00 │   67     0    10  87.0 │
 └─────────────┴───────┴──────────────┴─────────────────┴──────────────┴─────────────────┴────────────────────────┘
-                                                        MIXED TAG STATS                                                      <br />
+                                                        MIXED TAG STATS                                                        
 ┏━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Enter Tag ┃ Exit Reason ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃    Avg Duration ┃  Win  Draw  Loss  Win% ┃
 ┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -2650,7 +2651,7 @@ freqtrade backtesting --timerange=20190501-</code></p>
 │           │   stop_loss │      3 │       -10.14 │        -111.768 │       -11.18 │  1 day, 3:05:00 │    0     0     3     0 │
 │     TOTAL │             │     77 │         0.22 │          54.774 │         5.48 │        22:12:00 │   67     0    10  87.0 │
 └───────────┴─────────────┴────────┴──────────────┴─────────────────┴──────────────┴─────────────────┴────────────────────────┘
-                          SUMMARY METRICS                        <br />
+                          SUMMARY METRICS                          
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Metric                        ┃ Value                           ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -2702,30 +2703,32 @@ freqtrade backtesting --timerange=20190501-</code></p>
 │ Drawdown start                │ 2025-07-22 15:10:00             │
 │ Drawdown end                  │ 2025-08-01 00:00:00             │
 │ Market change                 │ 30.51%                          │
-└───────────────────────────────┴─────────────────────────────────┘</p>
-<p>Backtested 2025-07-01 00:00:00 -&gt; 2025-08-01 00:00:00 | Max open trades : 3
-                                                            STRATEGY SUMMARY                                                          <br />
+└───────────────────────────────┴─────────────────────────────────┘
+
+Backtested 2025-07-01 00:00:00 -&gt; 2025-08-01 00:00:00 | Max open trades : 3
+                                                            STRATEGY SUMMARY                                                            
 ┏━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
 ┃       Strategy ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃           Drawdown ┃
 ┡━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
 │ SampleStrategy │     77 │         0.22 │          54.774 │         5.48 │     22:12:00 │   67     0    10  87.0 │ 94.647 USDT  8.23% │
 └────────────────┴────────┴──────────────┴─────────────────┴──────────────┴──────────────┴────────────────────────┴────────────────────┘
-```</p>
+</code></pre></div>
 <h3 id="backtesting-report-table">Backtesting report table<a class="headerlink" href="#backtesting-report-table" title="Permanent link">&para;</a></h3>
 <p>The first table contains all trades the bot made, including "left open trades".</p>
 <p>The last line will give you the overall performance of your strategy,
 here:</p>
-<p><code>│         TOTAL │     77 │         0.22 │          54.774 │         5.48 │        22:12:00 │   67     0    10  87.0 │</code></p>
+<div class="highlight"><pre><span></span><code>│         TOTAL │     77 │         0.22 │          54.774 │         5.48 │        22:12:00 │   67     0    10  87.0 │
+</code></pre></div>
 <p>The bot has made <code>77</code> trades for an average duration of <code>22:12:00</code>, with a performance of <code>5.48%</code> (profit), that means it has earned a total of <code>54.774 USDT</code> starting with a capital of 1000 USDT.</p>
 <p>The column <code>Avg Profit %</code> shows the average profit for all trades made.
 The column <code>Tot Profit %</code> shows instead the total profit % in relation to the starting balance.</p>
 <p>In the above results, we have a starting balance of 1000 USDT and an absolute profit of 54.774 USDT - so the <code>Tot Profit %</code> will be <code>(54.774 / 1000) * 100 ~= 5.48%</code>.</p>
 <p>Your strategy performance is influenced by your entry strategy, your exit strategy, and also by the <code>minimal_roi</code> and <code>stop_loss</code> you have set.</p>
 <p>For example, if your <code>minimal_roi</code> is only <code>"0":  0.01</code> you cannot expect the bot to make more profit than 1% (because it will exit every time a trade reaches 1%).</p>
-<p><code>json
-"minimal_roi": {
-    "0":  0.01
-},</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;minimal_roi&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;0&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.01</span>
+<span class="p">},</span>
+</code></pre></div>
 <p>On the other hand, if you set a too high <code>minimal_roi</code> like <code>"0":  0.55</code>
 (55%), there is almost no chance that the bot will ever reach this profit.
 Hence, keep in mind that your performance is an integral mix of all different elements of the strategy, your configuration, and the crypto-currency pairs you have set up.</p>
@@ -2742,7 +2745,7 @@ These trades are also included in the first table, but are also shown separately
 <h3 id="summary-metrics">Summary metrics<a class="headerlink" href="#summary-metrics" title="Permanent link">&para;</a></h3>
 <p>The last element of the backtest report is the summary metrics table.
 It contains key metrics about the performance of your strategy on backtesting data.</p>
-<p><code>┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+<div class="highlight"><pre><span></span><code>┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Metric                        ┃ Value                           ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
 │ Backtesting from              │ 2025-07-01 00:00:00             │
@@ -2789,7 +2792,8 @@ It contains key metrics about the performance of your strategy on backtesting da
 │ Drawdown start                │ 2025-07-22 15:10:00             │
 │ Drawdown end                  │ 2025-08-01 00:00:00             │
 │ Market change                 │ 30.51%                          │
-└───────────────────────────────┴─────────────────────────────────┘</code></p>
+└───────────────────────────────┴─────────────────────────────────┘
+</code></pre></div>
 <ul>
 <li><code>Backtesting from</code> / <code>Backtesting to</code>: Backtesting range (usually defined with the <code>--timerange</code> option).</li>
 <li><code>Trading Mode</code>: Spot or Futures trading.</li>
@@ -2832,35 +2836,35 @@ It contains key metrics about the performance of your strategy on backtesting da
 <h3 id="daily-weekly-monthly-yearly-breakdown">Daily / Weekly / Monthly / Yearly breakdown<a class="headerlink" href="#daily-weekly-monthly-yearly-breakdown" title="Permanent link">&para;</a></h3>
 <p>You can get an overview over daily, weekly, monthly, or yearly results by using the <code>--breakdown &lt;&gt;</code> switch.</p>
 <p>To visualize monthly and yearly breakdowns, you can use the following:</p>
-<p><code>bash
-freqtrade backtesting --strategy MyAwesomeStrategy --breakdown month year</code></p>
-<p><code>output
-                                 MONTH BREAKDOWN
-┏━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃      Month ┃ Trades ┃ Tot Profit USDT ┃ Profit Factor ┃  Win  Draw  Loss  Win% ┃
-┡━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ 31/01/2020 │     12 │          44.451 │          7.28 │   10     0     2  83.3 │
-│ 29/02/2020 │     30 │           45.41 │          2.36 │   17     0    13  56.7 │
-│ 31/03/2020 │     35 │         142.024 │          2.42 │   14     0    21  40.0 │
-│ 30/04/2020 │     67 │         -23.692 │          0.81 │   24     0    43  35.8 │
-...
-...
-│ 30/04/2025 │    203 │          -63.43 │          0.81 │   73     0   130  36.0 │
-│ 31/05/2025 │    142 │         104.675 │          1.28 │   59     0    83  41.5 │
-│ 30/06/2025 │    177 │          -1.014 │           1.0 │   85     0    92  48.0 │
-│ 31/07/2025 │    155 │         232.762 │           1.6 │   63     0    92  40.6 │
-└────────────┴────────┴─────────────────┴───────────────┴────────────────────────┘
-                                  YEAR BREAKDOWN
-┏━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃       Year ┃ Trades ┃ Tot Profit USDT ┃ Profit Factor ┃  Win  Draw  Loss  Win% ┃
-┡━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ 31/12/2020 │    896 │         868.889 │          1.46 │  351     0   545  39.2 │
-│ 31/12/2021 │   1778 │        4487.163 │          1.93 │  745     0  1033  41.9 │
-│ 31/12/2022 │   1736 │          938.27 │          1.27 │  698     0  1038  40.2 │
-│ 31/12/2023 │   1712 │        1677.126 │          1.68 │  670     0  1042  39.1 │
-│ 31/12/2024 │   1609 │        3198.424 │          2.22 │  773     0   836  48.0 │
-│ 31/12/2025 │   1042 │         716.174 │          1.33 │  420     0   622  40.3 │
-└────────────┴────────┴─────────────────┴───────────────┴────────────────────────┘</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>MyAwesomeStrategy<span class="w"> </span>--breakdown<span class="w"> </span>month<span class="w"> </span>year
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">                                 MONTH BREAKDOWN</span>
+<span class="go">┏━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓</span>
+<span class="go">┃      Month ┃ Trades ┃ Tot Profit USDT ┃ Profit Factor ┃  Win  Draw  Loss  Win% ┃</span>
+<span class="go">┡━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩</span>
+<span class="go">│ 31/01/2020 │     12 │          44.451 │          7.28 │   10     0     2  83.3 │</span>
+<span class="go">│ 29/02/2020 │     30 │           45.41 │          2.36 │   17     0    13  56.7 │</span>
+<span class="go">│ 31/03/2020 │     35 │         142.024 │          2.42 │   14     0    21  40.0 │</span>
+<span class="go">│ 30/04/2020 │     67 │         -23.692 │          0.81 │   24     0    43  35.8 │</span>
+<span class="go">...</span>
+<span class="go">...</span>
+<span class="go">│ 30/04/2025 │    203 │          -63.43 │          0.81 │   73     0   130  36.0 │</span>
+<span class="go">│ 31/05/2025 │    142 │         104.675 │          1.28 │   59     0    83  41.5 │</span>
+<span class="go">│ 30/06/2025 │    177 │          -1.014 │           1.0 │   85     0    92  48.0 │</span>
+<span class="go">│ 31/07/2025 │    155 │         232.762 │           1.6 │   63     0    92  40.6 │</span>
+<span class="go">└────────────┴────────┴─────────────────┴───────────────┴────────────────────────┘</span>
+<span class="go">                                  YEAR BREAKDOWN</span>
+<span class="go">┏━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓</span>
+<span class="go">┃       Year ┃ Trades ┃ Tot Profit USDT ┃ Profit Factor ┃  Win  Draw  Loss  Win% ┃</span>
+<span class="go">┡━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩</span>
+<span class="go">│ 31/12/2020 │    896 │         868.889 │          1.46 │  351     0   545  39.2 │</span>
+<span class="go">│ 31/12/2021 │   1778 │        4487.163 │          1.93 │  745     0  1033  41.9 │</span>
+<span class="go">│ 31/12/2022 │   1736 │          938.27 │          1.27 │  698     0  1038  40.2 │</span>
+<span class="go">│ 31/12/2023 │   1712 │        1677.126 │          1.68 │  670     0  1042  39.1 │</span>
+<span class="go">│ 31/12/2024 │   1609 │        3198.424 │          2.22 │  773     0   836  48.0 │</span>
+<span class="go">│ 31/12/2025 │   1042 │         716.174 │          1.33 │  420     0   622  40.3 │</span>
+<span class="go">└────────────┴────────┴─────────────────┴───────────────┴────────────────────────┘</span>
+</code></pre></div>
 <p>The output will display tables containing the realized absolute profit (in stake currency) for the selected period, along with additional statistics such as number of trades, profit factor, and distribution of wins, draws, and losses that materialized (closed) on this period.</p>
 <h3 id="backtest-result-caching">Backtest result caching<a class="headerlink" href="#backtest-result-caching" title="Permanent link">&para;</a></h3>
 <p>To save time, by default backtest will reuse a cached result from within the last day when the backtested strategy and config match that of a previous backtest. To force a new backtest despite existing result for an identical run specify <code>--cache none</code> parameter.</p>
@@ -2948,8 +2952,8 @@ So assuming you run backtesting with a 1h timeframe, there will be 4 prices for 
 <p>While backtesting does take some assumptions (read above) about this - this can never be perfect, and will always be biased in one way or the other.
 To mitigate this, freqtrade can use a lower (faster) timeframe to simulate intra-candle movements.</p>
 <p>To utilize this, you can append <code>--timeframe-detail 5m</code> to your regular backtesting command.</p>
-<p><code>bash
-freqtrade backtesting --strategy AwesomeStrategy --timeframe 1h --timeframe-detail 5m</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--timeframe<span class="w"> </span>1h<span class="w"> </span>--timeframe-detail<span class="w"> </span>5m
+</code></pre></div>
 <p>This will load 1h data (the main timeframe) as well as 5m data (detail timeframe) for the selected timerange.
 The strategy will be analyzed with the 1h timeframe.
 Candles where activity may take place (there's an active signal, the pair is in a trade) are evaluated at the 5m timeframe.
@@ -3040,16 +3044,17 @@ Also, data must be available / downloaded already.</p>
 <p>This is limited to 1 timeframe value per run. However, data is only loaded once from disk so if you have multiple
 strategies you'd like to compare, this will give a nice runtime boost.</p>
 <p>All listed Strategies need to be in the same directory, unless also <code>--recursive-strategy-search</code> is specified, where sub-directories within the strategy directory are also considered.</p>
-<p><code>bash
-freqtrade backtesting --timerange 20180401-20180410 --timeframe 5m --strategy-list Strategy001 Strategy002 --export trades</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20180401</span>-20180410<span class="w"> </span>--timeframe<span class="w"> </span>5m<span class="w"> </span>--strategy-list<span class="w"> </span>Strategy001<span class="w"> </span>Strategy002<span class="w"> </span>--export<span class="w"> </span>trades
+</code></pre></div>
 <p>This will save the results to <code>user_data/backtest_results/backtest-result-&lt;datetime&gt;.json</code>, including results for both <code>Strategy001</code> and <code>Strategy002</code>.
 There will be an additional table comparing win/losses of the different strategies (identical to the "Total" row in the first table).
 Detailed output for all strategies one after the other will be available, so make sure to scroll up to see the details per strategy.</p>
-<p><code>================================================== STRATEGY SUMMARY ===================================================================
+<div class="highlight"><pre><span></span><code>================================================== STRATEGY SUMMARY ===================================================================
 | Strategy    |  Trades |   Avg Profit % |   Tot Profit BTC |   Tot Profit % | Avg Duration   |  Wins |  Draws | Losses | Drawdown % |
 |-------------+---------+----------------+------------------+----------------+----------------+-------+--------+--------+------------|
 | Strategy1   |     429 |           0.36 |       0.00762792 |          76.20 | 4:12:00        |   186 |      0 |    243 |       45.2 |
-| Strategy2   |    1487 |          -0.13 |      -0.00988917 |         -98.79 | 4:43:00        |   662 |      0 |    825 |     241.68 |</code></p>
+| Strategy2   |    1487 |          -0.13 |      -0.00988917 |         -98.79 | 4:43:00        |   662 |      0 |    825 |     241.68 |
+</code></pre></div>
 <h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
 <p>Great, your strategy is profitable. What if the bot can give you the optimal parameters to use for your strategy?
 Your next step is to learn <a href="../hyperopt/">how to find optimal parameters with Hyperopt</a></p>

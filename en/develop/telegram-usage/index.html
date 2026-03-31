@@ -2611,16 +2611,16 @@ Telegram user id.</p>
 This will return the group id to you, without having to use some random bot.
 While "chat_id" is still required, it doesn't need to be set to this particular group id for this command.</p>
 <p>The response will also contain the "topic_id" if necessary - both in a format ready to copy/paste into your configuration.</p>
-<p><code>json
- {
-    "enabled": true,
-    "token": "********",
-    "chat_id": "-1001332619709",
-    "topic_id": "122"
-}</code></p>
+<div class="highlight"><pre><span></span><code><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;********&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;chat_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;-1001332619709&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;topic_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;122&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>For the Freqtrade configuration, you can then use the full value (including <code>-</code> ) as string:</p>
-<p><code>json
-   "chat_id": "-1001332619709"</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">   </span><span class="nt">&quot;chat_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;-1001332619709&quot;</span>
+</code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Using telegram groups</p>
 <p>When using telegram groups, you're giving every member of the telegram group access to your freqtrade bot and to all commands possible via telegram. Please make sure that you can trust everyone in the telegram group to avoid unpleasant surprises.</p>
@@ -2628,18 +2628,18 @@ While "chat_id" is still required, it doesn't need to be set to this particular 
 <h5 id="group-topic-id">Group Topic ID<a class="headerlink" href="#group-topic-id" title="Permanent link">&para;</a></h5>
 <p>To use a specific topic in a group, you can use the <code>topic_id</code> parameter in the configuration. This will allow you to use the bot in a specific topic in a group.<br />
 Without this, the bot will always respond to the general channel in the group if topics are enabled for a group chat.</p>
-<p><code>json
-   "chat_id": "-1001332619709",
-   "topic_id": "3"</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">   </span><span class="nt">&quot;chat_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;-1001332619709&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;topic_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3&quot;</span>
+</code></pre></div>
 <p>Similar to the group-id - you can use <code>/tg_info</code> from the topic/thread to get the correct topic-id.</p>
 <h4 id="authorized-users">Authorized users<a class="headerlink" href="#authorized-users" title="Permanent link">&para;</a></h4>
 <p>For groups, it can be useful to limit who can send commands to the bot.</p>
 <p>If <code>"authorized_users": []</code> is present and empty, no user will be allowed to control the bot.
 In the below example, only the user with the id "1234567" is allowed to control the bot - all other users will only be able to receive messages.</p>
-<p><code>json
-   "chat_id": "-1001332619709",
-   "topic_id": "3",
-   "authorized_users": ["1234567"]</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">   </span><span class="nt">&quot;chat_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;-1001332619709&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;topic_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;authorized_users&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;1234567&quot;</span><span class="p">]</span>
+</code></pre></div>
 <h2 id="control-telegram-noise">Control telegram noise<a class="headerlink" href="#control-telegram-noise" title="Permanent link">&para;</a></h2>
 <p>Freqtrade provides means to control the verbosity of your telegram bot.
 Each setting has the following possible values:</p>
@@ -2649,43 +2649,43 @@ Each setting has the following possible values:</p>
 <li><code>off</code> - Skip sending a message-type all together.</li>
 </ul>
 <p>Example configuration showing the different settings:</p>
-<p><code>json
-"telegram": {
-    "enabled": true,
-    "token": "your_telegram_token",
-    "chat_id": "your_telegram_chat_id",
-    "allow_custom_messages": true,
-    "notification_settings": {
-        "status": "silent",
-        "warning": "on",
-        "startup": "off",
-        "entry": "silent",
-        "entry_fill": "on",
-        "entry_cancel": "silent",
-        "exit": {
-            "roi": "silent",
-            "emergency_exit": "on",
-            "force_exit": "on",
-            "exit_signal": "silent",
-            "trailing_stop_loss": "on",
-            "stop_loss": "on",
-            "stoploss_on_exchange": "on",
-            "custom_exit": "silent",  // custom_exit without specifying an exit reason
-            "partial_exit": "on",
-            // "custom_exit_message": "silent",  // Disable individual custom exit reasons
-            "*": "off"  // Disable all other exit reasons
-        },
-        // "exit": "off",  // Simplistic configuration to disable all exit messages
-        "exit_cancel": "on",
-        "exit_fill": "off",
-        "protection_trigger": "off",
-        "protection_trigger_global": "on",
-        "strategy_msg": "off",
-        "show_candle": "off"
-    },
-    "reload": true,
-    "balance_dust_level": 0.01
-},</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;telegram&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_telegram_token&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;chat_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_telegram_chat_id&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;allow_custom_messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;notification_settings&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;warning&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;startup&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;entry&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;entry_fill&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;entry_cancel&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;roi&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;emergency_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;force_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;exit_signal&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;trailing_stop_loss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;stop_loss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;custom_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;silent&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// custom_exit without specifying an exit reason</span>
+<span class="w">            </span><span class="nt">&quot;partial_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="c1">// &quot;custom_exit_message&quot;: &quot;silent&quot;,  // Disable individual custom exit reasons</span>
+<span class="w">            </span><span class="nt">&quot;*&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="w">  </span><span class="c1">// Disable all other exit reasons</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="c1">// &quot;exit&quot;: &quot;off&quot;,  // Simplistic configuration to disable all exit messages</span>
+<span class="w">        </span><span class="nt">&quot;exit_cancel&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;exit_fill&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;protection_trigger&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;protection_trigger_global&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;on&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;strategy_msg&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;show_candle&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;off&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;reload&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;balance_dust_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span>
+<span class="p">},</span>
+</code></pre></div>
 <ul>
 <li><code>entry</code> notifications are sent when the order is placed, while <code>entry_fill</code> notifications are sent when the order is filled on the exchange.  </li>
 <li><code>exit</code> notifications are sent when the order is placed, while <code>exit_fill</code> notifications are sent when the order is filled on the exchange.<br />
@@ -2701,25 +2701,25 @@ Each setting has the following possible values:</p>
 <h2 id="create-a-custom-keyboard-command-shortcut-buttons">Create a custom keyboard (command shortcut buttons)<a class="headerlink" href="#create-a-custom-keyboard-command-shortcut-buttons" title="Permanent link">&para;</a></h2>
 <p>Telegram allows us to create a custom keyboard with buttons for commands.
 The default custom keyboard looks like this.</p>
-<p><code>python
-[
-    ["/daily", "/profit", "/balance"], # row 1, 3 commands
-    ["/status", "/status table", "/performance"], # row 2, 3 commands
-    ["/count", "/start", "/stop", "/help"] # row 3, 4 commands
-]</code></p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span>
+    <span class="p">[</span><span class="s2">&quot;/daily&quot;</span><span class="p">,</span> <span class="s2">&quot;/profit&quot;</span><span class="p">,</span> <span class="s2">&quot;/balance&quot;</span><span class="p">],</span> <span class="c1"># row 1, 3 commands</span>
+    <span class="p">[</span><span class="s2">&quot;/status&quot;</span><span class="p">,</span> <span class="s2">&quot;/status table&quot;</span><span class="p">,</span> <span class="s2">&quot;/performance&quot;</span><span class="p">],</span> <span class="c1"># row 2, 3 commands</span>
+    <span class="p">[</span><span class="s2">&quot;/count&quot;</span><span class="p">,</span> <span class="s2">&quot;/start&quot;</span><span class="p">,</span> <span class="s2">&quot;/stop&quot;</span><span class="p">,</span> <span class="s2">&quot;/help&quot;</span><span class="p">]</span> <span class="c1"># row 3, 4 commands</span>
+<span class="p">]</span>
+</code></pre></div>
 <h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h3>
 <p>You can create your own keyboard in <code>config.json</code>:</p>
-<p><code>json
-"telegram": {
-      "enabled": true,
-      "token": "your_telegram_token",
-      "chat_id": "your_telegram_chat_id",
-      "keyboard": [
-          ["/daily", "/stats", "/balance", "/profit"],
-          ["/status table", "/performance"],
-          ["/reload_config", "/count", "/logs"]
-      ]
-   },</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;telegram&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_telegram_token&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;chat_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_telegram_chat_id&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;keyboard&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">[</span><span class="s2">&quot;/daily&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/stats&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/balance&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/profit&quot;</span><span class="p">],</span>
+<span class="w">          </span><span class="p">[</span><span class="s2">&quot;/status table&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/performance&quot;</span><span class="p">],</span>
+<span class="w">          </span><span class="p">[</span><span class="s2">&quot;/reload_config&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/count&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/logs&quot;</span><span class="p">]</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">   </span><span class="p">},</span>
+</code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Supported Commands</p>
 <p>Only the following commands are allowed. Command arguments are not supported!</p>
@@ -2953,19 +2953,17 @@ Enter Tag is configurable via Strategy.</p>
 </blockquote>
 <h3 id="status-table">/status table<a class="headerlink" href="#status-table" title="Permanent link">&para;</a></h3>
 <p>Return the status of all open trades in a table format.</p>
-<p><code>ID L/S    Pair     Since   Profit
+<div class="highlight"><pre><span></span><code>ID L/S    Pair     Since   Profit
 ----    --------  -------  --------
   67 L   SC/BTC    1 d      13.33%
- 123 S   CVC/BTC   1 h      12.95%</code></p>
+ 123 S   CVC/BTC   1 h      12.95%
+</code></pre></div>
 <h3 id="count">/count<a class="headerlink" href="#count" title="Permanent link">&para;</a></h3>
 <p>Return the number of trades used and available.</p>
-<p>```
-current    max</p>
-<hr />
-<div class="codehilite"><pre><span></span><code> 2     10
+<div class="highlight"><pre><span></span><code>current    max
+---------  -----
+     2     10
 </code></pre></div>
-
-<p>```</p>
 <h3 id="profit">/profit<a class="headerlink" href="#profit" title="Permanent link">&para;</a></h3>
 <p>Also available as <code>/profit_long</code> and <code>/profit_short</code> to show profit for long or short trades only.</p>
 <p>Return a summary of your profit/loss and performance.</p>
@@ -3045,34 +3043,35 @@ Trades created through <code>/forcelong</code> will have the buy-tag of <code>fo
 <blockquote>
 <p><strong>Daily Profit over the last 3 days:</strong></p>
 </blockquote>
-<p>```
-Day (count)     USDT          USD         Profit %</p>
-<hr />
-<p>2022-06-11 (1)  -0.746 USDT   -0.75 USD   -0.08%
+<div class="highlight"><pre><span></span><code>Day (count)     USDT          USD         Profit %
+--------------  ------------  ----------  ----------
+2022-06-11 (1)  -0.746 USDT   -0.75 USD   -0.08%
 2022-06-10 (0)  0 USDT        0.00 USD    0.00%
 2022-06-09 (5)  20 USDT       20.10 USD   5.00%
-```</p>
+</code></pre></div>
 <h3 id="weekly">/weekly <n><a class="headerlink" href="#weekly" title="Permanent link">&para;</a></h3>
 <p>Per default <code>/weekly</code> will return the 8 last weeks, including the current week. Each week starts
 from Monday. The example below if for <code>/weekly 3</code>:</p>
 <blockquote>
 <p><strong>Weekly Profit over the last 3 weeks (starting from Monday):</strong></p>
 </blockquote>
-<p><code>Monday (count)  Profit BTC      Profit USD   Profit %
+<div class="highlight"><pre><span></span><code>Monday (count)  Profit BTC      Profit USD   Profit %
 -------------  --------------  ------------    ----------
 2018-01-03 (5)  0.00224175 BTC  29,142 USD   4.98%
 2017-12-27 (1)  0.00033131 BTC   4,307 USD   0.00%
-2017-12-20 (4)  0.00269130 BTC  34.986 USD   5.12%</code></p>
+2017-12-20 (4)  0.00269130 BTC  34.986 USD   5.12%
+</code></pre></div>
 <h3 id="monthly">/monthly <n><a class="headerlink" href="#monthly" title="Permanent link">&para;</a></h3>
 <p>Per default <code>/monthly</code> will return the 6 last months, including the current month. The example below
 if for <code>/monthly 3</code>:</p>
 <blockquote>
 <p><strong>Monthly Profit over the last 3 months:</strong>
-<code>Month (count)  Profit BTC      Profit USD    Profit %
+<div class="highlight"><pre><span></span><code>Month (count)  Profit BTC      Profit USD    Profit %
 -------------  --------------  ------------    ----------
 2018-01 (20)    0.00224175 BTC  29,142 USD  4.98%
 2017-12 (5)    0.00033131 BTC   4,307 USD   0.00%
-2017-11 (10)    0.00269130 BTC  34.986 USD  5.10%</code></p>
+2017-11 (10)    0.00269130 BTC  34.986 USD  5.10%
+</code></pre></div></p>
 </blockquote>
 <h3 id="whitelist">/whitelist<a class="headerlink" href="#whitelist" title="Permanent link">&para;</a></h3>
 <p>Shows the current whitelist</p>
@@ -3096,9 +3095,11 @@ Use <code>/reload_config</code> to reset the blacklist.</p>
 <h3 id="marketdir">/marketdir<a class="headerlink" href="#marketdir" title="Permanent link">&para;</a></h3>
 <p>If a market direction is provided the command updates the user managed variable that represents the current market direction.
 This variable is not set to any valid market direction on bot startup and must be set by the user. The example below is for <code>/marketdir long</code>:</p>
-<p><code>Successfully updated marketdirection from none to long.</code></p>
+<div class="highlight"><pre><span></span><code>Successfully updated marketdirection from none to long.
+</code></pre></div>
 <p>If no market direction is provided the command outputs the currently set market directions. The example below is for <code>/marketdir</code>:</p>
-<p><code>Currently set marketdirection: even</code></p>
+<div class="highlight"><pre><span></span><code>Currently set marketdirection: even
+</code></pre></div>
 <p>You can use the market direction in your strategy via <code>self.market_direction</code>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Bot restarts</p>

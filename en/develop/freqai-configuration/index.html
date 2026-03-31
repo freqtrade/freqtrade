@@ -2283,28 +2283,28 @@
 <p>FreqAI is configured through the typical <a href="../configuration/">Freqtrade config file</a> and the standard <a href="../strategy-customization/">Freqtrade strategy</a>. Examples of FreqAI config and strategy files can be found in <code>config_examples/config_freqai.example.json</code> and <code>freqtrade/templates/FreqaiExampleStrategy.py</code>, respectively.</p>
 <h2 id="setting-up-the-configuration-file">Setting up the configuration file<a class="headerlink" href="#setting-up-the-configuration-file" title="Permanent link">&para;</a></h2>
 <p>Although there are plenty of additional parameters to choose from, as highlighted in the <a href="../freqai-parameter-table/#parameter-table">parameter table</a>, a FreqAI config must at minimum include the following parameters (the parameter values are only examples):</p>
-<p><code>json
-    "freqai": {
-        "enabled": true,
-        "purge_old_models": 2,
-        "train_period_days": 30,
-        "backtest_period_days": 7,
-        "identifier" : "unique-id",
-        "feature_parameters" : {
-            "include_timeframes": ["5m","15m","4h"],
-            "include_corr_pairlist": [
-                "ETH/USD",
-                "LINK/USD",
-                "BNB/USD"
-            ],
-            "label_period_candles": 24,
-            "include_shifted_candles": 2,
-            "indicator_periods_candles": [10, 20]
-        },
-        "data_split_parameters" : {
-            "test_size": 0.25
-        }
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;purge_old_models&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;train_period_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;backtest_period_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;identifier&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unique-id&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;include_timeframes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;5m&quot;</span><span class="p">,</span><span class="s2">&quot;15m&quot;</span><span class="p">,</span><span class="s2">&quot;4h&quot;</span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;include_corr_pairlist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;ETH/USD&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;LINK/USD&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;BNB/USD&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;label_period_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">24</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;include_shifted_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;indicator_periods_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;data_split_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;test_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.25</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>A full example config is available in <code>config_examples/config_freqai.example.json</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2312,112 +2312,110 @@
 </div>
 <h2 id="building-a-freqai-strategy">Building a FreqAI strategy<a class="headerlink" href="#building-a-freqai-strategy" title="Permanent link">&para;</a></h2>
 <p>The FreqAI strategy requires including the following lines of code in the standard <a href="../strategy-customization/">Freqtrade strategy</a>:</p>
-<p>```python
-    # user should define the maximum startup candle count (the largest number of candles
-    # passed to any single indicator)
-    startup_candle_count: int = 20</p>
-<div class="codehilite"><pre><span></span><code>def populate_indicators(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:
+<div class="highlight"><pre><span></span><code>    <span class="c1"># user should define the maximum startup candle count (the largest number of candles</span>
+    <span class="c1"># passed to any single indicator)</span>
+    <span class="n">startup_candle_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span>
 
-    # the model will return all labels created by user in `set_freqai_targets()`
-    # (&amp; appended targets), an indication of whether or not the prediction should be accepted,
-    # the target mean/std values for each of the labels created by user in
-    # `set_freqai_targets()` for each training period.
+    <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
 
-    dataframe = self.freqai.start(dataframe, metadata, self)
+        <span class="c1"># the model will return all labels created by user in `set_freqai_targets()`</span>
+        <span class="c1"># (&amp; appended targets), an indication of whether or not the prediction should be accepted,</span>
+        <span class="c1"># the target mean/std values for each of the labels created by user in</span>
+        <span class="c1"># `set_freqai_targets()` for each training period.</span>
 
-    return dataframe
+        <span class="n">dataframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqai</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
 
-def feature_engineering_expand_all(self, dataframe: DataFrame, period, **kwargs) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    *Only functional with FreqAI enabled strategies*
-    This function will automatically expand the defined features on the config defined
-    `indicator_periods_candles`, `include_timeframes`, `include_shifted_candles`, and
-    `include_corr_pairs`. In other words, a single feature defined in this function
-    will automatically expand to a total of
-    `indicator_periods_candles` * `include_timeframes` * `include_shifted_candles` *
-    `include_corr_pairs` numbers of features added to the model.
+        <span class="k">return</span> <span class="n">dataframe</span>
 
-    All features must be prepended with `%` to be recognized by FreqAI internals.
+    <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_expand_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        This function will automatically expand the defined features on the config defined</span>
+<span class="sd">        `indicator_periods_candles`, `include_timeframes`, `include_shifted_candles`, and</span>
+<span class="sd">        `include_corr_pairs`. In other words, a single feature defined in this function</span>
+<span class="sd">        will automatically expand to a total of</span>
+<span class="sd">        `indicator_periods_candles` * `include_timeframes` * `include_shifted_candles` *</span>
+<span class="sd">        `include_corr_pairs` numbers of features added to the model.</span>
 
-    :param df: strategy dataframe which will receive the features
-    :param period: period of the indicator - usage example:
-    dataframe[&quot;%-ema-period&quot;] = ta.EMA(dataframe, timeperiod=period)
-    &quot;&quot;&quot;
+<span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
 
-    dataframe[&quot;%-rsi-period&quot;] = ta.RSI(dataframe, timeperiod=period)
-    dataframe[&quot;%-mfi-period&quot;] = ta.MFI(dataframe, timeperiod=period)
-    dataframe[&quot;%-adx-period&quot;] = ta.ADX(dataframe, timeperiod=period)
-    dataframe[&quot;%-sma-period&quot;] = ta.SMA(dataframe, timeperiod=period)
-    dataframe[&quot;%-ema-period&quot;] = ta.EMA(dataframe, timeperiod=period)
+<span class="sd">        :param df: strategy dataframe which will receive the features</span>
+<span class="sd">        :param period: period of the indicator - usage example:</span>
+<span class="sd">        dataframe[&quot;%-ema-period&quot;] = ta.EMA(dataframe, timeperiod=period)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
-    return dataframe
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">si-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-mfi-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-a</span><span class="s2">dx-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-s</span><span class="s2">ma-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-e</span><span class="s2">ma-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
 
-def feature_engineering_expand_basic(self, dataframe: DataFrame, **kwargs) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    *Only functional with FreqAI enabled strategies*
-    This function will automatically expand the defined features on the config defined
-    `include_timeframes`, `include_shifted_candles`, and `include_corr_pairs`.
-    In other words, a single feature defined in this function
-    will automatically expand to a total of
-    `include_timeframes` * `include_shifted_candles` * `include_corr_pairs`
-    numbers of features added to the model.
+        <span class="k">return</span> <span class="n">dataframe</span>
 
-    Features defined here will *not* be automatically duplicated on user defined
-    `indicator_periods_candles`
+    <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_expand_basic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        This function will automatically expand the defined features on the config defined</span>
+<span class="sd">        `include_timeframes`, `include_shifted_candles`, and `include_corr_pairs`.</span>
+<span class="sd">        In other words, a single feature defined in this function</span>
+<span class="sd">        will automatically expand to a total of</span>
+<span class="sd">        `include_timeframes` * `include_shifted_candles` * `include_corr_pairs`</span>
+<span class="sd">        numbers of features added to the model.</span>
 
-    All features must be prepended with `%` to be recognized by FreqAI internals.
+<span class="sd">        Features defined here will *not* be automatically duplicated on user defined</span>
+<span class="sd">        `indicator_periods_candles`</span>
 
-    :param df: strategy dataframe which will receive the features
-    dataframe[&quot;%-pct-change&quot;] = dataframe[&quot;close&quot;].pct_change()
-    dataframe[&quot;%-ema-200&quot;] = ta.EMA(dataframe, timeperiod=200)
-    &quot;&quot;&quot;
-    dataframe[&quot;%-pct-change&quot;] = dataframe[&quot;close&quot;].pct_change()
-    dataframe[&quot;%-raw_volume&quot;] = dataframe[&quot;volume&quot;]
-    dataframe[&quot;%-raw_price&quot;] = dataframe[&quot;close&quot;]
-    return dataframe
+<span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
 
-def feature_engineering_standard(self, dataframe: DataFrame, **kwargs) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    *Only functional with FreqAI enabled strategies*
-    This optional function will be called once with the dataframe of the base timeframe.
-    This is the final function to be called, which means that the dataframe entering this
-    function will contain all the features and columns created by all other
-    freqai_feature_engineering_* functions.
+<span class="sd">        :param df: strategy dataframe which will receive the features</span>
+<span class="sd">        dataframe[&quot;%-pct-change&quot;] = dataframe[&quot;close&quot;].pct_change()</span>
+<span class="sd">        dataframe[&quot;%-ema-200&quot;] = ta.EMA(dataframe, timeperiod=200)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-pct-change&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">aw_volume&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">aw_price&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dataframe</span>
 
-    This function is a good place to do custom exotic feature extractions (e.g. tsfresh).
-    This function is a good place for any feature that should not be auto-expanded upon
-    (e.g. day of the week).
+    <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_standard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        This optional function will be called once with the dataframe of the base timeframe.</span>
+<span class="sd">        This is the final function to be called, which means that the dataframe entering this</span>
+<span class="sd">        function will contain all the features and columns created by all other</span>
+<span class="sd">        freqai_feature_engineering_* functions.</span>
 
-    All features must be prepended with `%` to be recognized by FreqAI internals.
+<span class="sd">        This function is a good place to do custom exotic feature extractions (e.g. tsfresh).</span>
+<span class="sd">        This function is a good place for any feature that should not be auto-expanded upon</span>
+<span class="sd">        (e.g. day of the week).</span>
 
-    :param df: strategy dataframe which will receive the features
-    usage example: dataframe[&quot;%-day_of_week&quot;] = (dataframe[&quot;date&quot;].dt.dayofweek + 1) / 7
-    &quot;&quot;&quot;
-    dataframe[&quot;%-day_of_week&quot;] = (dataframe[&quot;date&quot;].dt.dayofweek + 1) / 7
-    dataframe[&quot;%-hour_of_day&quot;] = (dataframe[&quot;date&quot;].dt.hour + 1) / 25
-    return dataframe
+<span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
 
-def set_freqai_targets(self, dataframe: DataFrame, **kwargs) -&gt; DataFrame:
-    &quot;&quot;&quot;
-    *Only functional with FreqAI enabled strategies*
-    Required function to set the targets for the model.
-    All targets must be prepended with `&amp;` to be recognized by the FreqAI internals.
+<span class="sd">        :param df: strategy dataframe which will receive the features</span>
+<span class="sd">        usage example: dataframe[&quot;%-day_of_week&quot;] = (dataframe[&quot;date&quot;].dt.dayofweek + 1) / 7</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">ay_of_week&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-ho</span><span class="s2">ur_of_day&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">25</span>
+        <span class="k">return</span> <span class="n">dataframe</span>
 
-    :param df: strategy dataframe which will receive the targets
-    usage example: dataframe[&quot;&amp;-target&quot;] = dataframe[&quot;close&quot;].shift(-1) / dataframe[&quot;close&quot;]
-    &quot;&quot;&quot;
-    dataframe[&quot;&amp;-s_close&quot;] = (
-        dataframe[&quot;close&quot;]
-        .shift(-self.freqai_info[&quot;feature_parameters&quot;][&quot;label_period_candles&quot;])
-        .rolling(self.freqai_info[&quot;feature_parameters&quot;][&quot;label_period_candles&quot;])
-        .mean()
-        / dataframe[&quot;close&quot;]
-        - 1
-        )
-    return dataframe
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_freqai_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        Required function to set the targets for the model.</span>
+<span class="sd">        All targets must be prepended with `&amp;` to be recognized by the FreqAI internals.</span>
+
+<span class="sd">        :param df: strategy dataframe which will receive the targets</span>
+<span class="sd">        usage example: dataframe[&quot;&amp;-target&quot;] = dataframe[&quot;close&quot;].shift(-1) / dataframe[&quot;close&quot;]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+            <span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+            <span class="o">-</span> <span class="mi">1</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
-
-<p>```</p>
 <p>Notice how the <code>feature_engineering_*()</code> is where <a href="../freqai-feature-engineering/#feature-engineering">features</a> are added. Meanwhile <code>set_freqai_targets()</code> adds the labels/targets. A full example strategy is available in <code>templates/FreqaiExampleStrategy.py</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2470,18 +2468,19 @@ will cause the algorithm to fail in live/dry mode. In order to add generalized f
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>There are instances where the TA-Lib functions actually require more data than just the passed <code>period</code> or else the feature dataset gets populated with NaNs. Anecdotally, multiplying the <code>startup_candle_count</code> by 2 always leads to a fully NaN free training dataset. Hence, it is typically safest to multiply the expected <code>startup_candle_count</code> by 2. Look out for this log message to confirm that the data is clean:</p>
-<p><code>2022-08-31 15:14:04 - freqtrade.freqai.data_kitchen - INFO - dropped 0 training points due to NaNs in populated dataset 4319.</code></p>
+<div class="highlight"><pre><span></span><code>2022-08-31 15:14:04 - freqtrade.freqai.data_kitchen - INFO - dropped 0 training points due to NaNs in populated dataset 4319.
+</code></pre></div>
 </div>
 <h2 id="creating-a-dynamic-target-threshold">Creating a dynamic target threshold<a class="headerlink" href="#creating-a-dynamic-target-threshold" title="Permanent link">&para;</a></h2>
 <p>Deciding when to enter or exit a trade can be done in a dynamic way to reflect current market conditions. FreqAI allows you to return additional information from the training of a model (more info <a href="../freqai-feature-engineering/#returning-additional-info-from-training">here</a>). For example, the <code>&amp;*_std/mean</code> return values describe the statistical distribution of the target/label <em>during the most recent training</em>. Comparing a given prediction to these values allows you to know the rarity of the prediction. In <code>templates/FreqaiExampleStrategy.py</code>, the <code>target_roi</code> and  <code>sell_roi</code> are defined to be 1.25 z-scores away from the mean which causes predictions that are closer to the mean to be filtered out.</p>
-<p><code>python
-dataframe["target_roi"] = dataframe["&amp;-s_close_mean"] + dataframe["&amp;-s_close_std"] * 1.25
-dataframe["sell_roi"] = dataframe["&amp;-s_close_mean"] - dataframe["&amp;-s_close_std"] * 1.25</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;target_roi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close_mean&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close_std&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.25</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;sell_roi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close_mean&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close_std&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.25</span>
+</code></pre></div>
 <p>To consider the population of <em>historical predictions</em> for creating the dynamic target instead of information from the training as discussed above, you would set <code>fit_live_predictions_candles</code> in the config to the number of historical prediction candles you wish to use to generate target statistics.</p>
-<p><code>json
-    "freqai": {
-        "fit_live_predictions_candles": 300,
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;fit_live_predictions_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>If this value is set, FreqAI will initially use the predictions from the training data and subsequently begin introducing real prediction data as it is generated. FreqAI will save this historical data to be reloaded if you stop and restart a model with the same <code>identifier</code>.</p>
 <h2 id="using-different-prediction-models">Using different prediction models<a class="headerlink" href="#using-different-prediction-models" title="Permanent link">&para;</a></h2>
 <p>FreqAI has multiple example prediction model libraries that are ready to be used as is via the flag <code>--freqaimodel</code>. These libraries include <code>LightGBM</code>, and <code>XGBoost</code> regression, classification, and multi-target models, and can be found in <code>freqai/prediction_models/</code>.</p>
@@ -2498,22 +2497,22 @@ Make sure to use unique names to avoid overriding built-in models.</p>
 <h3 id="setting-model-targets">Setting model targets<a class="headerlink" href="#setting-model-targets" title="Permanent link">&para;</a></h3>
 <h4 id="regressors">Regressors<a class="headerlink" href="#regressors" title="Permanent link">&para;</a></h4>
 <p>If you are using a regressor, you need to specify a target that has continuous values. FreqAI includes a variety of regressors, such as the <code>LightGBMRegressor</code>via the flag <code>--freqaimodel LightGBMRegressor</code>. An example of how you could set a regression target for predicting the price 100 candles into the future would be</p>
-<p><code>python
-df['&amp;s-close_price'] = df['close'].shift(-100)</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">df</span><span class="p">[</span><span class="s1">&#39;&amp;s-close_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;close&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span>
+</code></pre></div>
 <p>If you want to predict multiple targets, you need to define multiple labels using the same syntax as shown above.</p>
 <h4 id="classifiers">Classifiers<a class="headerlink" href="#classifiers" title="Permanent link">&para;</a></h4>
 <p>If you are using a classifier, you need to specify a target that has discrete values. FreqAI includes a variety of classifiers, such as the <code>LightGBMClassifier</code> via the flag <code>--freqaimodel LightGBMClassifier</code>. If you elects to use a classifier, the classes need to be set using strings. For example, if you want to predict if the price 100 candles into the future goes up or down you would set</p>
-<p><code>python
-df['&amp;s-up_or_down'] = np.where( df["close"].shift(-100) &gt; df["close"], 'up', 'down')</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">df</span><span class="p">[</span><span class="s1">&#39;&amp;s-up_or_down&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">],</span> <span class="s1">&#39;up&#39;</span><span class="p">,</span> <span class="s1">&#39;down&#39;</span><span class="p">)</span>
+</code></pre></div>
 <p>If you want to predict multiple targets you must specify all labels in the same label column. You could, for example, add the label <code>same</code> to define where the price was unchanged by setting</p>
-<p><code>python
-df['&amp;s-up_or_down'] = np.where( df["close"].shift(-100) &gt; df["close"], 'up', 'down')
-df['&amp;s-up_or_down'] = np.where( df["close"].shift(-100) == df["close"], 'same', df['&amp;s-up_or_down'])</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">df</span><span class="p">[</span><span class="s1">&#39;&amp;s-up_or_down&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">],</span> <span class="s1">&#39;up&#39;</span><span class="p">,</span> <span class="s1">&#39;down&#39;</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;&amp;s-up_or_down&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="o">==</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">],</span> <span class="s1">&#39;same&#39;</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;&amp;s-up_or_down&#39;</span><span class="p">])</span>
+</code></pre></div>
 <h2 id="pytorch-module">PyTorch Module<a class="headerlink" href="#pytorch-module" title="Permanent link">&para;</a></h2>
 <h3 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h3>
 <p>The easiest way to quickly run a pytorch model is with the following command (for regression task):</p>
-<p><code>bash
-freqtrade trade --config config_examples/config_freqai.example.json --strategy FreqaiExampleStrategy --freqaimodel PyTorchMLPRegressor --strategy-path freqtrade/templates</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--config<span class="w"> </span>config_examples/config_freqai.example.json<span class="w"> </span>--strategy<span class="w"> </span>FreqaiExampleStrategy<span class="w"> </span>--freqaimodel<span class="w"> </span>PyTorchMLPRegressor<span class="w"> </span>--strategy-path<span class="w"> </span>freqtrade/templates<span class="w"> </span>
+</code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Installation/docker</p>
 <p>The PyTorch module requires large packages such as <code>torch</code>, which should be explicitly requested during <code>./setup.sh -i</code> by answering "y" to the question "Do you also want dependencies for freqai-rl or PyTorch (~700mb additional space required) [y/N]?".
@@ -2530,69 +2529,67 @@ As long as you only load models that you have trained yourself, there is no risk
 <h3 id="structure">Structure<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h3>
 <h4 id="model">Model<a class="headerlink" href="#model" title="Permanent link">&para;</a></h4>
 <p>You can construct your own Neural Network architecture in PyTorch by simply defining your <code>nn.Module</code> class inside your custom <a href="#using-different-prediction-models"><code>IFreqaiModel</code> file</a> and then using that class in your <code>def train()</code> function. Here is an example of logistic regression model implementation using PyTorch (should be used with nn.BCELoss criterion) for classification tasks.</p>
-<p>```python</p>
-<p>class LogisticRegression(nn.Module):
-    def <strong>init</strong>(self, input_size: int):
-        super().<strong>init</strong>()
-        # Define your layers
-        self.linear = nn.Linear(input_size, 1)
-        self.activation = nn.Sigmoid()</p>
-<div class="codehilite"><pre><span></span><code>def forward(self, x: torch.Tensor) -&gt; torch.Tensor:
-    # Define the forward pass
-    out = self.linear(x)
-    out = self.activation(out)
-    return out
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LogisticRegression</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># Define your layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="c1"># Define the forward pass</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCoolPyTorchClassifier</span><span class="p">(</span><span class="n">BasePyTorchClassifier</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a custom IFreqaiModel showing how a user might setup their own </span>
+<span class="sd">    custom Neural Network architecture for their training.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_convertor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PyTorchDataConvertor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">DefaultPyTorchDataConvertor</span><span class="p">(</span><span class="n">target_tensor_type</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_training_parameters&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;learning_rate&quot;</span><span class="p">,</span>  <span class="mf">3e-4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_kwargs&quot;</span><span class="p">,</span>  <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trainer_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;trainer_kwargs&quot;</span><span class="p">,</span>  <span class="p">{})</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_dictionary</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">dk</span><span class="p">:</span> <span class="n">FreqaiDataKitchen</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        User sets up the training and test data to fit their desired model here</span>
+<span class="sd">        :param data_dictionary: the dictionary holding all data for train, test,</span>
+<span class="sd">            labels, weights</span>
+<span class="sd">        :param dk: The datakitchen object for the current coin/model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">class_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_class_names</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">convert_label_column_to_int</span><span class="p">(</span><span class="n">data_dictionary</span><span class="p">,</span> <span class="n">dk</span><span class="p">,</span> <span class="n">class_names</span><span class="p">)</span>
+        <span class="n">n_features</span> <span class="o">=</span> <span class="n">data_dictionary</span><span class="p">[</span><span class="s2">&quot;train_features&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span>
+            <span class="n">input_dim</span><span class="o">=</span><span class="n">n_features</span>
+        <span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">)</span>
+        <span class="n">criterion</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()</span>
+        <span class="n">init_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_init_model</span><span class="p">(</span><span class="n">dk</span><span class="o">.</span><span class="n">pair</span><span class="p">)</span>
+        <span class="n">trainer</span> <span class="o">=</span> <span class="n">PyTorchModelTrainer</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">criterion</span><span class="o">=</span><span class="n">criterion</span><span class="p">,</span>
+            <span class="n">model_meta_data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;class_names&quot;</span><span class="p">:</span> <span class="n">class_names</span><span class="p">},</span>
+            <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+            <span class="n">init_model</span><span class="o">=</span><span class="n">init_model</span><span class="p">,</span>
+            <span class="n">data_convertor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_convertor</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">trainer_kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_dictionary</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">splits</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">trainer</span>
 </code></pre></div>
-
-<p>class MyCoolPyTorchClassifier(BasePyTorchClassifier):
-    """
-    This is a custom IFreqaiModel showing how a user might setup their own 
-    custom Neural Network architecture for their training.
-    """</p>
-<div class="codehilite"><pre><span></span><code>@property
-def data_convertor(self) -&gt; PyTorchDataConvertor:
-    return DefaultPyTorchDataConvertor(target_tensor_type=torch.float)
-
-def __init__(self, **kwargs) -&gt; None:
-    super().__init__(**kwargs)
-    config = self.freqai_info.get(&quot;model_training_parameters&quot;, {})
-    self.learning_rate: float = config.get(&quot;learning_rate&quot;,  3e-4)
-    self.model_kwargs: dict[str, Any] = config.get(&quot;model_kwargs&quot;,  {})
-    self.trainer_kwargs: dict[str, Any] = config.get(&quot;trainer_kwargs&quot;,  {})
-
-def fit(self, data_dictionary: dict, dk: FreqaiDataKitchen, **kwargs) -&gt; Any:
-    &quot;&quot;&quot;
-    User sets up the training and test data to fit their desired model here
-    :param data_dictionary: the dictionary holding all data for train, test,
-        labels, weights
-    :param dk: The datakitchen object for the current coin/model
-    &quot;&quot;&quot;
-
-    class_names = self.get_class_names()
-    self.convert_label_column_to_int(data_dictionary, dk, class_names)
-    n_features = data_dictionary[&quot;train_features&quot;].shape[-1]
-    model = LogisticRegression(
-        input_dim=n_features
-    )
-    model.to(self.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
-    criterion = torch.nn.CrossEntropyLoss()
-    init_model = self.get_init_model(dk.pair)
-    trainer = PyTorchModelTrainer(
-        model=model,
-        optimizer=optimizer,
-        criterion=criterion,
-        model_meta_data={&quot;class_names&quot;: class_names},
-        device=self.device,
-        init_model=init_model,
-        data_convertor=self.data_convertor,
-        **self.trainer_kwargs,
-    )
-    trainer.fit(data_dictionary, self.splits)
-    return trainer
-</code></pre></div>
-
-<p>```</p>
 <h4 id="trainer">Trainer<a class="headerlink" href="#trainer" title="Permanent link">&para;</a></h4>
 <p>The <code>PyTorchModelTrainer</code> performs the idiomatic PyTorch train loop:
 Define our model, loss function, and optimizer, and then move them to the appropriate device (GPU or CPU). Inside the loop, we iterate through the batches in the dataloader, move the data to the device, compute the prediction and loss, backpropagate, and update the model parameters using the optimizer. </p>
@@ -2610,65 +2607,61 @@ From top to bottom:</p>
 <p><img alt="image" src="../assets/freqai_pytorch-diagram.png" /></p>
 <h4 id="full-example">Full example<a class="headerlink" href="#full-example" title="Permanent link">&para;</a></h4>
 <p>Building a PyTorch regressor using MLP (multilayer perceptron) model, MSELoss criterion, and AdamW optimizer.</p>
-<p>```python
-class PyTorchMLPRegressor(BasePyTorchRegressor):
-    def <strong>init</strong>(self, <strong>kwargs) -&gt; None:
-        super().<strong>init</strong>(</strong>kwargs)
-        config = self.freqai_info.get("model_training_parameters", {})
-        self.learning_rate: float = config.get("learning_rate",  3e-4)
-        self.model_kwargs: dict[str, Any] = config.get("model_kwargs",  {})
-        self.trainer_kwargs: dict[str, Any] = config.get("trainer_kwargs",  {})</p>
-<div class="codehilite"><pre><span></span><code>def fit(self, data_dictionary: dict, dk: FreqaiDataKitchen, **kwargs) -&gt; Any:
-    n_features = data_dictionary[&quot;train_features&quot;].shape[-1]
-    model = PyTorchMLPModel(
-        input_dim=n_features,
-        output_dim=1,
-        **self.model_kwargs
-    )
-    model.to(self.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=self.learning_rate)
-    criterion = torch.nn.MSELoss()
-    init_model = self.get_init_model(dk.pair)
-    trainer = PyTorchModelTrainer(
-        model=model,
-        optimizer=optimizer,
-        criterion=criterion,
-        device=self.device,
-        init_model=init_model,
-        target_tensor_type=torch.float,
-        **self.trainer_kwargs,
-    )
-    trainer.fit(data_dictionary)
-    return trainer
-</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PyTorchMLPRegressor</span><span class="p">(</span><span class="n">BasePyTorchRegressor</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_training_parameters&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;learning_rate&quot;</span><span class="p">,</span>  <span class="mf">3e-4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model_kwargs&quot;</span><span class="p">,</span>  <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trainer_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;trainer_kwargs&quot;</span><span class="p">,</span>  <span class="p">{})</span>
 
-<p>```</p>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_dictionary</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">dk</span><span class="p">:</span> <span class="n">FreqaiDataKitchen</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">n_features</span> <span class="o">=</span> <span class="n">data_dictionary</span><span class="p">[</span><span class="s2">&quot;train_features&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PyTorchMLPModel</span><span class="p">(</span>
+            <span class="n">input_dim</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
+            <span class="n">output_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_kwargs</span>
+        <span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">)</span>
+        <span class="n">criterion</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">()</span>
+        <span class="n">init_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_init_model</span><span class="p">(</span><span class="n">dk</span><span class="o">.</span><span class="n">pair</span><span class="p">)</span>
+        <span class="n">trainer</span> <span class="o">=</span> <span class="n">PyTorchModelTrainer</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">criterion</span><span class="o">=</span><span class="n">criterion</span><span class="p">,</span>
+            <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+            <span class="n">init_model</span><span class="o">=</span><span class="n">init_model</span><span class="p">,</span>
+            <span class="n">target_tensor_type</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">trainer_kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_dictionary</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">trainer</span>
+</code></pre></div>
 <p>Here we create a <code>PyTorchMLPRegressor</code> class that implements the <code>fit</code> method. The <code>fit</code> method specifies the training building blocks: model, optimizer, criterion, and trainer. We inherit both <code>BasePyTorchRegressor</code> and <code>BasePyTorchModel</code>, where the former implements the <code>predict</code> method that is suitable for our regression task, and the latter implements the train method.</p>
 <details class="note">
 <summary>Setting Class Names for Classifiers</summary>
 <p>When using classifiers, the user must declare the class names (or targets) by overriding the <code>IFreqaiModel.class_names</code> attribute. This is achieved by setting <code>self.freqai.class_names</code> in the FreqAI strategy inside the <code>set_freqai_targets</code> method.</p>
 <p>For example, if you are using a binary classifier to predict price movements as up or down, you can set the class names as follows:
-```python
-def set_freqai_targets(self, dataframe: DataFrame, metadata: dict, **kwargs) -&gt; DataFrame:
-    self.freqai.class_names = ["down", "up"]
-    dataframe['&amp;s-up_or_down'] = np.where(dataframe["close"].shift(-100) &gt;
-                                              dataframe["close"], 'up', 'down')</p>
-<div class="codehilite"><pre><span></span><code>return dataframe
-</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_freqai_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">freqai</span><span class="o">.</span><span class="n">class_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;down&quot;</span><span class="p">,</span> <span class="s2">&quot;up&quot;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;&amp;s-up_or_down&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="o">&gt;</span>
+                                              <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">],</span> <span class="s1">&#39;up&#39;</span><span class="p">,</span> <span class="s1">&#39;down&#39;</span><span class="p">)</span>
 
-<p>```
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
 To see a full example, you can refer to the <a href="https://github.com/freqtrade/freqtrade/blob/develop/tests/strategy/strats/freqai_test_classifier.py">classifier test strategy class</a>.</p>
 </details>
 <h4 id="improving-performance-with-torchcompile">Improving performance with <code>torch.compile()</code><a class="headerlink" href="#improving-performance-with-torchcompile" title="Permanent link">&para;</a></h4>
 <p>Torch provides a <code>torch.compile()</code> method that can be used to improve performance for specific GPU hardware. More details can be found <a href="https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html">here</a>. In brief, you simply wrap your <code>model</code> in <code>torch.compile()</code>:</p>
-<p><code>python
-        model = PyTorchMLPModel(
-            input_dim=n_features,
-            output_dim=1,
-            **self.model_kwargs
-        )
-        model.to(self.device)
-        model = torch.compile(model)</code></p>
+<div class="highlight"><pre><span></span><code>        <span class="n">model</span> <span class="o">=</span> <span class="n">PyTorchMLPModel</span><span class="p">(</span>
+            <span class="n">input_dim</span><span class="o">=</span><span class="n">n_features</span><span class="p">,</span>
+            <span class="n">output_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_kwargs</span>
+        <span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</code></pre></div>
 <p>Then proceed to use the model as normal. Keep in mind that doing this will remove eager execution, which means errors and tracebacks will not be informative.</p>
 
 

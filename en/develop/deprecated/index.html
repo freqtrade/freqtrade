@@ -2022,6 +2022,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#catboost-models-in-freqai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catboost models in freqAI
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2340,6 +2351,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#catboost-models-in-freqai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catboost models in freqAI
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2437,13 +2459,13 @@ The same is true for <code>dp.get_pair_dataframe(metadata["pair"], "8h", candle_
 <p>freqtrade will auto-adjust the timeframe and return <code>funding_rates</code> despite the wrongly given timeframe. It'll issue a warning - and may still break your strategy.</p>
 <h3 id="selective-data-re-download">Selective data re-download<a class="headerlink" href="#selective-data-re-download" title="Permanent link">&para;</a></h3>
 <p>The script below should serve as an example - you may need to adjust the timeframe and exchange to your needs!</p>
-<p>``` bash</p>
-<h1 id="cleanup-no-longer-needed-data">Cleanup no longer needed data<a class="headerlink" href="#cleanup-no-longer-needed-data" title="Permanent link">&para;</a></h1>
-<p>rm user_data/data/<exchange>/futures/<em>-mark</em>
-rm user_data/data/<exchange>/futures/<em>-funding_rate</em></p>
-<h1 id="download-new-data-only-required-once-to-fix-the-mark-and-funding-fee-data">download new data (only required once to fix the mark and funding fee data)<a class="headerlink" href="#download-new-data-only-required-once-to-fix-the-mark-and-funding-fee-data" title="Permanent link">&para;</a></h1>
-<p>freqtrade download-data -t 1h --trading-mode futures --candle-types funding_rate mark [...] --timerange <full timerange you've got other data for></p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Cleanup no longer needed data</span>
+rm<span class="w"> </span>user_data/data/&lt;exchange&gt;/futures/*-mark*
+rm<span class="w"> </span>user_data/data/&lt;exchange&gt;/futures/*-funding_rate*
+
+<span class="c1"># download new data (only required once to fix the mark and funding fee data)</span>
+freqtrade<span class="w"> </span>download-data<span class="w"> </span>-t<span class="w"> </span>1h<span class="w"> </span>--trading-mode<span class="w"> </span>futures<span class="w"> </span>--candle-types<span class="w"> </span>funding_rate<span class="w"> </span>mark<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>--timerange<span class="w"> </span>&lt;full<span class="w"> </span>timerange<span class="w"> </span>you<span class="err">&#39;</span>ve<span class="w"> </span>got<span class="w"> </span>other<span class="w"> </span>data<span class="w"> </span><span class="k">for</span>&gt;
+</code></pre></div>
 <p>The result of the above will be that your funding_rates and mark data will have the 1h timeframe.
 you can verify this with <code>freqtrade list-data --exchange &lt;yourexchange&gt; --show</code>.</p>
 <div class="admonition note">

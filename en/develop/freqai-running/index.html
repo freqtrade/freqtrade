@@ -2194,16 +2194,16 @@
 <p><img alt="freqai-window" src="../assets/freqai_moving-window.jpg" /></p>
 <h2 id="live-deployments">Live deployments<a class="headerlink" href="#live-deployments" title="Permanent link">&para;</a></h2>
 <p>FreqAI can be run dry/live using the following command:</p>
-<p><code>bash
-freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.json --freqaimodel LightGBMRegressor</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--strategy<span class="w"> </span>FreqaiExampleStrategy<span class="w"> </span>--config<span class="w"> </span>config_freqai.example.json<span class="w"> </span>--freqaimodel<span class="w"> </span>LightGBMRegressor
+</code></pre></div>
 <p>When launched, FreqAI will start training a new model, with a new <code>identifier</code>, based on the config settings. Following training, the model will be used to make predictions on incoming candles until a new model is available. New models are typically generated as often as possible, with FreqAI managing an internal queue of the coin pairs to try to keep all models equally up to date. FreqAI will always use the most recently trained model to make predictions on incoming live data. If you do not want FreqAI to retrain new models as often as possible, you can set <code>live_retrain_hours</code> to tell FreqAI to wait at least that number of hours before training a new model. Additionally, you can set <code>expired_hours</code> to tell FreqAI to avoid making predictions on models that are older than that number of hours.</p>
 <p>Trained models are by default saved to disk to allow for reuse during backtesting or after a crash. You can opt to <a href="#purging-old-model-data">purge old models</a> to save disk space by setting <code>"purge_old_models": true</code> in the config.</p>
 <p>To start a dry/live run from a saved backtest model (or from a previously crashed dry/live session), you only need to specify the <code>identifier</code> of the specific model:</p>
-<p><code>json
-    "freqai": {
-        "identifier": "example",
-        "live_retrain_hours": 0.5
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;identifier&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;example&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;live_retrain_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>In this case, although FreqAI will initiate with a pre-trained model, it will still check to see how much time has elapsed since the model was trained. If a full <code>live_retrain_hours</code> has elapsed since the end of the loaded model, FreqAI will start training a new model.</p>
 <h3 id="automatic-data-download">Automatic data download<a class="headerlink" href="#automatic-data-download" title="Permanent link">&para;</a></h3>
 <p>FreqAI automatically downloads the proper amount of data needed to ensure training of a model through the defined <code>train_period_days</code> and <code>startup_candle_count</code> (see the <a href="../freqai-parameter-table/">parameter table</a> for detailed descriptions of these parameters). </p>
@@ -2211,15 +2211,15 @@ freqtrade trade --strategy FreqaiExampleStrategy --config config_freqai.example.
 <p>All predictions made during the lifetime of a specific <code>identifier</code> model are stored in <code>historic_predictions.pkl</code> to allow for reloading after a crash or changes made to the config.</p>
 <h3 id="purging-old-model-data">Purging old model data<a class="headerlink" href="#purging-old-model-data" title="Permanent link">&para;</a></h3>
 <p>FreqAI stores new model files after each successful training. These files become obsolete as new models are generated to adapt to new market conditions. If you are planning to leave FreqAI running for extended periods of time with high frequency retraining, you should enable <code>purge_old_models</code> in the config:</p>
-<p><code>json
-    "freqai": {
-        "purge_old_models": 4,
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;purge_old_models&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>This will automatically purge all models older than the four most recently trained ones to save disk space. Inputing "0" will never purge any models.</p>
 <h2 id="backtesting">Backtesting<a class="headerlink" href="#backtesting" title="Permanent link">&para;</a></h2>
 <p>The FreqAI backtesting module can be executed with the following command:</p>
-<p><code>bash
-freqtrade backtesting --strategy FreqaiExampleStrategy --strategy-path freqtrade/templates --config config_examples/config_freqai.example.json --freqaimodel LightGBMRegressor --timerange 20210501-20210701</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>FreqaiExampleStrategy<span class="w"> </span>--strategy-path<span class="w"> </span>freqtrade/templates<span class="w"> </span>--config<span class="w"> </span>config_examples/config_freqai.example.json<span class="w"> </span>--freqaimodel<span class="w"> </span>LightGBMRegressor<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20210501</span>-20210701
+</code></pre></div>
 <p>If this command has never been executed with the existing config file, FreqAI will train a new model
 for each pair, for each backtesting window within the expanded <code>--timerange</code>.</p>
 <p>Backtesting mode requires <a href="#downloading-data-to-cover-the-full-backtest-period">downloading the necessary data</a> before deployment (unlike in dry/live mode where FreqAI handles the data downloading automatically). You should be careful to consider that the time range of the downloaded data is more than the backtesting time range. This is because FreqAI needs data prior to the desired backtesting time range in order to train a model to be ready to make predictions on the first candle of the set backtesting time range. More details on how to calculate the data to download can be found <a href="#deciding-the-size-of-the-sliding-training-window-and-backtesting-duration">here</a>.</p>
@@ -2267,10 +2267,10 @@ a float to indicate sub-daily retraining in live/dry mode). In the presented <a 
 </div>
 <h2 id="defining-model-expirations">Defining model expirations<a class="headerlink" href="#defining-model-expirations" title="Permanent link">&para;</a></h2>
 <p>During dry/live mode, FreqAI trains each coin pair sequentially (on separate threads/GPU from the main Freqtrade bot). This means that there is always an age discrepancy between models. If you are training on 50 pairs, and each pair requires 5 minutes to train, the oldest model will be over 4 hours old. This may be undesirable if the characteristic time scale (the trade duration target) for a strategy is less than 4 hours. You can decide to only make trade entries if the model is less than a certain number of hours old by setting the <code>expiration_hours</code> in the config file:</p>
-<p><code>json
-    "freqai": {
-        "expiration_hours": 0.5,
-    }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;expiration_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
 <p>In the presented example config, the user will only allow predictions on models that are less than &frac12; hours old.</p>
 <h2 id="controlling-the-model-learning-process">Controlling the model learning process<a class="headerlink" href="#controlling-the-model-learning-process" title="Permanent link">&para;</a></h2>
 <p>Model training parameters are unique to the selected machine learning library. FreqAI allows you to set any parameter for any library using the <code>model_training_parameters</code> dictionary in the config. The example config (found in <code>config_examples/config_freqai.example.json</code>) shows some of the example parameters associated with <code>Catboost</code> and <code>LightGBM</code>, but you can add any parameters available in those libraries or any other machine learning library you choose to implement.</p>
@@ -2288,8 +2288,8 @@ a float to indicate sub-daily retraining in live/dry mode). In the presented <a 
 </details>
 <h2 id="hyperopt">Hyperopt<a class="headerlink" href="#hyperopt" title="Permanent link">&para;</a></h2>
 <p>You can hyperopt using the same command as for <a href="../hyperopt/">typical Freqtrade hyperopt</a>:</p>
-<p><code>bash
-freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqaiExampleStrategy --freqaimodel LightGBMRegressor --strategy-path freqtrade/templates --config config_examples/config_freqai.example.json --timerange 20220428-20220507</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>hyperopt<span class="w"> </span>--hyperopt-loss<span class="w"> </span>SharpeHyperOptLoss<span class="w"> </span>--strategy<span class="w"> </span>FreqaiExampleStrategy<span class="w"> </span>--freqaimodel<span class="w"> </span>LightGBMRegressor<span class="w"> </span>--strategy-path<span class="w"> </span>freqtrade/templates<span class="w"> </span>--config<span class="w"> </span>config_examples/config_freqai.example.json<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20220428</span>-20220507
+</code></pre></div>
 <p><code>hyperopt</code> requires you to have the data pre-downloaded in the same fashion as if you were doing <a href="#backtesting">backtesting</a>. In addition, you must consider some restrictions when trying to hyperopt FreqAI strategies:</p>
 <ul>
 <li>The <code>--analyze-per-epoch</code> hyperopt parameter is not compatible with FreqAI.</li>
@@ -2298,9 +2298,9 @@ freqtrade hyperopt --hyperopt-loss SharpeHyperOptLoss --strategy FreqaiExampleSt
 </ul>
 <p>The best method for combining hyperopt and FreqAI is to focus on hyperopting entry/exit thresholds/criteria. You need to focus on hyperopting parameters that are not used in your features. For example, you should not try to hyperopt rolling window lengths in the feature creation, or any part of the FreqAI config which changes predictions. In order to efficiently hyperopt the FreqAI strategy, FreqAI stores predictions as dataframes and reuses them. Hence the requirement to hyperopt entry/exit thresholds/criteria only.</p>
 <p>A good example of a hyperoptable parameter in FreqAI is a threshold for the <a href="../freqai-feature-engineering/#identifying-outliers-with-the-dissimilarity-index-di">Dissimilarity Index (DI)</a> <code>DI_values</code> beyond which we consider data points as outliers:</p>
-<p><code>python
-di_max = IntParameter(low=1, high=20, default=10, space='buy', optimize=True, load=True)
-dataframe['outlier'] = np.where(dataframe['DI_values'] &gt; self.di_max.value/10, 1, 0)</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">di_max</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s1">&#39;buy&#39;</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">load</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;outlier&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;DI_values&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">di_max</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
 <p>This specific hyperopt would help you understand the appropriate <code>DI_values</code> for your particular parameter space.</p>
 <h2 id="using-tensorboard">Using Tensorboard<a class="headerlink" href="#using-tensorboard" title="Permanent link">&para;</a></h2>
 <div class="admonition note">
@@ -2312,9 +2312,9 @@ dataframe['outlier'] = np.where(dataframe['DI_values'] &gt; self.di_max.value/10
 <p>Tensorboard logging requires the FreqAI torch installation/docker image.</p>
 </div>
 <p>The easiest way to use tensorboard is to ensure <code>freqai.activate_tensorboard</code> is set to <code>True</code> (default setting) in your configuration file, run FreqAI, then open a separate shell and run:</p>
-<p><code>bash
-cd freqtrade
-tensorboard --logdir user_data/models/unique-id</code></p>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>freqtrade
+tensorboard<span class="w"> </span>--logdir<span class="w"> </span>user_data/models/unique-id
+</code></pre></div>
 <p>where <code>unique-id</code> is the <code>identifier</code> set in the <code>freqai</code> configuration file. This command must be run in a separate shell if you wish to view the output in your browser at 127.0.0.1:6060 (6060 is the default port used by Tensorboard).</p>
 <p><img alt="tensorboard" src="../assets/tensorboard.jpg" /></p>
 <div class="admonition note">

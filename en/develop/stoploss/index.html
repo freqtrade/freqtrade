@@ -2234,11 +2234,11 @@ Stoploss calculations do include fees, so a stoploss of -10% is placed exactly 1
 <h2 id="stop-loss-on-exchangefreqtrade">Stop Loss On-Exchange/Freqtrade<a class="headerlink" href="#stop-loss-on-exchangefreqtrade" title="Permanent link">&para;</a></h2>
 <p>Those stoploss modes can be <em>on exchange</em> or <em>off exchange</em>.</p>
 <p>These modes can be configured with these values:</p>
-<p><code>python
-    'emergency_exit': 'market',
-    'stoploss_on_exchange': False
-    'stoploss_on_exchange_interval': 60,
-    'stoploss_on_exchange_limit_ratio': 0.99</code></p>
+<div class="highlight"><pre><span></span><code>    <span class="s1">&#39;emergency_exit&#39;</span><span class="p">:</span> <span class="s1">&#39;market&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;stoploss_on_exchange&#39;</span><span class="p">:</span> <span class="kc">False</span>
+    <span class="s1">&#39;stoploss_on_exchange_interval&#39;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+    <span class="s1">&#39;stoploss_on_exchange_limit_ratio&#39;</span><span class="p">:</span> <span class="mf">0.99</span>
+</code></pre></div>
 <p>Stoploss on exchange is only supported for the following exchanges, and not all exchanges support both stop-limit and stop-market.
 The Order-type will be ignored if only one mode is available.</p>
 <details class="info">
@@ -2418,16 +2418,16 @@ The naming for these prices in exchange terminology often varies, but is usually
 <p><code>emergency_exit</code> is an optional value, which defaults to <code>market</code> and is used when creating stop loss on exchange orders fails.
 The below is the default which is used if not changed in strategy or configuration file.</p>
 <p>Example from strategy file:</p>
-<p><code>python
-order_types = {
-    "entry": "limit",
-    "exit": "limit",
-    "emergency_exit": "market",
-    "stoploss": "market",
-    "stoploss_on_exchange": True,
-    "stoploss_on_exchange_interval": 60,
-    "stoploss_on_exchange_limit_ratio": 0.99
-}</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">order_types</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;emergency_exit&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss_on_exchange_interval&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+    <span class="s2">&quot;stoploss_on_exchange_limit_ratio&quot;</span><span class="p">:</span> <span class="mf">0.99</span>
+<span class="p">}</span>
+</code></pre></div>
 <h2 id="stop-loss-types">Stop Loss Types<a class="headerlink" href="#stop-loss-types" title="Permanent link">&para;</a></h2>
 <p>At this stage the bot contains the following stoploss support modes:</p>
 <ol>
@@ -2440,8 +2440,8 @@ order_types = {
 <h3 id="static-stop-loss">Static Stop Loss<a class="headerlink" href="#static-stop-loss" title="Permanent link">&para;</a></h3>
 <p>This is very simple, you define a stop loss of x (as a ratio of price, i.e. x * 100% of price). This will try to sell the asset once the loss exceeds the defined loss.</p>
 <p>Example of stop loss:</p>
-<p><code>python
-    stoploss = -0.10</code></p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+</code></pre></div>
 <p>For example, simplified math:</p>
 <ul>
 <li>the bot buys an asset at a price of 100$</li>
@@ -2451,9 +2451,9 @@ order_types = {
 <h3 id="trailing-stop-loss">Trailing Stop Loss<a class="headerlink" href="#trailing-stop-loss" title="Permanent link">&para;</a></h3>
 <p>The initial value for this is <code>stoploss</code>, just as you would define your static Stop loss.
 To enable trailing stoploss:</p>
-<p><code>python
-    stoploss = -0.10
-    trailing_stop = True</code></p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
 <p>This will now activate an algorithm, which automatically moves the stop loss up every time the price of your asset increases.</p>
 <p>For example, simplified math:</p>
 <ul>
@@ -2473,12 +2473,12 @@ For example, your default stop loss is -10%, but once you have reached profitabi
 <p>If you want the stoploss to only be changed when you break even of making a profit (what most users want) please refer to next section with <a href="#trailing-stop-loss-only-once-the-trade-has-reached-a-certain-offset">offset enabled</a>.</p>
 </div>
 <p>Both values require <code>trailing_stop</code> to be set to true and <code>trailing_stop_positive</code> with a value.</p>
-<p><code>python
-    stoploss = -0.10
-    trailing_stop = True
-    trailing_stop_positive = 0.02
-    trailing_stop_positive_offset = 0.0
-    trailing_only_offset_is_reached = False  # Default - not necessary for this example</code></p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">trailing_stop_positive</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="n">trailing_stop_positive_offset</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">trailing_only_offset_is_reached</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Default - not necessary for this example</span>
+</code></pre></div>
 <p>For example, simplified math:</p>
 <ul>
 <li>the bot buys an asset at a price of 100$</li>
@@ -2494,11 +2494,11 @@ Before this, <code>stoploss</code> is used for the trailing stoploss.</p>
 <p class="admonition-title">Use an offset to change your stoploss</p>
 <p>Use <code>trailing_stop_positive_offset</code> to ensure that your new trailing stoploss will be in profit by setting <code>trailing_stop_positive_offset</code> higher than <code>trailing_stop_positive</code>. Your first new stoploss value will then already have locked in profits.</p>
 <p>Example with simplified math:</p>
-<p><code>python
-    stoploss = -0.10
-    trailing_stop = True
-    trailing_stop_positive = 0.02
-    trailing_stop_positive_offset = 0.03</code></p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">trailing_stop_positive</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="n">trailing_stop_positive_offset</span> <span class="o">=</span> <span class="mf">0.03</span>
+</code></pre></div>
 <ul>
 <li>the bot buys an asset at a price of 100$</li>
 <li>the stop loss is defined at -10%, so the stop loss would get triggered once the asset drops below 90$</li>
@@ -2515,12 +2515,12 @@ Before this, <code>stoploss</code> is used for the trailing stoploss.</p>
 Leaving this value as <code>trailing_only_offset_is_reached=False</code> will allow the trailing stoploss to start trailing as soon as the asset price increases above the initial entry price.</p>
 <p>This option can be used with or without <code>trailing_stop_positive</code>, but uses <code>trailing_stop_positive_offset</code> as offset.</p>
 <p>Configuration (offset is buy-price + 3%):</p>
-<p><code>python
-    stoploss = -0.10
-    trailing_stop = True
-    trailing_stop_positive = 0.02
-    trailing_stop_positive_offset = 0.03
-    trailing_only_offset_is_reached = True</code></p>
+<div class="highlight"><pre><span></span><code>    <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.10</span>
+    <span class="n">trailing_stop</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">trailing_stop_positive</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="n">trailing_stop_positive_offset</span> <span class="o">=</span> <span class="mf">0.03</span>
+    <span class="n">trailing_only_offset_is_reached</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
 <p>For example, simplified math:</p>
 <ul>
 <li>the bot buys an asset at a price of 100$</li>

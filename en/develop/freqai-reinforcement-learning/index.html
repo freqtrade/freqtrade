@@ -2108,88 +2108,84 @@ Users who prefer docker should ensure they use the docker image appended with <c
 <p>As explained above, the agent is "trained" in an artificial trading "environment". In our case, that environment may seem quite similar to a real Freqtrade backtesting environment, but it is <em>NOT</em>. In fact, the RL training environment is much more simplified. It does not incorporate any of the complicated strategy logic, such as callbacks like <code>custom_exit</code>, <code>custom_stoploss</code>, leverage controls, etc. The RL environment is instead a very "raw" representation of the true market, where the agent has free will to learn the policy (read: stoploss, take profit, etc.) which is enforced by the <code>calculate_reward()</code>. Thus, it is important to consider that the agent training environment is not identical to the real world.</p>
 <h2 id="running-reinforcement-learning">Running Reinforcement Learning<a class="headerlink" href="#running-reinforcement-learning" title="Permanent link">&para;</a></h2>
 <p>Setting up and running a Reinforcement Learning model is the same as running a Regressor or Classifier. The same two flags, <code>--freqaimodel</code> and <code>--strategy</code>, must be defined on the command line:</p>
-<p><code>bash
-freqtrade trade --freqaimodel ReinforcementLearner --strategy MyRLStrategy --config config.json</code></p>
-<p>where <code>ReinforcementLearner</code> will use the templated <code>ReinforcementLearner</code> from <code>freqai/prediction_models/ReinforcementLearner</code> (or a custom user defined one located in <code>user_data/freqaimodels</code>). The strategy, on the other hand, follows the same base <a href="../freqai-feature-engineering/">feature engineering</a> with <code>feature_engineering_*</code> as a typical Regressor. The difference lies in the creation of the targets, Reinforcement Learning doesn't require them. However, FreqAI requires a default (neutral) value to be set in the action column:</p>
-<p><code>``python
-    def set_freqai_targets(self, dataframe, **kwargs) -&gt; DataFrame:
-        """
-        *Only functional with FreqAI enabled strategies*
-        Required function to set the targets for the model.
-        All targets must be prepended with</code>&amp;` to be recognized by the FreqAI internals.</p>
-<div class="codehilite"><pre><span></span><code>    More details about feature engineering available:
-
-    https://www.freqtrade.io/en/stable/freqai-feature-engineering
-
-    :param df: strategy dataframe which will receive the targets
-    usage example: dataframe[&quot;&amp;-target&quot;] = dataframe[&quot;close&quot;].shift(-1) / dataframe[&quot;close&quot;]
-    &quot;&quot;&quot;
-    # For RL, there are no direct targets to set. This is filler (neutral)
-    # until the agent sends an action.
-    dataframe[&quot;&amp;-action&quot;] = 0
-    return dataframe
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--freqaimodel<span class="w"> </span>ReinforcementLearner<span class="w"> </span>--strategy<span class="w"> </span>MyRLStrategy<span class="w"> </span>--config<span class="w"> </span>config.json
 </code></pre></div>
+<p>where <code>ReinforcementLearner</code> will use the templated <code>ReinforcementLearner</code> from <code>freqai/prediction_models/ReinforcementLearner</code> (or a custom user defined one located in <code>user_data/freqaimodels</code>). The strategy, on the other hand, follows the same base <a href="../freqai-feature-engineering/">feature engineering</a> with <code>feature_engineering_*</code> as a typical Regressor. The difference lies in the creation of the targets, Reinforcement Learning doesn't require them. However, FreqAI requires a default (neutral) value to be set in the action column:</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">set_freqai_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        *Only functional with FreqAI enabled strategies*</span>
+<span class="sd">        Required function to set the targets for the model.</span>
+<span class="sd">        All targets must be prepended with `&amp;` to be recognized by the FreqAI internals.</span>
 
-<p>```</p>
+<span class="sd">        More details about feature engineering available:</span>
+
+<span class="sd">        https://www.freqtrade.io/en/stable/freqai-feature-engineering</span>
+
+<span class="sd">        :param df: strategy dataframe which will receive the targets</span>
+<span class="sd">        usage example: dataframe[&quot;&amp;-target&quot;] = dataframe[&quot;close&quot;].shift(-1) / dataframe[&quot;close&quot;]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># For RL, there are no direct targets to set. This is filler (neutral)</span>
+        <span class="c1"># until the agent sends an action.</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
 <p>Most of the function remains the same as for typical Regressors, however, the function below shows how the strategy must pass the raw price data to the agent so that it has access to raw OHLCV in the training environment:</p>
-<p><code>python
-    def feature_engineering_standard(self, dataframe: DataFrame, **kwargs) -&gt; DataFrame:
-        # The following features are necessary for RL models
-        dataframe[f"%-raw_close"] = dataframe["close"]
-        dataframe[f"%-raw_open"] = dataframe["open"]
-        dataframe[f"%-raw_high"] = dataframe["high"]
-        dataframe[f"%-raw_low"] = dataframe["low"]
-    return dataframe</code></p>
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_standard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+        <span class="c1"># The following features are necessary for RL models</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-raw_close&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-raw_open&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;open&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-raw_high&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;high&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-raw_low&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;low&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
 <p>Finally, there is no explicit "label" to make - instead it is necessary to assign the <code>&amp;-action</code> column which will contain the agent's actions when accessed in <code>populate_entry/exit_trends()</code>. In the present example, the neutral action to 0. This value should align with the environment used. FreqAI provides two environments, both use 0 as the neutral action.</p>
 <p>After users realize there are no labels to set, they will soon understand that the agent is making its "own" entry and exit decisions. This makes strategy construction rather simple. The entry and exit signals come from the agent in the form of an integer - which are used directly to decide entries and exits in the strategy:</p>
-<p>```python
-    def populate_entry_trend(self, df: DataFrame, metadata: dict) -&gt; DataFrame:</p>
-<div class="codehilite"><pre><span></span><code>    enter_long_conditions = [df[&quot;do_predict&quot;] == 1, df[&quot;&amp;-action&quot;] == 1]
+<div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
 
-    if enter_long_conditions:
-        df.loc[
-            reduce(lambda x, y: x &amp; y, enter_long_conditions), [&quot;enter_long&quot;, &quot;enter_tag&quot;]
-        ] = (1, &quot;long&quot;)
+        <span class="n">enter_long_conditions</span> <span class="o">=</span> <span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;do_predict&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;&amp;-action&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
 
-    enter_short_conditions = [df[&quot;do_predict&quot;] == 1, df[&quot;&amp;-action&quot;] == 3]
+        <span class="k">if</span> <span class="n">enter_long_conditions</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">y</span><span class="p">,</span> <span class="n">enter_long_conditions</span><span class="p">),</span> <span class="p">[</span><span class="s2">&quot;enter_long&quot;</span><span class="p">,</span> <span class="s2">&quot;enter_tag&quot;</span><span class="p">]</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;long&quot;</span><span class="p">)</span>
 
-    if enter_short_conditions:
-        df.loc[
-            reduce(lambda x, y: x &amp; y, enter_short_conditions), [&quot;enter_short&quot;, &quot;enter_tag&quot;]
-        ] = (1, &quot;short&quot;)
+        <span class="n">enter_short_conditions</span> <span class="o">=</span> <span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;do_predict&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;&amp;-action&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">]</span>
 
-    return df
+        <span class="k">if</span> <span class="n">enter_short_conditions</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">y</span><span class="p">,</span> <span class="n">enter_short_conditions</span><span class="p">),</span> <span class="p">[</span><span class="s2">&quot;enter_short&quot;</span><span class="p">,</span> <span class="s2">&quot;enter_tag&quot;</span><span class="p">]</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;short&quot;</span><span class="p">)</span>
 
-def populate_exit_trend(self, df: DataFrame, metadata: dict) -&gt; DataFrame:
-    exit_long_conditions = [df[&quot;do_predict&quot;] == 1, df[&quot;&amp;-action&quot;] == 2]
-    if exit_long_conditions:
-        df.loc[reduce(lambda x, y: x &amp; y, exit_long_conditions), &quot;exit_long&quot;] = 1
+        <span class="k">return</span> <span class="n">df</span>
 
-    exit_short_conditions = [df[&quot;do_predict&quot;] == 1, df[&quot;&amp;-action&quot;] == 4]
-    if exit_short_conditions:
-        df.loc[reduce(lambda x, y: x &amp; y, exit_short_conditions), &quot;exit_short&quot;] = 1
+    <span class="k">def</span><span class="w"> </span><span class="nf">populate_exit_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">exit_long_conditions</span> <span class="o">=</span> <span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;do_predict&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;&amp;-action&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">exit_long_conditions</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">y</span><span class="p">,</span> <span class="n">exit_long_conditions</span><span class="p">),</span> <span class="s2">&quot;exit_long&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 
-    return df
+        <span class="n">exit_short_conditions</span> <span class="o">=</span> <span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;do_predict&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;&amp;-action&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">4</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">exit_short_conditions</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">y</span><span class="p">,</span> <span class="n">exit_short_conditions</span><span class="p">),</span> <span class="s2">&quot;exit_short&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">df</span>
 </code></pre></div>
-
-<p>```</p>
 <p>It is important to consider that <code>&amp;-action</code> depends on which environment they choose to use. The example above shows 5 actions, where 0 is neutral, 1 is enter long, 2 is exit long, 3 is enter short and 4 is exit short.</p>
 <h2 id="configuring-the-reinforcement-learner">Configuring the Reinforcement Learner<a class="headerlink" href="#configuring-the-reinforcement-learner" title="Permanent link">&para;</a></h2>
 <p>In order to configure the <code>Reinforcement Learner</code> the following dictionary must exist in the <code>freqai</code> config:</p>
-<p><code>json
-        "rl_config": {
-            "train_cycles": 25,
-            "add_state_info": true,
-            "max_trade_duration_candles": 300,
-            "max_training_drawdown_pct": 0.02,
-            "cpu_count": 8,
-            "model_type": "PPO",
-            "policy_type": "MlpPolicy",
-            "model_reward_parameters": {
-                "rr": 1,
-                "profit_aim": 0.025
-            }
-        }</code></p>
+<div class="highlight"><pre><span></span><code><span class="w">        </span><span class="nt">&quot;rl_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;train_cycles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">25</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;add_state_info&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;max_trade_duration_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;max_training_drawdown_pct&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.02</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;cpu_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;model_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PPO&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;policy_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MlpPolicy&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;model_reward_parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;rr&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;profit_aim&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.025</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+</code></pre></div>
 <p>Parameter details can be found <a href="../freqai-parameter-table/">here</a>, but in general the <code>train_cycles</code> decides how many times the agent should cycle through the candle data in its artificial environment to train weights in the model. <code>model_type</code> is a string which selects one of the available models in <a href="https://stable-baselines3.readthedocs.io/en/master/">stable_baselines</a>(external link).</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2210,113 +2206,112 @@ The reward function provided with the Freqtrade source code is a showcase of fun
 <p class="admonition-title">Hint</p>
 <p>The best reward functions are ones that are continuously differentiable, and well scaled. In other words, adding a single large negative penalty to a rare event is not a good idea, and the neural net will not be able to learn that function. Instead, it is better to add a small negative penalty to a common event. This will help the agent learn faster. Not only this, but you can help improve the continuity of your rewards/penalties by having them scale with severity according to some linear/exponential functions. In other words, you'd slowly scale the penalty as the duration of the trade increases. This is better than a single large penalty occurring at a single point in time.</p>
 </div>
-<p>```python
-from freqtrade.freqai.prediction_models.ReinforcementLearner import ReinforcementLearner
-from freqtrade.freqai.RL.Base5ActionRLEnv import Actions, Base5ActionRLEnv, Positions</p>
-<p>class MyCoolRLModel(ReinforcementLearner):
-    """
-    User created RL prediction model.</p>
-<div class="codehilite"><pre><span></span><code>Save this file to `freqtrade/user_data/freqaimodels`
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.freqai.prediction_models.ReinforcementLearner</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReinforcementLearner</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.freqai.RL.Base5ActionRLEnv</span><span class="w"> </span><span class="kn">import</span> <span class="n">Actions</span><span class="p">,</span> <span class="n">Base5ActionRLEnv</span><span class="p">,</span> <span class="n">Positions</span>
 
-then use it with:
 
-freqtrade trade --freqaimodel MyCoolRLModel --config config.json --strategy SomeCoolStrat
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCoolRLModel</span><span class="p">(</span><span class="n">ReinforcementLearner</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    User created RL prediction model.</span>
 
-Here the users can override any of the functions
-available in the `IFreqaiModel` inheritance tree. Most importantly for RL, this
-is where the user overrides `MyRLEnv` (see below), to define custom
-`calculate_reward()` function, or to override any other parts of the environment.
+<span class="sd">    Save this file to `freqtrade/user_data/freqaimodels`</span>
 
-This class also allows users to override any other part of the IFreqaiModel tree.
-For example, the user can override `def fit()` or `def train()` or `def predict()`
-to take fine-tuned control over these processes.
+<span class="sd">    then use it with:</span>
 
-Another common override may be `def data_cleaning_predict()` where the user can
-take fine-tuned control over the data handling pipeline.
-&quot;&quot;&quot;
-class MyRLEnv(Base5ActionRLEnv):
-    &quot;&quot;&quot;
-    User made custom environment. This class inherits from BaseEnvironment and gym.Env.
-    Users can override any functions from those parent classes. Here is an example
-    of a user customized `calculate_reward()` function.
+<span class="sd">    freqtrade trade --freqaimodel MyCoolRLModel --config config.json --strategy SomeCoolStrat</span>
 
-    Warning!
-    This is function is a showcase of functionality designed to show as many possible
-    environment control features as possible. It is also designed to run quickly
-    on small computers. This is a benchmark, it is *not* for live production.
-    &quot;&quot;&quot;
-    def calculate_reward(self, action: int) -&gt; float:
-        # first, penalize if the action is not valid
-        if not self._is_valid(action):
-            return -2
-        pnl = self.get_unrealized_profit()
+<span class="sd">    Here the users can override any of the functions</span>
+<span class="sd">    available in the `IFreqaiModel` inheritance tree. Most importantly for RL, this</span>
+<span class="sd">    is where the user overrides `MyRLEnv` (see below), to define custom</span>
+<span class="sd">    `calculate_reward()` function, or to override any other parts of the environment.</span>
 
-        factor = 100
+<span class="sd">    This class also allows users to override any other part of the IFreqaiModel tree.</span>
+<span class="sd">    For example, the user can override `def fit()` or `def train()` or `def predict()`</span>
+<span class="sd">    to take fine-tuned control over these processes.</span>
 
-        pair = self.pair.replace(&#39;:&#39;, &#39;&#39;)
+<span class="sd">    Another common override may be `def data_cleaning_predict()` where the user can</span>
+<span class="sd">    take fine-tuned control over the data handling pipeline.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">class</span><span class="w"> </span><span class="nc">MyRLEnv</span><span class="p">(</span><span class="n">Base5ActionRLEnv</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        User made custom environment. This class inherits from BaseEnvironment and gym.Env.</span>
+<span class="sd">        Users can override any functions from those parent classes. Here is an example</span>
+<span class="sd">        of a user customized `calculate_reward()` function.</span>
 
-        # you can use feature values from dataframe
-        # Assumes the shifted RSI indicator has been generated in the strategy.
-        rsi_now = self.raw_features[f&quot;%-rsi-period_10_shift-1_{pair}_&quot;
-                        f&quot;{self.config[&#39;timeframe&#39;]}&quot;].iloc[self._current_tick]
+<span class="sd">        Warning!</span>
+<span class="sd">        This is function is a showcase of functionality designed to show as many possible</span>
+<span class="sd">        environment control features as possible. It is also designed to run quickly</span>
+<span class="sd">        on small computers. This is a benchmark, it is *not* for live production.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">calculate_reward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+            <span class="c1"># first, penalize if the action is not valid</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid</span><span class="p">(</span><span class="n">action</span><span class="p">):</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">2</span>
+            <span class="n">pnl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_unrealized_profit</span><span class="p">()</span>
 
-        # reward agent for entering trades
-        if (action in (Actions.Long_enter.value, Actions.Short_enter.value)
-                and self._position == Positions.Neutral):
-            if rsi_now &lt; 40:
-                factor = 40 / rsi_now
-            else:
-                factor = 1
-            return 25 * factor
+            <span class="n">factor</span> <span class="o">=</span> <span class="mi">100</span>
 
-        # discourage agent from not entering trades
-        if action == Actions.Neutral.value and self._position == Positions.Neutral:
-            return -1
-        max_trade_duration = self.rl_config.get(&#39;max_trade_duration_candles&#39;, 300)
-        trade_duration = self._current_tick - self._last_trade_tick
-        if trade_duration &lt;= max_trade_duration:
-            factor *= 1.5
-        elif trade_duration &gt; max_trade_duration:
-            factor *= 0.5
-        # discourage sitting in position
-        if self._position in (Positions.Short, Positions.Long) and \
-        action == Actions.Neutral.value:
-            return -1 * trade_duration / max_trade_duration
-        # close long
-        if action == Actions.Long_exit.value and self._position == Positions.Long:
-            if pnl &gt; self.profit_aim * self.rr:
-                factor *= self.rl_config[&#39;model_reward_parameters&#39;].get(&#39;win_reward_factor&#39;, 2)
-            return float(pnl * factor)
-        # close short
-        if action == Actions.Short_exit.value and self._position == Positions.Short:
-            if pnl &gt; self.profit_aim * self.rr:
-                factor *= self.rl_config[&#39;model_reward_parameters&#39;].get(&#39;win_reward_factor&#39;, 2)
-            return float(pnl * factor)
-        return 0.
+            <span class="n">pair</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+            <span class="c1"># you can use feature values from dataframe</span>
+            <span class="c1"># Assumes the shifted RSI indicator has been generated in the strategy.</span>
+            <span class="n">rsi_now</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw_features</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;%-rsi-period_10_shift-1_</span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">_&quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;timeframe&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_tick</span><span class="p">]</span>
+
+            <span class="c1"># reward agent for entering trades</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">action</span> <span class="ow">in</span> <span class="p">(</span><span class="n">Actions</span><span class="o">.</span><span class="n">Long_enter</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">Actions</span><span class="o">.</span><span class="n">Short_enter</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">==</span> <span class="n">Positions</span><span class="o">.</span><span class="n">Neutral</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">rsi_now</span> <span class="o">&lt;</span> <span class="mi">40</span><span class="p">:</span>
+                    <span class="n">factor</span> <span class="o">=</span> <span class="mi">40</span> <span class="o">/</span> <span class="n">rsi_now</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">factor</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">return</span> <span class="mi">25</span> <span class="o">*</span> <span class="n">factor</span>
+
+            <span class="c1"># discourage agent from not entering trades</span>
+            <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Actions</span><span class="o">.</span><span class="n">Neutral</span><span class="o">.</span><span class="n">value</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">==</span> <span class="n">Positions</span><span class="o">.</span><span class="n">Neutral</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">max_trade_duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rl_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;max_trade_duration_candles&#39;</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+            <span class="n">trade_duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_tick</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_trade_tick</span>
+            <span class="k">if</span> <span class="n">trade_duration</span> <span class="o">&lt;=</span> <span class="n">max_trade_duration</span><span class="p">:</span>
+                <span class="n">factor</span> <span class="o">*=</span> <span class="mf">1.5</span>
+            <span class="k">elif</span> <span class="n">trade_duration</span> <span class="o">&gt;</span> <span class="n">max_trade_duration</span><span class="p">:</span>
+                <span class="n">factor</span> <span class="o">*=</span> <span class="mf">0.5</span>
+            <span class="c1"># discourage sitting in position</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="ow">in</span> <span class="p">(</span><span class="n">Positions</span><span class="o">.</span><span class="n">Short</span><span class="p">,</span> <span class="n">Positions</span><span class="o">.</span><span class="n">Long</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="n">action</span> <span class="o">==</span> <span class="n">Actions</span><span class="o">.</span><span class="n">Neutral</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">trade_duration</span> <span class="o">/</span> <span class="n">max_trade_duration</span>
+            <span class="c1"># close long</span>
+            <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Actions</span><span class="o">.</span><span class="n">Long_exit</span><span class="o">.</span><span class="n">value</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">==</span> <span class="n">Positions</span><span class="o">.</span><span class="n">Long</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pnl</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">profit_aim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">rr</span><span class="p">:</span>
+                    <span class="n">factor</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rl_config</span><span class="p">[</span><span class="s1">&#39;model_reward_parameters&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;win_reward_factor&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">pnl</span> <span class="o">*</span> <span class="n">factor</span><span class="p">)</span>
+            <span class="c1"># close short</span>
+            <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="n">Actions</span><span class="o">.</span><span class="n">Short_exit</span><span class="o">.</span><span class="n">value</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position</span> <span class="o">==</span> <span class="n">Positions</span><span class="o">.</span><span class="n">Short</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pnl</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">profit_aim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">rr</span><span class="p">:</span>
+                    <span class="n">factor</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rl_config</span><span class="p">[</span><span class="s1">&#39;model_reward_parameters&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;win_reward_factor&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">pnl</span> <span class="o">*</span> <span class="n">factor</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mf">0.</span>
 </code></pre></div>
-
-<p>```</p>
 <h2 id="using-tensorboard">Using Tensorboard<a class="headerlink" href="#using-tensorboard" title="Permanent link">&para;</a></h2>
 <p>Reinforcement Learning models benefit from tracking training metrics. FreqAI has integrated Tensorboard to allow users to track training and evaluation performance across all coins and across all retrainings. Tensorboard is activated via the following command:</p>
-<p><code>bash
-tensorboard --logdir user_data/models/unique-id</code></p>
+<div class="highlight"><pre><span></span><code>tensorboard<span class="w"> </span>--logdir<span class="w"> </span>user_data/models/unique-id
+</code></pre></div>
 <p>where <code>unique-id</code> is the <code>identifier</code> set in the <code>freqai</code> configuration file. This command must be run in a separate shell to view the output in the browser at 127.0.0.1:6006 (6006 is the default port used by Tensorboard).</p>
 <p><img alt="tensorboard" src="../assets/tensorboard.jpg" /></p>
 <h2 id="custom-logging">Custom logging<a class="headerlink" href="#custom-logging" title="Permanent link">&para;</a></h2>
 <p>FreqAI also provides a built in episodic summary logger called <code>self.tensorboard_log</code> for adding custom information to the Tensorboard log. By default, this function is already called once per step inside the environment to record the agent actions. All values accumulated for all steps in a single episode are reported at the conclusion of each episode, followed by a full reset of all metrics to 0 in preparation for the subsequent episode.</p>
 <p><code>self.tensorboard_log</code> can also be used anywhere inside the environment, for example, it can be added to the <code>calculate_reward</code> function to collect more detailed information about how often various parts of the reward were called:</p>
-<p><code>``python
-    class MyRLEnv(Base5ActionRLEnv):
-        """
-        User made custom environment. This class inherits from BaseEnvironment and gym.Env.
-        Users can override any functions from those parent classes. Here is an example
-        of a user customized</code>calculate_reward()` function.
-        """
-        def calculate_reward(self, action: int) -&gt; float:
-            if not self._is_valid(action):
-                self.tensorboard_log("invalid")
-                return -2</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code>    <span class="k">class</span><span class="w"> </span><span class="nc">MyRLEnv</span><span class="p">(</span><span class="n">Base5ActionRLEnv</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        User made custom environment. This class inherits from BaseEnvironment and gym.Env.</span>
+<span class="sd">        Users can override any functions from those parent classes. Here is an example</span>
+<span class="sd">        of a user customized `calculate_reward()` function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">calculate_reward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid</span><span class="p">(</span><span class="n">action</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">tensorboard_log</span><span class="p">(</span><span class="s2">&quot;invalid&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="o">-</span><span class="mi">2</span>
+</code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The <code>self.tensorboard_log()</code> function is designed for tracking incremented objects only i.e. events, actions inside the training environment. If the event of interest is a float, the float can be passed as the second argument e.g. <code>self.tensorboard_log("float_metric1", 0.23)</code>. In this case the metric values are not incremented.</p>

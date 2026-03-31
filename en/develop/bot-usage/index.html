@@ -2110,109 +2110,113 @@
 <p>The clock on the system running the bot must be accurate, synchronized to a NTP server frequently enough to avoid problems with communication to the exchanges.</p>
 </div>
 <h2 id="bot-commands">Bot commands<a class="headerlink" href="#bot-commands" title="Permanent link">&para;</a></h2>
-<p>``` output
-usage: freqtrade [-h] [-V]
-                 {trade,create-userdir,new-config,show-config,new-strategy,download-data,convert-data,convert-trade-data,trades-to-ohlcv,list-data,backtesting,backtesting-show,backtesting-analysis,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-markets,list-pairs,list-strategies,list-hyperoptloss,list-freqaimodels,list-timeframes,show-trades,test-pairlist,convert-db,install-ui,plot-dataframe,plot-profit,webserver,strategy-updater,lookahead-analysis,recursive-analysis} ...</p>
-<p>Free, open source crypto trading bot</p>
-<p>positional arguments:
-  {trade,create-userdir,new-config,show-config,new-strategy,download-data,convert-data,convert-trade-data,trades-to-ohlcv,list-data,backtesting,backtesting-show,backtesting-analysis,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-markets,list-pairs,list-strategies,list-hyperoptloss,list-freqaimodels,list-timeframes,show-trades,test-pairlist,convert-db,install-ui,plot-dataframe,plot-profit,webserver,strategy-updater,lookahead-analysis,recursive-analysis}
-    trade               Trade module.
-    create-userdir      Create user-data directory.
-    new-config          Create new config
-    show-config         Show resolved config
-    new-strategy        Create new strategy
-    download-data       Download backtesting data.
-    convert-data        Convert candle (OHLCV) data from one format to
-                        another.
-    convert-trade-data  Convert trade data from one format to another.
-    trades-to-ohlcv     Convert trade data to OHLCV data.
-    list-data           List downloaded data.
-    backtesting         Backtesting module.
-    backtesting-show    Show past Backtest results
-    backtesting-analysis
-                        Backtest Analysis module.
-    edge                Edge module. No longer part of Freqtrade
-    hyperopt            Hyperopt module.
-    hyperopt-list       List Hyperopt results
-    hyperopt-show       Show details of Hyperopt results
-    list-exchanges      Print available exchanges.
-    list-markets        Print markets on exchange.
-    list-pairs          Print pairs on exchange.
-    list-strategies     Print available strategies.
-    list-hyperoptloss   Print available hyperopt loss functions.
-    list-freqaimodels   Print available freqAI models.
-    list-timeframes     Print available timeframes for the exchange.
-    show-trades         Show trades.
-    test-pairlist       Test your pairlist configuration.
-    convert-db          Migrate database to different system
-    install-ui          Install FreqUI
-    plot-dataframe      Plot candles with indicators.
-    plot-profit         Generate plot showing profits.
-    webserver           Webserver module.
-    strategy-updater    updates outdated strategy files to the current version
-    lookahead-analysis  Check for potential look ahead bias.
-    recursive-analysis  Check for potential recursive formula issue.</p>
-<p>options:
-  -h, --help            show this help message and exit
-  -V, --version         show program's version number and exit</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code><span class="go">usage: freqtrade [-h] [-V]</span>
+<span class="go">                 {trade,create-userdir,new-config,show-config,new-strategy,download-data,convert-data,convert-trade-data,trades-to-ohlcv,list-data,backtesting,backtesting-show,backtesting-analysis,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-markets,list-pairs,list-strategies,list-hyperoptloss,list-freqaimodels,list-timeframes,show-trades,test-pairlist,convert-db,install-ui,plot-dataframe,plot-profit,webserver,strategy-updater,lookahead-analysis,recursive-analysis} ...</span>
+
+<span class="go">Free, open source crypto trading bot</span>
+
+<span class="go">positional arguments:</span>
+<span class="go">  {trade,create-userdir,new-config,show-config,new-strategy,download-data,convert-data,convert-trade-data,trades-to-ohlcv,list-data,backtesting,backtesting-show,backtesting-analysis,edge,hyperopt,hyperopt-list,hyperopt-show,list-exchanges,list-markets,list-pairs,list-strategies,list-hyperoptloss,list-freqaimodels,list-timeframes,show-trades,test-pairlist,convert-db,install-ui,plot-dataframe,plot-profit,webserver,strategy-updater,lookahead-analysis,recursive-analysis}</span>
+<span class="go">    trade               Trade module.</span>
+<span class="go">    create-userdir      Create user-data directory.</span>
+<span class="go">    new-config          Create new config</span>
+<span class="go">    show-config         Show resolved config</span>
+<span class="go">    new-strategy        Create new strategy</span>
+<span class="go">    download-data       Download backtesting data.</span>
+<span class="go">    convert-data        Convert candle (OHLCV) data from one format to</span>
+<span class="go">                        another.</span>
+<span class="go">    convert-trade-data  Convert trade data from one format to another.</span>
+<span class="go">    trades-to-ohlcv     Convert trade data to OHLCV data.</span>
+<span class="go">    list-data           List downloaded data.</span>
+<span class="go">    backtesting         Backtesting module.</span>
+<span class="go">    backtesting-show    Show past Backtest results</span>
+<span class="go">    backtesting-analysis</span>
+<span class="go">                        Backtest Analysis module.</span>
+<span class="go">    edge                Edge module. No longer part of Freqtrade</span>
+<span class="go">    hyperopt            Hyperopt module.</span>
+<span class="go">    hyperopt-list       List Hyperopt results</span>
+<span class="go">    hyperopt-show       Show details of Hyperopt results</span>
+<span class="go">    list-exchanges      Print available exchanges.</span>
+<span class="go">    list-markets        Print markets on exchange.</span>
+<span class="go">    list-pairs          Print pairs on exchange.</span>
+<span class="go">    list-strategies     Print available strategies.</span>
+<span class="go">    list-hyperoptloss   Print available hyperopt loss functions.</span>
+<span class="go">    list-freqaimodels   Print available freqAI models.</span>
+<span class="go">    list-timeframes     Print available timeframes for the exchange.</span>
+<span class="go">    show-trades         Show trades.</span>
+<span class="go">    test-pairlist       Test your pairlist configuration.</span>
+<span class="go">    convert-db          Migrate database to different system</span>
+<span class="go">    install-ui          Install FreqUI</span>
+<span class="go">    plot-dataframe      Plot candles with indicators.</span>
+<span class="go">    plot-profit         Generate plot showing profits.</span>
+<span class="go">    webserver           Webserver module.</span>
+<span class="go">    strategy-updater    updates outdated strategy files to the current version</span>
+<span class="go">    lookahead-analysis  Check for potential look ahead bias.</span>
+<span class="go">    recursive-analysis  Check for potential recursive formula issue.</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+</code></pre></div>
 <h3 id="bot-trading-commands">Bot trading commands<a class="headerlink" href="#bot-trading-commands" title="Permanent link">&para;</a></h3>
-<p>``` output
-usage: freqtrade trade [-h] [-v] [--no-color] [--logfile FILE] [-V] [-c PATH]
-                       [-d PATH] [--userdir PATH] [-s NAME]
-                       [--strategy-path PATH] [--recursive-strategy-search]
-                       [--freqaimodel NAME] [--freqaimodel-path PATH]
-                       [--db-url PATH] [--sd-notify] [--dry-run]
-                       [--dry-run-wallet DRY_RUN_WALLET] [--fee FLOAT]</p>
-<p>options:
-  -h, --help            show this help message and exit
-  --db-url PATH         Override trades database URL, this is useful in custom
-                        deployments (default: <code>sqlite:///tradesv3.sqlite</code> for
-                        Live Run mode, <code>sqlite:///tradesv3.dryrun.sqlite</code> for
-                        Dry Run).
-  --sd-notify           Notify systemd service manager.
-  --dry-run             Enforce dry-run for trading (removes Exchange secrets
-                        and simulates trades).
-  --dry-run-wallet, --starting-balance DRY_RUN_WALLET
-                        Starting balance, used for backtesting / hyperopt and
-                        dry-runs.
-  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade
-                        entry and exit).</p>
-<p>Common arguments:
-  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --no-color            Disable colorization of hyperopt results. May be
-                        useful if you are redirecting output to a file.
-  --logfile, --log-file FILE
-                        Log to the file specified. Special values are:
-                        'syslog', 'journald'. See the documentation for more
-                        details.
-  -V, --version         show program's version number and exit
-  -c, --config PATH     Specify configuration file (default:
-                        <code>userdir/config.json</code> or <code>config.json</code> whichever
-                        exists). Multiple --config options may be used. Can be
-                        set to <code>-</code> to read config from stdin.
-  -d, --datadir, --data-dir PATH
-                        Path to the base directory of the exchange with
-                        historical backtesting data. To see futures data, use
-                        trading-mode additionally.
-  --userdir, --user-data-dir PATH
-                        Path to userdata directory.</p>
-<p>Strategy arguments:
-  -s, --strategy NAME   Specify strategy class name which will be used by the
-                        bot.
-  --strategy-path PATH  Specify additional strategy lookup path.
-  --recursive-strategy-search
-                        Recursively search for a strategy in the strategies
-                        folder.
-  --freqaimodel NAME    Specify a custom freqaimodels.
-  --freqaimodel-path PATH
-                        Specify additional lookup path for freqaimodels.</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code><span class="go">usage: freqtrade trade [-h] [-v] [--no-color] [--logfile FILE] [-V] [-c PATH]</span>
+<span class="go">                       [-d PATH] [--userdir PATH] [-s NAME]</span>
+<span class="go">                       [--strategy-path PATH] [--recursive-strategy-search]</span>
+<span class="go">                       [--freqaimodel NAME] [--freqaimodel-path PATH]</span>
+<span class="go">                       [--db-url PATH] [--sd-notify] [--dry-run]</span>
+<span class="go">                       [--dry-run-wallet DRY_RUN_WALLET] [--fee FLOAT]</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  --db-url PATH         Override trades database URL, this is useful in custom</span>
+<span class="go">                        deployments (default: `sqlite:///tradesv3.sqlite` for</span>
+<span class="go">                        Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for</span>
+<span class="go">                        Dry Run).</span>
+<span class="go">  --sd-notify           Notify systemd service manager.</span>
+<span class="go">  --dry-run             Enforce dry-run for trading (removes Exchange secrets</span>
+<span class="go">                        and simulates trades).</span>
+<span class="go">  --dry-run-wallet, --starting-balance DRY_RUN_WALLET</span>
+<span class="go">                        Starting balance, used for backtesting / hyperopt and</span>
+<span class="go">                        dry-runs.</span>
+<span class="go">  --fee FLOAT           Specify fee ratio. Will be applied twice (on trade</span>
+<span class="go">                        entry and exit).</span>
+
+<span class="go">Common arguments:</span>
+<span class="go">  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).</span>
+<span class="go">  --no-color            Disable colorization of hyperopt results. May be</span>
+<span class="go">                        useful if you are redirecting output to a file.</span>
+<span class="go">  --logfile, --log-file FILE</span>
+<span class="go">                        Log to the file specified. Special values are:</span>
+<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        details.</span>
+<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -c, --config PATH     Specify configuration file (default:</span>
+<span class="go">                        `userdir/config.json` or `config.json` whichever</span>
+<span class="go">                        exists). Multiple --config options may be used. Can be</span>
+<span class="go">                        set to `-` to read config from stdin.</span>
+<span class="go">  -d, --datadir, --data-dir PATH</span>
+<span class="go">                        Path to the base directory of the exchange with</span>
+<span class="go">                        historical backtesting data. To see futures data, use</span>
+<span class="go">                        trading-mode additionally.</span>
+<span class="go">  --userdir, --user-data-dir PATH</span>
+<span class="go">                        Path to userdata directory.</span>
+
+<span class="go">Strategy arguments:</span>
+<span class="go">  -s, --strategy NAME   Specify strategy class name which will be used by the</span>
+<span class="go">                        bot.</span>
+<span class="go">  --strategy-path PATH  Specify additional strategy lookup path.</span>
+<span class="go">  --recursive-strategy-search</span>
+<span class="go">                        Recursively search for a strategy in the strategies</span>
+<span class="go">                        folder.</span>
+<span class="go">  --freqaimodel NAME    Specify a custom freqaimodels.</span>
+<span class="go">  --freqaimodel-path PATH</span>
+<span class="go">                        Specify additional lookup path for freqaimodels.</span>
+</code></pre></div>
 <h3 id="how-to-specify-which-configuration-file-be-used">How to specify which configuration file be used?<a class="headerlink" href="#how-to-specify-which-configuration-file-be-used" title="Permanent link">&para;</a></h3>
 <p>The bot allows you to select which configuration file you want to use by means of
 the <code>-c/--config</code> command line option:</p>
-<p><code>bash
-freqtrade trade -c path/far/far/away/config.json</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>path/far/far/away/config.json
+</code></pre></div>
 <p>Per default, the bot loads the <code>config.json</code> configuration file from the current
 working directory.</p>
 <h3 id="how-to-use-multiple-configuration-files">How to use multiple configuration files?<a class="headerlink" href="#how-to-use-multiple-configuration-files" title="Permanent link">&para;</a></h3>
@@ -2224,11 +2228,11 @@ defined in the previous configuration files specified in the command line earlie
 for the Exchange you use for trading, specify default configuration file with
 empty key and secret values while running in the Dry Mode (which does not actually
 require them):</p>
-<p><code>bash
-freqtrade trade -c ./config.json</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>./config.json
+</code></pre></div>
 <p>and specify both configuration files when running in the normal Live Trade Mode:</p>
-<p><code>bash
-freqtrade trade -c ./config.json -c path/to/secrets/keys.config.json</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>./config.json<span class="w"> </span>-c<span class="w"> </span>path/to/secrets/keys.config.json
+</code></pre></div>
 <p>This could help you hide your private Exchange key and Exchange secret on you local machine
 by setting appropriate file permissions for the file which contains actual secrets and, additionally,
 prevent unintended disclosure of sensitive private data when you publish examples
@@ -2238,13 +2242,14 @@ of your configuration in the project issues or in the Internet.</p>
 <h3 id="where-to-store-custom-data">Where to store custom data<a class="headerlink" href="#where-to-store-custom-data" title="Permanent link">&para;</a></h3>
 <p>Freqtrade allows the creation of a user-data directory using <code>freqtrade create-userdir --userdir someDirectory</code>.
 This directory will look as follows:</p>
-<p><code>user_data/
+<div class="highlight"><pre><span></span><code>user_data/
 ├── backtest_results
 ├── data
 ├── hyperopts
 ├── hyperopt_results
 ├── plot
-└── strategies</code></p>
+└── strategies
+</code></pre></div>
 <p>You can add the entry "user_data_dir" setting to your configuration, to always point your bot to this directory.
 Alternatively, pass in <code>--userdir</code> to every command.
 The bot will fail to start if the directory does not exist, but will create necessary subdirectories.</p>
@@ -2259,8 +2264,8 @@ To use other directories, please read the next section about <code>--strategy-pa
 <p><strong>Example:</strong>
 In <code>user_data/strategies</code> you have a file <code>my_awesome_strategy.py</code> which has
 a strategy class called <code>AwesomeStrategy</code> to load it:</p>
-<p><code>bash
-freqtrade trade --strategy AwesomeStrategy</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy
+</code></pre></div>
 <p>If the bot does not find your strategy file, it will display in an error
 message the reason (File not found, or errors in your code).</p>
 <p>Learn more about strategy file in
@@ -2268,8 +2273,8 @@ message the reason (File not found, or errors in your code).</p>
 <h3 id="how-to-use-strategy-path">How to use <strong>--strategy-path</strong>?<a class="headerlink" href="#how-to-use-strategy-path" title="Permanent link">&para;</a></h3>
 <p>This parameter allows you to add an additional strategy lookup path, which gets
 checked before the default locations (The passed path must be a directory!):</p>
-<p><code>bash
-freqtrade trade --strategy AwesomeStrategy --strategy-path /some/directory</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--strategy-path<span class="w"> </span>/some/directory
+</code></pre></div>
 <h4 id="how-to-install-a-strategy">How to install a strategy?<a class="headerlink" href="#how-to-install-a-strategy" title="Permanent link">&para;</a></h4>
 <p>This is very simple. Copy paste your strategy file into the directory
 <code>user_data/strategies</code> or use <code>--strategy-path</code>. And voila, the bot is ready to use it.</p>
@@ -2278,8 +2283,8 @@ freqtrade trade --strategy AwesomeStrategy --strategy-path /some/directory</code
 stored in a database. If you want to store your bot actions in a DB
 using <code>--db-url</code>. This can also be used to specify a custom database
 in production mode. Example command:</p>
-<p><code>bash
-freqtrade trade -c config.json --db-url sqlite:///tradesv3.dry_run.sqlite</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w"> </span>config.json<span class="w"> </span>--db-url<span class="w"> </span>sqlite:///tradesv3.dry_run.sqlite
+</code></pre></div>
 <h2 id="next-step">Next step<a class="headerlink" href="#next-step" title="Permanent link">&para;</a></h2>
 <p>The optimal strategy of the bot will change with time depending of the market trends. The next step is to
 <a href="../strategy-customization/">Strategy Customization</a>.</p>

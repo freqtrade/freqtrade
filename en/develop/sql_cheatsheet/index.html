@@ -2184,27 +2184,27 @@ Always make sure to have a backup of your database before running any queries.</
 <p>Sqlite3 is a terminal based sqlite application.
 Feel free to use a visual Database editor like SqliteBrowser if you feel more comfortable with that.</p>
 <h3 id="ubuntudebian-installation">Ubuntu/Debian installation<a class="headerlink" href="#ubuntudebian-installation" title="Permanent link">&para;</a></h3>
-<p><code>bash
-sudo apt-get install sqlite3</code></p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>sqlite3
+</code></pre></div>
 <h3 id="using-sqlite3-via-docker">Using sqlite3 via docker<a class="headerlink" href="#using-sqlite3-via-docker" title="Permanent link">&para;</a></h3>
 <p>The freqtrade docker image does contain sqlite3, so you can edit the database without having to install anything on the host system.</p>
-<p><code>bash
-docker compose exec freqtrade /bin/bash
-sqlite3 &lt;database-file&gt;.sqlite</code></p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>freqtrade<span class="w"> </span>/bin/bash
+sqlite3<span class="w"> </span>&lt;database-file&gt;.sqlite
+</code></pre></div>
 <h2 id="open-the-db">Open the DB<a class="headerlink" href="#open-the-db" title="Permanent link">&para;</a></h2>
-<p><code>bash
-sqlite3
-.open &lt;filepath&gt;</code></p>
+<div class="highlight"><pre><span></span><code>sqlite3
+.open<span class="w"> </span>&lt;filepath&gt;
+</code></pre></div>
 <h2 id="table-structure">Table structure<a class="headerlink" href="#table-structure" title="Permanent link">&para;</a></h2>
 <h3 id="list-tables">List tables<a class="headerlink" href="#list-tables" title="Permanent link">&para;</a></h3>
-<p><code>bash
-.tables</code></p>
+<div class="highlight"><pre><span></span><code>.tables
+</code></pre></div>
 <h3 id="display-table-structure">Display table structure<a class="headerlink" href="#display-table-structure" title="Permanent link">&para;</a></h3>
-<p><code>bash
-.schema &lt;table_name&gt;</code></p>
+<div class="highlight"><pre><span></span><code>.schema<span class="w"> </span>&lt;table_name&gt;
+</code></pre></div>
 <h3 id="get-all-trades-in-the-table">Get all trades in the table<a class="headerlink" href="#get-all-trades-in-the-table" title="Permanent link">&para;</a></h3>
-<p><code>sql
-SELECT * FROM trades;</code></p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">trades</span><span class="p">;</span>
+</code></pre></div>
 <h2 id="destructive-queries">Destructive queries<a class="headerlink" href="#destructive-queries" title="Permanent link">&para;</a></h2>
 <p>Queries that write to the database.
 These queries should usually not be necessary as freqtrade tries to handle all database operations itself - or exposes them via API or telegram commands.</p>
@@ -2227,25 +2227,25 @@ It is strongly advised to backup your database file before making any manual cha
 <p class="admonition-title">Note</p>
 <p>This should not be necessary after /forceexit, as force_exit orders are closed automatically by the bot on the next iteration.</p>
 </div>
-<p><code>sql
-UPDATE trades
-SET is_open=0,
-  close_date=&lt;close_date&gt;,
-  close_rate=&lt;close_rate&gt;,
-  close_profit = close_rate / open_rate - 1,
-  close_profit_abs = (amount * &lt;close_rate&gt; * (1 - fee_close) - (amount * (open_rate * (1 - fee_open)))),
-  exit_reason=&lt;exit_reason&gt;
-WHERE id=&lt;trade_ID_to_update&gt;;</code></p>
+<div class="highlight"><pre><span></span><code><span class="k">UPDATE</span><span class="w"> </span><span class="n">trades</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">is_open</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="n">close_date</span><span class="o">=&lt;</span><span class="n">close_date</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">close_rate</span><span class="o">=&lt;</span><span class="n">close_rate</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">close_profit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">close_rate</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">open_rate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="n">close_profit_abs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">&lt;</span><span class="n">close_rate</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">fee_close</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">open_rate</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">fee_open</span><span class="p">)))),</span>
+<span class="w">  </span><span class="n">exit_reason</span><span class="o">=&lt;</span><span class="n">exit_reason</span><span class="o">&gt;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="o">=&lt;</span><span class="n">trade_ID_to_update</span><span class="o">&gt;</span><span class="p">;</span>
+</code></pre></div>
 <h4 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h4>
-<p><code>sql
-UPDATE trades
-SET is_open=0,
-  close_date='2020-06-20 03:08:45.103418',
-  close_rate=0.19638016,
-  close_profit=0.0496,
-  close_profit_abs = (amount * 0.19638016 * (1 - fee_close) - (amount * (open_rate * (1 - fee_open)))),
-  exit_reason='force_exit'  
-WHERE id=31;</code></p>
+<div class="highlight"><pre><span></span><code><span class="k">UPDATE</span><span class="w"> </span><span class="n">trades</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">is_open</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="n">close_date</span><span class="o">=</span><span class="s1">&#39;2020-06-20 03:08:45.103418&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">close_rate</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">19638016</span><span class="p">,</span>
+<span class="w">  </span><span class="n">close_profit</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">0496</span><span class="p">,</span>
+<span class="w">  </span><span class="n">close_profit_abs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">19638016</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">fee_close</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">open_rate</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">fee_open</span><span class="p">)))),</span>
+<span class="w">  </span><span class="n">exit_reason</span><span class="o">=</span><span class="s1">&#39;force_exit&#39;</span><span class="w">  </span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="o">=</span><span class="mi">31</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="remove-trade-from-the-database">Remove trade from the database<a class="headerlink" href="#remove-trade-from-the-database" title="Permanent link">&para;</a></h3>
 <div class="admonition tip">
 <p class="admonition-title">Use RPC Methods to delete trades</p>
@@ -2256,14 +2256,15 @@ WHERE id=31;</code></p>
 <p class="admonition-title">Danger</p>
 <p>Some systems (Ubuntu) disable foreign keys in their sqlite3 packaging. When using sqlite - please ensure that foreign keys are on by running <code>PRAGMA foreign_keys = ON</code> before the above query.</p>
 </div>
-<p>```sql
-DELETE FROM trades WHERE id = <tradeid>;
-DELETE FROM orders WHERE ft_trade_id = <tradeid>;
-DELETE FROM trade_custom_data WHERE ft_trade_id = <tradeid>;</p>
-<p>DELETE FROM trades WHERE id = 31;
-DELETE FROM orders WHERE ft_trade_id = 31;
-DELETE FROM trade_custom_data WHERE ft_trade_id = 31;
-```</p>
+<div class="highlight"><pre><span></span><code><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">trades</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="n">tradeid</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ft_trade_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="n">tradeid</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">trade_custom_data</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ft_trade_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&lt;</span><span class="n">tradeid</span><span class="o">&gt;</span><span class="p">;</span>
+
+
+<span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">trades</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">31</span><span class="p">;</span>
+<span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ft_trade_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">31</span><span class="p">;</span>
+<span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">trade_custom_data</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ft_trade_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">31</span><span class="p">;</span>
+</code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>This will remove the specified trade from the database. Please make sure you got the correct id and <strong>NEVER</strong> run this query without the <code>where</code> clause.</p>

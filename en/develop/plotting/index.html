@@ -2022,8 +2022,8 @@ This is mostly for the performance problems even medium sized plots can cause, b
 </div>
 <h2 id="installation-setup">Installation / Setup<a class="headerlink" href="#installation-setup" title="Permanent link">&para;</a></h2>
 <p>Plotting modules use the Plotly library. You can install / upgrade this by running the following command:</p>
-<p><code>bash
-pip install -U -r requirements-plot.txt</code></p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>-r<span class="w"> </span>requirements-plot.txt
+</code></pre></div>
 <h2 id="plot-price-and-indicators">Plot price and indicators<a class="headerlink" href="#plot-price-and-indicators" title="Permanent link">&para;</a></h2>
 <p>The <code>freqtrade plot-dataframe</code> subcommand shows an interactive graph with three subplots:</p>
 <ul>
@@ -2033,89 +2033,91 @@ pip install -U -r requirements-plot.txt</code></p>
 </ul>
 <p><img alt="plot-dataframe" src="../assets/plot-dataframe.png" /></p>
 <p>Possible arguments:</p>
-<p>``` output
-usage: freqtrade plot-dataframe [-h] [-v] [--no-color] [--logfile FILE] [-V]
-                                [-c PATH] [-d PATH] [--userdir PATH] [-s NAME]
-                                [--strategy-path PATH]
-                                [--recursive-strategy-search]
-                                [--freqaimodel NAME] [--freqaimodel-path PATH]
-                                [-p PAIRS [PAIRS ...]]
-                                [--indicators1 INDICATORS1 [INDICATORS1 ...]]
-                                [--indicators2 INDICATORS2 [INDICATORS2 ...]]
-                                [--plot-limit INT] [--db-url PATH]
-                                [--trade-source {DB,file}]
-                                [--export {none,trades,signals}]
-                                [--backtest-filename PATH]
-                                [--timerange TIMERANGE] [-i TIMEFRAME]
-                                [--no-trades]</p>
-<p>options:
-  -h, --help            show this help message and exit
-  -p, --pairs PAIRS [PAIRS ...]
-                        Limit command to these pairs. Pairs are space-
-                        separated.
-  --indicators1 INDICATORS1 [INDICATORS1 ...]
-                        Set indicators from your strategy you want in the
-                        first row of the graph. Space-separated list. Example:
-                        <code>ema3 ema5</code>. Default: <code>['sma', 'ema3', 'ema5']</code>.
-  --indicators2 INDICATORS2 [INDICATORS2 ...]
-                        Set indicators from your strategy you want in the
-                        third row of the graph. Space-separated list. Example:
-                        <code>fastd fastk</code>. Default: <code>['macd', 'macdsignal']</code>.
-  --plot-limit INT      Specify tick limit for plotting. Notice: too high
-                        values cause huge files. Default: 750.
-  --db-url PATH         Override trades database URL, this is useful in custom
-                        deployments (default: <code>sqlite:///tradesv3.sqlite</code> for
-                        Live Run mode, <code>sqlite:///tradesv3.dryrun.sqlite</code> for
-                        Dry Run).
-  --trade-source {DB,file}
-                        Specify the source for trades (Can be DB or file
-                        (backtest file)) Default: file
-  --export {none,trades,signals}
-                        Export backtest results (default: trades).
-  --backtest-filename, --export-filename PATH
-                        Use this filename for backtest results.Example:
-                        <code>--backtest-
-                        filename=backtest_results_2020-09-27_16-20-48.json</code>.
-                        Assumes either <code>user_data/backtest_results/</code> or
-                        <code>--export-directory</code> as base directory.
-  --timerange TIMERANGE
-                        Specify what timerange of data to use.
-  -i, --timeframe TIMEFRAME
-                        Specify timeframe (<code>1m</code>, <code>5m</code>, <code>30m</code>, <code>1h</code>, <code>1d</code>).
-  --no-trades           Skip using trades from backtesting file and DB.</p>
-<p>Common arguments:
-  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --no-color            Disable colorization of hyperopt results. May be
-                        useful if you are redirecting output to a file.
-  --logfile, --log-file FILE
-                        Log to the file specified. Special values are:
-                        'syslog', 'journald'. See the documentation for more
-                        details.
-  -V, --version         show program's version number and exit
-  -c, --config PATH     Specify configuration file (default:
-                        <code>userdir/config.json</code> or <code>config.json</code> whichever
-                        exists). Multiple --config options may be used. Can be
-                        set to <code>-</code> to read config from stdin.
-  -d, --datadir, --data-dir PATH
-                        Path to the base directory of the exchange with
-                        historical backtesting data. To see futures data, use
-                        trading-mode additionally.
-  --userdir, --user-data-dir PATH
-                        Path to userdata directory.</p>
-<p>Strategy arguments:
-  -s, --strategy NAME   Specify strategy class name which will be used by the
-                        bot.
-  --strategy-path PATH  Specify additional strategy lookup path.
-  --recursive-strategy-search
-                        Recursively search for a strategy in the strategies
-                        folder.
-  --freqaimodel NAME    Specify a custom freqaimodels.
-  --freqaimodel-path PATH
-                        Specify additional lookup path for freqaimodels.</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code><span class="go">usage: freqtrade plot-dataframe [-h] [-v] [--no-color] [--logfile FILE] [-V]</span>
+<span class="go">                                [-c PATH] [-d PATH] [--userdir PATH] [-s NAME]</span>
+<span class="go">                                [--strategy-path PATH]</span>
+<span class="go">                                [--recursive-strategy-search]</span>
+<span class="go">                                [--freqaimodel NAME] [--freqaimodel-path PATH]</span>
+<span class="go">                                [-p PAIRS [PAIRS ...]]</span>
+<span class="go">                                [--indicators1 INDICATORS1 [INDICATORS1 ...]]</span>
+<span class="go">                                [--indicators2 INDICATORS2 [INDICATORS2 ...]]</span>
+<span class="go">                                [--plot-limit INT] [--db-url PATH]</span>
+<span class="go">                                [--trade-source {DB,file}]</span>
+<span class="go">                                [--export {none,trades,signals}]</span>
+<span class="go">                                [--backtest-filename PATH]</span>
+<span class="go">                                [--timerange TIMERANGE] [-i TIMEFRAME]</span>
+<span class="go">                                [--no-trades]</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -p, --pairs PAIRS [PAIRS ...]</span>
+<span class="go">                        Limit command to these pairs. Pairs are space-</span>
+<span class="go">                        separated.</span>
+<span class="go">  --indicators1 INDICATORS1 [INDICATORS1 ...]</span>
+<span class="go">                        Set indicators from your strategy you want in the</span>
+<span class="go">                        first row of the graph. Space-separated list. Example:</span>
+<span class="go">                        `ema3 ema5`. Default: `[&#39;sma&#39;, &#39;ema3&#39;, &#39;ema5&#39;]`.</span>
+<span class="go">  --indicators2 INDICATORS2 [INDICATORS2 ...]</span>
+<span class="go">                        Set indicators from your strategy you want in the</span>
+<span class="go">                        third row of the graph. Space-separated list. Example:</span>
+<span class="go">                        `fastd fastk`. Default: `[&#39;macd&#39;, &#39;macdsignal&#39;]`.</span>
+<span class="go">  --plot-limit INT      Specify tick limit for plotting. Notice: too high</span>
+<span class="go">                        values cause huge files. Default: 750.</span>
+<span class="go">  --db-url PATH         Override trades database URL, this is useful in custom</span>
+<span class="go">                        deployments (default: `sqlite:///tradesv3.sqlite` for</span>
+<span class="go">                        Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for</span>
+<span class="go">                        Dry Run).</span>
+<span class="go">  --trade-source {DB,file}</span>
+<span class="go">                        Specify the source for trades (Can be DB or file</span>
+<span class="go">                        (backtest file)) Default: file</span>
+<span class="go">  --export {none,trades,signals}</span>
+<span class="go">                        Export backtest results (default: trades).</span>
+<span class="go">  --backtest-filename, --export-filename PATH</span>
+<span class="go">                        Use this filename for backtest results.Example:</span>
+<span class="go">                        `--backtest-</span>
+<span class="go">                        filename=backtest_results_2020-09-27_16-20-48.json`.</span>
+<span class="go">                        Assumes either `user_data/backtest_results/` or</span>
+<span class="go">                        `--export-directory` as base directory.</span>
+<span class="go">  --timerange TIMERANGE</span>
+<span class="go">                        Specify what timerange of data to use.</span>
+<span class="go">  -i, --timeframe TIMEFRAME</span>
+<span class="go">                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).</span>
+<span class="go">  --no-trades           Skip using trades from backtesting file and DB.</span>
+
+<span class="go">Common arguments:</span>
+<span class="go">  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).</span>
+<span class="go">  --no-color            Disable colorization of hyperopt results. May be</span>
+<span class="go">                        useful if you are redirecting output to a file.</span>
+<span class="go">  --logfile, --log-file FILE</span>
+<span class="go">                        Log to the file specified. Special values are:</span>
+<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        details.</span>
+<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -c, --config PATH     Specify configuration file (default:</span>
+<span class="go">                        `userdir/config.json` or `config.json` whichever</span>
+<span class="go">                        exists). Multiple --config options may be used. Can be</span>
+<span class="go">                        set to `-` to read config from stdin.</span>
+<span class="go">  -d, --datadir, --data-dir PATH</span>
+<span class="go">                        Path to the base directory of the exchange with</span>
+<span class="go">                        historical backtesting data. To see futures data, use</span>
+<span class="go">                        trading-mode additionally.</span>
+<span class="go">  --userdir, --user-data-dir PATH</span>
+<span class="go">                        Path to userdata directory.</span>
+
+<span class="go">Strategy arguments:</span>
+<span class="go">  -s, --strategy NAME   Specify strategy class name which will be used by the</span>
+<span class="go">                        bot.</span>
+<span class="go">  --strategy-path PATH  Specify additional strategy lookup path.</span>
+<span class="go">  --recursive-strategy-search</span>
+<span class="go">                        Recursively search for a strategy in the strategies</span>
+<span class="go">                        folder.</span>
+<span class="go">  --freqaimodel NAME    Specify a custom freqaimodels.</span>
+<span class="go">  --freqaimodel-path PATH</span>
+<span class="go">                        Specify additional lookup path for freqaimodels.</span>
+</code></pre></div>
 <p>Example:</p>
-<p><code>bash
-freqtrade plot-dataframe -p BTC/ETH --strategy AwesomeStrategy</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>plot-dataframe<span class="w"> </span>-p<span class="w"> </span>BTC/ETH<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy
+</code></pre></div>
 <p>The <code>-p/--pairs</code> argument can be used to specify pairs you would like to plot.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2123,21 +2125,21 @@ freqtrade plot-dataframe -p BTC/ETH --strategy AwesomeStrategy</code></p>
 </div>
 <p>Specify custom indicators.
 Use <code>--indicators1</code> for the main plot and <code>--indicators2</code> for the subplot below (if values are in a different range than prices).</p>
-<p><code>bash
-freqtrade plot-dataframe --strategy AwesomeStrategy -p BTC/ETH --indicators1 sma ema --indicators2 macd</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>plot-dataframe<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>-p<span class="w"> </span>BTC/ETH<span class="w"> </span>--indicators1<span class="w"> </span>sma<span class="w"> </span>ema<span class="w"> </span>--indicators2<span class="w"> </span>macd
+</code></pre></div>
 <h3 id="further-usage-examples">Further usage examples<a class="headerlink" href="#further-usage-examples" title="Permanent link">&para;</a></h3>
 <p>To plot multiple pairs, separate them with a space:</p>
-<p><code>bash
-freqtrade plot-dataframe --strategy AwesomeStrategy -p BTC/ETH XRP/ETH</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>plot-dataframe<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>-p<span class="w"> </span>BTC/ETH<span class="w"> </span>XRP/ETH
+</code></pre></div>
 <p>To plot a timerange (to zoom in)</p>
-<p><code>bash
-freqtrade plot-dataframe --strategy AwesomeStrategy -p BTC/ETH --timerange=20180801-20180805</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>plot-dataframe<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>-p<span class="w"> </span>BTC/ETH<span class="w"> </span>--timerange<span class="o">=</span><span class="m">20180801</span>-20180805
+</code></pre></div>
 <p>To plot trades stored in a database use <code>--db-url</code> in combination with <code>--trade-source DB</code>:</p>
-<p><code>bash
-freqtrade plot-dataframe --strategy AwesomeStrategy --db-url sqlite:///tradesv3.dry_run.sqlite -p BTC/ETH --trade-source DB</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>plot-dataframe<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--db-url<span class="w"> </span>sqlite:///tradesv3.dry_run.sqlite<span class="w"> </span>-p<span class="w"> </span>BTC/ETH<span class="w"> </span>--trade-source<span class="w"> </span>DB
+</code></pre></div>
 <p>To plot trades from a backtesting result, use <code>--export-filename &lt;filename&gt;</code></p>
-<p><code>bash
-freqtrade plot-dataframe --strategy AwesomeStrategy --export-filename user_data/backtest_results/backtest-result.json -p BTC/ETH</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>plot-dataframe<span class="w"> </span>--strategy<span class="w"> </span>AwesomeStrategy<span class="w"> </span>--export-filename<span class="w"> </span>user_data/backtest_results/backtest-result.json<span class="w"> </span>-p<span class="w"> </span>BTC/ETH
+</code></pre></div>
 <h3 id="plot-dataframe-basics">Plot dataframe basics<a class="headerlink" href="#plot-dataframe-basics" title="Permanent link">&para;</a></h3>
 <p><img alt="plot-dataframe2" src="../assets/plot-dataframe2.png" /></p>
 <p>The <code>plot-dataframe</code> subcommand requires backtesting data, a strategy and either a backtesting-results file or a database, containing trades corresponding to the strategy.</p>
@@ -2173,87 +2175,84 @@ It also allows multiple subplots to display both MACD and RSI at the same time.<
 </ul>
 <p>Extra parameters to <code>plotly.graph_objects.*</code> constructor can be specified in <code>plotly</code> dict.</p>
 <p>Sample configuration with inline comments explaining the process:</p>
-<p>``` python
-@property
-def plot_config(self):
-    """
-        There are a lot of solutions how to build the return dictionary.
-        The only important point is the return value.
-        Example:
-            plot_config = {'main_plot': {}, 'subplots': {}}</p>
-<div class="codehilite"><pre><span></span><code>&quot;&quot;&quot;
-plot_config = {}
-plot_config[&#39;main_plot&#39;] = {
-    # Configuration for main plot indicators.
-    # Assumes 2 parameters, emashort and emalong to be specified.
-    f&#39;ema_{self.emashort.value}&#39;: {&#39;color&#39;: &#39;red&#39;},
-    f&#39;ema_{self.emalong.value}&#39;: {&#39;color&#39;: &#39;#CCCCCC&#39;},
-    # By omitting color, a random color is selected.
-    &#39;sar&#39;: {},
-    # fill area between senkou_a and senkou_b
-    &#39;senkou_a&#39;: {
-        &#39;color&#39;: &#39;green&#39;, #optional
-        &#39;fill_to&#39;: &#39;senkou_b&#39;,
-        &#39;fill_label&#39;: &#39;Ichimoku Cloud&#39;, #optional
-        &#39;fill_color&#39;: &#39;rgba(255,76,46,0.2)&#39;, #optional
-    },
-    # plot senkou_b, too. Not only the area to it.
-    &#39;senkou_b&#39;: {}
-}
-plot_config[&#39;subplots&#39;] = {
-     # Create subplot MACD
-    &quot;MACD&quot;: {
-        &#39;macd&#39;: {&#39;color&#39;: &#39;blue&#39;, &#39;fill_to&#39;: &#39;macdhist&#39;},
-        &#39;macdsignal&#39;: {&#39;color&#39;: &#39;orange&#39;},
-        &#39;macdhist&#39;: {&#39;type&#39;: &#39;bar&#39;, &#39;plotly&#39;: {&#39;opacity&#39;: 0.9}}
-    },
-    # Additional subplot RSI
-    &quot;RSI&quot;: {
-        &#39;rsi&#39;: {&#39;color&#39;: &#39;red&#39;}
-    }
-}
+<div class="highlight"><pre><span></span><code><span class="nd">@property</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        There are a lot of solutions how to build the return dictionary.</span>
+<span class="sd">        The only important point is the return value.</span>
+<span class="sd">        Example:</span>
+<span class="sd">            plot_config = {&#39;main_plot&#39;: {}, &#39;subplots&#39;: {}}</span>
 
-return plot_config
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plot_config</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">plot_config</span><span class="p">[</span><span class="s1">&#39;main_plot&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="c1"># Configuration for main plot indicators.</span>
+        <span class="c1"># Assumes 2 parameters, emashort and emalong to be specified.</span>
+        <span class="sa">f</span><span class="s1">&#39;ema_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">emashort</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">},</span>
+        <span class="sa">f</span><span class="s1">&#39;ema_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">emalong</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;#CCCCCC&#39;</span><span class="p">},</span>
+        <span class="c1"># By omitting color, a random color is selected.</span>
+        <span class="s1">&#39;sar&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="c1"># fill area between senkou_a and senkou_b</span>
+        <span class="s1">&#39;senkou_a&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
+            <span class="s1">&#39;fill_to&#39;</span><span class="p">:</span> <span class="s1">&#39;senkou_b&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;fill_label&#39;</span><span class="p">:</span> <span class="s1">&#39;Ichimoku Cloud&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
+            <span class="s1">&#39;fill_color&#39;</span><span class="p">:</span> <span class="s1">&#39;rgba(255,76,46,0.2)&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
+        <span class="p">},</span>
+        <span class="c1"># plot senkou_b, too. Not only the area to it.</span>
+        <span class="s1">&#39;senkou_b&#39;</span><span class="p">:</span> <span class="p">{}</span>
+    <span class="p">}</span>
+    <span class="n">plot_config</span><span class="p">[</span><span class="s1">&#39;subplots&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+         <span class="c1"># Create subplot MACD</span>
+        <span class="s2">&quot;MACD&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;macd&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;fill_to&#39;</span><span class="p">:</span> <span class="s1">&#39;macdhist&#39;</span><span class="p">},</span>
+            <span class="s1">&#39;macdsignal&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;orange&#39;</span><span class="p">},</span>
+            <span class="s1">&#39;macdhist&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;plotly&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;opacity&#39;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}}</span>
+        <span class="p">},</span>
+        <span class="c1"># Additional subplot RSI</span>
+        <span class="s2">&quot;RSI&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;rsi&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">plot_config</span>
 </code></pre></div>
-
-<p>```</p>
 <details class="note">
 <summary>As attribute (former method)</summary>
 <p>Assigning plot_config is also possible as Attribute (this used to be the default way).
 This has the disadvantage that strategy parameters are not available, preventing certain configurations from working.</p>
-<p><code>`` python
-    plot_config = {
-        'main_plot': {
-            # Configuration for main plot indicators.
-            # Specifies</code>ema10<code>to be red, and</code>ema50` to be a shade of gray
-            'ema10': {'color': 'red'},
-            'ema50': {'color': '#CCCCCC'},
-            # By omitting color, a random color is selected.
-            'sar': {},
-        # fill area between senkou_a and senkou_b
-        'senkou_a': {
-            'color': 'green', #optional
-            'fill_to': 'senkou_b',
-            'fill_label': 'Ichimoku Cloud', #optional
-            'fill_color': 'rgba(255,76,46,0.2)', #optional
-        },
-        # plot senkou_b, too. Not only the area to it.
-        'senkou_b': {}
-        },
-        'subplots': {
-            # Create subplot MACD
-            "MACD": {
-                'macd': {'color': 'blue', 'fill_to': 'macdhist'},
-                'macdsignal': {'color': 'orange'},
-                'macdhist': {'type': 'bar', 'plotly': {'opacity': 0.9}}
-            },
-            # Additional subplot RSI
-            "RSI": {
-                'rsi': {'color': 'red'}
-            }
-        }
-    }</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code>    <span class="n">plot_config</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;main_plot&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="c1"># Configuration for main plot indicators.</span>
+            <span class="c1"># Specifies `ema10` to be red, and `ema50` to be a shade of gray</span>
+            <span class="s1">&#39;ema10&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">},</span>
+            <span class="s1">&#39;ema50&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;#CCCCCC&#39;</span><span class="p">},</span>
+            <span class="c1"># By omitting color, a random color is selected.</span>
+            <span class="s1">&#39;sar&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="c1"># fill area between senkou_a and senkou_b</span>
+        <span class="s1">&#39;senkou_a&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
+            <span class="s1">&#39;fill_to&#39;</span><span class="p">:</span> <span class="s1">&#39;senkou_b&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;fill_label&#39;</span><span class="p">:</span> <span class="s1">&#39;Ichimoku Cloud&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
+            <span class="s1">&#39;fill_color&#39;</span><span class="p">:</span> <span class="s1">&#39;rgba(255,76,46,0.2)&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
+        <span class="p">},</span>
+        <span class="c1"># plot senkou_b, too. Not only the area to it.</span>
+        <span class="s1">&#39;senkou_b&#39;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;subplots&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="c1"># Create subplot MACD</span>
+            <span class="s2">&quot;MACD&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;macd&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;fill_to&#39;</span><span class="p">:</span> <span class="s1">&#39;macdhist&#39;</span><span class="p">},</span>
+                <span class="s1">&#39;macdsignal&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;orange&#39;</span><span class="p">},</span>
+                <span class="s1">&#39;macdhist&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;plotly&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;opacity&#39;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}}</span>
+            <span class="p">},</span>
+            <span class="c1"># Additional subplot RSI</span>
+            <span class="s2">&quot;RSI&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;rsi&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+</code></pre></div>
 </details>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2286,82 +2285,84 @@ This graph will also highlight the start (and end) of the Max drawdown period.</
 <p>The third graph can be useful to spot outliers, events in pairs that cause profit spikes.</p>
 <p>The forth graph can help you analyze trade parallelism, showing how often max_open_trades have been maxed out.</p>
 <p>Possible options for the <code>freqtrade plot-profit</code> subcommand:</p>
-<p>``` output
-usage: freqtrade plot-profit [-h] [-v] [--no-color] [--logfile FILE] [-V]
-                             [-c PATH] [-d PATH] [--userdir PATH] [-s NAME]
-                             [--strategy-path PATH]
-                             [--recursive-strategy-search]
-                             [--freqaimodel NAME] [--freqaimodel-path PATH]
-                             [-p PAIRS [PAIRS ...]] [--timerange TIMERANGE]
-                             [--export {none,trades,signals}]
-                             [--backtest-filename PATH] [--db-url PATH]
-                             [--trade-source {DB,file}] [-i TIMEFRAME]
-                             [--auto-open]</p>
-<p>options:
-  -h, --help            show this help message and exit
-  -p, --pairs PAIRS [PAIRS ...]
-                        Limit command to these pairs. Pairs are space-
-                        separated.
-  --timerange TIMERANGE
-                        Specify what timerange of data to use.
-  --export {none,trades,signals}
-                        Export backtest results (default: trades).
-  --backtest-filename, --export-filename PATH
-                        Use this filename for backtest results.Example:
-                        <code>--backtest-
-                        filename=backtest_results_2020-09-27_16-20-48.json</code>.
-                        Assumes either <code>user_data/backtest_results/</code> or
-                        <code>--export-directory</code> as base directory.
-  --db-url PATH         Override trades database URL, this is useful in custom
-                        deployments (default: <code>sqlite:///tradesv3.sqlite</code> for
-                        Live Run mode, <code>sqlite:///tradesv3.dryrun.sqlite</code> for
-                        Dry Run).
-  --trade-source {DB,file}
-                        Specify the source for trades (Can be DB or file
-                        (backtest file)) Default: file
-  -i, --timeframe TIMEFRAME
-                        Specify timeframe (<code>1m</code>, <code>5m</code>, <code>30m</code>, <code>1h</code>, <code>1d</code>).
-  --auto-open           Automatically open generated plot.</p>
-<p>Common arguments:
-  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).
-  --no-color            Disable colorization of hyperopt results. May be
-                        useful if you are redirecting output to a file.
-  --logfile, --log-file FILE
-                        Log to the file specified. Special values are:
-                        'syslog', 'journald'. See the documentation for more
-                        details.
-  -V, --version         show program's version number and exit
-  -c, --config PATH     Specify configuration file (default:
-                        <code>userdir/config.json</code> or <code>config.json</code> whichever
-                        exists). Multiple --config options may be used. Can be
-                        set to <code>-</code> to read config from stdin.
-  -d, --datadir, --data-dir PATH
-                        Path to the base directory of the exchange with
-                        historical backtesting data. To see futures data, use
-                        trading-mode additionally.
-  --userdir, --user-data-dir PATH
-                        Path to userdata directory.</p>
-<p>Strategy arguments:
-  -s, --strategy NAME   Specify strategy class name which will be used by the
-                        bot.
-  --strategy-path PATH  Specify additional strategy lookup path.
-  --recursive-strategy-search
-                        Recursively search for a strategy in the strategies
-                        folder.
-  --freqaimodel NAME    Specify a custom freqaimodels.
-  --freqaimodel-path PATH
-                        Specify additional lookup path for freqaimodels.</p>
-<p>```</p>
+<div class="highlight"><pre><span></span><code><span class="go">usage: freqtrade plot-profit [-h] [-v] [--no-color] [--logfile FILE] [-V]</span>
+<span class="go">                             [-c PATH] [-d PATH] [--userdir PATH] [-s NAME]</span>
+<span class="go">                             [--strategy-path PATH]</span>
+<span class="go">                             [--recursive-strategy-search]</span>
+<span class="go">                             [--freqaimodel NAME] [--freqaimodel-path PATH]</span>
+<span class="go">                             [-p PAIRS [PAIRS ...]] [--timerange TIMERANGE]</span>
+<span class="go">                             [--export {none,trades,signals}]</span>
+<span class="go">                             [--backtest-filename PATH] [--db-url PATH]</span>
+<span class="go">                             [--trade-source {DB,file}] [-i TIMEFRAME]</span>
+<span class="go">                             [--auto-open]</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -p, --pairs PAIRS [PAIRS ...]</span>
+<span class="go">                        Limit command to these pairs. Pairs are space-</span>
+<span class="go">                        separated.</span>
+<span class="go">  --timerange TIMERANGE</span>
+<span class="go">                        Specify what timerange of data to use.</span>
+<span class="go">  --export {none,trades,signals}</span>
+<span class="go">                        Export backtest results (default: trades).</span>
+<span class="go">  --backtest-filename, --export-filename PATH</span>
+<span class="go">                        Use this filename for backtest results.Example:</span>
+<span class="go">                        `--backtest-</span>
+<span class="go">                        filename=backtest_results_2020-09-27_16-20-48.json`.</span>
+<span class="go">                        Assumes either `user_data/backtest_results/` or</span>
+<span class="go">                        `--export-directory` as base directory.</span>
+<span class="go">  --db-url PATH         Override trades database URL, this is useful in custom</span>
+<span class="go">                        deployments (default: `sqlite:///tradesv3.sqlite` for</span>
+<span class="go">                        Live Run mode, `sqlite:///tradesv3.dryrun.sqlite` for</span>
+<span class="go">                        Dry Run).</span>
+<span class="go">  --trade-source {DB,file}</span>
+<span class="go">                        Specify the source for trades (Can be DB or file</span>
+<span class="go">                        (backtest file)) Default: file</span>
+<span class="go">  -i, --timeframe TIMEFRAME</span>
+<span class="go">                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).</span>
+<span class="go">  --auto-open           Automatically open generated plot.</span>
+
+<span class="go">Common arguments:</span>
+<span class="go">  -v, --verbose         Verbose mode (-vv for more, -vvv to get all messages).</span>
+<span class="go">  --no-color            Disable colorization of hyperopt results. May be</span>
+<span class="go">                        useful if you are redirecting output to a file.</span>
+<span class="go">  --logfile, --log-file FILE</span>
+<span class="go">                        Log to the file specified. Special values are:</span>
+<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        details.</span>
+<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -c, --config PATH     Specify configuration file (default:</span>
+<span class="go">                        `userdir/config.json` or `config.json` whichever</span>
+<span class="go">                        exists). Multiple --config options may be used. Can be</span>
+<span class="go">                        set to `-` to read config from stdin.</span>
+<span class="go">  -d, --datadir, --data-dir PATH</span>
+<span class="go">                        Path to the base directory of the exchange with</span>
+<span class="go">                        historical backtesting data. To see futures data, use</span>
+<span class="go">                        trading-mode additionally.</span>
+<span class="go">  --userdir, --user-data-dir PATH</span>
+<span class="go">                        Path to userdata directory.</span>
+
+<span class="go">Strategy arguments:</span>
+<span class="go">  -s, --strategy NAME   Specify strategy class name which will be used by the</span>
+<span class="go">                        bot.</span>
+<span class="go">  --strategy-path PATH  Specify additional strategy lookup path.</span>
+<span class="go">  --recursive-strategy-search</span>
+<span class="go">                        Recursively search for a strategy in the strategies</span>
+<span class="go">                        folder.</span>
+<span class="go">  --freqaimodel NAME    Specify a custom freqaimodels.</span>
+<span class="go">  --freqaimodel-path PATH</span>
+<span class="go">                        Specify additional lookup path for freqaimodels.</span>
+</code></pre></div>
 <p>The <code>-p/--pairs</code>  argument, can be used to limit the pairs that are considered for this calculation.</p>
 <p>Examples:</p>
 <p>Use custom backtest-export file</p>
-<p><code>bash
-freqtrade plot-profit  -p LTC/BTC --export-filename user_data/backtest_results/backtest-result.json</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>plot-profit<span class="w">  </span>-p<span class="w"> </span>LTC/BTC<span class="w"> </span>--export-filename<span class="w"> </span>user_data/backtest_results/backtest-result.json
+</code></pre></div>
 <p>Use custom database</p>
-<p><code>bash
-freqtrade plot-profit  -p LTC/BTC --db-url sqlite:///tradesv3.sqlite --trade-source DB</code></p>
-<p><code>bash
-freqtrade --datadir user_data/data/binance_save/ plot-profit -p LTC/BTC</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>plot-profit<span class="w">  </span>-p<span class="w"> </span>LTC/BTC<span class="w"> </span>--db-url<span class="w"> </span>sqlite:///tradesv3.sqlite<span class="w"> </span>--trade-source<span class="w"> </span>DB
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>--datadir<span class="w"> </span>user_data/data/binance_save/<span class="w"> </span>plot-profit<span class="w"> </span>-p<span class="w"> </span>LTC/BTC
+</code></pre></div>
 
 
 

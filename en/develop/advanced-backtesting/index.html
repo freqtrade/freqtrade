@@ -2091,8 +2091,8 @@ determine indicator values on the signal candle that resulted in a trade opening
 </div>
 <p>We need to run backtesting with the <code>--export</code> option set to <code>signals</code> to enable the exporting of
 signals <strong>and</strong> trades:</p>
-<p><code>bash
-freqtrade backtesting -c &lt;config.json&gt; --timeframe &lt;tf&gt; --strategy &lt;strategy_name&gt; --timerange=&lt;timerange&gt; --export=signals</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--timeframe<span class="w"> </span>&lt;tf&gt;<span class="w"> </span>--strategy<span class="w"> </span>&lt;strategy_name&gt;<span class="w"> </span>--timerange<span class="o">=</span>&lt;timerange&gt;<span class="w"> </span>--export<span class="o">=</span>signals
+</code></pre></div>
 <p>This will tell freqtrade to output a pickled dictionary of strategy, pairs and corresponding
 DataFrame of the candles that resulted in entry and exit signals.
 Depending on how many entries your strategy makes, this file may get quite large, so periodically check your <code>user_data/backtest_results</code> folder to delete old exports.</p>
@@ -2101,8 +2101,8 @@ backtesting with the <code>--cache none</code> option to make sure no cached res
 <p>If all goes well, you should now see a <code>backtest-result-{timestamp}_signals.pkl</code> and <code>backtest-result-{timestamp}_exited.pkl</code> files in the <code>user_data/backtest_results</code> folder.</p>
 <p>To analyze the entry/exit tags, we now need to use the <code>freqtrade backtesting-analysis</code> command
 with <code>--analysis-groups</code> option provided with space-separated arguments:</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --analysis-groups 0 1 2 3 4 5</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="m">5</span>
+</code></pre></div>
 <p>This command will read from the last backtesting results. The <code>--analysis-groups</code> option is
 used to specify the various tabular outputs showing the profit of each group or trade,
 ranging from the simplest (0) to the most detailed per pair, per buy and per sell tag (4):</p>
@@ -2118,30 +2118,32 @@ ranging from the simplest (0) to the most detailed per pair, per buy and per sel
 <h3 id="using-backtest-filename">Using backtest-filename<a class="headerlink" href="#using-backtest-filename" title="Permanent link">&para;</a></h3>
 <p>By default, <code>backtesting-analysis</code> processes the most recent backtest results in the <code>user_data/backtest_results</code> directory. 
 If you want to analyze results from an earlier backtest, use the <code>--backtest-filename</code> option to specify the desired file. This lets you revisit and re-analyze historical backtest outputs at any time by providing the filename of the relevant backtest result:</p>
-<p><code>bash
-freqtrade backtesting -c &lt;config.json&gt; --strategy &lt;strategy_name&gt; --timerange &lt;timerange&gt; --export signals --backtest-filename backtest-result-2025-03-05_20-38-34.zip</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--strategy<span class="w"> </span>&lt;strategy_name&gt;<span class="w"> </span>--timerange<span class="w"> </span>&lt;timerange&gt;<span class="w"> </span>--export<span class="w"> </span>signals<span class="w"> </span>--backtest-filename<span class="w"> </span>backtest-result-2025-03-05_20-38-34.zip
+</code></pre></div>
 <p>You should see some output similar to below in the logs with the name of the timestamped filename that was exported:</p>
-<p><code>2022-06-14 16:28:32,698 - freqtrade.misc - INFO - dumping json to "mystrat_backtest-2022-06-14_16-28-32.json"</code></p>
+<div class="highlight"><pre><span></span><code>2022-06-14 16:28:32,698 - freqtrade.misc - INFO - dumping json to &quot;mystrat_backtest-2022-06-14_16-28-32.json&quot;
+</code></pre></div>
 <p>You can then use that filename in <code>backtesting-analysis</code>:</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --backtest-filename=backtest-result-2025-03-05_20-38-34.zip</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--backtest-filename<span class="o">=</span>backtest-result-2025-03-05_20-38-34.zip
+</code></pre></div>
 <p>To use a result from a different results directory, you can use  <code>--backtest-directory</code> to specify the directory</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --backtest-directory custom_results/ --backtest-filename backtest-result-2025-03-05_20-38-34.zip</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--backtest-directory<span class="w"> </span>custom_results/<span class="w"> </span>--backtest-filename<span class="w"> </span>backtest-result-2025-03-05_20-38-34.zip
+</code></pre></div>
 <h3 id="tuning-the-buy-tags-and-sell-tags-to-display">Tuning the buy tags and sell tags to display<a class="headerlink" href="#tuning-the-buy-tags-and-sell-tags-to-display" title="Permanent link">&para;</a></h3>
 <p>To show only certain buy and sell tags in the displayed output, use the following two options:</p>
-<p><code>--enter-reason-list : Space-separated list of enter signals to analyse. Default: "all"
---exit-reason-list : Space-separated list of exit signals to analyse. Default: "all"</code></p>
+<div class="highlight"><pre><span></span><code>--enter-reason-list : Space-separated list of enter signals to analyse. Default: &quot;all&quot;
+--exit-reason-list : Space-separated list of exit signals to analyse. Default: &quot;all&quot;
+</code></pre></div>
 <p>For example:</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --analysis-groups 0 2 --enter-reason-list enter_tag_a enter_tag_b --exit-reason-list roi custom_exit_tag_a stop_loss</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>--enter-reason-list<span class="w"> </span>enter_tag_a<span class="w"> </span>enter_tag_b<span class="w"> </span>--exit-reason-list<span class="w"> </span>roi<span class="w"> </span>custom_exit_tag_a<span class="w"> </span>stop_loss
+</code></pre></div>
 <h3 id="outputting-signal-candle-indicators">Outputting signal candle indicators<a class="headerlink" href="#outputting-signal-candle-indicators" title="Permanent link">&para;</a></h3>
 <p>The real power of <code>freqtrade backtesting-analysis</code> comes from the ability to print out the indicator
 values present on signal candles to allow fine-grained investigation and tuning of buy signal
 indicators. To print out a column for a given set of indicators, use the <code>--indicator-list</code>
 option:</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --analysis-groups 0 2 --enter-reason-list enter_tag_a enter_tag_b --exit-reason-list roi custom_exit_tag_a stop_loss --indicator-list rsi rsi_1h bb_lowerband ema_9 macd macdsignal</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>--enter-reason-list<span class="w"> </span>enter_tag_a<span class="w"> </span>enter_tag_b<span class="w"> </span>--exit-reason-list<span class="w"> </span>roi<span class="w"> </span>custom_exit_tag_a<span class="w"> </span>stop_loss<span class="w"> </span>--indicator-list<span class="w"> </span>rsi<span class="w"> </span>rsi_1h<span class="w"> </span>bb_lowerband<span class="w"> </span>ema_9<span class="w"> </span>macd<span class="w"> </span>macdsignal
+</code></pre></div>
 <p>The indicators have to be present in your strategy's main DataFrame (either for your main
 timeframe or for informative timeframes) otherwise they will simply be ignored in the script
 output.</p>
@@ -2166,8 +2168,8 @@ automatically accessible by including them on the indicator-list, and these incl
 <li><strong>profit_abs    :</strong> absolute profit return of the trade </li>
 </ul>
 <h4 id="sample-output-for-indicator-values">Sample Output for Indicator Values<a class="headerlink" href="#sample-output-for-indicator-values" title="Permanent link">&para;</a></h4>
-<p><code>bash
-freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>user_data/config.json<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span>--indicator-list<span class="w"> </span>chikou_span<span class="w"> </span>tenkan_sen<span class="w"> </span>
+</code></pre></div>
 <p>In this example,
 we aim to display the <code>chikou_span</code> and <code>tenkan_sen</code> indicator values at both the entry and exit points of trades.</p>
 <p>A sample output for indicators might look like this:</p>
@@ -2222,33 +2224,34 @@ to distinguish the values at the entry and exit points of the trade.</p>
 <h4 id="filtering-indicators-based-on-entry-or-exit-signals">Filtering Indicators Based on Entry or Exit Signals<a class="headerlink" href="#filtering-indicators-based-on-entry-or-exit-signals" title="Permanent link">&para;</a></h4>
 <p>The <code>--indicator-list</code> option, by default, displays indicator values for both entry and exit signals. To filter the indicator values exclusively for entry signals, you can use the <code>--entry-only</code> argument. Similarly, to display indicator values only at exit signals, use the <code>--exit-only</code> argument.</p>
 <p>Example: Display indicator values at entry signals:</p>
-<p><code>bash
-freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen --entry-only</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>user_data/config.json<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span>--indicator-list<span class="w"> </span>chikou_span<span class="w"> </span>tenkan_sen<span class="w"> </span>--entry-only
+</code></pre></div>
 <p>Example: Display indicator values at exit signals:</p>
-<p><code>bash
-freqtrade backtesting-analysis -c user_data/config.json --analysis-groups 0 --indicator-list chikou_span tenkan_sen --exit-only</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>user_data/config.json<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span>--indicator-list<span class="w"> </span>chikou_span<span class="w"> </span>tenkan_sen<span class="w"> </span>--exit-only
+</code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>When using these filters, the indicator names will not be suffixed with <code>(entry)</code> or <code>(exit)</code>.</p>
 </div>
 <h3 id="filtering-the-trade-output-by-date">Filtering the trade output by date<a class="headerlink" href="#filtering-the-trade-output-by-date" title="Permanent link">&para;</a></h3>
 <p>To show only trades between dates within your backtested timerange, supply the usual <code>timerange</code> option in <code>YYYYMMDD-[YYYYMMDD]</code> format:</p>
-<p><code>--timerange : Timerange to filter output trades, start date inclusive, end date exclusive. e.g. 20220101-20221231</code></p>
+<div class="highlight"><pre><span></span><code>--timerange : Timerange to filter output trades, start date inclusive, end date exclusive. e.g. 20220101-20221231
+</code></pre></div>
 <p>For example, if your backtest timerange was <code>20220101-20221231</code> but you only want to output trades in January:</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --timerange 20220101-20220201</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20220101</span>-20220201
+</code></pre></div>
 <h3 id="printing-out-rejected-signals">Printing out rejected signals<a class="headerlink" href="#printing-out-rejected-signals" title="Permanent link">&para;</a></h3>
 <p>Use the <code>--rejected-signals</code> option to print out rejected signals.</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --rejected-signals</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--rejected-signals
+</code></pre></div>
 <h3 id="writing-tables-to-csv">Writing tables to CSV<a class="headerlink" href="#writing-tables-to-csv" title="Permanent link">&para;</a></h3>
 <p>Some of the tabular outputs can become large, so printing them out to the terminal is not preferable.
 Use the <code>--analysis-to-csv</code> option to disable printing out of tables to standard out and write them to CSV files.</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --analysis-to-csv</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--analysis-to-csv
+</code></pre></div>
 <p>By default this will write one file per output table you specified in the <code>backtesting-analysis</code> command, e.g.</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --analysis-to-csv --rejected-signals --analysis-groups 0 1</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--analysis-to-csv<span class="w"> </span>--rejected-signals<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">1</span>
+</code></pre></div>
 <p>This will write to <code>user_data/backtest_results</code>:</p>
 <ul>
 <li>rejected_signals.csv</li>
@@ -2256,8 +2259,8 @@ freqtrade backtesting-analysis -c &lt;config.json&gt; --analysis-to-csv --reject
 <li>group_1.csv</li>
 </ul>
 <p>To override where the files will be written, also specify the <code>--analysis-csv-path</code> option.</p>
-<p><code>bash
-freqtrade backtesting-analysis -c &lt;config.json&gt; --analysis-to-csv --analysis-csv-path another/data/path/</code></p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--analysis-to-csv<span class="w"> </span>--analysis-csv-path<span class="w"> </span>another/data/path/
+</code></pre></div>
 
 
 

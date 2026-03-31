@@ -2157,23 +2157,23 @@ Also, the standard disallows <code>*</code> CORS policies for requests with cred
 <p>Users can allow access from different origin URL's to the bot API via the <code>CORS_origins</code> configuration setting.
 It consists of a list of allowed URL's that are allowed to consume resources from the bot's API.</p>
 <p>Assuming your application is deployed as <code>https://frequi.freqtrade.io/home/</code> - this would mean that the following configuration becomes necessary:</p>
-<p><code>jsonc
-{
+<div class="highlight"><pre><span></span><code>{
     //...
-    "jwt_secret_key": "somethingRandomSomethingRandom123",
-    "CORS_origins": ["https://frequi.freqtrade.io"],
+    &quot;jwt_secret_key&quot;: &quot;somethingRandomSomethingRandom123&quot;,
+    &quot;CORS_origins&quot;: [&quot;https://frequi.freqtrade.io&quot;],
     //...
-}</code></p>
+}
+</code></pre></div>
 <p>In the following (pretty common) case, FreqUI is accessible on <code>http://localhost:8080/trade</code> (this is what you see in your navbar when navigating to freqUI).
 <img alt="freqUI url" src="../assets/frequi_url.png" /></p>
 <p>The correct configuration for this case is <code>http://localhost:8080</code> - the main part of the URL including the port.</p>
-<p><code>jsonc
-{
+<div class="highlight"><pre><span></span><code>{
     //...
-    "jwt_secret_key": "somethingRandomSomethingRandom123",
-    "CORS_origins": ["http://localhost:8080"],
+    &quot;jwt_secret_key&quot;: &quot;somethingRandomSomethingRandom123&quot;,
+    &quot;CORS_origins&quot;: [&quot;http://localhost:8080&quot;],
     //...
-}</code></p>
+}
+</code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">trailing Slash</p>
 <p>The trailing slash is not allowed in the <code>CORS_origins</code> configuration (e.g. <code>"http://localhots:8080/"</code>).
