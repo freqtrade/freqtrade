@@ -165,7 +165,8 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     message_str = (
         "rpc.telegram is listening for following commands: [['status'], ['profit'], "
         "['balance'], ['start'], ['stop'], "
-        "['forceexit', 'forcesell', 'fx'], ['forcebuy', 'forcelong'], ['forceshort'], "
+        "['forceexit', 'forcesell', 'fx'], ['closeall'], "
+        "['forcebuy', 'forcelong'], ['forceshort'], "
         "['reload_trade'], ['trades'], ['delete'], ['cancel_open_order', 'coo'], "
         "['performance'], ['buys', 'entries'], ['exits', 'sells'], ['mix_tags'], "
         "['stats'], ['daily'], ['weekly'], ['monthly'], "
@@ -1546,6 +1547,36 @@ async def test_forceexit_all_handle(default_conf, update, ticker, fee, mocker) -
     } == msg
 
 
+async def test_closeall_handle(default_conf, update, ticker, fee, mocker) -> None:
+    patch_exchange(mocker)
+    mocker.patch("freqtrade.rpc.telegram.Telegram._init", MagicMock())
+    patch_whitelist(mocker, default_conf)
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=ticker,
+        get_fee=fee,
+        _dry_is_price_crossed=MagicMock(return_value=True),
+    )
+    default_conf["max_open_trades"] = 4
+    freqtradebot = FreqtradeBot(default_conf)
+    rpc = RPC(freqtradebot)
+    telegram = Telegram(rpc, default_conf)
+    msg_mock = mocker.patch("freqtrade.rpc.telegram.Telegram._send_msg", AsyncMock())
+    patch_get_signal(freqtradebot)
+
+    freqtradebot.enter_positions()
+    context = MagicMock()
+    context.args = []
+
+    await telegram._close_all(update=update, context=context)
+
+    assert msg_mock.call_count == 1
+    assert (
+        msg_mock.call_args_list[0][0][0]
+        == "Status: `Created exit orders for all open trades.`"
+    )
+
+
 async def test_forceexit_handle_invalid(default_conf, update, mocker) -> None:
     telegram, freqtradebot, msg_mock = get_telegram_testobject(mocker, default_conf)
     patch_get_signal(freqtradebot)
@@ -2864,7 +2895,8 @@ async def test__send_msg_keyboard(default_conf, mocker, caplog) -> None:
     default_keys_list = [
         ["/daily", "/profit", "/balance"],
         ["/status", "/status table", "/performance"],
-        ["/count", "/start", "/stop", "/help"],
+        ["/count", "/logs", "/help"],
+        ["/start", "/stop"],
     ]
     default_keyboard = ReplyKeyboardMarkup(default_keys_list)
 

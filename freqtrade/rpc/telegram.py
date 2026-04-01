@@ -171,7 +171,8 @@ class Telegram(RPCHandler):
         self._keyboard: list[list[str | KeyboardButton]] = [
             ["/daily", "/profit", "/balance"],
             ["/status", "/status table", "/performance"],
-            ["/count", "/start", "/stop", "/help"],
+            ["/count", "/logs", "/help"],
+            ["/start", "/stop"],
         ]
         # do not allow commands with mandatory arguments and critical cmds
         # TODO: DRY! - its not good to list all valid cmds here. But otherwise
@@ -216,6 +217,7 @@ class Telegram(RPCHandler):
             r"/forceshort$",
             r"/forcesell$",
             r"/forceexit$",
+            r"/closeall$",
             r"/health$",
             r"/help$",
             r"/version$",
@@ -270,6 +272,7 @@ class Telegram(RPCHandler):
             CommandHandler("start", self._start),
             CommandHandler("stop", self._stop),
             CommandHandler(["forcesell", "forceexit", "fx"], self._force_exit),
+            CommandHandler("closeall", self._close_all),
             CommandHandler(
                 ["forcebuy", "forcelong"],
                 partial(self._force_enter, order_side=SignalDirection.LONG),
@@ -1437,6 +1440,21 @@ class Telegram(RPCHandler):
             )
             await self._send_msg(msg="Which trade?", keyboard=buttons_aligned)
 
+    @authorized_only
+    async def _close_all(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /closeall.
+        Exits all open trades at current price.
+        """
+        try:
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(
+                None, safe_async_db(self._rpc._rpc_force_exit), "all"
+            )
+            await self._send_msg(f"Status: `{result['result']}`")
+        except RPCException as e:
+            await self._send_msg(str(e))
+
     async def _force_exit_action(self, trade_id: str):
         if trade_id != "cancel":
             try:
@@ -1931,6 +1949,7 @@ class Telegram(RPCHandler):
             "*/forceexit <trade_id>|all:* `Instantly exits the given trade or all trades, "
             "regardless of profit`\n"
             "*/fx <trade_id>|all:* `Alias to /forceexit`\n"
+            "*/closeall:* `Instantly exits all open trades with one command`\n"
             f"{force_enter_text if self._config.get('force_entry_enable', False) else ''}"
             "*/delete <trade_id>:* `Instantly delete the given trade in the database`\n"
             "*/reload_trade <trade_id>:* `Reload trade from exchange Orders`\n"

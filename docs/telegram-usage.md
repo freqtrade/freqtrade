@@ -188,7 +188,7 @@ You can create your own keyboard in `config.json`:
 !!! Note "Supported Commands"
     Only the following commands are allowed. Command arguments are not supported!
 
-    `/start`, `/pause`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/help`, `/version`, `/marketdir`
+    `/start`, `/pause`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/help`, `/version`, `/marketdir`, `/closeall`
 
 ## Telegram commands
 
@@ -222,6 +222,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/forceexit <trade_id> | /fx <tradeid>` | Instantly exits the given trade  (Ignoring `minimum_roi`).
 | `/forceexit all | /fx all` | Instantly exits all open trades (Ignoring `minimum_roi`).
 | `/fx` | alias for `/forceexit`
+| `/closeall` | Instantly exits all open trades with one command.
 | `/forcelong <pair> [rate]` | Instantly buys the given pair. Rate is optional and only applies to limit orders. (`force_entry_enable` must be set to True)
 | `/forceshort <pair> [rate]` | Instantly shorts the given pair. Rate is optional and only applies to limit orders. This will only work on non-spot markets. (`force_entry_enable` must be set to True)
 | `/delete <trade_id>` | Delete a specific trade from the Database. Tries to close open orders. Requires manual handling of this trade on the exchange.
@@ -350,6 +351,11 @@ The relative profit of `15.2 Σ%` is be based on the starting capital - so in th
 !!! Tip
     You can get a list of all open trades by calling `/forceexit` without parameter, which will show a list of buttons to simply exit a trade.
     This command has an alias in `/fx` - which has the same capabilities, but is faster to type in "emergency" situations.
+
+### /closeall
+
+`/closeall` is a dedicated shortcut for immediately issuing exit orders for all open trades.
+Compared to `/forceexit all`, it avoids passing arguments and is easier to use in urgent situations.
 
 ### /forcelong <pair> [rate] | /forceshort <pair> [rate]
 
