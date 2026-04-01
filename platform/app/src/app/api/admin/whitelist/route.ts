@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
-const ADMIN_WALLETS = ["0xb6c0b51dcb745a1bc41d503d3a1c959e857200f2"];
+const ADMIN_WALLETS = ["0xaedb312d90fa956775ea8abed298ea3b085abbd9"];
 
 function isAdmin(wallet: string): boolean {
   return ADMIN_WALLETS.includes(wallet.toLowerCase());

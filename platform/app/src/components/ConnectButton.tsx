@@ -26,7 +26,7 @@ export function ConnectButton() {
 
   return (
     <button
-      onClick={() => open()}
+      onClick={() => open({ view: "Connect" })}
       className="bg-accent hover:bg-accent-dark text-dark-900 font-semibold px-6 py-2 rounded-lg transition"
     >
       Connect Wallet

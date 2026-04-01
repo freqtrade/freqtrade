@@ -5,7 +5,7 @@ import { ConnectButton } from "./ConnectButton";
 
 // Hardcoded admin wallets — add yours here
 const ADMIN_WALLETS = [
-  "0xb6c0b51dcb745a1bc41d503d3a1c959e857200f2",
+  "0xaedb312d90fa956775ea8abed298ea3b085abbd9",
 ];
 
 // For now, all connected wallets are whitelisted (MVP)

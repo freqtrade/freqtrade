@@ -343,10 +343,21 @@ def main():
                     import psycopg2
                     dbc = psycopg2.connect(DB_URL.replace("postgres://", "postgresql://"))
                     dbc_cur = dbc.cursor()
-                    dbc_cur.execute("SELECT balance FROM bot_status WHERE balance > 0 ORDER BY timestamp DESC LIMIT 1")
-                    row = dbc_cur.fetchone()
-                    if row:
-                        db_bal = float(row[0])
+                    # Get balance from MEXC directly
+                    try:
+                        import ccxt, os
+                        mexc = ccxt.mexc({
+                            'apiKey': os.environ.get('MEXC_KEY', ''),
+                            'secret': os.environ.get('MEXC_SECRET', ''),
+                            'enableRateLimit': True,
+                        })
+                        bal = mexc.fetch_balance()
+                        db_bal = float(bal.get('USDT', {}).get('total', 0))
+                    except:
+                        dbc_cur.execute("SELECT balance FROM bot_status WHERE balance > 0 ORDER BY timestamp DESC LIMIT 1")
+                        row = dbc_cur.fetchone()
+                        if row:
+                            db_bal = float(row[0])
                     dbc_cur.execute("SELECT COUNT(*), SUM(close_profit_abs) FROM trades WHERE close_date IS NOT NULL")
                     row = dbc_cur.fetchone()
                     db_trades = row[0] or 0
