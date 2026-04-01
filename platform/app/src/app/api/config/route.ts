@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { encrypt } from "@/lib/encryption";
+import { query } from "@/utils/db";
+import { encrypt } from "@/utils/encryption";
 
 export async function POST(req: NextRequest) {
   const wallet = req.headers.get("x-wallet-address")?.toLowerCase();

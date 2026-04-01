@@ -4,7 +4,7 @@ import { ConnectButton } from "@/components/ConnectButton";
 import { AuthGuard, useIsAdmin } from "@/components/AuthGuard";
 import { useWallet } from "@/components/ConnectButton";
 import { useEffect, useState } from "react";
-import { apiGet, apiPost, apiDelete } from "@/lib/api";
+import { apiGet, apiPost, apiDelete } from "@/utils/api";
 
 function AdminContent() {
   const isAdmin = useIsAdmin();
@@ -49,11 +49,14 @@ function AdminContent() {
   return (
     <div className="min-h-screen">
       <nav className="border-b border-dark-700 px-6 py-4 flex justify-between items-center">
-        <a href="/dashboard" className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2">
           <span className="text-2xl">📈</span>
           <span className="text-xl font-bold text-white">TrendRider</span>
         </a>
         <div className="flex items-center gap-4">
+          <a href="/dashboard" className="text-gray-400 hover:text-white transition">Global</a>
+          <a href="/my-bot" className="text-gray-400 hover:text-white transition">My Bot</a>
+          <a href="/config" className="text-gray-400 hover:text-white transition">Config</a>
           <span className="bg-red-500/20 text-red-400 px-3 py-1 rounded text-xs font-bold">ADMIN</span>
           <ConnectButton />
         </div>

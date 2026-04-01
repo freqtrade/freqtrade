@@ -9,7 +9,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (connected) router.push("/dashboard");
+    if (connected) router.push("/my-bot");
   }, [connected, router]);
 
   return (
@@ -19,7 +19,10 @@ export default function Home() {
           <span className="text-2xl">📈</span>
           <span className="text-xl font-bold text-white">TrendRider</span>
         </div>
-        <ConnectButton />
+        <div className="flex items-center gap-4">
+          <a href="/dashboard" className="text-gray-400 hover:text-white transition">Live Dashboard</a>
+          <ConnectButton />
+        </div>
       </nav>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6">

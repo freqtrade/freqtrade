@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { query } from "@/utils/db";
 
 const ADMIN_WALLETS = ["0xaedb312d90fa956775ea8abed298ea3b085abbd9"];
 

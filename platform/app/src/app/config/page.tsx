@@ -4,7 +4,7 @@ import { ConnectButton } from "@/components/ConnectButton";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useWallet } from "@/components/ConnectButton";
 import { useState } from "react";
-import { apiPost } from "@/lib/api";
+import { apiPost } from "@/utils/api";
 
 function ConfigContent() {
   const { address } = useWallet();
@@ -36,11 +36,16 @@ function ConfigContent() {
   return (
     <div className="min-h-screen">
       <nav className="border-b border-dark-700 px-6 py-4 flex justify-between items-center">
-        <a href="/dashboard" className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2">
           <span className="text-2xl">📈</span>
           <span className="text-xl font-bold text-white">TrendRider</span>
         </a>
-        <ConnectButton />
+        <div className="flex items-center gap-4">
+          <a href="/dashboard" className="text-gray-400 hover:text-white transition">Global</a>
+          <a href="/my-bot" className="text-gray-400 hover:text-white transition">My Bot</a>
+          <a href="/config" className="text-accent font-medium">Config</a>
+          <ConnectButton />
+        </div>
       </nav>
 
       <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
