@@ -2,13 +2,13 @@
 
 import { ConnectButton } from "@/components/ConnectButton";
 import { AuthGuard, useIsAdmin } from "@/components/AuthGuard";
-import { useAccount } from "wagmi";
+import { useWallet } from "@/components/ConnectButton";
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, apiDelete } from "@/lib/api";
 
 function AdminContent() {
   const isAdmin = useIsAdmin();
-  const { address } = useAccount();
+  const { address } = useWallet();
   const [users, setUsers] = useState<any[]>([]);
   const [newWallet, setNewWallet] = useState("");
   const [loading, setLoading] = useState(true);

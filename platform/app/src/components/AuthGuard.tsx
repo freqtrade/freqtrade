@@ -1,21 +1,15 @@
 "use client";
 
-import { useAccount } from "wagmi";
-import { ConnectButton } from "./ConnectButton";
+import { ConnectButton, useWallet } from "./ConnectButton";
 
-// Hardcoded admin wallets — add yours here
 const ADMIN_WALLETS = [
   "0xaedb312d90fa956775ea8abed298ea3b085abbd9",
 ];
 
-// For now, all connected wallets are whitelisted (MVP)
-// Later: check against database whitelist
-const WHITELISTED = true;
-
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isConnected } = useAccount();
+  const { connected } = useWallet();
 
-  if (!isConnected) {
+  if (!connected) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6">
         <div className="text-center space-y-3">
@@ -28,20 +22,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!WHITELISTED) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <span className="text-5xl">⛔</span>
-        <h1 className="text-2xl font-bold text-white">Access Denied</h1>
-        <p className="text-gray-500">Your wallet is not whitelisted. Contact admin.</p>
-      </div>
-    );
-  }
-
   return <>{children}</>;
 }
 
 export function useIsAdmin() {
-  const { address } = useAccount();
+  const { address } = useWallet();
   return address ? ADMIN_WALLETS.includes(address.toLowerCase()) : false;
 }

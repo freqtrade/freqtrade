@@ -2,12 +2,12 @@
 
 import { ConnectButton } from "@/components/ConnectButton";
 import { AuthGuard } from "@/components/AuthGuard";
-import { useAccount } from "wagmi";
+import { useWallet } from "@/components/ConnectButton";
 import { useState } from "react";
 import { apiPost } from "@/lib/api";
 
 function ConfigContent() {
-  const { address } = useAccount();
+  const { address } = useWallet();
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [stake, setStake] = useState("1");

@@ -1,17 +1,16 @@
 "use client";
 
-import { ConnectButton } from "@/components/ConnectButton";
-import { useAccount } from "wagmi";
+import { ConnectButton, useWallet } from "@/components/ConnectButton";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function Home() {
-  const { isConnected } = useAccount();
+  const { connected } = useWallet();
   const router = useRouter();
 
   useEffect(() => {
-    if (isConnected) router.push("/dashboard");
-  }, [isConnected, router]);
+    if (connected) router.push("/dashboard");
+  }, [connected, router]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -36,8 +35,8 @@ export default function Home() {
           </p>
           <div className="grid grid-cols-3 gap-4 pt-6">
             <div className="bg-dark-800 rounded-xl p-4">
-              <div className="text-2xl font-bold text-accent">66%</div>
-              <div className="text-sm text-gray-500">Win Rate</div>
+              <div className="text-2xl font-bold text-accent">$10K+</div>
+              <div className="text-sm text-gray-500">Volume Traded</div>
             </div>
             <div className="bg-dark-800 rounded-xl p-4">
               <div className="text-2xl font-bold text-accent">1.98</div>
@@ -48,7 +47,9 @@ export default function Home() {
               <div className="text-sm text-gray-500">Automated</div>
             </div>
           </div>
-          <ConnectButton />
+          <div className="pt-4">
+            <ConnectButton />
+          </div>
         </div>
       </main>
 
@@ -56,8 +57,7 @@ export default function Home() {
         <p className="font-semibold text-gray-400 mb-2">⚠️ Disclaimer</p>
         <p>
           TrendRider is experimental software in active development. Trading
-          cryptocurrency involves substantial risk of loss. Past performance
-          does not guarantee future results. Use at your own risk.{" "}
+          cryptocurrency involves substantial risk of loss. Use at your own risk.{" "}
           <a href="/terms" className="text-accent underline">Terms & Conditions</a>
         </p>
       </footer>

@@ -2,12 +2,12 @@
 
 import { ConnectButton } from "@/components/ConnectButton";
 import { AuthGuard } from "@/components/AuthGuard";
-import { useAccount } from "wagmi";
+import { useWallet } from "@/components/ConnectButton";
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api";
 
 function DashboardContent() {
-  const { address } = useAccount();
+  const { address } = useWallet();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
