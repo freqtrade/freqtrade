@@ -569,6 +569,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#which-order-type-is-used-for-stoploss-on-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which order type is used for stoploss on exchange?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#which-order-type-should-i-use-for-stoploss-on-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which order type should i use for stoploss on exchange?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2026,6 +2048,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#which-order-type-is-used-for-stoploss-on-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which order type is used for stoploss on exchange?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#which-order-type-should-i-use-for-stoploss-on-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which order type should i use for stoploss on exchange?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2381,6 +2425,18 @@ If set to low/tight you will have greater risk of missing fill on the order and 
 In that case, the bot will fallback to using the <code>emergency_exit</code> order type to place a market order as placing the stoploss order failed.
 Freqtrade currently does not implement a limitation to avoid this situation, so please ensure your stoploss values are within reasonable limits for your exchange or disable stoploss on exchange.</p>
 </div>
+<h3 id="which-order-type-is-used-for-stoploss-on-exchange">Which order type is used for stoploss on exchange?<a class="headerlink" href="#which-order-type-is-used-for-stoploss-on-exchange" title="Permanent link">&para;</a></h3>
+<p>The order type used for stoploss on exchange is determined by the <code>stoploss</code> value and the exchange capabilities.
+If your selected exchange supports both stop-limit and stop-market orders, then the <code>stoploss</code> value will determine which order type is used for stoploss on exchange.
+If your exchange only supports one of the two order types, you must configure your <code>stoploss</code> value accordingly, otherwise the bot will fail to start.</p>
+<h3 id="which-order-type-should-i-use-for-stoploss-on-exchange">Which order type should i use for stoploss on exchange?<a class="headerlink" href="#which-order-type-should-i-use-for-stoploss-on-exchange" title="Permanent link">&para;</a></h3>
+<p>If we translate the two stoploss order types into human words - they would be something like this:</p>
+<ul>
+<li><strong>stoploss-market</strong> -&gt; "when stop triggers, get me the hell out of here at whatever price".</li>
+<li><strong>stoploss-limit</strong> -&gt; "when stop triggers, place a limit order x% below the stoploss price. I accept a loss of "stoploss + 1%" at worst - but if price jumps further - i accept to wait for price to get back down to me, potentially resulting in a much bigger loss than "stoploss + 1%".</li>
+</ul>
+<p>As a consequence, we recommend using stoploss-market orders whenever possible, as the main point of a stoploss is to get you out of a position when the market is crashing, and in such situations, you'll want to exit the position immediately at the best available price, rather than risking a limit order not getting filled and potentially incurring even greater losses.
+The choice is ultimately up to you, but please be aware of the risk of using stoploss-limit orders, especially in volatile markets.</p>
 <h3 id="stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio">stoploss_on_exchange and stoploss_on_exchange_limit_ratio<a class="headerlink" href="#stoploss_on_exchange-and-stoploss_on_exchange_limit_ratio" title="Permanent link">&para;</a></h3>
 <p>Enable or Disable stop loss on exchange.
 If the stoploss is <em>on exchange</em> it means a stoploss limit order is placed on the exchange immediately after buy order fills. This will protect you against sudden crashes in market, as the order execution happens purely within the exchange, and has no potential network overhead.</p>
