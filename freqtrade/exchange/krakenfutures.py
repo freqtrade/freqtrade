@@ -142,29 +142,52 @@ class Krakenfutures(Exchange):
     def _adjust_krakenfutures_order(self, order: CcxtOrder) -> CcxtOrder:
         """Apply Kraken Futures-specific order corrections.
 
-        For filled terminal orders, always fetch trades and compute VWAP because
-        CCXT's average is still unreliable.
+        For terminal orders (canceled/closed), fetch trades once and use
+        them for two purposes:
 
-        See: https://github.com/ccxt/ccxt/issues/27996
+        1. Fill recovery: CCXT can return ``filled=0`` for cancelled orders
+           that were actually executed on Kraken Futures, which causes
+           freqtrade to delete the trade and leave an orphaned position.
+           Trades from the fills endpoint are authoritative.
+           See: https://github.com/ccxt/ccxt/issues/28210
+
+        2. VWAP: Compute volume-weighted average price from actual fills
+           because CCXT's ``average`` field is unreliable on this exchange.
+           See: https://github.com/ccxt/ccxt/issues/27996
         """
-        if order.get("status") == "canceled" and order.get("filled") is None:
-            # Workaround for missing filled parsing - https://github.com/ccxt/ccxt/issues/28210
-            order["filled"] = safe_value_nested(order, "info.order.filled", default_value=None)
-
         filled = self._safe_float(order.get("filled")) or 0.0
-        if order.get("status") in ("canceled", "closed") and filled > 0:
-            # Compute VWAP and cost for filled orders.
-            trades = self.get_trades_for_order(
-                order["id"], order["symbol"], since=dt_from_ts(order["timestamp"])
+
+        # Only process terminal orders; skip open orders entirely.
+        if order.get("status") not in ("canceled", "closed"):
+            return order
+
+        # Fetch trades once — reuse for both fill recovery and VWAP.
+        ts = order.get("timestamp")
+        trades = (
+            self.get_trades_for_order(order["id"], order["symbol"], since=dt_from_ts(ts))
+            if ts
+            else []
+        )
+        total_amount = sum(t["amount"] for t in trades) if trades else 0.0
+
+        # ── 1. Fill recovery ─────────────────────────────────────────
+        if filled == 0 and total_amount > 0:
+            logger.warning(
+                "Order %s reported filled=0 but has %.8f filled via trades. "
+                "Correcting to prevent orphaned position.",
+                order["id"],
+                total_amount,
             )
-            if trades:
-                total_amount = sum(t["amount"] for t in trades)
-                if total_amount:
-                    # Compute VWAP
-                    order["average"] = sum(t["price"] * t["amount"] for t in trades) / total_amount
-                    trade_costs = [t["cost"] for t in trades if t.get("cost") is not None]
-                    if trade_costs:
-                        order["cost"] = sum(trade_costs)
+            order["filled"] = total_amount
+            filled = total_amount
+
+        # ── 2. VWAP computation ──────────────────────────────────────
+        if trades and total_amount and filled > 0:
+            order["average"] = sum(t["price"] * t["amount"] for t in trades) / total_amount
+            trade_costs = [t["cost"] for t in trades if t.get("cost") is not None]
+            if trade_costs:
+                order["cost"] = sum(trade_costs)
+
         return order
 
     def get_trades_for_order(

@@ -96,7 +96,7 @@ def test_krakenfutures_adjust_order_skips_open_orders(mocker, default_conf):
 
 
 def test_krakenfutures_adjust_order_handles_none_filled(mocker, default_conf):
-    """Don't crash or fetch trades when filled is None."""
+    """Fetch trades to verify fill state when filled is None (fill recovery)."""
     ex = get_patched_exchange(mocker, default_conf, exchange="krakenfutures")
 
     order = {
@@ -107,11 +107,65 @@ def test_krakenfutures_adjust_order_handles_none_filled(mocker, default_conf):
         "average": None,
         "timestamp": 1771354195241,
     }
-    trades_mock = mocker.patch.object(ex, "get_trades_for_order")
+    trades_mock = mocker.patch.object(ex, "get_trades_for_order", return_value=[])
 
     result = ex._adjust_krakenfutures_order(order)
     assert result["average"] is None
-    trades_mock.assert_not_called()
+    # Trades are fetched to verify nothing was actually filled
+    trades_mock.assert_called_once()
+
+
+def test_krakenfutures_adjust_order_recovers_filled_from_trades(mocker, default_conf):
+    """Recover filled amount from trades when CCXT reports filled=0 for a canceled order.
+
+    Prevents orphaned positions when Kraken Futures fills an order but CCXT
+    returns filled=0 in the order status response.
+    """
+    ex = get_patched_exchange(mocker, default_conf, exchange="krakenfutures")
+
+    order = {
+        "id": "abc",
+        "symbol": "BTC/USD:USD",
+        "status": "canceled",
+        "filled": 0.0,
+        "average": None,
+        "timestamp": 1771354195241,
+    }
+    trades = [
+        {
+            "amount": 0.0029,
+            "price": 72150.0,
+            "cost": 209.24,
+            "takerOrMaker": "taker",
+            "symbol": "BTC/USD:USD",
+            "fee": None,
+        },
+    ]
+    mocker.patch.object(ex, "get_trades_for_order", return_value=trades)
+
+    result = ex._adjust_krakenfutures_order(order)
+    assert result["filled"] == pytest.approx(0.0029)
+    assert result["average"] == pytest.approx(72150.0)
+    assert result["cost"] == pytest.approx(209.24)
+
+
+def test_krakenfutures_adjust_order_no_recovery_when_truly_canceled(mocker, default_conf):
+    """Don't change filled when trades confirm the order was never executed."""
+    ex = get_patched_exchange(mocker, default_conf, exchange="krakenfutures")
+
+    order = {
+        "id": "abc",
+        "symbol": "BTC/USD:USD",
+        "status": "canceled",
+        "filled": 0.0,
+        "average": None,
+        "timestamp": 1771354195241,
+    }
+    mocker.patch.object(ex, "get_trades_for_order", return_value=[])
+
+    result = ex._adjust_krakenfutures_order(order)
+    assert result["filled"] == 0.0
+    assert result["average"] is None
 
 
 def test_krakenfutures_adjust_order_recomputes_existing_average(mocker, default_conf):
