@@ -1488,6 +1488,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#bybit-demo-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bybit Demo Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2531,6 +2542,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#bybit-demo-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bybit Demo Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3109,6 +3131,11 @@ Other configurations (multiple bots on one account, manual non-bot trades on the
 <li>Contract - Positions</li>
 </ul>
 <p>We do strongly recommend to limit all API keys to the IP you're going to use it from.</p>
+<h3 id="bybit-demo-mode">Bybit Demo Mode<a class="headerlink" href="#bybit-demo-mode" title="Permanent link">&para;</a></h3>
+<p>Bybit has a <a href="https://learn.bybit.com/en/bybit-guide/how-to-use-bybit-demo-trading">demo mode</a> - which can be activated by setting <code>exchange.demo_trading</code> to <code>true</code> in the configuration.
+Bybit uses live markets to simulate your trades (without market impact) - making it work very similar to freqtrade's dry-run mode.  </p>
+<p>You'll need to use separate API keys for demo trading, which you can create on bybit's demo page.</p>
+<p>Demo mode is incompatible with dry-run.</p>
 <h2 id="bitmart">Bitmart<a class="headerlink" href="#bitmart" title="Permanent link">&para;</a></h2>
 <p>Bitmart requires the API key Memo (the name you give the API key) to go along with the exchange key and secret.
 It's therefore required to pass the UID as well.</p>
