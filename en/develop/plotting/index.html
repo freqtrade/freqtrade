@@ -2170,10 +2170,10 @@ Use <code>--indicators1</code> for the main plot and <code>--indicators2</code> 
 It also allows multiple subplots to display both MACD and RSI at the same time.</p>
 <p>Plot type can be configured using <code>type</code> key. Possible types are:</p>
 <ul>
-<li><code>scatter</code> corresponding to <code>plotly.graph_objects.Scatter</code> class (default).</li>
-<li><code>bar</code> corresponding to <code>plotly.graph_objects.Bar</code> class.</li>
+<li><code>scatter</code> corresponding a scatter plot.</li>
+<li><code>bar</code> corresponding to a bar plot.</li>
 </ul>
-<p>Extra parameters to <code>plotly.graph_objects.*</code> constructor can be specified in <code>plotly</code> dict.</p>
+<p>Extra parameters to <code>plotly.graph_objects.*</code> constructor can be specified in <code>plotly</code> dict - these are only supported when using plotly as plotting library and will be ignored when using freq-ui.</p>
 <p>Sample configuration with inline comments explaining the process:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@property</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">plot_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -2219,7 +2219,7 @@ It also allows multiple subplots to display both MACD and RSI at the same time.<
 </code></pre></div>
 <details class="note">
 <summary>As attribute (former method)</summary>
-<p>Assigning plot_config is also possible as Attribute (this used to be the default way).
+<p>Assigning <code>plot_config</code> is also possible as Attribute (this used to be the default way).
 This has the disadvantage that strategy parameters are not available, preventing certain configurations from working.</p>
 <div class="highlight"><pre><span></span><code>    <span class="n">plot_config</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s1">&#39;main_plot&#39;</span><span class="p">:</span> <span class="p">{</span>
