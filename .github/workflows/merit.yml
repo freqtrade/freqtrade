@@ -1,0 +1,18 @@
+name: Merit ⚡
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  merit:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ericscalibur/Merit@v1
+        with:
+          nwc-connection-string: ${{ secrets.NWC_CONNECTION_STRING }}
+          treasury-lightning-address: ""  # add your Lightning address here
