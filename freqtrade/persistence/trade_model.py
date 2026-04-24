@@ -858,7 +858,7 @@ class LocalTrade:
             higher_stop = stop_loss_norm > self.stop_loss
             lower_stop = stop_loss_norm < self.stop_loss
 
-            # stop losses only walk up, never down!,
+            # stop losses only walk up, never down!
             #   ? But adding more to a leveraged trade would create a lower liquidation price,
             #   ? decreasing the minimum stoploss
             if (

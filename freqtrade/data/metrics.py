@@ -140,7 +140,7 @@ def _calc_drawdown_series(
         max_drawdown_df["drawdown_relative"] = (max_balance - cumulative_balance) / max_balance
     else:
         # NOTE: This is not completely accurate,
-        # but might good enough if starting_balance is not available
+        # but might be good enough if starting_balance is not available
         max_drawdown_df["drawdown_relative"] = (
             max_drawdown_df["high_value"] - max_drawdown_df["cumulative"]
         ) / max_drawdown_df["high_value"]
