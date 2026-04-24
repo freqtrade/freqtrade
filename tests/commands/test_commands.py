@@ -46,6 +46,7 @@ from freqtrade.enums import RunMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.models import init_db
 from freqtrade.persistence.pairlock_middleware import PairLocks
+from freqtrade.persistence.wallet_history import WalletHistory
 from freqtrade.util import dt_utc
 from tests.conftest import (
     CURRENT_TEST_STRATEGY,
@@ -2025,6 +2026,20 @@ def test_start_convert_db(fee, tmp_path):
 
     PairLocks.timeframe = "5m"
     PairLocks.lock_pair("XRP/USDT", datetime.now(), "Random reason 125", side="long")
+    wallet_history = WalletHistory(
+        timestamp=datetime(2024, 1, 1),
+        currency="USDT",
+        quote_currency="USDT",
+        balance=100.0,
+        rate=1.0,
+        total_quote=100.0,
+        total_position_value=0.0,
+        collateral=100.0,
+        leverage=1.0,
+        bot_managed=True,
+    )
+    WalletHistory.session.add(wallet_history)
+    WalletHistory.session.commit()
     assert db_src_file.is_file()
     assert not db_target_file.is_file()
 
@@ -2033,6 +2048,14 @@ def test_start_convert_db(fee, tmp_path):
     start_convert_db(pargs)
 
     assert db_target_file.is_file()
+
+    init_db(db_to)
+    migrated_wallet_history = WalletHistory.session.query(WalletHistory).one()
+    assert migrated_wallet_history.currency == "USDT"
+    assert migrated_wallet_history.quote_currency == "USDT"
+    assert migrated_wallet_history.balance == 100.0
+    assert migrated_wallet_history.total_quote == 100.0
+    assert migrated_wallet_history.bot_managed is True
 
 
 def test_start_strategy_updater(mocker, tmp_path):
