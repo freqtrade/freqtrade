@@ -222,7 +222,8 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         Clean up FreqAI and child threads
         """
-        self.freqai.shutdown()
+        if getattr(self, "freqai", None):
+            self.freqai.shutdown()
 
     @abstractmethod
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

@@ -39,6 +39,22 @@ The Order-type will be ignored if only one mode is available.
     In that case, the bot will fallback to using the `emergency_exit` order type to place a market order as placing the stoploss order failed.
     Freqtrade currently does not implement a limitation to avoid this situation, so please ensure your stoploss values are within reasonable limits for your exchange or disable stoploss on exchange.
 
+### Which order type is used for stoploss on exchange?
+
+The order type used for stoploss on exchange is determined by the `stoploss` value and the exchange capabilities.
+If your selected exchange supports both stop-limit and stop-market orders, then the `stoploss` value will determine which order type is used for stoploss on exchange.
+If your exchange only supports one of the two order types, you must configure your `stoploss` value accordingly, otherwise the bot will fail to start.
+
+### Which order type should i use for stoploss on exchange?
+
+If we translate the two stoploss order types into human words - they would be something like this:
+
+* **stoploss-market** -> "when stop triggers, get me the hell out of here at whatever price".
+* **stoploss-limit** -> "when stop triggers, place a limit order x% below the stoploss price. I accept a loss of "stoploss + 1%" at worst - but if price jumps further - i accept to wait for price to get back down to me, potentially resulting in a much bigger loss than "stoploss + 1%".
+
+As a consequence, we recommend using stoploss-market orders whenever possible, as the main point of a stoploss is to get you out of a position when the market is crashing, and in such situations, you'll want to exit the position immediately at the best available price, rather than risking a limit order not getting filled and potentially incurring even greater losses.
+The choice is ultimately up to you, but please be aware of the risk of using stoploss-limit orders, especially in volatile markets.
+
 ### stoploss_on_exchange and stoploss_on_exchange_limit_ratio
 
 Enable or Disable stop loss on exchange.

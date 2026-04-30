@@ -111,10 +111,10 @@ It also allows multiple subplots to display both MACD and RSI at the same time.
 
 Plot type can be configured using `type` key. Possible types are:
 
-* `scatter` corresponding to `plotly.graph_objects.Scatter` class (default).
-* `bar` corresponding to `plotly.graph_objects.Bar` class.
+* `scatter` corresponding a scatter plot.
+* `bar` corresponding to a bar plot.
 
-Extra parameters to `plotly.graph_objects.*` constructor can be specified in `plotly` dict.
+Extra parameters to `plotly.graph_objects.*` constructor can be specified in `plotly` dict - these are only supported when using plotly as plotting library and will be ignored when using freq-ui.
 
 Sample configuration with inline comments explaining the process:
 
@@ -163,7 +163,7 @@ def plot_config(self):
 ```
 
 ??? Note "As attribute (former method)"
-    Assigning plot_config is also possible as Attribute (this used to be the default way).
+    Assigning `plot_config` is also possible as Attribute (this used to be the default way).
     This has the disadvantage that strategy parameters are not available, preventing certain configurations from working.
 
     ``` python

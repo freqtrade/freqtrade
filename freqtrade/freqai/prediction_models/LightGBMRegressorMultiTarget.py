@@ -6,6 +6,7 @@ from lightgbm import LGBMRegressor
 from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.base_models.FreqaiMultiOutputRegressor import FreqaiMultiOutputRegressor
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
+from freqtrade.freqai.tensorboard import LightGBMCallback
 
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,11 @@ class LightGBMRegressorMultiTarget(BaseRegressionModel):
         else:
             init_models = [None] * y.shape[1]
 
+        activate_tensorboard = self.freqai_info.get("activate_tensorboard", True)
+        callbacks = []
+        if LightGBMCallback is not None:
+            callbacks = [LightGBMCallback(dk.data_path, activate_tensorboard)]
+
         fit_params = []
         for i in range(len(eval_sets)):
             fit_params.append(
@@ -62,6 +68,7 @@ class LightGBMRegressorMultiTarget(BaseRegressionModel):
                     "eval_set": eval_sets[i],
                     "eval_sample_weight": eval_weights,
                     "init_model": init_models[i],
+                    "callbacks": callbacks,
                 }
             )
 

@@ -22,6 +22,7 @@ from freqtrade.strategy.parameters import (
 )
 from freqtrade.strategy.strategy_validation import StrategyResultValidator
 from freqtrade.util import dt_now
+from freqtrade.util.datetime_helpers import dt_now_no_micro
 from tests.conftest import CURRENT_TEST_STRATEGY, TRADE_SIDES, log_has, log_has_re
 
 from .strats.strategy_test_v3 import StrategyTestV3
@@ -33,7 +34,7 @@ _STRATEGY.dp = DataProvider({}, None, None)
 
 
 def test_returns_latest_signal(ohlcv_history):
-    ohlcv_history.loc[1, "date"] = dt_now()
+    ohlcv_history.loc[1, "date"] = dt_now_no_micro()
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history["enter_long"] = 0
@@ -160,7 +161,7 @@ def test_get_signal_exception_valueerror(mocker, caplog, ohlcv_history):
 def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, "date"] = dt_now() - timedelta(minutes=16)
+    ohlcv_history.loc[1, "date"] = dt_now_no_micro() - timedelta(minutes=16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history["exit_long"] = 0
@@ -179,7 +180,7 @@ def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
 def test_get_signal_no_sell_column(default_conf, mocker, caplog, ohlcv_history):
     # default_conf defines a 5m interval. we check interval * 2 + 5m
     # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, "date"] = dt_now()
+    ohlcv_history.loc[1, "date"] = dt_now_no_micro()
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     # Intentionally don't set sell column
@@ -223,7 +224,7 @@ def test_ignore_expired_candle(default_conf):
 
 
 def test_assert_df_raise(mocker, caplog, ohlcv_history):
-    ohlcv_history.loc[1, "date"] = dt_now() - timedelta(minutes=16)
+    ohlcv_history.loc[1, "date"] = dt_now_no_micro() - timedelta(minutes=16)
     # Take a copy to correctly modify the call
     mocked_history = ohlcv_history.copy()
     mocked_history["sell"] = 0
@@ -1040,6 +1041,7 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
     ],
 )
 def test_pandas_warning_direct(ohlcv_history, function, raises, recwarn):
+    recwarn.clear()
     df = _STRATEGY.populate_indicators(ohlcv_history, {"pair": "ETH/BTC"})
     if raises:
         assert len(recwarn) == 1
@@ -1053,6 +1055,7 @@ def test_pandas_warning_direct(ohlcv_history, function, raises, recwarn):
 
 
 def test_pandas_warning_through_analyze_pair(ohlcv_history, mocker, recwarn):
+    recwarn.clear()
     mocker.patch.object(_STRATEGY.dp, "ohlcv", return_value=ohlcv_history)
     _STRATEGY.analyze_pair("ETH/BTC")
     assert len(recwarn) == 0, f"warnings: {', '.join(str(w) for w in recwarn.list)}"

@@ -1,6 +1,6 @@
 import logging
 
-from pandas import DataFrame, read_parquet, to_datetime
+from pandas import DataFrame, read_parquet
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
@@ -68,7 +68,7 @@ class ParquetDataHandler(IDataHandler):
                     "volume": "float",
                 }
             )
-            pairdata["date"] = to_datetime(pairdata["date"], unit="ms", utc=True)
+            pairdata["date"] = pairdata["date"].dt.as_unit("ms")
             return pairdata
         except Exception as e:
             logger.exception(

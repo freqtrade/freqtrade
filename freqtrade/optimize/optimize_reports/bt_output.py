@@ -1,6 +1,8 @@
 import logging
 from typing import Any, Literal
 
+from rich.text import Text
+
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT, Config
 from freqtrade.ft_types import BacktestResultType
 from freqtrade.optimize.optimize_reports.optimize_reports import generate_periodic_breakdown_stats
@@ -8,6 +10,8 @@ from freqtrade.util import decimals_per_coin, fmt_coin, print_rich_table
 
 
 logger = logging.getLogger(__name__)
+
+__EMPTY_LINE = ("", "")
 
 
 def _get_line_floatfmt(stake_currency: str) -> list[str]:
@@ -201,7 +205,7 @@ def text_table_add_metrics(strat_results: dict) -> None:
 
         short_metrics = (
             [
-                ("", ""),  # Empty line to improve readability
+                __EMPTY_LINE,  # Empty line to improve readability
                 (
                     "Long / Short trades",
                     f"{strat_results.get('trade_count_long', 'total_trades')} / "
@@ -222,7 +226,7 @@ def text_table_add_metrics(strat_results: dict) -> None:
             else []
         )
 
-        drawdown_metrics = []
+        drawdown_metrics: list[tuple[str | Text, str | Text]] = []
         if "max_relative_drawdown" in strat_results:
             # Compatibility to show old hyperopt results
             drawdown_metrics.append(
@@ -287,6 +291,79 @@ def text_table_add_metrics(strat_results: dict) -> None:
             if "trading_mode" in strat_results
             else []
         )
+        wallet_metrics: list[tuple[str, str]] = [
+            (
+                "Min/Max balance (closed trades)",
+                f"{fmt_coin(strat_results['csum_min'], stake)} / "
+                f"{fmt_coin(strat_results['csum_max'], stake)}",
+            ),
+        ]
+        wallet_stats = strat_results.get("wallet_stats", {})
+        if wallet_stats:
+            drawdown_metrics.extend(
+                [
+                    __EMPTY_LINE,  # Empty line to improve readability
+                    (Text("Wallet based Metrics", style="bold"), ""),
+                    (
+                        "Min/Max balance (wallet balance)",
+                        f"{fmt_coin(wallet_stats['low_balance'], stake)} / "
+                        f"{fmt_coin(wallet_stats['high_balance'], stake)}",
+                    ),
+                    (
+                        "Min/Max balance dates (wallet balance)",
+                        f"{wallet_stats['low_date']} / {wallet_stats['high_date']}",
+                    ),
+                ]
+            )
+            if "max_drawdown_abs" in wallet_stats:
+                # Assume that if sharpe is there, all others are there as well.
+                drawdown_metrics.extend(
+                    [
+                        (
+                            "Max % of account underwater (balance)",
+                            f"{wallet_stats['max_relative_drawdown']:.2%}",
+                        ),
+                        (
+                            "Absolute drawdown (wallet balance)",
+                            f"{fmt_coin(wallet_stats['max_drawdown_abs'], stake)} "
+                            f"({wallet_stats['max_drawdown_account']:.2%})",
+                        ),
+                        (
+                            "Drawdown duration",
+                            wallet_stats["drawdown_duration"]
+                            if "drawdown_duration" in wallet_stats
+                            else "N/A",
+                        ),
+                        (
+                            "Profit at drawdown start",
+                            fmt_coin(wallet_stats["max_drawdown_high"], stake),
+                        ),
+                        (
+                            "Profit at drawdown end",
+                            fmt_coin(wallet_stats["max_drawdown_low"], stake),
+                        ),
+                        ("Drawdown start", wallet_stats["drawdown_start"]),
+                        ("Drawdown end", wallet_stats["drawdown_end"]),
+                        (
+                            "Sharpe (daily wallet balance)",
+                            f"{wallet_stats['sharpe']:.2f}"
+                            if wallet_stats and "sharpe" in wallet_stats
+                            else "N/A",
+                        ),
+                        (
+                            "Sortino (daily wallet balance)",
+                            f"{wallet_stats['sortino']:.2f}"
+                            if wallet_stats and "sortino" in wallet_stats
+                            else "N/A",
+                        ),
+                        (
+                            "Calmar (daily wallet balance)",
+                            f"{wallet_stats['calmar']:.2f}"
+                            if wallet_stats and "calmar" in wallet_stats
+                            else "N/A",
+                        ),
+                    ]
+                )
 
         # Newly added fields should be ignored if they are missing in strat_results. hyperopt-show
         # command stores these results and newer version of freqtrade must be able to handle old
@@ -296,7 +373,7 @@ def text_table_add_metrics(strat_results: dict) -> None:
             ("Backtesting to", strat_results["backtest_end"]),
             *trading_mode,
             ("Max open trades", strat_results["max_open_trades"]),
-            ("", ""),  # Empty line to improve readability
+            __EMPTY_LINE,  # Empty line to improve readability
             (
                 "Total/Daily Avg Trades",
                 f"{strat_results['total_trades']} / {strat_results['trades_per_day']}",
@@ -315,9 +392,18 @@ def text_table_add_metrics(strat_results: dict) -> None:
             ),
             ("Total profit %", f"{strat_results['profit_total']:.2%}"),
             ("CAGR %", f"{strat_results['cagr']:.2%}" if "cagr" in strat_results else "N/A"),
-            ("Sortino", f"{strat_results['sortino']:.2f}" if "sortino" in strat_results else "N/A"),
-            ("Sharpe", f"{strat_results['sharpe']:.2f}" if "sharpe" in strat_results else "N/A"),
-            ("Calmar", f"{strat_results['calmar']:.2f}" if "calmar" in strat_results else "N/A"),
+            (
+                "Sharpe (closed trades)",
+                f"{strat_results['sharpe']:.2f}" if "sharpe" in strat_results else "N/A",
+            ),
+            (
+                "Sortino (closed trades)",
+                f"{strat_results['sortino']:.2f}" if "sortino" in strat_results else "N/A",
+            ),
+            (
+                "Calmar (closed trades)",
+                f"{strat_results['calmar']:.2f}" if "calmar" in strat_results else "N/A",
+            ),
             ("SQN", f"{strat_results['sqn']:.2f}" if "sqn" in strat_results else "N/A"),
             (
                 "Profit factor",
@@ -346,12 +432,13 @@ def text_table_add_metrics(strat_results: dict) -> None:
                 "Avg. stake amount",
                 fmt_coin(strat_results["avg_stake_amount"], stake),
             ),
+            ("Market change", f"{strat_results['market_change']:.2%}"),
             (
                 "Total trade volume",
                 fmt_coin(strat_results["total_volume"], stake),
             ),
             *short_metrics,
-            ("", ""),  # Empty line to improve readability
+            __EMPTY_LINE,  # Empty line to improve readability
             (
                 "Best Pair",
                 f"{strat_results['best_pair']['key']} "
@@ -407,11 +494,9 @@ def text_table_add_metrics(strat_results: dict) -> None:
                 f"{strat_results.get('timedout_exit_orders', 'N/A')}",
             ),
             *entry_adjustment_metrics,
-            ("", ""),  # Empty line to improve readability
-            ("Min balance", fmt_coin(strat_results["csum_min"], stake)),
-            ("Max balance", fmt_coin(strat_results["csum_max"], stake)),
+            __EMPTY_LINE,  # Empty line to improve readability
+            *wallet_metrics,
             *drawdown_metrics,
-            ("Market change", f"{strat_results['market_change']:.2%}"),
         ]
         print_rich_table(metrics, ["Metric", "Value"], summary="SUMMARY METRICS", justify="left")
 

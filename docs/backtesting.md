@@ -160,117 +160,131 @@ The most important in the backtesting is to understand the result.
 A backtesting result will look like that:
 
 ```
-                                                 BACKTESTING REPORT                                                  
-┏━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃          Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃    Avg Duration ┃  Win  Draw  Loss  Win% ┃
-┡━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ LTC/USDT:USDT │     16 │          1.0 │          56.176 │         5.62 │        16:16:00 │   16     0     0   100 │
-│ ETC/USDT:USDT │     12 │         0.72 │          30.936 │         3.09 │         9:55:00 │   11     0     1  91.7 │
-│ ETH/USDT:USDT │      8 │         0.66 │          17.864 │         1.79 │ 1 day, 13:55:00 │    7     0     1  87.5 │
-│ XLM/USDT:USDT │     10 │         0.31 │          11.054 │         1.11 │        12:08:00 │    9     0     1  90.0 │
-│ BTC/USDT:USDT │      8 │         0.21 │           7.289 │         0.73 │ 3 days, 1:24:00 │    6     0     2  75.0 │
-│ XRP/USDT:USDT │      9 │        -0.14 │          -7.261 │        -0.73 │        21:18:00 │    8     0     1  88.9 │
-│ DOT/USDT:USDT │      6 │         -0.4 │          -9.187 │        -0.92 │         5:35:00 │    4     0     2  66.7 │
-│ ADA/USDT:USDT │      8 │        -1.76 │         -52.098 │        -5.21 │        11:38:00 │    6     0     2  75.0 │
-│         TOTAL │     77 │         0.22 │          54.774 │         5.48 │        22:12:00 │   67     0    10  87.0 │
-└───────────────┴────────┴──────────────┴─────────────────┴──────────────┴─────────────────┴────────────────────────┘
-                                               LEFT OPEN TRADES REPORT                                                
-┏━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃          Pair ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃     Avg Duration ┃  Win  Draw  Loss  Win% ┃
-┡━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ BTC/USDT:USDT │      1 │        -4.14 │          -9.930 │        -0.99 │ 17 days, 8:00:00 │    0     0     1     0 │
-│ ETC/USDT:USDT │      1 │        -4.24 │         -15.365 │        -1.54 │         10:40:00 │    0     0     1     0 │
-│ DOT/USDT:USDT │      1 │        -5.29 │         -19.125 │        -1.91 │         11:30:00 │    0     0     1     0 │
-│         TOTAL │      3 │        -4.56 │         -44.420 │        -4.44 │  6 days, 2:03:00 │    0     0     3     0 │
-└───────────────┴────────┴──────────────┴─────────────────┴──────────────┴──────────────────┴────────────────────────┘
-                                                ENTER TAG STATS                                                
-┏━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Enter Tag ┃ Entries ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
-┡━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
-│     OTHER │      77 │         0.22 │          54.774 │         5.48 │     22:12:00 │   67     0    10  87.0 │
-│     TOTAL │      77 │         0.22 │          54.774 │         5.48 │     22:12:00 │   67     0    10  87.0 │
-└───────────┴─────────┴──────────────┴─────────────────┴──────────────┴──────────────┴────────────────────────┘
-                                                EXIT REASON STATS                                                 
-┏━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Exit Reason ┃ Exits ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃    Avg Duration ┃  Win  Draw  Loss  Win% ┃
-┡━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
-│         roi │    67 │         1.05 │         242.179 │        24.22 │        15:49:00 │   67     0     0   100 │
-│ exit_signal │     4 │        -2.23 │         -31.217 │        -3.12 │  1 day, 8:38:00 │    0     0     4     0 │
-│  force_exit │     3 │        -4.56 │         -44.420 │        -4.44 │ 6 days, 2:03:00 │    0     0     3     0 │
-│   stop_loss │     3 │       -10.14 │        -111.768 │       -11.18 │  1 day, 3:05:00 │    0     0     3     0 │
-│       TOTAL │    77 │         0.22 │          54.774 │         5.48 │        22:12:00 │   67     0    10  87.0 │
-└─────────────┴───────┴──────────────┴─────────────────┴──────────────┴─────────────────┴────────────────────────┘
-                                                        MIXED TAG STATS                                                        
-┏━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Enter Tag ┃ Exit Reason ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃    Avg Duration ┃  Win  Draw  Loss  Win% ┃
-┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
-│           │         roi │     67 │         1.05 │         242.179 │        24.22 │        15:49:00 │   67     0     0   100 │
-│           │ exit_signal │      4 │        -2.23 │         -31.217 │        -3.12 │  1 day, 8:38:00 │    0     0     4     0 │
-│           │  force_exit │      3 │        -4.56 │         -44.420 │        -4.44 │ 6 days, 2:03:00 │    0     0     3     0 │
-│           │   stop_loss │      3 │       -10.14 │        -111.768 │       -11.18 │  1 day, 3:05:00 │    0     0     3     0 │
-│     TOTAL │             │     77 │         0.22 │          54.774 │         5.48 │        22:12:00 │   67     0    10  87.0 │
-└───────────┴─────────────┴────────┴──────────────┴─────────────────┴──────────────┴─────────────────┴────────────────────────┘
-                          SUMMARY METRICS                          
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Metric                        ┃ Value                           ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ Backtesting from              │ 2025-07-01 00:00:00             │
-│ Backtesting to                │ 2025-08-01 00:00:00             │
-│ Trading Mode                  │ Isolated Futures                │
-│ Max open trades               │ 3                               │
-│                               │                                 │
-│ Total/Daily Avg Trades        │ 77 / 2.48                       │
-│ Starting balance              │ 1000 USDT                       │
-│ Final balance                 │ 1054.774 USDT                   │
-│ Absolute profit               │ 54.774 USDT                     │
-│ Total profit %                │ 5.48%                           │
-│ CAGR %                        │ 87.36%                          │
-│ Sortino                       │ 2.48                            │
-│ Sharpe                        │ 3.75                            │
-│ Calmar                        │ 40.99                           │
-│ SQN                           │ 0.69                            │
-│ Profit factor                 │ 1.29                            │
-│ Expectancy (Ratio)            │ 0.71 (0.04)                     │
-│ Avg. daily profit             │ 1.767 USDT                      │
-│ Avg. stake amount             │ 345.016 USDT                    │
-│ Total trade volume            │ 53316.954 USDT                  │
-│                               │                                 │
-│ Long / Short trades           │ 67 / 10                         │
-│ Long / Short profit %         │ 8.94% / -3.47%                  │
-│ Long / Short profit USDT      │ 89.425 / -34.651                │
-│                               │                                 │
-│ Best Pair                     │ LTC/USDT:USDT 5.62%             │
-│ Worst Pair                    │ ADA/USDT:USDT -5.21%            │
-│ Best trade                    │ ETC/USDT:USDT 2.00%             │
-│ Worst trade                   │ ADA/USDT:USDT -10.17%           │
-│ Best day                      │ 26.91 USDT                      │
-│ Worst day                     │ -47.741 USDT                    │
-│ Days win/draw/lose            │ 20 / 6 / 5                      │
-│ Min/Max/Avg. Duration Winners │ 0d 00:35 / 5d 18:15 / 0d 15:49  │
-│ Min/Max/Avg. Duration Losers  │ 0d 10:40 / 17d 08:00 / 2d 17:00 │
-│ Max Consecutive Wins / Loss   │ 36 / 3                          │
-│ Rejected Entry signals        │ 258                             │
-│ Entry/Exit Timeouts           │ 0 / 0                           │
-│                               │                                 │
-│ Min balance                   │ 1003.168 USDT                   │
-│ Max balance                   │ 1149.421 USDT                   │
-│ Max % of account underwater   │ 8.23%                           │
-│ Absolute drawdown             │ 94.647 USDT (8.23%)             │
-│ Drawdown duration             │ 9 days 08:50:00                 │
-│ Profit at drawdown start      │ 149.421 USDT                    │
-│ Profit at drawdown end        │ 54.774 USDT                     │
-│ Drawdown start                │ 2025-07-22 15:10:00             │
-│ Drawdown end                  │ 2025-08-01 00:00:00             │
-│ Market change                 │ 30.51%                          │
-└───────────────────────────────┴─────────────────────────────────┘
+                                               BACKTESTING REPORT                                                
+┏━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃          Pair ┃ Trades ┃ Avg Profit % ┃  Tot Profit ┃ Tot Profit % ┃    Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ LTC/USDT:USDT │     16 │         1.01 │      56.882 │         5.69 │        16:16:00 │   16     0     0   100 │
+│ ETC/USDT:USDT │     12 │         0.73 │      31.513 │         3.15 │         9:55:00 │   11     0     1  91.7 │
+│ ETH/USDT:USDT │      8 │         0.69 │      18.659 │         1.87 │ 1 day, 13:55:00 │    7     0     1  87.5 │
+│ XLM/USDT:USDT │     10 │          0.3 │      10.694 │         1.07 │        12:08:00 │    9     0     1  90.0 │
+│ BTC/USDT:USDT │      8 │         0.22 │       7.502 │         0.75 │ 3 days, 1:24:00 │    6     0     2  75.0 │
+│ XRP/USDT:USDT │      9 │        -0.13 │      -6.837 │        -0.68 │        21:18:00 │    8     0     1  88.9 │
+│ DOT/USDT:USDT │      6 │        -0.39 │      -9.169 │        -0.92 │         5:35:00 │    4     0     2  66.7 │
+│ ADA/USDT:USDT │      8 │        -1.75 │     -52.089 │        -5.21 │        11:38:00 │    6     0     2  75.0 │
+│         TOTAL │     77 │         0.23 │      57.157 │         5.72 │        22:12:00 │   67     0    10  87.0 │
+└───────────────┴────────┴──────────────┴─────────────┴──────────────┴─────────────────┴────────────────────────┘
+                                             LEFT OPEN TRADES REPORT                                              
+┏━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃          Pair ┃ Trades ┃ Avg Profit % ┃  Tot Profit ┃ Tot Profit % ┃     Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ BTC/USDT:USDT │      1 │        -4.14 │      -9.930 │        -0.99 │ 17 days, 8:00:00 │    0     0     1     0 │
+│ ETC/USDT:USDT │      1 │        -4.24 │     -15.365 │        -1.54 │         10:40:00 │    0     0     1     0 │
+│ DOT/USDT:USDT │      1 │        -5.29 │     -19.166 │        -1.92 │         11:30:00 │    0     0     1     0 │
+│         TOTAL │      3 │        -4.56 │     -44.461 │        -4.45 │  6 days, 2:03:00 │    0     0     3     0 │
+└───────────────┴────────┴──────────────┴─────────────┴──────────────┴──────────────────┴────────────────────────┘
+                                              ENTER TAG STATS                                              
+┏━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Enter Tag ┃ Entries ┃ Avg Profit % ┃  Tot Profit ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│     OTHER │      77 │         0.23 │      57.157 │         5.72 │     22:12:00 │   67     0    10  87.0 │
+│     TOTAL │      77 │         0.23 │      57.157 │         5.72 │     22:12:00 │   67     0    10  87.0 │
+└───────────┴─────────┴──────────────┴─────────────┴──────────────┴──────────────┴────────────────────────┘
+                                              EXIT REASON STATS                                               
+┏━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Exit Reason ┃ Exits ┃ Avg Profit % ┃  Tot Profit ┃ Tot Profit % ┃    Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│         roi │    67 │         1.06 │     245.117 │        24.51 │        15:49:00 │   67     0     0   100 │
+│ exit_signal │     4 │        -2.23 │     -31.226 │        -3.12 │  1 day, 8:38:00 │    0     0     4     0 │
+│  force_exit │     3 │        -4.56 │     -44.461 │        -4.45 │ 6 days, 2:03:00 │    0     0     3     0 │
+│   stop_loss │     3 │       -10.14 │    -112.273 │       -11.23 │  1 day, 3:05:00 │    0     0     3     0 │
+│       TOTAL │    77 │         0.23 │      57.157 │         5.72 │        22:12:00 │   67     0    10  87.0 │
+└─────────────┴───────┴──────────────┴─────────────┴──────────────┴─────────────────┴────────────────────────┘
+                                                      MIXED TAG STATS                                                      
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Enter Tag ┃ Exit Reason ┃ Trades ┃ Avg Profit % ┃  Tot Profit ┃ Tot Profit % ┃    Avg Duration ┃  Win  Draw  Loss  Win% ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│           │         roi │     67 │         1.06 │     245.117 │        24.51 │        15:49:00 │   67     0     0   100 │
+│           │ exit_signal │      4 │        -2.23 │     -31.226 │        -3.12 │  1 day, 8:38:00 │    0     0     4     0 │
+│           │  force_exit │      3 │        -4.56 │     -44.461 │        -4.45 │ 6 days, 2:03:00 │    0     0     3     0 │
+│           │   stop_loss │      3 │       -10.14 │    -112.273 │       -11.23 │  1 day, 3:05:00 │    0     0     3     0 │
+│     TOTAL │             │     77 │         0.23 │      57.157 │         5.72 │        22:12:00 │   67     0    10  87.0 │
+└───────────┴─────────────┴────────┴──────────────┴─────────────┴──────────────┴─────────────────┴────────────────────────┘
+                                   SUMMARY METRICS                                    
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Metric                                 ┃ Value                                     ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Backtesting from                       │ 2025-07-01 00:00:00                       │
+│ Backtesting to                         │ 2025-08-01 00:00:00                       │
+│ Trading Mode                           │ Isolated Futures                          │
+│ Max open trades                        │ 3                                         │
+│                                        │                                           │
+│ Total/Daily Avg Trades                 │ 77 / 2.48                                 │
+│ Starting balance                       │ 1000 USDT                                 │
+│ Final balance                          │ 1057.157 USDT                             │
+│ Absolute profit                        │ 57.157 USDT                               │
+│ Total profit %                         │ 5.72%                                     │
+│ CAGR %                                 │ 92.41%                                    │
+│ Sharpe (closed trades)                 │ 3.89                                      │
+│ Sortino (closed trades)                │ 2.57                                      │
+│ Calmar (closed trades)                 │ 43.03                                     │
+│ SQN                                    │ 0.71                                      │
+│ Profit factor                          │ 1.30                                      │
+│ Expectancy (Ratio)                     │ 0.74 (0.04)                               │
+│ Avg. daily profit                      │ 1.844 USDT                                │
+│ Avg. stake amount                      │ 345.478 USDT                              │
+│ Market change                          │ 30.51%                                    │
+│ Total trade volume                     │ 53390.788 USDT                            │
+│                                        │                                           │
+│ Long / Short trades                    │ 67 / 10                                   │
+│ Long / Short profit %                  │ 9.19% / -3.48%                            │
+│ Long / Short profit USDT               │ 91.940 / -34.783                          │
+│                                        │                                           │
+│ Best Pair                              │ LTC/USDT:USDT 5.69%                       │
+│ Worst Pair                             │ ADA/USDT:USDT -5.21%                      │
+│ Best trade                             │ XRP/USDT:USDT 2.00%                       │
+│ Worst trade                            │ ADA/USDT:USDT -10.17%                     │
+│ Best day                               │ 27.031 USDT                               │
+│ Worst day                              │ -47.826 USDT                              │
+│ Days win/draw/lose                     │ 20 / 6 / 5                                │
+│ Min/Max/Avg. Duration Winners          │ 0d 00:35 / 5d 18:15 / 0d 15:49            │
+│ Min/Max/Avg. Duration Losers           │ 0d 10:40 / 17d 08:00 / 2d 17:00           │
+│ Max Consecutive Wins / Loss            │ 36 / 3                                    │
+│ Rejected Entry signals                 │ 258                                       │
+│ Entry/Exit Timeouts                    │ 0 / 0                                     │
+│                                        │                                           │
+│ Min/Max balance (closed trades)        │ 1003.205 USDT / 1151.425 USDT             │
+│ Max % of account underwater            │ 8.19%                                     │
+│ Absolute drawdown                      │ 94.268 USDT (8.19%)                       │
+│ Drawdown duration                      │ 9 days 08:50:00                           │
+│ Profit at drawdown start               │ 151.425 USDT                              │
+│ Profit at drawdown end                 │ 57.157 USDT                               │
+│ Drawdown start                         │ 2025-07-22 15:10:00                       │
+│ Drawdown end                           │ 2025-08-01 00:00:00                       │
+│                                        │                                           │
+│ Wallet based Metrics                   │                                           │
+│ Min/Max balance (wallet balance)       │ 1000 USDT / 1151.425 USDT                 │
+│ Min/Max balance dates (wallet balance) │ 2025-07-01 00:05:00 / 2025-07-22 15:15:00 │
+│ Max % of account underwater (balance)  │ 5.01%                                     │
+│ Absolute drawdown (wallet balance)     │ 54.76 USDT (4.76%)                        │
+│ Drawdown duration                      │ 7 days 20:35:00                           │
+│ Profit at drawdown start               │ 151.425 USDT                              │
+│ Profit at drawdown end                 │ 96.664 USDT                               │
+│ Drawdown start                         │ 2025-07-22 15:15:00                       │
+│ Drawdown end                           │ 2025-07-30 11:50:00                       │
+│ Sharpe (daily wallet balance)          │ 4.42                                      │
+│ Sortino (daily wallet balance)         │ 4.35                                      │
+│ Calmar (daily wallet balance)          │ 136.07                                    │
+└────────────────────────────────────────┴───────────────────────────────────────────┘
 
 Backtested 2025-07-01 00:00:00 -> 2025-08-01 00:00:00 | Max open trades : 3
-                                                            STRATEGY SUMMARY                                                            
-┏━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
-┃       Strategy ┃ Trades ┃ Avg Profit % ┃ Tot Profit USDT ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃           Drawdown ┃
-┡━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
-│ SampleStrategy │     77 │         0.22 │          54.774 │         5.48 │     22:12:00 │   67     0    10  87.0 │ 94.647 USDT  8.23% │
-└────────────────┴────────┴──────────────┴─────────────────┴──────────────┴──────────────┴────────────────────────┴────────────────────┘
+                                                        STRATEGY SUMMARY                                                        
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃       Strategy ┃ Trades ┃ Avg Profit % ┃  Tot Profit ┃ Tot Profit % ┃ Avg Duration ┃  Win  Draw  Loss  Win% ┃       Drawdown ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ SampleStrategy │     77 │         0.23 │      57.157 │         5.72 │     22:12:00 │   67     0    10  87.0 │ 94.268   8.19% │
+└────────────────┴────────┴──────────────┴─────────────┴──────────────┴──────────────┴────────────────────────┴────────────────┘
+
 ```
 
 ### Backtesting report table
@@ -329,54 +343,72 @@ The last element of the backtest report is the summary metrics table.
 It contains key metrics about the performance of your strategy on backtesting data.
 
 ```
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Metric                        ┃ Value                           ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ Backtesting from              │ 2025-07-01 00:00:00             │
-│ Backtesting to                │ 2025-08-01 00:00:00             │
-│ Trading Mode                  │ Isolated Futures                │
-│ Max open trades               │ 3                               │
-│                               │                                 │
-│ Total/Daily Avg Trades        │ 72 / 2.32                       │
-│ Starting balance              │ 1000 USDT                       │
-│ Final balance                 │ 1106.734 USDT                   │
-│ Absolute profit               │ 106.734 USDT                    │
-│ Total profit %                │ 10.67%                          │
-│ CAGR %                        │ 230.04%                         │
-│ Sortino                       │ 4.99                            │
-│ Sharpe                        │ 8.00                            │
-│ Calmar                        │ 77.76                           │
-│ SQN                           │ 1.52                            │
-│ Profit factor                 │ 1.79                            │
-│ Expectancy (Ratio)            │ 1.48 (0.07)                     │
-│ Avg. daily profit             │ 3.443 USDT                      │
-│ Avg. stake amount             │ 363.133 USDT                    │
-│ Total trade volume            │ 52466.174 USDT                  │
-│                               │                                 │
-│ Best Pair                     │ LTC/USDT:USDT 4.48%             │
-│ Worst Pair                    │ ADA/USDT:USDT -1.78%            │
-│ Best trade                    │ ETC/USDT:USDT 2.00%             │
-│ Worst trade                   │ ADA/USDT:USDT -10.17%           │
-│ Best day                      │ 23.535 USDT                     │
-│ Worst day                     │ -49.813 USDT                    │
-│ Days win/draw/lose            │ 21 / 6 / 4                      │
-│ Min/Max/Avg. Duration Winners │ 0d 00:35 / 5d 18:15 / 0d 15:30  │
-│ Min/Max/Avg. Duration Losers  │ 0d 12:00 / 17d 08:00 / 3d 23:28 │
-│ Max Consecutive Wins / Loss   │ 58 / 4                          │
-│ Rejected Entry signals        │ 254                             │
-│ Entry/Exit Timeouts           │ 0 / 0                           │
-│                               │                                 │
-│ Min balance                   │ 1003.168 USDT                   │
-│ Max balance                   │ 1209 USDT                       │
-│ Max % of account underwater   │ 8.46%                           │
-│ Absolute drawdown             │ 102.266 USDT (8.46%)            │
-│ Drawdown duration             │ 9 days 08:50:00                 │
-│ Profit at drawdown start      │ 209 USDT                        │
-│ Profit at drawdown end        │ 106.734 USDT                    │
-│ Drawdown start                │ 2025-07-22 15:10:00             │
-│ Drawdown end                  │ 2025-08-01 00:00:00             │
-│ Market change                 │ 30.51%                          │
-└───────────────────────────────┴─────────────────────────────────┘
+                                   SUMMARY METRICS                                    
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Metric                                 ┃ Value                                     ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Backtesting from                       │ 2025-07-01 00:00:00                       │
+│ Backtesting to                         │ 2025-08-01 00:00:00                       │
+│ Trading Mode                           │ Isolated Futures                          │
+│ Max open trades                        │ 3                                         │
+│                                        │                                           │
+│ Total/Daily Avg Trades                 │ 77 / 2.48                                 │
+│ Starting balance                       │ 1000 USDT                                 │
+│ Final balance                          │ 1057.157 USDT                             │
+│ Absolute profit                        │ 57.157 USDT                               │
+│ Total profit %                         │ 5.72%                                     │
+│ CAGR %                                 │ 92.41%                                    │
+│ Sharpe (closed trades)                 │ 3.89                                      │
+│ Sortino (closed trades)                │ 2.57                                      │
+│ Calmar (closed trades)                 │ 43.03                                     │
+│ SQN                                    │ 0.71                                      │
+│ Profit factor                          │ 1.30                                      │
+│ Expectancy (Ratio)                     │ 0.74 (0.04)                               │
+│ Avg. daily profit                      │ 1.844 USDT                                │
+│ Avg. stake amount                      │ 345.478 USDT                              │
+│ Market change                          │ 30.51%                                    │
+│ Total trade volume                     │ 53390.788 USDT                            │
+│                                        │                                           │
+│ Long / Short trades                    │ 67 / 10                                   │
+│ Long / Short profit %                  │ 9.19% / -3.48%                            │
+│ Long / Short profit USDT               │ 91.940 / -34.783                          │
+│                                        │                                           │
+│ Best Pair                              │ LTC/USDT:USDT 5.69%                       │
+│ Worst Pair                             │ ADA/USDT:USDT -5.21%                      │
+│ Best trade                             │ XRP/USDT:USDT 2.00%                       │
+│ Worst trade                            │ ADA/USDT:USDT -10.17%                     │
+│ Best day                               │ 27.031 USDT                               │
+│ Worst day                              │ -47.826 USDT                              │
+│ Days win/draw/lose                     │ 20 / 6 / 5                                │
+│ Min/Max/Avg. Duration Winners          │ 0d 00:35 / 5d 18:15 / 0d 15:49            │
+│ Min/Max/Avg. Duration Losers           │ 0d 10:40 / 17d 08:00 / 2d 17:00           │
+│ Max Consecutive Wins / Loss            │ 36 / 3                                    │
+│ Rejected Entry signals                 │ 258                                       │
+│ Entry/Exit Timeouts                    │ 0 / 0                                     │
+│                                        │                                           │
+│ Min/Max balance (closed trades)        │ 1003.205 USDT / 1151.425 USDT             │
+│ Max % of account underwater            │ 8.19%                                     │
+│ Absolute drawdown                      │ 94.268 USDT (8.19%)                       │
+│ Drawdown duration                      │ 9 days 08:50:00                           │
+│ Profit at drawdown start               │ 151.425 USDT                              │
+│ Profit at drawdown end                 │ 57.157 USDT                               │
+│ Drawdown start                         │ 2025-07-22 15:10:00                       │
+│ Drawdown end                           │ 2025-08-01 00:00:00                       │
+│                                        │                                           │
+│ Wallet based Metrics                   │                                           │
+│ Min/Max balance (wallet balance)       │ 1000 USDT / 1151.425 USDT                 │
+│ Min/Max balance dates (wallet balance) │ 2025-07-01 00:05:00 / 2025-07-22 15:15:00 │
+│ Max % of account underwater (balance)  │ 5.01%                                     │
+│ Absolute drawdown (wallet balance)     │ 54.76 USDT (4.76%)                        │
+│ Drawdown duration                      │ 7 days 20:35:00                           │
+│ Profit at drawdown start               │ 151.425 USDT                              │
+│ Profit at drawdown end                 │ 96.664 USDT                               │
+│ Drawdown start                         │ 2025-07-22 15:15:00                       │
+│ Drawdown end                           │ 2025-07-30 11:50:00                       │
+│ Sharpe (daily wallet balance)          │ 4.42                                      │
+│ Sortino (daily wallet balance)         │ 4.35                                      │
+│ Calmar (daily wallet balance)          │ 136.07                                    │
+└────────────────────────────────────────┴───────────────────────────────────────────┘
 ```
 
 - `Backtesting from` / `Backtesting to`: Backtesting range (usually defined with the `--timerange` option).
@@ -388,14 +420,15 @@ It contains key metrics about the performance of your strategy on backtesting da
 - `Absolute profit`: Profit made in stake currency.
 - `Total profit %`: Total profit. Aligned to the `TOTAL` row's `Tot Profit %` from the first table. Calculated as `(End capital − Starting capital) / Starting capital`.
 - `CAGR %`: Compound annual growth rate.
-- `Sortino`: Annualized Sortino ratio.
-- `Sharpe`: Annualized Sharpe ratio.
-- `Calmar`: Annualized Calmar ratio.
+- `Sharpe (closed trades)`: Annualized Sharpe ratio including only closed trades (ignoring open trades with profits or losses).
+- `Sortino (closed trades)`: Annualized Sortino ratio including only closed trades (ignoring open trades with profits or losses).
+- `Calmar (closed trades)`: Annualized Calmar ratio including only closed trades (ignoring open trades with profits or losses).
 - `SQN`: System Quality Number (SQN) - by Van Tharp.
 - `Profit factor`: Sum of the profits of all winning trades divided by the sum of the losses of all losing trades.
 - `Expectancy (Ratio)`: Expectancy ratio, which is the average profit or loss per trade. A negative expectancy ratio means that your strategy is not profitable.
 - `Avg. daily profit`: Average profit per day, calculated as `(Total Profit / Backtest Days)`.
 - `Avg. stake amount`: Average stake amount, either `stake_amount` or the average when using dynamic stake amount.
+- `Market change`: Change of the market during the backtest period. Calculated as the average of all pairs' changes from the first to the last candle using the "close" column.
 - `Total trade volume`: Volume generated on the exchange to reach the above profit.
 - `Long / Short trades`: Split long/short trade counts (only shown when short trades were made).
 - `Long / Short profit %`: Profit percentage for long and short trades (only shown when short trades were made).
@@ -409,13 +442,21 @@ It contains key metrics about the performance of your strategy on backtesting da
 - `Max Consecutive Wins / Loss`: Maximum consecutive wins/losses in a row.
 - `Rejected Entry signals`: Trade entry signals that could not be acted upon due to `max_open_trades` being reached.
 - `Entry/Exit Timeouts`: Entry/exit orders which did not fill (only applicable if custom pricing is used).
-- `Min balance` / `Max balance`: Lowest and Highest Wallet balance during the backtest period.
+- `Min/Max balance (closed trades)`: Lowest and Highest Wallet balance during the backtest period based on closed trades trades.
 - `Max % of account underwater`: Maximum percentage your account has decreased from the top since the simulation started. Calculated as the maximum of `(Max Balance - Current Balance) / (Max Balance)`.
 - `Absolute drawdown`: Maximum absolute drawdown experienced, including percentage relative to the account calculated as `(Absolute Drawdown) / (DrawdownHigh + startingBalance)`..
+- `Absolute drawdown (wallet balance)`: Maximum absolute drawdown experienced based on the unrealized balance, including percentage relative to the account calculated as `(Absolute Drawdown) / (DrawdownHigh + startingBalance)`.
 - `Drawdown duration`: Duration of the largest drawdown period.
 - `Profit at drawdown start` / `Profit at drawdown end`: Profit at the beginning and end of the largest drawdown period.
 - `Drawdown start` / `Drawdown end`: Start and end datetime for the largest drawdown (can also be visualized via the `plot-dataframe` sub-command).
-- `Market change`: Change of the market during the backtest period. Calculated as the average of all pairs' changes from the first to the last candle using the "close" column.
+- `Min/Max balance (wallet balance)`: Lowest and Highest Wallet balance during the backtest period - including capital tied in open trades.
+- `Min/Max balance dates (wallet balance)`: Dates when the minimum and maximum unrealized balance occurred.
+- `Sharpe (wallet balance)` Annualized Sharpe ratio calculation including unrealized profits.
+- `Sortino (wallet balance)` Annualized Sortino ratio calculation including unrealized profits.
+- `Calmar (wallet balance)` Annualized Calmar ratio calculation including unrealized profits.
+
+!!! Tip "Wallet based Metrics"
+    The metrics under the "Wallet based Metrics" section are calculated based on the unrealized balance, which includes the capital tied in open trades. This provides a more comprehensive view of the strategy's performance, as it accounts for both realized and unrealized profits and losses.
 
 ### Daily / Weekly / Monthly / Yearly breakdown
 

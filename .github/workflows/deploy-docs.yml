@@ -26,15 +26,15 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - name: Install uv and Python 🐍
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          python-version: '3.12'
+          activate-environment: true
+          python-version: '3.13'
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r docs/requirements-docs.txt
+          uv pip install -r docs/requirements-docs.txt
 
       - name: Fetch gh-pages branch
         run: |

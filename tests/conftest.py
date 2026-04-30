@@ -169,25 +169,27 @@ def generate_trades_history(n_rows, start_date: datetime | None = None, days=5):
     return df
 
 
-def generate_test_data(timeframe: str, size: int, start: str = "2020-07-05", random_seed=42):
+def generate_test_data(
+    timeframe: str, size: int, start: str = "2020-07-05", random_seed=42, base=20
+):
     np.random.seed(random_seed)
 
-    base = np.random.normal(20, 2, size=size)
+    base = np.random.normal(base, 2, size=size)
     if timeframe == "1y":
-        date = pd.date_range(start, periods=size, freq="1YS", tz="UTC")
+        date = pd.date_range(start, periods=size, freq="1YS", tz="UTC", unit="ms")
     elif timeframe == "1M":
-        date = pd.date_range(start, periods=size, freq="1MS", tz="UTC")
+        date = pd.date_range(start, periods=size, freq="1MS", tz="UTC", unit="ms")
     elif timeframe == "3M":
-        date = pd.date_range(start, periods=size, freq="3MS", tz="UTC")
+        date = pd.date_range(start, periods=size, freq="3MS", tz="UTC", unit="ms")
     elif timeframe == "1w" or timeframe == "7d":
-        date = pd.date_range(start, periods=size, freq="1W-MON", tz="UTC")
+        date = pd.date_range(start, periods=size, freq="1W-MON", tz="UTC", unit="ms")
     else:
         tf_mins = timeframe_to_minutes(timeframe)
         if tf_mins >= 1:
-            date = pd.date_range(start, periods=size, freq=f"{tf_mins}min", tz="UTC")
+            date = pd.date_range(start, periods=size, freq=f"{tf_mins}min", tz="UTC", unit="ms")
         else:
             tf_secs = timeframe_to_seconds(timeframe)
-            date = pd.date_range(start, periods=size, freq=f"{tf_secs}s", tz="UTC")
+            date = pd.date_range(start, periods=size, freq=f"{tf_secs}s", tz="UTC", unit="ms")
     df = pd.DataFrame(
         {
             "date": date,
@@ -205,7 +207,7 @@ def generate_test_data(timeframe: str, size: int, start: str = "2020-07-05", ran
 def generate_test_data_raw(timeframe: str, size: int, start: str = "2020-07-05", random_seed=42):
     """Generates data in the ohlcv format used by ccxt"""
     df = generate_test_data(timeframe, size, start, random_seed)
-    df["date"] = df.loc[:, "date"].astype(np.int64) // 1000 // 1000
+    df["date"] = df.loc[:, "date"].dt.as_unit("ms").astype("int64")
     return list(list(x) for x in zip(*(df[x].values.tolist() for x in df.columns), strict=False))
 
 

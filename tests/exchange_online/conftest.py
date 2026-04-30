@@ -603,6 +603,7 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
                     "status": "closed",
                     "type": "market",
                     "amount": 0.0004,
+                    "filled": 0.0004,
                     "side": "sell",
                     "triggerPrice": None,
                     "stopPrice": None,
@@ -646,6 +647,8 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
                     "price": None,
                     "status": "open",
                     "amount": 0.0004,
+                    # TODO: filled should be 0, not None.
+                    "filled": None,
                     "side": "buy",
                     "triggerPrice": 71641.0,
                     "stopPrice": 71641.0,
@@ -681,8 +684,7 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
                     "datetime": "2026-03-21T07:32:21.555Z",
                     "price": None,
                     "status": "canceled",
-                    # TODO: filled should be 0, not None.
-                    "filled": None,
+                    "filled": 0.0,
                 },
             },
         ],

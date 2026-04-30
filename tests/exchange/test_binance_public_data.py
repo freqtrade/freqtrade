@@ -69,7 +69,7 @@ def make_response_from_url(start_date, end_date):
             "taker_buy_quote_volume,ignore"
         )
         df = pd.DataFrame(columns=cols.split(","), dtype=float)
-        df["open_time"] = date_col.astype("int64") // 10**6
+        df["open_time"] = date_col.as_unit("ms").astype("int64")
         df["open"] = df["high"] = df["low"] = df["close"] = df["volume"] = 1.0
         return df
 

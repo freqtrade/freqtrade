@@ -1434,8 +1434,8 @@ def test_rpc_add_and_delete_lock(mocker, default_conf):
     pair = "ETH/BTC"
 
     rpc._rpc_add_lock(pair, datetime.now(UTC) + timedelta(minutes=4), "", "*")
-    rpc._rpc_add_lock(pair, datetime.now(UTC) + timedelta(minutes=5), "", "*")
-    rpc._rpc_add_lock(pair, datetime.now(UTC) + timedelta(minutes=10), "", "*")
+    rpc._rpc_add_lock(pair, datetime.now(UTC) + timedelta(minutes=20), "", "*")
+    rpc._rpc_add_lock(pair, datetime.now(UTC) + timedelta(minutes=50), "", "*")
 
     locks = rpc._rpc_locks()
     assert locks["lock_count"] == 3

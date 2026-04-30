@@ -1,6 +1,5 @@
 import logging
 
-import numpy as np
 from pandas import DataFrame, read_json, to_datetime
 
 from freqtrade import misc
@@ -35,8 +34,8 @@ class JsonDataHandler(IDataHandler):
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
         self.create_dir_if_needed(filename)
         _data = data.copy()
-        # Convert date to int
-        _data["date"] = _data["date"].astype(np.int64) // 1000 // 1000
+        # Convert date to int (milliseconds)
+        _data["date"] = _data["date"].dt.as_unit("ms").astype("int64")
 
         # Reset index, select only appropriate columns and save as json
         _data.reset_index(drop=True).loc[:, self._columns].to_json(
@@ -81,7 +80,7 @@ class JsonDataHandler(IDataHandler):
                 "volume": "float",
             }
         )
-        pairdata["date"] = to_datetime(pairdata["date"], unit="ms", utc=True)
+        pairdata["date"] = to_datetime(pairdata["date"], unit="ms", utc=True).dt.as_unit("ms")
         return pairdata
 
     def ohlcv_append(
@@ -105,6 +104,9 @@ class JsonDataHandler(IDataHandler):
         :param trading_mode: Trading mode to use (used to determine the filename)
         """
         filename = self._pair_trades_filename(self._datadir, pair, trading_mode)
+        # Convert StringDtype columns to object to avoid NaN serialization issues
+        for col in data.select_dtypes(include="string").columns:
+            data[col] = data[col].astype(object).where(data[col].notna(), other=None)
         trades = data.values.tolist()
         misc.file_dump_json(filename, trades, is_zip=self._use_zip)
 

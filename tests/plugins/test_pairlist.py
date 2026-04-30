@@ -2850,10 +2850,10 @@ def test_backtesting_modes(
 def test_DelistFilter_error(whitelist_conf) -> None:
     whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, {"method": "DelistFilter"}]
     exchange_mock = MagicMock()
-    exchange_mock._ft_has = {"has_delisting": False}
+    exchange_mock.get_option = MagicMock(return_value=False)
     with pytest.raises(
         OperationalException,
-        match=r"DelistFilter doesn't support this exchange and trading mode combination\.",
+        match=r"DelistFilter doesn't support .* in .* mode\.",
     ):
         PairListManager(exchange_mock, whitelist_conf, MagicMock())
 

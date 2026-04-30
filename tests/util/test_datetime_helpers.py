@@ -6,7 +6,9 @@ import time_machine
 from freqtrade.util import (
     dt_floor_day,
     dt_from_ts,
+    dt_humanize_delta,
     dt_now,
+    dt_now_no_micro,
     dt_ts,
     dt_ts_def,
     dt_ts_none,
@@ -16,15 +18,17 @@ from freqtrade.util import (
     format_ms_time_det,
     shorten_date,
 )
-from freqtrade.util.datetime_helpers import dt_humanize_delta
 
 
 def test_dt_now():
-    with time_machine.travel("2021-09-01 05:01:00 +00:00", tick=False) as t:
+    with time_machine.travel("2021-09-01 05:01:00.123 +00:00", tick=False) as t:
         now = datetime.now(UTC)
         assert dt_now() == now
         assert dt_ts() == int(now.timestamp() * 1000)
         assert dt_ts(now) == int(now.timestamp() * 1000)
+        assert dt_now().microsecond != 0.0
+        assert dt_now_no_micro().microsecond == 0.0
+        assert dt_now_no_micro() == now.replace(microsecond=0)
 
         t.shift(timedelta(hours=5))
         assert dt_now() >= now

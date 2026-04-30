@@ -42,6 +42,7 @@ class PairLocks:
     ) -> PairLock:
         """
         Create PairLock from now to "until".
+        Doesn't create a new lock if there is already a lock with the same Reason, side and endtime.
         Uses database by default, unless PairLocks.use_db is set to False,
         in which case a list is maintained.
         :param pair: pair to lock. use '*' to lock all pairs
@@ -50,10 +51,19 @@ class PairLocks:
         :param now: Current timestamp. Used to determine lock start time.
         :param side: Side to lock pair, can be 'long', 'short' or '*'
         """
+        lock_end_time = timeframe_to_next_date(PairLocks.timeframe, until)
+        existing_locks = PairLocks.get_pair_locks(pair, now, side=side)
+        for lock in existing_locks:
+            if (
+                lock.reason == reason
+                and lock.lock_end_time_utc == lock_end_time
+                and lock.side == side
+            ):
+                return lock
         lock = PairLock(
             pair=pair,
             lock_time=now or datetime.now(UTC),
-            lock_end_time=timeframe_to_next_date(PairLocks.timeframe, until),
+            lock_end_time=lock_end_time,
             reason=reason,
             side=side,
             active=True,

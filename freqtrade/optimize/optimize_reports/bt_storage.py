@@ -52,6 +52,7 @@ def store_backtest_results(
     dtappendix: str,
     *,
     market_change_data: DataFrame | None = None,
+    wallet_summary: dict[str, DataFrame] | None = None,
     analysis_results: dict[str, dict[str, DataFrame]] | None = None,
     strategy_files: dict[str, str] | None = None,
 ) -> Path:
@@ -122,6 +123,15 @@ def store_backtest_results(
             )
             market_change_buf.seek(0)
             zipf.writestr(market_change_name, market_change_buf.getvalue())
+
+        # Add wallet summary if present
+        if wallet_summary is not None:
+            for strategy, df in wallet_summary.items():
+                wallet_name = f"{base_filename.stem}_{strategy}_wallet.feather"
+                wallet_buf = BytesIO()
+                df.reset_index().to_feather(wallet_buf, compression_level=9, compression="lz4")
+                wallet_buf.seek(0)
+                zipf.writestr(wallet_name, wallet_buf.getvalue())
 
         # Add analysis results if present and running in backtest mode
         if (

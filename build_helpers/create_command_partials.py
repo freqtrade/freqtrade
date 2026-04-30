@@ -87,7 +87,7 @@ def extract_command_partials():
             help_output = _get_help_output(subparser)
             _write_partial_file(f"docs/commands/{command}.md", help_output)
         else:
-            print(f"  Warning: subcommand '{command}' not found in parser")
+            print(f" Warning: subcommand '{command}' not found in parser")
 
     # freqtrade-client still uses subprocess as requested
     print("Running for freqtrade-client")

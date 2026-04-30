@@ -55,6 +55,7 @@ class BacktestContentTypeIcomplete(TypedDict, total=False):
     backtest_start_time: int
     backtest_end_time: int
     run_id: str
+    wallet_summary: DataFrame
 
 
 class BacktestContentType(BacktestContentTypeIcomplete, total=True):

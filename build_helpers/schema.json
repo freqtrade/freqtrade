@@ -283,6 +283,10 @@
         "month"
       ]
     },
+    "skip_wallet_history_migration": {
+      "description": "Disable wallet history migration.",
+      "type": "boolean"
+    },
     "hyperopt_path": {
       "description": "Specify additional lookup path for Hyperopt Loss functions.",
       "type": "string"

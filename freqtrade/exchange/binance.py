@@ -46,6 +46,10 @@ class Binance(Exchange):
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
         "ws_enabled": True,
         "has_delisting": True,
+        # Demo trading
+        # https://www.binance.com/en/support/faq/detail/9be58f73e5e14338809e3b705b9687dd
+        # Intentionally Disabled as it's a separate market - not a simulated live market.
+        "supports_demo_trading": False,
     }
     _ft_has_futures: FtHas = {
         "ohlcv_candle_limit": 499,

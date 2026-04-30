@@ -10,8 +10,8 @@ from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
 from freqtrade.misc import safe_value_fallback
-from freqtrade.persistence import LocalTrade, Trade
-from freqtrade.util.datetime_helpers import dt_now
+from freqtrade.persistence import LocalTrade, Trade, WalletHistory
+from freqtrade.util import dt_floor_day, dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -445,3 +445,71 @@ class Wallets:
                 logger.debug(msg)
             else:
                 logger.info(msg)
+
+    def record_wallet_state(self) -> None:
+        """Record daily wallet totals to database"""
+        if self._is_backtest:
+            # only record in live mode.
+            return
+        timestamp = dt_floor_day(dt_now())
+
+        # Record total balances for all currencies
+        wallet_records = []
+        position_collaterals = 0.0
+        open_assets: dict[str, Trade] = {t.safe_base_currency: t for t in Trade.get_open_trades()}
+        for pos in self.get_all_positions().values():
+            base = self._exchange.get_pair_base_currency(pos.symbol)
+            rate = self._exchange.get_conversion_rate(base, self._stake_currency)
+            total_quote = None
+            leverage = pos.leverage or 1.0
+            if rate:
+                # Same formula than in rpc's _rpc_balance
+                total_quote = (
+                    rate * pos.position - pos.collateral * (leverage - 1)
+                    if pos.side == "long"
+                    else pos.collateral * (1 + leverage) - rate * pos.position
+                )
+
+            position_record = WalletHistory(
+                timestamp=timestamp,
+                currency=pos.symbol,
+                quote_currency=self._stake_currency,
+                rate=rate,
+                balance=pos.position,
+                total_quote=total_quote,
+                total_position_value=rate * pos.position if rate else None,
+                collateral=pos.collateral,
+                leverage=leverage,
+                bot_managed=base in open_assets,
+            )
+            position_collaterals += pos.collateral
+            wallet_records.append(position_record)
+
+        for wallet in self.get_all_balances().values():
+            # TODO: (needs decision) exclude minimal balances?
+            rate = self._exchange.get_conversion_rate(wallet.currency, self._stake_currency)
+            is_bot_managed = (
+                self._stake_currency == wallet.currency or wallet.currency in open_assets
+            )
+            balance = wallet.total - (
+                position_collaterals if wallet.currency == self._stake_currency else 0
+            )
+            total_quote = rate * balance if rate else None
+
+            wallet_record = WalletHistory(
+                timestamp=timestamp,
+                currency=wallet.currency,
+                quote_currency=self._stake_currency,
+                rate=rate,
+                balance=balance,
+                leverage=1.0,
+                total_quote=total_quote,
+                bot_managed=is_bot_managed,
+            )
+            wallet_records.append(wallet_record)
+        try:
+            WalletHistory.session.bulk_save_objects(wallet_records)
+            WalletHistory.session.commit()
+        except Exception as e:
+            WalletHistory.session.rollback()
+            logger.error(f"Error saving wallet balance records: {e}")

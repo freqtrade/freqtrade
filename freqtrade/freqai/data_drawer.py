@@ -361,7 +361,7 @@ class FreqaiDataDrawer:
             label_loc = df.columns.get_loc(label)
             pred_label_loc = predictions.columns.get_loc(label)
             df.iloc[-1, label_loc] = predictions.iloc[-1, pred_label_loc]
-            if df[label].dtype == object:
+            if pd.api.types.is_string_dtype(df[label].dtype):
                 continue
             label_mean_loc = df.columns.get_loc(f"{label}_mean")
             label_std_loc = df.columns.get_loc(f"{label}_std")

@@ -12,6 +12,13 @@ def dt_now() -> datetime:
     return datetime.now(UTC)
 
 
+def dt_now_no_micro() -> datetime:
+    """Return the current datetime in UTC without microseconds.
+    Should not be used outside of tests.
+    """
+    return dt_now().replace(microsecond=0)
+
+
 def dt_utc(
     year: int,
     month: int,

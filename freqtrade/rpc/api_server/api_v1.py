@@ -69,7 +69,8 @@ logger = logging.getLogger(__name__)
 # 2.45: Add price to forceexit endpoint
 # 2.46: Add prepend_data to download-data endpoint
 # 2.47: Add Strategy parameters
-API_VERSION = 2.47
+# 2.48: add /backtest/history/wallets endpoint
+API_VERSION = 2.48
 
 # Public API, requires no auth.
 router_public = APIRouter()

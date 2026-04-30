@@ -83,6 +83,9 @@ def test_backtest_position_adjustment(default_conf, fee, mocker, testdatadir) ->
             "funding_fees": [0.0, 0.0],
         }
     )
+    # TODO: pandas3 - create correctly above ?!?
+    expected["open_date"] = expected["open_date"].astype("datetime64[ms, UTC]")
+    expected["close_date"] = expected["close_date"].astype("datetime64[ms, UTC]")
     results_no = results.drop(columns=["orders"])
     pd.testing.assert_frame_equal(results_no, expected, check_exact=True)
 

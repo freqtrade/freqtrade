@@ -757,10 +757,12 @@ def test_backtest__check_trade_exit(default_conf, mocker) -> None:
 def test_backtest_one(default_conf, mocker, testdatadir) -> None:
     default_conf["use_exit_signal"] = False
     default_conf["max_open_trades"] = 10
+    default_conf["runmode"] = RunMode.BACKTEST
 
     patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float("inf"))
+    mocker.patch(f"{EXMS}.get_pair_base_currency", lambda _, x: x.split("/")[0])
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
     pair = "UNITTEST/BTC"
@@ -858,6 +860,9 @@ def test_backtest_one(default_conf, mocker, testdatadir) -> None:
             "funding_fees": [0.0, 0.0],
         }
     )
+    # TODO: pandas3 - create correctly above ?!?
+    expected["open_date"] = expected["open_date"].astype("datetime64[ms, UTC]")
+    expected["close_date"] = expected["close_date"].astype("datetime64[ms, UTC]")
     pd.testing.assert_frame_equal(results, expected)
     assert "orders" in results.columns
     data_pair = processed[pair]
@@ -875,13 +880,23 @@ def test_backtest_one(default_conf, mocker, testdatadir) -> None:
             ln1.iloc[0]["low"], 6
         ) < round(t["close_rate"], 6) < round(ln1.iloc[0]["high"], 6)
 
+    wallet_summary = result["wallet_summary"]
+    assert isinstance(wallet_summary, pd.DataFrame)
+    assert len(wallet_summary) == 255
+    unique_currencies = wallet_summary["currency"].value_counts()
+    assert unique_currencies["BTC"] == 200
+    assert unique_currencies["UNITTEST"] == 55
+
 
 @pytest.mark.parametrize("use_detail", [True, False])
 def test_backtest_one_detail(default_conf_usdt, mocker, testdatadir, use_detail) -> None:
     default_conf_usdt["use_exit_signal"] = False
+    default_conf_usdt["runmode"] = RunMode.BACKTEST
     patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float("inf"))
+    mocker.patch(f"{EXMS}.get_pair_base_currency", lambda _, x: x.split("/")[0])
+
     default_conf_usdt["unfilledtimeout"] = {
         "entry": 11,
         "exit": 30,
@@ -968,6 +983,12 @@ def test_backtest_one_detail(default_conf_usdt, mocker, testdatadir, use_detail)
         )
 
     assert late_entry > 0
+    wallet_summary = result["wallet_summary"]
+    assert isinstance(wallet_summary, pd.DataFrame)
+    assert len(wallet_summary) == 591 if use_detail else 597
+    unique_currencies = wallet_summary["currency"].value_counts()
+    assert unique_currencies["USDT"] == 576
+    assert unique_currencies["XRP"] == 15 if use_detail else 21
 
 
 @pytest.mark.parametrize(

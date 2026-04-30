@@ -1,6 +1,6 @@
 import logging
 
-from pandas import DataFrame, read_feather, to_datetime
+from pandas import DataFrame, read_feather
 from pyarrow import dataset
 
 from freqtrade.configuration import TimeRange
@@ -71,7 +71,7 @@ class FeatherDataHandler(IDataHandler):
                     "volume": "float",
                 }
             )
-            pairdata["date"] = to_datetime(pairdata["date"], unit="ms", utc=True)
+            pairdata["date"] = pairdata["date"].dt.as_unit("ms")
             return pairdata
         except Exception as e:
             logger.exception(

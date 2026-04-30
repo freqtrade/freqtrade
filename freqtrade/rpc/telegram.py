@@ -483,7 +483,7 @@ class Telegram(RPCHandler):
                 profit_prefix = "Sub "
                 cp_extra = (
                     f"*Final Profit:* `{format_pct(msg['final_profit_ratio'])} "
-                    f"({msg['cumulative_profit']:.8f} {msg['quote_currency']}{cp_fiat})`\n"
+                    f"({fmt_coin(msg['cumulative_profit'], msg['stake_currency'])}{cp_fiat})`\n"
                 )
             else:
                 exit_wording = f"Partially {exit_wording.lower()}"
@@ -832,7 +832,7 @@ class Telegram(RPCHandler):
                 ):
                     # Adding initial stoploss only if it is different from stoploss
                     lines.append(
-                        f"*Initial Stoploss:* `{r['initial_stop_loss_abs']:.8f}` "
+                        f"*Initial Stoploss:* `{round_value(r['initial_stop_loss_abs'], 8)}` "
                         f"`({format_pct(r['initial_stop_loss_ratio'])})`"
                     )
 
@@ -2049,7 +2049,7 @@ class Telegram(RPCHandler):
 
         await self._send_msg(
             f"*Mode:* `{'Dry-run' if val['dry_run'] else 'Live'}`\n"
-            f"*Exchange:* `{val['exchange']}`\n"
+            f"*Exchange:* `{val['exchange']}{' (Demo)' if val['demo_trading'] else ''}`\n"
             f"*Market: * `{val['trading_mode']}`\n"
             f"*Stake per trade:* `{val['stake_amount']} {val['stake_currency']}`\n"
             f"*Max open Trades:* `{val['max_open_trades']}`\n"
@@ -2243,7 +2243,7 @@ class Telegram(RPCHandler):
         else:
             raise RPCException(
                 "Invalid usage of command /marketdir. \n"
-                "Usage: */marketdir [short |  long | even | none]*"
+                "Usage: */marketdir [short | long | even | none]*"
             )
 
     async def _tg_info(self, update: Update, context: CallbackContext) -> None:

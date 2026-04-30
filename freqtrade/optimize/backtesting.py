@@ -51,6 +51,7 @@ from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
 from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (
+    convert_bt_wallet_collection,
     generate_backtest_stats,
     generate_rejected_signals,
     generate_trade_signal_candles,
@@ -137,6 +138,7 @@ class Backtesting:
         }
         self.rejected_dict: dict[str, list] = {}
         self.starting_balance: float = 0.0
+        self.wallet_captures: list = []
 
         self._exchange_name = self.config["exchange"]["name"]
         self.__initial_backtest = exchange is None
@@ -451,6 +453,7 @@ class Backtesting:
         self.replaced_entry_orders = 0
         self.canceled_exit_orders = 0
         self.replaced_exit_orders = 0
+        self.wallet_captures = []
         self.dataprovider.clear_cache()
         if enable_protections:
             self._load_protections(self.strategy)
@@ -754,7 +757,7 @@ class Backtesting:
     ) -> bool:
         """
         Check if an order is open and if it should've filled.
-        :return:  True if the order filled.
+        :return: True if the order filled.
         """
         if order and self._get_order_filled(order.ft_price, row):
             order.close_bt_order(current_date, trade)
@@ -1603,6 +1606,7 @@ class Backtesting:
             pair_detail_cache: dict[str, list[tuple]] = {}
             pair_tradedir_cache: dict[str, LongShort | None] = {}
             pairs_with_open_trades = [t.pair for t in LocalTrade.bt_trades_open]
+            self._capture_wallet(current_time, self.strategy.config["stake_currency"], 1)
 
             for current_time_det, is_first, has_detail, idx, pair in self._time_pair_generator_det(
                 current_time, pairs
@@ -1627,6 +1631,7 @@ class Backtesting:
                     )
                     trade_dir = self.check_for_trade_entry(row)
                     pair_tradedir_cache[pair] = trade_dir
+                    self._capture_wallet(current_time, pair.split("/")[0], row[OPEN_IDX])
 
                 else:
                     # Detail candle - from cache.
@@ -1679,6 +1684,15 @@ class Backtesting:
 
                 yield current_time_det, pair, row, is_last_row, trade_dir
             self.progress.increment()
+
+    def _capture_wallet(self, current_time: datetime, currency: str, price: float) -> None:
+        """
+        Capture the current wallet state.
+        """
+        if self.dataprovider.runmode != RunMode.BACKTEST:
+            return
+        if total := self.wallets.get_total(currency):
+            self.wallet_captures.append((current_time, currency, price, total))
 
     def backtest(
         self, processed: dict, start_date: datetime, end_date: datetime
@@ -1739,6 +1753,7 @@ class Backtesting:
             "canceled_entry_orders": self.canceled_entry_orders,
             "replaced_entry_orders": self.replaced_entry_orders,
             "final_balance": self.wallets.get_total(self.strategy.config["stake_currency"]),
+            "wallet_summary": convert_bt_wallet_collection(self.wallet_captures),
         }
 
     def backtest_one_strategy(
@@ -1867,6 +1882,11 @@ class Backtesting:
                     dt_appendix,
                     market_change_data=combined_res,
                     analysis_results=self.analysis_results,
+                    wallet_summary={
+                        s: x["wallet_summary"]
+                        for s, x in self.all_bt_content.items()
+                        if "wallet_summary" in x
+                    },
                     strategy_files={s.get_strategy_name(): s.__file__ for s in self.strategylist},
                 )
 

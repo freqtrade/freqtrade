@@ -158,3 +158,36 @@ def test_PairLocks_reason(use_db):
 
     PairLocks.reset_locks()
     PairLocks.use_db = True
+
+
+@pytest.mark.parametrize("use_db", (False, True))
+@pytest.mark.usefixtures("init_persistence")
+def test_PairLocks_no_duplicates(use_db, time_machine):
+    PairLocks.timeframe = "5m"
+    PairLocks.use_db = use_db
+    PairLocks.reset_locks()
+    # No lock should be present
+    assert len(PairLocks.get_all_locks()) == 0
+    time_machine.move_to("2026-01-05 20:00:05 +00:00", tick=False)
+
+    assert PairLocks.use_db == use_db
+    PairLocks.lock_pair("XRP/USDT", dt_now() + timedelta(minutes=4), "TestLock1")
+    assert len(PairLocks.get_all_locks()) == 1
+
+    PairLocks.lock_pair("XRP/USDT", dt_now() + timedelta(minutes=4), "TestLock1")
+    assert len(PairLocks.get_all_locks()) == 1
+
+    # Different Reason - should create a new lock
+    PairLocks.lock_pair("XRP/USDT", dt_now() + timedelta(minutes=4), "TestLock2")
+    assert len(PairLocks.get_all_locks()) == 2
+
+    # Different end-time - should create a new lock
+    PairLocks.lock_pair("XRP/USDT", dt_now() + timedelta(minutes=5), "TestLock1")
+    assert len(PairLocks.get_all_locks()) == 3
+
+    # Different side - should create a new lock
+    PairLocks.lock_pair("XRP/USDT", dt_now() + timedelta(minutes=4), "TestLock1", side="long")
+    assert len(PairLocks.get_all_locks()) == 4
+
+    PairLocks.reset_locks()
+    PairLocks.use_db = True

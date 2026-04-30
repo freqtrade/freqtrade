@@ -16,10 +16,11 @@ from freqtrade.data.btanalysis import (
     get_backtest_market_change,
     get_backtest_result,
     get_backtest_resultlist,
+    get_backtest_wallet_change,
     load_and_merge_backtest_result,
     update_backtest_metadata,
 )
-from freqtrade.enums import BacktestState
+from freqtrade.enums import BacktestState, RunMode
 from freqtrade.exceptions import ConfigurationError, DependencyException, OperationalException
 from freqtrade.ft_types import get_BacktestResultType_default
 from freqtrade.misc import deep_merge_dicts, is_file_in_dir
@@ -29,6 +30,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     BacktestMetadataUpdate,
     BacktestRequest,
     BacktestResponse,
+    WalletHistoryResponse,
 )
 from freqtrade.rpc.api_server.deps import get_config, verify_strategy
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
@@ -106,6 +108,11 @@ def __run_backtest_bg(btconfig: Config):
                     ApiBG.bt["bt"].results,
                     datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
                     market_change_data=combined_res,
+                    wallet_summary={
+                        s: x["wallet_summary"]
+                        for s, x in ApiBG.bt["bt"].all_bt_content.items()
+                        if "wallet_summary" in x
+                    },
                     strategy_files={
                         s.get_strategy_name(): s.__file__ for s in ApiBG.bt["bt"].strategylist
                     },
@@ -137,6 +144,7 @@ async def api_start_backtest(
     verify_strategy(bt_settings.strategy)
 
     btconfig = deepcopy(config)
+    btconfig["runmode"] = RunMode.BACKTEST
     remove_exchange_credentials(btconfig["exchange"], True)
     settings = dict(bt_settings)
     if settings.get("freqai", None) is not None:
@@ -353,4 +361,30 @@ def api_get_backtest_market_change(file: str, config=Depends(get_config)):
         "columns": df.columns.tolist(),
         "data": df.values.tolist(),
         "length": len(df),
+    }
+
+
+@router.get(
+    "/backtest/history/{file}/{strategy}/wallet",
+    response_model=WalletHistoryResponse,
+    tags=["webserver", "backtest"],
+)
+def api_get_backtest_wallet(file: str, strategy: str, config=Depends(get_config)):
+    bt_results_base: Path = config["user_data_dir"] / "backtest_results"
+    file_abs = (bt_results_base / file).with_suffix(".zip")
+    # Ensure file is in backtest_results directory
+    if not is_file_in_dir(file_abs, bt_results_base):
+        raise HTTPException(status_code=400, detail="Unable to retrieve wallet history.")
+
+    results = get_backtest_wallet_change(file_abs, strategy)
+    if results is None:
+        raise HTTPException(status_code=404, detail="Unable to retrieve wallet history.")
+    # Consolidate the wallet to the base currency
+    results.loc[:, "total_quote"] = results["rate"] * results["balance"]
+    results = results.groupby(["date", "__date_ts"]).agg({"total_quote": "sum"}).reset_index()
+
+    return {
+        "columns": results.columns.tolist(),
+        "data": results.values.tolist(),
+        "length": len(results),
     }

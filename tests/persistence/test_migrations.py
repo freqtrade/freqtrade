@@ -383,11 +383,19 @@ def test_migrate_set_sequence_ids():
     )
     engine.name = "postgresql"
 
-    set_sequence_ids(engine, 22, 55, 5, 3, 1)
+    set_sequence_ids(
+        engine,
+        order_id=22,
+        trade_id=55,
+        pairlock_id=5,
+        kv_id=3,
+        custom_data_id=10,
+        wallet_history_id=15,
+    )
 
     # begin called once and connection.execute invoked for each provided sequence id
     assert engine.begin.call_count == 1
-    assert conn.execute.call_count == 5
+    assert conn.execute.call_count == 6
     assert (
         conn.execute.call_args_list[0][0][0].text == "ALTER SEQUENCE orders_id_seq RESTART WITH 22"
     )
@@ -404,7 +412,12 @@ def test_migrate_set_sequence_ids():
     )
     assert (
         conn.execute.call_args_list[4][0][0].text
-        == "ALTER SEQUENCE trade_custom_data_id_seq RESTART WITH 1"
+        == "ALTER SEQUENCE trade_custom_data_id_seq RESTART WITH 10"
+    )
+
+    assert (
+        conn.execute.call_args_list[5][0][0].text
+        == "ALTER SEQUENCE wallet_history_id_seq RESTART WITH 15"
     )
 
     engine.reset_mock()

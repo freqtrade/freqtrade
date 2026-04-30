@@ -67,6 +67,8 @@ class FtHas(TypedDict, total=False):
 
     # Delisting check
     has_delisting: bool
+    # Demo mode - this is not sandbox but an exchange-provided demo mode.
+    supports_demo_trading: bool
 
 
 class Ticker(TypedDict):

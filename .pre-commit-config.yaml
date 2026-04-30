@@ -15,23 +15,23 @@ repos:
 
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.19.1"
+    rev: "v1.20.2"
     hooks:
       - id: mypy
         exclude: build_helpers
         additional_dependencies:
-          - types-cachetools==6.2.0.20251022
+          - types-cachetools==6.2.0.20260408
           - types-filelock==3.2.7
-          - types-requests==2.32.4.20260107
-          - types-tabulate==0.10.0.20260308
-          - types-python-dateutil==2.9.0.20260305
-          - scipy-stubs==1.17.1.2
-          - SQLAlchemy==2.0.48
+          - types-requests==2.33.0.20260408
+          - types-tabulate==0.10.0.20260408
+          - types-python-dateutil==2.9.0.20260408
+          - scipy-stubs==1.17.1.4
+          - SQLAlchemy==2.0.49
         # stages: [push]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.15.7'
+    rev: 'v0.15.12'
     hooks:
       - id: ruff
       - id: ruff-format
@@ -70,6 +70,6 @@ repos:
 
   # Ensure github actions remain safe
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.23.1
+    rev: v1.24.1
     hooks:
     - id: zizmor

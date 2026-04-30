@@ -35,6 +35,9 @@ class Bybit(Exchange):
             # TODO: Can be removed once bybit fully forces all accounts to unified mode.
             "fetchOrder": False,
         },
+        # Demo trading
+        # https://learn.bybit.com/en/bybit-guide/how-to-use-bybit-demo-trading
+        "supports_demo_trading": True,
     }
     _ft_has_futures: FtHas = {
         "ohlcv_has_history": True,

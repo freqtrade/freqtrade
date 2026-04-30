@@ -7,12 +7,14 @@ from sqlalchemy import select
 
 from freqtrade.constants import UNLIMITED_STAKE_AMOUNT
 from freqtrade.exceptions import DependencyException
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Trade, WalletHistory
+from freqtrade.wallets import PositionWallet, Wallet
 from tests.conftest import (
     EXMS,
     create_mock_trades,
     create_mock_trades_usdt,
     get_patched_freqtradebot,
+    log_has_re,
     patch_wallet,
 )
 
@@ -607,3 +609,81 @@ def test_dry_run_wallet_initialization(mocker, default_conf_usdt, config, wallet
             pytest.approx(freqtrade.wallets._wallets[stake_currency].free)
             == wallets[stake_currency]["free"] - 100.0
         )
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_record_wallet_state_stores_wallet_history(mocker, default_conf_usdt):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    stake_currency = default_conf_usdt["stake_currency"]
+    freqtrade.wallets._wallets = {
+        stake_currency: Wallet(stake_currency, free=100.0, used=50, total=150),
+        "BTC": Wallet("BTC", free=2.0, used=1.0, total=3.0),
+    }
+    freqtrade.wallets._positions = {
+        "ETH/USDT:USDT": PositionWallet(
+            symbol="ETH/USDT:USDT",
+            position=0.8,
+            collateral=1.0,
+            leverage=3.0,
+            side="long",
+        )
+    }
+
+    conversion_rates = {stake_currency: 1.0, "BTC": 70000, "ETH": 2500.1}
+    mocker.patch.object(
+        freqtrade.exchange,
+        "get_conversion_rate",
+        side_effect=lambda currency, *args, **kwargs: conversion_rates.get(currency, 1.0),
+    )
+    mocker.patch(
+        "freqtrade.persistence.trade_model.Trade.get_open_trades",
+        return_value=[
+            MagicMock(pair="ETH/USDT:USDT", safe_base_currency="ETH"),
+        ],
+    )
+
+    freqtrade.wallets.record_wallet_state()
+
+    wallet_entries = WalletHistory.session.query(WalletHistory).all()
+    assert len(wallet_entries) == 3
+    assert "total_quote" in repr(wallet_entries[0])
+    assert "WalletHistory(" in repr(wallet_entries[0])
+
+    records_by_currency = {entry.currency: entry for entry in wallet_entries}
+    assert records_by_currency[stake_currency].balance == 149
+    assert records_by_currency[stake_currency].rate == 1.0
+    assert records_by_currency["BTC"].rate == 70000
+    assert records_by_currency["BTC"].balance == 3
+    assert not records_by_currency["BTC"].bot_managed
+    assert records_by_currency["ETH/USDT:USDT"].balance == 0.8
+    assert records_by_currency["ETH/USDT:USDT"].rate == 2500.1
+    assert records_by_currency["ETH/USDT:USDT"].bot_managed is True
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_record_wallet_state_stores_wallet_history_error(mocker, default_conf, caplog):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    stake_currency = default_conf["stake_currency"]
+    freqtrade.wallets._wallets = {
+        stake_currency: Wallet(stake_currency, free=1.0, used=0.5, total=1.5),
+        "ETH": Wallet("ETH", free=2.0, used=1.0, total=3.0),
+    }
+    freqtrade.wallets._positions = {
+        "ETH/BTC": PositionWallet(
+            symbol="ETH/BTC",
+            position=0.8,
+            collateral=1.0,
+            leverage=3.0,
+            side="long",
+        )
+    }
+
+    # Mock bulk_save_objects to raise an exception
+    mocker.patch.object(
+        WalletHistory.session, "bulk_save_objects", side_effect=Exception("DB Error")
+    )
+    freqtrade.wallets.record_wallet_state()
+
+    assert log_has_re(r"Error saving wallet balance records: .*", caplog)
+    wallet_entries = WalletHistory.session.query(WalletHistory).all()
+    assert len(wallet_entries) == 0

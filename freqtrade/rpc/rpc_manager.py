@@ -59,7 +59,7 @@ class RPCManager:
         logger.info("Cleaning up rpc modules ...")
         while self.registered_modules:
             mod = self.registered_modules.pop()
-            logger.info("Cleaning up rpc.%s ...", mod.name)
+            logger.info(f"Cleaning up rpc.{mod.name} ...")
             mod.cleanup()
             del mod
 
@@ -73,7 +73,7 @@ class RPCManager:
         }
         """
         if msg.get("type") not in NO_ECHO_MESSAGES:
-            logger.info("Sending rpc message: %s", msg)
+            logger.info(f"Sending rpc message: {msg}")
         for mod in self.registered_modules:
             logger.debug("Forwarding message to rpc.%s", mod.name)
             try:
@@ -81,7 +81,7 @@ class RPCManager:
             except NotImplementedError:
                 logger.error(f"Message type '{msg['type']}' not implemented by handler {mod.name}.")
             except Exception:
-                logger.exception("Exception occurred within RPC module %s", mod.name)
+                logger.exception(f"Exception occurred within RPC module {mod.name}")
 
     def process_msg_queue(self, queue: deque) -> None:
         """
@@ -89,7 +89,7 @@ class RPCManager:
         """
         while queue:
             msg = queue.popleft()
-            logger.info("Sending rpc strategy_msg: %s", msg)
+            logger.info(f"Sending rpc strategy_msg: {msg}")
             for mod in self.registered_modules:
                 if mod._config.get(mod.name, {}).get("allow_custom_messages", False):
                     mod.send_msg(
@@ -114,6 +114,8 @@ class RPCManager:
         trailing_stop = config["trailing_stop"]
         timeframe = config["timeframe"]
         exchange_name = config["exchange"]["name"]
+        if config["exchange"].get("demo_trading"):
+            exchange_name += " (demo trading)"
         strategy_name = config.get("strategy", "")
         pos_adjust_enabled = "On" if config["position_adjustment_enable"] else "Off"
         self.send_msg(

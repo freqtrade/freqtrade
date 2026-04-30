@@ -28,6 +28,7 @@ from freqtrade.optimize.optimize_reports import (
     generate_trading_stats,
     show_sorted_pairlist,
     store_backtest_results,
+    text_table_add_metrics,
     text_table_bt_results,
     text_table_strategy,
 )
@@ -36,6 +37,7 @@ from freqtrade.optimize.optimize_reports.optimize_reports import (
     _get_resample_from_period,
     calc_streak,
     generate_tag_metrics,
+    generate_wallet_stats,
 )
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.util import dt_ts, format_duration
@@ -616,6 +618,63 @@ def test_text_table_strategy(testdatadir, capsys):
     )
 
 
+def test_generate_wallet_stats_extended_metrics():
+    wallet_df = pd.DataFrame(
+        {
+            "date": [
+                dt_utc(2025, 1, 1, 0, 0, 0),
+                dt_utc(2025, 1, 1, 12, 0, 0),
+                dt_utc(2025, 1, 1, 18, 0, 0),
+                dt_utc(2025, 1, 3, 0, 0, 0),
+            ],
+            "currency": ["BTC", "BTC", "BTC", "BTC"],
+            "rate": [1.0, 1.0, 1.0, 1.0],
+            "balance": [100.0, 120.0, 80.0, 110.0],
+        }
+    )
+
+    stats = generate_wallet_stats(wallet_df, "BTC")
+
+    assert "sharpe" in stats
+    assert "sortino" in stats
+    assert "calmar" in stats
+    assert "max_drawdown_account" in stats
+    assert "max_drawdown_abs" in stats
+    assert pytest.approx(stats["max_drawdown_account"]) == 1 / 3
+    assert stats["drawdown_start"] == "2025-01-01 12:00:00"
+    assert stats["drawdown_end"] == "2025-01-01 18:00:00"
+
+
+def test_text_table_add_metrics_shows_wallet_ratios(testdatadir, capsys):
+    filename = testdatadir / "backtest_results/backtest-result.json"
+    bt_data = load_backtest_stats(filename)
+    strat_results = next(iter(bt_data["strategy"].values()))
+    strat_results["wallet_stats"] = {
+        "low_balance": 0.95,
+        "high_balance": 1.12,
+        "low_date": "2025-01-01 18:00:00",
+        "high_date": "2025-01-01 12:00:00",
+        "sharpe": 1.23,
+        "sortino": 2.34,
+        "calmar": 3.45,
+        "max_drawdown_account": 0.12,
+        "max_relative_drawdown": 0.15,
+        "max_drawdown_abs": 0.05,
+        "drawdown_start": "2025-01-01 12:00:00",
+        "drawdown_end": "2025-01-01 18:00:00",
+        "max_drawdown_high": 1.12,
+        "max_drawdown_low": 0.95,
+    }
+
+    text_table_add_metrics(strat_results)
+    text = capsys.readouterr().out
+
+    assert "Sharpe (daily wallet balance)" in text
+    assert "Sortino (daily wallet balance)" in text
+    assert "Calmar (daily wallet balance)" in text
+    assert "Max % of account underwater (balance)" in text
+
+
 def test_generate_periodic_breakdown_stats(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename).to_dict(orient="records")
@@ -654,7 +713,7 @@ def test_generate_periodic_breakdown_stats(testdatadir):
 
 
 def test__get_resample_from_period():
-    assert _get_resample_from_period("day") == "1d"
+    assert _get_resample_from_period("day") == "1D"
     assert _get_resample_from_period("week") == "1W-MON"
     assert _get_resample_from_period("month") == "1ME"
     assert _get_resample_from_period("weekday") == "weekday"
