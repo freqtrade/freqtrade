@@ -1,5 +1,6 @@
 import json
 import zipfile
+from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
@@ -12,8 +13,27 @@ from freqtrade_ext.bot_factory.backtest_results import (
     summarize,
 )
 from freqtrade_ext.bot_factory.data_quality import check_ohlcv_parquet, pair_to_ohlcv_filename
-from freqtrade_ext.bot_factory.freqai_checks import DependencySpec, check_freqai_dependencies
+from freqtrade_ext.bot_factory.freqai_backtest import (
+    build_freqai_metadata,
+    freqai_input_pairs,
+    freqai_input_timeframes,
+    freqai_model_name,
+    resolve_ohlcv_input_paths,
+)
+from freqtrade_ext.bot_factory.freqai_checks import (
+    FREQAI_LABEL_NOTICE,
+    DependencySpec,
+    check_freqai_dependencies,
+    validate_freqai_strategy_paths,
+)
 from freqtrade_ext.bot_factory.safety import scan_paths
+from freqtrade_ext.bot_factory.walk_forward import (
+    WalkForwardRules,
+    aggregate_walk_forward_results,
+    generate_rolling_windows,
+    parse_window_specs,
+    window_run_id,
+)
 
 
 def test_load_backtest_result_resolves_latest_zip(tmp_path):
@@ -183,6 +203,21 @@ def test_static_check_allows_iloc_slice_excluding_last_row(tmp_path):
     assert report.findings == []
 
 
+def test_static_check_allows_target_generation_shift_minus_one(tmp_path):
+    strategy_path = tmp_path / "FreqAIStrategy.py"
+    strategy_path.write_text(
+        "def set_freqai_targets(dataframe, metadata):\n"
+        "    dataframe['&-return'] = dataframe['close'].shift(-1) / dataframe['close'] - 1\n"
+        "    return dataframe\n",
+        encoding="utf-8",
+    )
+
+    report = scan_paths([strategy_path])
+
+    assert report.ok
+    assert report.findings == []
+
+
 def test_ohlcv_quality_check_detects_invalid_price_bounds(tmp_path):
     data_path = tmp_path / "BTC_USDT-5m.parquet"
     pd.DataFrame(
@@ -242,3 +277,207 @@ def test_freqai_dependency_check_reports_missing_dependency():
     assert not report.dependencies[0].installed
     assert report.dependencies[0].version is None
     assert "ModuleNotFoundError" in report.dependencies[0].error
+
+
+def test_freqai_validation_accepts_prefixed_features_targets_and_target_shift(tmp_path):
+    strategy_path = tmp_path / "GoodFreqAIStrategy.py"
+    strategy_path.write_text(
+        "def feature_engineering_expand_all(dataframe, period, metadata):\n"
+        "    dataframe['%-rsi-period'] = 50\n"
+        "    return dataframe\n"
+        "\n"
+        "def set_freqai_targets(dataframe, metadata):\n"
+        "    label_period = 12\n"
+        "    dataframe['&-future_return'] = dataframe['close'].shift(-label_period)\n"
+        "    return dataframe\n",
+        encoding="utf-8",
+    )
+
+    report = validate_freqai_strategy_paths([strategy_path])
+
+    assert report.ok
+    assert [column.column for column in report.feature_columns] == ["%-rsi-period"]
+    assert [column.column for column in report.target_columns] == ["&-future_return"]
+    assert report.allowed_target_shift_lines[0]["function"] == "set_freqai_targets"
+    assert report.label_notice == FREQAI_LABEL_NOTICE
+
+
+def test_freqai_validation_rejects_unprefixed_features_and_targets(tmp_path):
+    strategy_path = tmp_path / "BadFreqAIStrategy.py"
+    strategy_path.write_text(
+        "def feature_engineering_expand_all(dataframe, period, metadata):\n"
+        "    dataframe['rsi'] = 50\n"
+        "    return dataframe\n"
+        "\n"
+        "def set_freqai_targets(dataframe, metadata):\n"
+        "    dataframe['future_return'] = dataframe['close'].pct_change()\n"
+        "    return dataframe\n",
+        encoding="utf-8",
+    )
+
+    report = validate_freqai_strategy_paths([strategy_path])
+
+    assert not report.ok
+    assert {finding.rule for finding in report.findings} == {
+        "freqai_feature_prefix",
+        "freqai_target_prefix",
+    }
+
+
+def test_freqai_validation_rejects_negative_shift_outside_targets(tmp_path):
+    strategy_path = tmp_path / "BadFreqAIStrategy.py"
+    strategy_path.write_text(
+        "def populate_entry_trend(dataframe, metadata):\n"
+        "    dataframe['future_close'] = dataframe['close'].shift(-2)\n"
+        "    return dataframe\n",
+        encoding="utf-8",
+    )
+
+    report = validate_freqai_strategy_paths([strategy_path])
+
+    assert not report.ok
+    assert [finding.rule for finding in report.findings] == ["freqai_shift_outside_targets"]
+
+
+def test_freqai_model_name_prefers_explicit_then_config():
+    config = {"freqaimodel": "ConfigModel", "freqai": {"freqaimodel": "NestedModel"}}
+
+    assert freqai_model_name(config, "ExplicitModel") == "ExplicitModel"
+    assert freqai_model_name(config) == "ConfigModel"
+    assert freqai_model_name({"freqai": {"freqaimodel": "NestedModel"}}) == "NestedModel"
+
+
+def test_freqai_input_ohlcv_paths_include_corr_pairs_and_timeframes(tmp_path):
+    config = {
+        "timeframe": "5m",
+        "trading_mode": "futures",
+        "exchange": {
+            "name": "bybit",
+            "pair_whitelist": ["BTC/USDT:USDT"],
+        },
+        "freqai": {
+            "feature_parameters": {
+                "include_corr_pairlist": ["ETH/USDT:USDT"],
+                "include_timeframes": ["15m", "5m"],
+            }
+        },
+    }
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+
+    pairs = freqai_input_pairs(config)
+    timeframes = freqai_input_timeframes(config)
+    paths = resolve_ohlcv_input_paths(
+        config_path=config_path,
+        config=config,
+        userdir=tmp_path / "user_data",
+        pairs=pairs,
+        timeframes=timeframes,
+    )
+
+    assert pairs == ["BTC/USDT:USDT", "ETH/USDT:USDT"]
+    assert timeframes == ["5m", "15m"]
+    assert [path.name for path in paths] == [
+        "BTC_USDT_USDT-5m-futures.parquet",
+        "BTC_USDT_USDT-15m-futures.parquet",
+        "ETH_USDT_USDT-5m-futures.parquet",
+        "ETH_USDT_USDT-15m-futures.parquet",
+    ]
+
+
+def test_freqai_metadata_uses_relative_paths(tmp_path):
+    run_dir = tmp_path / "data" / "freqai" / "SampleStrategy" / "run1"
+    metadata = build_freqai_metadata(
+        root_dir=tmp_path,
+        strategy="SampleStrategy",
+        run_id="run1",
+        status="completed",
+        config_paths=[tmp_path / "user_data" / "config.json"],
+        freqaimodel="CatboostRegressor",
+        freqai_id="sample_freqai",
+        timeframe="5m",
+        timerange="20250101-20250103",
+        pairs=["BTC/USDT:USDT"],
+        dependency_status={"ok": True},
+        artifact_paths={"result": run_dir / "result.json", "skipped": None},
+        notes=["backtest only"],
+    )
+
+    assert metadata["config_paths"] == [str(Path("user_data") / "config.json")]
+    assert metadata["artifact_paths"]["result"] == str(
+        Path("data") / "freqai" / "SampleStrategy" / "run1" / "result.json"
+    )
+    assert "skipped" not in metadata["artifact_paths"]
+    assert metadata["safety_scope"]["live_trading"] is False
+    assert metadata["safety_scope"]["metadata_contains_secrets"] is False
+
+
+def test_walk_forward_generates_rolling_windows():
+    windows = generate_rolling_windows(
+        start="20250101",
+        end="20250108",
+        train_days=2,
+        test_days=1,
+        step_days=2,
+    )
+
+    assert [window.timerange for window in windows] == [
+        "20250101-20250104",
+        "20250103-20250106",
+        "20250105-20250108",
+    ]
+    assert windows[0].train_start == "20250101"
+    assert windows[0].test_start == "20250103"
+
+
+def test_walk_forward_parses_fixed_and_train_test_windows():
+    windows = parse_window_specs(
+        ["20250105-20250107", "20250101:20250103:20250103:20250105"]
+    )
+
+    assert windows[0].timerange == "20250105-20250107"
+    assert windows[0].test_start == "20250105"
+    assert windows[1].timerange == "20250101-20250105"
+    assert window_run_id("wf", windows[1]) == (
+        "wf_02_train_20250101_20250103_test_20250103_20250105"
+    )
+
+
+def test_walk_forward_aggregates_window_metrics():
+    window_results = [
+        {
+            "status": "completed",
+            "gate_recommendation": "pass",
+            "window": {"index": 1, "timerange": "20250101-20250103"},
+            "metrics": {
+                "total_return": 0.02,
+                "total_return_pct": 2.0,
+                "max_drawdown_pct": 4.0,
+            },
+        },
+        {
+            "status": "completed",
+            "gate_recommendation": "pass",
+            "window": {"index": 2, "timerange": "20250103-20250105"},
+            "metrics": {
+                "total_return": 0.015,
+                "total_return_pct": 1.5,
+                "max_drawdown_pct": 6.0,
+            },
+        },
+    ]
+
+    metrics = aggregate_walk_forward_results(
+        window_results,
+        WalkForwardRules(
+            min_pass_rate=1.0,
+            min_profitable_windows_ratio=1.0,
+            max_drawdown_pct_any_window=10.0,
+            max_single_window_profit_dependency=0.6,
+        ),
+    )
+
+    assert metrics["recommendation"] == "pass"
+    assert metrics["summary"]["window_count"] == 2
+    assert metrics["summary"]["total_return"] == 0.035
+    assert metrics["summary"]["max_drawdown_pct_any_window"] == 6.0

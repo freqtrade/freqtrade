@@ -80,7 +80,11 @@ class _SafetyVisitor(ast.NodeVisitor):
         func_name = self._call_name(node.func)
         attr_name = self._attr_name(node.func)
 
-        if attr_name == "shift" and self._has_exact_negative_one_arg(node):
+        if (
+            attr_name == "shift"
+            and self._has_exact_negative_one_arg(node)
+            and not self._in_freqai_target_context()
+        ):
             self._add(node, "no_shift_minus_one", "error", "Exact shift(-1) is forbidden.")
 
         if func_name in {"requests.post", "httpx.post"}:
@@ -135,6 +139,9 @@ class _SafetyVisitor(ast.NodeVisitor):
             return False
         fn = self._function_stack[-1]
         return any(fn.startswith(prefix) for prefix in INDICATOR_CONTEXT_PREFIXES)
+
+    def _in_freqai_target_context(self) -> bool:
+        return bool(self._function_stack and self._function_stack[-1] == "set_freqai_targets")
 
     def _has_exact_negative_one_arg(self, node: ast.Call) -> bool:
         if node.args and self._is_negative_one(node.args[0]):
