@@ -1,0 +1,87 @@
+{
+  "generated_at": "2026-05-02T13:13:27.262268+00:00",
+  "phase": "2",
+  "status": "completed",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "wf_02_20250107_20250109",
+  "freqaimodel": "LightGBMRegressor",
+  "freqai_identifier": "phase2_long_only_lightgbm_v1",
+  "timeframe": "5m",
+  "timerange": "20250107-20250109",
+  "pairs": [
+    "BTC/USDT:USDT"
+  ],
+  "config_paths": [
+    "user_data\\config_freqai_phase2_safe.json"
+  ],
+  "dependency_status": {
+    "ok": true,
+    "dependencies": [
+      {
+        "name": "lightgbm",
+        "import_name": "lightgbm",
+        "package_name": "lightgbm",
+        "required": true,
+        "installed": true,
+        "version": "4.6.0",
+        "error": null
+      },
+      {
+        "name": "xgboost",
+        "import_name": "xgboost",
+        "package_name": "xgboost",
+        "required": true,
+        "installed": true,
+        "version": "3.0.5",
+        "error": null
+      },
+      {
+        "name": "tensorboard",
+        "import_name": "tensorboard",
+        "package_name": "tensorboard",
+        "required": true,
+        "installed": true,
+        "version": "2.20.0",
+        "error": null
+      },
+      {
+        "name": "datasieve",
+        "import_name": "datasieve",
+        "package_name": "datasieve",
+        "required": true,
+        "installed": true,
+        "version": "0.1.9",
+        "error": null
+      }
+    ],
+    "python_version": "3.12.4",
+    "generated_at": "2026-05-02T13:13:21.730853+00:00"
+  },
+  "artifact_paths": {
+    "command": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\command.txt",
+    "stdout": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\stdout.log",
+    "stderr": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\stderr.log",
+    "result": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\result.json",
+    "metrics": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\metrics.json",
+    "trades": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\trades.csv",
+    "report": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\report.md",
+    "static_check": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\static_check.json",
+    "freqai_validation": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\freqai_validation.json",
+    "freqai_env": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\freqai_env.json",
+    "ohlcv_quality": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\ohlcv_quality.json",
+    "freqai_metadata": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\freqai_metadata.json"
+  },
+  "notes": [
+    "This run path is limited to Freqtrade backtesting.",
+    "Passing gates do not authorize paper trading or live trading.",
+    "FreqAI labels are backtest labels, not live trading instructions."
+  ],
+  "safety_scope": {
+    "command": "freqtrade backtesting only",
+    "paper_trading": false,
+    "dry_run_trading": false,
+    "live_trading": false,
+    "exchange_order_placement": false,
+    "metadata_contains_secrets": false
+  }
+}

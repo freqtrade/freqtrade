@@ -1,0 +1,224 @@
+{
+  "generated_at": "2026-05-02T13:13:27.372434+00:00",
+  "phase": "2",
+  "status": "completed",
+  "recommendation": "fail",
+  "rules": {
+    "min_pass_rate": 0.7,
+    "min_profitable_windows_ratio": 0.6,
+    "max_drawdown_pct_any_window": 20.0,
+    "max_single_window_profit_dependency": 0.4
+  },
+  "summary": {
+    "window_count": 2,
+    "completed_windows": 2,
+    "failed_windows": 0,
+    "pass_rate": 0.0,
+    "profitable_windows_ratio": 0.0,
+    "total_return": -0.00184177513,
+    "total_return_pct": -0.18417751300000001,
+    "max_drawdown_pct_any_window": 0.17188215400000217,
+    "max_single_window_profit_dependency": null
+  },
+  "checks": [
+    {
+      "name": "all_windows_completed",
+      "actual": "2/2",
+      "rule": "all windows complete",
+      "pass": true
+    },
+    {
+      "name": "min_pass_rate",
+      "actual": 0.0,
+      "rule": ">= 0.7",
+      "pass": false
+    },
+    {
+      "name": "min_profitable_windows_ratio",
+      "actual": 0.0,
+      "rule": ">= 0.6",
+      "pass": false
+    },
+    {
+      "name": "max_drawdown_pct_any_window",
+      "actual": 0.17188215400000217,
+      "rule": "<= 20.0",
+      "pass": true
+    },
+    {
+      "name": "max_single_window_profit_dependency",
+      "actual": null,
+      "rule": "<= 0.4",
+      "pass": false
+    }
+  ],
+  "windows": [
+    {
+      "window": {
+        "index": 1,
+        "timerange": "20250105-20250107",
+        "train_start": null,
+        "train_end": null,
+        "test_start": "20250105",
+        "test_end": "20250107"
+      },
+      "run_id": "wf_01_20250105_20250107",
+      "run_dir": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_01_20250105_20250107",
+      "returncode": 0,
+      "status": "completed",
+      "metrics": {
+        "strategy_name": "LongOnlyFreqAIStrategy",
+        "total_return": -0.0006169853000000001,
+        "total_return_pct": -0.061698530000000015,
+        "cagr": -0.10652289419474403,
+        "sharpe": -123.75151368692907,
+        "sortino": -123.75151368692907,
+        "calmar": -955.2486587271242,
+        "max_drawdown_pct": 0.06169853000000103,
+        "profit_factor": 0.0,
+        "win_rate": 0.0,
+        "average_win": null,
+        "average_loss": -0.003150296793171559,
+        "trade_count": 2,
+        "expectancy": -0.003150296793171559,
+        "fee_paid": null,
+        "backtest_start": "2025-01-05 00:00:00",
+        "backtest_end": "2025-01-07 00:00:00",
+        "generated_at": "2026-05-02T13:13:20.550992+00:00"
+      },
+      "gate_recommendation": "fail",
+      "gate_checks": [
+        {
+          "name": "min_trades",
+          "actual": 2,
+          "rule": ">= 200",
+          "pass": false
+        },
+        {
+          "name": "min_profit_factor",
+          "actual": "0.000000",
+          "rule": ">= 1.25",
+          "pass": false
+        },
+        {
+          "name": "max_drawdown_pct",
+          "actual": "0.061699",
+          "rule": "<= 15.0",
+          "pass": true
+        },
+        {
+          "name": "min_sortino",
+          "actual": "-123.751514",
+          "rule": ">= 1.2",
+          "pass": false
+        }
+      ],
+      "artifacts": {
+        "metrics": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_01_20250105_20250107\\metrics.json",
+        "report": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_01_20250105_20250107\\report.md",
+        "freqai_metadata": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_01_20250105_20250107\\freqai_metadata.json",
+        "freqai_validation": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_01_20250105_20250107\\freqai_validation.json"
+      }
+    },
+    {
+      "window": {
+        "index": 2,
+        "timerange": "20250107-20250109",
+        "train_start": null,
+        "train_end": null,
+        "test_start": "20250107",
+        "test_end": "20250109"
+      },
+      "run_id": "wf_02_20250107_20250109",
+      "run_dir": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109",
+      "returncode": 0,
+      "status": "completed",
+      "metrics": {
+        "strategy_name": "LongOnlyFreqAIStrategy",
+        "total_return": -0.00122478983,
+        "total_return_pct": -0.122478983,
+        "cagr": -0.20041396452528137,
+        "sharpe": -18.174831326093834,
+        "sortino": -111.59691707752164,
+        "calmar": -680.6866304049964,
+        "max_drawdown_pct": 0.17188215400000217,
+        "profit_factor": 0.28742466771739433,
+        "win_rate": 0.3333333333333333,
+        "average_win": 0.00522978324724038,
+        "average_loss": -0.008969083880096136,
+        "trade_count": 3,
+        "expectancy": -0.0042361281709839636,
+        "fee_paid": null,
+        "backtest_start": "2025-01-07 00:00:00",
+        "backtest_end": "2025-01-09 00:00:00",
+        "generated_at": "2026-05-02T13:13:27.260764+00:00"
+      },
+      "gate_recommendation": "fail",
+      "gate_checks": [
+        {
+          "name": "min_trades",
+          "actual": 3,
+          "rule": ">= 200",
+          "pass": false
+        },
+        {
+          "name": "min_profit_factor",
+          "actual": "0.287425",
+          "rule": ">= 1.25",
+          "pass": false
+        },
+        {
+          "name": "max_drawdown_pct",
+          "actual": "0.171882",
+          "rule": "<= 15.0",
+          "pass": true
+        },
+        {
+          "name": "min_sortino",
+          "actual": "-111.596917",
+          "rule": ">= 1.2",
+          "pass": false
+        }
+      ],
+      "artifacts": {
+        "metrics": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\metrics.json",
+        "report": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\report.md",
+        "freqai_metadata": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\freqai_metadata.json",
+        "freqai_validation": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\freqai_validation.json"
+      }
+    }
+  ],
+  "safety_scope": {
+    "command": "freqtrade backtesting only",
+    "paper_trading": false,
+    "dry_run_trading": false,
+    "live_trading": false,
+    "exchange_order_placement": false
+  },
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase2_walk_forward_20250105_20250109",
+  "config_path": "user_data\\config_freqai_phase2_safe.json",
+  "window_specs": [
+    {
+      "index": 1,
+      "timerange": "20250105-20250107",
+      "train_start": null,
+      "train_end": null,
+      "test_start": "20250105",
+      "test_end": "20250107"
+    },
+    {
+      "index": 2,
+      "timerange": "20250107-20250109",
+      "train_start": null,
+      "train_end": null,
+      "test_start": "20250107",
+      "test_end": "20250109"
+    }
+  ],
+  "artifacts": {
+    "walk_forward_metrics": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\walk_forward_metrics.json",
+    "walk_forward_report": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\walk_forward_report.md",
+    "command": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\command.txt"
+  }
+}

@@ -21,9 +21,8 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
   `ccxt`, Freqtrade runtime requirements, `pytest`, pytest plugins, `duckdb`, and `mlflow`.
 - [x] FreqAI dependency audit command exists and reports missing runtime dependencies
   deterministically without starting any bot process.
-- [ ] FreqAI-specific runtime dependencies are not fully installed yet:
-  `lightgbm`, `xgboost`, `tensorboard`, and `datasieve` are currently missing in the
-  local `.venv`.
+- [x] FreqAI-specific runtime dependencies are installed in the local `.venv`:
+  `lightgbm`, `xgboost`, `tensorboard`, and `datasieve`.
 
 ## Phase 1 MVP Tasks
 
@@ -83,6 +82,172 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 - [x] Add reviewer notes and promotion recommendations.
 
 ## Latest Verification
+
+Checked on 2026-05-02 JST.
+
+- [x] Added FreqAI feature/label validation helpers in
+  `freqtrade_ext/bot_factory/freqai_checks.py`.
+  The validation report checks `%`-prefixed FreqAI feature columns,
+  `&`-prefixed target/label columns, records allowed negative shifts inside
+  `set_freqai_targets`, and reports negative shifts in
+  `populate_*`/`feature_engineering_*` signal logic as errors.
+- [x] Added `scripts/bot_factory_validate_freqai_strategy.py` for standalone
+  FreqAI feature/label/lookahead validation.
+- [x] Updated `scripts/bot_factory_run_freqai_backtest.py` to write
+  `freqai_validation.json`, block invalid FreqAI feature/label conventions
+  before backtesting, and keep the note
+  `FreqAI labels are backtest labels, not live trading instructions.` in both
+  report reviewer notes and `freqai_metadata.json`.
+- [x] Updated static safety scanning so `shift(-1)` remains blocked in
+  indicator/entry/exit logic but is allowed in `set_freqai_targets` supervised
+  label generation.
+- [x] Added a backtest-only walk-forward runner:
+  `freqtrade_ext/bot_factory/walk_forward.py` and
+  `scripts/bot_factory_run_walk_forward.py`.
+  It accepts repeated `--window` specs or generated rolling windows from
+  `--start`, `--end`, `--train-days`, `--test-days`, and `--step-days`, runs
+  only the checked FreqAI backtest wrapper per window, and writes
+  `walk_forward_metrics.json` plus `walk_forward_report.md`.
+- [x] `python -m py_compile` passed for:
+  `freqtrade_ext/bot_factory/freqai_checks.py`,
+  `freqtrade_ext/bot_factory/safety.py`,
+  `freqtrade_ext/bot_factory/walk_forward.py`,
+  `scripts/bot_factory_validate_freqai_strategy.py`,
+  `scripts/bot_factory_run_freqai_backtest.py`,
+  `scripts/bot_factory_run_walk_forward.py`, and
+  `tests/test_bot_factory.py`.
+- [x] `pytest tests/test_bot_factory.py` passed: 22 tests. The first sandboxed
+  run was blocked by Windows temp/cache ACLs at
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4`; the same focused command
+  was rerun with normal filesystem permissions and passed.
+- [x] Ran standalone FreqAI validation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_validate_freqai_strategy.py `
+    user_data\strategies\LongOnlyFreqAIStrategy.py `
+    --output registry\strategies\checks\phase2_freqai_validation_LongOnlyFreqAIStrategy.json
+  ```
+
+  Result: `ok=true`, 1 file checked, 9 `%` feature columns, 1 `&` target
+  column, and the negative shift in `set_freqai_targets` recorded as allowed
+  supervised target generation.
+- [x] Re-ran `scripts/bot_factory_check_freqai_env.py`; it passed with `ok=true`
+  for `lightgbm==4.6.0`, `xgboost==3.0.5`, `tensorboard==2.20.0`, and
+  `datasieve==0.1.9`.
+- [x] Re-ran `scripts/bot_factory_static_check.py user_data/strategies`; it
+  passed with warnings only: 7 files checked, no errors. The warnings remain
+  review-only findings in `5mV1.py` and `FreqAICustomStrategy.py`.
+- [x] Re-ran
+  `scripts/bot_factory_check_ohlcv.py user_data/data/bybit/futures/BTC_USDT_USDT-5m-futures.parquet --timeframe 5m`;
+  it passed with 8995 rows, no duplicate timestamps, no missing intervals, and
+  no OHLCV integrity findings.
+- [x] Ran a two-window Phase 2 walk-forward verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py `
+    --config user_data\config_freqai_phase2_safe.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --timeframe 5m `
+    --pairs BTC/USDT:USDT `
+    --window 20250105-20250107 `
+    --window 20250107-20250109 `
+    --run-id phase2_walk_forward_20250105_20250109 `
+    --reviewer-note "Phase 2 walk-forward verification only; no paper or live promotion."
+  ```
+
+  The first sandboxed attempt completed parent artifact generation but both
+  child windows failed while loading public Bybit market metadata. The same
+  backtesting-only command completed after allowing normal network access for
+  that public metadata load.
+- [x] Generated walk-forward artifacts under
+  `data/walk_forward/LongOnlyFreqAIStrategy/phase2_walk_forward_20250105_20250109/`:
+  `walk_forward_metrics.json`, `walk_forward_report.md`, `command.txt`,
+  `window_logs/`, and per-window FreqAI artifacts under
+  `windows/LongOnlyFreqAIStrategy/wf_01_20250105_20250107/` and
+  `windows/LongOnlyFreqAIStrategy/wf_02_20250107_20250109/`.
+- [x] Walk-forward verification metrics: 2/2 windows completed, pass rate
+  `0.00%`, profitable windows ratio `0.00%`, combined total return `-0.18%`,
+  max drawdown in any window `0.1719%`, and recommendation `fail`. Window 1
+  had 2 trades and `-0.0617%`; window 2 had 3 trades and `-0.1225%`.
+  Exported trades in both windows remained `is_short=False`, `leverage=1.0`.
+  This verifies the historical walk-forward pipeline, not promotion.
+- [x] Installed FreqAI runtime dependencies from the existing
+  `requirements-freqai.txt` into the local `.venv`.
+- [x] Re-ran `scripts/bot_factory_check_freqai_env.py`; it passed with `ok=true`
+  for `lightgbm==4.6.0`, `xgboost==3.0.5`, `tensorboard==2.20.0`, and
+  `datasieve==0.1.9`.
+- [x] Added a FreqAI backtest metadata/helper module:
+  `freqtrade_ext/bot_factory/freqai_backtest.py`.
+- [x] Added `scripts/bot_factory_run_freqai_backtest.py`, a FreqAI-specific
+  wrapper that runs dependency audit, static strategy checks, known or explicitly
+  supplied OHLCV parquet quality checks, `freqtrade backtesting` only, and writes
+  `freqai_metadata.json` without secrets.
+- [x] Added focused tests for FreqAI model-name resolution, FreqAI OHLCV input
+  path resolution, and metadata path sanitization.
+- [x] `python -m py_compile` passed for Bot Factory helpers, scripts, and
+  `tests/test_bot_factory.py` using explicit file paths.
+- [x] `pytest tests/test_bot_factory.py` passed: 15 tests. The sandboxed run
+  could not create pytest temp directories, so the same command was rerun with
+  normal filesystem permissions.
+- [x] `scripts/bot_factory_static_check.py user_data/strategies` passed with
+  warnings only: 6 files checked, no errors.
+- [x] `scripts/bot_factory_check_ohlcv.py user_data/data/bybit/futures/BTC_USDT_USDT-5m-futures.parquet --timeframe 5m`
+  passed: 8995 rows, no duplicate timestamps, no missing intervals, no OHLCV
+  integrity findings.
+- [x] Added a Phase 2-safe long-only FreqAI strategy:
+  `user_data/strategies/LongOnlyFreqAIStrategy.py`.
+  It sets `can_short = False`, emits no short entry/exit signals, and does not
+  implement a `leverage()` hook.
+- [x] Added a Phase 2-safe historical config:
+  `user_data/config_freqai_phase2_safe.json`.
+  It uses `LightGBMRegressor`, one local Bybit futures pair
+  (`BTC/USDT:USDT`), no API server credentials, no orderbook pricing, no
+  `ext_risk` leverage settings, `save_backtest_models = false`, and
+  `freqtrade backtesting` only.
+- [x] `python -m py_compile` passed for
+  `user_data/strategies/LongOnlyFreqAIStrategy.py`,
+  `freqtrade_ext/bot_factory/freqai_backtest.py`,
+  `scripts/bot_factory_run_freqai_backtest.py`, and
+  `tests/test_bot_factory.py`.
+- [x] `python -m json.tool user_data/config_freqai_phase2_safe.json` passed.
+- [x] `pytest tests/test_bot_factory.py` passed: 15 tests. The sandboxed run
+  was blocked by Windows temp/cache ACLs, so the same focused command was
+  rerun with normal filesystem permissions.
+- [x] `scripts/bot_factory_static_check.py user_data/strategies` passed with
+  warnings only: 7 files checked, no errors. The warnings are pre-existing
+  review warnings in `5mV1.py` and `FreqAICustomStrategy.py`; the new
+  long-only strategy added no findings.
+- [x] `scripts/bot_factory_check_ohlcv.py user_data/data/bybit/futures/BTC_USDT_USDT-5m-futures.parquet --timeframe 5m`
+  passed: 8995 rows, no duplicate timestamps, no missing intervals, no OHLCV
+  integrity findings.
+- [x] Ran a real Phase 2-safe FreqAI historical backtest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_backtest.py `
+    --config user_data\config_freqai_phase2_safe.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --timeframe 5m `
+    --timerange 20250105-20250107 `
+    --pairs BTC/USDT:USDT `
+    --run-id phase2_safe_20250105_20250107 `
+    --reviewer-note "Phase 2 historical FreqAI verification only; no paper or live promotion."
+  ```
+
+  The first sandboxed attempt reached Freqtrade backtesting startup but was
+  blocked while loading public Bybit market metadata. The same backtest-only
+  command completed after allowing normal network access for that public market
+  metadata load.
+- [x] Generated FreqAI artifacts under
+  `data/freqai/LongOnlyFreqAIStrategy/phase2_safe_20250105_20250107/`:
+  `freqai_metadata.json`, `metrics.json`, `trades.csv`, `report.md`,
+  `static_check.json`, `ohlcv_quality.json`, `freqai_env.json`, `result.json`,
+  `command.txt`, `stdout.log`, and `stderr.log`.
+- [x] FreqAI verification metrics: 2 trades, -0.06% total return, 0.00 profit
+  factor, 0.0617% max drawdown, `is_short=False`, `leverage=1.0` in exported
+  trades. The initial gate correctly remains `fail`; this verifies the
+  historical FreqAI pipeline, not strategy promotion.
+- [x] Added `docs/BOT_FACTORY_PHASE2_RUNBOOK.md` for the verified FreqAI
+  historical backtest workflow and current Phase 2 limitations.
 
 Checked on 2026-04-26 JST.
 
@@ -163,6 +328,9 @@ Checked on 2026-04-26 JST.
   `registry/strategies/gate_thresholds.example.json`.
 - MLflow logging is opt-in with `--mlflow`. If MLflow is unavailable, the command records
   `mlflow_error.txt` and keeps the local `metrics.json`/`report.md` as the source of truth.
+- Phase 2 FreqAI backtests may need public exchange market metadata during
+  Freqtrade startup even when all OHLCV candles are local. This is not an order
+  endpoint and must remain limited to `freqtrade backtesting`.
 - The root `docker-compose.yml` was left unchanged. Use
   `docker-compose.bot-factory.yml` for Bot Factory PostgreSQL/MLflow infrastructure.
   Do not start paper or live bots in Phase 1.
@@ -171,8 +339,15 @@ Checked on 2026-04-26 JST.
 
 - [x] Add Phase 2 agent handoff instructions.
 - [x] Add FreqAI dependency audit helper and script.
+- [x] Install FreqAI runtime dependencies in the local `.venv`.
+- [x] Add FreqAI backtest wrapper with dependency, static, OHLCV, and metadata
+  prechecks.
+- [x] Verify a FreqAI-enabled historical backtest on a Phase 2-safe config.
+- [x] Add FreqAI feature/label validation and integrate it into FreqAI backtest
+  prechecks.
+- [x] Add and verify a backtest-only walk-forward runner on two historical
+  windows.
 - [ ] FreqAI training factory.
-- [ ] Walk-forward runner.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
@@ -192,6 +367,47 @@ Audit FreqAI runtime dependencies:
 ```powershell
 .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
 ```
+
+Validate FreqAI feature/label conventions:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\bot_factory_validate_freqai_strategy.py `
+  user_data\strategies\LongOnlyFreqAIStrategy.py `
+  --output registry\strategies\checks\phase2_freqai_validation_LongOnlyFreqAIStrategy.json
+```
+
+Template for a checked FreqAI backtest wrapper run on a Phase 2-safe historical
+config:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_backtest.py `
+  --config user_data\config_freqai_phase2_safe.json `
+  --strategy LongOnlyFreqAIStrategy `
+  --timeframe 5m `
+  --timerange 20250101-20250103 `
+  --pairs BTC/USDT:USDT
+```
+
+This command path is for `freqtrade backtesting` only. Do not use it to start
+paper trading, dry-run trading, canary live, live trading, exchange order
+placement, leverage experiments, or shorting in Phase 2.
+
+Run a checked walk-forward verification:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py `
+  --config user_data\config_freqai_phase2_safe.json `
+  --strategy LongOnlyFreqAIStrategy `
+  --timeframe 5m `
+  --pairs BTC/USDT:USDT `
+  --window 20250105-20250107 `
+  --window 20250107-20250109 `
+  --run-id phase2_walk_forward_20250105_20250109 `
+  --reviewer-note "Phase 2 walk-forward verification only; no paper or live promotion."
+```
+
+This command runs the checked FreqAI backtest wrapper per window. It does not
+authorize paper trading or live trading even if gates pass.
 
 Run OHLCV quality checks:
 

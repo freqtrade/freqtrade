@@ -1,0 +1,20 @@
+{
+  "strategy_name": "LongOnlyFreqAIStrategy",
+  "total_return": -0.00122478983,
+  "total_return_pct": -0.122478983,
+  "cagr": -0.20041396452528137,
+  "sharpe": -18.174831326093834,
+  "sortino": -111.59691707752164,
+  "calmar": -680.6866304049964,
+  "max_drawdown_pct": 0.17188215400000217,
+  "profit_factor": 0.28742466771739433,
+  "win_rate": 0.3333333333333333,
+  "average_win": 0.00522978324724038,
+  "average_loss": -0.008969083880096136,
+  "trade_count": 3,
+  "expectancy": -0.0042361281709839636,
+  "fee_paid": null,
+  "backtest_start": "2025-01-07 00:00:00",
+  "backtest_end": "2025-01-09 00:00:00",
+  "generated_at": "2026-05-02T13:13:27.260764+00:00"
+}

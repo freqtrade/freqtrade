@@ -1,0 +1,79 @@
+{
+  "ok": true,
+  "files_checked": 1,
+  "findings": [],
+  "feature_columns": [
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 25,
+      "function": "feature_engineering_expand_all",
+      "column": "%-rsi-period"
+    },
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 26,
+      "function": "feature_engineering_expand_all",
+      "column": "%-mfi-period"
+    },
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 27,
+      "function": "feature_engineering_expand_all",
+      "column": "%-adx-period"
+    },
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 28,
+      "function": "feature_engineering_expand_all",
+      "column": "%-ema-distance-period"
+    },
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 36,
+      "function": "feature_engineering_expand_basic",
+      "column": "%-pct-change"
+    },
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 37,
+      "function": "feature_engineering_expand_basic",
+      "column": "%-raw-volume"
+    },
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 38,
+      "function": "feature_engineering_expand_basic",
+      "column": "%-raw-close"
+    },
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 44,
+      "function": "feature_engineering_standard",
+      "column": "%-day-of-week"
+    },
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 45,
+      "function": "feature_engineering_standard",
+      "column": "%-hour-of-day"
+    }
+  ],
+  "target_columns": [
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 57,
+      "function": "set_freqai_targets",
+      "column": "&-long_return"
+    }
+  ],
+  "allowed_target_shift_lines": [
+    {
+      "path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+      "line": 55,
+      "function": "set_freqai_targets",
+      "reason": "supervised target generation"
+    }
+  ],
+  "label_notice": "FreqAI labels are backtest labels, not live trading instructions.",
+  "generated_at": "2026-05-02T13:13:21.733470+00:00"
+}

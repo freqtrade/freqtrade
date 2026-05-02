@@ -1,0 +1,43 @@
+{
+  "ok": true,
+  "dependencies": [
+    {
+      "name": "lightgbm",
+      "import_name": "lightgbm",
+      "package_name": "lightgbm",
+      "required": true,
+      "installed": true,
+      "version": "4.6.0",
+      "error": null
+    },
+    {
+      "name": "xgboost",
+      "import_name": "xgboost",
+      "package_name": "xgboost",
+      "required": true,
+      "installed": true,
+      "version": "3.0.5",
+      "error": null
+    },
+    {
+      "name": "tensorboard",
+      "import_name": "tensorboard",
+      "package_name": "tensorboard",
+      "required": true,
+      "installed": true,
+      "version": "2.20.0",
+      "error": null
+    },
+    {
+      "name": "datasieve",
+      "import_name": "datasieve",
+      "package_name": "datasieve",
+      "required": true,
+      "installed": true,
+      "version": "0.1.9",
+      "error": null
+    }
+  ],
+  "python_version": "3.12.4",
+  "generated_at": "2026-05-02T13:13:16.555815+00:00"
+}
