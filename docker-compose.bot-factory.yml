@@ -1,0 +1,35 @@
+---
+services:
+  bot_factory_postgres:
+    image: postgres:16-alpine
+    container_name: bot_factory_postgres
+    profiles: ["bot-factory"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${BOT_FACTORY_POSTGRES_DB:-bot_factory}
+      POSTGRES_USER: ${BOT_FACTORY_POSTGRES_USER:-bot_factory}
+      POSTGRES_PASSWORD: ${BOT_FACTORY_POSTGRES_PASSWORD:-bot_factory_dev_password}
+    ports:
+      - "127.0.0.1:${BOT_FACTORY_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - bot_factory_postgres_data:/var/lib/postgresql/data
+
+  bot_factory_mlflow:
+    image: ${MLFLOW_IMAGE:-ghcr.io/mlflow/mlflow:v2.17.2}
+    container_name: bot_factory_mlflow
+    profiles: ["bot-factory"]
+    restart: unless-stopped
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+    ports:
+      - "127.0.0.1:${MLFLOW_PORT:-5000}:5000"
+    volumes:
+      - bot_factory_mlflow_data:/mlflow
+
+volumes:
+  bot_factory_postgres_data:
+  bot_factory_mlflow_data:

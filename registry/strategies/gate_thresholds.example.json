@@ -1,0 +1,8 @@
+{
+  "backtest_rules": {
+    "min_trades": 200,
+    "min_profit_factor": 1.25,
+    "max_drawdown_pct": 15.0,
+    "min_sortino": 1.2
+  }
+}

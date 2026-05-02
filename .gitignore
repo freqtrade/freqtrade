@@ -134,3 +134,9 @@ target/
 !config_examples/config_freqai.example.json
 
 docker-compose-*.yml
+
+# Bot Factory runtime outputs
+data/backtests/**
+!data/backtests/
+!data/backtests/.gitkeep
+registry/strategies/checks/*.json
