@@ -1,7 +1,7 @@
 # Bot Factory Phase 2 Runbook
 
-This runbook covers the verified Phase 2 FreqAI historical backtest and
-walk-forward paths.
+This runbook covers the verified Phase 2 FreqAI historical backtest,
+walk-forward, and training factory paths.
 
 It must not be used to start paper trading, dry-run trading, canary live, live
 trading, exchange order placement, leverage experiments, or shorting. The
@@ -209,19 +209,23 @@ Important files:
 - `logs/`: parent-captured child command/stdout/stderr logs.
 - `freqai_backtests/`: child checked FreqAI backtest artifacts.
 
-Current verification status on 2026-05-02 JST:
+Verified result on 2026-05-03 JST:
 
 - The training factory helper, CLI, command construction, and manifest/report
   generation are implemented.
+- The first sandboxed historical training attempt failed while loading public
+  Bybit market metadata during Freqtrade backtesting startup.
+- The same backtesting-only command completed after allowing normal network
+  access for that public metadata load.
 - Parent dependency audit passed with `ok=true`.
-- The sandboxed historical training attempt generated parent artifacts, and the
-  checked child backtest completed dependency, validation, and OHLCV prechecks.
-- The child backtest then failed while loading public Bybit market metadata
-  under sandboxed network access:
-  `Could not load markets, therefore cannot start.`
-- A successful historical training factory run still needs a normal-network
-  retry for this public metadata load. This remains backtesting-only and does
-  not authorize paper or live trading.
+- Parent status: `completed`; parent recommendation: `fail`.
+- Child `freqai_backtest` status: `completed`; child recommendation: `fail`.
+- Metrics: 2 trades, `-0.0617%` total return, `0.0` profit factor, and
+  `0.0617%` max drawdown.
+- Exported trades remained `is_short=False` and `leverage=1.0`.
+- Reports and metadata state that this is Phase 2 verification only, not paper
+  or live promotion, and that FreqAI labels are backtest labels, not live
+  trading instructions.
 
 ## Current Limitations
 
@@ -237,7 +241,7 @@ Current verification status on 2026-05-02 JST:
 - The verified walk-forward run fails promotion gates because both windows are
   unprofitable and have too few trades. This is expected for pipeline
   verification.
-- The training factory historical verification is not complete yet. The current
-  sandbox blocked public Bybit market metadata loading during the child
-  backtest stage, after parent artifacts and prechecks were written.
+- The verified training factory run also fails promotion gates because the
+  brief verification timerange produced only 2 trades and negative return. This
+  is expected for pipeline verification.
 - Passing gates do not authorize paper trading or live trading.

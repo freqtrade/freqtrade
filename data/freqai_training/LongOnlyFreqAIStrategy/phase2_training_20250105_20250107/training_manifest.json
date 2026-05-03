@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-05-02T13:33:01.947824+00:00",
+  "generated_at": "2026-05-03T03:31:14.806963+00:00",
   "phase": "2",
   "factory": "freqai_training",
-  "status": "failed",
+  "status": "completed",
   "recommendation": "fail",
   "strategy": "LongOnlyFreqAIStrategy",
   "run_id": "phase2_training_20250105_20250107",
@@ -55,20 +55,20 @@
       }
     ],
     "python_version": "3.12.4",
-    "generated_at": "2026-05-02T13:32:56.493171+00:00"
+    "generated_at": "2026-05-03T03:31:09.472469+00:00"
   },
   "summary": {
     "stage_count": 1,
-    "completed_stages": 0,
-    "failed_stages": 1
+    "completed_stages": 1,
+    "failed_stages": 0
   },
   "stages": [
     {
       "name": "freqai_backtest",
       "run_id": "train_20250105_20250107",
-      "status": "failed",
-      "returncode": 2,
-      "recommendation": null,
+      "status": "completed",
+      "returncode": 0,
+      "recommendation": "fail",
       "output_dir": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107",
       "artifacts": {
         "command": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\logs\\freqai_backtest.command.txt",
@@ -110,7 +110,7 @@
         "--mlflow-experiment",
         "bot_factory_freqai_training"
       ],
-      "error": "2026-05-02 22:33:01,635 - freqtrade - ERROR - Could not load markets, therefore cannot start. Please investigate the above error for more details."
+      "error": null
     }
   ],
   "artifact_paths": {

@@ -83,6 +83,109 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-03 JST.
+
+- [x] Started the handoff with:
+
+  ```powershell
+  git status --short --untracked-files=all
+  ```
+
+  Result: no file changes were listed, but the expected Windows ACL warnings
+  remained for `.codex_tmp/pytest-of-yoro4/`, `bot_factory_pytest_tmp/`, and
+  `codex_tmp/pytest/`.
+- [x] Attempted to remove the workspace-local pytest temp directory after
+  resolving it inside the repository:
+
+  ```powershell
+  Remove-Item -Recurse -Force -LiteralPath bot_factory_pytest_tmp
+  ```
+
+  Result: Windows returned access denied, so the directory was left untouched.
+- [x] Re-ran the focused syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\freqai_training.py `
+    scripts\bot_factory_run_freqai_training.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked. The
+  same command was re-run with normal filesystem temp/cache permissions and
+  passed: 26 tests.
+- [x] Re-ran the FreqAI dependency audit:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  ```
+
+  Result: `ok=true` for `lightgbm==4.6.0`, `xgboost==3.0.5`,
+  `tensorboard==2.20.0`, and `datasieve==0.1.9`. Report written to
+  `registry/strategies/checks/20260503T033037Z_freqai_env.json`.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. The existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260503T033036Z_static_check.json`.
+- [x] Re-ran the known OHLCV parquet quality check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py `
+    user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet `
+    --timeframe 5m
+  ```
+
+  Result: passed with 8995 rows, no duplicate timestamps, no missing
+  intervals, and no OHLCV integrity findings. Report written to
+  `registry/strategies/checks/20260503T033036Z_ohlcv_quality.json`.
+- [x] Completed a Phase 2-safe FreqAI training factory historical
+  verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py `
+    --config user_data\config_freqai_phase2_safe.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --timeframe 5m `
+    --timerange 20250105-20250107 `
+    --pairs BTC/USDT:USDT `
+    --run-id phase2_training_20250105_20250107 `
+    --python .\.venv\Scripts\python.exe `
+    --reviewer-note "Phase 2 FreqAI training factory verification only; no paper or live promotion."
+  ```
+
+  The sandboxed attempt failed at the same public Bybit market metadata load
+  seen previously. The same backtesting-only command was then re-run with
+  normal network access for public metadata and completed successfully.
+- [x] Updated FreqAI training artifacts under
+  `data/freqai_training/LongOnlyFreqAIStrategy/phase2_training_20250105_20250107/`:
+  parent `training_manifest.json`, `training_report.md`, `command.txt`,
+  `freqai_env.json`, `logs/`, and child checked FreqAI backtest artifacts under
+  `freqai_backtests/LongOnlyFreqAIStrategy/train_20250105_20250107/`.
+  Child artifacts include `metrics.json`, `trades.csv`, `report.md`,
+  `result.json`, `freqai_metadata.json`, `freqai_validation.json`,
+  `static_check.json`, `ohlcv_quality.json`, `freqai_env.json`, and the raw
+  Freqtrade zip/pointer files.
+- [x] Training factory verification result: parent status `completed`, parent
+  recommendation `fail`, child `freqai_backtest` status `completed`, child
+  recommendation `fail`. Metrics: 2 trades, total return `-0.0617%`, profit
+  factor `0.0`, max drawdown `0.0617%`, Sharpe/Sortino `-123.7515`. Exported
+  trades remained `is_short=False` and `leverage=1.0`. Reports and metadata
+  state that this is Phase 2 verification only, not paper/live promotion, and
+  that FreqAI labels are backtest labels, not live trading instructions.
+
 Checked on 2026-05-02 JST.
 
 - [x] Added a FreqAI training factory orchestration helper:
@@ -433,7 +536,7 @@ Checked on 2026-04-26 JST.
 - [x] Add and verify a backtest-only walk-forward runner on two historical
   windows.
 - [x] Add FreqAI training factory orchestration helper and CLI.
-- [ ] Complete FreqAI training factory historical verification with public
+- [x] Complete FreqAI training factory historical verification with public
   market metadata access.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.

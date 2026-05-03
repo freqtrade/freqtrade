@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-05-02T13:33:01.833124+00:00",
+  "generated_at": "2026-05-03T03:31:14.688690+00:00",
   "phase": "2",
-  "status": "failed_backtest",
+  "status": "completed",
   "strategy": "LongOnlyFreqAIStrategy",
   "run_id": "train_20250105_20250107",
   "freqaimodel": "LightGBMRegressor",
@@ -55,7 +55,7 @@
       }
     ],
     "python_version": "3.12.4",
-    "generated_at": "2026-05-02T13:32:57.588097+00:00"
+    "generated_at": "2026-05-03T03:31:10.516879+00:00"
   },
   "artifact_paths": {
     "command": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\command.txt",

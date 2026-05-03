@@ -4,17 +4,16 @@
 
 - Strategy: LongOnlyFreqAIStrategy
 - Run ID: phase2_training_20250105_20250107
-- Status: failed
+- Status: completed
 - Recommendation: fail
-- Stages completed: 0/1
+- Stages completed: 1/1
 - Timerange: 20250105-20250107
 - Timeframe: 5m
 - FreqAI model: LightGBMRegressor
 
 ## Stages
 
-- freqai_backtest: status=failed, recommendation=n/a, returncode=2
-  Error: 2026-05-02 22:33:01,635 - freqtrade - ERROR - Could not load markets, therefore cannot start. Please investigate the above error for more details.
+- freqai_backtest: status=completed, recommendation=fail, returncode=0
 
 ## Artifacts
 
