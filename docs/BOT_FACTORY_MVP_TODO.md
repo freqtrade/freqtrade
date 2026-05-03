@@ -85,6 +85,12 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 Checked on 2026-05-03 JST.
 
+- [x] Added `docs/BOT_FACTORY_PHASE3_NEXT_AGENT_PROMPT.md`, a paste-ready
+  prompt for the next agent to start Phase 3 paper readiness design. It records
+  the required first command, source-of-truth files, current branch, recent
+  commits, known ACL warnings, completed Phase 2 work, Phase 3 safety
+  boundaries, recommended deliverables, verification commands, and
+  documentation requirements.
 - [x] Added `docs/BOT_FACTORY_PHASE3_AGENT_INSTRUCTIONS.md` as the next-agent
   handoff for Phase 3 paper trading design. It explicitly starts Phase 3 with
   no-startup paper readiness design, blocks bot startup until explicit user
@@ -555,6 +561,7 @@ Checked on 2026-04-26 JST.
   unchecked items below are later-phase work and are not required for Phase 2
   completion.
 - [x] Add Phase 3 paper trading design agent handoff instructions.
+- [x] Add paste-ready Phase 3 next-agent prompt.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
