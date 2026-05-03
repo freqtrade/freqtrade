@@ -85,6 +85,12 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 Checked on 2026-05-03 JST.
 
+- [x] Added `docs/BOT_FACTORY_PHASE3_AGENT_INSTRUCTIONS.md` as the next-agent
+  handoff for Phase 3 paper trading design. It explicitly starts Phase 3 with
+  no-startup paper readiness design, blocks bot startup until explicit user
+  request and preflight checks, forbids API keys/secrets, live/canary order
+  placement, leverage above `1.0`, and shorting, and keeps `Paper trading
+  deployment` as later work until implementation and verification exist.
 - [x] Marked Bot Factory Phase 2 complete for the backtesting-only FreqAI
   Factory scope. Phase 2 completion covers dependency audit, Phase 2-safe
   historical FreqAI backtest, required local artifacts, feature/label
@@ -548,6 +554,7 @@ Checked on 2026-04-26 JST.
 - [x] Phase 2 complete for the FreqAI Factory backtesting-only scope. Remaining
   unchecked items below are later-phase work and are not required for Phase 2
   completion.
+- [x] Add Phase 3 paper trading design agent handoff instructions.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
