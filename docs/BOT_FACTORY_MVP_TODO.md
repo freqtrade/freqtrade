@@ -85,6 +85,13 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 Checked on 2026-05-03 JST.
 
+- [x] Marked Bot Factory Phase 2 complete for the backtesting-only FreqAI
+  Factory scope. Phase 2 completion covers dependency audit, Phase 2-safe
+  historical FreqAI backtest, required local artifacts, feature/label
+  validation, two-window walk-forward verification, training factory
+  verification, and documented results. This completion does not authorize
+  paper trading, dry-run trading, live trading, canary live, exchange order
+  placement, leverage, or shorting.
 - [x] Started the handoff with:
 
   ```powershell
@@ -538,6 +545,9 @@ Checked on 2026-04-26 JST.
 - [x] Add FreqAI training factory orchestration helper and CLI.
 - [x] Complete FreqAI training factory historical verification with public
   market metadata access.
+- [x] Phase 2 complete for the FreqAI Factory backtesting-only scope. Remaining
+  unchecked items below are later-phase work and are not required for Phase 2
+  completion.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.

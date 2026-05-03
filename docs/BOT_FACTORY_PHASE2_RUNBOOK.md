@@ -7,6 +7,20 @@ It must not be used to start paper trading, dry-run trading, canary live, live
 trading, exchange order placement, leverage experiments, or shorting. The
 verified path uses `freqtrade backtesting` only.
 
+## Phase 2 Completion Note
+
+Checked on 2026-05-03 JST: Bot Factory Phase 2 is complete for the
+backtesting-only FreqAI Factory scope.
+
+Completion means the repository has verified FreqAI dependency audit,
+feature/label validation, Phase 2-safe historical FreqAI backtest artifacts,
+two-window walk-forward artifacts, training factory artifacts, and source of
+truth documentation. It does not mean the strategy is profitable, promoted, or
+approved for paper trading or live trading.
+
+Paper trading deployment, Risk Governor, Execution Gateway, Dashboard, and
+canary live workflow remain later-phase work.
+
 ## Scope
 
 Allowed:
