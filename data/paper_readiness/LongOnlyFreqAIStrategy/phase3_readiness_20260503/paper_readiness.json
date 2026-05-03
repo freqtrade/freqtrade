@@ -1,0 +1,699 @@
+{
+  "generated_at": "2026-05-03T05:06:49.491074+00:00",
+  "phase": "3",
+  "factory": "paper_readiness",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_readiness_20260503",
+  "status": "fail",
+  "readiness": "fail",
+  "config_path": "user_data\\config_freqai_phase2_safe.json",
+  "strategy_path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+  "historical_dir": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107",
+  "walk_forward_dir": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109",
+  "training_dir": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107",
+  "checks": [
+    {
+      "name": "artifact_present_historical_metrics",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Required candidate artifact must exist: historical_metrics.",
+      "details": {
+        "path": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\metrics.json"
+      }
+    },
+    {
+      "name": "artifact_present_historical_report",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Required candidate artifact must exist: historical_report.",
+      "details": {
+        "path": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\report.md"
+      }
+    },
+    {
+      "name": "artifact_present_historical_metadata",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Required candidate artifact must exist: historical_metadata.",
+      "details": {
+        "path": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\freqai_metadata.json"
+      }
+    },
+    {
+      "name": "artifact_present_historical_trades",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Required candidate artifact must exist: historical_trades.",
+      "details": {
+        "path": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\trades.csv"
+      }
+    },
+    {
+      "name": "artifact_present_walk_forward_metrics",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Required candidate artifact must exist: walk_forward_metrics.",
+      "details": {
+        "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\walk_forward_metrics.json"
+      }
+    },
+    {
+      "name": "artifact_present_walk_forward_report",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Required candidate artifact must exist: walk_forward_report.",
+      "details": {
+        "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\walk_forward_report.md"
+      }
+    },
+    {
+      "name": "artifact_present_training_manifest",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Required candidate artifact must exist: training_manifest.",
+      "details": {
+        "path": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\training_manifest.json"
+      }
+    },
+    {
+      "name": "artifact_present_training_report",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Required candidate artifact must exist: training_report.",
+      "details": {
+        "path": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\training_report.md"
+      }
+    },
+    {
+      "name": "dry_run_true",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must set dry_run=true for any future paper path.",
+      "details": {
+        "present": true
+      }
+    },
+    {
+      "name": "strategy_matches_candidate",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config strategy must match the readiness candidate.",
+      "details": {
+        "configured_strategy": "LongOnlyFreqAIStrategy",
+        "candidate": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "timeframe_explicit",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define an explicit timeframe.",
+      "details": {
+        "present": true
+      }
+    },
+    {
+      "name": "max_open_trades_explicit",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define a positive max_open_trades limit.",
+      "details": {
+        "present": true
+      }
+    },
+    {
+      "name": "max_open_trades_conservative",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config max_open_trades must stay within accepted simulation limits.",
+      "details": {
+        "configured": 1,
+        "maximum": 3
+      }
+    },
+    {
+      "name": "stake_amount_capped",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define a positive numeric stake_amount cap.",
+      "details": {
+        "present": true,
+        "numeric": true
+      }
+    },
+    {
+      "name": "stake_amount_conservative",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config stake_amount must stay within accepted simulation limits.",
+      "details": {
+        "configured": 100,
+        "maximum": 1000.0
+      }
+    },
+    {
+      "name": "dry_run_wallet_conservative",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define a conservative positive dry_run_wallet.",
+      "details": {
+        "present": true,
+        "configured": 1000,
+        "maximum": 10000.0
+      }
+    },
+    {
+      "name": "stake_amount_within_dry_run_wallet",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config stake_amount must not exceed dry_run_wallet.",
+      "details": {
+        "stake_amount": 100,
+        "dry_run_wallet": 1000
+      }
+    },
+    {
+      "name": "pair_allowlist_explicit",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define an explicit non-empty exchange.pair_whitelist.",
+      "details": {
+        "pair_count": 1
+      }
+    },
+    {
+      "name": "api_server_disabled",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Remote API server must not be enabled for this no-startup readiness layer.",
+      "details": {
+        "api_server_present": false
+      }
+    },
+    {
+      "name": "force_entry_disabled",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not enable force_entry_enable for paper readiness.",
+      "details": {
+        "present": true,
+        "configured": false
+      }
+    },
+    {
+      "name": "initial_state_stopped",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config initial_state must be explicitly stopped.",
+      "details": {
+        "present": true,
+        "configured": "stopped",
+        "accepted": "stopped"
+      }
+    },
+    {
+      "name": "cancel_open_orders_on_exit_explicit",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must explicitly set cancel_open_orders_on_exit.",
+      "details": {
+        "present": true,
+        "configured": false
+      }
+    },
+    {
+      "name": "no_credential_values",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not contain non-empty API keys, secrets, tokens, UIDs, or passwords.",
+      "details": {
+        "credential_key_paths": []
+      }
+    },
+    {
+      "name": "no_private_env_values",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not contain private environment variable references.",
+      "details": {
+        "env_reference_paths": []
+      }
+    },
+    {
+      "name": "no_leverage_above_one",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not set leverage above 1.0.",
+      "details": {
+        "leverage_key_paths": []
+      }
+    },
+    {
+      "name": "no_order_endpoint_overrides",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not include private or order endpoint overrides.",
+      "details": {
+        "endpoint_key_paths": []
+      }
+    },
+    {
+      "name": "can_short_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Strategy must explicitly set can_short = False.",
+      "details": {
+        "explicit_value": false
+      }
+    },
+    {
+      "name": "no_short_signals",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Strategy must not reference enter_short or exit_short signals.",
+      "details": {
+        "lines": []
+      }
+    },
+    {
+      "name": "leverage_hook_absent_or_capped",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "No leverage hook was found.",
+      "details": {
+        "hook_present": false
+      }
+    },
+    {
+      "name": "static_strategy_check",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Static strategy safety check must pass without errors.",
+      "details": {
+        "files_checked": 1,
+        "finding_count": 0
+      }
+    },
+    {
+      "name": "historical_backtest_gate",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Historical backtest gate must pass before paper readiness can pass.",
+      "details": {
+        "recommendation": "fail",
+        "trade_count": 2,
+        "total_return_pct": -0.061698530000000015,
+        "checks": [
+          {
+            "name": "min_trades",
+            "actual": 2,
+            "rule": ">= 200",
+            "pass": false
+          },
+          {
+            "name": "min_profit_factor",
+            "actual": "0.000000",
+            "rule": ">= 1.25",
+            "pass": false
+          },
+          {
+            "name": "max_drawdown_pct",
+            "actual": "0.061699",
+            "rule": "<= 15.0",
+            "pass": true
+          },
+          {
+            "name": "min_sortino",
+            "actual": "-123.751514",
+            "rule": ">= 1.2",
+            "pass": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "historical_trades_no_shorts",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Historical exported trades must not contain short trades.",
+      "details": {
+        "lines": []
+      }
+    },
+    {
+      "name": "historical_trades_no_leverage_above_one",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Historical exported trades must not contain leverage above 1.0.",
+      "details": {
+        "lines": []
+      }
+    },
+    {
+      "name": "walk_forward_gate",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Walk-forward recommendation must pass before paper readiness can pass.",
+      "details": {
+        "recommendation": "fail",
+        "status": "completed",
+        "summary": {
+          "window_count": 2,
+          "completed_windows": 2,
+          "failed_windows": 0,
+          "pass_rate": 0.0,
+          "profitable_windows_ratio": 0.0,
+          "total_return": -0.00184177513,
+          "total_return_pct": -0.18417751300000001,
+          "max_drawdown_pct_any_window": 0.17188215400000217,
+          "max_single_window_profit_dependency": null
+        }
+      }
+    },
+    {
+      "name": "walk_forward_child_windows_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward metrics must include child window evidence.",
+      "details": {
+        "window_count": 2
+      }
+    },
+    {
+      "name": "walk_forward_wf_01_20250105_20250107_metrics_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window child artifact must exist: metrics.",
+      "details": {
+        "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_01_20250105_20250107\\metrics.json"
+      }
+    },
+    {
+      "name": "walk_forward_wf_01_20250105_20250107_trades_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window child artifact must exist: trades.",
+      "details": {
+        "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_01_20250105_20250107\\trades.csv"
+      }
+    },
+    {
+      "name": "walk_forward_wf_01_20250105_20250107_freqai_metadata_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window child artifact must exist: freqai_metadata.",
+      "details": {
+        "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_01_20250105_20250107\\freqai_metadata.json"
+      }
+    },
+    {
+      "name": "walk_forward_wf_01_20250105_20250107_trades_no_shorts",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window exported trades must not contain short trades.",
+      "details": {
+        "lines": []
+      }
+    },
+    {
+      "name": "walk_forward_wf_01_20250105_20250107_trades_no_leverage_above_one",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window exported trades must not contain leverage above 1.0.",
+      "details": {
+        "lines": []
+      }
+    },
+    {
+      "name": "walk_forward_wf_02_20250107_20250109_metrics_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window child artifact must exist: metrics.",
+      "details": {
+        "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\metrics.json"
+      }
+    },
+    {
+      "name": "walk_forward_wf_02_20250107_20250109_trades_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window child artifact must exist: trades.",
+      "details": {
+        "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\trades.csv"
+      }
+    },
+    {
+      "name": "walk_forward_wf_02_20250107_20250109_freqai_metadata_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window child artifact must exist: freqai_metadata.",
+      "details": {
+        "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\windows\\LongOnlyFreqAIStrategy\\wf_02_20250107_20250109\\freqai_metadata.json"
+      }
+    },
+    {
+      "name": "walk_forward_wf_02_20250107_20250109_trades_no_shorts",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window exported trades must not contain short trades.",
+      "details": {
+        "lines": []
+      }
+    },
+    {
+      "name": "walk_forward_wf_02_20250107_20250109_trades_no_leverage_above_one",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward window exported trades must not contain leverage above 1.0.",
+      "details": {
+        "lines": []
+      }
+    },
+    {
+      "name": "training_factory_gate",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Training factory recommendation must pass before paper readiness can pass.",
+      "details": {
+        "recommendation": "fail",
+        "status": "completed",
+        "summary": {
+          "stage_count": 1,
+          "completed_stages": 1,
+          "failed_stages": 0
+        }
+      }
+    },
+    {
+      "name": "training_child_stages_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training manifest must include child stage evidence.",
+      "details": {
+        "stage_count": 1
+      }
+    },
+    {
+      "name": "training_freqai_backtest_child_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training manifest must include a freqai_backtest child stage.",
+      "details": {
+        "child_count": 1
+      }
+    },
+    {
+      "name": "training_train_20250105_20250107_metrics_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training child artifact must exist: metrics.",
+      "details": {
+        "path": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\metrics.json"
+      }
+    },
+    {
+      "name": "training_train_20250105_20250107_trades_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training child artifact must exist: trades.",
+      "details": {
+        "path": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\trades.csv"
+      }
+    },
+    {
+      "name": "training_train_20250105_20250107_freqai_metadata_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training child artifact must exist: freqai_metadata.",
+      "details": {
+        "path": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\freqai_metadata.json"
+      }
+    },
+    {
+      "name": "training_train_20250105_20250107_trades_no_shorts",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training child exported trades must not contain short trades.",
+      "details": {
+        "lines": []
+      }
+    },
+    {
+      "name": "training_train_20250105_20250107_trades_no_leverage_above_one",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training child exported trades must not contain leverage above 1.0.",
+      "details": {
+        "lines": []
+      }
+    },
+    {
+      "name": "reviewer_note_present",
+      "status": "pass",
+      "severity": "failure",
+      "message": "At least one explicit reviewer note is required before paper readiness can pass.",
+      "details": {
+        "note_count": 1
+      }
+    }
+  ],
+  "blockers": [],
+  "failures": [
+    {
+      "name": "historical_backtest_gate",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Historical backtest gate must pass before paper readiness can pass.",
+      "details": {
+        "recommendation": "fail",
+        "trade_count": 2,
+        "total_return_pct": -0.061698530000000015,
+        "checks": [
+          {
+            "name": "min_trades",
+            "actual": 2,
+            "rule": ">= 200",
+            "pass": false
+          },
+          {
+            "name": "min_profit_factor",
+            "actual": "0.000000",
+            "rule": ">= 1.25",
+            "pass": false
+          },
+          {
+            "name": "max_drawdown_pct",
+            "actual": "0.061699",
+            "rule": "<= 15.0",
+            "pass": true
+          },
+          {
+            "name": "min_sortino",
+            "actual": "-123.751514",
+            "rule": ">= 1.2",
+            "pass": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "walk_forward_gate",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Walk-forward recommendation must pass before paper readiness can pass.",
+      "details": {
+        "recommendation": "fail",
+        "status": "completed",
+        "summary": {
+          "window_count": 2,
+          "completed_windows": 2,
+          "failed_windows": 0,
+          "pass_rate": 0.0,
+          "profitable_windows_ratio": 0.0,
+          "total_return": -0.00184177513,
+          "total_return_pct": -0.18417751300000001,
+          "max_drawdown_pct_any_window": 0.17188215400000217,
+          "max_single_window_profit_dependency": null
+        }
+      }
+    },
+    {
+      "name": "training_factory_gate",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Training factory recommendation must pass before paper readiness can pass.",
+      "details": {
+        "recommendation": "fail",
+        "status": "completed",
+        "summary": {
+          "stage_count": 1,
+          "completed_stages": 1,
+          "failed_stages": 0
+        }
+      }
+    }
+  ],
+  "reviewer_notes": [
+    "Phase 3 no-startup paper readiness check only; do not start paper trading."
+  ],
+  "strategy_safety": {
+    "ok": true,
+    "source_path": "user_data\\strategies\\LongOnlyFreqAIStrategy.py",
+    "checks": [
+      {
+        "name": "can_short_false",
+        "status": "pass",
+        "severity": "blocker",
+        "message": "Strategy must explicitly set can_short = False.",
+        "details": {
+          "explicit_value": false
+        }
+      },
+      {
+        "name": "no_short_signals",
+        "status": "pass",
+        "severity": "blocker",
+        "message": "Strategy must not reference enter_short or exit_short signals.",
+        "details": {
+          "lines": []
+        }
+      },
+      {
+        "name": "leverage_hook_absent_or_capped",
+        "status": "pass",
+        "severity": "blocker",
+        "message": "No leverage hook was found.",
+        "details": {
+          "hook_present": false
+        }
+      }
+    ]
+  },
+  "static_check": {
+    "ok": true,
+    "files_checked": 1,
+    "findings": []
+  },
+  "artifact_paths": {
+    "paper_readiness": "data\\paper_readiness\\LongOnlyFreqAIStrategy\\phase3_readiness_20260503\\paper_readiness.json",
+    "paper_readiness_report": "data\\paper_readiness\\LongOnlyFreqAIStrategy\\phase3_readiness_20260503\\paper_readiness_report.md",
+    "candidate_artifacts": "data\\paper_readiness\\LongOnlyFreqAIStrategy\\phase3_readiness_20260503\\candidate_artifacts.json",
+    "config_safety": "data\\paper_readiness\\LongOnlyFreqAIStrategy\\phase3_readiness_20260503\\config_safety.json",
+    "command": "data\\paper_readiness\\LongOnlyFreqAIStrategy\\phase3_readiness_20260503\\command.txt"
+  },
+  "safety_scope": {
+    "command": "paper readiness preflight only",
+    "bot_startup": false,
+    "freqtrade_trade": false,
+    "paper_trading_started": false,
+    "dry_run_trading_started": false,
+    "live_trading": false,
+    "exchange_order_placement": false,
+    "uses_api_keys_or_secrets": false,
+    "leverage_above_one": false,
+    "shorting": false,
+    "metadata_contains_secrets": false,
+    "local_artifacts_source_of_truth": true
+  },
+  "notice": "Paper readiness is a no-startup preflight. It does not start paper trading, dry-run trading, live trading, or any bot process."
+}

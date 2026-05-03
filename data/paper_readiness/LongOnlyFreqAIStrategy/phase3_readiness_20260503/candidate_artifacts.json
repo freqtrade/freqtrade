@@ -1,0 +1,71 @@
+{
+  "generated_at": "2026-05-03T05:06:49.473645+00:00",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_readiness_20260503",
+  "artifacts": {
+    "historical_metrics": {
+      "path": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\metrics.json",
+      "exists": true,
+      "kind": "file",
+      "bytes": 651,
+      "modified_at": "2026-05-02T12:59:41.583584+00:00",
+      "sha256": "6adbabacda421be497a0214fbeebb744c405c4c8bbeb3c91f3502b0e0faa0d4e"
+    },
+    "historical_report": {
+      "path": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\report.md",
+      "exists": true,
+      "kind": "file",
+      "bytes": 1173,
+      "modified_at": "2026-05-02T12:59:41.583584+00:00",
+      "sha256": "3b87b67ac1f2ffb97794c45b58aa2f6639d41a681baf4aba92bc1b2e2ac55298"
+    },
+    "historical_metadata": {
+      "path": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\freqai_metadata.json",
+      "exists": true,
+      "kind": "file",
+      "bytes": 3105,
+      "modified_at": "2026-05-02T12:59:41.589655+00:00",
+      "sha256": "d85fc76372a48378e91ec06e74674e83d9e6e312b912a690f9659579161d6385"
+    },
+    "historical_trades": {
+      "path": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\trades.csv",
+      "exists": true,
+      "kind": "file",
+      "bytes": 1652,
+      "modified_at": "2026-05-02T12:59:41.583584+00:00",
+      "sha256": "497b0b24aa4ca7435975c3788011bea513a13976073932386106d2377193f12f"
+    },
+    "walk_forward_metrics": {
+      "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\walk_forward_metrics.json",
+      "exists": true,
+      "kind": "file",
+      "bytes": 7979,
+      "modified_at": "2026-05-02T13:13:27.372434+00:00",
+      "sha256": "be9453116aa59a08c9a18804167c2f60c1d6b1b8c0a30686cb16bf07b6fd7309"
+    },
+    "walk_forward_report": {
+      "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\walk_forward_report.md",
+      "exists": true,
+      "kind": "file",
+      "bytes": 994,
+      "modified_at": "2026-05-02T13:13:27.372434+00:00",
+      "sha256": "c5b4c6f87ce4d25f0adba8dad02fc5bcee8fd20ed96732a41d13de2bd323d1d7"
+    },
+    "training_manifest": {
+      "path": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\training_manifest.json",
+      "exists": true,
+      "kind": "file",
+      "bytes": 5869,
+      "modified_at": "2026-05-03T03:31:14.810969+00:00",
+      "sha256": "37a3ea72146fdd448b3382bd8f6b404848656cfcdc1c9a82902aaf7544d045e7"
+    },
+    "training_report": {
+      "path": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\training_report.md",
+      "exists": true,
+      "kind": "file",
+      "bytes": 1479,
+      "modified_at": "2026-05-03T03:31:14.810969+00:00",
+      "sha256": "1f7fcb06ea5b46840bb976f15e88b4fcad72bc0a379bd0e1a42f61b8ab3c89c9"
+    }
+  }
+}

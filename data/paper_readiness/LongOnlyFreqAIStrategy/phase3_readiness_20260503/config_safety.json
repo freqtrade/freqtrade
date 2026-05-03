@@ -1,0 +1,201 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "dry_run_true",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must set dry_run=true for any future paper path.",
+      "details": {
+        "present": true
+      }
+    },
+    {
+      "name": "strategy_matches_candidate",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config strategy must match the readiness candidate.",
+      "details": {
+        "configured_strategy": "LongOnlyFreqAIStrategy",
+        "candidate": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "timeframe_explicit",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define an explicit timeframe.",
+      "details": {
+        "present": true
+      }
+    },
+    {
+      "name": "max_open_trades_explicit",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define a positive max_open_trades limit.",
+      "details": {
+        "present": true
+      }
+    },
+    {
+      "name": "max_open_trades_conservative",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config max_open_trades must stay within accepted simulation limits.",
+      "details": {
+        "configured": 1,
+        "maximum": 3
+      }
+    },
+    {
+      "name": "stake_amount_capped",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define a positive numeric stake_amount cap.",
+      "details": {
+        "present": true,
+        "numeric": true
+      }
+    },
+    {
+      "name": "stake_amount_conservative",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config stake_amount must stay within accepted simulation limits.",
+      "details": {
+        "configured": 100,
+        "maximum": 1000.0
+      }
+    },
+    {
+      "name": "dry_run_wallet_conservative",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define a conservative positive dry_run_wallet.",
+      "details": {
+        "present": true,
+        "configured": 1000,
+        "maximum": 10000.0
+      }
+    },
+    {
+      "name": "stake_amount_within_dry_run_wallet",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config stake_amount must not exceed dry_run_wallet.",
+      "details": {
+        "stake_amount": 100,
+        "dry_run_wallet": 1000
+      }
+    },
+    {
+      "name": "pair_allowlist_explicit",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must define an explicit non-empty exchange.pair_whitelist.",
+      "details": {
+        "pair_count": 1
+      }
+    },
+    {
+      "name": "api_server_disabled",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Remote API server must not be enabled for this no-startup readiness layer.",
+      "details": {
+        "api_server_present": false
+      }
+    },
+    {
+      "name": "force_entry_disabled",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not enable force_entry_enable for paper readiness.",
+      "details": {
+        "present": true,
+        "configured": false
+      }
+    },
+    {
+      "name": "initial_state_stopped",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config initial_state must be explicitly stopped.",
+      "details": {
+        "present": true,
+        "configured": "stopped",
+        "accepted": "stopped"
+      }
+    },
+    {
+      "name": "cancel_open_orders_on_exit_explicit",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must explicitly set cancel_open_orders_on_exit.",
+      "details": {
+        "present": true,
+        "configured": false
+      }
+    },
+    {
+      "name": "no_credential_values",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not contain non-empty API keys, secrets, tokens, UIDs, or passwords.",
+      "details": {
+        "credential_key_paths": []
+      }
+    },
+    {
+      "name": "no_private_env_values",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not contain private environment variable references.",
+      "details": {
+        "env_reference_paths": []
+      }
+    },
+    {
+      "name": "no_leverage_above_one",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not set leverage above 1.0.",
+      "details": {
+        "leverage_key_paths": []
+      }
+    },
+    {
+      "name": "no_order_endpoint_overrides",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Config must not include private or order endpoint overrides.",
+      "details": {
+        "endpoint_key_paths": []
+      }
+    }
+  ],
+  "sanitized_summary": {
+    "dry_run": true,
+    "strategy": "LongOnlyFreqAIStrategy",
+    "timeframe": "5m",
+    "exchange_name": "bybit",
+    "pair_count": 1,
+    "max_open_trades": 1,
+    "stake_currency": "USDT",
+    "stake_amount": 100,
+    "dry_run_wallet": 1000,
+    "force_entry_enable": false,
+    "initial_state": "stopped",
+    "cancel_open_orders_on_exit": false,
+    "api_server_present": false,
+    "api_server_enabled": false,
+    "accepted_simulation_limits": {
+      "max_open_trades_maximum": 3,
+      "stake_amount_maximum": 1000.0,
+      "dry_run_wallet_maximum": 10000.0,
+      "required_initial_state": "stopped"
+    }
+  },
+  "metadata_contains_secrets": false
+}

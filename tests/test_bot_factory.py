@@ -33,6 +33,12 @@ from freqtrade_ext.bot_factory.freqai_training import (
     build_training_manifest,
     training_child_run_id,
 )
+from freqtrade_ext.bot_factory.paper import (
+    PaperReadinessInputs,
+    evaluate_config_safety,
+    evaluate_paper_readiness,
+    evaluate_strategy_long_only,
+)
 from freqtrade_ext.bot_factory.safety import scan_paths
 from freqtrade_ext.bot_factory.walk_forward import (
     WalkForwardRules,
@@ -587,3 +593,424 @@ def test_training_manifest_keeps_local_artifacts_as_source_of_truth(tmp_path):
         / "freqai_backtests"
         / "metrics.json"
     )
+
+
+def test_paper_config_safety_accepts_dry_run_sanitized_config():
+    config = _paper_config("PaperStrategy")
+
+    result = evaluate_config_safety(config, strategy="PaperStrategy")
+
+    assert result.ok
+    assert result.sanitized_summary["dry_run"] is True
+    assert result.to_dict()["metadata_contains_secrets"] is False
+
+
+def test_paper_config_safety_rejects_credentials_and_live_mode():
+    config = _paper_config("PaperStrategy")
+    config["dry_run"] = False
+    config["exchange"]["key"] = "not-a-real-key-but-nonempty"
+
+    result = evaluate_config_safety(config, strategy="PaperStrategy")
+
+    assert not result.ok
+    assert {check.name for check in result.checks if check.status == "blocked"} >= {
+        "dry_run_true",
+        "no_credential_values",
+    }
+
+
+def test_paper_config_safety_rejects_forced_entry_and_unsafe_startup():
+    config = _paper_config("PaperStrategy")
+    config["force_entry_enable"] = True
+    config["initial_state"] = "running"
+    config.pop("cancel_open_orders_on_exit")
+
+    result = evaluate_config_safety(config, strategy="PaperStrategy")
+
+    assert not result.ok
+    assert {check.name for check in result.checks if check.status == "blocked"} >= {
+        "force_entry_disabled",
+        "initial_state_stopped",
+        "cancel_open_orders_on_exit_explicit",
+    }
+
+
+def test_paper_config_safety_rejects_oversized_simulation_limits():
+    config = _paper_config("PaperStrategy")
+    config["max_open_trades"] = 4
+    config["stake_amount"] = 2000
+    config["dry_run_wallet"] = 20000
+
+    result = evaluate_config_safety(config, strategy="PaperStrategy")
+
+    assert not result.ok
+    assert {check.name for check in result.checks if check.status == "blocked"} >= {
+        "max_open_trades_conservative",
+        "stake_amount_conservative",
+        "dry_run_wallet_conservative",
+    }
+
+
+def test_paper_strategy_long_only_rejects_short_signals_and_high_leverage(tmp_path):
+    strategy_path = tmp_path / "PaperStrategy.py"
+    strategy_path.write_text(
+        "class PaperStrategy:\n"
+        "    can_short = False\n"
+        "    def leverage(self, *args, **kwargs):\n"
+        "        return 2.0\n"
+        "    def populate_entry_trend(self, dataframe, metadata):\n"
+        "        dataframe.loc[:, 'enter_short'] = 1\n"
+        "        return dataframe\n",
+        encoding="utf-8",
+    )
+
+    result = evaluate_strategy_long_only(strategy_path, "PaperStrategy")
+
+    assert not result.ok
+    blocked_names = {check.name for check in result.checks if check.status == "blocked"}
+    assert "no_short_signals" in blocked_names
+    assert "leverage_hook_no_constant_above_one" in blocked_names
+
+
+def test_paper_readiness_fails_when_phase2_gates_fail(tmp_path):
+    strategy_path = _write_paper_strategy(tmp_path, "PaperStrategy")
+    historical_dir, walk_forward_dir, training_dir = _write_paper_evidence(
+        tmp_path,
+        historical_gate_pass=False,
+        walk_forward_recommendation="pass",
+        training_recommendation="pass",
+    )
+    config = _paper_config("PaperStrategy")
+    static_report = scan_paths([strategy_path])
+    inputs = PaperReadinessInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_check",
+        config_path=tmp_path / "config.json",
+        strategy_path=strategy_path,
+        historical_dir=historical_dir,
+        walk_forward_dir=walk_forward_dir,
+        training_dir=training_dir,
+        reviewer_notes=["Reviewed for no-startup paper readiness."],
+    )
+
+    readiness, _, _ = evaluate_paper_readiness(
+        inputs,
+        static_report=static_report,
+        config=config,
+        strategy_file=strategy_path,
+    )
+
+    assert readiness["readiness"] == "fail"
+    assert readiness["blockers"] == []
+    assert "historical_backtest_gate" in {
+        check["name"] for check in readiness["failures"]
+    }
+
+
+def test_paper_readiness_passes_with_required_local_evidence(tmp_path):
+    strategy_path = _write_paper_strategy(tmp_path, "PaperStrategy")
+    historical_dir, walk_forward_dir, training_dir = _write_paper_evidence(
+        tmp_path,
+        historical_gate_pass=True,
+        walk_forward_recommendation="pass",
+        training_recommendation="pass",
+    )
+    config = _paper_config("PaperStrategy")
+    static_report = scan_paths([strategy_path])
+    inputs = PaperReadinessInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_check",
+        config_path=tmp_path / "config.json",
+        strategy_path=strategy_path,
+        historical_dir=historical_dir,
+        walk_forward_dir=walk_forward_dir,
+        training_dir=training_dir,
+        reviewer_notes=["Reviewed for no-startup paper readiness."],
+    )
+
+    readiness, candidate_artifacts, config_safety = evaluate_paper_readiness(
+        inputs,
+        static_report=static_report,
+        config=config,
+        strategy_file=strategy_path,
+    )
+
+    assert readiness["readiness"] == "pass"
+    assert all(info["exists"] for info in candidate_artifacts["artifacts"].values())
+    assert config_safety.ok
+    assert readiness["safety_scope"]["bot_startup"] is False
+
+
+def test_paper_readiness_blocks_short_trade_artifact(tmp_path):
+    strategy_path = _write_paper_strategy(tmp_path, "PaperStrategy")
+    historical_dir, walk_forward_dir, training_dir = _write_paper_evidence(
+        tmp_path,
+        historical_gate_pass=True,
+        walk_forward_recommendation="pass",
+        training_recommendation="pass",
+    )
+    (historical_dir / "trades.csv").write_text(
+        "is_short,leverage\nTrue,1.0\n", encoding="utf-8"
+    )
+    config = _paper_config("PaperStrategy")
+    static_report = scan_paths([strategy_path])
+    inputs = PaperReadinessInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_check",
+        config_path=tmp_path / "config.json",
+        strategy_path=strategy_path,
+        historical_dir=historical_dir,
+        walk_forward_dir=walk_forward_dir,
+        training_dir=training_dir,
+        reviewer_notes=["Reviewed for no-startup paper readiness."],
+    )
+
+    readiness, _, _ = evaluate_paper_readiness(
+        inputs,
+        static_report=static_report,
+        config=config,
+        strategy_file=strategy_path,
+    )
+
+    assert readiness["readiness"] == "blocked"
+    assert "historical_trades_no_shorts" in {
+        check["name"] for check in readiness["blockers"]
+    }
+
+
+def test_paper_readiness_blocks_missing_training_child_evidence(tmp_path):
+    strategy_path = _write_paper_strategy(tmp_path, "PaperStrategy")
+    historical_dir, walk_forward_dir, training_dir = _write_paper_evidence(
+        tmp_path,
+        historical_gate_pass=True,
+        walk_forward_recommendation="pass",
+        training_recommendation="pass",
+    )
+    child_trades = (
+        training_dir
+        / "freqai_backtests"
+        / "PaperStrategy"
+        / "train_20250101_20250201"
+        / "trades.csv"
+    )
+    child_trades.unlink()
+    config = _paper_config("PaperStrategy")
+    static_report = scan_paths([strategy_path])
+    inputs = PaperReadinessInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_check",
+        config_path=tmp_path / "config.json",
+        strategy_path=strategy_path,
+        historical_dir=historical_dir,
+        walk_forward_dir=walk_forward_dir,
+        training_dir=training_dir,
+        reviewer_notes=["Reviewed for no-startup paper readiness."],
+    )
+
+    readiness, _, _ = evaluate_paper_readiness(
+        inputs,
+        static_report=static_report,
+        config=config,
+        strategy_file=strategy_path,
+    )
+
+    assert readiness["readiness"] == "blocked"
+    assert "training_train_20250101_20250201_trades_present" in {
+        check["name"] for check in readiness["blockers"]
+    }
+
+
+def test_paper_readiness_blocks_walk_forward_child_high_leverage(tmp_path):
+    strategy_path = _write_paper_strategy(tmp_path, "PaperStrategy")
+    historical_dir, walk_forward_dir, training_dir = _write_paper_evidence(
+        tmp_path,
+        historical_gate_pass=True,
+        walk_forward_recommendation="pass",
+        training_recommendation="pass",
+    )
+    window_trades = (
+        walk_forward_dir
+        / "windows"
+        / "PaperStrategy"
+        / "wf_01_20250101_20250115"
+        / "trades.csv"
+    )
+    window_trades.write_text("is_short,leverage\nFalse,1.5\n", encoding="utf-8")
+    config = _paper_config("PaperStrategy")
+    static_report = scan_paths([strategy_path])
+    inputs = PaperReadinessInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_check",
+        config_path=tmp_path / "config.json",
+        strategy_path=strategy_path,
+        historical_dir=historical_dir,
+        walk_forward_dir=walk_forward_dir,
+        training_dir=training_dir,
+        reviewer_notes=["Reviewed for no-startup paper readiness."],
+    )
+
+    readiness, _, _ = evaluate_paper_readiness(
+        inputs,
+        static_report=static_report,
+        config=config,
+        strategy_file=strategy_path,
+    )
+
+    assert readiness["readiness"] == "blocked"
+    assert "walk_forward_wf_01_20250101_20250115_trades_no_leverage_above_one" in {
+        check["name"] for check in readiness["blockers"]
+    }
+
+
+def _paper_config(strategy: str) -> dict:
+    return {
+        "dry_run": True,
+        "dry_run_wallet": 1000,
+        "max_open_trades": 1,
+        "cancel_open_orders_on_exit": False,
+        "initial_state": "stopped",
+        "force_entry_enable": False,
+        "stake_currency": "USDT",
+        "stake_amount": 100,
+        "strategy": strategy,
+        "timeframe": "5m",
+        "exchange": {
+            "name": "bybit",
+            "key": "",
+            "secret": "",
+            "pair_whitelist": ["BTC/USDT:USDT"],
+        },
+    }
+
+
+def _write_paper_strategy(tmp_path, strategy: str) -> Path:
+    strategy_path = tmp_path / f"{strategy}.py"
+    strategy_path.write_text(
+        f"class {strategy}:\n"
+        "    can_short = False\n"
+        "    def populate_entry_trend(self, dataframe, metadata):\n"
+        "        dataframe.loc[:, 'enter_long'] = 1\n"
+        "        return dataframe\n",
+        encoding="utf-8",
+    )
+    return strategy_path
+
+
+def _write_paper_evidence(
+    tmp_path,
+    *,
+    historical_gate_pass: bool,
+    walk_forward_recommendation: str,
+    training_recommendation: str,
+) -> tuple[Path, Path, Path]:
+    historical_dir = tmp_path / "data" / "freqai" / "PaperStrategy" / "historical"
+    walk_forward_dir = tmp_path / "data" / "walk_forward" / "PaperStrategy" / "wf"
+    training_dir = tmp_path / "data" / "freqai_training" / "PaperStrategy" / "training"
+    window_dir = walk_forward_dir / "windows" / "PaperStrategy" / "wf_01_20250101_20250115"
+    training_child_dir = (
+        training_dir
+        / "freqai_backtests"
+        / "PaperStrategy"
+        / "train_20250101_20250201"
+    )
+    historical_dir.mkdir(parents=True)
+    walk_forward_dir.mkdir(parents=True)
+    training_dir.mkdir(parents=True)
+    window_dir.mkdir(parents=True)
+    training_child_dir.mkdir(parents=True)
+
+    metrics = {
+        "strategy_name": "PaperStrategy",
+        "total_return": 0.05 if historical_gate_pass else -0.01,
+        "total_return_pct": 5.0 if historical_gate_pass else -1.0,
+        "cagr": 0.2 if historical_gate_pass else -0.1,
+        "sharpe": 2.0 if historical_gate_pass else -1.0,
+        "sortino": 2.0 if historical_gate_pass else -1.0,
+        "calmar": 2.0 if historical_gate_pass else -1.0,
+        "max_drawdown_pct": 5.0,
+        "profit_factor": 1.5 if historical_gate_pass else 0.5,
+        "win_rate": 0.55 if historical_gate_pass else 0.2,
+        "average_win": 0.02,
+        "average_loss": -0.01,
+        "trade_count": 250 if historical_gate_pass else 2,
+        "expectancy": 0.001 if historical_gate_pass else -0.001,
+        "fee_paid": None,
+        "backtest_start": "2025-01-01 00:00:00",
+        "backtest_end": "2025-02-01 00:00:00",
+        "generated_at": "2026-05-03T00:00:00+00:00",
+    }
+    (historical_dir / "metrics.json").write_text(json.dumps(metrics), encoding="utf-8")
+    (historical_dir / "report.md").write_text("# Report\n", encoding="utf-8")
+    (historical_dir / "freqai_metadata.json").write_text(
+        json.dumps({"status": "completed"}), encoding="utf-8"
+    )
+    (historical_dir / "trades.csv").write_text("is_short,leverage\nFalse,1.0\n", encoding="utf-8")
+
+    (walk_forward_dir / "walk_forward_metrics.json").write_text(
+        json.dumps(
+            {
+                "status": "completed",
+                "recommendation": walk_forward_recommendation,
+                "summary": {"window_count": 1, "completed_windows": 1},
+                "windows": [
+                    {
+                        "run_id": "wf_01_20250101_20250115",
+                        "run_dir": str(window_dir),
+                        "status": "completed",
+                        "artifacts": {
+                            "metrics": str(window_dir / "metrics.json"),
+                            "trades": str(window_dir / "trades.csv"),
+                            "freqai_metadata": str(window_dir / "freqai_metadata.json"),
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (walk_forward_dir / "walk_forward_report.md").write_text("# Walk Forward\n", encoding="utf-8")
+    (window_dir / "metrics.json").write_text(json.dumps(metrics), encoding="utf-8")
+    (window_dir / "trades.csv").write_text("is_short,leverage\nFalse,1.0\n", encoding="utf-8")
+    (window_dir / "freqai_metadata.json").write_text(
+        json.dumps({"status": "completed"}), encoding="utf-8"
+    )
+
+    (training_dir / "training_manifest.json").write_text(
+        json.dumps(
+            {
+                "status": "completed",
+                "recommendation": training_recommendation,
+                "summary": {"stage_count": 1, "completed_stages": 1},
+                "stages": [
+                    {
+                        "name": "freqai_backtest",
+                        "run_id": "train_20250101_20250201",
+                        "status": "completed",
+                        "output_dir": str(training_child_dir),
+                        "artifacts": {
+                            "metrics": str(training_child_dir / "metrics.json"),
+                            "trades": str(training_child_dir / "trades.csv"),
+                            "freqai_metadata": str(
+                                training_child_dir / "freqai_metadata.json"
+                            ),
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (training_dir / "training_report.md").write_text("# Training\n", encoding="utf-8")
+    (training_child_dir / "metrics.json").write_text(json.dumps(metrics), encoding="utf-8")
+    (training_child_dir / "trades.csv").write_text(
+        "is_short,leverage\nFalse,1.0\n", encoding="utf-8"
+    )
+    (training_child_dir / "freqai_metadata.json").write_text(
+        json.dumps({"status": "completed"}), encoding="utf-8"
+    )
+    return historical_dir, walk_forward_dir, training_dir
