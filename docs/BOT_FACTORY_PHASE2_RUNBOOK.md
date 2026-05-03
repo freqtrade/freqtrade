@@ -174,6 +174,55 @@ Verified result on 2026-05-02 JST:
 
 This verifies the walk-forward pipeline only. It is not promotion approval.
 
+## 7. Run FreqAI Training Factory
+
+The training factory is a parent orchestration wrapper. It runs the checked
+FreqAI backtest wrapper for the training stage and can optionally run the
+checked walk-forward wrapper when windows are supplied. Local artifacts remain
+the source of truth.
+
+```powershell
+.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py `
+  --config user_data\config_freqai_phase2_safe.json `
+  --strategy LongOnlyFreqAIStrategy `
+  --timeframe 5m `
+  --timerange 20250105-20250107 `
+  --pairs BTC/USDT:USDT `
+  --run-id phase2_training_20250105_20250107 `
+  --python .\.venv\Scripts\python.exe `
+  --reviewer-note "Phase 2 FreqAI training factory verification only; no paper or live promotion."
+```
+
+Outputs are written under:
+
+```text
+data/freqai_training/LongOnlyFreqAIStrategy/phase2_training_20250105_20250107/
+```
+
+Important files:
+
+- `training_manifest.json`: parent stage status, recommendations, dependency
+  audit, local artifact paths, and Phase 2 safety scope.
+- `training_report.md`: Markdown summary of the training factory run.
+- `command.txt`: exact checked child command lines.
+- `freqai_env.json`: parent FreqAI dependency audit.
+- `logs/`: parent-captured child command/stdout/stderr logs.
+- `freqai_backtests/`: child checked FreqAI backtest artifacts.
+
+Current verification status on 2026-05-02 JST:
+
+- The training factory helper, CLI, command construction, and manifest/report
+  generation are implemented.
+- Parent dependency audit passed with `ok=true`.
+- The sandboxed historical training attempt generated parent artifacts, and the
+  checked child backtest completed dependency, validation, and OHLCV prechecks.
+- The child backtest then failed while loading public Bybit market metadata
+  under sandboxed network access:
+  `Could not load markets, therefore cannot start.`
+- A successful historical training factory run still needs a normal-network
+  retry for this public metadata load. This remains backtesting-only and does
+  not authorize paper or live trading.
+
 ## Current Limitations
 
 - The verified run is a pipeline check, not a profitable strategy approval.
@@ -188,4 +237,7 @@ This verifies the walk-forward pipeline only. It is not promotion approval.
 - The verified walk-forward run fails promotion gates because both windows are
   unprofitable and have too few trades. This is expected for pipeline
   verification.
+- The training factory historical verification is not complete yet. The current
+  sandbox blocked public Bybit market metadata loading during the child
+  backtest stage, after parent artifacts and prechecks were written.
 - Passing gates do not authorize paper trading or live trading.

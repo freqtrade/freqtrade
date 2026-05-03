@@ -26,6 +26,13 @@ from freqtrade_ext.bot_factory.freqai_checks import (
     check_freqai_dependencies,
     validate_freqai_strategy_paths,
 )
+from freqtrade_ext.bot_factory.freqai_training import (
+    TrainingStageResult,
+    build_checked_freqai_backtest_command,
+    build_checked_walk_forward_command,
+    build_training_manifest,
+    training_child_run_id,
+)
 from freqtrade_ext.bot_factory.safety import scan_paths
 from freqtrade_ext.bot_factory.walk_forward import (
     WalkForwardRules,
@@ -481,3 +488,102 @@ def test_walk_forward_aggregates_window_metrics():
     assert metrics["summary"]["window_count"] == 2
     assert metrics["summary"]["total_return"] == 0.035
     assert metrics["summary"]["max_drawdown_pct_any_window"] == 6.0
+
+
+def test_training_child_run_id_sanitizes_timerange():
+    assert training_child_run_id("train", "20250105-20250107") == (
+        "train_20250105_20250107"
+    )
+
+
+def test_training_backtest_command_uses_checked_wrapper_only(tmp_path):
+    cmd = build_checked_freqai_backtest_command(
+        python_executable=".venv/Scripts/python.exe",
+        runner_script="scripts/bot_factory_run_freqai_backtest.py",
+        config="user_data/config_freqai_phase2_safe.json",
+        strategy="LongOnlyFreqAIStrategy",
+        strategy_path="user_data/strategies",
+        output_root=tmp_path / "freqai_backtests",
+        run_id="train_20250105_20250107",
+        timerange="20250105-20250107",
+        timeframe="5m",
+        pairs=["BTC/USDT:USDT"],
+        reviewer_notes=["training factory test"],
+    )
+
+    assert cmd[:2] == [
+        ".venv/Scripts/python.exe",
+        "scripts/bot_factory_run_freqai_backtest.py",
+    ]
+    assert "backtesting" not in cmd
+    assert "trade" not in cmd
+    assert cmd[cmd.index("--timerange") + 1] == "20250105-20250107"
+    assert cmd[cmd.index("--pairs") + 1] == "BTC/USDT:USDT"
+
+
+def test_training_walk_forward_command_accepts_windows_and_rules(tmp_path):
+    cmd = build_checked_walk_forward_command(
+        python_executable=".venv/Scripts/python.exe",
+        runner_script="scripts/bot_factory_run_walk_forward.py",
+        config="user_data/config_freqai_phase2_safe.json",
+        strategy="LongOnlyFreqAIStrategy",
+        strategy_path="user_data/strategies",
+        output_root=tmp_path / "walk_forward",
+        run_id="wf_run",
+        window_specs=["20250105-20250107", "20250107-20250109"],
+        timeframe="5m",
+        pairs=["BTC/USDT:USDT"],
+        min_pass_rate=0.5,
+    )
+
+    assert cmd[:2] == [
+        ".venv/Scripts/python.exe",
+        "scripts/bot_factory_run_walk_forward.py",
+    ]
+    assert cmd.count("--window") == 2
+    assert "20250105-20250107" in cmd
+    assert cmd[cmd.index("--min-pass-rate") + 1] == "0.5"
+
+
+def test_training_manifest_keeps_local_artifacts_as_source_of_truth(tmp_path):
+    run_dir = tmp_path / "data" / "freqai_training" / "LongOnlyFreqAIStrategy" / "run1"
+    stage = TrainingStageResult(
+        name="freqai_backtest",
+        run_id="train_20250105_20250107",
+        status="completed",
+        returncode=0,
+        output_dir=run_dir / "freqai_backtests" / "LongOnlyFreqAIStrategy",
+        recommendation="fail",
+        artifacts={"metrics": run_dir / "freqai_backtests" / "metrics.json"},
+        command=[".venv/Scripts/python.exe", "scripts/bot_factory_run_freqai_backtest.py"],
+    )
+
+    manifest = build_training_manifest(
+        root_dir=tmp_path,
+        strategy="LongOnlyFreqAIStrategy",
+        run_id="run1",
+        config_path=tmp_path / "user_data" / "config_freqai_phase2_safe.json",
+        timeframe="5m",
+        timerange="20250105-20250107",
+        pairs=["BTC/USDT:USDT"],
+        freqaimodel="LightGBMRegressor",
+        freqai_identifier="phase2_safe_long_only",
+        dependency_status={"ok": True},
+        stages=[stage],
+        artifact_paths={"training_manifest": run_dir / "training_manifest.json"},
+        notes=[FREQAI_LABEL_NOTICE],
+    )
+
+    assert manifest["status"] == "completed"
+    assert manifest["recommendation"] == "fail"
+    assert manifest["config_path"] == str(Path("user_data") / "config_freqai_phase2_safe.json")
+    assert manifest["safety_scope"]["local_artifacts_source_of_truth"] is True
+    assert manifest["safety_scope"]["live_trading"] is False
+    assert manifest["stages"][0]["artifacts"]["metrics"] == str(
+        Path("data")
+        / "freqai_training"
+        / "LongOnlyFreqAIStrategy"
+        / "run1"
+        / "freqai_backtests"
+        / "metrics.json"
+    )

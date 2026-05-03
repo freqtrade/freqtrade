@@ -85,6 +85,91 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 Checked on 2026-05-02 JST.
 
+- [x] Added a FreqAI training factory orchestration helper:
+  `freqtrade_ext/bot_factory/freqai_training.py`.
+  It builds checked child commands for the existing FreqAI backtest and
+  walk-forward wrappers, aggregates stage status/recommendations, and writes a
+  local `training_manifest.json` plus `training_report.md` with Phase 2 safety
+  scope. The factory does not call paper, dry-run, canary, live, order,
+  leverage, or shorting paths.
+- [x] Added `scripts/bot_factory_run_freqai_training.py`.
+  The script runs a parent FreqAI dependency audit, requires FreqAI to be
+  enabled, invokes `scripts/bot_factory_run_freqai_backtest.py` for the training
+  stage, optionally invokes `scripts/bot_factory_run_walk_forward.py` when
+  windows are supplied, and keeps local artifacts as the source of truth.
+  Optional MLflow is pass-through to the checked child wrappers.
+- [x] Added focused tests for training child run-id sanitization, checked child
+  command construction, walk-forward command construction, and training
+  manifest safety/source-of-truth metadata in `tests/test_bot_factory.py`.
+- [x] `python -m py_compile` passed for:
+  `freqtrade_ext/bot_factory/freqai_training.py`,
+  `scripts/bot_factory_run_freqai_training.py`, and
+  `tests/test_bot_factory.py`.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\freqai_training.py `
+    scripts\bot_factory_run_freqai_training.py `
+    tests\test_bot_factory.py
+  ```
+- [x] Direct helper verification passed with inline Python assertions for:
+  `training_child_run_id`, checked FreqAI backtest command construction, and
+  training manifest safety metadata.
+- [ ] `pytest tests/test_bot_factory.py` could not complete in this session
+  because Windows temp/cache ACLs blocked `tmp_path` setup under the local
+  pytest temp root. A workspace-local
+  `--basetemp bot_factory_pytest_tmp -p no:cacheprovider` retry was also
+  blocked by ACLs, and normal-permission escalation was unavailable. The
+  workspace-local temp directory remains ACL-blocked and now appears as a
+  warning in `git status`; it should be removed when normal filesystem access
+  is available.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py `
+    --basetemp bot_factory_pytest_tmp `
+    -p no:cacheprovider
+  ```
+- [x] Re-ran `scripts/bot_factory_static_check.py user_data/strategies`; it
+  passed with warnings only: 7 files checked, no errors. The warnings remain
+  review-only findings in `5mV1.py` and `FreqAICustomStrategy.py`.
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+- [x] Re-ran
+  `scripts/bot_factory_check_ohlcv.py user_data/data/bybit/futures/BTC_USDT_USDT-5m-futures.parquet --timeframe 5m`;
+  it passed with 8995 rows, no duplicate timestamps, no missing intervals, and
+  no OHLCV integrity findings.
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py `
+    user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet `
+    --timeframe 5m
+  ```
+- [ ] Attempted a Phase 2-safe FreqAI training factory verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py `
+    --config user_data\config_freqai_phase2_safe.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --timeframe 5m `
+    --timerange 20250105-20250107 `
+    --pairs BTC/USDT:USDT `
+    --run-id phase2_training_20250105_20250107 `
+    --python .\.venv\Scripts\python.exe `
+    --reviewer-note "Phase 2 FreqAI training factory verification only; no paper or live promotion."
+  ```
+
+  Parent artifacts were written under
+  `data/freqai_training/LongOnlyFreqAIStrategy/phase2_training_20250105_20250107/`:
+  `training_manifest.json`, `training_report.md`, `command.txt`,
+  `freqai_env.json`, and `logs/`. The child checked FreqAI backtest completed
+  dependency, validation, and OHLCV prechecks, then failed while loading public
+  Bybit market metadata under sandboxed network access:
+  `Could not load markets, therefore cannot start.` A normal-network retry for
+  this backtesting-only command was unavailable in this session. This is not a
+  strategy promotion and does not authorize paper or live trading.
 - [x] Added FreqAI feature/label validation helpers in
   `freqtrade_ext/bot_factory/freqai_checks.py`.
   The validation report checks `%`-prefixed FreqAI feature columns,
@@ -347,7 +432,9 @@ Checked on 2026-04-26 JST.
   prechecks.
 - [x] Add and verify a backtest-only walk-forward runner on two historical
   windows.
-- [ ] FreqAI training factory.
+- [x] Add FreqAI training factory orchestration helper and CLI.
+- [ ] Complete FreqAI training factory historical verification with public
+  market metadata access.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
@@ -408,6 +495,25 @@ Run a checked walk-forward verification:
 
 This command runs the checked FreqAI backtest wrapper per window. It does not
 authorize paper trading or live trading even if gates pass.
+
+Run the FreqAI training factory wrapper:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py `
+  --config user_data\config_freqai_phase2_safe.json `
+  --strategy LongOnlyFreqAIStrategy `
+  --timeframe 5m `
+  --timerange 20250105-20250107 `
+  --pairs BTC/USDT:USDT `
+  --run-id phase2_training_20250105_20250107 `
+  --python .\.venv\Scripts\python.exe `
+  --reviewer-note "Phase 2 FreqAI training factory verification only; no paper or live promotion."
+```
+
+This command is an orchestration wrapper. It runs the checked FreqAI backtest
+wrapper for the training stage and can run the checked walk-forward wrapper when
+`--window` or rolling-window arguments are supplied. It remains limited to
+historical `freqtrade backtesting`.
 
 Run OHLCV quality checks:
 

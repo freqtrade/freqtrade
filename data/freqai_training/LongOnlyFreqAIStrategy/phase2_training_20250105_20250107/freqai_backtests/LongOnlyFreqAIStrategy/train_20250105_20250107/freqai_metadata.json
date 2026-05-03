@@ -1,0 +1,87 @@
+{
+  "generated_at": "2026-05-02T13:33:01.833124+00:00",
+  "phase": "2",
+  "status": "failed_backtest",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "train_20250105_20250107",
+  "freqaimodel": "LightGBMRegressor",
+  "freqai_identifier": "phase2_long_only_lightgbm_v1",
+  "timeframe": "5m",
+  "timerange": "20250105-20250107",
+  "pairs": [
+    "BTC/USDT:USDT"
+  ],
+  "config_paths": [
+    "user_data\\config_freqai_phase2_safe.json"
+  ],
+  "dependency_status": {
+    "ok": true,
+    "dependencies": [
+      {
+        "name": "lightgbm",
+        "import_name": "lightgbm",
+        "package_name": "lightgbm",
+        "required": true,
+        "installed": true,
+        "version": "4.6.0",
+        "error": null
+      },
+      {
+        "name": "xgboost",
+        "import_name": "xgboost",
+        "package_name": "xgboost",
+        "required": true,
+        "installed": true,
+        "version": "3.0.5",
+        "error": null
+      },
+      {
+        "name": "tensorboard",
+        "import_name": "tensorboard",
+        "package_name": "tensorboard",
+        "required": true,
+        "installed": true,
+        "version": "2.20.0",
+        "error": null
+      },
+      {
+        "name": "datasieve",
+        "import_name": "datasieve",
+        "package_name": "datasieve",
+        "required": true,
+        "installed": true,
+        "version": "0.1.9",
+        "error": null
+      }
+    ],
+    "python_version": "3.12.4",
+    "generated_at": "2026-05-02T13:32:57.588097+00:00"
+  },
+  "artifact_paths": {
+    "command": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\command.txt",
+    "stdout": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\stdout.log",
+    "stderr": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\stderr.log",
+    "result": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\result.json",
+    "metrics": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\metrics.json",
+    "trades": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\trades.csv",
+    "report": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\report.md",
+    "static_check": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\static_check.json",
+    "freqai_validation": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\freqai_validation.json",
+    "freqai_env": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\freqai_env.json",
+    "ohlcv_quality": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\ohlcv_quality.json",
+    "freqai_metadata": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\freqai_backtests\\LongOnlyFreqAIStrategy\\train_20250105_20250107\\freqai_metadata.json"
+  },
+  "notes": [
+    "This run path is limited to Freqtrade backtesting.",
+    "Passing gates do not authorize paper trading or live trading.",
+    "FreqAI labels are backtest labels, not live trading instructions."
+  ],
+  "safety_scope": {
+    "command": "freqtrade backtesting only",
+    "paper_trading": false,
+    "dry_run_trading": false,
+    "live_trading": false,
+    "exchange_order_placement": false,
+    "metadata_contains_secrets": false
+  }
+}
