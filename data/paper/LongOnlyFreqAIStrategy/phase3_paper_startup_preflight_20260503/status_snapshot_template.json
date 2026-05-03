@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-05-03T08:12:20.280172+00:00",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_startup_preflight_20260503",
+  "status": "not_started",
+  "startup_executed": false,
+  "bot_startup": false,
+  "freqtrade_trade_executed": false,
+  "paper_trading_started": false,
+  "dry_run_trading_started": false,
+  "live_trading": false,
+  "exchange_order_placement": false,
+  "message": "Template only; no paper process was started."
+}

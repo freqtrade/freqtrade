@@ -1,0 +1,446 @@
+{
+  "generated_at": "2026-05-03T08:12:20.280172+00:00",
+  "phase": "3",
+  "factory": "paper_startup_preflight",
+  "status": "blocked",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_startup_preflight_20260503",
+  "plan_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_plan_20260503\\paper_run_plan.json",
+  "plan_summary": {
+    "status": "blocked",
+    "plan_run_id": "phase3_paper_plan_20260503",
+    "readiness": "fail"
+  },
+  "checks": [
+    {
+      "name": "paper_plan_source_is_phase3_paper_run_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight must consume a Phase 3 paper run plan.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_run_plan"
+      }
+    },
+    {
+      "name": "paper_plan_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan strategy must match the startup preflight candidate.",
+      "details": {
+        "plan_strategy": "LongOnlyFreqAIStrategy",
+        "candidate": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "paper_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must be ready before startup preflight can pass.",
+      "details": {
+        "plan_status": "blocked"
+      }
+    },
+    {
+      "name": "paper_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must have no blockers.",
+      "details": {
+        "blocker_count": 3
+      }
+    },
+    {
+      "name": "paper_plan_future_startup_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan future startup eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "paper_plan_requires_separate_user_request",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan must require a separate explicit user request.",
+      "details": {
+        "requires_separate_user_request": true
+      }
+    },
+    {
+      "name": "paper_plan_requires_stop_cleanup_first",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan must require stop and cleanup review before startup.",
+      "details": {
+        "requires_stop_cleanup_first": true
+      }
+    },
+    {
+      "name": "paper_plan_does_not_authorize_startup",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan must not authorize startup by itself.",
+      "details": {
+        "startup_authorized_by_this_command": false
+      }
+    },
+    {
+      "name": "paper_plan_has_start_command_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must include a freqtrade trade command preview.",
+      "details": {
+        "command_token_count": 0
+      }
+    },
+    {
+      "name": "paper_plan_start_command_uses_freqtrade_trade",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview must use freqtrade trade.",
+      "details": {
+        "executable": null,
+        "subcommand": null
+      }
+    },
+    {
+      "name": "paper_plan_start_command_has_required_options",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview must include one config, strategy, and strategy path.",
+      "details": {
+        "config_count": 0,
+        "strategy_count": 0,
+        "strategy_path_count": 0
+      }
+    },
+    {
+      "name": "paper_plan_start_command_config_matches_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview config must match a local existing plan config.",
+      "details": {
+        "command_config_path": null,
+        "plan_config_path": "user_data\\config_freqai_phase2_safe.json"
+      }
+    },
+    {
+      "name": "paper_plan_start_command_strategy_matches_candidate",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview strategy must match the startup candidate.",
+      "details": {
+        "command_strategy": null,
+        "candidate": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "paper_plan_start_command_strategy_path_matches_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview strategy path must match a local plan path.",
+      "details": {
+        "command_strategy_path": null,
+        "plan_strategy_path": "user_data\\strategies"
+      }
+    },
+    {
+      "name": "confirm_paper_start_acknowledged",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight requires explicit --confirm-paper-start acknowledgement.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight requires the exact requested start command string.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_matches_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Requested start command must exactly match the paper run plan preview.",
+      "details": {
+        "requested_start_command": null,
+        "expected_start_command": null
+      }
+    },
+    {
+      "name": "reviewer_note_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight requires at least one reviewer note.",
+      "details": {
+        "note_count": 1
+      }
+    },
+    {
+      "name": "stop_cleanup_artifact_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Stop and cleanup documentation path must resolve inside the repository workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_plan_20260503\\stop_cleanup.md"
+      }
+    },
+    {
+      "name": "stop_cleanup_artifact_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Stop and cleanup documentation must exist before startup preflight can pass.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_plan_20260503\\stop_cleanup.md"
+      }
+    },
+    {
+      "name": "paper_run_checklist_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run checklist path must resolve inside the repository workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_plan_20260503\\paper_run_checklist.md"
+      }
+    },
+    {
+      "name": "paper_run_checklist_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run checklist must exist before startup preflight can pass.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_plan_20260503\\paper_run_checklist.md"
+      }
+    },
+    {
+      "name": "paper_plan_no_startup_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan must record no startup execution.",
+      "details": {
+        "bot_startup": false,
+        "freqtrade_trade_executed": false,
+        "paper_trading_started": false,
+        "dry_run_trading_started": false
+      }
+    },
+    {
+      "name": "paper_plan_no_live_or_exchange_order_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan must not involve live trading or exchange order placement.",
+      "details": {
+        "live_trading": false,
+        "exchange_order_placement": false
+      }
+    },
+    {
+      "name": "paper_plan_no_secrets_leverage_or_shorting_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan metadata must remain sanitized and long-only.",
+      "details": {
+        "uses_api_keys_or_secrets": false,
+        "leverage_above_one": false,
+        "shorting": false,
+        "metadata_contains_secrets": false
+      }
+    },
+    {
+      "name": "paper_plan_local_artifacts_source_of_truth",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan must keep local artifacts as the source of truth.",
+      "details": {
+        "local_artifacts_source_of_truth": true
+      }
+    }
+  ],
+  "blockers": [
+    {
+      "name": "paper_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must be ready before startup preflight can pass.",
+      "details": {
+        "plan_status": "blocked"
+      }
+    },
+    {
+      "name": "paper_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must have no blockers.",
+      "details": {
+        "blocker_count": 3
+      }
+    },
+    {
+      "name": "paper_plan_future_startup_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan future startup eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "paper_plan_has_start_command_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must include a freqtrade trade command preview.",
+      "details": {
+        "command_token_count": 0
+      }
+    },
+    {
+      "name": "paper_plan_start_command_uses_freqtrade_trade",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview must use freqtrade trade.",
+      "details": {
+        "executable": null,
+        "subcommand": null
+      }
+    },
+    {
+      "name": "paper_plan_start_command_has_required_options",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview must include one config, strategy, and strategy path.",
+      "details": {
+        "config_count": 0,
+        "strategy_count": 0,
+        "strategy_path_count": 0
+      }
+    },
+    {
+      "name": "paper_plan_start_command_config_matches_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview config must match a local existing plan config.",
+      "details": {
+        "command_config_path": null,
+        "plan_config_path": "user_data\\config_freqai_phase2_safe.json"
+      }
+    },
+    {
+      "name": "paper_plan_start_command_strategy_matches_candidate",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview strategy must match the startup candidate.",
+      "details": {
+        "command_strategy": null,
+        "candidate": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "paper_plan_start_command_strategy_path_matches_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan command preview strategy path must match a local plan path.",
+      "details": {
+        "command_strategy_path": null,
+        "plan_strategy_path": "user_data\\strategies"
+      }
+    },
+    {
+      "name": "confirm_paper_start_acknowledged",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight requires explicit --confirm-paper-start acknowledgement.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight requires the exact requested start command string.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_matches_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Requested start command must exactly match the paper run plan preview.",
+      "details": {
+        "requested_start_command": null,
+        "expected_start_command": null
+      }
+    }
+  ],
+  "reviewer_notes": [
+    "Phase 3 paper startup preflight hardening check only; do not start paper trading."
+  ],
+  "requested_start_command": null,
+  "expected_start_command": null,
+  "startup": {
+    "eligible": false,
+    "startup_executed": false,
+    "startup_authorized_by_this_command": false,
+    "requires_separate_execution_after_preflight": true,
+    "command_preview": []
+  },
+  "process_metadata": {
+    "strategy": "LongOnlyFreqAIStrategy",
+    "run_id": "phase3_paper_startup_preflight_20260503",
+    "process_started": false,
+    "startup_executed": false,
+    "pid": null,
+    "started_at": null,
+    "ended_at": null,
+    "command": [],
+    "stdout_log": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+    "stderr_log": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+    "status_snapshot": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+    "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json",
+    "notice": "Paper startup preflight is a no-startup gate. It does not start freqtrade trade, paper trading, dry-run trading, live trading, or any bot process."
+  },
+  "status_snapshot": {
+    "generated_at": "2026-05-03T08:12:20.280172+00:00",
+    "strategy": "LongOnlyFreqAIStrategy",
+    "run_id": "phase3_paper_startup_preflight_20260503",
+    "status": "not_started",
+    "startup_executed": false,
+    "bot_startup": false,
+    "freqtrade_trade_executed": false,
+    "paper_trading_started": false,
+    "dry_run_trading_started": false,
+    "live_trading": false,
+    "exchange_order_placement": false,
+    "message": "Template only; no paper process was started."
+  },
+  "log_paths": {
+    "stdout": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+    "stderr": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+    "status_snapshot": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+    "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+  },
+  "artifact_paths": {
+    "paper_startup_preflight": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_startup_preflight.json",
+    "paper_startup_preflight_report": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_startup_preflight_report.md",
+    "process_metadata_template": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+    "status_snapshot_template": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+    "start_command_preview": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\start_command_preview.txt",
+    "command": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\command.txt"
+  },
+  "safety_scope": {
+    "command": "paper startup preflight only",
+    "bot_startup": false,
+    "freqtrade_trade_executed": false,
+    "paper_trading_started": false,
+    "dry_run_trading_started": false,
+    "live_trading": false,
+    "canary_live_trading": false,
+    "exchange_order_placement": false,
+    "uses_api_keys_or_secrets": false,
+    "leverage_above_one": false,
+    "shorting": false,
+    "metadata_contains_secrets": false,
+    "local_artifacts_source_of_truth": true
+  },
+  "notice": "Paper startup preflight is a no-startup gate. It does not start freqtrade trade, paper trading, dry-run trading, live trading, or any bot process."
+}

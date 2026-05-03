@@ -1,0 +1,1 @@
+C:\Users\yoro4\Documents\GitHub\freqtrade\.venv\Scripts\python.exe scripts\bot_factory_plan_paper_run.py --readiness-json data\paper_readiness\LongOnlyFreqAIStrategy\phase3_readiness_20260503\paper_readiness.json --strategy LongOnlyFreqAIStrategy --run-id phase3_paper_plan_20260503 --reviewer-note Phase 3 paper run planning hardening check only; do not start paper trading.

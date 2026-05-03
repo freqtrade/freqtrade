@@ -39,6 +39,16 @@ from freqtrade_ext.bot_factory.paper import (
     evaluate_paper_readiness,
     evaluate_strategy_long_only,
 )
+from freqtrade_ext.bot_factory.paper_plan import (
+    PaperRunPlanInputs,
+    build_paper_run_plan,
+    write_paper_run_plan_artifacts,
+)
+from freqtrade_ext.bot_factory.paper_startup import (
+    PaperStartupPreflightInputs,
+    build_paper_startup_preflight,
+    write_paper_startup_preflight_artifacts,
+)
 from freqtrade_ext.bot_factory.safety import scan_paths
 from freqtrade_ext.bot_factory.walk_forward import (
     WalkForwardRules,
@@ -867,6 +877,255 @@ def test_paper_readiness_blocks_walk_forward_child_high_leverage(tmp_path):
     }
 
 
+def test_paper_run_plan_ready_requires_passed_readiness_and_acknowledgement(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(_paper_config("PaperStrategy")), encoding="utf-8")
+    readiness_path = tmp_path / "paper_readiness.json"
+    readiness = _paper_readiness_payload(
+        strategy="PaperStrategy",
+        status="pass",
+        config_path=config_path,
+    )
+    readiness_path.write_text(json.dumps(readiness), encoding="utf-8")
+    inputs = PaperRunPlanInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_plan",
+        readiness_path=readiness_path,
+        config_path=config_path,
+        strategy_path=tmp_path / "strategies",
+        output_root=tmp_path / "data" / "paper",
+        reviewer_notes=["Reviewed for future paper planning only."],
+        confirm_paper=True,
+        command=["python", "scripts/bot_factory_plan_paper_run.py"],
+    )
+
+    plan = build_paper_run_plan(inputs, readiness)
+    write_paper_run_plan_artifacts(inputs, plan)
+
+    assert plan["status"] == "ready"
+    assert plan["future_startup"]["eligible"] is True
+    assert plan["future_startup"]["startup_authorized_by_this_command"] is False
+    assert plan["safety_scope"]["bot_startup"] is False
+    assert plan["future_startup"]["command_preview"][:2] == ["freqtrade", "trade"]
+    assert (inputs.output_dir / "paper_run_plan.json").is_file()
+    assert (inputs.output_dir / "stop_cleanup.md").is_file()
+
+
+def test_paper_run_plan_blocks_failed_readiness_without_start_command(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(_paper_config("PaperStrategy")), encoding="utf-8")
+    readiness = _paper_readiness_payload(
+        strategy="PaperStrategy",
+        status="fail",
+        config_path=config_path,
+        failures=[{"name": "historical_backtest_gate"}],
+    )
+    inputs = PaperRunPlanInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_plan",
+        readiness_path=tmp_path / "paper_readiness.json",
+        config_path=config_path,
+        reviewer_notes=["Reviewed for future paper planning only."],
+        confirm_paper=True,
+    )
+
+    plan = build_paper_run_plan(inputs, readiness)
+
+    assert plan["status"] == "blocked"
+    assert plan["future_startup"]["eligible"] is False
+    assert plan["future_startup"]["command_preview"] == []
+    assert {"readiness_passed", "readiness_has_no_failures"} <= {
+        check["name"] for check in plan["blockers"]
+    }
+
+
+def test_paper_run_plan_blocks_missing_confirmation_and_reviewer_note(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(_paper_config("PaperStrategy")), encoding="utf-8")
+    readiness = _paper_readiness_payload(
+        strategy="PaperStrategy",
+        status="pass",
+        config_path=config_path,
+    )
+    inputs = PaperRunPlanInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_plan",
+        readiness_path=tmp_path / "paper_readiness.json",
+        config_path=config_path,
+    )
+
+    plan = build_paper_run_plan(inputs, readiness)
+
+    assert plan["status"] == "blocked"
+    assert {"confirm_paper_acknowledged", "reviewer_note_present"} <= {
+        check["name"] for check in plan["blockers"]
+    }
+
+
+def test_paper_run_plan_blocks_unsafe_readiness_scope(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(_paper_config("PaperStrategy")), encoding="utf-8")
+    readiness = _paper_readiness_payload(
+        strategy="PaperStrategy",
+        status="pass",
+        config_path=config_path,
+    )
+    readiness["safety_scope"]["uses_api_keys_or_secrets"] = True
+    readiness["safety_scope"]["local_artifacts_source_of_truth"] = False
+    inputs = PaperRunPlanInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_plan",
+        readiness_path=tmp_path / "paper_readiness.json",
+        config_path=config_path,
+        reviewer_notes=["Reviewed for future paper planning only."],
+        confirm_paper=True,
+    )
+
+    plan = build_paper_run_plan(inputs, readiness)
+
+    assert plan["status"] == "blocked"
+    assert {
+        "readiness_metadata_sanitized",
+        "readiness_local_artifacts_source_of_truth",
+    } <= {check["name"] for check in plan["blockers"]}
+
+
+def test_paper_startup_preflight_ready_records_templates_without_starting(tmp_path):
+    plan, plan_path = _write_ready_paper_run_plan(tmp_path)
+    start_command = " ".join(plan["future_startup"]["command_preview"])
+    inputs = PaperStartupPreflightInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_start_preflight",
+        plan_path=plan_path,
+        output_root=tmp_path / "data" / "paper",
+        reviewer_notes=["Reviewed startup preflight only; do not start paper trading."],
+        confirm_paper_start=True,
+        requested_start_command=start_command,
+        command=["python", "scripts/bot_factory_prepare_paper_start.py"],
+    )
+
+    preflight = build_paper_startup_preflight(inputs, plan)
+    write_paper_startup_preflight_artifacts(inputs, preflight)
+
+    assert preflight["status"] == "ready"
+    assert preflight["startup"]["eligible"] is True
+    assert preflight["startup"]["startup_executed"] is False
+    assert preflight["startup"]["startup_authorized_by_this_command"] is False
+    assert preflight["safety_scope"]["bot_startup"] is False
+    assert preflight["process_metadata"]["process_started"] is False
+    assert preflight["process_metadata"]["pid"] is None
+    assert preflight["startup"]["command_preview"][:2] == ["freqtrade", "trade"]
+    assert (inputs.output_dir / "paper_startup_preflight.json").is_file()
+    assert (inputs.output_dir / "process_metadata_template.json").is_file()
+    assert (inputs.output_dir / "status_snapshot_template.json").is_file()
+    assert (inputs.output_dir / "start_command_preview.txt").read_text(
+        encoding="utf-8"
+    ).startswith("freqtrade trade")
+
+
+def test_paper_startup_preflight_blocks_failed_plan_without_start_command(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(_paper_config("PaperStrategy")), encoding="utf-8")
+    readiness = _paper_readiness_payload(
+        strategy="PaperStrategy",
+        status="fail",
+        config_path=config_path,
+        failures=[{"name": "historical_backtest_gate"}],
+    )
+    plan_inputs = PaperRunPlanInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_plan",
+        readiness_path=tmp_path / "paper_readiness.json",
+        config_path=config_path,
+        output_root=tmp_path / "data" / "paper",
+        reviewer_notes=["Reviewed for future paper planning only."],
+        confirm_paper=True,
+    )
+    plan = build_paper_run_plan(plan_inputs, readiness)
+    write_paper_run_plan_artifacts(plan_inputs, plan)
+    inputs = PaperStartupPreflightInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_start_preflight",
+        plan_path=plan_inputs.output_dir / "paper_run_plan.json",
+        output_root=tmp_path / "data" / "paper",
+        reviewer_notes=["Reviewed startup preflight only."],
+        confirm_paper_start=True,
+        requested_start_command="freqtrade trade --config config.json",
+    )
+
+    preflight = build_paper_startup_preflight(inputs, plan)
+    write_paper_startup_preflight_artifacts(inputs, preflight)
+
+    assert preflight["status"] == "blocked"
+    assert preflight["startup"]["eligible"] is False
+    assert preflight["startup"]["command_preview"] == []
+    assert (inputs.output_dir / "start_command_preview.txt").read_text(
+        encoding="utf-8"
+    ) == ""
+    assert {"paper_plan_ready", "paper_plan_future_startup_eligible"} <= {
+        check["name"] for check in preflight["blockers"]
+    }
+
+
+def test_paper_startup_preflight_blocks_missing_confirmation_command_and_note(tmp_path):
+    plan, plan_path = _write_ready_paper_run_plan(tmp_path)
+    inputs = PaperStartupPreflightInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_start_preflight",
+        plan_path=plan_path,
+        output_root=tmp_path / "data" / "paper",
+    )
+
+    preflight = build_paper_startup_preflight(inputs, plan)
+
+    assert preflight["status"] == "blocked"
+    assert {
+        "confirm_paper_start_acknowledged",
+        "requested_start_command_present",
+        "reviewer_note_present",
+    } <= {check["name"] for check in preflight["blockers"]}
+
+
+def test_paper_startup_preflight_blocks_tampered_start_command_preview(tmp_path):
+    plan, plan_path = _write_ready_paper_run_plan(tmp_path)
+    plan["future_startup"]["command_preview"] = [
+        "python",
+        "trade",
+        "--config",
+        plan["config_path"],
+        "--strategy",
+        "OtherStrategy",
+        "--strategy-path",
+        plan["strategy_path"],
+    ]
+    inputs = PaperStartupPreflightInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_start_preflight",
+        plan_path=plan_path,
+        output_root=tmp_path / "data" / "paper",
+        reviewer_notes=["Reviewed startup preflight only."],
+        confirm_paper_start=True,
+        requested_start_command=" ".join(plan["future_startup"]["command_preview"]),
+    )
+
+    preflight = build_paper_startup_preflight(inputs, plan)
+
+    assert preflight["status"] == "blocked"
+    assert {
+        "paper_plan_start_command_uses_freqtrade_trade",
+        "paper_plan_start_command_strategy_matches_candidate",
+    } <= {check["name"] for check in preflight["blockers"]}
+
+
 def _paper_config(strategy: str) -> dict:
     return {
         "dry_run": True,
@@ -899,6 +1158,70 @@ def _write_paper_strategy(tmp_path, strategy: str) -> Path:
         encoding="utf-8",
     )
     return strategy_path
+
+
+def _paper_readiness_payload(
+    *,
+    strategy: str,
+    status: str,
+    config_path: Path,
+    blockers: list[dict] | None = None,
+    failures: list[dict] | None = None,
+) -> dict:
+    return {
+        "generated_at": "2026-05-03T00:00:00+00:00",
+        "phase": "3",
+        "factory": "paper_readiness",
+        "strategy": strategy,
+        "run_id": "readiness_run",
+        "status": status,
+        "readiness": status,
+        "config_path": str(config_path),
+        "blockers": blockers or [],
+        "failures": failures or [],
+        "reviewer_notes": ["Reviewed for no-startup paper readiness."],
+        "safety_scope": {
+            "command": "paper readiness preflight only",
+            "bot_startup": False,
+            "freqtrade_trade": False,
+            "paper_trading_started": False,
+            "dry_run_trading_started": False,
+            "live_trading": False,
+            "exchange_order_placement": False,
+            "uses_api_keys_or_secrets": False,
+            "leverage_above_one": False,
+            "shorting": False,
+            "metadata_contains_secrets": False,
+            "local_artifacts_source_of_truth": True,
+        },
+    }
+
+
+def _write_ready_paper_run_plan(tmp_path) -> tuple[dict, Path]:
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(_paper_config("PaperStrategy")), encoding="utf-8")
+    (tmp_path / "strategies").mkdir()
+    readiness_path = tmp_path / "paper_readiness.json"
+    readiness = _paper_readiness_payload(
+        strategy="PaperStrategy",
+        status="pass",
+        config_path=config_path,
+    )
+    readiness_path.write_text(json.dumps(readiness), encoding="utf-8")
+    inputs = PaperRunPlanInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_plan",
+        readiness_path=readiness_path,
+        config_path=config_path,
+        strategy_path=tmp_path / "strategies",
+        output_root=tmp_path / "data" / "paper",
+        reviewer_notes=["Reviewed for future paper planning only."],
+        confirm_paper=True,
+    )
+    plan = build_paper_run_plan(inputs, readiness)
+    write_paper_run_plan_artifacts(inputs, plan)
+    return plan, inputs.output_dir / "paper_run_plan.json"
 
 
 def _write_paper_evidence(

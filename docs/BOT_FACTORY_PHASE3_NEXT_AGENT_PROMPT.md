@@ -3,8 +3,7 @@
 Use the following prompt for the next coding agent.
 
 ````markdown
-Continue Bot Factory Phase 3 after the first no-startup paper readiness
-increment.
+Continue Bot Factory Phase 3 from the current no-startup state.
 
 First command, required:
 
@@ -12,7 +11,7 @@ First command, required:
 git status --short --untracked-files=all
 ```
 
-Source of truth:
+Read these files before making changes:
 
 - `AGENTS.md`
 - `docs/BOT_FACTORY_MVP_TODO.md`
@@ -25,158 +24,119 @@ Current branch:
 
 - `develop`
 
-Recent commits:
+Current worktree context:
 
-- `ab1ad1b56 docs(bot-factory): add phase3 paper design handoff`
-- `4dcb88aeb docs(bot-factory): mark phase2 complete`
-- `530b3d49f chore(bot-factory): verify phase2 training factory`
-
-Current status:
-
-- If this increment has not been committed, `git status` may list the Phase 3
-  readiness files below. If it has been committed, status should be clean apart
-  from the known ACL warnings.
-- The following known ACL warnings may appear:
-  - `.codex_tmp/pytest-of-yoro4/`
-  - `bot_factory_pytest_tmp/`
-  - `codex_tmp/pytest/`
-- The first Phase 3 no-startup paper readiness layer is implemented and
-  verified, and it has been hardened with stricter child evidence and config
-  policy checks. Do not repeat that milestone unless you are fixing or
-  extending it.
-- Expected current file changes may include:
+- This handoff may include uncommitted Phase 3 no-startup changes:
   - `docs/BOT_FACTORY_MVP_TODO.md`
   - `docs/BOT_FACTORY_PHASE3_NEXT_AGENT_PROMPT.md`
   - `docs/BOT_FACTORY_PHASE3_PAPER_DESIGN.md`
-  - `freqtrade_ext/bot_factory/paper.py`
-  - `scripts/bot_factory_check_paper_readiness.py`
+  - `freqtrade_ext/bot_factory/paper_plan.py`
+  - `freqtrade_ext/bot_factory/paper_startup.py`
+  - `scripts/bot_factory_plan_paper_run.py`
+  - `scripts/bot_factory_prepare_paper_start.py`
   - `tests/test_bot_factory.py`
-- Expected local readiness artifacts may exist under:
+  - `data/paper/LongOnlyFreqAIStrategy/phase3_paper_plan_20260503/`
+  - `data/paper/LongOnlyFreqAIStrategy/phase3_paper_startup_preflight_20260503/`
+- Existing readiness artifacts may exist under:
   - `data/paper_readiness/LongOnlyFreqAIStrategy/phase3_readiness_20260503/`
-- `bot_factory_pytest_tmp` could not be removed with normal file access in the
-  previous session. The attempted command was:
+- Known Windows ACL warnings may appear in `git status`:
+  - `.codex_tmp/pytest-of-yoro4/`
+  - `bot_factory_pytest_tmp/`
+  - `codex_tmp/pytest/`
+- Do not remove ACL-blocked directories unless normal file access is available
+  and the resolved path is safely inside the repository.
 
-  ```powershell
-  Remove-Item -Recurse -Force -LiteralPath bot_factory_pytest_tmp
-  ```
+Completed Phase 3 work:
 
-  It returned access denied. Remove it only if normal file access is available.
-
-Completed work:
-
-- Phase 1 Backtest Factory.
-- Phase 2 backtesting-only FreqAI Factory.
-- Phase 2 completion note:
-  - `docs/BOT_FACTORY_MVP_TODO.md`
-  - `docs/BOT_FACTORY_PHASE2_RUNBOOK.md`
-- Phase 3 handoff instructions:
-  - `docs/BOT_FACTORY_PHASE3_AGENT_INSTRUCTIONS.md`
-- Phase 3 no-startup paper readiness design and preflight:
-  - `docs/BOT_FACTORY_PHASE3_PAPER_DESIGN.md`
+- No-startup paper readiness preflight is implemented:
   - `freqtrade_ext/bot_factory/paper.py`
   - `scripts/bot_factory_check_paper_readiness.py`
+  - docs in `docs/BOT_FACTORY_PHASE3_PAPER_DESIGN.md`
   - focused tests in `tests/test_bot_factory.py`
-- Phase 3 no-startup readiness hardening:
-  - walk-forward child window artifacts now require `metrics.json`,
-    `trades.csv`, and `freqai_metadata.json`
-  - training `freqai_backtest` child artifacts now require `metrics.json`,
-    `trades.csv`, and `freqai_metadata.json`
-  - historical, walk-forward child, and training child trade exports must have
-    no shorts and no leverage above `1.0`
-  - config policy rejects `force_entry_enable=true`, requires
-    `initial_state=stopped`, requires explicit `cancel_open_orders_on_exit`,
-    and enforces `max_open_trades <= 3`, `stake_amount <= 1000`,
-    `dry_run_wallet <= 10000`, and `stake_amount <= dry_run_wallet`
+- Readiness preflight is hardened:
+  - requires historical metrics/report/metadata/trades
+  - requires walk-forward metrics/report and child window
+    `metrics.json`, `trades.csv`, `freqai_metadata.json`
+  - requires training manifest/report and training `freqai_backtest` child
+    `metrics.json`, `trades.csv`, `freqai_metadata.json`
+  - verifies historical, walk-forward child, and training child trade exports
+    contain no shorts and no leverage above `1.0`
+  - validates dry-run config safety, including `dry_run=true`,
+    `initial_state=stopped`, `force_entry_enable=false`, explicit
+    `cancel_open_orders_on_exit`, no credentials, no private env references,
+    no order endpoint overrides, conservative `max_open_trades`,
+    `stake_amount`, and `dry_run_wallet`
+- No-startup paper run planner is implemented:
+  - `freqtrade_ext/bot_factory/paper_plan.py`
+  - `scripts/bot_factory_plan_paper_run.py`
+  - consumes `paper_readiness.json`
+  - requires a Phase 3 `paper_readiness` source
+  - blocks unless readiness is `pass`
+  - blocks if readiness has blockers or failures
+  - verifies readiness safety scope is no-startup/no-live/no-order-placement
+  - verifies readiness scope is no-secret, long-only, no leverage above `1.0`,
+    and keeps local artifacts as the source of truth
+  - requires the referenced dry-run config file to exist
+  - requires config and strategy paths to resolve inside the repository
+    workspace
+  - requires `--confirm-paper` and at least one reviewer note before a plan can
+    become `ready`
+  - writes `paper_run_plan.json`, `paper_run_checklist.md`,
+    `stop_cleanup.md`, and `command.txt`
+  - records `startup_authorized_by_this_command=false`
+  - never starts `freqtrade trade` or any bot process
+- No-startup paper startup preflight is implemented:
+  - `freqtrade_ext/bot_factory/paper_startup.py`
+  - `scripts/bot_factory_prepare_paper_start.py`
+  - consumes `paper_run_plan.json`
+  - requires a Phase 3 `paper_run_plan` source
+  - blocks unless the paper run plan is `ready`
+  - blocks unless the plan has no blockers and future startup eligibility is
+    true
+  - verifies the plan still requires a separate explicit user request, stop
+    and cleanup review, no plan-side startup authorization, and no-startup /
+    no-live / no-order-placement / no-secret / long-only safety scope
+  - verifies the plan keeps local artifacts as the source of truth
+  - verifies the command preview uses `freqtrade trade`, has exactly one
+    `--config`, `--strategy`, and `--strategy-path`, matches the plan metadata,
+    resolves to local workspace paths, and targets the startup candidate
+  - verifies referenced stop/cleanup and paper run checklist artifacts resolve
+    inside the workspace and exist locally
+  - requires `--confirm-paper-start`, exact `--requested-start-command`, and
+    at least one reviewer note before startup preflight can become `ready`
+  - writes `paper_startup_preflight.json`,
+    `paper_startup_preflight_report.md`, `process_metadata_template.json`,
+    `status_snapshot_template.json`, `start_command_preview.txt`, and
+    `command.txt`
+  - records `startup_executed=false` and
+    `startup_authorized_by_this_command=false`
+  - never starts `freqtrade trade` or any bot process
 
-Important constraints:
+Verified current candidate state:
 
-- The first Phase 3 increment is paper trading readiness design and preflight
-  implementation only.
-- Do not start `freqtrade trade`.
-- Do not start paper trading, dry-run trading, canary live, live trading, or
-  any bot startup process.
-- Do not use API keys, secrets, credential-like config values, exchange order
-  endpoints, real order placement, leverage above `1.0`, or shorting.
-- The `LongOnlyFreqAIStrategy` Phase 2 results are pipeline verification, not
-  profitable strategy approval. Recent gates are `fail`, so do not promote the
-  strategy into paper trading.
-- Local JSON, CSV, and Markdown artifacts are the source of truth. MLflow is
-  optional.
+- Current `LongOnlyFreqAIStrategy` Phase 2 artifacts are pipeline verification
+  artifacts, not a profitable strategy approval.
+- The latest readiness run returned `readiness=fail`, as expected, because
+  historical, walk-forward, and training gates still recommend `fail`.
+- The no-startup planner run returned `status=blocked`, as expected, because
+  readiness is still `fail` and no user-supplied `--confirm-paper`
+  acknowledgement was provided.
+- The blocked plan wrote no startup command preview.
+- The no-startup startup preflight run returned `status=blocked`, as expected,
+  because the plan is still blocked, no command preview exists, and no
+  `--confirm-paper-start` or exact requested start command was supplied.
+- The blocked startup preflight wrote an empty `start_command_preview.txt`.
 
-Completed first Phase 3 goal:
-
-Implement a no-startup paper readiness layer that can decide, from local
-artifacts and static/config checks, whether a candidate strategy is eligible for
-a tightly scoped future paper trading run.
-
-Implemented deliverables:
-
-- `docs/BOT_FACTORY_PHASE3_PAPER_DESIGN.md`
-- `freqtrade_ext/bot_factory/paper.py`
-- `scripts/bot_factory_check_paper_readiness.py`
-- focused tests in `tests/test_bot_factory.py` or a focused new test file
-
-Minimum requirements:
-
-- Read Phase 2 artifacts:
-  - historical FreqAI backtest metrics/report/metadata/trades
-  - walk-forward metrics/report
-  - training factory manifest/report
-- Treat failed Phase 2 gates as a paper readiness blocker.
-- Document that a future human-approved infrastructure-only smoke test is a
-  separate path, but do not implement bot startup in this first increment.
-- Run or consume existing static safety checks.
-- Validate that the candidate remains long-only:
-  - `can_short = False`
-  - no short entry or exit signals
-  - no leverage hook, or no leverage above `1.0`
-  - historical exported trades contain no shorts and no leverage above `1.0`
-- Validate that any proposed paper config is `dry_run=true` only.
-- Validate that any proposed paper config contains no secrets, API keys, private
-  environment values, or credential-like values.
-- Return readiness as one of `pass`, `fail`, or `blocked`.
-- Write local artifacts as the source of truth.
-
-Recommended artifact layout:
-
-```text
-data/paper_readiness/<strategy>/<run_id>/
-```
-
-Recommended artifact files:
-
-- `paper_readiness.json`
-- `paper_readiness_report.md`
-- `candidate_artifacts.json`
-- `config_safety.json`
-- `command.txt`
-
-Verified readiness result:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\bot_factory_check_paper_readiness.py `
-  --config user_data\config_freqai_phase2_safe.json `
-  --strategy LongOnlyFreqAIStrategy `
-  --historical-dir data\freqai\LongOnlyFreqAIStrategy\phase2_safe_20250105_20250107 `
-  --walk-forward-dir data\walk_forward\LongOnlyFreqAIStrategy\phase2_walk_forward_20250105_20250109 `
-  --training-dir data\freqai_training\LongOnlyFreqAIStrategy\phase2_training_20250105_20250107 `
-  --run-id phase3_readiness_20260503 `
-  --reviewer-note "Phase 3 no-startup paper readiness check only; do not start paper trading."
-```
-
-Result: completed without bot startup and returned `readiness=fail`, because
-the historical, walk-forward, and training Phase 2 gates still recommend
-`fail`. This is expected and blocks paper readiness for the current
-`LongOnlyFreqAIStrategy` evidence. The hardened config policy, child evidence,
-and long-only/leverage trade export checks pass for the current local
-artifacts.
-
-Latest verification from this handoff:
+Latest verification commands and results:
 
 ```powershell
 .\.venv\Scripts\python.exe -m py_compile `
   freqtrade_ext\bot_factory\paper.py `
+  freqtrade_ext\bot_factory\paper_plan.py `
+  freqtrade_ext\bot_factory\paper_startup.py `
   scripts\bot_factory_check_paper_readiness.py `
+  scripts\bot_factory_plan_paper_run.py `
+  scripts\bot_factory_prepare_paper_start.py `
   tests\test_bot_factory.py
 ```
 
@@ -186,10 +146,13 @@ Result: passed.
 .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
 ```
 
-Result: the sandboxed run failed at `tmp_path` setup because
-`C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked. The same
-focused command was rerun with normal filesystem permissions and passed:
-`36 passed`.
+Result: sandbox temp/cache ACLs blocked the sandboxed run at
+`C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4`, producing 44 fixture setup
+errors before test bodies ran. A normal filesystem permissions rerun was
+requested but could not be approved in this environment because the Codex usage
+limit was reached, so the focused pytest suite was not completed for this
+increment. The previous normal-permissions run before this hardening passed
+`42 passed`.
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
@@ -197,25 +160,83 @@ focused command was rerun with normal filesystem permissions and passed:
 
 Result: `ok=true`, 7 files checked, no errors. Existing review warnings remain
 in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
-`registry/strategies/checks/20260503T050639Z_static_check.json`.
+`registry/strategies/checks/20260503T080954Z_static_check.json`.
+
+```powershell
+.\.venv\Scripts\python.exe scripts\bot_factory_plan_paper_run.py `
+  --readiness-json data\paper_readiness\LongOnlyFreqAIStrategy\phase3_readiness_20260503\paper_readiness.json `
+  --strategy LongOnlyFreqAIStrategy `
+  --run-id phase3_paper_plan_20260503 `
+  --reviewer-note "Phase 3 paper run planning hardening check only; do not start paper trading."
+```
+
+Result: completed without bot startup and returned `status=blocked`. Artifacts
+were written under
+`data/paper/LongOnlyFreqAIStrategy/phase3_paper_plan_20260503/`. The newly
+added source, safety-scope, local-artifact, and workspace-path planner checks
+passed for the current readiness artifact.
+
+```powershell
+.\.venv\Scripts\python.exe scripts\bot_factory_prepare_paper_start.py `
+  --plan-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_plan_20260503\paper_run_plan.json `
+  --strategy LongOnlyFreqAIStrategy `
+  --run-id phase3_paper_startup_preflight_20260503 `
+  --reviewer-note "Phase 3 paper startup preflight hardening check only; do not start paper trading."
+```
+
+Result: completed without bot startup and returned `status=blocked`, as
+expected. Artifacts were written under
+`data/paper/LongOnlyFreqAIStrategy/phase3_paper_startup_preflight_20260503/`.
+The generated `start_command_preview.txt` is empty. The newly added plan-source,
+workspace-artifact, and local-artifact checks passed; command-preview integrity
+checks are blocked because the plan correctly has no command preview while
+readiness remains `fail`.
+
+Hard safety boundaries:
+
+- Do not start `freqtrade trade`.
+- Do not start paper trading, dry-run trading, canary live, live trading, or
+  any bot startup process.
+- Do not use API keys, secrets, private environment values, exchange order
+  endpoints, real order placement, leverage above `1.0`, or shorting.
+- Do not promote `LongOnlyFreqAIStrategy` to paper while readiness remains
+  `fail`.
+- Local JSON, CSV, Markdown, and logs remain the source of truth. MLflow is
+  optional and must not replace local artifacts.
 
 Next safe Phase 3 direction:
 
-- Improve or harden the readiness layer further only if a concrete gap is
-  found, or design a future paper-run wrapper without starting it.
-- Any future wrapper must require a passing readiness report,
-  `--confirm-paper` or equivalent explicit acknowledgement, reviewer notes,
-  sanitized metadata, and stop/cleanup documentation before any start
-  documentation.
-- Do not create `docs/BOT_FACTORY_PHASE3_RUNBOOK.md` until an actual paper path
-  has been implemented and verified.
+- If continuing code work, harden the no-startup startup preflight further only
+  if a concrete gap is found, or design the later execution wrapper without
+  running it.
+- A future execution wrapper must require:
+  - a passing `paper_readiness.json`
+  - a `ready` `paper_run_plan.json`
+  - a `ready` `paper_startup_preflight.json`
+  - explicit user request for the exact paper startup command
+  - `--confirm-paper-start` or equivalent acknowledgement
+  - reviewer notes
+  - sanitized metadata
+  - process metadata path
+  - stdout/stderr log paths
+  - status snapshot path
+  - stop/cleanup procedure before any start documentation
+- Do not create `docs/BOT_FACTORY_PHASE3_RUNBOOK.md` until an actual paper
+  path has been implemented and verified.
+- Do not mark `Paper trading deployment` complete until an explicitly
+  requested, preflight-approved paper path has been implemented, verified, and
+  documented.
 
-Verification candidates:
+Suggested verification after changes:
 
 ```powershell
 .\.venv\Scripts\python.exe -m py_compile `
   freqtrade_ext\bot_factory\paper.py `
+  freqtrade_ext\bot_factory\paper_plan.py `
+  freqtrade_ext\bot_factory\paper_startup.py `
   scripts\bot_factory_check_paper_readiness.py `
+  scripts\bot_factory_plan_paper_run.py `
+  scripts\bot_factory_prepare_paper_start.py `
   tests\test_bot_factory.py
 
 .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
@@ -223,19 +244,8 @@ Verification candidates:
 .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
 ```
 
-Known issue:
+Documentation requirement:
 
-- Pytest may fail in the sandbox due to Windows temp/cache ACLs at
-  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4`.
-- If that happens, record the sandbox failure and rerun the same focused pytest
-  command with normal filesystem permissions.
-
-Documentation:
-
-- Update `docs/BOT_FACTORY_MVP_TODO.md` after the increment with exact
-  commands, results, artifacts, and remaining limitations.
-- Do not create `docs/BOT_FACTORY_PHASE3_RUNBOOK.md` until an actual paper path
-  has been implemented and verified.
-- Do not mark `Paper trading deployment` complete until an explicitly requested,
-  preflight-approved paper path has been implemented, verified, and documented.
+- Update `docs/BOT_FACTORY_MVP_TODO.md` after each completed Bot Factory
+  increment with exact commands, results, artifacts, and remaining limitations.
 ````

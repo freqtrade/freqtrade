@@ -85,6 +85,235 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 Checked on 2026-05-03 JST.
 
+- [x] Hardened the Phase 3 no-startup paper run planner and startup preflight.
+  The planner now requires a Phase 3 `paper_readiness` source, sanitized
+  no-secret readiness scope, long-only/no-leverage readiness scope, local
+  artifacts as source of truth, and config/strategy paths that resolve inside
+  the repository workspace. The startup preflight now requires a Phase 3
+  `paper_run_plan` source, a `freqtrade trade` command preview with exactly one
+  `--config`, `--strategy`, and `--strategy-path`, command config and strategy
+  path matching the plan, local existing command paths, stop/cleanup and
+  checklist paths inside the workspace, and local artifacts as source of truth.
+  These checks only inspect metadata and write artifacts; they do not start
+  `freqtrade trade`, paper trading, dry-run trading, live trading, canary live
+  trading, exchange order placement, leverage above `1.0`, or shorting.
+- [x] Added focused test coverage for unsafe readiness scope and tampered
+  startup command previews in `tests/test_bot_factory.py`.
+- [x] Updated `docs/BOT_FACTORY_PHASE3_PAPER_DESIGN.md` and
+  `docs/BOT_FACTORY_PHASE3_NEXT_AGENT_PROMPT.md` with the hardened planner and
+  startup preflight gates.
+- [x] Re-ran the focused syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\paper.py freqtrade_ext\bot_factory\paper_plan.py freqtrade_ext\bot_factory\paper_startup.py scripts\bot_factory_check_paper_readiness.py scripts\bot_factory_plan_paper_run.py scripts\bot_factory_prepare_paper_start.py tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked,
+  producing 44 fixture setup errors before test bodies ran. A normal filesystem
+  permissions rerun was requested but could not be approved in this environment
+  because the Codex usage limit was reached, so the focused pytest suite was
+  not completed for this increment.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. The existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260503T080954Z_static_check.json`.
+- [x] Re-ran the no-startup paper run planner against the current
+  `LongOnlyFreqAIStrategy` readiness artifact:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_plan_paper_run.py --readiness-json data\paper_readiness\LongOnlyFreqAIStrategy\phase3_readiness_20260503\paper_readiness.json --strategy LongOnlyFreqAIStrategy --run-id phase3_paper_plan_20260503 --reviewer-note "Phase 3 paper run planning hardening check only; do not start paper trading."
+  ```
+
+  Result: completed without starting any bot process and returned
+  `status=blocked`, as expected. The planner still blocks because readiness is
+  `fail`, failed readiness gates are present, and no user-supplied
+  `--confirm-paper` acknowledgement was provided. The newly added source,
+  safety-scope, local-artifact, and workspace-path checks passed for the current
+  readiness artifact. Artifacts were updated under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_plan_20260503/`.
+- [x] Re-ran the no-startup paper startup preflight against the current blocked
+  `LongOnlyFreqAIStrategy` paper plan:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_prepare_paper_start.py --plan-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_plan_20260503\paper_run_plan.json --strategy LongOnlyFreqAIStrategy --run-id phase3_paper_startup_preflight_20260503 --reviewer-note "Phase 3 paper startup preflight hardening check only; do not start paper trading."
+  ```
+
+  Result: completed without starting any bot process and returned
+  `status=blocked`, as expected. The preflight still blocks because the current
+  paper run plan is blocked, future startup eligibility is false, no startup
+  command preview exists, and no user-supplied `--confirm-paper-start` or exact
+  `--requested-start-command` was provided. The newly added plan-source,
+  workspace-artifact, and local-artifact checks passed; command-preview
+  integrity checks are blocked because the plan correctly has no command
+  preview while readiness remains `fail`. Artifacts were updated under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_startup_preflight_20260503/`.
+- [x] Remaining Phase 3 limitation: no actual paper startup wrapper, running
+  paper process, monitoring, process stop implementation, cleanup executor, or
+  paper/live promotion path has been implemented. `Paper trading deployment`
+  remains incomplete until the user explicitly requests a preflight-approved
+  paper path and it is implemented, verified, and documented.
+
+- [x] Added the Phase 3 no-startup paper startup preflight gate:
+  `freqtrade_ext/bot_factory/paper_startup.py` and
+  `scripts/bot_factory_prepare_paper_start.py`. The preflight consumes an
+  existing `paper_run_plan.json`, requires the plan to be `ready`, requires no
+  plan blockers, verifies future startup eligibility, verifies the plan still
+  requires a separate explicit user request and stop/cleanup review, requires
+  `--confirm-paper-start`, exact `--requested-start-command`, and reviewer
+  notes before preflight can become `ready`, and writes
+  `paper_startup_preflight.json`, `paper_startup_preflight_report.md`,
+  `process_metadata_template.json`, `status_snapshot_template.json`,
+  `start_command_preview.txt`, and `command.txt`. The preflight records
+  `startup_executed=false` and
+  `startup_authorized_by_this_command=false`; it does not start
+  `freqtrade trade`, paper trading, dry-run trading, live trading, canary live
+  trading, exchange order placement, leverage above `1.0`, or shorting.
+- [x] Added focused startup preflight tests to `tests/test_bot_factory.py`.
+  Tests cover a synthetic ready-plan path that records process/status templates
+  without startup, a failed-plan path that writes no start command preview, and
+  missing confirmation/requested-command/reviewer-note blockers.
+- [x] Updated `docs/BOT_FACTORY_PHASE3_PAPER_DESIGN.md` with the startup
+  preflight gate, required checks, artifact layout, and the current limitation
+  that no actual paper startup, running process, monitoring loop, stop executor,
+  or promotion path exists.
+- [x] Re-ran the focused syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\paper.py `
+    freqtrade_ext\bot_factory\paper_plan.py `
+    freqtrade_ext\bot_factory\paper_startup.py `
+    scripts\bot_factory_check_paper_readiness.py `
+    scripts\bot_factory_plan_paper_run.py `
+    scripts\bot_factory_prepare_paper_start.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run still failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked. The
+  same focused command was re-run with normal filesystem temp/cache
+  permissions and passed: 42 tests.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. The existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260503T074924Z_static_check.json`.
+- [x] Ran the no-startup paper startup preflight against the current blocked
+  `LongOnlyFreqAIStrategy` paper plan:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_prepare_paper_start.py `
+    --plan-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_plan_20260503\paper_run_plan.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --run-id phase3_paper_startup_preflight_20260503 `
+    --reviewer-note "Phase 3 paper startup preflight only; do not start paper trading."
+  ```
+
+  Result: completed without starting any bot process and returned
+  `status=blocked`, as expected. The preflight blocked because the current
+  paper run plan is still `blocked`, future startup eligibility is false, no
+  startup command preview exists, and no user-supplied
+  `--confirm-paper-start` or exact `--requested-start-command` was provided.
+  It wrote an empty `start_command_preview.txt`. Artifacts were written under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_startup_preflight_20260503/`.
+- [x] Remaining Phase 3 limitation: no actual paper startup wrapper, running
+  paper process, monitoring, process stop implementation, cleanup executor, or
+  paper/live promotion path has been implemented. `Paper trading deployment`
+  remains incomplete until the user explicitly requests a preflight-approved
+  paper path and it is implemented, verified, and documented.
+- [x] Added the Phase 3 no-startup paper run planning gate:
+  `freqtrade_ext/bot_factory/paper_plan.py` and
+  `scripts/bot_factory_plan_paper_run.py`. The planner consumes an existing
+  `paper_readiness.json`, requires readiness `pass`, rejects readiness blockers
+  or failures, verifies the readiness safety scope is no-startup/no-live/no
+  order-placement, requires the referenced dry-run config file to exist,
+  requires `--confirm-paper` and reviewer notes before a plan can become
+  `ready`, and writes `paper_run_plan.json`, `paper_run_checklist.md`,
+  `stop_cleanup.md`, and `command.txt`. The planner does not start
+  `freqtrade trade`, paper trading, dry-run trading, live trading, canary live
+  trading, exchange order placement, leverage above `1.0`, or shorting.
+- [x] Added focused paper run planning tests to `tests/test_bot_factory.py`.
+  Tests cover a synthetic passed-readiness `ready` path with explicit
+  acknowledgement, a failed-readiness `blocked` path that writes no startup
+  command preview, and missing confirmation/reviewer-note blockers.
+- [x] Updated `docs/BOT_FACTORY_PHASE3_PAPER_DESIGN.md` with the paper run
+  planning gate, artifact layout, required gates, and the current limitation
+  that no actual paper startup, monitoring loop, or promotion path exists.
+- [x] Re-ran the focused syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\paper_plan.py `
+    scripts\bot_factory_plan_paper_run.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run still failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked. The
+  same focused command was re-run with normal filesystem temp/cache
+  permissions and passed: 39 tests.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. The existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260503T065802Z_static_check.json`.
+- [x] Ran the no-startup paper run planner against the current
+  `LongOnlyFreqAIStrategy` readiness artifact:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_plan_paper_run.py `
+    --readiness-json data\paper_readiness\LongOnlyFreqAIStrategy\phase3_readiness_20260503\paper_readiness.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --run-id phase3_paper_plan_20260503 `
+    --reviewer-note "Phase 3 paper run planning only; do not start paper trading."
+  ```
+
+  Result: completed without starting any bot process and returned
+  `status=blocked`, as expected. The planner blocked because the current
+  readiness report is still `fail` and no user-supplied `--confirm-paper`
+  acknowledgement was provided. It wrote no startup command preview. Artifacts
+  were written under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_plan_20260503/`.
+- [x] Remaining Phase 3 limitation: no actual paper startup wrapper, running
+  paper process, monitoring, process stop implementation, cleanup executor, or
+  paper/live promotion path has been implemented. `Paper trading deployment`
+  remains incomplete until the user explicitly requests a preflight-approved
+  paper path and it is implemented, verified, and documented.
 - [x] Hardened the Phase 3 no-startup paper readiness layer in
   `freqtrade_ext/bot_factory/paper.py` and focused tests in
   `tests/test_bot_factory.py`. The checker now validates walk-forward child
@@ -728,6 +957,8 @@ Checked on 2026-04-26 JST.
 - [x] Add Phase 3 paper trading design agent handoff instructions.
 - [x] Add paste-ready Phase 3 next-agent prompt.
 - [x] Add Phase 3 no-startup paper readiness preflight layer.
+- [x] Add Phase 3 no-startup paper run planning gate.
+- [x] Add Phase 3 no-startup paper startup preflight gate.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
