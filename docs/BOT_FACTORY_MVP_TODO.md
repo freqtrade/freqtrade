@@ -83,7 +83,632 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-04 JST.
+
+- [x] Hardened the Phase 3 no-process-control paper/backtest drift reporter so
+  the supplied paper metrics path must match the exact
+  `paper_runtime_validation.input_paths.paper_metrics` artifact consumed by the
+  runtime validator. This prevents an explicit `--paper-metrics-json` override
+  from swapping in a different local metrics file that only matches by
+  strategy/run ID. The reporter now also scans all consumed drift inputs
+  (historical metrics, walk-forward metrics, training manifest, runtime
+  validation, and paper metrics) for non-empty credential-like metadata and
+  private environment references, recording only offending paths. Added focused
+  regression coverage in `tests/test_bot_factory.py` for the path-integrity and
+  reference-artifact secret metadata blockers.
+- [x] Re-ran the full Phase 3 syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\paper.py `
+    freqtrade_ext\bot_factory\paper_plan.py `
+    freqtrade_ext\bot_factory\paper_startup.py `
+    freqtrade_ext\bot_factory\paper_monitoring.py `
+    freqtrade_ext\bot_factory\paper_stop_cleanup.py `
+    freqtrade_ext\bot_factory\paper_execution.py `
+    freqtrade_ext\bot_factory\paper_executor.py `
+    freqtrade_ext\bot_factory\paper_runtime.py `
+    freqtrade_ext\bot_factory\paper_drift.py `
+    scripts\bot_factory_check_paper_readiness.py `
+    scripts\bot_factory_plan_paper_run.py `
+    scripts\bot_factory_prepare_paper_start.py `
+    scripts\bot_factory_plan_paper_monitoring.py `
+    scripts\bot_factory_plan_paper_stop_cleanup.py `
+    scripts\bot_factory_request_paper_start.py `
+    scripts\bot_factory_plan_paper_executor.py `
+    scripts\bot_factory_validate_paper_runtime.py `
+    scripts\bot_factory_report_paper_drift.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked,
+  producing 64 fixture setup errors before test bodies ran. The same focused
+  command was re-run with normal filesystem temp/cache permissions and passed:
+  64 tests.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. Existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260504T055512Z_static_check.json`.
+- [x] Re-ran the no-process-control paper/backtest drift reporter against the
+  current blocked `LongOnlyFreqAIStrategy` runtime validation artifact:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_report_paper_drift.py `
+    --historical-metrics-json data\freqai\LongOnlyFreqAIStrategy\phase2_safe_20250105_20250107\metrics.json `
+    --walk-forward-metrics-json data\walk_forward\LongOnlyFreqAIStrategy\phase2_walk_forward_20250105_20250109\walk_forward_metrics.json `
+    --training-manifest-json data\freqai_training\LongOnlyFreqAIStrategy\phase2_training_20250105_20250107\training_manifest.json `
+    --paper-runtime-validation-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_runtime_validation_20260504\paper_runtime_validation.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --run-id phase3_paper_drift_report_20260504 `
+    --reviewer-note "Phase 3 paper/backtest drift reporting path-integrity hardening only; do not start, stop, poll, terminate, clean up, promote, or manage paper trading."
+  ```
+
+  Result: completed without bot startup, process polling, process stop,
+  termination, cleanup execution, promotion, or process management and returned
+  `status=blocked`, as expected. The new
+  `paper_metrics_path_matches_runtime_validation` check passes for the current
+  artifact chain, while the report remains blocked because runtime validation is
+  still `blocked`, the referenced `paper_metrics.json` does not exist, and the
+  current walk-forward and training recommendations are still `fail`. Artifacts
+  were updated under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_drift_report_20260504/`.
+- [x] Remaining Phase 3 limitation: no actual paper startup wrapper, running
+  paper process, monitoring loop, status polling implementation, process stop
+  implementation, cleanup executor, process-control executor, or paper/live
+  promotion path has been implemented. The drift reporter remains local artifact
+  analysis only and cannot authorize promotion. `Paper trading deployment`
+  remains incomplete until the user explicitly requests a preflight-approved
+  paper path and it is implemented, verified, and documented.
+- [x] Added the Phase 3 no-process-control paper/backtest drift reporting
+  layer: `freqtrade_ext/bot_factory/paper_drift.py` and
+  `scripts/bot_factory_report_paper_drift.py`. The reporter consumes local
+  historical metrics, walk-forward metrics, training manifest, a Phase 3
+  `paper_runtime_validation.json`, and local paper metrics; compares paper
+  total return, max drawdown, and trade count against prior historical and
+  walk-forward evidence with configurable drift thresholds; requires passed
+  runtime validation, local paper metrics, matching strategy/run IDs, passing
+  walk-forward and training recommendations, reviewer notes, and sanitized
+  no-live/no-order-placement/no-leverage-above-`1.0`/no-shorting/
+  no-process-control safety scope before it can pass; and writes
+  `paper_drift_report.json`, `paper_drift_report.md`, `drift_metrics.json`, and
+  `command.txt`. It records `paper_promotion_eligible=false`,
+  `promotion_authorized_by_this_command=false`, `process_control=false`,
+  `status_polling_started=false`, `process_stop_started=false`, and
+  `cleanup_executed=false`; it never starts, stops, polls, terminates, cleans
+  up, promotes, or manages `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary live trading, exchange order placement, leverage above
+  `1.0`, or shorting.
+- [x] Added focused test coverage for the paper/backtest drift reporter in
+  `tests/test_bot_factory.py`: synthetic passed local runtime and paper metrics
+  can generate a passing drift report without process control, blocked runtime
+  validation plus missing paper metrics blocks reporting, and failed prior
+  recommendations plus large return/drawdown drift produce a non-promoting
+  `fail` report.
+- [x] Re-ran the focused syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\paper.py `
+    freqtrade_ext\bot_factory\paper_plan.py `
+    freqtrade_ext\bot_factory\paper_startup.py `
+    freqtrade_ext\bot_factory\paper_monitoring.py `
+    freqtrade_ext\bot_factory\paper_stop_cleanup.py `
+    freqtrade_ext\bot_factory\paper_execution.py `
+    freqtrade_ext\bot_factory\paper_executor.py `
+    freqtrade_ext\bot_factory\paper_runtime.py `
+    freqtrade_ext\bot_factory\paper_drift.py `
+    scripts\bot_factory_check_paper_readiness.py `
+    scripts\bot_factory_plan_paper_run.py `
+    scripts\bot_factory_prepare_paper_start.py `
+    scripts\bot_factory_plan_paper_monitoring.py `
+    scripts\bot_factory_plan_paper_stop_cleanup.py `
+    scripts\bot_factory_request_paper_start.py `
+    scripts\bot_factory_plan_paper_executor.py `
+    scripts\bot_factory_validate_paper_runtime.py `
+    scripts\bot_factory_report_paper_drift.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked,
+  producing 62 fixture setup errors before test bodies ran. The same focused
+  command was re-run with normal filesystem temp/cache permissions and passed:
+  62 tests.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. Existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260503T205151Z_static_check.json`.
+- [x] Ran the new no-process-control paper/backtest drift reporter against the
+  current blocked `LongOnlyFreqAIStrategy` runtime validation artifact:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_report_paper_drift.py `
+    --historical-metrics-json data\freqai\LongOnlyFreqAIStrategy\phase2_safe_20250105_20250107\metrics.json `
+    --walk-forward-metrics-json data\walk_forward\LongOnlyFreqAIStrategy\phase2_walk_forward_20250105_20250109\walk_forward_metrics.json `
+    --training-manifest-json data\freqai_training\LongOnlyFreqAIStrategy\phase2_training_20250105_20250107\training_manifest.json `
+    --paper-runtime-validation-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_runtime_validation_20260504\paper_runtime_validation.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --run-id phase3_paper_drift_report_20260504 `
+    --reviewer-note "Phase 3 paper/backtest drift reporting only; do not start, stop, poll, terminate, clean up, promote, or manage paper trading."
+  ```
+
+  Result: completed without bot startup, process polling, process stop,
+  termination, cleanup execution, promotion, or process management and returned
+  `status=blocked`, as expected. It blocks because the runtime validation is
+  still `blocked`, the referenced `paper_metrics.json` does not exist, and the
+  current walk-forward and training recommendations are still `fail`. Artifacts
+  were written under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_drift_report_20260504/`.
+- [x] Remaining Phase 3 limitation: no actual paper startup wrapper, running
+  paper process, monitoring loop, status polling implementation, process stop
+  implementation, cleanup executor, process-control executor, or paper/live
+  promotion path has been implemented. The new drift reporter is local artifact
+  analysis only and cannot authorize promotion. `Paper trading deployment`
+  remains incomplete until the user explicitly requests a preflight-approved
+  paper path and it is implemented, verified, and documented.
+- [x] Added the Phase 3 no-process-control paper runtime artifact validation
+  gate: `freqtrade_ext/bot_factory/paper_runtime.py` and
+  `scripts/bot_factory_validate_paper_runtime.py`. The validator consumes an
+  existing `paper_process_executor_plan.json`, supplied process metadata JSON,
+  status snapshot JSON, stdout/stderr log paths, and paper metrics JSON; blocks
+  unless the process executor plan is a ready Phase 3
+  `paper_process_executor_plan` for the same strategy with no blockers and
+  eligibility true; verifies runtime paths resolve inside the workspace, exist
+  locally, and match the executor plan plus executor manifest; verifies required
+  runtime schema fields, known local status values, consistent trade counts,
+  matching strategy/run IDs, and command consistency; verifies runtime metadata
+  has no non-empty credential values or private environment references; verifies
+  no live/canary trading, exchange order placement, leverage above `1.0`,
+  shorting, or process-control/poll/stop/cleanup execution is recorded by the
+  validation path; requires reviewer notes before it can pass; and writes
+  `paper_runtime_validation.json`, `paper_runtime_validation_report.md`,
+  `runtime_artifacts_manifest.json`, and `command.txt`. It records
+  `bot_startup_performed_by_validator=false`,
+  `polling_performed_by_validator=false`, `stop_performed_by_validator=false`,
+  `process_control=false`, `status_polling_started=false`,
+  `process_stop_started=false`, and `cleanup_executed=false`; it never starts,
+  stops, polls, terminates, cleans up, or manages `freqtrade trade`, paper
+  trading, dry-run trading, live trading, canary live trading, exchange order
+  placement, leverage above `1.0`, or shorting.
+- [x] Added focused test coverage for the runtime artifact validation gate in
+  `tests/test_bot_factory.py`: synthetic ready runtime artifacts validate
+  without process control, a blocked process executor plan and missing runtime
+  artifacts block validation, and secret/leverage/short/path mismatch evidence
+  blocks validation.
+- [x] Re-ran the focused syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\paper.py `
+    freqtrade_ext\bot_factory\paper_plan.py `
+    freqtrade_ext\bot_factory\paper_startup.py `
+    freqtrade_ext\bot_factory\paper_monitoring.py `
+    freqtrade_ext\bot_factory\paper_stop_cleanup.py `
+    freqtrade_ext\bot_factory\paper_execution.py `
+    freqtrade_ext\bot_factory\paper_executor.py `
+    freqtrade_ext\bot_factory\paper_runtime.py `
+    scripts\bot_factory_check_paper_readiness.py `
+    scripts\bot_factory_plan_paper_run.py `
+    scripts\bot_factory_prepare_paper_start.py `
+    scripts\bot_factory_plan_paper_monitoring.py `
+    scripts\bot_factory_plan_paper_stop_cleanup.py `
+    scripts\bot_factory_request_paper_start.py `
+    scripts\bot_factory_plan_paper_executor.py `
+    scripts\bot_factory_validate_paper_runtime.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked,
+  producing 59 fixture setup errors before test bodies ran. The same focused
+  command was re-run with normal filesystem temp/cache permissions and passed:
+  59 tests.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. Existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260503T154351Z_static_check.json`.
+- [x] Ran the new no-process-control runtime artifact validator against the
+  current blocked `LongOnlyFreqAIStrategy` process executor plan:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_validate_paper_runtime.py `
+    --process-executor-plan-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_executor_plan_20260503\paper_process_executor_plan.json `
+    --process-metadata-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_startup_preflight_20260503\process_metadata_template.json `
+    --status-snapshot-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_startup_preflight_20260503\status_snapshot_template.json `
+    --stdout-log data\paper\LongOnlyFreqAIStrategy\phase3_paper_startup_preflight_20260503\logs\stdout.log `
+    --stderr-log data\paper\LongOnlyFreqAIStrategy\phase3_paper_startup_preflight_20260503\logs\stderr.log `
+    --paper-metrics-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_startup_preflight_20260503\paper_metrics.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --run-id phase3_paper_runtime_validation_20260504 `
+    --reviewer-note "Phase 3 paper runtime artifact validation only; do not start, stop, poll, terminate, clean up, or manage paper trading."
+  ```
+
+  Result: completed without bot startup, process polling, process stop,
+  termination, cleanup execution, or process management and returned
+  `status=blocked`, as expected. It blocks because the process executor plan is
+  still `blocked`, has blockers, is not eligible, has no reviewed command
+  preview, stdout/stderr logs and paper metrics do not exist, and the available
+  process metadata/status snapshot are no-startup templates whose run IDs belong
+  to the blocked startup preflight rather than a ready process executor plan.
+  Artifacts were written under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_runtime_validation_20260504/`.
+- [x] Added the Phase 3 no-startup/no-process-control paper process executor
+  planning gate: `freqtrade_ext/bot_factory/paper_executor.py` and
+  `scripts/bot_factory_plan_paper_executor.py`. The gate consumes an existing
+  `paper_execution_request.json`; requires a Phase 3
+  `paper_execution_request` source for the same strategy; blocks unless the
+  execution request is `ready`, has no blockers, and execution request
+  eligibility is true; verifies the execution request still requires a separate
+  process executor; verifies the request and manifest record no startup
+  execution, process start, process control, status polling, process stop, or
+  cleanup; verifies the command preview exists, uses `freqtrade trade`, has
+  exactly one `--config`, `--strategy`, and `--strategy-path`, targets the same
+  strategy, and exactly matches the request strings, manifest command, and
+  supplied `--requested-start-command`; verifies process metadata, status
+  snapshot, stdout, stderr, paper metrics, execution manifest template, and
+  start command request paths are local workspace paths; requires
+  `--confirm-process-executor-plan` and reviewer notes before it can become
+  `ready`; and writes `paper_process_executor_plan.json`,
+  `paper_process_executor_report.md`, `process_executor_manifest.json`,
+  `operator_start_checklist.md`, `start_command_review.txt`, and
+  `command.txt`. It records `startup_executed=false`,
+  `process_started=false`, `process_control=false`,
+  `status_polling_started=false`, `process_stop_started=false`,
+  `cleanup_executed=false`, `start_authorized_by_this_command=false`, and
+  `requires_explicit_user_start_after_plan=true`; it never starts, stops,
+  polls, terminates, cleans up, or manages `freqtrade trade`, paper trading,
+  dry-run trading, live trading, canary live trading, exchange order placement,
+  leverage above `1.0`, or shorting.
+- [x] Added focused test coverage for the process executor planning gate in
+  `tests/test_bot_factory.py`: a synthetic ready execution request writes
+  executor manifest and operator checklist artifacts without startup, a blocked
+  execution request blocks executor planning and writes an empty start command
+  review, and missing confirmation/requested command/reviewer notes plus unsafe
+  request scope block executor planning.
+- [x] Re-ran the focused syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\paper.py `
+    freqtrade_ext\bot_factory\paper_plan.py `
+    freqtrade_ext\bot_factory\paper_startup.py `
+    freqtrade_ext\bot_factory\paper_monitoring.py `
+    freqtrade_ext\bot_factory\paper_stop_cleanup.py `
+    freqtrade_ext\bot_factory\paper_execution.py `
+    freqtrade_ext\bot_factory\paper_executor.py `
+    scripts\bot_factory_check_paper_readiness.py `
+    scripts\bot_factory_plan_paper_run.py `
+    scripts\bot_factory_prepare_paper_start.py `
+    scripts\bot_factory_plan_paper_monitoring.py `
+    scripts\bot_factory_plan_paper_stop_cleanup.py `
+    scripts\bot_factory_request_paper_start.py `
+    scripts\bot_factory_plan_paper_executor.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked,
+  producing 56 fixture setup errors before test bodies ran. The same focused
+  command was re-run with normal filesystem temp/cache permissions and passed:
+  56 tests.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. Existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260503T152117Z_static_check.json`.
+- [x] Ran the new no-startup/no-process-control process executor planning gate
+  against the current blocked `LongOnlyFreqAIStrategy` execution request:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_plan_paper_executor.py `
+    --execution-request-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_execution_request_20260503\paper_execution_request.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --run-id phase3_paper_executor_plan_20260503 `
+    --reviewer-note "Phase 3 paper process executor planning only; do not start, stop, poll, terminate, clean up, or manage paper trading."
+  ```
+
+  Result: completed without bot startup, process polling, process stop,
+  termination, cleanup execution, or process management and returned
+  `status=blocked`, as expected. It blocks because the execution request is
+  still `blocked`, still has blockers, is not eligible, no startup command
+  preview exists while readiness remains failed, and no
+  `--confirm-process-executor-plan` or exact `--requested-start-command` was
+  supplied. It still verified local runtime paths, manifest paths, and
+  no-startup/no-process-control safety scope. Artifacts were written under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_executor_plan_20260503/`.
+- [x] Remaining Phase 3 limitation: no actual paper startup wrapper, running
+  paper process, monitoring loop, status polling implementation, process stop
+  implementation, cleanup executor, process-control executor, or paper/live
+  promotion path has been implemented. `Paper trading deployment` remains
+  incomplete until the user explicitly requests a preflight-approved paper path
+  and it is implemented, verified, and documented.
+- [x] Added the Phase 3 no-startup/no-process-control paper start execution
+  request gate: `freqtrade_ext/bot_factory/paper_execution.py` and
+  `scripts/bot_factory_request_paper_start.py`. The gate consumes the existing
+  `paper_readiness.json`, `paper_run_plan.json`,
+  `paper_startup_preflight.json`, `paper_monitoring_plan.json`, and
+  `paper_stop_cleanup_plan.json`; requires matching Phase 3 sources for the
+  same strategy; requires readiness `pass`; requires the paper run plan,
+  startup preflight, monitoring plan, and stop/cleanup plan to be `ready` with
+  no blockers and eligible flags; verifies artifact-chain path consistency;
+  verifies the plan and startup preflight command previews match; verifies
+  process metadata, status snapshot, stdout, stderr, and paper metrics paths are
+  local workspace paths; verifies the stop/cleanup review guardrails; requires
+  `--confirm-paper-execution`, an exact `--requested-start-command`, and
+  reviewer notes before it can become `ready`; and writes
+  `paper_execution_request.json`, `paper_execution_request_report.md`,
+  `execution_manifest_template.json`, `start_command_request.txt`, and
+  `command.txt`. It records `startup_executed=false`,
+  `process_started=false`, `process_control=false`,
+  `status_polling_started=false`, `process_stop_started=false`,
+  `cleanup_executed=false`, and
+  `startup_authorized_by_this_command=false`; it never starts, stops, polls,
+  terminates, cleans up, or manages `freqtrade trade`, paper trading, dry-run
+  trading, live trading, canary live trading, exchange order placement,
+  leverage above `1.0`, or shorting.
+- [x] Added focused test coverage for the execution request gate in
+  `tests/test_bot_factory.py`: a synthetic ready artifact chain writes request
+  and manifest artifacts without startup, a blocked stop/cleanup plan blocks
+  request readiness and writes an empty start command request, and missing
+  confirmation/requested command/reviewer notes plus unsafe upstream scopes
+  block request readiness.
+- [x] Re-ran the focused syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\paper.py `
+    freqtrade_ext\bot_factory\paper_plan.py `
+    freqtrade_ext\bot_factory\paper_startup.py `
+    freqtrade_ext\bot_factory\paper_monitoring.py `
+    freqtrade_ext\bot_factory\paper_stop_cleanup.py `
+    freqtrade_ext\bot_factory\paper_execution.py `
+    scripts\bot_factory_check_paper_readiness.py `
+    scripts\bot_factory_plan_paper_run.py `
+    scripts\bot_factory_prepare_paper_start.py `
+    scripts\bot_factory_plan_paper_monitoring.py `
+    scripts\bot_factory_plan_paper_stop_cleanup.py `
+    scripts\bot_factory_request_paper_start.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked,
+  producing 53 fixture setup errors before test bodies ran. The same focused
+  command was re-run with normal filesystem temp/cache permissions and passed:
+  53 tests.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. Existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260503T150747Z_static_check.json`.
+- [x] Ran the new no-startup/no-process-control paper execution request gate
+  against the current blocked `LongOnlyFreqAIStrategy` artifact chain:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_request_paper_start.py `
+    --readiness-json data\paper_readiness\LongOnlyFreqAIStrategy\phase3_readiness_20260503\paper_readiness.json `
+    --plan-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_plan_20260503\paper_run_plan.json `
+    --startup-preflight-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_startup_preflight_20260503\paper_startup_preflight.json `
+    --monitoring-plan-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_monitoring_plan_20260503\paper_monitoring_plan.json `
+    --stop-cleanup-plan-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_stop_cleanup_plan_20260503\paper_stop_cleanup_plan.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --run-id phase3_paper_execution_request_20260503 `
+    --reviewer-note "Phase 3 paper execution request planning only; do not start, stop, poll, terminate, clean up, or manage paper trading."
+  ```
+
+  Result: completed without bot startup, process polling, process stop,
+  termination, cleanup execution, or process management and returned
+  `status=blocked`, as expected. It blocks because readiness is still `fail`,
+  the upstream plan/preflight/monitoring/stop-cleanup artifacts are still
+  `blocked`, no command preview exists while readiness remains failed, and no
+  `--confirm-paper-execution` or exact `--requested-start-command` was
+  supplied. It still verified artifact-chain path consistency, local runtime
+  paths, no-process-control scope, and stop/cleanup review guardrails. Artifacts
+  were written under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_execution_request_20260503/`.
+- [x] Remaining Phase 3 limitation: no actual paper startup wrapper, running
+  paper process, monitoring loop, status polling implementation, process stop
+  implementation, cleanup executor, process-control executor, or paper/live
+  promotion path has been implemented. `Paper trading deployment` remains
+  incomplete until the user explicitly requests a preflight-approved paper path
+  and it is implemented, verified, and documented.
+
 Checked on 2026-05-03 JST.
+
+- [x] Added the Phase 3 no-process-control paper stop/cleanup planner:
+  `freqtrade_ext/bot_factory/paper_stop_cleanup.py` and
+  `scripts/bot_factory_plan_paper_stop_cleanup.py`. The planner consumes an
+  existing `paper_monitoring_plan.json`, requires a Phase 3
+  `paper_monitoring_plan` source, requires the monitoring plan to be `ready`
+  with no blockers and monitoring eligibility, verifies no monitoring start,
+  status polling, process control, or process stop was started, verifies local
+  process metadata, status snapshot, stdout, stderr, and paper metrics paths
+  resolve inside the repository workspace, verifies monitoring schemas include
+  stop-relevant status, metrics, process identity, and local log fields,
+  preserves no-secret/long-only/no-live/no-order-placement/local-artifact safety
+  scope, requires reviewer notes, and writes
+  `paper_stop_cleanup_plan.json`, `paper_stop_cleanup_report.md`,
+  `stop_request_schema.json`, `cleanup_checklist.md`, and `command.txt`. It
+  records `stop_executed=false`, `cleanup_executed=false`,
+  `process_control=false`, `process_stop_started=false`,
+  `status_polling_started=false`, and never starts, stops, polls, terminates,
+  cleans up, or manages `freqtrade trade`, paper trading, dry-run trading, live
+  trading, canary live trading, exchange order placement, leverage above `1.0`,
+  or shorting.
+- [x] Added focused test coverage for the stop/cleanup planner in
+  `tests/test_bot_factory.py`: a synthetic ready monitoring plan writes stop
+  request and cleanup artifacts without process control, a blocked monitoring
+  plan blocks stop/cleanup readiness while still writing schemas, and unsafe
+  monitoring scope/missing reviewer notes block stop/cleanup readiness.
+- [x] Added the Phase 3 no-startup paper monitoring/status schema planner:
+  `freqtrade_ext/bot_factory/paper_monitoring.py` and
+  `scripts/bot_factory_plan_paper_monitoring.py`. The planner consumes an
+  existing `paper_startup_preflight.json`, requires a Phase 3
+  `paper_startup_preflight` source, requires the startup preflight to be
+  `ready` with no blockers and future startup eligibility, verifies no startup
+  was executed or authorized by the preflight, verifies local process metadata,
+  status snapshot, stdout, stderr, and paper metrics paths resolve inside the
+  repository workspace, preserves no-secret/long-only/no-live/no-order-placement
+  safety scope, requires reviewer notes, and writes
+  `paper_monitoring_plan.json`, `paper_monitoring_report.md`,
+  `status_snapshot_schema.json`, `paper_metrics_schema.json`,
+  `process_metadata_schema.json`, and `command.txt`. It does not start, stop,
+  poll, or manage `freqtrade trade`, paper trading, dry-run trading, live
+  trading, canary live trading, exchange order placement, leverage above `1.0`,
+  or shorting.
+- [x] Added focused test coverage for the monitoring planner in
+  `tests/test_bot_factory.py`: a synthetic ready startup preflight writes
+  schemas without process control, a blocked startup preflight blocks monitoring
+  readiness while still writing schemas, and unsafe scope/missing reviewer notes
+  block monitoring readiness.
+- [x] Started this handoff with:
+
+  ```powershell
+  git status --short --untracked-files=all
+  ```
+
+  Result: existing uncommitted Phase 3 documentation/test changes were present
+  along with untracked monitoring planner files and monitoring artifacts. Known
+  ACL warnings appeared for `.codex_tmp/pytest-of-yoro4/`,
+  `bot_factory_pytest_tmp/`, and `codex_tmp/pytest/`.
+- [x] Re-ran the focused syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\paper.py `
+    freqtrade_ext\bot_factory\paper_plan.py `
+    freqtrade_ext\bot_factory\paper_startup.py `
+    freqtrade_ext\bot_factory\paper_monitoring.py `
+    freqtrade_ext\bot_factory\paper_stop_cleanup.py `
+    scripts\bot_factory_check_paper_readiness.py `
+    scripts\bot_factory_plan_paper_run.py `
+    scripts\bot_factory_prepare_paper_start.py `
+    scripts\bot_factory_plan_paper_monitoring.py `
+    scripts\bot_factory_plan_paper_stop_cleanup.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked,
+  producing 50 fixture setup errors before test bodies ran. The same focused
+  command was re-run with normal filesystem temp/cache permissions and passed:
+  50 tests.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. Existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260503T134124Z_static_check.json`.
+- [x] Ran the new no-startup monitoring/status schema planner against the
+  current blocked `LongOnlyFreqAIStrategy` startup preflight:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_plan_paper_monitoring.py `
+    --startup-preflight-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_startup_preflight_20260503\paper_startup_preflight.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --run-id phase3_paper_monitoring_plan_20260503 `
+    --reviewer-note "Phase 3 paper monitoring schema planning only; do not start, stop, poll, or manage paper trading."
+  ```
+
+  Result: completed without starting, stopping, polling, or managing any bot
+  process and returned `status=blocked`, as expected. It blocks because the
+  upstream startup preflight is still `blocked`, still has blockers, and
+  startup eligibility is false. It still verified local template/log/metrics
+  paths and wrote schema artifacts under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_monitoring_plan_20260503/`.
+- [x] Ran the new no-process-control paper stop/cleanup planner against the
+  current blocked `LongOnlyFreqAIStrategy` monitoring plan:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_plan_paper_stop_cleanup.py `
+    --monitoring-plan-json data\paper\LongOnlyFreqAIStrategy\phase3_paper_monitoring_plan_20260503\paper_monitoring_plan.json `
+    --strategy LongOnlyFreqAIStrategy `
+    --run-id phase3_paper_stop_cleanup_plan_20260503 `
+    --reviewer-note "Phase 3 paper stop/cleanup planning only; do not start, stop, poll, terminate, or manage paper trading."
+  ```
+
+  Result: completed without starting, stopping, polling, terminating, cleaning
+  up, or managing any bot process and returned `status=blocked`, as expected.
+  It blocks because the upstream monitoring plan is still `blocked`, still has
+  blockers, and monitoring eligibility is false. It still verified local
+  process metadata, status snapshot, stdout, stderr, paper metrics, schema, and
+  safety-scope checks and wrote artifacts under
+  `data/paper/LongOnlyFreqAIStrategy/phase3_paper_stop_cleanup_plan_20260503/`.
+- [x] Remaining Phase 3 limitation: no actual paper startup wrapper, running
+  paper process, monitoring loop, status polling implementation, process stop
+  implementation, cleanup executor, or paper/live promotion path has been
+  implemented. `Paper trading deployment` remains incomplete until the user
+  explicitly requests a preflight-approved paper path and it is implemented,
+  verified, and documented.
 
 - [x] Hardened the Phase 3 no-startup paper run planner and startup preflight.
   The planner now requires a Phase 3 `paper_readiness` source, sanitized
@@ -959,6 +1584,12 @@ Checked on 2026-04-26 JST.
 - [x] Add Phase 3 no-startup paper readiness preflight layer.
 - [x] Add Phase 3 no-startup paper run planning gate.
 - [x] Add Phase 3 no-startup paper startup preflight gate.
+- [x] Add Phase 3 no-process-control paper stop/cleanup planning gate.
+- [x] Add Phase 3 no-startup paper start execution request gate.
+- [x] Add Phase 3 no-startup/no-process-control paper process executor
+  planning gate.
+- [x] Add Phase 3 no-process-control paper runtime artifact validation gate.
+- [x] Add Phase 3 no-process-control paper/backtest drift reporting layer.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
