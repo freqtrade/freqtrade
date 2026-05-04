@@ -1,0 +1,115 @@
+{
+  "title": "Bot Factory Paper Metrics Snapshot",
+  "type": "object",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_monitoring_plan_20260503",
+  "required": [
+    "generated_at",
+    "strategy",
+    "run_id",
+    "source",
+    "status",
+    "trade_counts",
+    "profit",
+    "risk",
+    "safety_scope"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string"
+    },
+    "strategy": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "local_paper_artifacts"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "starting",
+        "running",
+        "stopping",
+        "stopped",
+        "failed"
+      ]
+    },
+    "trade_counts": {
+      "type": "object",
+      "required": [
+        "open",
+        "closed",
+        "total"
+      ],
+      "properties": {
+        "open": {
+          "type": "integer"
+        },
+        "closed": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        }
+      }
+    },
+    "profit": {
+      "type": "object",
+      "properties": {
+        "realized": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unrealized": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "properties": {
+        "max_drawdown_pct": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max_open_trades": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
+    },
+    "safety_scope": {
+      "type": "object"
+    }
+  },
+  "safety_invariants": {
+    "metadata_contains_secrets": false,
+    "local_artifacts_source_of_truth": true,
+    "live_trading": false,
+    "exchange_order_placement": false,
+    "leverage_above_one": false,
+    "shorting": false
+  }
+}

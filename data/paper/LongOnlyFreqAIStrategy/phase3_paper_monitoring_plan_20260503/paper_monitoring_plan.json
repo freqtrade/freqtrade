@@ -1,0 +1,588 @@
+{
+  "generated_at": "2026-05-03T13:14:41.506423+00:00",
+  "phase": "3",
+  "factory": "paper_monitoring_plan",
+  "status": "blocked",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_monitoring_plan_20260503",
+  "startup_preflight_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_startup_preflight.json",
+  "startup_preflight_summary": {
+    "status": "blocked",
+    "startup_eligible": false,
+    "startup_executed": false,
+    "preflight_run_id": "phase3_paper_startup_preflight_20260503"
+  },
+  "checks": [
+    {
+      "name": "startup_preflight_source_is_phase3_paper_startup_preflight",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Monitoring schemas must consume a Phase 3 paper startup preflight.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_startup_preflight"
+      }
+    },
+    {
+      "name": "startup_preflight_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight strategy must match the monitoring candidate.",
+      "details": {
+        "preflight_strategy": "LongOnlyFreqAIStrategy",
+        "candidate": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "startup_preflight_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight must be ready before monitoring artifacts can be ready.",
+      "details": {
+        "preflight_status": "blocked"
+      }
+    },
+    {
+      "name": "startup_preflight_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight must have no blockers.",
+      "details": {
+        "blocker_count": 12
+      }
+    },
+    {
+      "name": "startup_preflight_startup_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight startup eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "startup_preflight_did_not_execute_startup",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Monitoring planning can only consume a no-startup preflight.",
+      "details": {
+        "startup_executed": false,
+        "process_metadata_startup_executed": false,
+        "process_started": false
+      }
+    },
+    {
+      "name": "startup_preflight_does_not_authorize_startup",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight must not authorize startup by itself.",
+      "details": {
+        "startup_authorized_by_this_command": false
+      }
+    },
+    {
+      "name": "startup_preflight_requires_separate_execution",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight must require a separate execution step.",
+      "details": {
+        "requires_separate_execution_after_preflight": true
+      }
+    },
+    {
+      "name": "process_metadata_template_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata template path must resolve inside the repository workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json"
+      }
+    },
+    {
+      "name": "process_metadata_template_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata template must exist before monitoring can be ready.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json"
+      }
+    },
+    {
+      "name": "status_snapshot_template_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot template path must resolve inside the repository workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json"
+      }
+    },
+    {
+      "name": "status_snapshot_template_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot template must exist before monitoring can be ready.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json"
+      }
+    },
+    {
+      "name": "stdout_log_path_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stdout log path must resolve inside the repository workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log"
+      }
+    },
+    {
+      "name": "stderr_log_path_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stderr log path must resolve inside the repository workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log"
+      }
+    },
+    {
+      "name": "paper_metrics_path_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper metrics path must resolve inside the repository workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "startup_preflight_no_startup_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight must record no startup execution.",
+      "details": {
+        "bot_startup": false,
+        "freqtrade_trade_executed": false,
+        "paper_trading_started": false,
+        "dry_run_trading_started": false
+      }
+    },
+    {
+      "name": "startup_preflight_no_live_or_exchange_order_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight must not involve live trading or exchange order placement.",
+      "details": {
+        "live_trading": false,
+        "exchange_order_placement": false
+      }
+    },
+    {
+      "name": "startup_preflight_no_secrets_leverage_or_shorting_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight metadata must remain sanitized and long-only.",
+      "details": {
+        "uses_api_keys_or_secrets": false,
+        "leverage_above_one": false,
+        "shorting": false,
+        "metadata_contains_secrets": false
+      }
+    },
+    {
+      "name": "startup_preflight_local_artifacts_source_of_truth",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight must keep local artifacts as the source of truth.",
+      "details": {
+        "local_artifacts_source_of_truth": true
+      }
+    },
+    {
+      "name": "status_snapshot_template_records_no_startup",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot template must record no startup execution.",
+      "details": {
+        "startup_executed": false,
+        "bot_startup": false,
+        "freqtrade_trade_executed": false,
+        "paper_trading_started": false
+      }
+    },
+    {
+      "name": "reviewer_note_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Monitoring schema planning requires at least one reviewer note.",
+      "details": {
+        "note_count": 1
+      }
+    }
+  ],
+  "blockers": [
+    {
+      "name": "startup_preflight_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight must be ready before monitoring artifacts can be ready.",
+      "details": {
+        "preflight_status": "blocked"
+      }
+    },
+    {
+      "name": "startup_preflight_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight must have no blockers.",
+      "details": {
+        "blocker_count": 12
+      }
+    },
+    {
+      "name": "startup_preflight_startup_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight startup eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    }
+  ],
+  "reviewer_notes": [
+    "Phase 3 paper monitoring schema planning only; do not start, stop, poll, or manage paper trading."
+  ],
+  "monitoring": {
+    "eligible": false,
+    "monitoring_started": false,
+    "status_polling_started": false,
+    "process_control": false,
+    "process_stop_started": false,
+    "requires_started_process_metadata": true,
+    "requires_status_snapshot_path": true,
+    "requires_stdout_stderr_logs": true,
+    "requires_separate_execution_after_start": true
+  },
+  "planned_paths": {
+    "process_metadata": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+    "status_snapshot": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+    "stdout": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+    "stderr": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+    "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+  },
+  "schemas": {
+    "status_snapshot": {
+      "title": "Bot Factory Paper Status Snapshot",
+      "type": "object",
+      "strategy": "LongOnlyFreqAIStrategy",
+      "run_id": "phase3_paper_monitoring_plan_20260503",
+      "required": [
+        "generated_at",
+        "strategy",
+        "run_id",
+        "status",
+        "startup_executed",
+        "bot_startup",
+        "freqtrade_trade_executed",
+        "paper_trading_started",
+        "dry_run_trading_started",
+        "live_trading",
+        "exchange_order_placement",
+        "message"
+      ],
+      "properties": {
+        "generated_at": {
+          "type": "string"
+        },
+        "strategy": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "starting",
+            "running",
+            "stopping",
+            "stopped",
+            "failed"
+          ]
+        },
+        "pid": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "startup_executed": {
+          "type": "boolean"
+        },
+        "bot_startup": {
+          "type": "boolean"
+        },
+        "freqtrade_trade_executed": {
+          "type": "boolean"
+        },
+        "paper_trading_started": {
+          "type": "boolean"
+        },
+        "dry_run_trading_started": {
+          "type": "boolean"
+        },
+        "live_trading": {
+          "type": "boolean"
+        },
+        "exchange_order_placement": {
+          "type": "boolean"
+        },
+        "open_trade_count": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "closed_trade_count": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "last_heartbeat_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "safety_invariants": {
+        "metadata_contains_secrets": false,
+        "live_trading": false,
+        "exchange_order_placement": false,
+        "leverage_above_one": false,
+        "shorting": false
+      }
+    },
+    "paper_metrics": {
+      "title": "Bot Factory Paper Metrics Snapshot",
+      "type": "object",
+      "strategy": "LongOnlyFreqAIStrategy",
+      "run_id": "phase3_paper_monitoring_plan_20260503",
+      "required": [
+        "generated_at",
+        "strategy",
+        "run_id",
+        "source",
+        "status",
+        "trade_counts",
+        "profit",
+        "risk",
+        "safety_scope"
+      ],
+      "properties": {
+        "generated_at": {
+          "type": "string"
+        },
+        "strategy": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "local_paper_artifacts"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "starting",
+            "running",
+            "stopping",
+            "stopped",
+            "failed"
+          ]
+        },
+        "trade_counts": {
+          "type": "object",
+          "required": [
+            "open",
+            "closed",
+            "total"
+          ],
+          "properties": {
+            "open": {
+              "type": "integer"
+            },
+            "closed": {
+              "type": "integer"
+            },
+            "total": {
+              "type": "integer"
+            }
+          }
+        },
+        "profit": {
+          "type": "object",
+          "properties": {
+            "realized": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "unrealized": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "currency": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "risk": {
+          "type": "object",
+          "properties": {
+            "max_drawdown_pct": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "max_open_trades": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        },
+        "safety_scope": {
+          "type": "object"
+        }
+      },
+      "safety_invariants": {
+        "metadata_contains_secrets": false,
+        "local_artifacts_source_of_truth": true,
+        "live_trading": false,
+        "exchange_order_placement": false,
+        "leverage_above_one": false,
+        "shorting": false
+      }
+    },
+    "process_metadata": {
+      "title": "Bot Factory Paper Process Metadata",
+      "type": "object",
+      "strategy": "LongOnlyFreqAIStrategy",
+      "run_id": "phase3_paper_monitoring_plan_20260503",
+      "required": [
+        "strategy",
+        "run_id",
+        "process_started",
+        "startup_executed",
+        "pid",
+        "started_at",
+        "ended_at",
+        "command",
+        "stdout_log",
+        "stderr_log",
+        "status_snapshot",
+        "paper_metrics",
+        "notice"
+      ],
+      "properties": {
+        "strategy": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "process_started": {
+          "type": "boolean"
+        },
+        "startup_executed": {
+          "type": "boolean"
+        },
+        "pid": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "started_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ended_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "stdout_log": {
+          "type": "string"
+        },
+        "stderr_log": {
+          "type": "string"
+        },
+        "status_snapshot": {
+          "type": "string"
+        },
+        "paper_metrics": {
+          "type": "string"
+        },
+        "notice": {
+          "type": "string"
+        }
+      },
+      "safety_invariants": {
+        "metadata_contains_secrets": false,
+        "stdout_stderr_are_local_paths": true,
+        "status_snapshot_is_local_path": true,
+        "paper_metrics_is_local_path": true
+      }
+    }
+  },
+  "artifact_paths": {
+    "paper_monitoring_plan": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_monitoring_plan_20260503\\paper_monitoring_plan.json",
+    "paper_monitoring_report": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_monitoring_plan_20260503\\paper_monitoring_report.md",
+    "status_snapshot_schema": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_monitoring_plan_20260503\\status_snapshot_schema.json",
+    "paper_metrics_schema": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_monitoring_plan_20260503\\paper_metrics_schema.json",
+    "process_metadata_schema": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_monitoring_plan_20260503\\process_metadata_schema.json",
+    "command": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_monitoring_plan_20260503\\command.txt"
+  },
+  "safety_scope": {
+    "command": "paper monitoring schema planning only",
+    "bot_startup": false,
+    "freqtrade_trade_executed": false,
+    "paper_trading_started": false,
+    "dry_run_trading_started": false,
+    "live_trading": false,
+    "canary_live_trading": false,
+    "exchange_order_placement": false,
+    "uses_api_keys_or_secrets": false,
+    "leverage_above_one": false,
+    "shorting": false,
+    "metadata_contains_secrets": false,
+    "local_artifacts_source_of_truth": true
+  },
+  "notice": "Paper monitoring planning is a no-startup, no-process-control gate. It writes status and metrics artifact schemas only; it does not start, stop, poll, or manage any bot process."
+}

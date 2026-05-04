@@ -1,0 +1,80 @@
+{
+  "title": "Bot Factory Paper Process Metadata",
+  "type": "object",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_monitoring_plan_20260503",
+  "required": [
+    "strategy",
+    "run_id",
+    "process_started",
+    "startup_executed",
+    "pid",
+    "started_at",
+    "ended_at",
+    "command",
+    "stdout_log",
+    "stderr_log",
+    "status_snapshot",
+    "paper_metrics",
+    "notice"
+  ],
+  "properties": {
+    "strategy": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "process_started": {
+      "type": "boolean"
+    },
+    "startup_executed": {
+      "type": "boolean"
+    },
+    "pid": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "started_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ended_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "command": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "stdout_log": {
+      "type": "string"
+    },
+    "stderr_log": {
+      "type": "string"
+    },
+    "status_snapshot": {
+      "type": "string"
+    },
+    "paper_metrics": {
+      "type": "string"
+    },
+    "notice": {
+      "type": "string"
+    }
+  },
+  "safety_invariants": {
+    "metadata_contains_secrets": false,
+    "stdout_stderr_are_local_paths": true,
+    "status_snapshot_is_local_path": true,
+    "paper_metrics_is_local_path": true
+  }
+}

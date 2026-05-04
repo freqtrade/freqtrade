@@ -1,0 +1,97 @@
+{
+  "title": "Bot Factory Paper Status Snapshot",
+  "type": "object",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_monitoring_plan_20260503",
+  "required": [
+    "generated_at",
+    "strategy",
+    "run_id",
+    "status",
+    "startup_executed",
+    "bot_startup",
+    "freqtrade_trade_executed",
+    "paper_trading_started",
+    "dry_run_trading_started",
+    "live_trading",
+    "exchange_order_placement",
+    "message"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string"
+    },
+    "strategy": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "starting",
+        "running",
+        "stopping",
+        "stopped",
+        "failed"
+      ]
+    },
+    "pid": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "startup_executed": {
+      "type": "boolean"
+    },
+    "bot_startup": {
+      "type": "boolean"
+    },
+    "freqtrade_trade_executed": {
+      "type": "boolean"
+    },
+    "paper_trading_started": {
+      "type": "boolean"
+    },
+    "dry_run_trading_started": {
+      "type": "boolean"
+    },
+    "live_trading": {
+      "type": "boolean"
+    },
+    "exchange_order_placement": {
+      "type": "boolean"
+    },
+    "open_trade_count": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "closed_trade_count": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "last_heartbeat_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "message": {
+      "type": "string"
+    }
+  },
+  "safety_invariants": {
+    "metadata_contains_secrets": false,
+    "live_trading": false,
+    "exchange_order_placement": false,
+    "leverage_above_one": false,
+    "shorting": false
+  }
+}

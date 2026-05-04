@@ -1,0 +1,79 @@
+{
+  "title": "Bot Factory Paper Stop Request",
+  "type": "object",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_stop_cleanup_plan_20260503",
+  "required": [
+    "generated_at",
+    "strategy",
+    "run_id",
+    "source",
+    "requested_action",
+    "process_metadata_path",
+    "status_snapshot_path",
+    "paper_metrics_path",
+    "stop_authorized_by_this_command",
+    "stop_executed",
+    "process_control",
+    "reviewer_notes",
+    "safety_scope"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string"
+    },
+    "strategy": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "local_paper_artifacts"
+      ]
+    },
+    "requested_action": {
+      "type": "string",
+      "enum": [
+        "future_stop_review_only"
+      ]
+    },
+    "process_metadata_path": {
+      "type": "string"
+    },
+    "status_snapshot_path": {
+      "type": "string"
+    },
+    "paper_metrics_path": {
+      "type": "string"
+    },
+    "stop_authorized_by_this_command": {
+      "type": "boolean"
+    },
+    "stop_executed": {
+      "type": "boolean"
+    },
+    "process_control": {
+      "type": "boolean"
+    },
+    "reviewer_notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "safety_scope": {
+      "type": "object"
+    }
+  },
+  "safety_invariants": {
+    "metadata_contains_secrets": false,
+    "local_artifacts_source_of_truth": true,
+    "live_trading": false,
+    "exchange_order_placement": false,
+    "process_control_by_schema": false,
+    "stop_authorized_by_schema": false
+  }
+}
