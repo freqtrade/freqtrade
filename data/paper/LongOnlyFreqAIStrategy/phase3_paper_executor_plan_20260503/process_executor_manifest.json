@@ -1,0 +1,21 @@
+{
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_executor_plan_20260503",
+  "source_execution_request": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\paper_execution_request.json",
+  "startup_executed": false,
+  "process_started": false,
+  "process_control": false,
+  "status_polling_started": false,
+  "process_stop_started": false,
+  "cleanup_executed": false,
+  "start_authorized_by_this_command": false,
+  "requires_explicit_user_start_after_plan": true,
+  "requires_ready_stop_cleanup_plan_before_start": true,
+  "command": [],
+  "process_metadata": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+  "status_snapshot": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+  "stdout_log": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+  "stderr_log": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+  "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json",
+  "notice": "Paper process executor planning is a no-startup, no-process-control gate. It records a reviewed executor manifest draft only; it does not start freqtrade trade, paper trading, dry-run trading, live trading, stop, poll, terminate, clean up, or manage any bot process."
+}

@@ -1,0 +1,500 @@
+{
+  "generated_at": "2026-05-03T15:24:40.950330+00:00",
+  "phase": "3",
+  "factory": "paper_process_executor_plan",
+  "status": "blocked",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_executor_plan_20260503",
+  "execution_request_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\paper_execution_request.json",
+  "execution_request_summary": {
+    "status": "blocked",
+    "eligible": false,
+    "execution_request_run_id": "phase3_paper_execution_request_20260503",
+    "requires_separate_process_executor": true
+  },
+  "checks": [
+    {
+      "name": "execution_request_source_is_phase3_paper_execution_request",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process executor planning must consume a Phase 3 paper execution request.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_execution_request"
+      }
+    },
+    {
+      "name": "execution_request_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request strategy must match the process executor candidate.",
+      "details": {
+        "execution_request_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "execution_request_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request must be ready before process executor planning can be ready.",
+      "details": {
+        "execution_request_status": "blocked"
+      }
+    },
+    {
+      "name": "execution_request_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request must have no blockers.",
+      "details": {
+        "blocker_count": 19
+      }
+    },
+    {
+      "name": "execution_request_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "execution_request_requires_separate_process_executor",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must require a separate process executor.",
+      "details": {}
+    },
+    {
+      "name": "execution_request_did_not_start_or_manage_process",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must remain no-startup and no-process-control.",
+      "details": {
+        "startup_executed": false,
+        "process_started": false,
+        "process_control": false,
+        "status_polling_started": false,
+        "process_stop_started": false,
+        "cleanup_executed": false
+      }
+    },
+    {
+      "name": "execution_request_does_not_authorize_startup",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must not authorize startup by itself.",
+      "details": {}
+    },
+    {
+      "name": "execution_request_has_start_command",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request must include a start command preview.",
+      "details": {
+        "command_token_count": 0
+      }
+    },
+    {
+      "name": "execution_manifest_command_matches_request",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution manifest command must match the execution request command preview.",
+      "details": {}
+    },
+    {
+      "name": "execution_request_start_command_uses_freqtrade_trade",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request command preview must use freqtrade trade.",
+      "details": {
+        "executable": null,
+        "subcommand": null
+      }
+    },
+    {
+      "name": "execution_request_start_command_has_required_options",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request command preview must include one config, strategy, and strategy path.",
+      "details": {
+        "config_count": 0,
+        "strategy_count": 0,
+        "strategy_path_count": 0
+      }
+    },
+    {
+      "name": "execution_request_start_command_strategy_matches_candidate",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request command preview strategy must match the process executor candidate.",
+      "details": {
+        "command_strategy": null,
+        "candidate": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "execution_request_expected_command_matches_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request expected/requested command strings must match the command preview.",
+      "details": {
+        "expected_start_command": null,
+        "requested_start_command": null,
+        "command_preview": null
+      }
+    },
+    {
+      "name": "requested_start_command_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor planning requires the exact requested start command string.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_matches_execution_request",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Requested start command must exactly match the execution request command preview.",
+      "details": {
+        "requested_start_command": null,
+        "expected_start_command": null
+      }
+    },
+    {
+      "name": "process_metadata_template_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata template path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json"
+      }
+    },
+    {
+      "name": "status_snapshot_template_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot template path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json"
+      }
+    },
+    {
+      "name": "stdout_log_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stdout log path must resolve inside the workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log"
+      }
+    },
+    {
+      "name": "stderr_log_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stderr log path must resolve inside the workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log"
+      }
+    },
+    {
+      "name": "paper_metrics_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "paper metrics path must resolve inside the workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "execution_manifest_template_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution manifest template path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\execution_manifest_template.json"
+      }
+    },
+    {
+      "name": "start_command_request_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Start command request path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\start_command_request.txt"
+      }
+    },
+    {
+      "name": "execution_manifest_requires_separate_process_executor",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution manifest must require a separate process executor.",
+      "details": {}
+    },
+    {
+      "name": "execution_manifest_no_startup_or_process_control",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution manifest template must remain no-startup and no-process-control.",
+      "details": {}
+    },
+    {
+      "name": "execution_manifest_paths_match_request",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution manifest paths must match the execution request planned paths.",
+      "details": {}
+    },
+    {
+      "name": "execution_manifest_has_command_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution manifest must include the reviewed command preview.",
+      "details": {}
+    },
+    {
+      "name": "execution_request_no_startup_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must record no startup execution.",
+      "details": {}
+    },
+    {
+      "name": "execution_request_no_live_or_exchange_order_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must not involve live trading or exchange order placement.",
+      "details": {}
+    },
+    {
+      "name": "execution_request_no_secrets_leverage_or_shorting_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request metadata must remain sanitized and long-only.",
+      "details": {}
+    },
+    {
+      "name": "execution_request_local_artifacts_source_of_truth",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must keep local artifacts as the source of truth.",
+      "details": {}
+    },
+    {
+      "name": "execution_request_no_process_control_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request safety scope must record no process control.",
+      "details": {}
+    },
+    {
+      "name": "confirm_process_executor_plan_acknowledged",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper process executor planning requires explicit --confirm-process-executor-plan acknowledgement.",
+      "details": {}
+    },
+    {
+      "name": "reviewer_note_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper process executor planning requires at least one reviewer note.",
+      "details": {
+        "note_count": 1
+      }
+    }
+  ],
+  "blockers": [
+    {
+      "name": "execution_request_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request must be ready before process executor planning can be ready.",
+      "details": {
+        "execution_request_status": "blocked"
+      }
+    },
+    {
+      "name": "execution_request_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request must have no blockers.",
+      "details": {
+        "blocker_count": 19
+      }
+    },
+    {
+      "name": "execution_request_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "execution_request_has_start_command",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request must include a start command preview.",
+      "details": {
+        "command_token_count": 0
+      }
+    },
+    {
+      "name": "execution_manifest_command_matches_request",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution manifest command must match the execution request command preview.",
+      "details": {}
+    },
+    {
+      "name": "execution_request_start_command_uses_freqtrade_trade",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request command preview must use freqtrade trade.",
+      "details": {
+        "executable": null,
+        "subcommand": null
+      }
+    },
+    {
+      "name": "execution_request_start_command_has_required_options",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request command preview must include one config, strategy, and strategy path.",
+      "details": {
+        "config_count": 0,
+        "strategy_count": 0,
+        "strategy_path_count": 0
+      }
+    },
+    {
+      "name": "execution_request_start_command_strategy_matches_candidate",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request command preview strategy must match the process executor candidate.",
+      "details": {
+        "command_strategy": null,
+        "candidate": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "execution_request_expected_command_matches_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution request expected/requested command strings must match the command preview.",
+      "details": {
+        "expected_start_command": null,
+        "requested_start_command": null,
+        "command_preview": null
+      }
+    },
+    {
+      "name": "requested_start_command_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor planning requires the exact requested start command string.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_matches_execution_request",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Requested start command must exactly match the execution request command preview.",
+      "details": {
+        "requested_start_command": null,
+        "expected_start_command": null
+      }
+    },
+    {
+      "name": "execution_manifest_has_command_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Execution manifest must include the reviewed command preview.",
+      "details": {}
+    },
+    {
+      "name": "confirm_process_executor_plan_acknowledged",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper process executor planning requires explicit --confirm-process-executor-plan acknowledgement.",
+      "details": {}
+    }
+  ],
+  "reviewer_notes": [
+    "Phase 3 paper process executor planning only; do not start, stop, poll, terminate, clean up, or manage paper trading."
+  ],
+  "requested_start_command": null,
+  "expected_start_command": null,
+  "executor_plan": {
+    "eligible": false,
+    "startup_executed": false,
+    "process_started": false,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false,
+    "start_authorized_by_this_command": false,
+    "requires_explicit_user_start_after_plan": true,
+    "requires_ready_stop_cleanup_plan_before_start": true,
+    "command_preview": []
+  },
+  "planned_paths": {
+    "process_metadata": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+    "status_snapshot": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+    "stdout": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+    "stderr": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+    "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+  },
+  "executor_manifest": {
+    "strategy": "LongOnlyFreqAIStrategy",
+    "run_id": "phase3_paper_executor_plan_20260503",
+    "source_execution_request": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\paper_execution_request.json",
+    "startup_executed": false,
+    "process_started": false,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false,
+    "start_authorized_by_this_command": false,
+    "requires_explicit_user_start_after_plan": true,
+    "requires_ready_stop_cleanup_plan_before_start": true,
+    "command": [],
+    "process_metadata": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+    "status_snapshot": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+    "stdout_log": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+    "stderr_log": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+    "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json",
+    "notice": "Paper process executor planning is a no-startup, no-process-control gate. It records a reviewed executor manifest draft only; it does not start freqtrade trade, paper trading, dry-run trading, live trading, stop, poll, terminate, clean up, or manage any bot process."
+  },
+  "artifact_paths": {
+    "paper_process_executor_plan": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_executor_plan_20260503\\paper_process_executor_plan.json",
+    "paper_process_executor_report": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_executor_plan_20260503\\paper_process_executor_report.md",
+    "process_executor_manifest": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_executor_plan_20260503\\process_executor_manifest.json",
+    "operator_start_checklist": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_executor_plan_20260503\\operator_start_checklist.md",
+    "start_command_review": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_executor_plan_20260503\\start_command_review.txt",
+    "command": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_executor_plan_20260503\\command.txt"
+  },
+  "safety_scope": {
+    "command": "paper process executor planning only",
+    "bot_startup": false,
+    "freqtrade_trade_executed": false,
+    "paper_trading_started": false,
+    "dry_run_trading_started": false,
+    "live_trading": false,
+    "canary_live_trading": false,
+    "exchange_order_placement": false,
+    "uses_api_keys_or_secrets": false,
+    "leverage_above_one": false,
+    "shorting": false,
+    "metadata_contains_secrets": false,
+    "local_artifacts_source_of_truth": true,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false
+  },
+  "notice": "Paper process executor planning is a no-startup, no-process-control gate. It records a reviewed executor manifest draft only; it does not start freqtrade trade, paper trading, dry-run trading, live trading, stop, poll, terminate, clean up, or manage any bot process."
+}

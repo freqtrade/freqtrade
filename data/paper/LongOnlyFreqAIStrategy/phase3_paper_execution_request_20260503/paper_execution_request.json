@@ -1,0 +1,861 @@
+{
+  "generated_at": "2026-05-03T15:07:59.774012+00:00",
+  "phase": "3",
+  "factory": "paper_execution_request",
+  "status": "blocked",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_execution_request_20260503",
+  "input_paths": {
+    "readiness": "data\\paper_readiness\\LongOnlyFreqAIStrategy\\phase3_readiness_20260503\\paper_readiness.json",
+    "paper_run_plan": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_plan_20260503\\paper_run_plan.json",
+    "paper_startup_preflight": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_startup_preflight.json",
+    "paper_monitoring_plan": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_monitoring_plan_20260503\\paper_monitoring_plan.json",
+    "paper_stop_cleanup_plan": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_stop_cleanup_plan_20260503\\paper_stop_cleanup_plan.json"
+  },
+  "summaries": {
+    "readiness": "fail",
+    "paper_run_plan": "blocked",
+    "startup_preflight": "blocked",
+    "monitoring_plan": "blocked",
+    "stop_cleanup_plan": "blocked"
+  },
+  "checks": [
+    {
+      "name": "readiness_source_is_phase3_paper_readiness",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must consume a Phase 3 paper readiness report.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_readiness"
+      }
+    },
+    {
+      "name": "readiness_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Readiness report strategy must match the execution request candidate.",
+      "details": {
+        "readiness_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "readiness_passed",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Readiness must pass before a paper execution request can be ready.",
+      "details": {
+        "readiness": "fail"
+      }
+    },
+    {
+      "name": "readiness_has_no_blockers",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Readiness report must have no blockers.",
+      "details": {
+        "blocker_count": 0
+      }
+    },
+    {
+      "name": "readiness_has_no_failures",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Readiness report must have no failed gate checks.",
+      "details": {
+        "failure_count": 3
+      }
+    },
+    {
+      "name": "readiness_no_startup_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Readiness report must remain no-startup.",
+      "details": {}
+    },
+    {
+      "name": "readiness_no_live_or_exchange_order_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Readiness report must not involve live trading or exchange order placement.",
+      "details": {}
+    },
+    {
+      "name": "readiness_no_secrets_leverage_or_shorting_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Readiness report metadata must remain sanitized and long-only.",
+      "details": {}
+    },
+    {
+      "name": "readiness_local_artifacts_source_of_truth",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Readiness report must keep local artifacts as the source of truth.",
+      "details": {}
+    },
+    {
+      "name": "paper_plan_source_is_phase3_paper_run_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must consume a Phase 3 paper run plan.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_run_plan"
+      }
+    },
+    {
+      "name": "paper_plan_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan strategy must match the execution request candidate.",
+      "details": {
+        "plan_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "paper_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must be ready before a paper execution request can be ready.",
+      "details": {
+        "plan_status": "blocked"
+      }
+    },
+    {
+      "name": "paper_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must have no blockers.",
+      "details": {
+        "blocker_count": 3
+      }
+    },
+    {
+      "name": "paper_plan_readiness_path_matches_request",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan must reference the same readiness artifact.",
+      "details": {
+        "plan_readiness_path": "data\\paper_readiness\\LongOnlyFreqAIStrategy\\phase3_readiness_20260503\\paper_readiness.json"
+      }
+    },
+    {
+      "name": "paper_plan_future_startup_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan future startup eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "paper_plan_has_start_command_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must include a command preview.",
+      "details": {}
+    },
+    {
+      "name": "paper_plan_requires_separate_user_request",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan must require a separate explicit user request.",
+      "details": {}
+    },
+    {
+      "name": "paper_plan_does_not_authorize_startup",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper run plan must not authorize startup by itself.",
+      "details": {}
+    },
+    {
+      "name": "paper_plan_no_startup_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "paper_plan must record no startup execution.",
+      "details": {}
+    },
+    {
+      "name": "paper_plan_no_live_or_exchange_order_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "paper_plan must not involve live trading or exchange order placement.",
+      "details": {}
+    },
+    {
+      "name": "paper_plan_no_secrets_leverage_or_shorting_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "paper_plan metadata must remain sanitized and long-only.",
+      "details": {}
+    },
+    {
+      "name": "paper_plan_local_artifacts_source_of_truth",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "paper_plan must keep local artifacts as the source of truth.",
+      "details": {}
+    },
+    {
+      "name": "startup_preflight_source_is_phase3_paper_startup_preflight",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must consume a Phase 3 paper startup preflight.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_startup_preflight"
+      }
+    },
+    {
+      "name": "startup_preflight_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight strategy must match the execution request candidate.",
+      "details": {
+        "preflight_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "startup_preflight_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight must be ready before a paper execution request can be ready.",
+      "details": {
+        "preflight_status": "blocked"
+      }
+    },
+    {
+      "name": "startup_preflight_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight must have no blockers.",
+      "details": {
+        "blocker_count": 12
+      }
+    },
+    {
+      "name": "startup_preflight_plan_path_matches_request",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight must reference the same paper run plan artifact.",
+      "details": {
+        "preflight_plan_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_plan_20260503\\paper_run_plan.json"
+      }
+    },
+    {
+      "name": "startup_preflight_startup_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "startup_preflight_did_not_execute_startup",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request can only consume a no-startup preflight.",
+      "details": {
+        "startup_executed": false,
+        "process_started": false,
+        "status_snapshot_startup_executed": false
+      }
+    },
+    {
+      "name": "startup_preflight_does_not_authorize_startup",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight must not authorize startup by itself.",
+      "details": {}
+    },
+    {
+      "name": "startup_preflight_requires_separate_execution",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Startup preflight must require a separate execution step.",
+      "details": {}
+    },
+    {
+      "name": "startup_preflight_no_startup_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "startup_preflight must record no startup execution.",
+      "details": {}
+    },
+    {
+      "name": "startup_preflight_no_live_or_exchange_order_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "startup_preflight must not involve live trading or exchange order placement.",
+      "details": {}
+    },
+    {
+      "name": "startup_preflight_no_secrets_leverage_or_shorting_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "startup_preflight metadata must remain sanitized and long-only.",
+      "details": {}
+    },
+    {
+      "name": "startup_preflight_local_artifacts_source_of_truth",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "startup_preflight must keep local artifacts as the source of truth.",
+      "details": {}
+    },
+    {
+      "name": "monitoring_plan_source_is_phase3_paper_monitoring_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must consume a Phase 3 paper monitoring plan.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_monitoring_plan"
+      }
+    },
+    {
+      "name": "monitoring_plan_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Monitoring plan strategy must match the execution request candidate.",
+      "details": {
+        "monitoring_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "monitoring_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Monitoring plan must be ready before a paper execution request can be ready.",
+      "details": {
+        "monitoring_status": "blocked"
+      }
+    },
+    {
+      "name": "monitoring_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Monitoring plan must have no blockers.",
+      "details": {
+        "blocker_count": 3
+      }
+    },
+    {
+      "name": "monitoring_plan_startup_preflight_path_matches_request",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Monitoring plan must reference the same startup preflight artifact.",
+      "details": {
+        "monitoring_startup_preflight_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_startup_preflight.json"
+      }
+    },
+    {
+      "name": "monitoring_plan_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Monitoring plan eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "monitoring_plan_no_process_control",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Monitoring plan must remain no-process-control.",
+      "details": {
+        "monitoring_started": false,
+        "status_polling_started": false,
+        "process_control": false,
+        "process_stop_started": false
+      }
+    },
+    {
+      "name": "monitoring_plan_no_startup_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "monitoring_plan must record no startup execution.",
+      "details": {}
+    },
+    {
+      "name": "monitoring_plan_no_live_or_exchange_order_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "monitoring_plan must not involve live trading or exchange order placement.",
+      "details": {}
+    },
+    {
+      "name": "monitoring_plan_no_secrets_leverage_or_shorting_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "monitoring_plan metadata must remain sanitized and long-only.",
+      "details": {}
+    },
+    {
+      "name": "monitoring_plan_local_artifacts_source_of_truth",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "monitoring_plan must keep local artifacts as the source of truth.",
+      "details": {}
+    },
+    {
+      "name": "stop_cleanup_plan_source_is_phase3_paper_stop_cleanup_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Execution request must consume a Phase 3 paper stop and cleanup plan.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_stop_cleanup_plan"
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan strategy must match the execution request candidate.",
+      "details": {
+        "stop_cleanup_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan must be ready before a paper execution request can be ready.",
+      "details": {
+        "stop_cleanup_status": "blocked"
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan must have no blockers.",
+      "details": {
+        "blocker_count": 3
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_monitoring_path_matches_request",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan must reference the same monitoring plan artifact.",
+      "details": {
+        "stop_cleanup_monitoring_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_monitoring_plan_20260503\\paper_monitoring_plan.json"
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_no_process_control",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan must remain no-process-control.",
+      "details": {
+        "stop_executed": false,
+        "cleanup_executed": false,
+        "process_control": false,
+        "process_stop_started": false,
+        "status_polling_started": false
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_preserves_review_guardrails",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan must preserve review and artifact-retention guardrails.",
+      "details": {
+        "requires_operator_review_before_future_stop": true,
+        "stop_authorized_by_this_command": false,
+        "cleanup_authorized_by_this_command": false,
+        "deletes_source_artifacts": false
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_no_startup_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stop_cleanup_plan must record no startup execution.",
+      "details": {}
+    },
+    {
+      "name": "stop_cleanup_plan_no_live_or_exchange_order_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stop_cleanup_plan must not involve live trading or exchange order placement.",
+      "details": {}
+    },
+    {
+      "name": "stop_cleanup_plan_no_secrets_leverage_or_shorting_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stop_cleanup_plan metadata must remain sanitized and long-only.",
+      "details": {}
+    },
+    {
+      "name": "stop_cleanup_plan_local_artifacts_source_of_truth",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stop_cleanup_plan must keep local artifacts as the source of truth.",
+      "details": {}
+    },
+    {
+      "name": "stop_cleanup_plan_safety_no_process_control",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Stop and cleanup safety scope must record no process control.",
+      "details": {}
+    },
+    {
+      "name": "process_metadata_template_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata template path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json"
+      }
+    },
+    {
+      "name": "status_snapshot_template_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot template path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json"
+      }
+    },
+    {
+      "name": "stdout_log_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stdout log path must resolve inside the workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log"
+      }
+    },
+    {
+      "name": "stderr_log_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stderr log path must resolve inside the workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log"
+      }
+    },
+    {
+      "name": "paper_metrics_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "paper metrics path must resolve inside the workspace.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "monitoring_paths_match_startup_preflight",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Monitoring plan runtime paths must match startup preflight paths.",
+      "details": {}
+    },
+    {
+      "name": "stop_cleanup_paths_match_monitoring_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan runtime paths must match monitoring/startup paths.",
+      "details": {}
+    },
+    {
+      "name": "paper_plan_and_startup_commands_match",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan and startup preflight must agree on the exact command preview.",
+      "details": {
+        "plan_command": null,
+        "startup_command": null
+      }
+    },
+    {
+      "name": "confirm_paper_execution_acknowledged",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper execution request requires explicit --confirm-paper-execution acknowledgement.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper execution request requires the exact requested start command string.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_matches_preflight",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Requested start command must exactly match the startup preflight preview.",
+      "details": {
+        "requested_start_command": null,
+        "expected_start_command": null
+      }
+    },
+    {
+      "name": "reviewer_note_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper execution request requires at least one reviewer note.",
+      "details": {
+        "note_count": 1
+      }
+    }
+  ],
+  "blockers": [
+    {
+      "name": "readiness_passed",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Readiness must pass before a paper execution request can be ready.",
+      "details": {
+        "readiness": "fail"
+      }
+    },
+    {
+      "name": "readiness_has_no_failures",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Readiness report must have no failed gate checks.",
+      "details": {
+        "failure_count": 3
+      }
+    },
+    {
+      "name": "paper_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must be ready before a paper execution request can be ready.",
+      "details": {
+        "plan_status": "blocked"
+      }
+    },
+    {
+      "name": "paper_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must have no blockers.",
+      "details": {
+        "blocker_count": 3
+      }
+    },
+    {
+      "name": "paper_plan_future_startup_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan future startup eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "paper_plan_has_start_command_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan must include a command preview.",
+      "details": {}
+    },
+    {
+      "name": "startup_preflight_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight must be ready before a paper execution request can be ready.",
+      "details": {
+        "preflight_status": "blocked"
+      }
+    },
+    {
+      "name": "startup_preflight_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight must have no blockers.",
+      "details": {
+        "blocker_count": 12
+      }
+    },
+    {
+      "name": "startup_preflight_startup_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Startup preflight eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "monitoring_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Monitoring plan must be ready before a paper execution request can be ready.",
+      "details": {
+        "monitoring_status": "blocked"
+      }
+    },
+    {
+      "name": "monitoring_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Monitoring plan must have no blockers.",
+      "details": {
+        "blocker_count": 3
+      }
+    },
+    {
+      "name": "monitoring_plan_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Monitoring plan eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan must be ready before a paper execution request can be ready.",
+      "details": {
+        "stop_cleanup_status": "blocked"
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan must have no blockers.",
+      "details": {
+        "blocker_count": 3
+      }
+    },
+    {
+      "name": "stop_cleanup_plan_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Stop and cleanup plan eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "paper_plan_and_startup_commands_match",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper run plan and startup preflight must agree on the exact command preview.",
+      "details": {
+        "plan_command": null,
+        "startup_command": null
+      }
+    },
+    {
+      "name": "confirm_paper_execution_acknowledged",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper execution request requires explicit --confirm-paper-execution acknowledgement.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper execution request requires the exact requested start command string.",
+      "details": {}
+    },
+    {
+      "name": "requested_start_command_matches_preflight",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Requested start command must exactly match the startup preflight preview.",
+      "details": {
+        "requested_start_command": null,
+        "expected_start_command": null
+      }
+    }
+  ],
+  "reviewer_notes": [
+    "Phase 3 paper execution request planning only; do not start, stop, poll, terminate, clean up, or manage paper trading."
+  ],
+  "requested_start_command": null,
+  "expected_start_command": null,
+  "execution_request": {
+    "eligible": false,
+    "startup_executed": false,
+    "process_started": false,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false,
+    "startup_authorized_by_this_command": false,
+    "requires_separate_process_executor": true,
+    "command_preview": []
+  },
+  "planned_paths": {
+    "process_metadata": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+    "status_snapshot": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+    "stdout": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+    "stderr": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+    "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+  },
+  "execution_manifest": {
+    "strategy": "LongOnlyFreqAIStrategy",
+    "run_id": "phase3_paper_execution_request_20260503",
+    "startup_executed": false,
+    "process_started": false,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false,
+    "startup_authorized_by_this_command": false,
+    "requires_separate_process_executor": true,
+    "command": [],
+    "process_metadata": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+    "status_snapshot": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+    "stdout_log": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+    "stderr_log": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+    "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json",
+    "notice": "Paper start execution request is a no-startup, no-process-control gate. It records a reviewed future start request only; it does not start freqtrade trade, paper trading, dry-run trading, live trading, stop, poll, terminate, clean up, or manage any bot process."
+  },
+  "artifact_paths": {
+    "paper_execution_request": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\paper_execution_request.json",
+    "paper_execution_request_report": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\paper_execution_request_report.md",
+    "execution_manifest_template": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\execution_manifest_template.json",
+    "start_command_request": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\start_command_request.txt",
+    "command": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_execution_request_20260503\\command.txt"
+  },
+  "safety_scope": {
+    "command": "paper execution request only",
+    "bot_startup": false,
+    "freqtrade_trade_executed": false,
+    "paper_trading_started": false,
+    "dry_run_trading_started": false,
+    "live_trading": false,
+    "canary_live_trading": false,
+    "exchange_order_placement": false,
+    "uses_api_keys_or_secrets": false,
+    "leverage_above_one": false,
+    "shorting": false,
+    "metadata_contains_secrets": false,
+    "local_artifacts_source_of_truth": true,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false
+  },
+  "notice": "Paper start execution request is a no-startup, no-process-control gate. It records a reviewed future start request only; it does not start freqtrade trade, paper trading, dry-run trading, live trading, stop, poll, terminate, clean up, or manage any bot process."
+}
