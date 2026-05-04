@@ -85,6 +85,93 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 Checked on 2026-05-04 JST.
 
+- [x] Added the Strategy Proposal Generator:
+  `freqtrade_ext/bot_factory/strategy_proposals.py` and
+  `scripts/bot_factory_generate_strategy_proposal.py`. The generator accepts
+  explicit strategy hypothesis inputs plus optional local evidence paths,
+  resolves evidence inside the repository workspace, writes proposal Markdown
+  and sidecar metadata under `registry/strategies/proposals/`, records
+  generator version, proposal content hash, allowed data classes, source input
+  paths, checks, blockers, rejection reasons, and safety scope, and marks
+  blocked proposals as not eligible for code generation. It defaults to
+  long-only, leverage `1.0`, historical-evaluation-only, no live data, no
+  order endpoints, no secrets, no process control, and local artifacts as the
+  source of truth. It blocks proposal dependencies on future/lookahead data,
+  live-only data, account/position data, order endpoints, API keys/secrets or
+  private environment references, leverage above `1.0`, shorting, paper/live
+  process control, and one narrow backtest period.
+- [x] Added focused Strategy Proposal Generator tests in
+  `tests/test_bot_factory.py`: safe proposal Markdown/metadata generation with
+  local evidence, forbidden future/live/order/secret/leverage/short inputs
+  blocking code-generation eligibility, workspace-bound evidence path checks,
+  required Markdown sections, metadata fields, safety scope, and content hash.
+- [x] Re-ran the Strategy Proposal Generator syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\strategy_proposals.py `
+    scripts\bot_factory_generate_strategy_proposal.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked,
+  producing 67 fixture setup errors before test bodies ran. The same focused
+  command was re-run with normal filesystem temp/cache permissions and passed:
+  67 tests.
+- [x] Ran a local CLI smoke test for safe proposal generation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py `
+    --created-at 2026-05-04T13:44:21+00:00 `
+    --strategy-name LongOnlyRsiPullbackCandidate `
+    --strategy-type mean_reversion `
+    --target-exchange bybit `
+    --target-symbol BTC/USDT:USDT `
+    --timeframe 5m `
+    --spot-or-futures futures `
+    --long-short long-only `
+    --summary "Long-only RSI pullback candidate for historical evaluation." `
+    --hypothesis "After sharp short-term pullbacks in a liquid BTC futures market, mean reversion may occur when volume and volatility filters confirm liquidity." `
+    --market-condition "Liquid BTC/USDT futures, historical OHLCV only." `
+    --entry-logic "Enter long after RSI pullback and recovery confirmation using closed candles only." `
+    --exit-logic "Exit on mean-reversion target, momentum failure, or timeout using closed candles only." `
+    --risk-logic "Use strategy stoploss and no leverage above 1.0; no shorting." `
+    --required-data "OHLCV closed candles only" `
+    --parameters "RSI window, recovery threshold, stoploss, timeout candles" `
+    --expected-failure-case "Trend continuation after pullback" `
+    --backtest-plan "Run static checks, OHLCV quality check, historical backtest, walk-forward, and training factory if FreqAI is added later." `
+    --rejection-condition "Future data is required" `
+    --rejection-condition "Trade count is too low" `
+    --rejection-condition "Profit depends on one narrow period" `
+    --reviewer-note "Strategy proposal generation smoke test only; do not generate code, backtest, start paper trading, or promote."
+  ```
+
+  Result: completed with `status=accepted` and
+  `code_generation_eligible=true`. Artifacts were written to
+  `registry/strategies/proposals/20260504T134421Z_LongOnlyRsiPullbackCandidate.md`
+  and
+  `registry/strategies/proposals/20260504T134421Z_LongOnlyRsiPullbackCandidate.metadata.json`.
+  This smoke test did not generate strategy code, run static checks, run
+  backtests, start paper/dry-run/live trading, call exchange order endpoints,
+  promote candidates, or manage any bot process.
+- [x] Re-ran `git diff --check`.
+  Result: passed; Git reported existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md` and
+  `docs/BOT_FACTORY_PHASE3_NEXT_AGENT_PROMPT.md`.
+- [x] Remaining Strategy Generation limitation: Strategy Code Generator,
+  Candidate Evaluation Pipeline, Candidate Ranking / Registry, Iteration /
+  Improvement Loop, and Paper trading deployment are still incomplete. The new
+  proposal generator only creates local proposal artifacts and metadata; it
+  does not authorize code generation, evaluation, paper startup, promotion, or
+  process control.
 - [x] Hardened the Phase 3 no-process-control paper/backtest drift reporter so
   the supplied paper metrics path must match the exact
   `paper_runtime_validation.input_paths.paper_metrics` artifact consumed by the
@@ -1581,6 +1668,8 @@ Checked on 2026-04-26 JST.
   completion.
 - [x] Add Phase 3 paper trading design agent handoff instructions.
 - [x] Add paste-ready Phase 3 next-agent prompt.
+- [x] Add paste-ready Strategy Generation / Candidate Factory next-agent
+  prompt.
 - [x] Add Phase 3 no-startup paper readiness preflight layer.
 - [x] Add Phase 3 no-startup paper run planning gate.
 - [x] Add Phase 3 no-startup paper startup preflight gate.
@@ -1590,11 +1679,208 @@ Checked on 2026-04-26 JST.
   planning gate.
 - [x] Add Phase 3 no-process-control paper runtime artifact validation gate.
 - [x] Add Phase 3 no-process-control paper/backtest drift reporting layer.
+- [x] Add Strategy Proposal Generator for reproducible market hypothesis and
+  proposal artifacts.
+- [ ] Add Strategy Code Generator for proposal-derived, long-only Freqtrade
+  strategies with generated metadata.
+- [ ] Add Candidate Evaluation Pipeline that connects generated candidates to
+  static checks, FreqAI validation, OHLCV quality checks, historical
+  backtests, walk-forward, training factory, local reports, and metrics.
+- [ ] Add Candidate Ranking / Registry for pass/fail/retry/reject decisions
+  across multiple generated candidates.
+- [ ] Add Iteration / Improvement Loop that uses reviewer findings while
+  preserving safety guards and overfitting controls.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
 - [ ] Dashboard.
 - [ ] Canary live workflow with mandatory human approval.
+
+## Strategy Generation / Candidate Factory TODO
+
+Status: Strategy Proposal Generator implemented; Strategy Code Generator,
+Candidate Evaluation Pipeline, Candidate Ranking / Registry, Iteration /
+Improvement Loop, and paper deployment remain unimplemented. This section
+organizes the next safe Bot Factory work after the Phase 1/2 evaluation
+pipeline and the Phase 3 local-artifact readiness gates. It must stay limited
+to local artifacts, dependency checks, static checks, OHLCV quality checks,
+historical `freqtrade backtesting`, FreqAI validation when applicable,
+walk-forward evaluation, training factory orchestration, and local reports
+until a later explicitly approved paper path exists.
+
+Safety boundaries for all generated candidates:
+
+- Do not start `freqtrade trade`, paper trading, dry-run trading, canary live,
+  live trading, or any bot process from candidate generation or evaluation.
+- Do not use API keys, secrets, private environment values, exchange order
+  endpoints, real order placement, leverage above `1.0`, or shorting.
+- Do not promote to paper from one backtest run alone. Paper readiness requires
+  passing historical, walk-forward, and training artifacts plus the existing
+  Phase 3 readiness chain.
+- Keep JSON, CSV, Markdown, and local logs as the source of truth. MLflow may be
+  optional, but it must not replace local artifacts.
+
+### Strategy Proposal Generator
+
+- [x] Add a proposal generator that creates a clear market hypothesis from
+  allowed local evidence such as OHLCV summaries, quality reports, previous
+  candidate metrics, failed-candidate reasons, and reviewer notes.
+- [x] Save every proposal as Markdown under
+  `registry/strategies/proposals/<timestamp>_<strategy_name>.md` using
+  `registry/strategies/proposals/TEMPLATE.md` as the minimum schema.
+- [x] Require proposal metadata: `created_at`, `created_by_agent`,
+  `strategy_name`, `strategy_type`, `target_exchange`, `target_symbols`,
+  `timeframe`, `spot_or_futures`, `long_short`, source inputs, and proposal
+  status.
+- [x] Require explicit `Required Data`, `Entry Logic`, `Exit Logic`,
+  `Risk Logic`, `Expected Failure Cases`, `Backtest Plan`, and
+  `Rejection Conditions`.
+- [x] Reject proposals that depend on future data, live-only data, account or
+  position data, order endpoints, API keys, secrets, leverage above `1.0`,
+  shorting, or a single narrow backtest period.
+- [x] Add a machine-readable companion artifact, for example
+  `proposal_metadata.json`, with proposal path, source-input paths, rejected
+  evidence, allowed data classes, and a content hash.
+
+### Strategy Code Generator
+
+- [ ] Add a code generator that reads an accepted proposal and produces a
+  Freqtrade strategy `.py` file only after proposal schema and safety checks
+  pass.
+- [ ] Default generated Freqtrade strategies to long-only behavior:
+  `can_short = False`, no short entry/exit signals, no `leverage()` hook, and
+  generated metadata recording `leverage=1.0`.
+- [ ] Generate code that keeps parameters configurable through class parameters
+  or config, not hidden constants chosen to fit one timerange.
+- [ ] Block hardcoded secrets, private environment references, direct order API
+  calls, exchange order endpoints, lookahead patterns, `shift(-1)` in signal
+  logic, unsafe `iloc[-1]`, future data references, leverage above `1.0`, and
+  shorting.
+- [ ] Save generated strategy metadata under
+  `registry/strategies/generated/<strategy_name>/<candidate_id>/metadata.json`
+  with source proposal path/hash, generated strategy path/hash, safety-scope
+  flags, parameter defaults, code generator version, and rejection status.
+- [ ] Run the static strategy scanner before a generated strategy can enter the
+  candidate evaluation pipeline.
+
+### Candidate Evaluation Pipeline
+
+- [ ] Add an evaluation orchestrator that consumes a proposal, generated
+  strategy, config, data paths, and candidate ID, then writes a local
+  `candidate_manifest.json`.
+- [ ] Run checks in this order where applicable: static strategy check,
+  FreqAI feature/label validation, known OHLCV parquet quality checks,
+  historical backtest, walk-forward evaluation, FreqAI training factory, local
+  metrics normalization, trades export, and Markdown reports.
+- [ ] Preserve existing artifacts from `data/backtests/`, `data/freqai/`,
+  `data/walk_forward/`, and `data/freqai_training/`; do not replace them with
+  MLflow-only state.
+- [ ] Record every command preview, exact input path, output path, reviewer
+  note, and recommendation in the candidate manifest.
+- [ ] Produce an evaluation recommendation of `pass`, `fail`, `retry`, or
+  `reject`; `pass` requires all relevant historical, walk-forward, and training
+  gates to pass, not just one profitable run.
+- [ ] Keep paper/live promotion out of this pipeline. A passing candidate may
+  only become input to Phase 3 paper readiness.
+
+### Candidate Ranking / Registry
+
+- [ ] Define a candidate registry rooted at
+  `registry/strategies/candidates/<strategy_name>/<candidate_id>/`.
+- [ ] Store `candidate_record.json`, `candidate_report.md`,
+  `metrics_summary.json`, and `artifact_paths.json` for each candidate.
+- [ ] Maintain an append-only index such as
+  `registry/strategies/candidates/index.jsonl` with candidate ID, proposal
+  path, generated strategy path, artifact paths, key metrics, recommendation,
+  status, reviewer notes, and timestamps.
+- [ ] Compare multiple candidates on normalized metrics from historical
+  backtests, walk-forward windows, training manifests, trade count, drawdown,
+  fee/slippage sensitivity, and failure concentration.
+- [ ] Record `pass`, `fail`, `retry`, or `reject` with explicit reasons.
+  Failed and rejected candidates must keep their artifacts and failure reasons
+  for future proposal generation.
+- [ ] Do not rank candidates as paper-ready unless the referenced local
+  historical, walk-forward, and training artifact chain exists and passes.
+
+### Iteration / Improvement Loop
+
+- [ ] Add a reviewer-driven improvement loop that consumes reviewer findings,
+  failed-candidate reasons, and prior proposal/code metadata to create a new
+  proposal revision or strategy candidate.
+- [ ] Preserve lineage from original proposal to every generated revision,
+  including changed assumptions, changed parameters, changed data requirements,
+  and reviewer findings addressed.
+- [ ] Add overfitting controls: prohibit narrowing timeranges after a failure,
+  require out-of-sample walk-forward checks, limit parameter-search breadth,
+  record unchanged rejection rules, and reject candidates that improve only one
+  narrow period while degrading broader windows.
+- [ ] Add max-attempt, timeout, and retry limits per proposal and per strategy
+  family. After the limit, mark the candidate `reject` with reasons.
+- [ ] Add safety guards that prevent generated revisions from relaxing
+  constraints toward future data, live-only data, order endpoints, hardcoded
+  secrets, leverage above `1.0`, shorting, or process control.
+- [ ] Re-run static checks and generated metadata validation on every revision
+  before any evaluation command is allowed.
+
+### Phase 3 Connection
+
+- [ ] Only candidates with passing local historical metrics, walk-forward
+  metrics, training manifest, required reports, and sanitized metadata may be
+  submitted to `scripts/bot_factory_check_paper_readiness.py`.
+- [ ] Phase 3 paper readiness must be `pass`, and paper run plan, startup
+  preflight, monitoring plan, stop/cleanup plan, execution request, process
+  executor plan, runtime validation, and drift reporting must be ready/pass as
+  applicable before any process executor is considered.
+- [ ] Do not create a process executor from strategy generation artifacts while
+  any upstream readiness item is `fail`, `blocked`, missing, or only supported
+  by one run.
+- [ ] Keep `Paper trading deployment` incomplete until an explicitly requested,
+  preflight-approved paper path has been implemented, verified, and documented.
+
+### Verification Expectations
+
+- [ ] For this docs-only TODO increment, verify with:
+
+  ```powershell
+  git diff -- docs\BOT_FACTORY_MVP_TODO.md docs\BOT_FACTORY_PHASE3_NEXT_AGENT_PROMPT.md
+  ```
+
+- [ ] For future implementation increments, start with the required
+  `git status --short --untracked-files=all`, then run the narrowest relevant
+  checks first: `py_compile` for changed Python files, focused
+  `tests\test_bot_factory.py`, static strategy checks, FreqAI validation when
+  applicable, and OHLCV quality checks before historical backtests.
+- [ ] Do not mark any Strategy Generation / Candidate Factory item complete
+  until implementation, tests, exact commands, results, artifacts, and
+  remaining limitations are recorded in this TODO.
+
+### Future Implementation Files
+
+Implemented Strategy Proposal Generator files:
+
+- `freqtrade_ext/bot_factory/strategy_proposals.py`
+- `scripts/bot_factory_generate_strategy_proposal.py`
+- Focused Strategy Proposal Generator coverage in `tests/test_bot_factory.py`
+- Generated proposal artifacts under `registry/strategies/proposals/`
+
+Likely future files for remaining work:
+
+- `freqtrade_ext/bot_factory/strategy_code.py`
+- `freqtrade_ext/bot_factory/candidate_pipeline.py`
+- `freqtrade_ext/bot_factory/candidate_registry.py`
+- `freqtrade_ext/bot_factory/candidate_iteration.py`
+- `scripts/bot_factory_generate_strategy_code.py`
+- `scripts/bot_factory_evaluate_candidate.py`
+- `scripts/bot_factory_rank_candidates.py`
+- `scripts/bot_factory_iterate_candidate.py`
+- Generated strategy metadata under `registry/strategies/generated/`
+- Candidate registry artifacts under `registry/strategies/candidates/`
+- Candidate review artifacts under `registry/strategies/reviews/`
+- Candidate evaluation artifacts under `data/candidates/` plus existing
+  `data/backtests/`, `data/freqai/`, `data/walk_forward/`, and
+  `data/freqai_training/`
+- A runbook such as `docs/BOT_FACTORY_STRATEGY_GENERATION_RUNBOOK.md` only
+  after the implemented path is verified.
 
 ## Immediate Commands
 

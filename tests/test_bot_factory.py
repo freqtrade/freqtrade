@@ -79,6 +79,13 @@ from freqtrade_ext.bot_factory.paper_stop_cleanup import (
     build_paper_stop_cleanup_plan,
     write_paper_stop_cleanup_plan_artifacts,
 )
+from freqtrade_ext.bot_factory.strategy_proposals import (
+    REQUIRED_PROPOSAL_SECTIONS,
+    StrategyProposalEvidenceInput,
+    StrategyProposalInputs,
+    build_strategy_proposal,
+    write_strategy_proposal_artifacts,
+)
 from freqtrade_ext.bot_factory.safety import scan_paths
 from freqtrade_ext.bot_factory.walk_forward import (
     WalkForwardRules,
@@ -633,6 +640,94 @@ def test_training_manifest_keeps_local_artifacts_as_source_of_truth(tmp_path):
         / "freqai_backtests"
         / "metrics.json"
     )
+
+
+def test_strategy_proposal_generator_writes_safe_markdown_and_metadata(tmp_path):
+    evidence_path = (
+        tmp_path / "registry" / "strategies" / "checks" / "ohlcv_quality.json"
+    )
+    evidence_path.parent.mkdir(parents=True)
+    evidence_path.write_text(json.dumps({"ok": True, "rows": 1000}), encoding="utf-8")
+    inputs = _strategy_proposal_inputs(
+        tmp_path,
+        evidence_paths=[
+            StrategyProposalEvidenceInput("ohlcv_quality", evidence_path)
+        ],
+    )
+
+    artifacts = build_strategy_proposal(inputs)
+    write_strategy_proposal_artifacts(artifacts)
+
+    assert artifacts.metadata["status"] == "accepted"
+    assert artifacts.metadata["code_generation_eligible"] is True
+    assert artifacts.proposal_path.is_file()
+    assert artifacts.metadata_path.is_file()
+    for section in REQUIRED_PROPOSAL_SECTIONS:
+        assert f"## {section}" in artifacts.proposal_markdown
+    assert len(artifacts.metadata["proposal_content_hash"]) == 64
+    assert artifacts.metadata["strategy_name"] == "LongOnlyRsiPullbackCandidate"
+    assert artifacts.metadata["created_by_agent"] == "codex-test"
+    assert artifacts.metadata["source_input_paths"]["ohlcv_quality"] == [
+        str(Path("registry") / "strategies" / "checks" / "ohlcv_quality.json")
+    ]
+    assert artifacts.metadata["safety_scope"]["historical_evaluation_only"] is True
+    assert artifacts.metadata["safety_scope"]["shorting"] is False
+    assert artifacts.metadata["allowed_data_classes"]
+
+
+def test_strategy_proposal_generator_blocks_forbidden_dependencies(tmp_path):
+    inputs = _strategy_proposal_inputs(
+        tmp_path,
+        summary="Uses future close and live data to decide entries.",
+        required_data=[
+            "Account balance, position data, and exchange order endpoint data."
+        ],
+        risk_logic=(
+            "Use 2x leverage with short entry signals and api_key = "
+            "'abcdef1234567890'."
+        ),
+    )
+
+    artifacts = build_strategy_proposal(inputs)
+
+    assert artifacts.metadata["status"] == "blocked"
+    assert artifacts.metadata["code_generation_eligible"] is False
+    blocker_names = {check["name"] for check in artifacts.metadata["blockers"]}
+    assert {
+        "no_future_data_dependency",
+        "no_live_only_data_dependency",
+        "no_account_or_position_data_dependency",
+        "no_order_endpoint_dependency",
+        "no_api_key_or_secret_dependency",
+        "no_leverage_above_one_dependency",
+        "no_shorting_dependency",
+    }.issubset(blocker_names)
+    assert "abcdef1234567890" not in artifacts.proposal_markdown
+    assert "abcdef1234567890" not in json.dumps(artifacts.metadata)
+    assert "[REDACTED]" in artifacts.proposal_markdown
+
+
+def test_strategy_proposal_generator_blocks_evidence_outside_workspace(tmp_path):
+    outside_path = tmp_path.parent / f"{tmp_path.name}_outside_evidence.json"
+    outside_path.write_text(json.dumps({"ok": True}), encoding="utf-8")
+    inputs = _strategy_proposal_inputs(
+        tmp_path,
+        evidence_paths=[
+            StrategyProposalEvidenceInput("outside_metrics", outside_path)
+        ],
+    )
+
+    artifacts = build_strategy_proposal(inputs)
+
+    assert artifacts.metadata["status"] == "blocked"
+    assert artifacts.metadata["code_generation_eligible"] is False
+    assert artifacts.metadata["rejected_or_blocked_evidence"][0]["label"] == (
+        "outside_metrics"
+    )
+    assert artifacts.metadata["rejected_or_blocked_evidence"][0]["status"] == "blocked"
+    assert "evidence_outside_metrics_within_workspace" in {
+        check["name"] for check in artifacts.metadata["blockers"]
+    }
 
 
 def test_paper_config_safety_accepts_dry_run_sanitized_config():
@@ -1942,6 +2037,56 @@ def test_paper_drift_report_fails_prior_failed_gates_and_metric_drift(tmp_path):
         "paper_return_not_worse_than_historical_threshold",
         "paper_drawdown_not_worse_than_historical_threshold",
     } <= {check["name"] for check in report["failures"]}
+
+
+def _strategy_proposal_inputs(tmp_path, **overrides) -> StrategyProposalInputs:
+    data = {
+        "root_dir": tmp_path,
+        "strategy_name": "LongOnlyRsiPullbackCandidate",
+        "strategy_type": "mean_reversion",
+        "target_exchange": "bybit",
+        "target_symbols": ["BTC/USDT:USDT"],
+        "timeframe": "5m",
+        "spot_or_futures": "futures",
+        "long_short": "long-only",
+        "summary": "Long-only RSI pullback candidate for historical evaluation.",
+        "hypothesis": (
+            "After sharp short-term pullbacks in liquid BTC futures, mean "
+            "reversion may occur when volume and volatility filters confirm liquidity."
+        ),
+        "market_condition": "Liquid BTC/USDT futures, historical OHLCV only.",
+        "entry_logic": (
+            "Enter long after RSI pullback and recovery confirmation using "
+            "closed candles only."
+        ),
+        "exit_logic": (
+            "Exit on mean-reversion target, momentum failure, or timeout using "
+            "closed candles only."
+        ),
+        "risk_logic": "Use strategy stoploss, leverage 1.0, and no shorting.",
+        "required_data": ["OHLCV closed candles only"],
+        "parameters": ["RSI window, recovery threshold, stoploss, timeout candles"],
+        "expected_failure_cases": ["Trend continuation after pullback"],
+        "backtest_plan": (
+            "Run static checks, OHLCV quality check, historical backtest, "
+            "walk-forward validation, and training factory if FreqAI is added later."
+        ),
+        "rejection_conditions": [
+            "Future data is required.",
+            "Trade count is too low.",
+            "Profit depends on one narrow period.",
+        ],
+        "reviewer_notes": [
+            "Strategy proposal generation test only; do not generate code or start paper trading."
+        ],
+        "evidence_paths": [],
+        "output_root": tmp_path / "registry" / "strategies" / "proposals",
+        "created_by_agent": "codex-test",
+        "created_at": "2026-05-04T00:00:00+00:00",
+        "command": ["python", "scripts/bot_factory_generate_strategy_proposal.py"],
+    }
+    data.update(overrides)
+    return StrategyProposalInputs(**data)
 
 
 def _paper_config(strategy: str) -> dict:

@@ -1,0 +1,402 @@
+{
+  "generated_at": "2026-05-04T13:44:21+00:00",
+  "phase": "strategy_generation",
+  "factory": "strategy_proposal_generator",
+  "generator_version": "strategy_proposal_generator_v1",
+  "status": "accepted",
+  "proposal_status": "accepted",
+  "code_generation_eligible": true,
+  "strategy_name": "LongOnlyRsiPullbackCandidate",
+  "strategy_type": "mean_reversion",
+  "target_exchange": "bybit",
+  "target_symbols": [
+    "BTC/USDT:USDT"
+  ],
+  "timeframe": "5m",
+  "spot_or_futures": "futures",
+  "long_short": "long-only",
+  "created_at": "2026-05-04T13:44:21+00:00",
+  "created_by_agent": "codex",
+  "proposal_path": "registry\\strategies\\proposals\\20260504T134421Z_LongOnlyRsiPullbackCandidate.md",
+  "metadata_path": "registry\\strategies\\proposals\\20260504T134421Z_LongOnlyRsiPullbackCandidate.metadata.json",
+  "proposal_content_hash": "c64c39b4977a36aaf2bf2c823c3493a77524a4f86d9b5f9f1308c5c3c36570c6",
+  "source_input_paths": {},
+  "source_input_hashes": {
+    "summary": "8ca97b90b91f23710a70b244a953e1bc2799176e965f39541fb87c794e11c21a",
+    "hypothesis": "2c343cb57766b4558c5b679edccd8149dff1b976fa2cda387a4d74a19fae66df",
+    "market_condition": "7c8ae279f46d9b1446bc15e2174358df3ebfa2e4cc8d3470e14f7fd6cd888db1",
+    "entry_logic": "7c40fbf9c7ba9b93237021c5e22b86f42c9f90c790651d4cb3fdbc9d50df212f",
+    "exit_logic": "26956d599b82f448ff1882f04d3657dc22ad9ba7ca91418b3ec60dd1150adca8",
+    "risk_logic": "813a3cfc13afa17b34d0145578617349074d8b5c12db40372cf76249677bb012",
+    "required_data": "794913a8904035ba793a9d8e084522d8fcc2f167422e9960cf9fb6bf915274bc",
+    "parameters": "b5de6ceb24cb792f4c70ea0e7c719a1d39689f97bb82d9d2336d771e280623bf",
+    "expected_failure_cases": "0bfcce9ac2a3276451ebd3166a62f5fcfc6627c62b30e21185db90d487b66f74",
+    "backtest_plan": "e873b975047d6b29a9f558523e3d6fd5ac39686e004a003e30d224e9ac379e8b",
+    "rejection_conditions": "250f596511fb259a0c545d6a1d071d9916119fb805015422eca4a9d4b931ea0e",
+    "reviewer_notes": "9fff7a979d0f97881f0eedd732392ebd9d0a2376f6bd6b6c53d538aefe760d5a"
+  },
+  "allowed_data_classes": [
+    "historical_ohlcv_closed_candles",
+    "local_ohlcv_quality_json",
+    "local_previous_metrics_json",
+    "local_walk_forward_metrics_json",
+    "local_training_manifest_json",
+    "local_reviewer_notes"
+  ],
+  "evidence": [],
+  "rejected_or_blocked_evidence": [],
+  "checks": [
+    {
+      "name": "strategy_name_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Strategy name is required.",
+      "details": {}
+    },
+    {
+      "name": "strategy_type_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Strategy type is required.",
+      "details": {}
+    },
+    {
+      "name": "target_exchange_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Target exchange is required.",
+      "details": {}
+    },
+    {
+      "name": "target_symbols_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "At least one target symbol is required.",
+      "details": {}
+    },
+    {
+      "name": "timeframe_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Timeframe is required.",
+      "details": {}
+    },
+    {
+      "name": "summary_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Summary is required.",
+      "details": {}
+    },
+    {
+      "name": "hypothesis_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Hypothesis is required.",
+      "details": {}
+    },
+    {
+      "name": "market_condition_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Market condition is required.",
+      "details": {}
+    },
+    {
+      "name": "entry_logic_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Entry logic is required.",
+      "details": {}
+    },
+    {
+      "name": "exit_logic_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Exit logic is required.",
+      "details": {}
+    },
+    {
+      "name": "risk_logic_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Risk logic is required.",
+      "details": {}
+    },
+    {
+      "name": "required_data_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Required data must be explicit.",
+      "details": {}
+    },
+    {
+      "name": "parameters_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Parameters must be explicit.",
+      "details": {}
+    },
+    {
+      "name": "expected_failure_cases_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Expected failure cases must be explicit.",
+      "details": {}
+    },
+    {
+      "name": "backtest_plan_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Backtest plan is required.",
+      "details": {}
+    },
+    {
+      "name": "rejection_conditions_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Rejection conditions must be explicit.",
+      "details": {}
+    },
+    {
+      "name": "long_short_scope_long_only",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Strategy proposal scope must be long-only with no shorting.",
+      "details": {
+        "long_short": "long-only"
+      }
+    },
+    {
+      "name": "spot_or_futures_supported",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Spot/futures mode must be either spot or futures.",
+      "details": {
+        "spot_or_futures": "futures"
+      }
+    },
+    {
+      "name": "no_future_data_dependency",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal must not depend on future data, lookahead, next-candle values, or negative shifts.",
+      "details": {}
+    },
+    {
+      "name": "no_live_only_data_dependency",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal must not depend on live-only, real-time, streaming-only, or unclosed-candle data.",
+      "details": {}
+    },
+    {
+      "name": "no_account_or_position_data_dependency",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal must not depend on account, balance, fill, or position data.",
+      "details": {}
+    },
+    {
+      "name": "no_order_endpoint_dependency",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal must not depend on exchange order endpoints or direct order placement.",
+      "details": {}
+    },
+    {
+      "name": "no_api_key_or_secret_dependency",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal must not depend on API keys, secrets, private environment values, or credentials.",
+      "details": {
+        "secret_reference_count": 0,
+        "private_env_reference_count": 0
+      }
+    },
+    {
+      "name": "no_leverage_above_one_dependency",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal must not use leverage above 1.0.",
+      "details": {
+        "findings": []
+      }
+    },
+    {
+      "name": "no_shorting_dependency",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal must not include shorting behavior.",
+      "details": {}
+    },
+    {
+      "name": "no_paper_live_or_process_control_dependency",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal generation must not depend on paper/live startup or process control.",
+      "details": {}
+    },
+    {
+      "name": "backtest_plan_requires_broader_validation",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Backtest plan must not depend on one narrow backtest period; include walk-forward or broader validation.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_metadata_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Metadata section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_summary_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Summary section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_hypothesis_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Hypothesis section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_market_condition_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Market Condition section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_entry_logic_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Entry Logic section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_exit_logic_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Exit Logic section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_risk_logic_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Risk Logic section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_required_data_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Required Data section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_parameters_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Parameters section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_expected_failure_cases_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Expected Failure Cases section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_backtest_plan_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Backtest Plan section.",
+      "details": {}
+    },
+    {
+      "name": "markdown_section_rejection_conditions_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated proposal must include the Rejection Conditions section.",
+      "details": {}
+    }
+  ],
+  "blockers": [],
+  "rejection_reasons": [],
+  "safety_scope": {
+    "command": "strategy proposal generation only",
+    "long_only": true,
+    "historical_evaluation_only": true,
+    "live_data": false,
+    "live_trading": false,
+    "paper_trading_started": false,
+    "dry_run_trading_started": false,
+    "exchange_order_placement": false,
+    "uses_api_keys_or_secrets": false,
+    "metadata_contains_secrets": false,
+    "leverage": 1.0,
+    "leverage_above_one": false,
+    "shorting": false,
+    "process_control": false,
+    "code_generation_started": false,
+    "backtest_started": false,
+    "local_artifacts_source_of_truth": true
+  },
+  "command": [
+    "C:\\Users\\yoro4\\Documents\\GitHub\\freqtrade\\.venv\\Scripts\\python.exe",
+    "scripts\\bot_factory_generate_strategy_proposal.py",
+    "--created-at",
+    "2026-05-04T13:44:21+00:00",
+    "--strategy-name",
+    "LongOnlyRsiPullbackCandidate",
+    "--strategy-type",
+    "mean_reversion",
+    "--target-exchange",
+    "bybit",
+    "--target-symbol",
+    "BTC/USDT:USDT",
+    "--timeframe",
+    "5m",
+    "--spot-or-futures",
+    "futures",
+    "--long-short",
+    "long-only",
+    "--summary",
+    "Long-only RSI pullback candidate for historical evaluation.",
+    "--hypothesis",
+    "After sharp short-term pullbacks in a liquid BTC futures market, mean reversion may occur when volume and volatility filters confirm liquidity.",
+    "--market-condition",
+    "Liquid BTC/USDT futures, historical OHLCV only.",
+    "--entry-logic",
+    "Enter long after RSI pullback and recovery confirmation using closed candles only.",
+    "--exit-logic",
+    "Exit on mean-reversion target, momentum failure, or timeout using closed candles only.",
+    "--risk-logic",
+    "Use strategy stoploss and no leverage above 1.0; no shorting.",
+    "--required-data",
+    "OHLCV closed candles only",
+    "--parameters",
+    "RSI window, recovery threshold, stoploss, timeout candles",
+    "--expected-failure-case",
+    "Trend continuation after pullback",
+    "--backtest-plan",
+    "Run static checks, OHLCV quality check, historical backtest, walk-forward, and training factory if FreqAI is added later.",
+    "--rejection-condition",
+    "Future data is required",
+    "--rejection-condition",
+    "Trade count is too low",
+    "--rejection-condition",
+    "Profit depends on one narrow period",
+    "--reviewer-note",
+    "Strategy proposal generation smoke test only; do not generate code, backtest, start paper trading, or promote."
+  ],
+  "notice": "Strategy proposal generation writes local Markdown and metadata artifacts only. It does not generate strategy code, run backtests, start paper or dry-run trading, call exchange order endpoints, promote candidates, or manage any bot process."
+}
