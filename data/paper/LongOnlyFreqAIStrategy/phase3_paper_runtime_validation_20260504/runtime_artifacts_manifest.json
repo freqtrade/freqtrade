@@ -1,0 +1,33 @@
+{
+  "process_metadata": {
+    "strategy": "LongOnlyFreqAIStrategy",
+    "run_id": "phase3_paper_startup_preflight_20260503",
+    "status": null,
+    "process_started": false,
+    "startup_executed": false
+  },
+  "status_snapshot": {
+    "strategy": "LongOnlyFreqAIStrategy",
+    "run_id": "phase3_paper_startup_preflight_20260503",
+    "status": "not_started",
+    "process_started": null,
+    "startup_executed": false
+  },
+  "paper_metrics": {
+    "strategy": null,
+    "run_id": null,
+    "status": null,
+    "process_started": null,
+    "startup_executed": null
+  },
+  "stdout": {
+    "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+    "exists": false,
+    "size_bytes": null
+  },
+  "stderr": {
+    "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+    "exists": false,
+    "size_bytes": null
+  }
+}

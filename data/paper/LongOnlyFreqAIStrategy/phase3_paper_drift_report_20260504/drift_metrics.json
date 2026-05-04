@@ -1,0 +1,11 @@
+{
+  "thresholds": {
+    "max_return_drift_pct": 5.0,
+    "max_drawdown_drift_pct": 5.0
+  },
+  "return_vs_historical_pct_points": null,
+  "return_vs_walk_forward_pct_points": null,
+  "drawdown_vs_historical_pct_points": null,
+  "drawdown_vs_walk_forward_any_window_pct_points": null,
+  "paper_trade_count_vs_historical": null
+}

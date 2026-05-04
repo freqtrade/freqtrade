@@ -1,0 +1,577 @@
+{
+  "generated_at": "2026-05-04T05:59:35.850552+00:00",
+  "phase": "3",
+  "factory": "paper_drift_report",
+  "status": "blocked",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_drift_report_20260504",
+  "input_paths": {
+    "historical_metrics": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\metrics.json",
+    "walk_forward_metrics": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\walk_forward_metrics.json",
+    "training_manifest": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\training_manifest.json",
+    "paper_runtime_validation": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_runtime_validation_20260504\\paper_runtime_validation.json",
+    "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+  },
+  "checks": [
+    {
+      "name": "historical_metrics_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Historical metrics path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\freqai\\LongOnlyFreqAIStrategy\\phase2_safe_20250105_20250107\\metrics.json"
+      }
+    },
+    {
+      "name": "walk_forward_metrics_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward metrics path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\walk_forward\\LongOnlyFreqAIStrategy\\phase2_walk_forward_20250105_20250109\\walk_forward_metrics.json"
+      }
+    },
+    {
+      "name": "training_manifest_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training manifest path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\freqai_training\\LongOnlyFreqAIStrategy\\phase2_training_20250105_20250107\\training_manifest.json"
+      }
+    },
+    {
+      "name": "paper_runtime_validation_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper runtime validation path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_runtime_validation_20260504\\paper_runtime_validation.json"
+      }
+    },
+    {
+      "name": "paper_metrics_within_workspace_and_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "historical_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Historical metrics strategy must match the drift report candidate.",
+      "details": {
+        "historical_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "walk_forward_source_is_phase2_completed",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward metrics must be a completed Phase 2 artifact.",
+      "details": {
+        "phase": "2",
+        "status": "completed"
+      }
+    },
+    {
+      "name": "walk_forward_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward metrics strategy must match the drift report candidate.",
+      "details": {
+        "walk_forward_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "training_source_is_phase2_freqai_training",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training manifest must be a completed Phase 2 FreqAI training artifact.",
+      "details": {
+        "phase": "2",
+        "factory": "freqai_training",
+        "status": "completed"
+      }
+    },
+    {
+      "name": "training_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Training manifest strategy must match the drift report candidate.",
+      "details": {
+        "training_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "runtime_validation_source_is_phase3_paper_runtime_validation",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper drift reporting must consume a Phase 3 paper runtime validation artifact.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_runtime_validation"
+      }
+    },
+    {
+      "name": "runtime_validation_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Runtime validation strategy must match the drift report candidate.",
+      "details": {
+        "runtime_validation_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "runtime_validation_passed",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper runtime validation must pass before drift can be evaluated.",
+      "details": {
+        "status": "blocked",
+        "valid": false
+      }
+    },
+    {
+      "name": "paper_metrics_path_matches_runtime_validation",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper metrics path must match the artifact consumed by runtime validation.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "paper_metrics_source_is_local",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must use local paper artifacts as source.",
+      "details": {
+        "source": null
+      }
+    },
+    {
+      "name": "paper_metrics_strategy_matches",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics strategy must match the drift report candidate.",
+      "details": {
+        "paper_metrics_strategy": null
+      }
+    },
+    {
+      "name": "paper_metrics_run_id_matches_runtime_validation",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics run ID must match the runtime validation executor plan run ID.",
+      "details": {
+        "expected_runtime_run_id": "phase3_paper_executor_plan_20260503",
+        "paper_metrics_run_id": null
+      }
+    },
+    {
+      "name": "walk_forward_recommendation_passed",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Walk-forward recommendation must pass before drift reporting can support promotion review.",
+      "details": {
+        "recommendation": "fail"
+      }
+    },
+    {
+      "name": "training_recommendation_passed",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Training recommendation must pass before drift reporting can support promotion review.",
+      "details": {
+        "recommendation": "fail"
+      }
+    },
+    {
+      "name": "historical_return_metric_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Historical total_return_pct must be numeric.",
+      "details": {}
+    },
+    {
+      "name": "historical_drawdown_metric_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Historical max_drawdown_pct must be numeric.",
+      "details": {}
+    },
+    {
+      "name": "walk_forward_return_metric_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward summary total_return_pct must be numeric.",
+      "details": {}
+    },
+    {
+      "name": "walk_forward_drawdown_metric_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Walk-forward summary max_drawdown_pct_any_window must be numeric.",
+      "details": {}
+    },
+    {
+      "name": "paper_return_metric_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics total return percentage must be numeric.",
+      "details": {}
+    },
+    {
+      "name": "paper_drawdown_metric_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics max drawdown percentage must be numeric.",
+      "details": {}
+    },
+    {
+      "name": "paper_trade_count_metric_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics trade count must be a non-negative integer.",
+      "details": {}
+    },
+    {
+      "name": "paper_trade_count_positive",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper metrics must include at least one trade before drift can support review.",
+      "details": {
+        "paper_trade_count": null
+      }
+    },
+    {
+      "name": "paper_return_not_worse_than_historical_threshold",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper total return drift versus historical backtest must stay within threshold.",
+      "details": {
+        "delta_pct_points": null,
+        "minimum_allowed": -5.0
+      }
+    },
+    {
+      "name": "paper_return_not_worse_than_walk_forward_threshold",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper total return drift versus walk-forward evidence must stay within threshold.",
+      "details": {
+        "delta_pct_points": null,
+        "minimum_allowed": -5.0
+      }
+    },
+    {
+      "name": "paper_drawdown_not_worse_than_historical_threshold",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper max drawdown drift versus historical backtest must stay within threshold.",
+      "details": {
+        "delta_pct_points": null,
+        "maximum_allowed": 5.0
+      }
+    },
+    {
+      "name": "paper_drawdown_not_worse_than_walk_forward_threshold",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper max drawdown drift versus walk-forward max drawdown must stay within threshold.",
+      "details": {
+        "delta_pct_points": null,
+        "maximum_allowed": 5.0
+      }
+    },
+    {
+      "name": "runtime_validation_no_process_control_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Runtime validation safety scope must record no process control by the validator.",
+      "details": {}
+    },
+    {
+      "name": "paper_metrics_safe_scope",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics safety scope must be sanitized, long-only, and local-artifact based.",
+      "details": {
+        "live_trading": null,
+        "exchange_order_placement": null,
+        "leverage_above_one": null,
+        "shorting": null
+      }
+    },
+    {
+      "name": "paper_metrics_no_process_control_scope",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must not record process control, polling, stop, or cleanup execution.",
+      "details": {}
+    },
+    {
+      "name": "drift_inputs_no_credential_values",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Drift input metadata must not contain non-empty API keys, secrets, tokens, UIDs, or passwords.",
+      "details": {
+        "credential_key_paths": []
+      }
+    },
+    {
+      "name": "drift_inputs_no_private_env_references",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Drift input metadata must not contain private environment variable references.",
+      "details": {
+        "env_reference_paths": []
+      }
+    },
+    {
+      "name": "reviewer_note_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper/backtest drift reporting requires at least one reviewer note.",
+      "details": {
+        "note_count": 1
+      }
+    }
+  ],
+  "blockers": [
+    {
+      "name": "paper_metrics_within_workspace_and_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "runtime_validation_passed",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper runtime validation must pass before drift can be evaluated.",
+      "details": {
+        "status": "blocked",
+        "valid": false
+      }
+    },
+    {
+      "name": "paper_metrics_source_is_local",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must use local paper artifacts as source.",
+      "details": {
+        "source": null
+      }
+    },
+    {
+      "name": "paper_metrics_strategy_matches",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics strategy must match the drift report candidate.",
+      "details": {
+        "paper_metrics_strategy": null
+      }
+    },
+    {
+      "name": "paper_metrics_run_id_matches_runtime_validation",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics run ID must match the runtime validation executor plan run ID.",
+      "details": {
+        "expected_runtime_run_id": "phase3_paper_executor_plan_20260503",
+        "paper_metrics_run_id": null
+      }
+    },
+    {
+      "name": "paper_return_metric_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics total return percentage must be numeric.",
+      "details": {}
+    },
+    {
+      "name": "paper_drawdown_metric_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics max drawdown percentage must be numeric.",
+      "details": {}
+    },
+    {
+      "name": "paper_trade_count_metric_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics trade count must be a non-negative integer.",
+      "details": {}
+    },
+    {
+      "name": "paper_metrics_safe_scope",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics safety scope must be sanitized, long-only, and local-artifact based.",
+      "details": {
+        "live_trading": null,
+        "exchange_order_placement": null,
+        "leverage_above_one": null,
+        "shorting": null
+      }
+    },
+    {
+      "name": "paper_metrics_no_process_control_scope",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must not record process control, polling, stop, or cleanup execution.",
+      "details": {}
+    }
+  ],
+  "failures": [
+    {
+      "name": "walk_forward_recommendation_passed",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Walk-forward recommendation must pass before drift reporting can support promotion review.",
+      "details": {
+        "recommendation": "fail"
+      }
+    },
+    {
+      "name": "training_recommendation_passed",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Training recommendation must pass before drift reporting can support promotion review.",
+      "details": {
+        "recommendation": "fail"
+      }
+    },
+    {
+      "name": "paper_trade_count_positive",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper metrics must include at least one trade before drift can support review.",
+      "details": {
+        "paper_trade_count": null
+      }
+    },
+    {
+      "name": "paper_return_not_worse_than_historical_threshold",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper total return drift versus historical backtest must stay within threshold.",
+      "details": {
+        "delta_pct_points": null,
+        "minimum_allowed": -5.0
+      }
+    },
+    {
+      "name": "paper_return_not_worse_than_walk_forward_threshold",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper total return drift versus walk-forward evidence must stay within threshold.",
+      "details": {
+        "delta_pct_points": null,
+        "minimum_allowed": -5.0
+      }
+    },
+    {
+      "name": "paper_drawdown_not_worse_than_historical_threshold",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper max drawdown drift versus historical backtest must stay within threshold.",
+      "details": {
+        "delta_pct_points": null,
+        "maximum_allowed": 5.0
+      }
+    },
+    {
+      "name": "paper_drawdown_not_worse_than_walk_forward_threshold",
+      "status": "fail",
+      "severity": "failure",
+      "message": "Paper max drawdown drift versus walk-forward max drawdown must stay within threshold.",
+      "details": {
+        "delta_pct_points": null,
+        "maximum_allowed": 5.0
+      }
+    }
+  ],
+  "reviewer_notes": [
+    "Phase 3 paper/backtest drift reporting path-integrity hardening only; do not start, stop, poll, terminate, clean up, promote, or manage paper trading."
+  ],
+  "reference_evidence": {
+    "historical_total_return_pct": -0.061698530000000015,
+    "historical_max_drawdown_pct": 0.06169853000000103,
+    "historical_trade_count": 2,
+    "historical_profit_factor": 0.0,
+    "walk_forward_recommendation": "fail",
+    "walk_forward_total_return_pct": -0.18417751300000001,
+    "walk_forward_max_drawdown_pct_any_window": 0.17188215400000217,
+    "walk_forward_completed_windows": 2,
+    "walk_forward_pass_rate": 0.0,
+    "training_recommendation": "fail",
+    "training_completed_stages": 1
+  },
+  "paper_evidence": {
+    "status": null,
+    "run_id": null,
+    "total_return_pct": null,
+    "max_drawdown_pct": null,
+    "trade_count": null,
+    "open_trade_count": null,
+    "closed_trade_count": null,
+    "realized_profit": null,
+    "unrealized_profit": null
+  },
+  "drift": {
+    "thresholds": {
+      "max_return_drift_pct": 5.0,
+      "max_drawdown_drift_pct": 5.0
+    },
+    "return_vs_historical_pct_points": null,
+    "return_vs_walk_forward_pct_points": null,
+    "drawdown_vs_historical_pct_points": null,
+    "drawdown_vs_walk_forward_any_window_pct_points": null,
+    "paper_trade_count_vs_historical": null
+  },
+  "drift_report": {
+    "valid": false,
+    "paper_promotion_eligible": false,
+    "promotion_authorized_by_this_command": false,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false
+  },
+  "artifact_paths": {
+    "paper_drift_report": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_drift_report_20260504\\paper_drift_report.json",
+    "paper_drift_report_markdown": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_drift_report_20260504\\paper_drift_report.md",
+    "drift_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_drift_report_20260504\\drift_metrics.json",
+    "command": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_drift_report_20260504\\command.txt"
+  },
+  "safety_scope": {
+    "command": "paper/backtest drift reporting only",
+    "bot_startup_by_reporter": false,
+    "freqtrade_trade_executed_by_reporter": false,
+    "paper_trading_started_by_reporter": false,
+    "dry_run_trading_started_by_reporter": false,
+    "live_trading": false,
+    "canary_live_trading": false,
+    "exchange_order_placement": false,
+    "uses_api_keys_or_secrets": false,
+    "leverage_above_one": false,
+    "shorting": false,
+    "metadata_contains_secrets": false,
+    "local_artifacts_source_of_truth": true,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false
+  },
+  "notice": "Paper/backtest drift reporting is a no-process-control artifact analysis. It reads only supplied local historical, walk-forward, training, runtime validation, and paper metric JSON artifacts; it does not start, stop, poll, terminate, clean up, promote, or manage freqtrade trade, paper trading, dry-run trading, live trading, or any bot process."
+}

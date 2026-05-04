@@ -1,0 +1,755 @@
+{
+  "generated_at": "2026-05-03T15:40:52.456056+00:00",
+  "phase": "3",
+  "factory": "paper_runtime_validation",
+  "status": "blocked",
+  "strategy": "LongOnlyFreqAIStrategy",
+  "run_id": "phase3_paper_runtime_validation_20260504",
+  "input_paths": {
+    "paper_process_executor_plan": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_executor_plan_20260503\\paper_process_executor_plan.json",
+    "process_metadata": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+    "status_snapshot": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+    "stdout": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+    "stderr": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+    "paper_metrics": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+  },
+  "summaries": {
+    "process_executor_plan_status": "blocked",
+    "process_executor_plan_run_id": "phase3_paper_executor_plan_20260503",
+    "process_started": false,
+    "startup_executed": false,
+    "runtime_status": "not_started",
+    "paper_metrics_status": null
+  },
+  "checks": [
+    {
+      "name": "process_executor_plan_source_is_phase3_paper_process_executor_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Runtime validation must consume a Phase 3 paper process executor plan.",
+      "details": {
+        "phase": "3",
+        "factory": "paper_process_executor_plan"
+      }
+    },
+    {
+      "name": "process_executor_plan_strategy_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process executor plan strategy must match the runtime validation candidate.",
+      "details": {
+        "plan_strategy": "LongOnlyFreqAIStrategy"
+      }
+    },
+    {
+      "name": "process_executor_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor plan must be ready before runtime artifacts can pass validation.",
+      "details": {
+        "plan_status": "blocked"
+      }
+    },
+    {
+      "name": "process_executor_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor plan must have no blockers.",
+      "details": {
+        "blocker_count": 13
+      }
+    },
+    {
+      "name": "process_executor_plan_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor plan eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "process_executor_plan_records_no_plan_side_process_control",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process executor plan must remain a no-startup/no-process-control plan.",
+      "details": {}
+    },
+    {
+      "name": "process_executor_plan_requires_explicit_user_start_after_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process executor plan must require a separate explicit user start after planning.",
+      "details": {}
+    },
+    {
+      "name": "process_executor_plan_has_command_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor plan must include the reviewed command preview.",
+      "details": {
+        "command_token_count": 0
+      }
+    },
+    {
+      "name": "process_executor_plan_no_process_control_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process executor plan safety scope must record no process control.",
+      "details": {}
+    },
+    {
+      "name": "process_executor_plan_safe_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process executor plan safety scope must remain sanitized, long-only, and local-artifact based.",
+      "details": {}
+    },
+    {
+      "name": "process_metadata_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json"
+      }
+    },
+    {
+      "name": "status_snapshot_within_workspace_and_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json"
+      }
+    },
+    {
+      "name": "stdout_log_within_workspace_and_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "stdout log path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log"
+      }
+    },
+    {
+      "name": "stderr_log_within_workspace_and_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "stderr log path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log"
+      }
+    },
+    {
+      "name": "paper_metrics_within_workspace_and_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "process_metadata_path_matches_executor_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata path must match the process executor plan.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json"
+      }
+    },
+    {
+      "name": "status_snapshot_path_matches_executor_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot path must match the process executor plan.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json"
+      }
+    },
+    {
+      "name": "stdout_log_path_matches_executor_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stdout log path must match the process executor plan.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log"
+      }
+    },
+    {
+      "name": "stderr_log_path_matches_executor_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stderr log path must match the process executor plan.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log"
+      }
+    },
+    {
+      "name": "paper_metrics_path_matches_executor_plan",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper metrics path must match the process executor plan.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "process_metadata_path_matches_executor_manifest",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata path must match the executor manifest.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\process_metadata_template.json"
+      }
+    },
+    {
+      "name": "status_snapshot_path_matches_executor_manifest",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot path must match the executor manifest.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json"
+      }
+    },
+    {
+      "name": "stdout_log_path_matches_executor_manifest",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stdout log path must match the executor manifest.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log"
+      }
+    },
+    {
+      "name": "stderr_log_path_matches_executor_manifest",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "stderr log path must match the executor manifest.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log"
+      }
+    },
+    {
+      "name": "paper_metrics_path_matches_executor_manifest",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper metrics path must match the executor manifest.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "process_metadata_required_fields_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata must include required runtime fields.",
+      "details": {
+        "missing_fields": []
+      }
+    },
+    {
+      "name": "status_snapshot_required_fields_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot must include required runtime status fields.",
+      "details": {
+        "missing_fields": []
+      }
+    },
+    {
+      "name": "paper_metrics_required_fields_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must include required runtime metric fields.",
+      "details": {
+        "missing_fields": [
+          "generated_at",
+          "profit",
+          "risk",
+          "run_id",
+          "safety_scope",
+          "source",
+          "status",
+          "strategy",
+          "trade_counts"
+        ]
+      }
+    },
+    {
+      "name": "status_snapshot_status_known",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Status snapshot must use a known local status value.",
+      "details": {
+        "status": "not_started"
+      }
+    },
+    {
+      "name": "paper_metrics_source_is_local",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must use local paper artifacts as source.",
+      "details": {
+        "source": null
+      }
+    },
+    {
+      "name": "paper_metrics_status_matches_snapshot_status",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics status must match the status snapshot.",
+      "details": {
+        "paper_metrics_status": null,
+        "status_snapshot": "not_started"
+      }
+    },
+    {
+      "name": "paper_metrics_trade_counts_are_consistent",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics trade counts must be non-negative and internally consistent.",
+      "details": {
+        "open": null,
+        "closed": null,
+        "total": null
+      }
+    },
+    {
+      "name": "runtime_strategy_matches_candidate",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifacts must all reference the same strategy candidate.",
+      "details": {
+        "process_metadata_strategy": "LongOnlyFreqAIStrategy",
+        "status_snapshot_strategy": "LongOnlyFreqAIStrategy",
+        "paper_metrics_strategy": null
+      }
+    },
+    {
+      "name": "runtime_run_id_matches_process_executor_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifact run IDs must match the process executor plan run ID.",
+      "details": {
+        "plan_run_id": "phase3_paper_executor_plan_20260503",
+        "process_metadata_run_id": "phase3_paper_startup_preflight_20260503",
+        "status_snapshot_run_id": "phase3_paper_startup_preflight_20260503",
+        "paper_metrics_run_id": null
+      }
+    },
+    {
+      "name": "process_metadata_status_snapshot_path_matches_input",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata status snapshot path must match the supplied status snapshot.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\status_snapshot_template.json"
+      }
+    },
+    {
+      "name": "process_metadata_paper_metrics_path_matches_input",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata paper metrics path must match the supplied paper metrics.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "process_metadata_stdout_path_matches_input",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata stdout path must match the supplied stdout log.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log"
+      }
+    },
+    {
+      "name": "process_metadata_stderr_path_matches_input",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Process metadata stderr path must match the supplied stderr log.",
+      "details": {
+        "payload_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+        "expected_path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log"
+      }
+    },
+    {
+      "name": "process_metadata_command_matches_executor_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process metadata command must match the reviewed process executor plan command.",
+      "details": {
+        "metadata_command": null,
+        "executor_plan_command": null
+      }
+    },
+    {
+      "name": "runtime_no_live_or_exchange_order_scope",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifacts must not record live/canary trading or exchange order placement.",
+      "details": {
+        "status_live_trading": false,
+        "status_exchange_order_placement": false,
+        "metrics_live_trading": null,
+        "metrics_exchange_order_placement": null
+      }
+    },
+    {
+      "name": "runtime_metadata_no_credential_values",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Runtime metadata must not contain non-empty API keys, secrets, tokens, UIDs, or passwords.",
+      "details": {
+        "credential_key_paths": []
+      }
+    },
+    {
+      "name": "runtime_metadata_no_private_env_references",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Runtime metadata must not contain private environment variable references.",
+      "details": {
+        "env_reference_paths": []
+      }
+    },
+    {
+      "name": "runtime_no_leverage_above_one",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifacts must not record leverage above 1.0.",
+      "details": {
+        "leverage_paths": []
+      }
+    },
+    {
+      "name": "runtime_no_shorting",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifacts must not record shorting.",
+      "details": {
+        "short_paths": []
+      }
+    },
+    {
+      "name": "runtime_metadata_sanitized_scope",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics safety scope must record sanitized metadata.",
+      "details": {
+        "metadata_contains_secrets": null,
+        "uses_api_keys_or_secrets": null
+      }
+    },
+    {
+      "name": "runtime_local_artifacts_source_of_truth",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must keep local artifacts as the source of truth.",
+      "details": {}
+    },
+    {
+      "name": "runtime_no_process_control_scope",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Runtime validation artifacts must not record process control, polling, stop, or cleanup execution.",
+      "details": {
+        "process_control_paths": []
+      }
+    },
+    {
+      "name": "reviewer_note_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Paper runtime validation requires at least one reviewer note.",
+      "details": {
+        "note_count": 1
+      }
+    }
+  ],
+  "blockers": [
+    {
+      "name": "process_executor_plan_ready",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor plan must be ready before runtime artifacts can pass validation.",
+      "details": {
+        "plan_status": "blocked"
+      }
+    },
+    {
+      "name": "process_executor_plan_has_no_blockers",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor plan must have no blockers.",
+      "details": {
+        "blocker_count": 13
+      }
+    },
+    {
+      "name": "process_executor_plan_eligible",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor plan eligibility must be true.",
+      "details": {
+        "eligible": false
+      }
+    },
+    {
+      "name": "process_executor_plan_has_command_preview",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process executor plan must include the reviewed command preview.",
+      "details": {
+        "command_token_count": 0
+      }
+    },
+    {
+      "name": "stdout_log_within_workspace_and_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "stdout log path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log"
+      }
+    },
+    {
+      "name": "stderr_log_within_workspace_and_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "stderr log path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log"
+      }
+    },
+    {
+      "name": "paper_metrics_within_workspace_and_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics path must resolve inside the workspace and exist locally.",
+      "details": {
+        "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\paper_metrics.json"
+      }
+    },
+    {
+      "name": "paper_metrics_required_fields_present",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must include required runtime metric fields.",
+      "details": {
+        "missing_fields": [
+          "generated_at",
+          "profit",
+          "risk",
+          "run_id",
+          "safety_scope",
+          "source",
+          "status",
+          "strategy",
+          "trade_counts"
+        ]
+      }
+    },
+    {
+      "name": "paper_metrics_source_is_local",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must use local paper artifacts as source.",
+      "details": {
+        "source": null
+      }
+    },
+    {
+      "name": "paper_metrics_status_matches_snapshot_status",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics status must match the status snapshot.",
+      "details": {
+        "paper_metrics_status": null,
+        "status_snapshot": "not_started"
+      }
+    },
+    {
+      "name": "paper_metrics_trade_counts_are_consistent",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics trade counts must be non-negative and internally consistent.",
+      "details": {
+        "open": null,
+        "closed": null,
+        "total": null
+      }
+    },
+    {
+      "name": "runtime_strategy_matches_candidate",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifacts must all reference the same strategy candidate.",
+      "details": {
+        "process_metadata_strategy": "LongOnlyFreqAIStrategy",
+        "status_snapshot_strategy": "LongOnlyFreqAIStrategy",
+        "paper_metrics_strategy": null
+      }
+    },
+    {
+      "name": "runtime_run_id_matches_process_executor_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifact run IDs must match the process executor plan run ID.",
+      "details": {
+        "plan_run_id": "phase3_paper_executor_plan_20260503",
+        "process_metadata_run_id": "phase3_paper_startup_preflight_20260503",
+        "status_snapshot_run_id": "phase3_paper_startup_preflight_20260503",
+        "paper_metrics_run_id": null
+      }
+    },
+    {
+      "name": "process_metadata_command_matches_executor_plan",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Process metadata command must match the reviewed process executor plan command.",
+      "details": {
+        "metadata_command": null,
+        "executor_plan_command": null
+      }
+    },
+    {
+      "name": "runtime_no_live_or_exchange_order_scope",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifacts must not record live/canary trading or exchange order placement.",
+      "details": {
+        "status_live_trading": false,
+        "status_exchange_order_placement": false,
+        "metrics_live_trading": null,
+        "metrics_exchange_order_placement": null
+      }
+    },
+    {
+      "name": "runtime_no_leverage_above_one",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifacts must not record leverage above 1.0.",
+      "details": {
+        "leverage_paths": []
+      }
+    },
+    {
+      "name": "runtime_no_shorting",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Runtime artifacts must not record shorting.",
+      "details": {
+        "short_paths": []
+      }
+    },
+    {
+      "name": "runtime_metadata_sanitized_scope",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics safety scope must record sanitized metadata.",
+      "details": {
+        "metadata_contains_secrets": null,
+        "uses_api_keys_or_secrets": null
+      }
+    },
+    {
+      "name": "runtime_local_artifacts_source_of_truth",
+      "status": "blocked",
+      "severity": "blocker",
+      "message": "Paper metrics must keep local artifacts as the source of truth.",
+      "details": {}
+    }
+  ],
+  "reviewer_notes": [
+    "Phase 3 paper runtime artifact validation only; do not start, stop, poll, terminate, clean up, or manage paper trading."
+  ],
+  "runtime_validation": {
+    "valid": false,
+    "status_snapshot": "not_started",
+    "process_started": false,
+    "startup_executed": false,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false,
+    "bot_startup_performed_by_validator": false,
+    "polling_performed_by_validator": false,
+    "stop_performed_by_validator": false
+  },
+  "runtime_artifacts": {
+    "process_metadata": {
+      "strategy": "LongOnlyFreqAIStrategy",
+      "run_id": "phase3_paper_startup_preflight_20260503",
+      "status": null,
+      "process_started": false,
+      "startup_executed": false
+    },
+    "status_snapshot": {
+      "strategy": "LongOnlyFreqAIStrategy",
+      "run_id": "phase3_paper_startup_preflight_20260503",
+      "status": "not_started",
+      "process_started": null,
+      "startup_executed": false
+    },
+    "paper_metrics": {
+      "strategy": null,
+      "run_id": null,
+      "status": null,
+      "process_started": null,
+      "startup_executed": null
+    },
+    "stdout": {
+      "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stdout.log",
+      "exists": false,
+      "size_bytes": null
+    },
+    "stderr": {
+      "path": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_startup_preflight_20260503\\logs\\stderr.log",
+      "exists": false,
+      "size_bytes": null
+    }
+  },
+  "artifact_paths": {
+    "paper_runtime_validation": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_runtime_validation_20260504\\paper_runtime_validation.json",
+    "paper_runtime_validation_report": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_runtime_validation_20260504\\paper_runtime_validation_report.md",
+    "runtime_artifacts_manifest": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_runtime_validation_20260504\\runtime_artifacts_manifest.json",
+    "command": "data\\paper\\LongOnlyFreqAIStrategy\\phase3_paper_runtime_validation_20260504\\command.txt"
+  },
+  "safety_scope": {
+    "command": "paper runtime artifact validation only",
+    "bot_startup_by_validator": false,
+    "freqtrade_trade_executed_by_validator": false,
+    "paper_trading_started_by_validator": false,
+    "dry_run_trading_started_by_validator": false,
+    "live_trading": false,
+    "canary_live_trading": false,
+    "exchange_order_placement": false,
+    "uses_api_keys_or_secrets": false,
+    "leverage_above_one": false,
+    "shorting": false,
+    "metadata_contains_secrets": false,
+    "local_artifacts_source_of_truth": true,
+    "process_control": false,
+    "status_polling_started": false,
+    "process_stop_started": false,
+    "cleanup_executed": false
+  },
+  "notice": "Paper runtime validation is a no-process-control artifact gate. It reads only supplied local JSON and log artifacts; it does not start, stop, poll, terminate, clean up, or manage freqtrade trade, paper trading, dry-run trading, live trading, or any bot process."
+}
