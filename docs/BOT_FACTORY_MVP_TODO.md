@@ -9,6 +9,22 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 - Non-goal: live trading, canary live, Hummingbot integration, production risk changes.
 - Safety rule: every production-related action remains stubbed or human-approved.
 
+## Candidate Factory Direction Guardrails (Non-Subordinate to ML Tuning)
+
+- [ ] Prevent the iteration loop from degrading into repeated per-parameter tweaking.
+- [ ] Require each generated candidate to declare a hypothesis-level `thesis_id`,
+  `thesis_type`, and falsification criteria (not just threshold changes).
+- [ ] Add a local `research_brief.json` artifact step that records recent literature
+  references, why each reference is relevant, and which candidate hypotheses it
+  motivates.
+- [ ] Add loop budget controls that cap retries per thesis and force exploration of
+  distinct hypothesis families after repeated failures.
+- [ ] Add normalized failure taxonomy outputs (for example:
+  `FAIL_OVERFIT_WF_GAP`, `FAIL_COST_SENSITIVE`, `FAIL_REGIME_FRAGILE`) so
+  iteration inputs are evidence-driven instead of parameter-only.
+- [ ] Gate promotion to later stages on hypothesis diversity plus walk-forward
+  robustness, not on single-run backtest improvement.
+
 ## Current Reusable Work
 
 - [x] Freqtrade repository and CLI structure exists.
@@ -82,6 +98,35 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 - [x] Add reviewer notes and promotion recommendations.
 
 ## Latest Verification
+
+Checked on 2026-05-04 UTC for Strategy Code Generator mode extension.
+
+- [x] Extended `freqtrade_ext/bot_factory/strategy_code.py` to add proposal-driven generator mode support (`rule_based`, `freqai`, `hybrid_ml`) while preserving long-only safety scope and static-check gating. Generated metadata now records generator mode, feature list, target definition, label horizon, prediction threshold, rule filters, and risk policy.
+- [x] Added focused test coverage in `tests/test_bot_factory.py` validating FreqAI mode method emission (`feature_engineering_expand_all`, `feature_engineering_expand_basic`, `feature_engineering_standard`, `set_freqai_targets`) and metadata fields.
+- [x] Re-ran syntax check:
+
+  ```powershell
+  ./.venv/bin/python -m py_compile freqtrade_ext/bot_factory/strategy_code.py scripts/bot_factory_generate_strategy_code.py tests/test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  ./.venv/bin/python -m pytest tests/test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran static strategy check:
+
+  ```powershell
+  ./.venv/bin/python scripts/bot_factory_static_check.py user_data/strategies
+  ```
+
+  Result: `ok=true`; existing review warnings remained.
+- [x] Remaining limitation: this increment adds generator modes and FreqAI/hybrid scaffolding only; it does not implement Candidate Evaluation Pipeline, Candidate Ranking / Registry, Iteration / Improvement Loop, or Paper trading deployment.
+- [x] Follow-up fix: resolved a generator-mode regression in `strategy_code.py` where `rule_based` mode could raise an unbound local error during code rendering when ML-only proposal fields were absent. Added defaults for target/threshold/horizon outside the ML-mode branch and added focused regression coverage in `tests/test_bot_factory.py` (`test_strategy_code_generator_rule_based_mode_does_not_require_ml_threshold`).
+
 
 Checked on 2026-05-05 JST for Strategy Code Generator.
 

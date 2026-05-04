@@ -13,7 +13,7 @@ from freqtrade_ext.bot_factory.safety import scan_paths
 from freqtrade_ext.bot_factory.strategy_proposals import REQUIRED_PROPOSAL_SECTIONS
 
 
-STRATEGY_CODE_GENERATOR_VERSION = "strategy_code_generator_v1"
+STRATEGY_CODE_GENERATOR_VERSION = "strategy_code_generator_v2"
 STRATEGY_CODE_NOTICE = (
     "Strategy code generation writes local strategy, metadata, and static-check "
     "artifacts only. It does not run backtests, start paper or dry-run trading, "
@@ -109,6 +109,7 @@ _GENERATED_FORBIDDEN_PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
         "Generated strategy must not include a hardcoded backtest timerange.",
     ),
 ]
+ALLOWED_GENERATOR_MODES = {"rule_based", "freqai", "hybrid_ml"}
 
 
 @dataclass(frozen=True)
@@ -214,11 +215,14 @@ def build_strategy_code(inputs: StrategyCodeInputs) -> StrategyCodeArtifacts:
 
     strategy_code: str | None = None
     if not _has_blockers(checks):
+        generator_mode = _generator_mode_from_proposal(proposal_metadata)
         strategy_code = _render_long_only_strategy_code(
             strategy_name=class_name,
             timeframe=str(proposal_metadata["timeframe"]),
             candidate_id=candidate_id,
             source_proposal_hash=str(proposal_metadata["proposal_content_hash"]),
+            generator_mode=generator_mode,
+            proposal_metadata=proposal_metadata,
         )
         checks.extend(_generated_code_safety_checks(strategy_code))
         if _has_blockers(checks):
@@ -331,6 +335,13 @@ def _build_metadata(
         ),
         "metadata_path": _safe_relative_path(metadata_path, root_dir),
         "static_check_report_path": _safe_relative_path(static_check_path, root_dir),
+        "generator_mode": _generator_mode_from_proposal(proposal_metadata),
+        "feature_list": list(proposal_metadata.get("feature_list", [])),
+        "target_definition": proposal_metadata.get("target_definition"),
+        "label_horizon": proposal_metadata.get("label_horizon"),
+        "prediction_threshold": proposal_metadata.get("prediction_threshold"),
+        "rule_filters": list(proposal_metadata.get("rule_filters", [])),
+        "risk_policy": proposal_metadata.get("risk_policy"),
         "parameter_defaults": dict(DEFAULT_PARAMETER_DEFAULTS),
         "checks": [check.to_dict() for check in checks],
         "blockers": [check.to_dict() for check in blockers],
@@ -413,7 +424,38 @@ def _render_long_only_strategy_code(
     timeframe: str,
     candidate_id: str,
     source_proposal_hash: str,
+    generator_mode: str,
+    proposal_metadata: dict[str, Any],
 ) -> str:
+    freqai_block = ""
+    label_horizon = int(proposal_metadata.get("label_horizon") or 12)
+    target_name = str(proposal_metadata.get("target_definition") or "future_return")
+    threshold = float(proposal_metadata.get("prediction_threshold") or 0.0)
+    if generator_mode in {"freqai", "hybrid_ml"}:
+        freqai_block = f'''
+    def feature_engineering_expand_all(self, dataframe: DataFrame, period: int, metadata: dict) -> DataFrame:
+        dataframe[f"%-rsi-{{period}}"] = ta.RSI(dataframe, timeperiod=period)
+        dataframe[f"%-ema-{{period}}"] = ta.EMA(dataframe, timeperiod=period)
+        return dataframe
+
+    def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe["%-pct-change"] = dataframe["close"].pct_change().fillna(0.0)
+        dataframe["%-volume-z"] = (
+            (dataframe["volume"] - dataframe["volume"].rolling(24, min_periods=1).mean())
+            / dataframe["volume"].rolling(24, min_periods=1).std().replace(0, 1)
+        ).fillna(0.0)
+        return dataframe
+
+    def feature_engineering_standard(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe["%-atr"] = ta.ATR(dataframe, timeperiod=14).fillna(0.0)
+        return dataframe
+
+    def set_freqai_targets(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe["&-{target_name}"] = (
+            dataframe["close"].shift(-{label_horizon}) / dataframe["close"] - 1.0
+        )
+        return dataframe
+'''
     return f'''from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -428,10 +470,11 @@ from freqtrade.strategy import DecimalParameter, IStrategy, IntParameter, timefr
 
 class {strategy_name}(IStrategy):
     """
-    Generated Bot Factory long-only RSI pullback strategy.
+    Generated Bot Factory long-only strategy.
 
     Candidate ID: {candidate_id}
     Source proposal hash: {source_proposal_hash}
+    Generator mode: {generator_mode}
     """
 
     INTERFACE_VERSION = 3
@@ -472,6 +515,7 @@ class {strategy_name}(IStrategy):
         ).mean()
         dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
         return dataframe
+{freqai_block}
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         pullback_seen = (
@@ -487,11 +531,15 @@ class {strategy_name}(IStrategy):
         volume_filter = dataframe["volume"] > (
             dataframe["volume_mean"] * self.buy_volume_factor.value
         )
+        ml_filter = True
+        if "{generator_mode}" in ("freqai", "hybrid_ml"):
+            ml_filter = dataframe.get("&-{proposal_metadata.get("target_definition") or "future_return"}", 0) > {threshold}
         entry_condition = (
             pullback_seen
             & rsi_recovered
             & trend_filter
             & volume_filter
+            & ml_filter
             & (dataframe["volume"] > 0)
         )
         dataframe.loc[entry_condition, ["enter_long", "enter_tag"]] = (
@@ -529,6 +577,11 @@ class {strategy_name}(IStrategy):
             return "timeout_exit"
         return None
 '''
+
+
+def _generator_mode_from_proposal(proposal_metadata: dict[str, Any]) -> str:
+    mode = str(proposal_metadata.get("generator_mode") or "rule_based").strip().lower()
+    return mode if mode in ALLOWED_GENERATOR_MODES else "rule_based"
 
 
 def _metadata_schema_checks(proposal_metadata: dict[str, Any]) -> list[StrategyCodeCheck]:
