@@ -83,6 +83,100 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-05 JST for Strategy Code Generator.
+
+- [x] Started the Strategy Code Generator handoff with:
+
+  ```powershell
+  git status --short --untracked-files=all
+  ```
+
+  Result: the expected uncommitted docs-only handoff context was present:
+  `docs/BOT_FACTORY_PHASE3_NEXT_AGENT_PROMPT.md` was modified and
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` was untracked.
+  The known Windows ACL warnings remained for `.codex_tmp/pytest-of-yoro4/`,
+  `bot_factory_pytest_tmp/`, and `codex_tmp/pytest/`.
+- [x] Added the Strategy Code Generator v1 baseline:
+  `freqtrade_ext/bot_factory/strategy_code.py` and
+  `scripts/bot_factory_generate_strategy_code.py`. The generator reads an
+  accepted proposal metadata artifact, resolves source paths inside the
+  repository workspace, verifies proposal metadata status, code-generation
+  eligibility, factory/phase, required metadata fields, proposal Markdown
+  content hash, required Markdown sections, long-only scope, leverage `1.0`,
+  no live/paper/dry-run startup, no order placement, no secrets, no shorting,
+  no process control, and local artifacts as the source of truth before
+  writing strategy code. Generated strategies default to `can_short = False`,
+  omit `enter_short`, `exit_short`, and `leverage()`, expose RSI/EMA/volume
+  and timeout settings as Freqtrade parameters, and write local generated
+  metadata plus a generated-file static-check report under
+  `registry/strategies/generated/<strategy_name>/<candidate_id>/`.
+- [x] Correction note: Strategy Code Generator v1 is only a deterministic
+  long-only rule-based baseline and safety-path proof. It must not be treated
+  as the project's full AI/ML strategy generation layer. It does not synthesize
+  new trading logic from prior evaluation results, generate FreqAI strategies,
+  generate hybrid ML+rule candidates, search feature sets, select label
+  horizons, rank candidates, or iterate based on failed-candidate evidence.
+  Those remain Strategy Generation / Candidate Factory work.
+- [x] Added focused Strategy Code Generator tests in `tests/test_bot_factory.py`:
+  safe accepted proposal metadata produces a long-only generated strategy and
+  metadata, tampered proposal Markdown hash blocks code generation, missing
+  required proposal sections block code generation, and unsafe proposal safety
+  scope for shorting/leverage blocks code generation.
+- [x] Re-ran the Strategy Code Generator syntax check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_generate_strategy_code.py tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Re-ran focused pytest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py
+  ```
+
+  Result: the sandboxed run failed at `tmp_path` setup because
+  `C:\Users\yoro4\AppData\Local\Temp\pytest-of-yoro4` was ACL-blocked,
+  producing 71 fixture setup errors before test bodies ran. The same focused
+  command was re-run with normal filesystem temp/cache permissions and passed:
+  71 tests.
+- [x] Re-ran static strategy checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, no errors. Existing review warnings
+  remain in `5mV1.py` and `FreqAICustomStrategy.py`. Report written to
+  `registry/strategies/checks/20260504T171328Z_static_check.json`.
+- [x] Ran a local CLI smoke test for proposal-derived strategy code generation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260504T134421Z_LongOnlyRsiPullbackCandidate.metadata.json --candidate-id 20260504T171500Z_strategy_code_smoke --created-at 2026-05-04T17:15:00+00:00
+  ```
+
+  Result: completed with `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`. Artifacts were written under
+  `registry/strategies/generated/LongOnlyRsiPullbackCandidate/20260504T171500Z_strategy_code_smoke/`:
+  `LongOnlyRsiPullbackCandidate.py`, `metadata.json`, and
+  `static_check.json`.
+- [x] Re-ran syntax check on the smoke-generated strategy:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyRsiPullbackCandidate\20260504T171500Z_strategy_code_smoke\LongOnlyRsiPullbackCandidate.py
+  ```
+
+  Result: passed.
+- [x] Remaining Strategy Generation limitation: AI/ML/hybrid strategy code
+  generation, Candidate Evaluation Pipeline, Candidate Ranking / Registry,
+  Iteration / Improvement Loop, and Paper trading deployment are still
+  incomplete. The new code generator only creates a local rule-based baseline
+  strategy, metadata, and static-check artifacts from an accepted proposal; it
+  does not run backtests, start paper/dry-run/live trading, promote candidates,
+  rank candidates, call exchange order endpoints, synthesize FreqAI/hybrid ML
+  candidates, learn from prior failures, or manage any bot process.
+
 Checked on 2026-05-04 JST.
 
 - [x] Added the Strategy Proposal Generator:
@@ -1681,8 +1775,11 @@ Checked on 2026-04-26 JST.
 - [x] Add Phase 3 no-process-control paper/backtest drift reporting layer.
 - [x] Add Strategy Proposal Generator for reproducible market hypothesis and
   proposal artifacts.
-- [ ] Add Strategy Code Generator for proposal-derived, long-only Freqtrade
-  strategies with generated metadata.
+- [x] Add Strategy Code Generator v1 for proposal-derived, long-only
+  rule-based baseline Freqtrade strategies with generated metadata.
+- [ ] Extend Strategy Code Generator beyond the v1 baseline so it can generate
+  proposal-driven rule-based, FreqAI, and hybrid ML+rule candidates instead of
+  only a fixed RSI pullback template.
 - [ ] Add Candidate Evaluation Pipeline that connects generated candidates to
   static checks, FreqAI validation, OHLCV quality checks, historical
   backtests, walk-forward, training factory, local reports, and metrics.
@@ -1698,15 +1795,33 @@ Checked on 2026-04-26 JST.
 
 ## Strategy Generation / Candidate Factory TODO
 
-Status: Strategy Proposal Generator implemented; Strategy Code Generator,
-Candidate Evaluation Pipeline, Candidate Ranking / Registry, Iteration /
-Improvement Loop, and paper deployment remain unimplemented. This section
-organizes the next safe Bot Factory work after the Phase 1/2 evaluation
-pipeline and the Phase 3 local-artifact readiness gates. It must stay limited
-to local artifacts, dependency checks, static checks, OHLCV quality checks,
-historical `freqtrade backtesting`, FreqAI validation when applicable,
-walk-forward evaluation, training factory orchestration, and local reports
-until a later explicitly approved paper path exists.
+Status: Strategy Proposal Generator and Strategy Code Generator v1 baseline
+implemented. Full AI/ML/hybrid strategy generation, Candidate Evaluation
+Pipeline, Candidate Ranking / Registry, Iteration / Improvement Loop, and paper
+deployment remain unimplemented. This section organizes the next safe Bot
+Factory work after the Phase 1/2 evaluation pipeline and the Phase 3
+local-artifact readiness gates. It must stay limited to local artifacts,
+dependency checks, static checks, OHLCV quality checks, historical `freqtrade
+backtesting`, FreqAI validation when applicable, walk-forward evaluation,
+training factory orchestration, and local reports until a later explicitly
+approved paper path exists.
+
+Project intent guardrail:
+
+- The Strategy Generation / Candidate Factory objective is not just to create a
+  hand-written indicator template. The target system must generate multiple
+  strategy candidates, including rule-based, FreqAI, and hybrid ML+rule
+  candidates; evaluate them on historical, walk-forward, and training
+  artifacts; rank/select/reject them based on recorded metrics and failure
+  reasons; and feed reviewer findings plus failed-candidate evidence into
+  further iterations.
+- A deterministic rule-based template can exist as a baseline and safety-path
+  proof only. Do not mark the AI/ML candidate factory complete because a fixed
+  RSI pullback strategy can be generated.
+- The next implementation should move toward proposal-driven candidate
+  generation and evaluation: either extend the code generator to support
+  FreqAI/hybrid ML candidates, or implement enough Candidate Evaluation
+  Pipeline to compare the current baseline against future ML/hybrid candidates.
 
 Safety boundaries for all generated candidates:
 
@@ -1744,24 +1859,46 @@ Safety boundaries for all generated candidates:
 
 ### Strategy Code Generator
 
-- [ ] Add a code generator that reads an accepted proposal and produces a
-  Freqtrade strategy `.py` file only after proposal schema and safety checks
-  pass.
-- [ ] Default generated Freqtrade strategies to long-only behavior:
+Current v1 scope: implemented as a deterministic long-only RSI pullback
+baseline. This validates the artifact chain and safety checks, but it is not
+the full AI/ML strategy generator.
+
+- [x] Add a v1 baseline code generator that reads an accepted proposal and
+  produces a Freqtrade strategy `.py` file only after proposal schema and
+  safety checks pass.
+- [x] Default generated Freqtrade strategies to long-only behavior:
   `can_short = False`, no short entry/exit signals, no `leverage()` hook, and
   generated metadata recording `leverage=1.0`.
-- [ ] Generate code that keeps parameters configurable through class parameters
+- [x] Generate code that keeps parameters configurable through class parameters
   or config, not hidden constants chosen to fit one timerange.
-- [ ] Block hardcoded secrets, private environment references, direct order API
+- [x] Block hardcoded secrets, private environment references, direct order API
   calls, exchange order endpoints, lookahead patterns, `shift(-1)` in signal
   logic, unsafe `iloc[-1]`, future data references, leverage above `1.0`, and
   shorting.
-- [ ] Save generated strategy metadata under
+- [x] Save generated strategy metadata under
   `registry/strategies/generated/<strategy_name>/<candidate_id>/metadata.json`
   with source proposal path/hash, generated strategy path/hash, safety-scope
   flags, parameter defaults, code generator version, and rejection status.
-- [ ] Run the static strategy scanner before a generated strategy can enter the
+- [x] Run the static strategy scanner before a generated strategy can enter the
   candidate evaluation pipeline.
+- [ ] Add explicit generator modes such as `rule_based`, `freqai`, and
+  `hybrid_ml`, selected from proposal metadata rather than always producing
+  the same RSI pullback template.
+- [ ] Generate FreqAI-compatible strategy code when the accepted proposal asks
+  for ML: `feature_engineering_expand_all`,
+  `feature_engineering_expand_basic`, `feature_engineering_standard`,
+  `set_freqai_targets`, `populate_indicators`, long-only
+  `populate_entry_trend`, and long-only `populate_exit_trend`.
+- [ ] Generate hybrid ML+rule strategies that combine FreqAI predictions with
+  explicit rule filters, while recording feature list, target definition,
+  label horizon, prediction threshold, rule filters, and risk policy in
+  generated metadata.
+- [ ] Keep ML target generation safety explicit: future labels may only appear
+  in `set_freqai_targets`; negative shifts remain forbidden in indicator,
+  entry, and exit generation.
+- [ ] Use prior local evidence and reviewer findings to vary generated
+  candidate logic, features, thresholds, and labels. Do not hardcode one fixed
+  strategy template as the only generated candidate family.
 
 ### Candidate Evaluation Pipeline
 
@@ -1863,17 +2000,22 @@ Implemented Strategy Proposal Generator files:
 - Focused Strategy Proposal Generator coverage in `tests/test_bot_factory.py`
 - Generated proposal artifacts under `registry/strategies/proposals/`
 
-Likely future files for remaining work:
+Implemented Strategy Code Generator files:
 
 - `freqtrade_ext/bot_factory/strategy_code.py`
+- `scripts/bot_factory_generate_strategy_code.py`
+- Focused Strategy Code Generator coverage in `tests/test_bot_factory.py`
+- Generated strategy smoke artifacts under
+  `registry/strategies/generated/LongOnlyRsiPullbackCandidate/20260504T171500Z_strategy_code_smoke/`
+
+Likely future files for remaining work:
+
 - `freqtrade_ext/bot_factory/candidate_pipeline.py`
 - `freqtrade_ext/bot_factory/candidate_registry.py`
 - `freqtrade_ext/bot_factory/candidate_iteration.py`
-- `scripts/bot_factory_generate_strategy_code.py`
 - `scripts/bot_factory_evaluate_candidate.py`
 - `scripts/bot_factory_rank_candidates.py`
 - `scripts/bot_factory_iterate_candidate.py`
-- Generated strategy metadata under `registry/strategies/generated/`
 - Candidate registry artifacts under `registry/strategies/candidates/`
 - Candidate review artifacts under `registry/strategies/reviews/`
 - Candidate evaluation artifacts under `data/candidates/` plus existing

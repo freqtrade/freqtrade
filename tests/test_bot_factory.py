@@ -1,3 +1,4 @@
+import hashlib
 import json
 import zipfile
 from pathlib import Path
@@ -85,6 +86,11 @@ from freqtrade_ext.bot_factory.strategy_proposals import (
     StrategyProposalInputs,
     build_strategy_proposal,
     write_strategy_proposal_artifacts,
+)
+from freqtrade_ext.bot_factory.strategy_code import (
+    StrategyCodeInputs,
+    build_strategy_code,
+    write_strategy_code_artifacts,
 )
 from freqtrade_ext.bot_factory.safety import scan_paths
 from freqtrade_ext.bot_factory.walk_forward import (
@@ -728,6 +734,108 @@ def test_strategy_proposal_generator_blocks_evidence_outside_workspace(tmp_path)
     assert "evidence_outside_metrics_within_workspace" in {
         check["name"] for check in artifacts.metadata["blockers"]
     }
+
+
+def test_strategy_code_generator_writes_long_only_strategy_and_metadata(tmp_path):
+    proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
+    write_strategy_proposal_artifacts(proposal_artifacts)
+    inputs = _strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path)
+
+    artifacts = build_strategy_code(inputs)
+    write_strategy_code_artifacts(artifacts)
+
+    assert artifacts.metadata["status"] == "generated"
+    assert artifacts.metadata["strategy_code_generated"] is True
+    assert artifacts.metadata["candidate_evaluation_eligible"] is True
+    assert artifacts.strategy_path.is_file()
+    assert artifacts.metadata_path.is_file()
+    assert artifacts.static_check_path.is_file()
+    generated_code = artifacts.strategy_path.read_text(encoding="utf-8")
+    assert "can_short = False" in generated_code
+    assert "enter_short" not in generated_code
+    assert "exit_short" not in generated_code
+    assert "def leverage" not in generated_code
+    assert "shift(-1" not in generated_code
+    assert ".iloc[-1" not in generated_code
+    assert artifacts.metadata["source_proposal_content_hash"] == (
+        proposal_artifacts.metadata["proposal_content_hash"]
+    )
+    assert artifacts.metadata["parameter_defaults"]["buy_rsi_window"] == 14
+    assert artifacts.metadata["static_check"]["ran"] is True
+    assert artifacts.metadata["static_check"]["ok"] is True
+    assert scan_paths([artifacts.strategy_path]).ok
+
+
+def test_strategy_code_generator_blocks_tampered_proposal_hash(tmp_path):
+    proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
+    write_strategy_proposal_artifacts(proposal_artifacts)
+    proposal_artifacts.proposal_path.write_text(
+        proposal_artifacts.proposal_markdown + "\nTampered after metadata write.\n",
+        encoding="utf-8",
+    )
+
+    artifacts = build_strategy_code(
+        _strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path)
+    )
+    write_strategy_code_artifacts(artifacts)
+
+    assert artifacts.metadata["status"] == "blocked"
+    assert artifacts.metadata["strategy_code_generated"] is False
+    assert artifacts.metadata["candidate_evaluation_eligible"] is False
+    assert not artifacts.strategy_path.exists()
+    assert "proposal_content_hash_matches" in {
+        check["name"] for check in artifacts.metadata["blockers"]
+    }
+
+
+def test_strategy_code_generator_blocks_missing_required_proposal_section(tmp_path):
+    proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
+    write_strategy_proposal_artifacts(proposal_artifacts)
+    proposal_markdown = proposal_artifacts.proposal_markdown.replace(
+        "## Entry Logic\n\n", "", 1
+    )
+    proposal_artifacts.proposal_path.write_text(proposal_markdown, encoding="utf-8")
+    metadata = json.loads(proposal_artifacts.metadata_path.read_text(encoding="utf-8"))
+    metadata["proposal_content_hash"] = hashlib.sha256(
+        proposal_markdown.encode("utf-8")
+    ).hexdigest()
+    proposal_artifacts.metadata_path.write_text(
+        json.dumps(metadata, indent=2), encoding="utf-8"
+    )
+
+    artifacts = build_strategy_code(
+        _strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path)
+    )
+    write_strategy_code_artifacts(artifacts)
+
+    assert artifacts.metadata["status"] == "blocked"
+    assert not artifacts.strategy_path.exists()
+    assert "proposal_markdown_section_entry_logic_present" in {
+        check["name"] for check in artifacts.metadata["blockers"]
+    }
+
+
+def test_strategy_code_generator_blocks_unsafe_proposal_scope(tmp_path):
+    proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
+    write_strategy_proposal_artifacts(proposal_artifacts)
+    metadata = json.loads(proposal_artifacts.metadata_path.read_text(encoding="utf-8"))
+    metadata["safety_scope"]["shorting"] = True
+    metadata["safety_scope"]["leverage"] = 2.0
+    proposal_artifacts.metadata_path.write_text(
+        json.dumps(metadata, indent=2), encoding="utf-8"
+    )
+
+    artifacts = build_strategy_code(
+        _strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path)
+    )
+    write_strategy_code_artifacts(artifacts)
+
+    assert artifacts.metadata["status"] == "blocked"
+    assert artifacts.metadata["strategy_code_generated"] is False
+    assert not artifacts.strategy_path.exists()
+    blocker_names = {check["name"] for check in artifacts.metadata["blockers"]}
+    assert "proposal_safety_shorting_false" in blocker_names
+    assert "proposal_safety_leverage_capped_at_one" in blocker_names
 
 
 def test_paper_config_safety_accepts_dry_run_sanitized_config():
@@ -2087,6 +2195,25 @@ def _strategy_proposal_inputs(tmp_path, **overrides) -> StrategyProposalInputs:
     }
     data.update(overrides)
     return StrategyProposalInputs(**data)
+
+
+def _strategy_code_inputs(tmp_path, proposal_metadata_path, **overrides) -> StrategyCodeInputs:
+    data = {
+        "root_dir": tmp_path,
+        "proposal_metadata_path": proposal_metadata_path,
+        "candidate_id": "candidate_a",
+        "output_root": tmp_path / "registry" / "strategies" / "generated",
+        "created_by_agent": "codex-test",
+        "created_at": "2026-05-04T01:00:00+00:00",
+        "command": [
+            "python",
+            "scripts/bot_factory_generate_strategy_code.py",
+            "--proposal-metadata-json",
+            str(proposal_metadata_path),
+        ],
+    }
+    data.update(overrides)
+    return StrategyCodeInputs(**data)
 
 
 def _paper_config(strategy: str) -> dict:

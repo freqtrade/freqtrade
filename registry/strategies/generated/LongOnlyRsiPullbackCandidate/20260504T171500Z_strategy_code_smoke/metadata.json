@@ -1,0 +1,614 @@
+{
+  "generated_at": "2026-05-04T17:15:00+00:00",
+  "phase": "strategy_generation",
+  "factory": "strategy_code_generator",
+  "generator_version": "strategy_code_generator_v1",
+  "status": "generated",
+  "strategy_code_generated": true,
+  "candidate_evaluation_eligible": true,
+  "strategy_name": "LongOnlyRsiPullbackCandidate",
+  "strategy_class_name": "LongOnlyRsiPullbackCandidate",
+  "candidate_id": "20260504T171500Z_strategy_code_smoke",
+  "created_at": "2026-05-04T17:15:00+00:00",
+  "created_by_agent": "codex",
+  "target_exchange": "bybit",
+  "target_symbols": [
+    "BTC/USDT:USDT"
+  ],
+  "timeframe": "5m",
+  "spot_or_futures": "futures",
+  "long_short": "long-only",
+  "source_proposal_metadata_path": "registry\\strategies\\proposals\\20260504T134421Z_LongOnlyRsiPullbackCandidate.metadata.json",
+  "source_proposal_metadata_hash": "d25a73dc075a7abc8e3840a15248bbf1488d932bf00c7a9c12d295af44fa4926",
+  "source_proposal_path": "registry\\strategies\\proposals\\20260504T134421Z_LongOnlyRsiPullbackCandidate.md",
+  "source_proposal_content_hash": "c64c39b4977a36aaf2bf2c823c3493a77524a4f86d9b5f9f1308c5c3c36570c6",
+  "generated_strategy_path": "registry\\strategies\\generated\\LongOnlyRsiPullbackCandidate\\20260504T171500Z_strategy_code_smoke\\LongOnlyRsiPullbackCandidate.py",
+  "generated_strategy_content_hash": "22c225672605b3098efdb8a18c8102103eaadcbb6a781f59388c5091cbbd2fee",
+  "metadata_path": "registry\\strategies\\generated\\LongOnlyRsiPullbackCandidate\\20260504T171500Z_strategy_code_smoke\\metadata.json",
+  "static_check_report_path": "registry\\strategies\\generated\\LongOnlyRsiPullbackCandidate\\20260504T171500Z_strategy_code_smoke\\static_check.json",
+  "parameter_defaults": {
+    "buy_rsi_window": 14,
+    "buy_pullback_lookback": 5,
+    "buy_rsi_pullback": 32,
+    "buy_rsi_recovery": 42,
+    "buy_ema_fast": 12,
+    "buy_ema_slow": 48,
+    "buy_volume_window": 24,
+    "buy_volume_factor": 1.0,
+    "sell_rsi_exit": 65,
+    "sell_timeout_candles": 96
+  },
+  "checks": [
+    {
+      "name": "proposal_metadata_path_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata path must resolve inside the repository workspace.",
+      "details": {
+        "path": "registry\\strategies\\proposals\\20260504T134421Z_LongOnlyRsiPullbackCandidate.metadata.json"
+      }
+    },
+    {
+      "name": "proposal_metadata_file_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata path must exist as a local JSON file.",
+      "details": {
+        "path": "registry\\strategies\\proposals\\20260504T134421Z_LongOnlyRsiPullbackCandidate.metadata.json"
+      }
+    },
+    {
+      "name": "proposal_metadata_json_parseable",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata JSON must contain an object.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_status_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include status.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_proposal_status_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include proposal_status.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_code_generation_eligible_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include code_generation_eligible.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_strategy_name_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include strategy_name.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_target_exchange_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include target_exchange.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_target_symbols_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include target_symbols.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_timeframe_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include timeframe.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_spot_or_futures_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include spot_or_futures.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_long_short_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include long_short.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_proposal_path_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include proposal_path.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_proposal_content_hash_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include proposal_content_hash.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_safety_scope_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must include safety_scope.",
+      "details": {}
+    },
+    {
+      "name": "proposal_metadata_factory_valid",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must come from the strategy proposal generator.",
+      "details": {
+        "factory": "strategy_proposal_generator"
+      }
+    },
+    {
+      "name": "proposal_metadata_phase_valid",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must belong to the strategy_generation phase.",
+      "details": {
+        "phase": "strategy_generation"
+      }
+    },
+    {
+      "name": "proposal_metadata_has_no_blockers",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Accepted proposal metadata must not include blockers.",
+      "details": {}
+    },
+    {
+      "name": "candidate_id_safe",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Candidate ID must be a simple path-safe token.",
+      "details": {
+        "candidate_id": "20260504T171500Z_strategy_code_smoke"
+      }
+    },
+    {
+      "name": "strategy_class_name_valid",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Strategy name from proposal metadata must be a valid Python class name.",
+      "details": {
+        "strategy_name": "LongOnlyRsiPullbackCandidate"
+      }
+    },
+    {
+      "name": "generated_output_dir_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy output directory must resolve inside the repository workspace.",
+      "details": {
+        "path": "registry\\strategies\\generated\\LongOnlyRsiPullbackCandidate\\20260504T171500Z_strategy_code_smoke"
+      }
+    },
+    {
+      "name": "proposal_path_within_workspace",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal path must resolve inside the repository workspace.",
+      "details": {
+        "path": "registry\\strategies\\proposals\\20260504T134421Z_LongOnlyRsiPullbackCandidate.md"
+      }
+    },
+    {
+      "name": "proposal_file_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown file must exist.",
+      "details": {
+        "path": "registry\\strategies\\proposals\\20260504T134421Z_LongOnlyRsiPullbackCandidate.md"
+      }
+    },
+    {
+      "name": "proposal_content_hash_matches",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown content hash must match proposal metadata.",
+      "details": {
+        "expected": "c64c39b4977a36aaf2bf2c823c3493a77524a4f86d9b5f9f1308c5c3c36570c6",
+        "actual": "c64c39b4977a36aaf2bf2c823c3493a77524a4f86d9b5f9f1308c5c3c36570c6"
+      }
+    },
+    {
+      "name": "proposal_markdown_section_metadata_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Metadata section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_summary_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Summary section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_hypothesis_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Hypothesis section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_market_condition_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Market Condition section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_entry_logic_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Entry Logic section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_exit_logic_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Exit Logic section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_risk_logic_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Risk Logic section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_required_data_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Required Data section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_parameters_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Parameters section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_expected_failure_cases_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Expected Failure Cases section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_backtest_plan_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Backtest Plan section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_markdown_section_rejection_conditions_present",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Source proposal Markdown must include the Rejection Conditions section.",
+      "details": {}
+    },
+    {
+      "name": "proposal_status_accepted",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata status must be accepted.",
+      "details": {
+        "status": "accepted",
+        "proposal_status": "accepted"
+      }
+    },
+    {
+      "name": "proposal_code_generation_eligible",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal metadata must explicitly be code-generation eligible.",
+      "details": {
+        "code_generation_eligible": true
+      }
+    },
+    {
+      "name": "proposal_long_short_long_only",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal long_short scope must be long-only.",
+      "details": {
+        "long_short": "long-only"
+      }
+    },
+    {
+      "name": "proposal_safety_long_only_true",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record long_only=True.",
+      "details": {
+        "long_only": true
+      }
+    },
+    {
+      "name": "proposal_safety_historical_evaluation_only_true",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record historical_evaluation_only=True.",
+      "details": {
+        "historical_evaluation_only": true
+      }
+    },
+    {
+      "name": "proposal_safety_live_data_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record live_data=False.",
+      "details": {
+        "live_data": false
+      }
+    },
+    {
+      "name": "proposal_safety_live_trading_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record live_trading=False.",
+      "details": {
+        "live_trading": false
+      }
+    },
+    {
+      "name": "proposal_safety_paper_trading_started_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record paper_trading_started=False.",
+      "details": {
+        "paper_trading_started": false
+      }
+    },
+    {
+      "name": "proposal_safety_dry_run_trading_started_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record dry_run_trading_started=False.",
+      "details": {
+        "dry_run_trading_started": false
+      }
+    },
+    {
+      "name": "proposal_safety_exchange_order_placement_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record exchange_order_placement=False.",
+      "details": {
+        "exchange_order_placement": false
+      }
+    },
+    {
+      "name": "proposal_safety_uses_api_keys_or_secrets_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record uses_api_keys_or_secrets=False.",
+      "details": {
+        "uses_api_keys_or_secrets": false
+      }
+    },
+    {
+      "name": "proposal_safety_metadata_contains_secrets_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record metadata_contains_secrets=False.",
+      "details": {
+        "metadata_contains_secrets": false
+      }
+    },
+    {
+      "name": "proposal_safety_leverage_above_one_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record leverage_above_one=False.",
+      "details": {
+        "leverage_above_one": false
+      }
+    },
+    {
+      "name": "proposal_safety_shorting_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record shorting=False.",
+      "details": {
+        "shorting": false
+      }
+    },
+    {
+      "name": "proposal_safety_process_control_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record process_control=False.",
+      "details": {
+        "process_control": false
+      }
+    },
+    {
+      "name": "proposal_safety_backtest_started_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record backtest_started=False.",
+      "details": {
+        "backtest_started": false
+      }
+    },
+    {
+      "name": "proposal_safety_local_artifacts_source_of_truth_true",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope must record local_artifacts_source_of_truth=True.",
+      "details": {
+        "local_artifacts_source_of_truth": true
+      }
+    },
+    {
+      "name": "proposal_safety_leverage_capped_at_one",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Proposal safety scope leverage must be capped at 1.0.",
+      "details": {
+        "leverage": 1.0
+      }
+    },
+    {
+      "name": "generated_code_can_short_false",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must explicitly set can_short = False.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_parameters_configurable",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy parameters must be explicit and configurable.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_short_entry_signal",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not define short entry signals.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_short_exit_signal",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not define short exit signals.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_can_short_true",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not enable can_short.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_leverage_hook",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not define a leverage hook.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_shift_minus_one",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not use negative shifts.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_unsafe_iloc_minus_one",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not use iloc[-1].",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_direct_order_calls",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not call order endpoints or direct HTTP POST.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_process_control",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not include process-control code.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_hardcoded_secret_assignment",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not include hardcoded credential-like values.",
+      "details": {}
+    },
+    {
+      "name": "generated_code_no_single_timerange_fit",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy must not include a hardcoded backtest timerange.",
+      "details": {}
+    },
+    {
+      "name": "generated_strategy_static_scan_ok",
+      "status": "pass",
+      "severity": "blocker",
+      "message": "Generated strategy static safety scan must pass before evaluation.",
+      "details": {
+        "files_checked": 1,
+        "finding_count": 0
+      }
+    }
+  ],
+  "blockers": [],
+  "rejection_reasons": [],
+  "static_check": {
+    "ran": true,
+    "ok": true,
+    "files_checked": 1,
+    "findings": []
+  },
+  "safety_scope": {
+    "command": "strategy code generation only",
+    "long_only": true,
+    "historical_evaluation_only": true,
+    "live_data": false,
+    "live_trading": false,
+    "paper_trading_started": false,
+    "dry_run_trading_started": false,
+    "exchange_order_placement": false,
+    "uses_api_keys_or_secrets": false,
+    "metadata_contains_secrets": false,
+    "leverage": 1.0,
+    "leverage_above_one": false,
+    "shorting": false,
+    "process_control": false,
+    "backtest_started": false,
+    "candidate_evaluation_started": false,
+    "candidate_ranking_started": false,
+    "paper_promotion_eligible": false,
+    "promotion_authorized_by_this_command": false,
+    "local_artifacts_source_of_truth": true
+  },
+  "command": [
+    "C:\\Users\\yoro4\\Documents\\GitHub\\freqtrade\\.venv\\Scripts\\python.exe",
+    "scripts\\bot_factory_generate_strategy_code.py",
+    "--proposal-metadata-json",
+    "registry\\strategies\\proposals\\20260504T134421Z_LongOnlyRsiPullbackCandidate.metadata.json",
+    "--candidate-id",
+    "20260504T171500Z_strategy_code_smoke",
+    "--created-at",
+    "2026-05-04T17:15:00+00:00"
+  ],
+  "notice": "Strategy code generation writes local strategy, metadata, and static-check artifacts only. It does not run backtests, start paper or dry-run trading, call exchange order endpoints, promote candidates, or manage any bot process."
+}

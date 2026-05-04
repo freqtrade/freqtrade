@@ -78,6 +78,15 @@ Handoff priority for the next agent:
   candidate using Phase 2-safe historical work only: dependency checks, static
   checks, OHLCV quality checks, FreqAI validation, historical backtesting,
   walk-forward evaluation, training factory orchestration, and local reports.
+- The next main work item is strategy generation / candidate factory
+  implementation. Strategy Proposal Generator and Strategy Code Generator v1
+  baseline now exist, but v1 is only a deterministic long-only rule-based
+  safety-path proof. It is not the full AI/ML candidate factory.
+- The next strategy-generation work should move toward FreqAI/hybrid candidate
+  generation or the Candidate Evaluation Pipeline, not paper deployment and not
+  another fixed one-off indicator template.
+- Use `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` as the
+  paste-ready handoff when the next agent is starting strategy generation work.
 - If the user explicitly asks to continue Phase 3 code instead, restrict work
   to hardening existing local-artifact gates or their schemas/docs. Do not
   start, stop, poll, terminate, clean up, promote, or manage a bot process.
