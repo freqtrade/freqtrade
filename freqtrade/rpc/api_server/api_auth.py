@@ -15,9 +15,22 @@ from freqtrade.rpc.api_server.deps import get_api_config
 logger = logging.getLogger(__name__)
 
 ALGORITHM = "HS256"
-__DEFAULT_JWT = "somethingRandomSomethingRandom123"
+_KNOWN_WEAK_JWT_KEYS = frozenset([
+    "super-secret",
+    "somethingrandom",
+    "somethingrandomsomethingrandom123",
+])
 
 router_login = APIRouter()
+
+
+def _validate_jwt_secret_key(secret_key: str) -> None:
+    """Raise if the JWT secret key is a known-weak or insufficiently short value."""
+    if len(secret_key) < 16 or secret_key.lower() in _KNOWN_WEAK_JWT_KEYS:
+        raise ValueError(
+            "JWT secret key is too weak or uses a known default. "
+            "Please set a strong `jwt_secret_key` in your API server configuration."
+        )
 
 
 def verify_auth(api_config, username: str, password: str):
@@ -33,6 +46,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
 def get_user_from_token(token, secret_key: str, token_type: str = "access") -> str:  # noqa: S107
+    _validate_jwt_secret_key(secret_key)
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -88,6 +102,7 @@ async def validate_ws_token(
 
 
 def create_token(data: dict, secret_key: str, token_type: str = "access") -> str:  # noqa: S107
+    _validate_jwt_secret_key(secret_key)
     to_encode = data.copy()
     if token_type == "access":  # noqa: S105
         expire = datetime.now(UTC) + timedelta(minutes=15)
