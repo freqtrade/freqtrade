@@ -1926,19 +1926,19 @@ the full AI/ML strategy generator.
   flags, parameter defaults, code generator version, and rejection status.
 - [x] Run the static strategy scanner before a generated strategy can enter the
   candidate evaluation pipeline.
-- [ ] Add explicit generator modes such as `rule_based`, `freqai`, and
+- [x] Add explicit generator modes such as `rule_based`, `freqai`, and
   `hybrid_ml`, selected from proposal metadata rather than always producing
   the same RSI pullback template.
-- [ ] Generate FreqAI-compatible strategy code when the accepted proposal asks
+- [x] Generate FreqAI-compatible strategy code when the accepted proposal asks
   for ML: `feature_engineering_expand_all`,
   `feature_engineering_expand_basic`, `feature_engineering_standard`,
   `set_freqai_targets`, `populate_indicators`, long-only
   `populate_entry_trend`, and long-only `populate_exit_trend`.
-- [ ] Generate hybrid ML+rule strategies that combine FreqAI predictions with
+- [x] Generate hybrid ML+rule strategies that combine FreqAI predictions with
   explicit rule filters, while recording feature list, target definition,
   label horizon, prediction threshold, rule filters, and risk policy in
   generated metadata.
-- [ ] Keep ML target generation safety explicit: future labels may only appear
+- [x] Keep ML target generation safety explicit: future labels may only appear
   in `set_freqai_targets`; negative shifts remain forbidden in indicator,
   entry, and exit generation.
 - [ ] Use prior local evidence and reviewer findings to vary generated
@@ -2238,3 +2238,37 @@ Follow-up on 2026-05-05 UTC for Strategy Code Generator guardrail polish.
 
   Result: passed.
 - [x] Remaining limitation unchanged: full Candidate Evaluation Pipeline, Candidate Ranking / Registry, and Iteration / Improvement Loop orchestration are still pending.
+
+Checked on 2026-05-05 UTC for Candidate Evaluation Pipeline foundation.
+
+- [x] Added local historical-safe Candidate Evaluation Pipeline foundation:
+  `freqtrade_ext/bot_factory/candidate_evaluation.py` and
+  `scripts/bot_factory_evaluate_candidate.py`.
+  The pipeline consumes proposal metadata, generated strategy metadata, and
+  optional artifact inputs for static checks, FreqAI validation, OHLCV quality,
+  historical backtest, walk-forward, and training manifests; then writes
+  `candidate_manifest.json` and appends an index record to
+  `registry/strategies/candidates/index.jsonl`.
+- [x] Added minimal candidate registry schema support:
+  candidate artifacts are written under
+  `registry/strategies/candidates/<strategy_name>/<candidate_id>/`.
+  Index records are append-only JSONL and preserve recommendation,
+  thesis/failure metadata, and manifest path.
+- [x] Wired failure taxonomy + thesis metadata into iteration inputs:
+  manifest contains `failure_taxonomy_codes`, thesis fields, and
+  `next_candidate_input` contract fields (`retry_budget_per_thesis`,
+  `thesis_retry_count`, `parameter_only_retry_count`,
+  `force_distinct_hypothesis_family`).
+- [x] Added focused tests in `tests/test_bot_factory.py` for manifest/index
+  generation and ineligible candidate rejection.
+- [x] Remaining limitation: this increment does not orchestrate live execution
+  of backtest/walk-forward/training commands; it evaluates and aggregates local
+  artifact outputs only. Candidate ranking policy remains minimal append-only
+  index metadata and has not been expanded into full scoring/selection logic.
+
+
+Follow-up on 2026-05-05 UTC for TODO consistency cleanup.
+
+- [x] Aligned candidate registry index path references with implementation target: `registry/strategies/candidates/index.jsonl`.
+- [x] Updated Strategy Code Generator checklist entries to reflect already-implemented generator mode and FreqAI/hybrid scaffolding items.
+- [x] Remaining limitation unchanged: evaluation orchestration, ranking policy expansion, and iteration loop wiring remain pending.
