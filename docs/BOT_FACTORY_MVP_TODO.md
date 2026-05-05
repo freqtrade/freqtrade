@@ -2191,3 +2191,50 @@ Run a checked backtest with custom gate thresholds and optional MLflow logging:
   --gate-config registry\strategies\gate_thresholds.example.json `
   --mlflow
 ```
+
+
+Checked on 2026-05-05 UTC for hypothesis-centric Strategy Code Generator iteration guardrails.
+
+- [x] Extended `freqtrade_ext/bot_factory/strategy_code.py` to enforce hypothesis-centric candidate metadata requirements (`thesis_id`, `thesis_type`, `thesis_statement`, `falsification_criteria`, `novelty_vs_previous`, `evidence_refs`) before generation proceeds.
+- [x] Added iteration guardrail checks in strategy-code generation metadata validation: `retry_budget_per_thesis`, thesis retry cap enforcement, parameter-only retry limit enforcement, and forced distinct-hypothesis-family requirement after repeated failures.
+- [x] Added normalized failure taxonomy validation (`FAIL_OVERFIT_WF_GAP`, `FAIL_COST_SENSITIVE`, `FAIL_REGIME_FRAGILE`) and persisted failure codes into generated candidate metadata.
+- [x] Added local `research_brief.json` artifact output for each generated candidate under `registry/strategies/generated/<strategy>/<candidate_id>/`, sourced from thesis metadata and evidence references.
+- [x] Updated focused tests in `tests/test_bot_factory.py` so Strategy Code Generator scenarios include hypothesis metadata fixtures required by the new guardrails.
+- [x] Re-ran syntax check:
+
+  ```powershell
+  python -m py_compile freqtrade_ext/bot_factory/strategy_code.py scripts/bot_factory_generate_strategy_code.py tests/test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Attempted focused pytest:
+
+  ```powershell
+  python -m pytest tests/test_bot_factory.py -q
+  ```
+
+  Result: blocked by environment interpreter mismatch (`datetime.UTC` import requires Python 3.11+; active interpreter is 3.10).
+- [x] Attempted static strategy checks:
+
+  ```powershell
+  python scripts/bot_factory_static_check.py user_data/strategies
+  ```
+
+  Result: blocked by same Python 3.10 `datetime.UTC` import limitation.
+- [x] Remaining limitation: this increment adds hypothesis-centric metadata, guardrails, failure taxonomy normalization, and local research-brief artifact plumbing only. It does not implement the full Candidate Evaluation Pipeline, Candidate Ranking / Registry, Iteration / Improvement Loop orchestration, or paper deployment.
+
+
+Follow-up on 2026-05-05 UTC for Strategy Code Generator guardrail polish.
+
+- [x] Refined focused Strategy Code Generator tests in `tests/test_bot_factory.py` by replacing repeated hypothesis-metadata patch blocks with a shared `_write_hypothesis_metadata(...)` helper for readability and maintainability.
+- [x] Added focused regression tests for hypothesis guardrail behavior:
+  - blocks non-normalized failure taxonomy values
+  - writes per-candidate `research_brief.json` artifact with expected thesis/failure fields
+- [x] Re-ran syntax check:
+
+  ```powershell
+  python -m py_compile freqtrade_ext/bot_factory/strategy_code.py scripts/bot_factory_generate_strategy_code.py tests/test_bot_factory.py
+  ```
+
+  Result: passed.
+- [x] Remaining limitation unchanged: full Candidate Evaluation Pipeline, Candidate Ranking / Registry, and Iteration / Improvement Loop orchestration are still pending.
