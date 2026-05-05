@@ -3025,7 +3025,7 @@ def test_candidate_evaluation_freqai_requires_feature_label_validation(tmp_path)
     ))
     validation_check = next(c for c in manifest["checks"] if c["name"] == "freqai_feature_label_validation")
     assert validation_check["status"] == "missing"
-    assert manifest["recommendation"] != "pass"
+    assert manifest["recommendation"] == "fail"
 
 
 def test_candidate_artifact_paths_are_sanitized(tmp_path):
