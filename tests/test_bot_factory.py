@@ -838,6 +838,48 @@ def test_strategy_code_generator_blocks_unsafe_proposal_scope(tmp_path):
     assert "proposal_safety_leverage_capped_at_one" in blocker_names
 
 
+def test_strategy_code_generator_freqai_mode_emits_freqai_methods(tmp_path):
+    proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
+    write_strategy_proposal_artifacts(proposal_artifacts)
+    metadata = json.loads(proposal_artifacts.metadata_path.read_text(encoding="utf-8"))
+    metadata["generator_mode"] = "freqai"
+    metadata["feature_list"] = ["rsi", "ema", "atr"]
+    metadata["target_definition"] = "future_return"
+    metadata["label_horizon"] = 12
+    metadata["prediction_threshold"] = 0.01
+    metadata["rule_filters"] = ["trend_filter", "volume_filter"]
+    metadata["risk_policy"] = "long_only_leverage_1"
+    proposal_artifacts.metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+    artifacts = build_strategy_code(_strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path))
+    write_strategy_code_artifacts(artifacts)
+    code = artifacts.strategy_path.read_text(encoding="utf-8")
+
+    assert artifacts.metadata["generator_mode"] == "freqai"
+    assert "def feature_engineering_expand_all" in code
+    assert "def feature_engineering_expand_basic" in code
+    assert "def feature_engineering_standard" in code
+    assert "def set_freqai_targets" in code
+    assert 'shift(-12)' in code
+    assert artifacts.metadata["label_horizon"] == 12
+
+
+def test_strategy_code_generator_rule_based_mode_does_not_require_ml_threshold(tmp_path):
+    proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
+    write_strategy_proposal_artifacts(proposal_artifacts)
+    metadata = json.loads(proposal_artifacts.metadata_path.read_text(encoding="utf-8"))
+    metadata["generator_mode"] = "rule_based"
+    proposal_artifacts.metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+    artifacts = build_strategy_code(_strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path))
+    write_strategy_code_artifacts(artifacts)
+    code = artifacts.strategy_path.read_text(encoding="utf-8")
+
+    assert artifacts.metadata["status"] == "generated"
+    assert artifacts.metadata["generator_mode"] == "rule_based"
+    assert "def set_freqai_targets" not in code
+
+
 def test_paper_config_safety_accepts_dry_run_sanitized_config():
     config = _paper_config("PaperStrategy")
 
