@@ -2895,3 +2895,67 @@ def _write_paper_evidence(
         json.dumps({"status": "completed"}), encoding="utf-8"
     )
     return historical_dir, walk_forward_dir, training_dir
+
+
+def test_candidate_evaluation_writes_manifest_and_index(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_evaluation import (
+        CandidateEvaluationInputs,
+        evaluate_candidate,
+        write_candidate_artifacts,
+    )
+
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps({
+        "strategy_name": "LongOnlyRsiPullbackCandidate",
+        "code_generation_eligible": True,
+        "thesis_id": "TH-1",
+        "thesis_type": "mean_reversion",
+        "falsification_criteria": "wf_gap",
+        "failure_taxonomy_codes": ["FAIL_OVERFIT_WF_GAP"],
+        "retry_budget_per_thesis": 3,
+        "thesis_retry_count": 1,
+        "parameter_only_retry_count": 0,
+        "force_distinct_hypothesis_family": False,
+    }), encoding="utf-8")
+    generated = tmp_path / "generated.json"
+    generated.write_text(json.dumps({"strategy_name": "LongOnlyRsiPullbackCandidate", "candidate_evaluation_eligible": True}), encoding="utf-8")
+    static = tmp_path / "static.json"
+    static.write_text(json.dumps({"ok": True}), encoding="utf-8")
+    ohlcv = tmp_path / "ohlcv.json"
+    ohlcv.write_text(json.dumps({"ok": True}), encoding="utf-8")
+    backtest = tmp_path / "backtest.json"
+    backtest.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    walk = tmp_path / "walk.json"
+    walk.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    training = tmp_path / "train.json"
+    training.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+
+    manifest = evaluate_candidate(CandidateEvaluationInputs(
+        root_dir=tmp_path,
+        proposal_metadata_path=proposal,
+        generated_metadata_path=generated,
+        candidate_id="cand-1",
+        static_check_path=static,
+        ohlcv_quality_path=ohlcv,
+        backtest_metrics_path=backtest,
+        walk_forward_metrics_path=walk,
+        training_manifest_path=training,
+    ))
+    assert manifest["recommendation"] == "pass"
+    manifest_path, index_path = write_candidate_artifacts(
+        manifest, root_dir=tmp_path, output_root=Path("out"), index_path=Path("idx.jsonl")
+    )
+    assert manifest_path.is_file()
+    lines = index_path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1
+
+
+def test_candidate_evaluation_rejects_ineligible_candidate(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_evaluation import CandidateEvaluationInputs, evaluate_candidate
+
+    p = tmp_path / "p.json"
+    p.write_text(json.dumps({"strategy_name": "S", "code_generation_eligible": False}), encoding="utf-8")
+    g = tmp_path / "g.json"
+    g.write_text(json.dumps({"strategy_name": "S", "candidate_evaluation_eligible": False}), encoding="utf-8")
+    manifest = evaluate_candidate(CandidateEvaluationInputs(root_dir=tmp_path, proposal_metadata_path=p, generated_metadata_path=g, candidate_id="c"))
+    assert manifest["recommendation"] == "reject"
