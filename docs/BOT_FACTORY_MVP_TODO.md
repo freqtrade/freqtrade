@@ -2272,3 +2272,57 @@ Follow-up on 2026-05-05 UTC for TODO consistency cleanup.
 - [x] Aligned candidate registry index path references with implementation target: `registry/strategies/candidates/index.jsonl`.
 - [x] Updated Strategy Code Generator checklist entries to reflect already-implemented generator mode and FreqAI/hybrid scaffolding items.
 - [x] Remaining limitation unchanged: evaluation orchestration, ranking policy expansion, and iteration loop wiring remain pending.
+
+Checked on 2026-05-05 UTC for Candidate Evaluation orchestration + registry enrichment increment.
+
+- [x] Extended `freqtrade_ext/bot_factory/candidate_evaluation.py` from artifact-only aggregation to ordered historical-safe orchestration metadata. The manifest now records safe ordered steps (static check, conditional FreqAI validation, OHLCV quality, historical backtest, walk-forward, conditional training), command previews, and per-step input/output status without starting any process.
+- [x] Added richer candidate registry artifacts under `registry/strategies/candidates/<strategy>/<candidate_id>/`: `candidate_record.json`, `candidate_report.md`, `metrics_summary.json`, and `artifact_paths.json`, while preserving append-only `index.jsonl` records including failure reasons.
+- [x] Preserved and expanded iteration input contract wiring: `next_candidate_input` now carries thesis statement, evidence refs, failure taxonomy codes, retry budget metadata, and distinct-hypothesis-family control flags.
+- [x] Extended CLI wrapper `scripts/bot_factory_evaluate_candidate.py` with reviewer note propagation (`--reviewer-note`) into manifest artifacts.
+- [x] Added/updated focused test assertions in `tests/test_bot_factory.py` to verify enriched candidate artifact outputs and ordered orchestration metadata presence.
+- [x] Verification commands run:
+
+  ```powershell
+  ./.venv/bin/python -m py_compile freqtrade_ext/bot_factory/candidate_evaluation.py scripts/bot_factory_evaluate_candidate.py tests/test_bot_factory.py
+  ```
+
+  Result: passed.
+
+  ```powershell
+  ./.venv/bin/python -m pytest tests/test_bot_factory.py
+  ```
+
+  Result: passed.
+
+  ```powershell
+  ./.venv/bin/python scripts/bot_factory_static_check.py user_data/strategies
+  ```
+
+  Result: `ok=true`; existing warnings remain on known review files.
+- [x] Remaining limitations: orchestration remains local historical-safe and metadata-driven (command previews + artifact validation). This increment does not execute backtest/walk-forward/training subprocess chains inside the candidate pipeline, does not add full ranking/scoring policy selection, and does not implement paper deployment process control.
+
+Follow-up on 2026-05-05 UTC for candidate evaluation recommendation semantics and documentation accuracy.
+
+- [x] Tightened recommendation behavior in `candidate_evaluation.py` so missing required artifacts produce `recommendation=fail` (with explicit rationale) instead of `retry`; retry remains only for failed checks with known failure taxonomy guidance.
+- [x] Added explicit `recommendation_rationale` to `candidate_manifest.json`, `candidate_record.json`, and `candidate_report.md` to preserve reviewer-facing reasoning.
+- [x] Enriched append-only index rows with `candidate_report_path` for easier artifact navigation.
+- [x] Added focused regression coverage in `tests/test_bot_factory.py` for the missing-artifact fail behavior and index report-path emission.
+- [x] Verification commands run:
+
+  ```powershell
+  python -m py_compile freqtrade_ext/bot_factory/candidate_evaluation.py scripts/bot_factory_evaluate_candidate.py tests/test_bot_factory.py
+  ```
+
+  Result: passed.
+
+  ```powershell
+  python -m pytest tests/test_bot_factory.py
+  ```
+
+  Result: blocked in this environment because active interpreter is Python 3.10 and the repository test/runtime path imports `datetime.UTC` (requires Python 3.11+).
+
+  ```powershell
+  python scripts/bot_factory_static_check.py user_data/strategies
+  ```
+
+  Result: blocked by the same Python 3.10 vs 3.11 `datetime.UTC` limitation.

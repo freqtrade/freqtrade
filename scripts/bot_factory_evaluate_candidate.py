@@ -27,6 +27,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--backtest-metrics-json", default=None)
     p.add_argument("--walk-forward-metrics-json", default=None)
     p.add_argument("--training-manifest-json", default=None)
+    p.add_argument("--reviewer-note", action="append", default=[])
     return p.parse_args()
 
 
@@ -43,6 +44,7 @@ def main() -> int:
         backtest_metrics_path=Path(a.backtest_metrics_json) if a.backtest_metrics_json else None,
         walk_forward_metrics_path=Path(a.walk_forward_metrics_json) if a.walk_forward_metrics_json else None,
         training_manifest_path=Path(a.training_manifest_json) if a.training_manifest_json else None,
+        reviewer_notes=a.reviewer_note,
     )
     manifest = evaluate_candidate(inputs)
     manifest_path, index_path = write_candidate_artifacts(
