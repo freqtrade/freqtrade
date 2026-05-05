@@ -34,7 +34,9 @@ def evaluate_candidate(inputs: CandidateEvaluationInputs) -> dict[str, Any]:
     checks.append(_check("ohlcv_quality_check", inputs.ohlcv_quality_path, root, key="ok"))
     checks.append(_check("historical_backtest", inputs.backtest_metrics_path, root, key="recommendation", pass_values={"pass"}))
     checks.append(_check("walk_forward", inputs.walk_forward_metrics_path, root, key="recommendation", pass_values={"pass"}))
-    checks.append(_check("training_factory", inputs.training_manifest_path, root, key="recommendation", pass_values={"pass"}))
+    generator_mode = str(generated.get("generator_mode") or proposal.get("generator_mode") or "rule_based").strip()
+    training_required = generator_mode in {"freqai", "hybrid_ml"}
+    checks.append(_check("training_factory", inputs.training_manifest_path, root, key="recommendation", pass_values={"pass"}, required=training_required))
 
     failures = [c for c in checks if c["status"] in {"fail", "missing"}]
     failure_codes = list(dict.fromkeys(proposal.get("failure_taxonomy_codes", []) + generated.get("failure_taxonomy_codes", [])))
@@ -72,8 +74,8 @@ def evaluate_candidate(inputs: CandidateEvaluationInputs) -> dict[str, Any]:
 
 def write_candidate_artifacts(manifest: dict[str, Any], *, root_dir: Path, output_root: Path, index_path: Path) -> tuple[Path, Path]:
     root = root_dir.resolve()
-    strategy = str(manifest.get("strategy_name") or "unknown_strategy")
-    candidate_id = str(manifest["candidate_id"])
+    strategy = _safe_path_component(str(manifest.get("strategy_name") or "unknown_strategy"))
+    candidate_id = _safe_path_component(str(manifest["candidate_id"]))
     out_dir = _resolve(output_root, root) / strategy / candidate_id
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = out_dir / "candidate_manifest.json"
@@ -93,6 +95,12 @@ def write_candidate_artifacts(manifest: dict[str, Any], *, root_dir: Path, outpu
     with idx_path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
     return manifest_path, idx_path
+
+
+def _safe_path_component(value: str) -> str:
+    cleaned = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "_" for ch in value.strip())
+    cleaned = cleaned.strip("._")
+    return cleaned or "unknown"
 
 
 def _check(name: str, path: Path | None, root: Path, *, key: str, pass_values: set[str] | None = None, required: bool = True) -> dict[str, Any]:
