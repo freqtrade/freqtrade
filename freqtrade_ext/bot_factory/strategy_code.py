@@ -142,6 +142,7 @@ class StrategyCodeArtifacts:
     strategy_path: Path
     metadata_path: Path
     static_check_path: Path
+    research_brief_path: Path
 
 
 def build_strategy_code(inputs: StrategyCodeInputs) -> StrategyCodeArtifacts:
@@ -212,6 +213,7 @@ def build_strategy_code(inputs: StrategyCodeInputs) -> StrategyCodeArtifacts:
 
     checks.extend(_proposal_status_checks(proposal_metadata))
     checks.extend(_proposal_safety_scope_checks(proposal_metadata))
+    checks.extend(_hypothesis_iteration_checks(proposal_metadata))
 
     strategy_code: str | None = None
     if not _has_blockers(checks):
@@ -249,11 +251,16 @@ def build_strategy_code(inputs: StrategyCodeInputs) -> StrategyCodeArtifacts:
         strategy_path=strategy_path,
         metadata_path=metadata_path,
         static_check_path=static_check_path,
+        research_brief_path=output_dir / "research_brief.json",
     )
 
 
 def write_strategy_code_artifacts(artifacts: StrategyCodeArtifacts) -> None:
     artifacts.metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    artifacts.research_brief_path.write_text(
+        json.dumps(artifacts.metadata.get("research_brief", {}), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
     if artifacts.strategy_code is not None:
         artifacts.strategy_path.write_text(artifacts.strategy_code, encoding="utf-8")
         static_report = scan_paths([artifacts.strategy_path])
@@ -342,6 +349,25 @@ def _build_metadata(
         "prediction_threshold": proposal_metadata.get("prediction_threshold"),
         "rule_filters": list(proposal_metadata.get("rule_filters", [])),
         "risk_policy": proposal_metadata.get("risk_policy"),
+        "thesis_id": proposal_metadata.get("thesis_id"),
+        "thesis_type": proposal_metadata.get("thesis_type"),
+        "thesis_statement": proposal_metadata.get("thesis_statement"),
+        "falsification_criteria": proposal_metadata.get("falsification_criteria"),
+        "novelty_vs_previous": proposal_metadata.get("novelty_vs_previous"),
+        "evidence_refs": list(proposal_metadata.get("evidence_refs", [])),
+        "failure_taxonomy_codes": list(proposal_metadata.get("failure_taxonomy_codes", [])),
+        "retry_budget_per_thesis": proposal_metadata.get("retry_budget_per_thesis"),
+        "thesis_retry_count": proposal_metadata.get("thesis_retry_count"),
+        "parameter_only_retry_count": proposal_metadata.get("parameter_only_retry_count"),
+        "parameter_only_retry_limit": proposal_metadata.get("parameter_only_retry_limit"),
+        "force_distinct_hypothesis_family": bool(proposal_metadata.get("force_distinct_hypothesis_family", False)),
+        "research_brief": {
+            "thesis_id": proposal_metadata.get("thesis_id"),
+            "thesis_statement": proposal_metadata.get("thesis_statement"),
+            "evidence_refs": list(proposal_metadata.get("evidence_refs", [])),
+            "failure_taxonomy_codes": list(proposal_metadata.get("failure_taxonomy_codes", [])),
+            "generated_at": created_at,
+        },
         "parameter_defaults": dict(DEFAULT_PARAMETER_DEFAULTS),
         "checks": [check.to_dict() for check in checks],
         "blockers": [check.to_dict() for check in blockers],
@@ -417,6 +443,43 @@ def _finalize_static_check_metadata(metadata: dict[str, Any], static_report: Any
             check["message"] for check in metadata["blockers"]
         ]
 
+
+
+def _hypothesis_iteration_checks(proposal_metadata: dict[str, Any]) -> list[StrategyCodeCheck]:
+    checks: list[StrategyCodeCheck] = []
+    required_fields = [
+        "thesis_id",
+        "thesis_type",
+        "thesis_statement",
+        "falsification_criteria",
+        "novelty_vs_previous",
+        "evidence_refs",
+    ]
+    for field_name in required_fields:
+        value = proposal_metadata.get(field_name)
+        present = bool(value)
+        if field_name == "evidence_refs":
+            present = isinstance(value, list) and len(value) > 0
+        checks.append(_check(f"hypothesis_{field_name}_present", present, "blocker", f"Proposal metadata must include {field_name} for hypothesis-driven iteration."))
+
+    retry_budget = int(proposal_metadata.get("retry_budget_per_thesis") or 0)
+    thesis_retry_count = int(proposal_metadata.get("thesis_retry_count") or 0)
+    parameter_only_retry_count = int(proposal_metadata.get("parameter_only_retry_count") or 0)
+    parameter_retry_limit = int(proposal_metadata.get("parameter_only_retry_limit") or 0)
+    forced_family = bool(proposal_metadata.get("force_distinct_hypothesis_family"))
+
+    checks.append(_check("thesis_retry_budget_configured", retry_budget > 0, "blocker", "Proposal metadata must configure retry_budget_per_thesis > 0."))
+    checks.append(_check("thesis_retry_budget_not_exceeded", thesis_retry_count <= retry_budget if retry_budget > 0 else False, "blocker", "Thesis retry budget exceeded; generate a distinct hypothesis family candidate."))
+    checks.append(_check("parameter_only_retry_limit_configured", parameter_retry_limit > 0, "blocker", "Proposal metadata must configure parameter_only_retry_limit > 0."))
+    checks.append(_check("parameter_only_retry_guard", parameter_only_retry_count <= parameter_retry_limit if parameter_retry_limit > 0 else False, "blocker", "Parameter-only retries exceeded threshold; same-thesis tuning loop is blocked."))
+    checks.append(_check("distinct_hypothesis_family_after_repeated_failure", forced_family or thesis_retry_count <= 1, "blocker", "Repeated failures require force_distinct_hypothesis_family=true."))
+
+    failure_codes = proposal_metadata.get("failure_taxonomy_codes", [])
+    allowed = {"FAIL_OVERFIT_WF_GAP", "FAIL_COST_SENSITIVE", "FAIL_REGIME_FRAGILE"}
+    checks.append(_check("failure_taxonomy_codes_list", isinstance(failure_codes, list), "blocker", "failure_taxonomy_codes must be a list."))
+    if isinstance(failure_codes, list):
+        checks.append(_check("failure_taxonomy_codes_normalized", all(isinstance(code, str) and code in allowed for code in failure_codes), "blocker", "failure_taxonomy_codes must use normalized values.", {"allowed": sorted(allowed)}))
+    return checks
 
 def _render_long_only_strategy_code(
     *,

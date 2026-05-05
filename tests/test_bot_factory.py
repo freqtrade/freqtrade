@@ -739,6 +739,7 @@ def test_strategy_proposal_generator_blocks_evidence_outside_workspace(tmp_path)
 def test_strategy_code_generator_writes_long_only_strategy_and_metadata(tmp_path):
     proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
     write_strategy_proposal_artifacts(proposal_artifacts)
+    _write_hypothesis_metadata(proposal_artifacts.metadata_path)
     inputs = _strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path)
 
     artifacts = build_strategy_code(inputs)
@@ -769,6 +770,7 @@ def test_strategy_code_generator_writes_long_only_strategy_and_metadata(tmp_path
 def test_strategy_code_generator_blocks_tampered_proposal_hash(tmp_path):
     proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
     write_strategy_proposal_artifacts(proposal_artifacts)
+    _write_hypothesis_metadata(proposal_artifacts.metadata_path)
     proposal_artifacts.proposal_path.write_text(
         proposal_artifacts.proposal_markdown + "\nTampered after metadata write.\n",
         encoding="utf-8",
@@ -791,6 +793,7 @@ def test_strategy_code_generator_blocks_tampered_proposal_hash(tmp_path):
 def test_strategy_code_generator_blocks_missing_required_proposal_section(tmp_path):
     proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
     write_strategy_proposal_artifacts(proposal_artifacts)
+    _write_hypothesis_metadata(proposal_artifacts.metadata_path)
     proposal_markdown = proposal_artifacts.proposal_markdown.replace(
         "## Entry Logic\n\n", "", 1
     )
@@ -818,6 +821,7 @@ def test_strategy_code_generator_blocks_missing_required_proposal_section(tmp_pa
 def test_strategy_code_generator_blocks_unsafe_proposal_scope(tmp_path):
     proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
     write_strategy_proposal_artifacts(proposal_artifacts)
+    _write_hypothesis_metadata(proposal_artifacts.metadata_path)
     metadata = json.loads(proposal_artifacts.metadata_path.read_text(encoding="utf-8"))
     metadata["safety_scope"]["shorting"] = True
     metadata["safety_scope"]["leverage"] = 2.0
@@ -841,6 +845,7 @@ def test_strategy_code_generator_blocks_unsafe_proposal_scope(tmp_path):
 def test_strategy_code_generator_freqai_mode_emits_freqai_methods(tmp_path):
     proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
     write_strategy_proposal_artifacts(proposal_artifacts)
+    _write_hypothesis_metadata(proposal_artifacts.metadata_path)
     metadata = json.loads(proposal_artifacts.metadata_path.read_text(encoding="utf-8"))
     metadata["generator_mode"] = "freqai"
     metadata["feature_list"] = ["rsi", "ema", "atr"]
@@ -867,6 +872,7 @@ def test_strategy_code_generator_freqai_mode_emits_freqai_methods(tmp_path):
 def test_strategy_code_generator_rule_based_mode_does_not_require_ml_threshold(tmp_path):
     proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
     write_strategy_proposal_artifacts(proposal_artifacts)
+    _write_hypothesis_metadata(proposal_artifacts.metadata_path)
     metadata = json.loads(proposal_artifacts.metadata_path.read_text(encoding="utf-8"))
     metadata["generator_mode"] = "rule_based"
     proposal_artifacts.metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
@@ -2239,6 +2245,63 @@ def _strategy_proposal_inputs(tmp_path, **overrides) -> StrategyProposalInputs:
     return StrategyProposalInputs(**data)
 
 
+
+
+def _apply_hypothesis_metadata(metadata: dict[str, Any], **overrides: Any) -> dict[str, Any]:
+    defaults = {
+        "thesis_id": "THESIS-MR-001",
+        "thesis_type": "mean_reversion",
+        "thesis_statement": "Pullback recoveries in liquid BTC futures revert on closed-candle confirmation.",
+        "falsification_criteria": "Reject if walk-forward return remains negative with acceptable trade count.",
+        "novelty_vs_previous": "Adds explicit liquidity filter and timeout risk guard versus prior baseline.",
+        "evidence_refs": ["paper:10.2139/ssrn.1968356"],
+        "retry_budget_per_thesis": 3,
+        "thesis_retry_count": 1,
+        "parameter_only_retry_limit": 1,
+        "parameter_only_retry_count": 0,
+        "force_distinct_hypothesis_family": False,
+        "failure_taxonomy_codes": ["FAIL_OVERFIT_WF_GAP"],
+    }
+    defaults.update(overrides)
+    metadata.update(defaults)
+    return metadata
+
+
+def _write_hypothesis_metadata(metadata_path: Path, **overrides: Any) -> None:
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata = _apply_hypothesis_metadata(metadata, **overrides)
+    metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+
+def test_strategy_code_generator_blocks_invalid_failure_taxonomy_code(tmp_path):
+    proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
+    write_strategy_proposal_artifacts(proposal_artifacts)
+    _write_hypothesis_metadata(
+        proposal_artifacts.metadata_path,
+        failure_taxonomy_codes=["FAIL_UNKNOWN"],
+    )
+
+    artifacts = build_strategy_code(_strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path))
+    write_strategy_code_artifacts(artifacts)
+
+    assert artifacts.metadata["status"] == "blocked"
+    assert "failure_taxonomy_codes_normalized" in {
+        check["name"] for check in artifacts.metadata["blockers"]
+    }
+
+
+def test_strategy_code_generator_writes_research_brief_artifact(tmp_path):
+    proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
+    write_strategy_proposal_artifacts(proposal_artifacts)
+    _write_hypothesis_metadata(proposal_artifacts.metadata_path)
+
+    artifacts = build_strategy_code(_strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path))
+    write_strategy_code_artifacts(artifacts)
+
+    assert artifacts.research_brief_path.is_file()
+    brief = json.loads(artifacts.research_brief_path.read_text(encoding="utf-8"))
+    assert brief["thesis_id"] == "THESIS-MR-001"
+    assert brief["failure_taxonomy_codes"] == ["FAIL_OVERFIT_WF_GAP"]
 def _strategy_code_inputs(tmp_path, proposal_metadata_path, **overrides) -> StrategyCodeInputs:
     data = {
         "root_dir": tmp_path,
