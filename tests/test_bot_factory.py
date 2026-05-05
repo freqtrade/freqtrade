@@ -2993,6 +2993,41 @@ def test_candidate_evaluation_rule_based_does_not_require_training_manifest(tmp_
     assert manifest["recommendation"] == "pass"
 
 
+def test_candidate_evaluation_freqai_requires_feature_label_validation(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_evaluation import CandidateEvaluationInputs, evaluate_candidate
+
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps({"strategy_name": "FreqaiS", "code_generation_eligible": True, "generator_mode": "freqai"}), encoding="utf-8")
+    generated = tmp_path / "generated.json"
+    generated.write_text(json.dumps({"strategy_name": "FreqaiS", "candidate_evaluation_eligible": True, "generator_mode": "freqai"}), encoding="utf-8")
+    static = tmp_path / "static.json"
+    static.write_text(json.dumps({"ok": True}), encoding="utf-8")
+    ohlcv = tmp_path / "ohlcv.json"
+    ohlcv.write_text(json.dumps({"ok": True}), encoding="utf-8")
+    backtest = tmp_path / "backtest.json"
+    backtest.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    walk = tmp_path / "walk.json"
+    walk.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    training = tmp_path / "train.json"
+    training.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+
+    manifest = evaluate_candidate(CandidateEvaluationInputs(
+        root_dir=tmp_path,
+        proposal_metadata_path=proposal,
+        generated_metadata_path=generated,
+        candidate_id="cand-freqai",
+        static_check_path=static,
+        ohlcv_quality_path=ohlcv,
+        backtest_metrics_path=backtest,
+        walk_forward_metrics_path=walk,
+        training_manifest_path=training,
+        freqai_validation_path=None,
+    ))
+    validation_check = next(c for c in manifest["checks"] if c["name"] == "freqai_feature_label_validation")
+    assert validation_check["status"] == "missing"
+    assert manifest["recommendation"] != "pass"
+
+
 def test_candidate_artifact_paths_are_sanitized(tmp_path):
     from freqtrade_ext.bot_factory.candidate_evaluation import write_candidate_artifacts
 

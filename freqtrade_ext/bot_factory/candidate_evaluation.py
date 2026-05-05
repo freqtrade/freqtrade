@@ -28,14 +28,15 @@ def evaluate_candidate(inputs: CandidateEvaluationInputs) -> dict[str, Any]:
     proposal = _load_json(_resolve(inputs.proposal_metadata_path, root))
     generated = _load_json(_resolve(inputs.generated_metadata_path, root))
 
+    generator_mode = str(generated.get("generator_mode") or proposal.get("generator_mode") or "rule_based").strip()
+    freqai_validation_required = generator_mode in {"freqai", "hybrid_ml"}
+    training_required = generator_mode in {"freqai", "hybrid_ml"}
     checks = []
     checks.append(_check("static_strategy_check", inputs.static_check_path, root, key="ok"))
-    checks.append(_check("freqai_feature_label_validation", inputs.freqai_validation_path, root, key="ok", required=False))
+    checks.append(_check("freqai_feature_label_validation", inputs.freqai_validation_path, root, key="ok", required=freqai_validation_required))
     checks.append(_check("ohlcv_quality_check", inputs.ohlcv_quality_path, root, key="ok"))
     checks.append(_check("historical_backtest", inputs.backtest_metrics_path, root, key="recommendation", pass_values={"pass"}))
     checks.append(_check("walk_forward", inputs.walk_forward_metrics_path, root, key="recommendation", pass_values={"pass"}))
-    generator_mode = str(generated.get("generator_mode") or proposal.get("generator_mode") or "rule_based").strip()
-    training_required = generator_mode in {"freqai", "hybrid_ml"}
     checks.append(_check("training_factory", inputs.training_manifest_path, root, key="recommendation", pass_values={"pass"}, required=training_required))
 
     failures = [c for c in checks if c["status"] in {"fail", "missing"}]
