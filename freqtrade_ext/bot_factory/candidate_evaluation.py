@@ -21,6 +21,7 @@ class CandidateEvaluationInputs:
     backtest_metrics_path: Path | None = None
     walk_forward_metrics_path: Path | None = None
     training_manifest_path: Path | None = None
+    reviewer_notes: list[str] | None = None
 
 
 def evaluate_candidate(inputs: CandidateEvaluationInputs) -> dict[str, Any]:
@@ -30,19 +31,35 @@ def evaluate_candidate(inputs: CandidateEvaluationInputs) -> dict[str, Any]:
 
     generator_mode = str(generated.get("generator_mode") or proposal.get("generator_mode") or "rule_based").strip()
     ml_mode_required = generator_mode in {"freqai", "hybrid_ml"}
-    checks = []
-    checks.append(_check("static_strategy_check", inputs.static_check_path, root, key="ok"))
-    checks.append(_check("freqai_feature_label_validation", inputs.freqai_validation_path, root, key="ok", required=ml_mode_required))
-    checks.append(_check("ohlcv_quality_check", inputs.ohlcv_quality_path, root, key="ok"))
-    checks.append(_check("historical_backtest", inputs.backtest_metrics_path, root, key="recommendation", pass_values={"pass"}))
-    checks.append(_check("walk_forward", inputs.walk_forward_metrics_path, root, key="recommendation", pass_values={"pass"}))
-    checks.append(_check("training_factory", inputs.training_manifest_path, root, key="recommendation", pass_values={"pass"}, required=ml_mode_required))
+    steps = [
+        _step("static_strategy_check", inputs.static_check_path, root, key="ok", command_preview=["python", "scripts/bot_factory_static_check.py", "user_data/strategies"]),
+        _step("freqai_feature_label_validation", inputs.freqai_validation_path, root, key="ok", required=ml_mode_required, command_preview=["python", "scripts/bot_factory_validate_freqai_strategy.py", "<strategy_path>"]),
+        _step("ohlcv_quality_check", inputs.ohlcv_quality_path, root, key="ok", command_preview=["python", "scripts/bot_factory_check_ohlcv.py", "<ohlcv_parquet>", "--timeframe", str(proposal.get("timeframe") or generated.get("timeframe") or "")]),
+        _step("historical_backtest", inputs.backtest_metrics_path, root, key="recommendation", pass_values={"pass"}, command_preview=["python", "scripts/bot_factory_run_backtest.py", "--strategy", str(generated.get("strategy_name") or proposal.get("strategy_name") or "")]),
+        _step("walk_forward", inputs.walk_forward_metrics_path, root, key="recommendation", pass_values={"pass"}, command_preview=["python", "scripts/bot_factory_run_walk_forward.py", "--strategy", str(generated.get("strategy_name") or proposal.get("strategy_name") or "")]),
+        _step("training_factory", inputs.training_manifest_path, root, key="recommendation", pass_values={"pass"}, required=ml_mode_required, command_preview=["python", "scripts/bot_factory_run_freqai_training.py", "--strategy", str(generated.get("strategy_name") or proposal.get("strategy_name") or "")]),
+    ]
+
+    checks = [s["check"] for s in steps]
 
     failures = [c for c in checks if c["status"] in {"fail", "missing"}]
     failure_codes = list(dict.fromkeys(proposal.get("failure_taxonomy_codes", []) + generated.get("failure_taxonomy_codes", [])))
-    recommendation = "pass" if not failures else ("retry" if failure_codes else "fail")
+
     if proposal.get("code_generation_eligible") is False or generated.get("candidate_evaluation_eligible") is False:
         recommendation = "reject"
+        recommendation_rationale = "Candidate is not eligible for evaluation based on proposal/generated metadata flags."
+    elif not failures:
+        recommendation = "pass"
+        recommendation_rationale = "All required historical-safe checks passed for this generator mode."
+    elif any(c["status"] == "missing" for c in failures):
+        recommendation = "fail"
+        recommendation_rationale = "Required artifacts are missing; regenerate/evaluate required steps before retry."
+    elif failure_codes:
+        recommendation = "retry"
+        recommendation_rationale = "Checks failed with known taxonomy; retry is allowed with thesis-guided iteration input."
+    else:
+        recommendation = "fail"
+        recommendation_rationale = "Checks failed without retry taxonomy guidance."
 
     manifest = {
         "generated_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
@@ -52,7 +69,15 @@ def evaluate_candidate(inputs: CandidateEvaluationInputs) -> dict[str, Any]:
         "proposal_metadata_path": _rel(_resolve(inputs.proposal_metadata_path, root), root),
         "generated_metadata_path": _rel(_resolve(inputs.generated_metadata_path, root), root),
         "checks": checks,
+        "evaluation_orchestration": {
+            "generator_mode": generator_mode,
+            "ml_mode_required": ml_mode_required,
+            "steps": steps,
+            "executed_by_pipeline": False,
+            "note": "This pipeline aggregates existing local historical-safe artifacts only and records safe command previews.",
+        },
         "recommendation": recommendation,
+        "recommendation_rationale": recommendation_rationale,
         "failure_taxonomy_codes": failure_codes,
         "thesis": {
             "thesis_id": proposal.get("thesis_id") or generated.get("thesis_id"),
@@ -66,7 +91,10 @@ def evaluate_candidate(inputs: CandidateEvaluationInputs) -> dict[str, Any]:
             "thesis_retry_count": proposal.get("thesis_retry_count"),
             "parameter_only_retry_count": proposal.get("parameter_only_retry_count"),
             "force_distinct_hypothesis_family": proposal.get("force_distinct_hypothesis_family", False),
+            "thesis_statement": proposal.get("thesis_statement") or generated.get("thesis_statement"),
+            "evidence_refs": proposal.get("evidence_refs") or generated.get("evidence_refs") or [],
         },
+        "reviewer_notes": inputs.reviewer_notes or [],
         "safety_scope": {"historical_only": True, "live_trading": False, "process_control": False},
     }
     return manifest
@@ -91,7 +119,27 @@ def write_candidate_artifacts(manifest: dict[str, Any], *, root_dir: Path, outpu
         "failure_taxonomy_codes": manifest.get("failure_taxonomy_codes", []),
         "thesis_id": manifest.get("thesis", {}).get("thesis_id"),
         "manifest_path": _rel(manifest_path, root),
+        "recommendation_rationale": manifest.get("recommendation_rationale"),
+        "candidate_record_path": _rel(out_dir / "candidate_record.json", root),
+        "metrics_summary_path": _rel(out_dir / "metrics_summary.json", root),
+        "artifact_paths_path": _rel(out_dir / "artifact_paths.json", root),
+        "candidate_report_path": _rel(out_dir / "candidate_report.md", root),
     }
+
+    candidate_record = {
+        "candidate_id": candidate_id,
+        "strategy_name": strategy,
+        "recommendation": manifest["recommendation"],
+        "failure_taxonomy_codes": manifest.get("failure_taxonomy_codes", []),
+        "thesis": manifest.get("thesis", {}),
+        "next_candidate_input": manifest.get("next_candidate_input", {}),
+        "manifest_path": _rel(manifest_path, root),
+        "recommendation_rationale": manifest.get("recommendation_rationale"),
+    }
+    (out_dir / "candidate_record.json").write_text(json.dumps(candidate_record, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dir / "candidate_report.md").write_text(f"# Candidate Report\n\n- candidate_id: {candidate_id}\n- recommendation: {manifest['recommendation']}\n- rationale: {manifest.get('recommendation_rationale','')}\n", encoding="utf-8")
+    (out_dir / "metrics_summary.json").write_text(json.dumps(_extract_metrics_summary(manifest), indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dir / "artifact_paths.json").write_text(json.dumps(_extract_artifact_paths(manifest), indent=2, ensure_ascii=False), encoding="utf-8")
     with idx_path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
     return manifest_path, idx_path
@@ -113,6 +161,29 @@ def _check(name: str, path: Path | None, root: Path, *, key: str, pass_values: s
     value = payload.get(key)
     passed = bool(value) if pass_values is None else str(value) in pass_values
     return {"name": name, "status": "pass" if passed else "fail", "path": _rel(resolved, root), "value": value}
+
+
+def _step(name: str, path: Path | None, root: Path, *, key: str, pass_values: set[str] | None = None, required: bool = True, command_preview: list[str] | None = None) -> dict[str, Any]:
+    check = _check(name, path, root, key=key, pass_values=pass_values, required=required)
+    return {"name": name, "check": check, "input_path": check.get("path"), "output_status": check.get("status"), "command_preview": command_preview or []}
+
+
+def _extract_metrics_summary(manifest: dict[str, Any]) -> dict[str, Any]:
+    checks = {item["name"]: item for item in manifest.get("checks", [])}
+    return {
+        "recommendation": manifest.get("recommendation"),
+        "historical_backtest": checks.get("historical_backtest", {}).get("value"),
+        "walk_forward": checks.get("walk_forward", {}).get("value"),
+        "training_factory": checks.get("training_factory", {}).get("value"),
+    }
+
+
+def _extract_artifact_paths(manifest: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "proposal_metadata_path": manifest.get("proposal_metadata_path"),
+        "generated_metadata_path": manifest.get("generated_metadata_path"),
+        "check_artifact_paths": {item.get("name"): item.get("path") for item in manifest.get("checks", [])},
+    }
 
 
 def _resolve(path: Path, root: Path) -> Path:

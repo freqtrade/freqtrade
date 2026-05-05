@@ -2946,8 +2946,14 @@ def test_candidate_evaluation_writes_manifest_and_index(tmp_path):
         manifest, root_dir=tmp_path, output_root=Path("out"), index_path=Path("idx.jsonl")
     )
     assert manifest_path.is_file()
+    assert (manifest_path.parent / "candidate_record.json").is_file()
+    assert (manifest_path.parent / "candidate_report.md").is_file()
+    assert (manifest_path.parent / "metrics_summary.json").is_file()
+    assert (manifest_path.parent / "artifact_paths.json").is_file()
     lines = index_path.read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) == 1
+    first = json.loads(lines[0])
+    assert first["candidate_report_path"].endswith("candidate_report.md")
 
 
 def test_candidate_evaluation_rejects_ineligible_candidate(tmp_path):
@@ -2990,6 +2996,7 @@ def test_candidate_evaluation_rule_based_does_not_require_training_manifest(tmp_
     ))
     training_check = next(c for c in manifest["checks"] if c["name"] == "training_factory")
     assert training_check["status"] == "skipped"
+    assert manifest["evaluation_orchestration"]["steps"][0]["name"] == "static_strategy_check"
     assert manifest["recommendation"] == "pass"
 
 
@@ -3027,6 +3034,28 @@ def test_candidate_evaluation_freqai_requires_feature_label_validation(tmp_path)
     assert validation_check["status"] == "missing"
     assert manifest["recommendation"] == "fail"
 
+
+
+def test_candidate_evaluation_missing_required_artifact_is_fail_not_retry(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_evaluation import CandidateEvaluationInputs, evaluate_candidate
+
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps({"strategy_name": "RuleS", "code_generation_eligible": True, "failure_taxonomy_codes": ["FAIL_OVERFIT_WF_GAP"]}), encoding="utf-8")
+    generated = tmp_path / "generated.json"
+    generated.write_text(json.dumps({"strategy_name": "RuleS", "candidate_evaluation_eligible": True, "generator_mode": "rule_based"}), encoding="utf-8")
+
+    manifest = evaluate_candidate(CandidateEvaluationInputs(
+        root_dir=tmp_path,
+        proposal_metadata_path=proposal,
+        generated_metadata_path=generated,
+        candidate_id="cand-missing",
+        static_check_path=None,
+        ohlcv_quality_path=None,
+        backtest_metrics_path=None,
+        walk_forward_metrics_path=None,
+    ))
+    assert manifest["recommendation"] == "fail"
+    assert "missing" in manifest["recommendation_rationale"].lower()
 
 def test_candidate_artifact_paths_are_sanitized(tmp_path):
     from freqtrade_ext.bot_factory.candidate_evaluation import write_candidate_artifacts
