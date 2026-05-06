@@ -2395,3 +2395,41 @@ Follow-up on 2026-05-06 JST for Strategy Generation / Candidate Factory cleanup 
   local historical artifacts and command previews; it does not execute the full
   backtest, walk-forward, or training subprocess chain internally. Paper
   deployment remains intentionally out of scope.
+
+Follow-up on 2026-05-06 JST for `/goal` command self-run documentation.
+
+- [x] Checked existing Bot Factory docs for a `/goal` command runbook:
+
+  ```powershell
+  rg -n "/goal|goal command|goals|self-run|handoff|execution" docs AGENTS.md
+  ```
+
+  Result: existing handoff docs and next-agent prompts were present, but no
+  dedicated `/goal` command runbook covered objective shape, stop conditions,
+  verification order, artifact cleanup, documentation updates, and PR-ready
+  completion.
+- [x] Added `docs/BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md` with paste-ready
+  `/goal` objectives for normal implementation, PR creation, and cleanup after
+  an interrupted or mistaken goal such as `/goal r`.
+- [x] The runbook preserves Bot Factory safety boundaries: no trade, paper,
+  dry-run, canary, live, exchange-facing order, leverage, shorting, secret use,
+  or paper/live process control unless an active phase doc and explicit user
+  request permit it.
+- [x] The runbook records required first steps, source-of-truth docs, scope
+  rules, verification order, blocked-environment handling, TODO evidence
+  requirements, and PR-ready completion criteria.
+- [x] Confirmed the main MVP checklist and detailed Strategy Generation /
+  Candidate Factory TODO sections still carry intentionally open items:
+
+  ```powershell
+  rg -n "Strategy Generation|Candidate Evaluation|Candidate Ranking|Iteration|MVP|Remaining limitation|pending|incomplete" docs\BOT_FACTORY_MVP_TODO.md
+  ```
+
+  Result: the TODO contains existing follow-up records plus still-open MVP
+  checklist items for candidate variation, evaluation, ranking, iteration,
+  paper deployment, and later services.
+- [x] Added MVP TODO selection rules to the `/goal` runbook so future goals
+  scan unchecked checklist items, reconcile them with recent follow-up notes,
+  and leave checkboxes open for partial foundations or metadata-only work.
+- [x] Remaining limitation: this is a documentation-only increment. It does
+  not change Bot Factory runtime behavior.
