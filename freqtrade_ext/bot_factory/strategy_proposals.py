@@ -40,6 +40,17 @@ ALLOWED_DATA_CLASSES = [
     "local_training_manifest_json",
     "local_reviewer_notes",
 ]
+ALLOWED_GENERATOR_MODES = {"rule_based", "freqai", "hybrid_ml"}
+ALLOWED_FAILURE_TAXONOMY_CODES = {
+    "FAIL_OVERFIT_WF_GAP",
+    "FAIL_COST_SENSITIVE",
+    "FAIL_REGIME_FRAGILE",
+}
+ALLOWED_STRATEGY_LOGIC_VARIANTS = {
+    "mean_reversion_pullback",
+    "trend_continuation",
+    "volatility_breakout",
+}
 
 _PRIVATE_ENV_RE = re.compile(
     r"(?i)(\$\{[^}]*?(KEY|SECRET|TOKEN|PASSWORD|PASSWD|UID|JWT)[^}]*?\}|"
@@ -134,6 +145,26 @@ class StrategyProposalInputs:
     expected_failure_cases: Sequence[str]
     backtest_plan: str
     rejection_conditions: Sequence[str]
+    generator_mode: str = "rule_based"
+    thesis_id: str | None = None
+    thesis_type: str | None = None
+    thesis_statement: str | None = None
+    falsification_criteria: str | None = None
+    novelty_vs_previous: str | None = None
+    evidence_refs: Sequence[str] = field(default_factory=list)
+    failure_taxonomy_codes: Sequence[str] = field(default_factory=list)
+    retry_budget_per_thesis: int = 3
+    thesis_retry_count: int = 0
+    parameter_only_retry_limit: int = 1
+    parameter_only_retry_count: int = 0
+    force_distinct_hypothesis_family: bool = False
+    strategy_logic_variant: str | None = None
+    feature_list: Sequence[str] = field(default_factory=list)
+    target_definition: str | None = None
+    label_horizon: int | None = None
+    prediction_threshold: float | None = None
+    rule_filters: Sequence[str] = field(default_factory=list)
+    risk_policy: str = "long_only_leverage_1"
     reviewer_notes: Sequence[str] = field(default_factory=list)
     evidence_paths: Sequence[StrategyProposalEvidenceInput] = field(default_factory=list)
     output_root: Path = Path("registry/strategies/proposals")
@@ -171,6 +202,7 @@ def build_strategy_proposal(inputs: StrategyProposalInputs) -> StrategyProposalA
     checks: list[StrategyProposalCheck] = []
     checks.extend(_required_input_checks(inputs))
     checks.extend(_scope_checks(inputs))
+    checks.extend(_hypothesis_candidate_checks(inputs))
     checks.extend(_forbidden_dependency_checks(inputs, text_fields))
     checks.extend(evidence_checks)
 
@@ -264,6 +296,26 @@ def _build_metadata(
         "proposal_path": _safe_relative_path(proposal_path, inputs.root_dir),
         "metadata_path": _safe_relative_path(metadata_path, inputs.root_dir),
         "proposal_content_hash": proposal_hash,
+        "generator_mode": _generator_mode(inputs.generator_mode),
+        "strategy_logic_variant": _strategy_logic_variant(inputs),
+        "feature_list": _feature_list(inputs),
+        "target_definition": _target_definition(inputs),
+        "label_horizon": _label_horizon(inputs),
+        "prediction_threshold": _prediction_threshold(inputs),
+        "rule_filters": _rule_filters(inputs),
+        "risk_policy": _sanitize_text(inputs.risk_policy),
+        "thesis_id": _thesis_id(inputs, created_at),
+        "thesis_type": _thesis_type(inputs),
+        "thesis_statement": _thesis_statement(inputs),
+        "falsification_criteria": _falsification_criteria(inputs),
+        "novelty_vs_previous": _novelty_vs_previous(inputs, evidence),
+        "evidence_refs": _evidence_refs(inputs, evidence, proposal_path),
+        "failure_taxonomy_codes": _failure_taxonomy_codes(inputs),
+        "retry_budget_per_thesis": int(inputs.retry_budget_per_thesis),
+        "thesis_retry_count": int(inputs.thesis_retry_count),
+        "parameter_only_retry_limit": int(inputs.parameter_only_retry_limit),
+        "parameter_only_retry_count": int(inputs.parameter_only_retry_count),
+        "force_distinct_hypothesis_family": bool(inputs.force_distinct_hypothesis_family),
         "source_input_paths": input_paths,
         "source_input_hashes": {
             name: _sha256_text(_join_text(value)) for name, value in text_fields.items()
@@ -322,6 +374,10 @@ def _render_proposal_markdown(
         f"- spot_or_futures: {inputs.spot_or_futures}",
         f"- long_short: {inputs.long_short}",
         f"- proposal_status: {status}",
+        f"- generator_mode: {_generator_mode(inputs.generator_mode)}",
+        f"- thesis_id: {_thesis_id(inputs, created_at)}",
+        f"- thesis_type: {_thesis_type(inputs)}",
+        f"- strategy_logic_variant: {_strategy_logic_variant(inputs)}",
         "- safety_scope: long-only, leverage=1.0, historical-evaluation-only, "
         "no live data, no order endpoints, no secrets, no process control",
         "",
@@ -435,6 +491,70 @@ def _scope_checks(inputs: StrategyProposalInputs) -> list[StrategyProposalCheck]
             "blocker",
             "Spot/futures mode must be either spot or futures.",
             {"spot_or_futures": inputs.spot_or_futures},
+        ),
+    ]
+
+
+def _hypothesis_candidate_checks(inputs: StrategyProposalInputs) -> list[StrategyProposalCheck]:
+    retry_budget = int(inputs.retry_budget_per_thesis)
+    thesis_retry_count = int(inputs.thesis_retry_count)
+    parameter_retry_limit = int(inputs.parameter_only_retry_limit)
+    parameter_retry_count = int(inputs.parameter_only_retry_count)
+    raw_generator_mode = str(inputs.generator_mode or "rule_based").strip().lower()
+    raw_logic_variant = str(inputs.strategy_logic_variant or "").strip().lower()
+    failure_codes = _failure_taxonomy_codes(inputs)
+    raw_failure_codes = [str(code).strip() for code in inputs.failure_taxonomy_codes]
+    return [
+        _check(
+            "generator_mode_supported",
+            raw_generator_mode in ALLOWED_GENERATOR_MODES,
+            "blocker",
+            "Generator mode must be rule_based, freqai, or hybrid_ml.",
+            {"generator_mode": inputs.generator_mode},
+        ),
+        _check(
+            "strategy_logic_variant_supported",
+            not raw_logic_variant or raw_logic_variant in ALLOWED_STRATEGY_LOGIC_VARIANTS,
+            "blocker",
+            "Strategy logic variant must be one of the supported hypothesis families.",
+            {"strategy_logic_variant": inputs.strategy_logic_variant},
+        ),
+        _check(
+            "thesis_retry_budget_configured",
+            retry_budget > 0,
+            "blocker",
+            "retry_budget_per_thesis must be greater than zero.",
+        ),
+        _check(
+            "thesis_retry_budget_not_exceeded",
+            thesis_retry_count <= retry_budget,
+            "blocker",
+            "Thesis retry budget is already exceeded; switch to a distinct hypothesis family.",
+        ),
+        _check(
+            "parameter_only_retry_limit_configured",
+            parameter_retry_limit > 0,
+            "blocker",
+            "parameter_only_retry_limit must be greater than zero.",
+        ),
+        _check(
+            "parameter_only_retry_guard",
+            parameter_retry_count <= parameter_retry_limit,
+            "blocker",
+            "Parameter-only retry count exceeds the configured limit.",
+        ),
+        _check(
+            "distinct_hypothesis_family_after_repeated_failure",
+            bool(inputs.force_distinct_hypothesis_family) or thesis_retry_count <= 1,
+            "blocker",
+            "Repeated failures require force_distinct_hypothesis_family=true.",
+        ),
+        _check(
+            "failure_taxonomy_codes_normalized",
+            len(failure_codes) == len([code for code in raw_failure_codes if code]),
+            "blocker",
+            "Failure taxonomy codes must use normalized Bot Factory values.",
+            {"allowed": sorted(ALLOWED_FAILURE_TAXONOMY_CODES)},
         ),
     ]
 
@@ -711,6 +831,128 @@ def _sanitize_text(text: str) -> str:
 def _normalizes_to_long_only(value: str) -> bool:
     normalized = re.sub(r"[^a-z]+", "-", value.strip().lower()).strip("-")
     return normalized in {"long", "long-only", "longonly"}
+
+
+def _generator_mode(value: str) -> str:
+    mode = str(value or "rule_based").strip().lower()
+    return mode if mode in ALLOWED_GENERATOR_MODES else "rule_based"
+
+
+def _strategy_logic_variant(inputs: StrategyProposalInputs) -> str:
+    explicit = str(inputs.strategy_logic_variant or "").strip().lower()
+    if explicit in ALLOWED_STRATEGY_LOGIC_VARIANTS:
+        return explicit
+    thesis_type = _thesis_type(inputs)
+    failure_codes = set(_failure_taxonomy_codes(inputs))
+    if thesis_type in {"trend", "momentum", "trend_following", "trend_continuation"}:
+        return "trend_continuation"
+    if "FAIL_REGIME_FRAGILE" in failure_codes:
+        return "volatility_breakout"
+    if "FAIL_COST_SENSITIVE" in failure_codes:
+        return "trend_continuation"
+    return "mean_reversion_pullback"
+
+
+def _feature_list(inputs: StrategyProposalInputs) -> list[str]:
+    features = [str(item).strip() for item in inputs.feature_list if str(item).strip()]
+    if features:
+        return features
+    variant = _strategy_logic_variant(inputs)
+    if variant == "trend_continuation":
+        return ["ema_fast", "ema_slow", "rsi", "volume_mean", "atr"]
+    if variant == "volatility_breakout":
+        return ["rolling_high", "rolling_low", "atr", "volume_mean", "close_range"]
+    return ["rsi", "ema_fast", "ema_slow", "volume_mean", "atr"]
+
+
+def _target_definition(inputs: StrategyProposalInputs) -> str | None:
+    if inputs.target_definition:
+        return _sanitize_text(inputs.target_definition)
+    if _generator_mode(inputs.generator_mode) in {"freqai", "hybrid_ml"}:
+        return "future_return"
+    return None
+
+
+def _label_horizon(inputs: StrategyProposalInputs) -> int | None:
+    if inputs.label_horizon is not None:
+        return int(inputs.label_horizon)
+    if _generator_mode(inputs.generator_mode) in {"freqai", "hybrid_ml"}:
+        return 12
+    return None
+
+
+def _prediction_threshold(inputs: StrategyProposalInputs) -> float | None:
+    if inputs.prediction_threshold is not None:
+        return float(inputs.prediction_threshold)
+    if _generator_mode(inputs.generator_mode) == "hybrid_ml":
+        return 0.005
+    if _generator_mode(inputs.generator_mode) == "freqai":
+        return 0.0
+    return None
+
+
+def _rule_filters(inputs: StrategyProposalInputs) -> list[str]:
+    filters = [str(item).strip() for item in inputs.rule_filters if str(item).strip()]
+    if filters:
+        return filters
+    variant = _strategy_logic_variant(inputs)
+    if variant == "trend_continuation":
+        return ["trend_filter", "volume_filter", "atr_floor"]
+    if variant == "volatility_breakout":
+        return ["breakout_filter", "volume_filter", "atr_expansion_filter"]
+    return ["pullback_filter", "trend_filter", "volume_filter"]
+
+
+def _thesis_id(inputs: StrategyProposalInputs, created_at: str) -> str:
+    if inputs.thesis_id and inputs.thesis_id.strip():
+        return _sanitize_text(inputs.thesis_id).strip()
+    type_token = _safe_label(_thesis_type(inputs)).upper()
+    return f"THESIS-{type_token}-{_timestamp_slug(created_at)}"
+
+
+def _thesis_type(inputs: StrategyProposalInputs) -> str:
+    return _sanitize_text(inputs.thesis_type or inputs.strategy_type).strip()
+
+
+def _thesis_statement(inputs: StrategyProposalInputs) -> str:
+    return _sanitize_text(inputs.thesis_statement or inputs.hypothesis).strip()
+
+
+def _falsification_criteria(inputs: StrategyProposalInputs) -> str:
+    if inputs.falsification_criteria and inputs.falsification_criteria.strip():
+        return _sanitize_text(inputs.falsification_criteria).strip()
+    return "; ".join(_sanitize_text(item).strip() for item in inputs.rejection_conditions if str(item).strip())
+
+
+def _novelty_vs_previous(
+    inputs: StrategyProposalInputs, evidence: Sequence[dict[str, Any]]
+) -> str:
+    if inputs.novelty_vs_previous and inputs.novelty_vs_previous.strip():
+        return _sanitize_text(inputs.novelty_vs_previous).strip()
+    if evidence:
+        return "Uses local evidence references to vary hypothesis, features, labels, or filters from prior candidates."
+    return "Initial hypothesis-family candidate; future revisions must describe changed assumptions or filters."
+
+
+def _evidence_refs(
+    inputs: StrategyProposalInputs,
+    evidence: Sequence[dict[str, Any]],
+    proposal_path: Path,
+) -> list[str]:
+    refs = [_sanitize_text(item).strip() for item in inputs.evidence_refs if str(item).strip()]
+    refs.extend(
+        f"local:{item['label']}:{item.get('path')}"
+        for item in evidence
+        if item.get("status") == "accepted"
+    )
+    if not refs:
+        refs.append(f"local:proposal:{_safe_relative_path(proposal_path, inputs.root_dir)}")
+    return list(dict.fromkeys(refs))
+
+
+def _failure_taxonomy_codes(inputs: StrategyProposalInputs) -> list[str]:
+    codes = [str(code).strip() for code in inputs.failure_taxonomy_codes if str(code).strip()]
+    return [code for code in codes if code in ALLOWED_FAILURE_TAXONOMY_CODES]
 
 
 def _backtest_plan_has_broader_validation(backtest_plan: str) -> bool:

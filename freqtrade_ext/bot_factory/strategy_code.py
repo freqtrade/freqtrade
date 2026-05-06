@@ -32,6 +32,34 @@ DEFAULT_PARAMETER_DEFAULTS: dict[str, int | float] = {
     "sell_rsi_exit": 65,
     "sell_timeout_candles": 96,
 }
+LOGIC_VARIANT_PARAMETER_DEFAULTS: dict[str, dict[str, int | float]] = {
+    "mean_reversion_pullback": dict(DEFAULT_PARAMETER_DEFAULTS),
+    "trend_continuation": {
+        "buy_rsi_window": 14,
+        "buy_pullback_lookback": 8,
+        "buy_rsi_pullback": 45,
+        "buy_rsi_recovery": 52,
+        "buy_ema_fast": 16,
+        "buy_ema_slow": 64,
+        "buy_volume_window": 36,
+        "buy_volume_factor": 1.10,
+        "sell_rsi_exit": 58,
+        "sell_timeout_candles": 144,
+    },
+    "volatility_breakout": {
+        "buy_rsi_window": 10,
+        "buy_pullback_lookback": 10,
+        "buy_rsi_pullback": 40,
+        "buy_rsi_recovery": 50,
+        "buy_ema_fast": 10,
+        "buy_ema_slow": 40,
+        "buy_volume_window": 48,
+        "buy_volume_factor": 1.25,
+        "sell_rsi_exit": 70,
+        "sell_timeout_candles": 72,
+    },
+}
+ALLOWED_LOGIC_VARIANTS = set(LOGIC_VARIANT_PARAMETER_DEFAULTS)
 
 REQUIRED_PROPOSAL_METADATA_FIELDS = [
     "status",
@@ -343,6 +371,7 @@ def _build_metadata(
         "metadata_path": _safe_relative_path(metadata_path, root_dir),
         "static_check_report_path": _safe_relative_path(static_check_path, root_dir),
         "generator_mode": _generator_mode_from_proposal(proposal_metadata),
+        "strategy_logic_variant": _logic_variant_from_proposal(proposal_metadata),
         "feature_list": list(proposal_metadata.get("feature_list", [])),
         "target_definition": proposal_metadata.get("target_definition"),
         "label_horizon": proposal_metadata.get("label_horizon"),
@@ -366,9 +395,11 @@ def _build_metadata(
             "thesis_statement": proposal_metadata.get("thesis_statement"),
             "evidence_refs": list(proposal_metadata.get("evidence_refs", [])),
             "failure_taxonomy_codes": list(proposal_metadata.get("failure_taxonomy_codes", [])),
+            "strategy_logic_variant": _logic_variant_from_proposal(proposal_metadata),
+            "novelty_vs_previous": proposal_metadata.get("novelty_vs_previous"),
             "generated_at": created_at,
         },
-        "parameter_defaults": dict(DEFAULT_PARAMETER_DEFAULTS),
+        "parameter_defaults": _parameter_defaults_for_proposal(proposal_metadata),
         "checks": [check.to_dict() for check in checks],
         "blockers": [check.to_dict() for check in blockers],
         "rejection_reasons": [check.message for check in blockers],
@@ -479,6 +510,16 @@ def _hypothesis_iteration_checks(proposal_metadata: dict[str, Any]) -> list[Stra
     checks.append(_check("failure_taxonomy_codes_list", isinstance(failure_codes, list), "blocker", "failure_taxonomy_codes must be a list."))
     if isinstance(failure_codes, list):
         checks.append(_check("failure_taxonomy_codes_normalized", all(isinstance(code, str) and code in allowed for code in failure_codes), "blocker", "failure_taxonomy_codes must use normalized values.", {"allowed": sorted(allowed)}))
+    raw_logic_variant = proposal_metadata.get("strategy_logic_variant")
+    checks.append(
+        _check(
+            "strategy_logic_variant_supported",
+            raw_logic_variant is None or str(raw_logic_variant).strip().lower() in ALLOWED_LOGIC_VARIANTS,
+            "blocker",
+            "strategy_logic_variant must identify a supported hypothesis family.",
+            {"allowed": sorted(ALLOWED_LOGIC_VARIANTS)},
+        )
+    )
     return checks
 
 def _render_long_only_strategy_code(
@@ -491,9 +532,21 @@ def _render_long_only_strategy_code(
     proposal_metadata: dict[str, Any],
 ) -> str:
     freqai_block = ""
+    logic_variant = _logic_variant_from_proposal(proposal_metadata)
+    defaults = _parameter_defaults_for_proposal(proposal_metadata)
     label_horizon = int(proposal_metadata.get("label_horizon") or 12)
     target_name = str(proposal_metadata.get("target_definition") or "future_return")
     threshold = float(proposal_metadata.get("prediction_threshold") or 0.0)
+    entry_logic = _entry_logic_for_variant(logic_variant, generator_mode, target_name, threshold)
+    exit_logic = _exit_logic_for_variant(logic_variant)
+    entry_tag = {
+        "trend_continuation": "trend_continuation",
+        "volatility_breakout": "volatility_breakout",
+    }.get(logic_variant, "rsi_pullback_recovery")
+    exit_tag = {
+        "trend_continuation": "trend_exhaustion_or_timeout",
+        "volatility_breakout": "breakout_failure_or_mean_reversion",
+    }.get(logic_variant, "mean_reversion_or_momentum_failure")
     if generator_mode in {"freqai", "hybrid_ml"}:
         freqai_block = f'''
     def feature_engineering_expand_all(self, dataframe: DataFrame, period: int, metadata: dict) -> DataFrame:
@@ -538,6 +591,7 @@ class {strategy_name}(IStrategy):
     Candidate ID: {candidate_id}
     Source proposal hash: {source_proposal_hash}
     Generator mode: {generator_mode}
+    Strategy logic variant: {logic_variant}
     """
 
     INTERFACE_VERSION = 3
@@ -554,19 +608,19 @@ class {strategy_name}(IStrategy):
     stoploss = -0.05
     trailing_stop = False
 
-    buy_rsi_window = IntParameter(8, 30, default=14, space="buy", optimize=True, load=True)
-    buy_pullback_lookback = IntParameter(2, 12, default=5, space="buy", optimize=True, load=True)
-    buy_rsi_pullback = IntParameter(20, 45, default=32, space="buy", optimize=True, load=True)
-    buy_rsi_recovery = IntParameter(35, 55, default=42, space="buy", optimize=True, load=True)
-    buy_ema_fast = IntParameter(8, 24, default=12, space="buy", optimize=True, load=True)
-    buy_ema_slow = IntParameter(32, 96, default=48, space="buy", optimize=True, load=True)
-    buy_volume_window = IntParameter(12, 60, default=24, space="buy", optimize=True, load=True)
+    buy_rsi_window = IntParameter(8, 30, default={int(defaults["buy_rsi_window"])}, space="buy", optimize=True, load=True)
+    buy_pullback_lookback = IntParameter(2, 24, default={int(defaults["buy_pullback_lookback"])}, space="buy", optimize=True, load=True)
+    buy_rsi_pullback = IntParameter(20, 55, default={int(defaults["buy_rsi_pullback"])}, space="buy", optimize=True, load=True)
+    buy_rsi_recovery = IntParameter(35, 65, default={int(defaults["buy_rsi_recovery"])}, space="buy", optimize=True, load=True)
+    buy_ema_fast = IntParameter(8, 30, default={int(defaults["buy_ema_fast"])}, space="buy", optimize=True, load=True)
+    buy_ema_slow = IntParameter(32, 120, default={int(defaults["buy_ema_slow"])}, space="buy", optimize=True, load=True)
+    buy_volume_window = IntParameter(12, 72, default={int(defaults["buy_volume_window"])}, space="buy", optimize=True, load=True)
     buy_volume_factor = DecimalParameter(
-        0.80, 2.00, decimals=2, default=1.00, space="buy", optimize=True, load=True
+        0.80, 2.00, decimals=2, default={float(defaults["buy_volume_factor"]):.2f}, space="buy", optimize=True, load=True
     )
-    sell_rsi_exit = IntParameter(55, 80, default=65, space="sell", optimize=True, load=True)
+    sell_rsi_exit = IntParameter(55, 80, default={int(defaults["sell_rsi_exit"])}, space="sell", optimize=True, load=True)
     sell_timeout_candles = IntParameter(
-        24, 288, default=96, space="sell", optimize=True, load=True
+        24, 288, default={int(defaults["sell_timeout_candles"])}, space="sell", optimize=True, load=True
     )
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -577,50 +631,29 @@ class {strategy_name}(IStrategy):
             int(self.buy_volume_window.value), min_periods=1
         ).mean()
         dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
+        dataframe["atr_mean"] = dataframe["atr"].rolling(24, min_periods=1).mean()
+        dataframe["rolling_high"] = dataframe["close"].rolling(
+            int(self.buy_pullback_lookback.value), min_periods=1
+        ).max()
+        dataframe["rolling_low"] = dataframe["close"].rolling(
+            int(self.buy_pullback_lookback.value), min_periods=1
+        ).min()
         return dataframe
 {freqai_block}
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        pullback_seen = (
-            dataframe["rsi"].rolling(
-                int(self.buy_pullback_lookback.value), min_periods=1
-            ).min()
-            <= self.buy_rsi_pullback.value
-        )
-        rsi_recovered = qtpylib.crossed_above(
-            dataframe["rsi"], self.buy_rsi_recovery.value
-        )
-        trend_filter = dataframe["ema_fast"] >= dataframe["ema_slow"]
-        volume_filter = dataframe["volume"] > (
-            dataframe["volume_mean"] * self.buy_volume_factor.value
-        )
-        ml_filter = True
-        if "{generator_mode}" in ("freqai", "hybrid_ml"):
-            ml_filter = dataframe.get("&-{proposal_metadata.get("target_definition") or "future_return"}", 0) > {threshold}
-        entry_condition = (
-            pullback_seen
-            & rsi_recovered
-            & trend_filter
-            & volume_filter
-            & ml_filter
-            & (dataframe["volume"] > 0)
-        )
+{entry_logic}
         dataframe.loc[entry_condition, ["enter_long", "enter_tag"]] = (
             1,
-            "rsi_pullback_recovery",
+            "{entry_tag}",
         )
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        mean_reversion_target = dataframe["rsi"] >= self.sell_rsi_exit.value
-        momentum_failure = dataframe["ema_fast"] < dataframe["ema_slow"]
-        exit_condition = (
-            (mean_reversion_target | momentum_failure)
-            & (dataframe["volume"] > 0)
-        )
+{exit_logic}
         dataframe.loc[exit_condition, ["exit_long", "exit_tag"]] = (
             1,
-            "mean_reversion_or_momentum_failure",
+            "{exit_tag}",
         )
         return dataframe
 
@@ -645,6 +678,121 @@ class {strategy_name}(IStrategy):
 def _generator_mode_from_proposal(proposal_metadata: dict[str, Any]) -> str:
     mode = str(proposal_metadata.get("generator_mode") or "rule_based").strip().lower()
     return mode if mode in ALLOWED_GENERATOR_MODES else "rule_based"
+
+
+def _logic_variant_from_proposal(proposal_metadata: dict[str, Any]) -> str:
+    variant = str(proposal_metadata.get("strategy_logic_variant") or "").strip().lower()
+    if variant in ALLOWED_LOGIC_VARIANTS:
+        return variant
+    thesis_type = str(proposal_metadata.get("thesis_type") or "").strip().lower()
+    failure_codes = set(proposal_metadata.get("failure_taxonomy_codes") or [])
+    if thesis_type in {"trend", "momentum", "trend_following", "trend_continuation"}:
+        return "trend_continuation"
+    if "FAIL_REGIME_FRAGILE" in failure_codes:
+        return "volatility_breakout"
+    if "FAIL_COST_SENSITIVE" in failure_codes:
+        return "trend_continuation"
+    return "mean_reversion_pullback"
+
+
+def _parameter_defaults_for_proposal(proposal_metadata: dict[str, Any]) -> dict[str, int | float]:
+    return dict(LOGIC_VARIANT_PARAMETER_DEFAULTS[_logic_variant_from_proposal(proposal_metadata)])
+
+
+def _ml_filter_source(generator_mode: str, target_name: str, threshold: float) -> str:
+    if generator_mode not in {"freqai", "hybrid_ml"}:
+        return "        ml_filter = True"
+    return (
+        "        ml_filter = "
+        f"dataframe.get({json.dumps('&-' + target_name)}, 0) > {threshold}"
+    )
+
+
+def _entry_logic_for_variant(
+    logic_variant: str,
+    generator_mode: str,
+    target_name: str,
+    threshold: float,
+) -> str:
+    ml_filter = _ml_filter_source(generator_mode, target_name, threshold)
+    if logic_variant == "trend_continuation":
+        return f'''        trend_filter = dataframe["ema_fast"] > dataframe["ema_slow"]
+        momentum_confirmed = qtpylib.crossed_above(
+            dataframe["rsi"], self.buy_rsi_recovery.value
+        )
+        atr_floor = dataframe["atr"] >= dataframe["atr_mean"]
+        volume_filter = dataframe["volume"] > (
+            dataframe["volume_mean"] * self.buy_volume_factor.value
+        )
+{ml_filter}
+        entry_condition = (
+            trend_filter
+            & momentum_confirmed
+            & atr_floor
+            & volume_filter
+            & ml_filter
+            & (dataframe["volume"] > 0)
+        )'''
+    if logic_variant == "volatility_breakout":
+        return f'''        prior_high = dataframe["rolling_high"].shift(1)
+        breakout_filter = dataframe["close"] > prior_high
+        atr_expansion = dataframe["atr"] > dataframe["atr_mean"]
+        volume_filter = dataframe["volume"] > (
+            dataframe["volume_mean"] * self.buy_volume_factor.value
+        )
+{ml_filter}
+        entry_condition = (
+            breakout_filter
+            & atr_expansion
+            & volume_filter
+            & ml_filter
+            & (dataframe["volume"] > 0)
+        )'''
+    return f'''        pullback_seen = (
+            dataframe["rsi"].rolling(
+                int(self.buy_pullback_lookback.value), min_periods=1
+            ).min()
+            <= self.buy_rsi_pullback.value
+        )
+        rsi_recovered = qtpylib.crossed_above(
+            dataframe["rsi"], self.buy_rsi_recovery.value
+        )
+        trend_filter = dataframe["ema_fast"] >= dataframe["ema_slow"]
+        volume_filter = dataframe["volume"] > (
+            dataframe["volume_mean"] * self.buy_volume_factor.value
+        )
+{ml_filter}
+        entry_condition = (
+            pullback_seen
+            & rsi_recovered
+            & trend_filter
+            & volume_filter
+            & ml_filter
+            & (dataframe["volume"] > 0)
+        )'''
+
+
+def _exit_logic_for_variant(logic_variant: str) -> str:
+    if logic_variant == "trend_continuation":
+        return '''        trend_exhaustion = dataframe["ema_fast"] < dataframe["ema_slow"]
+        rsi_cooldown = dataframe["rsi"] < self.sell_rsi_exit.value
+        exit_condition = (
+            (trend_exhaustion | rsi_cooldown)
+            & (dataframe["volume"] > 0)
+        )'''
+    if logic_variant == "volatility_breakout":
+        return '''        breakout_failure = dataframe["close"] < dataframe["rolling_low"]
+        mean_reversion_target = dataframe["rsi"] >= self.sell_rsi_exit.value
+        exit_condition = (
+            (breakout_failure | mean_reversion_target)
+            & (dataframe["volume"] > 0)
+        )'''
+    return '''        mean_reversion_target = dataframe["rsi"] >= self.sell_rsi_exit.value
+        momentum_failure = dataframe["ema_fast"] < dataframe["ema_slow"]
+        exit_condition = (
+            (mean_reversion_target | momentum_failure)
+            & (dataframe["volume"] > 0)
+        )'''
 
 
 def _metadata_schema_checks(proposal_metadata: dict[str, Any]) -> list[StrategyCodeCheck]:
@@ -855,6 +1003,16 @@ def _generated_code_safety_checks(strategy_code: str) -> list[StrategyCodeCheck]
         ),
     ]
     for name, pattern, message in _GENERATED_FORBIDDEN_PATTERNS:
+        if name == "generated_code_no_shift_minus_one":
+            checks.append(
+                _check(
+                    name,
+                    _negative_shifts_only_in_freqai_targets(strategy_code),
+                    "blocker",
+                    "Generated strategy may only use negative shifts inside set_freqai_targets.",
+                )
+            )
+            continue
         checks.append(
             _check(
                 name,
@@ -864,6 +1022,19 @@ def _generated_code_safety_checks(strategy_code: str) -> list[StrategyCodeCheck]
             )
         )
     return checks
+
+
+def _negative_shifts_only_in_freqai_targets(strategy_code: str) -> bool:
+    pattern = re.compile(r"\.shift\s*\(\s*(?:periods\s*=\s*)?-\d+")
+    matches = list(pattern.finditer(strategy_code))
+    if not matches:
+        return True
+    target_start = strategy_code.find("def set_freqai_targets(")
+    if target_start == -1:
+        return False
+    next_method = strategy_code.find("\n    def ", target_start + 1)
+    target_end = next_method if next_method != -1 else len(strategy_code)
+    return all(target_start <= match.start() < target_end for match in matches)
 
 
 def _load_json_object_check(

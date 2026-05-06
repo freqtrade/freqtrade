@@ -21,12 +21,19 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--proposal-metadata-json", required=True)
     p.add_argument("--generated-metadata-json", required=True)
     p.add_argument("--candidate-id", required=True)
+    p.add_argument("--config", default=None)
+    p.add_argument("--strategy-path", default=None)
+    p.add_argument("--ohlcv-parquet", action="append", default=None)
     p.add_argument("--static-check-json", default=None)
     p.add_argument("--freqai-validation-json", default=None)
     p.add_argument("--ohlcv-quality-json", default=None)
     p.add_argument("--backtest-metrics-json", default=None)
+    p.add_argument("--backtest-trades-csv", default=None)
+    p.add_argument("--backtest-report-md", default=None)
     p.add_argument("--walk-forward-metrics-json", default=None)
+    p.add_argument("--walk-forward-report-md", default=None)
     p.add_argument("--training-manifest-json", default=None)
+    p.add_argument("--training-report-md", default=None)
     p.add_argument("--reviewer-note", action="append", default=[])
     return p.parse_args()
 
@@ -38,12 +45,19 @@ def main() -> int:
         proposal_metadata_path=Path(a.proposal_metadata_json),
         generated_metadata_path=Path(a.generated_metadata_json),
         candidate_id=a.candidate_id,
+        config_path=Path(a.config) if a.config else None,
+        strategy_path=Path(a.strategy_path) if a.strategy_path else None,
+        ohlcv_parquet_paths=[Path(path) for path in a.ohlcv_parquet or []],
         static_check_path=Path(a.static_check_json) if a.static_check_json else None,
         freqai_validation_path=Path(a.freqai_validation_json) if a.freqai_validation_json else None,
         ohlcv_quality_path=Path(a.ohlcv_quality_json) if a.ohlcv_quality_json else None,
         backtest_metrics_path=Path(a.backtest_metrics_json) if a.backtest_metrics_json else None,
+        backtest_trades_path=Path(a.backtest_trades_csv) if a.backtest_trades_csv else None,
+        backtest_report_path=Path(a.backtest_report_md) if a.backtest_report_md else None,
         walk_forward_metrics_path=Path(a.walk_forward_metrics_json) if a.walk_forward_metrics_json else None,
+        walk_forward_report_path=Path(a.walk_forward_report_md) if a.walk_forward_report_md else None,
         training_manifest_path=Path(a.training_manifest_json) if a.training_manifest_json else None,
+        training_report_path=Path(a.training_report_md) if a.training_report_md else None,
         reviewer_notes=a.reviewer_note,
     )
     manifest = evaluate_candidate(inputs)

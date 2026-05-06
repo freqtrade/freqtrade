@@ -2326,3 +2326,72 @@ Follow-up on 2026-05-05 UTC for candidate evaluation recommendation semantics an
   ```
 
   Result: blocked by the same Python 3.10 vs 3.11 `datetime.UTC` limitation.
+
+Follow-up on 2026-05-06 JST for Strategy Generation / Candidate Factory cleanup and completion.
+
+- [x] Preserved the core implementation from the interrupted CLI goal and
+  removed unrelated `/goals` handoff documentation from the intended Bot
+  Factory diff.
+- [x] Extended strategy proposal inputs with generator mode, thesis metadata,
+  evidence references, normalized failure taxonomy, retry budgets, strategy
+  logic variants, feature/target intent, rule filters, and risk profile fields.
+- [x] Extended strategy-code generation with strategy logic variants
+  (`mean_reversion_pullback`, `trend_continuation`, and
+  `volatility_breakout`), variant-specific defaults, novelty metadata, and
+  targeted safety handling for FreqAI target shifts.
+- [x] Enriched candidate evaluation manifests, records, reports, and index rows
+  with artifact path contracts for static checks, historical backtests,
+  walk-forward reports, and training reports while preserving historical-safe
+  metadata-driven orchestration.
+- [x] Added candidate ranking artifacts and CLI support that gate paper-ready
+  eligibility on recommendation, identity, backtest, walk-forward, and training
+  artifact chains before producing ranking JSON and Markdown reports.
+- [x] Added candidate iteration artifacts and CLI support that convert failed
+  candidate evidence into bounded revision inputs while blocking unsafe live,
+  leverage, shorting, future-data, parameter-only, and already-passing
+  revisions.
+- [x] Removed generated proposal/strategy smoke artifacts from the intended
+  source diff because the candidate evaluation smoke run was interrupted before
+  a complete candidate evidence chain was produced.
+- [x] Verification commands run:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  ```
+
+  Result: passed with `ok=true`; wrote
+  `registry\strategies\checks\20260506T074257Z_freqai_env.json`.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\strategy_proposals.py `
+    freqtrade_ext\bot_factory\strategy_code.py `
+    freqtrade_ext\bot_factory\candidate_evaluation.py `
+    freqtrade_ext\bot_factory\candidate_ranking.py `
+    freqtrade_ext\bot_factory\candidate_iteration.py `
+    scripts\bot_factory_generate_strategy_proposal.py `
+    scripts\bot_factory_evaluate_candidate.py `
+    scripts\bot_factory_rank_candidates.py `
+    scripts\bot_factory_iterate_candidate.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: passed; pytest emitted a Windows temp-directory cleanup
+  `PermissionError` during `atexit`, but the test command exited with code 0.
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true` with existing review warnings in local strategy files;
+  wrote `registry\strategies\checks\20260506T074643Z_static_check.json`.
+- [x] Remaining limitation: candidate evaluation still validates and aggregates
+  local historical artifacts and command previews; it does not execute the full
+  backtest, walk-forward, or training subprocess chain internally. Paper
+  deployment remains intentionally out of scope.

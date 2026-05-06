@@ -3,6 +3,7 @@ import json
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pandas as pd
 
@@ -736,10 +737,37 @@ def test_strategy_proposal_generator_blocks_evidence_outside_workspace(tmp_path)
     }
 
 
+def test_strategy_proposal_generator_emits_candidate_diversity_metadata(tmp_path):
+    artifacts = build_strategy_proposal(
+        _strategy_proposal_inputs(
+            tmp_path,
+            generator_mode="hybrid_ml",
+            thesis_id="THESIS-TREND-001",
+            thesis_type="trend_continuation",
+            failure_taxonomy_codes=["FAIL_COST_SENSITIVE"],
+            strategy_logic_variant="trend_continuation",
+            feature_list=["ema_fast", "ema_slow", "atr"],
+            target_definition="future_return",
+            label_horizon=18,
+            prediction_threshold=0.01,
+            rule_filters=["trend_filter", "atr_floor"],
+        )
+    )
+
+    metadata = artifacts.metadata
+    assert metadata["status"] == "accepted"
+    assert metadata["generator_mode"] == "hybrid_ml"
+    assert metadata["strategy_logic_variant"] == "trend_continuation"
+    assert metadata["thesis_id"] == "THESIS-TREND-001"
+    assert "pullbacks in liquid BTC futures" in metadata["thesis_statement"]
+    assert metadata["feature_list"] == ["ema_fast", "ema_slow", "atr"]
+    assert metadata["failure_taxonomy_codes"] == ["FAIL_COST_SENSITIVE"]
+    assert metadata["retry_budget_per_thesis"] == 3
+
+
 def test_strategy_code_generator_writes_long_only_strategy_and_metadata(tmp_path):
     proposal_artifacts = build_strategy_proposal(_strategy_proposal_inputs(tmp_path))
     write_strategy_proposal_artifacts(proposal_artifacts)
-    _write_hypothesis_metadata(proposal_artifacts.metadata_path)
     inputs = _strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path)
 
     artifacts = build_strategy_code(inputs)
@@ -765,6 +793,30 @@ def test_strategy_code_generator_writes_long_only_strategy_and_metadata(tmp_path
     assert artifacts.metadata["static_check"]["ran"] is True
     assert artifacts.metadata["static_check"]["ok"] is True
     assert scan_paths([artifacts.strategy_path]).ok
+
+
+def test_strategy_code_generator_varies_logic_by_hypothesis_family(tmp_path):
+    proposal_artifacts = build_strategy_proposal(
+        _strategy_proposal_inputs(
+            tmp_path,
+            thesis_type="trend_continuation",
+            strategy_logic_variant="trend_continuation",
+            failure_taxonomy_codes=["FAIL_COST_SENSITIVE"],
+        )
+    )
+    write_strategy_proposal_artifacts(proposal_artifacts)
+
+    artifacts = build_strategy_code(
+        _strategy_code_inputs(tmp_path, proposal_artifacts.metadata_path)
+    )
+    write_strategy_code_artifacts(artifacts)
+    generated_code = artifacts.strategy_path.read_text(encoding="utf-8")
+
+    assert artifacts.metadata["status"] == "generated"
+    assert artifacts.metadata["strategy_logic_variant"] == "trend_continuation"
+    assert artifacts.metadata["parameter_defaults"]["buy_ema_slow"] == 64
+    assert "trend_continuation" in generated_code
+    assert "rsi_pullback_recovery" not in generated_code
 
 
 def test_strategy_code_generator_blocks_tampered_proposal_hash(tmp_path):
@@ -2924,11 +2976,19 @@ def test_candidate_evaluation_writes_manifest_and_index(tmp_path):
     ohlcv = tmp_path / "ohlcv.json"
     ohlcv.write_text(json.dumps({"ok": True}), encoding="utf-8")
     backtest = tmp_path / "backtest.json"
-    backtest.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    backtest.write_text(json.dumps({"strategy_name": "LongOnlyRsiPullbackCandidate", "recommendation": "pass", "total_return_pct": 4.2, "trade_count": 240, "max_drawdown_pct": 3.0, "profit_factor": 1.5}), encoding="utf-8")
+    trades = tmp_path / "trades.csv"
+    trades.write_text("is_short,leverage\nFalse,1.0\n", encoding="utf-8")
+    backtest_report = tmp_path / "report.md"
+    backtest_report.write_text("# Backtest Report\n", encoding="utf-8")
     walk = tmp_path / "walk.json"
-    walk.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    walk.write_text(json.dumps({"strategy": "LongOnlyRsiPullbackCandidate", "recommendation": "pass", "summary": {"pass_rate": 1.0, "profitable_windows_ratio": 1.0, "total_return_pct": 3.0, "max_single_window_profit_dependency": 0.3}}), encoding="utf-8")
+    walk_report = tmp_path / "walk.md"
+    walk_report.write_text("# Walk Forward Report\n", encoding="utf-8")
     training = tmp_path / "train.json"
-    training.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    training.write_text(json.dumps({"strategy": "LongOnlyRsiPullbackCandidate", "recommendation": "pass", "summary": {"stage_count": 1, "failed_stages": 0}}), encoding="utf-8")
+    training_report = tmp_path / "training.md"
+    training_report.write_text("# Training Report\n", encoding="utf-8")
 
     manifest = evaluate_candidate(CandidateEvaluationInputs(
         root_dir=tmp_path,
@@ -2938,8 +2998,12 @@ def test_candidate_evaluation_writes_manifest_and_index(tmp_path):
         static_check_path=static,
         ohlcv_quality_path=ohlcv,
         backtest_metrics_path=backtest,
+        backtest_trades_path=trades,
+        backtest_report_path=backtest_report,
         walk_forward_metrics_path=walk,
+        walk_forward_report_path=walk_report,
         training_manifest_path=training,
+        training_report_path=training_report,
     ))
     assert manifest["recommendation"] == "pass"
     manifest_path, index_path = write_candidate_artifacts(
@@ -2979,9 +3043,15 @@ def test_candidate_evaluation_rule_based_does_not_require_training_manifest(tmp_
     ohlcv = tmp_path / "ohlcv.json"
     ohlcv.write_text(json.dumps({"ok": True}), encoding="utf-8")
     backtest = tmp_path / "backtest.json"
-    backtest.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    backtest.write_text(json.dumps({"strategy_name": "RuleS", "recommendation": "pass"}), encoding="utf-8")
     walk = tmp_path / "walk.json"
-    walk.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    walk.write_text(json.dumps({"strategy": "RuleS", "recommendation": "pass"}), encoding="utf-8")
+    trades = tmp_path / "trades.csv"
+    trades.write_text("is_short,leverage\nFalse,1.0\n", encoding="utf-8")
+    backtest_report = tmp_path / "report.md"
+    backtest_report.write_text("# Backtest Report\n", encoding="utf-8")
+    walk_report = tmp_path / "walk.md"
+    walk_report.write_text("# Walk Forward Report\n", encoding="utf-8")
 
     manifest = evaluate_candidate(CandidateEvaluationInputs(
         root_dir=tmp_path,
@@ -2991,7 +3061,10 @@ def test_candidate_evaluation_rule_based_does_not_require_training_manifest(tmp_
         static_check_path=static,
         ohlcv_quality_path=ohlcv,
         backtest_metrics_path=backtest,
+        backtest_trades_path=trades,
+        backtest_report_path=backtest_report,
         walk_forward_metrics_path=walk,
+        walk_forward_report_path=walk_report,
         training_manifest_path=None,
     ))
     training_check = next(c for c in manifest["checks"] if c["name"] == "training_factory")
@@ -3012,11 +3085,19 @@ def test_candidate_evaluation_freqai_requires_feature_label_validation(tmp_path)
     ohlcv = tmp_path / "ohlcv.json"
     ohlcv.write_text(json.dumps({"ok": True}), encoding="utf-8")
     backtest = tmp_path / "backtest.json"
-    backtest.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    backtest.write_text(json.dumps({"strategy_name": "FreqaiS", "recommendation": "pass"}), encoding="utf-8")
+    trades = tmp_path / "trades.csv"
+    trades.write_text("is_short,leverage\nFalse,1.0\n", encoding="utf-8")
+    backtest_report = tmp_path / "report.md"
+    backtest_report.write_text("# Backtest Report\n", encoding="utf-8")
     walk = tmp_path / "walk.json"
-    walk.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    walk.write_text(json.dumps({"strategy": "FreqaiS", "recommendation": "pass"}), encoding="utf-8")
+    walk_report = tmp_path / "walk.md"
+    walk_report.write_text("# Walk Forward Report\n", encoding="utf-8")
     training = tmp_path / "train.json"
-    training.write_text(json.dumps({"recommendation": "pass"}), encoding="utf-8")
+    training.write_text(json.dumps({"strategy": "FreqaiS", "recommendation": "pass"}), encoding="utf-8")
+    training_report = tmp_path / "training.md"
+    training_report.write_text("# Training Report\n", encoding="utf-8")
 
     manifest = evaluate_candidate(CandidateEvaluationInputs(
         root_dir=tmp_path,
@@ -3026,8 +3107,12 @@ def test_candidate_evaluation_freqai_requires_feature_label_validation(tmp_path)
         static_check_path=static,
         ohlcv_quality_path=ohlcv,
         backtest_metrics_path=backtest,
+        backtest_trades_path=trades,
+        backtest_report_path=backtest_report,
         walk_forward_metrics_path=walk,
+        walk_forward_report_path=walk_report,
         training_manifest_path=training,
+        training_report_path=training_report,
         freqai_validation_path=None,
     ))
     validation_check = next(c for c in manifest["checks"] if c["name"] == "freqai_feature_label_validation")
@@ -3076,3 +3161,165 @@ def test_candidate_artifact_paths_are_sanitized(tmp_path):
     )
     assert ".." not in str(manifest_path)
     assert manifest_path.is_file()
+
+
+def test_candidate_ranking_compares_candidates_and_gates_paper_ready(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_ranking import (
+        CandidateRankingInputs,
+        rank_candidates,
+        write_candidate_ranking_artifacts,
+    )
+
+    full_manifest = tmp_path / "full.json"
+    full_manifest.write_text(json.dumps({
+        "candidate_id": "full-pass",
+        "strategy_name": "S",
+        "recommendation": "pass",
+        "recommendation_rationale": "full chain passed",
+        "checks": [
+            {"name": "historical_backtest", "status": "pass", "path": "bt.json", "payload_summary": {"total_return_pct": 5.0, "trade_count": 250, "max_drawdown_pct": 4.0, "profit_factor": 1.6}},
+            {"name": "historical_strategy_identity", "status": "pass", "path": "bt.json"},
+            {"name": "historical_trades_export", "status": "pass", "path": "trades.csv"},
+            {"name": "historical_markdown_report", "status": "pass", "path": "report.md"},
+            {"name": "walk_forward", "status": "pass", "path": "wf.json", "payload_summary": {"summary": {"pass_rate": 1.0, "profitable_windows_ratio": 1.0, "total_return_pct": 4.0, "max_single_window_profit_dependency": 0.3}}},
+            {"name": "walk_forward_strategy_identity", "status": "pass", "path": "wf.json"},
+            {"name": "walk_forward_markdown_report", "status": "pass", "path": "wf.md"},
+            {"name": "training_factory", "status": "pass", "path": "train.json", "payload_summary": {"summary": {"stage_count": 1, "failed_stages": 0}}},
+            {"name": "training_strategy_identity", "status": "pass", "path": "train.json"},
+            {"name": "training_markdown_report", "status": "pass", "path": "train.md"},
+        ],
+    }), encoding="utf-8")
+    partial_manifest = tmp_path / "partial.json"
+    partial_manifest.write_text(json.dumps({
+        "candidate_id": "partial-pass",
+        "strategy_name": "S",
+        "recommendation": "pass",
+        "recommendation_rationale": "rule chain passed without training",
+        "checks": [
+            {"name": "historical_backtest", "status": "pass", "path": "bt.json", "payload_summary": {"total_return_pct": 6.0, "trade_count": 250, "max_drawdown_pct": 4.0}},
+            {"name": "historical_strategy_identity", "status": "pass", "path": "bt.json"},
+            {"name": "historical_trades_export", "status": "pass", "path": "trades.csv"},
+            {"name": "historical_markdown_report", "status": "pass", "path": "report.md"},
+            {"name": "walk_forward", "status": "pass", "path": "wf.json", "payload_summary": {"summary": {"pass_rate": 1.0, "profitable_windows_ratio": 1.0, "total_return_pct": 4.0}}},
+            {"name": "walk_forward_strategy_identity", "status": "pass", "path": "wf.json"},
+            {"name": "walk_forward_markdown_report", "status": "pass", "path": "wf.md"},
+            {"name": "training_factory", "status": "skipped", "path": None},
+            {"name": "training_strategy_identity", "status": "skipped", "path": None},
+            {"name": "training_markdown_report", "status": "skipped", "path": None},
+        ],
+    }), encoding="utf-8")
+
+    ranking = rank_candidates(CandidateRankingInputs(
+        root_dir=tmp_path,
+        candidate_manifest_paths=[partial_manifest, full_manifest],
+        reviewer_notes=["Ranking test only; no paper process."],
+    ))
+    ranking_path, report_path = write_candidate_ranking_artifacts(
+        ranking,
+        root_dir=tmp_path,
+        output_root=Path("rankings"),
+    )
+
+    assert ranking["ranked_candidates"][0]["candidate_id"] == "full-pass"
+    assert ranking["paper_ready_candidate_ids"] == ["full-pass"]
+    assert ranking["ranked_candidates"][1]["paper_ready_eligible"] is False
+    assert "training_factory" in ranking["ranked_candidates"][1]["paper_ready_blockers"]
+    assert ranking_path.is_file()
+    assert report_path.is_file()
+
+
+def test_candidate_iteration_plan_preserves_lineage_and_blocks_execution(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_iteration import (
+        CandidateIterationInputs,
+        build_candidate_iteration_plan,
+        write_candidate_iteration_artifacts,
+    )
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({
+        "candidate_id": "cand-fail",
+        "strategy_name": "S",
+        "recommendation": "retry",
+        "failure_taxonomy_codes": ["FAIL_OVERFIT_WF_GAP"],
+        "checks": [{"name": "walk_forward", "status": "fail", "path": "wf.json"}],
+        "next_candidate_input": {
+            "thesis_id": "TH-1",
+            "retry_budget_per_thesis": 3,
+            "thesis_retry_count": 1,
+            "parameter_only_retry_count": 0,
+            "force_distinct_hypothesis_family": False,
+        },
+    }), encoding="utf-8")
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps({
+        "strategy_name": "S",
+        "generator_mode": "rule_based",
+        "strategy_logic_variant": "mean_reversion_pullback",
+        "thesis_id": "TH-1",
+        "thesis_type": "mean_reversion",
+        "thesis_statement": "Pullback recovery thesis.",
+        "falsification_criteria": "Walk-forward degradation.",
+        "evidence_refs": ["local:prior"],
+        "retry_budget_per_thesis": 3,
+        "thesis_retry_count": 1,
+        "parameter_only_retry_limit": 1,
+        "parameter_only_retry_count": 0,
+    }), encoding="utf-8")
+
+    plan = build_candidate_iteration_plan(CandidateIterationInputs(
+        root_dir=tmp_path,
+        candidate_manifest_path=manifest,
+        proposal_metadata_path=proposal,
+        reviewer_findings=["Walk-forward gap indicates regime fragility."],
+        changed_assumptions=["Add regime filter before pullback entries."],
+        changed_parameters=["Raise volume factor modestly."],
+        unchanged_rejection_rules=["Reject if profit depends on one narrow period."],
+        prior_timerange="20250101-20250201",
+        proposed_timerange="20250101-20250201",
+    ))
+    plan_path, revision_path, report_path = write_candidate_iteration_artifacts(
+        plan,
+        root_dir=tmp_path,
+        output_root=Path("reviews"),
+    )
+
+    assert plan["action"] == "revise"
+    assert plan["evaluation_allowed_by_this_plan"] is False
+    assert plan["lineage"]["candidate_manifest_path"] == "manifest.json"
+    assert plan["proposal_revision_input"]["source_candidate_id"] == "cand-fail"
+    assert plan["proposal_revision_input"]["safety_scope"]["live_trading"] is False
+    assert plan_path.is_file()
+    assert revision_path.is_file()
+    assert report_path.is_file()
+
+
+def test_candidate_iteration_rejects_safety_relaxation(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_iteration import (
+        CandidateIterationInputs,
+        build_candidate_iteration_plan,
+    )
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({
+        "candidate_id": "cand-fail",
+        "strategy_name": "S",
+        "recommendation": "retry",
+        "checks": [{"name": "walk_forward", "status": "fail", "path": "wf.json"}],
+        "next_candidate_input": {"retry_budget_per_thesis": 3, "thesis_retry_count": 1},
+    }), encoding="utf-8")
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps({"strategy_name": "S"}), encoding="utf-8")
+
+    plan = build_candidate_iteration_plan(CandidateIterationInputs(
+        root_dir=tmp_path,
+        candidate_manifest_path=manifest,
+        proposal_metadata_path=proposal,
+        reviewer_findings=["Reviewer found weak walk-forward evidence."],
+        changed_assumptions=["Use future close to improve labels."],
+        unchanged_rejection_rules=["Reject if walk-forward gap persists."],
+    ))
+
+    assert plan["action"] == "reject"
+    assert "revision_safety_scope_preserved" in {
+        check["name"] for check in plan["checks"] if check["status"] == "blocked"
+    }

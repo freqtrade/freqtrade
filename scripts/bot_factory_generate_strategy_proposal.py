@@ -47,6 +47,35 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--expected-failure-case", action="append", required=True)
     parser.add_argument("--backtest-plan", required=True)
     parser.add_argument("--rejection-condition", action="append", required=True)
+    parser.add_argument("--generator-mode", default="rule_based", choices=["rule_based", "freqai", "hybrid_ml"])
+    parser.add_argument("--thesis-id", default=None)
+    parser.add_argument("--thesis-type", default=None)
+    parser.add_argument("--thesis-statement", default=None)
+    parser.add_argument("--falsification-criteria", default=None)
+    parser.add_argument("--novelty-vs-previous", default=None)
+    parser.add_argument("--evidence-ref", action="append", default=None)
+    parser.add_argument(
+        "--failure-taxonomy-code",
+        action="append",
+        default=None,
+        choices=["FAIL_OVERFIT_WF_GAP", "FAIL_COST_SENSITIVE", "FAIL_REGIME_FRAGILE"],
+    )
+    parser.add_argument("--retry-budget-per-thesis", type=int, default=3)
+    parser.add_argument("--thesis-retry-count", type=int, default=0)
+    parser.add_argument("--parameter-only-retry-limit", type=int, default=1)
+    parser.add_argument("--parameter-only-retry-count", type=int, default=0)
+    parser.add_argument("--force-distinct-hypothesis-family", action="store_true")
+    parser.add_argument(
+        "--strategy-logic-variant",
+        default=None,
+        choices=["mean_reversion_pullback", "trend_continuation", "volatility_breakout"],
+    )
+    parser.add_argument("--feature", action="append", default=None)
+    parser.add_argument("--target-definition", default=None)
+    parser.add_argument("--label-horizon", type=int, default=None)
+    parser.add_argument("--prediction-threshold", type=float, default=None)
+    parser.add_argument("--rule-filter", action="append", default=None)
+    parser.add_argument("--risk-policy", default="long_only_leverage_1")
     parser.add_argument("--reviewer-note", action="append", default=None)
     parser.add_argument("--output-root", default="registry/strategies/proposals")
     parser.add_argument("--created-by-agent", default="codex")
@@ -88,6 +117,26 @@ def main() -> int:
         expected_failure_cases=list(args.expected_failure_case),
         backtest_plan=args.backtest_plan,
         rejection_conditions=list(args.rejection_condition),
+        generator_mode=args.generator_mode,
+        thesis_id=args.thesis_id,
+        thesis_type=args.thesis_type,
+        thesis_statement=args.thesis_statement,
+        falsification_criteria=args.falsification_criteria,
+        novelty_vs_previous=args.novelty_vs_previous,
+        evidence_refs=list(args.evidence_ref or []),
+        failure_taxonomy_codes=list(args.failure_taxonomy_code or []),
+        retry_budget_per_thesis=args.retry_budget_per_thesis,
+        thesis_retry_count=args.thesis_retry_count,
+        parameter_only_retry_limit=args.parameter_only_retry_limit,
+        parameter_only_retry_count=args.parameter_only_retry_count,
+        force_distinct_hypothesis_family=args.force_distinct_hypothesis_family,
+        strategy_logic_variant=args.strategy_logic_variant,
+        feature_list=list(args.feature or []),
+        target_definition=args.target_definition,
+        label_horizon=args.label_horizon,
+        prediction_threshold=args.prediction_threshold,
+        rule_filters=list(args.rule_filter or []),
+        risk_policy=args.risk_policy,
         reviewer_notes=list(args.reviewer_note or []),
         evidence_paths=_evidence_inputs(args),
         output_root=Path(args.output_root),
@@ -107,6 +156,9 @@ def main() -> int:
                 "code_generation_eligible": artifacts.metadata[
                     "code_generation_eligible"
                 ],
+                "generator_mode": artifacts.metadata["generator_mode"],
+                "strategy_logic_variant": artifacts.metadata["strategy_logic_variant"],
+                "thesis_id": artifacts.metadata["thesis_id"],
             },
             indent=2,
         )
