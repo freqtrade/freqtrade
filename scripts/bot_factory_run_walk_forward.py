@@ -18,6 +18,7 @@ from freqtrade_ext.bot_factory.backtest_results import (
     evaluate_initial_gate,
     load_gate_thresholds,
 )
+from freqtrade_ext.bot_factory.freqai_backtest import sanitize_freqai_identifier
 from freqtrade_ext.bot_factory.walk_forward import (
     WalkForwardRules,
     WalkForwardWindow,
@@ -42,6 +43,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--strategy-path", default="user_data/strategies")
     parser.add_argument("--freqaimodel", default=None)
     parser.add_argument("--freqaimodel-path", default=None)
+    parser.add_argument(
+        "--freqai-identifier",
+        default=None,
+        help="Candidate-specific FreqAI identifier passed to FreqAI child wrappers.",
+    )
     parser.add_argument("--timeframe", default=None)
     parser.add_argument("--pairs", nargs="*", default=None)
     parser.add_argument("--output-root", default="data/walk_forward")
@@ -99,6 +105,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.freqai_identifier:
+        args.freqai_identifier = sanitize_freqai_identifier(args.freqai_identifier)
     _require_file(Path(args.config), "config")
     _require_file(Path(args.runner_script), "runner script")
     windows = _resolve_windows(args)
@@ -209,6 +217,8 @@ def _build_window_command(
         cmd.extend(["--freqaimodel", args.freqaimodel])
     if args.freqaimodel_path:
         cmd.extend(["--freqaimodel-path", args.freqaimodel_path])
+    if args.freqai_identifier:
+        cmd.extend(["--freqai-identifier", args.freqai_identifier])
     if args.timeframe:
         cmd.extend(["--timeframe", args.timeframe])
     if args.pairs:

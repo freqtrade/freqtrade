@@ -34,7 +34,9 @@ from freqtrade_ext.bot_factory.freqai_backtest import (
     freqai_model_name,
     load_json_config,
     resolve_ohlcv_input_paths,
+    sanitize_freqai_identifier,
     selected_pairs,
+    write_freqai_identifier_override_config,
     write_freqai_metadata,
 )
 from freqtrade_ext.bot_factory.freqai_checks import (
@@ -56,6 +58,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--strategy-path", default="user_data/strategies")
     parser.add_argument("--freqaimodel", default=None)
     parser.add_argument("--freqaimodel-path", default=None)
+    parser.add_argument(
+        "--freqai-identifier",
+        default=None,
+        help=(
+            "Candidate-specific FreqAI identifier override. A minimal non-secret "
+            "override config is written in the run artifact directory."
+        ),
+    )
     parser.add_argument("--timeframe", default=None)
     parser.add_argument("--timerange", default=None)
     parser.add_argument("--pairs", nargs="*", default=None)
@@ -95,6 +105,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.freqai_identifier:
+        args.freqai_identifier = sanitize_freqai_identifier(args.freqai_identifier)
     config_path = Path(args.config)
     _require_file(config_path, "config")
     config = load_json_config(config_path)
@@ -118,6 +130,15 @@ def main() -> int:
         "ohlcv_quality": run_dir / "ohlcv_quality.json",
         "freqai_metadata": run_dir / "freqai_metadata.json",
     }
+    if args.freqai_identifier:
+        artifacts["freqai_identifier_override_config"] = (
+            run_dir / "freqai_identifier_override.json"
+        )
+        write_freqai_identifier_override_config(
+            args.freqai_identifier,
+            artifacts["freqai_identifier_override_config"],
+        )
+    runtime_config_paths = _runtime_config_paths(args, artifacts)
 
     pairs = selected_pairs(config, args.pairs)
     metadata_notes = [
@@ -125,6 +146,10 @@ def main() -> int:
         "Passing gates do not authorize paper trading or live trading.",
         FREQAI_LABEL_NOTICE,
     ]
+    if args.freqai_identifier:
+        metadata_notes.append(
+            "FreqAI identifier is candidate-scoped to avoid stale model or prediction cache reuse."
+        )
 
     dependency_report = check_freqai_dependencies()
     artifacts["freqai_env"].write_text(dependency_report.to_json(), encoding="utf-8")
@@ -207,7 +232,9 @@ def main() -> int:
         return 1
 
     result_filename = "result.json"
-    cmd = _build_freqai_backtest_command(args, run_dir, result_filename)
+    cmd = _build_freqai_backtest_command(
+        args, run_dir, result_filename, runtime_config_paths
+    )
     artifacts["command"].write_text(" ".join(cmd), encoding="utf-8")
 
     print("Running:", " ".join(cmd))
@@ -262,30 +289,37 @@ def main() -> int:
 
 
 def _build_freqai_backtest_command(
-    args: argparse.Namespace, run_dir: Path, result_filename: str
+    args: argparse.Namespace,
+    run_dir: Path,
+    result_filename: str,
+    config_paths: list[Path],
 ) -> list[str]:
     cmd = [
         args.python,
         "-m",
         "freqtrade_ext.bot_factory.freqtrade_cli",
         "backtesting",
-        "-c",
-        args.config,
-        "--strategy",
-        args.strategy,
-        "--strategy-path",
-        args.strategy_path,
-        "--export",
-        "trades",
-        "--backtest-directory",
-        str(run_dir),
-        "--backtest-filename",
-        result_filename,
-        "--cache",
-        "none",
-        "--data-format-ohlcv",
-        args.data_format_ohlcv,
     ]
+    for config_path in config_paths:
+        cmd.extend(["-c", str(config_path)])
+    cmd.extend(
+        [
+            "--strategy",
+            args.strategy,
+            "--strategy-path",
+            args.strategy_path,
+            "--export",
+            "trades",
+            "--backtest-directory",
+            str(run_dir),
+            "--backtest-filename",
+            result_filename,
+            "--cache",
+            "none",
+            "--data-format-ohlcv",
+            args.data_format_ohlcv,
+        ]
+    )
     if args.freqaimodel:
         cmd.extend(["--freqaimodel", args.freqaimodel])
     if args.freqaimodel_path:
@@ -301,6 +335,16 @@ def _build_freqai_backtest_command(
     if args.datadir:
         cmd.extend(["--datadir", args.datadir])
     return cmd
+
+
+def _runtime_config_paths(
+    args: argparse.Namespace, artifacts: dict[str, Path | None]
+) -> list[Path]:
+    config_paths = [Path(args.config)]
+    override = artifacts.get("freqai_identifier_override_config")
+    if args.freqai_identifier and override is not None:
+        config_paths.append(override)
+    return config_paths
 
 
 def _run_ohlcv_quality_checks(
@@ -344,7 +388,7 @@ def _write_metadata(
     status: str,
     notes: list[str],
 ) -> None:
-    config_paths = [Path(args.config)]
+    config_paths = _runtime_config_paths(args, artifacts)
     metadata = build_freqai_metadata(
         root_dir=ROOT_DIR,
         strategy=args.strategy,
@@ -352,13 +396,14 @@ def _write_metadata(
         status=status,
         config_paths=config_paths,
         freqaimodel=freqai_model_name(config, args.freqaimodel),
-        freqai_id=freqai_identifier(config),
+        freqai_id=args.freqai_identifier or freqai_identifier(config),
         timeframe=args.timeframe or str(config.get("timeframe") or ""),
         timerange=args.timerange,
         pairs=pairs,
         dependency_status=dependency_status,
         artifact_paths=artifacts,
         notes=notes,
+        freqai_identifier_source="override" if args.freqai_identifier else "config",
     )
     write_freqai_metadata(metadata, artifacts["freqai_metadata"])
 

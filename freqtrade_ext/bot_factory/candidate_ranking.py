@@ -7,6 +7,15 @@ from pathlib import Path
 from typing import Any, Sequence
 
 
+RESEARCH_HANDOFF_KEYS = (
+    "research_decision_question_handoff",
+    "research_decision_novelty_handoff",
+    "local_falsification_handoff",
+    "structural_data_quality_handoff",
+    "structural_data_capability_handoff",
+)
+
+
 @dataclass(frozen=True)
 class CandidateRankingInputs:
     root_dir: Path
@@ -23,6 +32,8 @@ def rank_candidates(inputs: CandidateRankingInputs) -> dict[str, Any]:
         _candidate_row(_load_json(_resolve(path, root)), _resolve(path, root), root)
         for path in inputs.candidate_manifest_paths
     ]
+    hypothesis_diversity = _hypothesis_diversity(candidates)
+    _apply_hypothesis_diversity_gate(candidates, hypothesis_diversity)
     ranked = sorted(
         candidates,
         key=lambda item: (
@@ -40,6 +51,7 @@ def rank_candidates(inputs: CandidateRankingInputs) -> dict[str, Any]:
         "factory": "candidate_ranking_registry",
         "ranking_id": inputs.ranking_id or _ranking_id(generated_at),
         "candidate_count": len(ranked),
+        "hypothesis_diversity": hypothesis_diversity,
         "ranked_candidates": ranked,
         "best_candidate_id": ranked[0]["candidate_id"] if ranked else None,
         "paper_ready_candidate_ids": [
@@ -94,6 +106,7 @@ def _candidate_row(manifest: dict[str, Any], manifest_path: Path, root: Path) ->
     ]
     paper_ready_eligible = recommendation == "pass" and not missing_or_failed
     reasons = _ranking_reasons(manifest, checks, missing_or_failed)
+    research_brief = _research_brief_summary(manifest)
     metrics = {
         "historical_total_return_pct": _number(historical.get("total_return_pct")),
         "historical_trade_count": _number(historical.get("trade_count")),
@@ -122,6 +135,11 @@ def _candidate_row(manifest: dict[str, Any], manifest_path: Path, root: Path) ->
         "metrics": metrics,
         "failure_taxonomy_codes": manifest.get("failure_taxonomy_codes", []),
         "thesis": manifest.get("thesis", {}),
+        "hypothesis_family": _hypothesis_family(manifest),
+        "strategy_logic_variant": _strategy_logic_variant(manifest),
+        "blocked_next_actions": _blocked_next_actions(research_brief, manifest),
+        "research_brief": research_brief,
+        "research_handoff_summary": _research_handoff_summary(research_brief),
         "reasons": reasons,
         "artifact_paths": _artifact_paths(manifest),
     }
@@ -164,6 +182,90 @@ def _score(
     return round(base, 6)
 
 
+def _hypothesis_diversity(candidates: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    families = sorted(
+        {
+            str(item.get("hypothesis_family") or "").strip()
+            for item in candidates
+            if str(item.get("hypothesis_family") or "").strip()
+        }
+    )
+    thesis_ids = sorted(
+        {
+            thesis_id
+            for thesis_id in (_candidate_thesis_id(item) for item in candidates)
+            if thesis_id
+        }
+    )
+    variants = sorted(
+        {
+            str(item.get("strategy_logic_variant") or "").strip()
+            for item in candidates
+            if str(item.get("strategy_logic_variant") or "").strip()
+        }
+    )
+    return {
+        "minimum_distinct_hypothesis_families": 2,
+        "distinct_hypothesis_families": families,
+        "distinct_thesis_ids": thesis_ids,
+        "distinct_strategy_logic_variants": variants,
+        "passed": len(families) >= 2,
+    }
+
+
+def _candidate_thesis_id(item: dict[str, Any]) -> str | None:
+    thesis = item.get("thesis") if isinstance(item.get("thesis"), dict) else {}
+    value = str(thesis.get("thesis_id") or "").strip()
+    return value or None
+
+
+def _apply_hypothesis_diversity_gate(
+    candidates: Sequence[dict[str, Any]], diversity: dict[str, Any]
+) -> None:
+    if diversity.get("passed"):
+        return
+    for item in candidates:
+        if item.get("paper_ready_eligible"):
+            item["paper_ready_eligible"] = False
+            blockers = list(item.get("paper_ready_blockers", []))
+            blockers.append("hypothesis_diversity")
+            item["paper_ready_blockers"] = list(dict.fromkeys(blockers))
+            reasons = list(item.get("reasons", []))
+            reasons.append(
+                "paper_ready_blocked_until_multiple_distinct_hypothesis_families_are_evaluated"
+            )
+            item["reasons"] = list(dict.fromkeys(reasons))
+            item["score"] = _score(
+                str(item.get("recommendation") or "fail"),
+                item.get("metrics", {}),
+                False,
+            )
+
+
+def _hypothesis_family(manifest: dict[str, Any]) -> str | None:
+    thesis = manifest.get("thesis") if isinstance(manifest.get("thesis"), dict) else {}
+    next_input = (
+        manifest.get("next_candidate_input")
+        if isinstance(manifest.get("next_candidate_input"), dict)
+        else {}
+    )
+    raw = (
+        thesis.get("thesis_type")
+        or next_input.get("thesis_type")
+        or manifest.get("strategy_logic_variant")
+    )
+    return _safe_token(raw)
+
+
+def _strategy_logic_variant(manifest: dict[str, Any]) -> str | None:
+    next_input = (
+        manifest.get("next_candidate_input")
+        if isinstance(manifest.get("next_candidate_input"), dict)
+        else {}
+    )
+    return _safe_token(manifest.get("strategy_logic_variant") or next_input.get("strategy_logic_variant"))
+
+
 def _summary(check: dict[str, Any] | None) -> dict[str, Any]:
     if not check:
         return {}
@@ -188,6 +290,62 @@ def _artifact_paths(manifest: dict[str, Any]) -> dict[str, Any]:
             if check.get("path")
         },
     }
+
+
+def _research_brief_summary(manifest: dict[str, Any]) -> dict[str, Any]:
+    raw = manifest.get("research_brief")
+    if not isinstance(raw, dict):
+        return {}
+    keys = (
+        "thesis_id",
+        "thesis_type",
+        "thesis_statement",
+        "research_references",
+        "evidence_refs",
+        "novelty_vs_previous",
+        "blocked_next_actions",
+        *RESEARCH_HANDOFF_KEYS,
+    )
+    return {key: _copy_jsonish(raw[key]) for key in keys if key in raw}
+
+
+def _research_handoff_summary(research_brief: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: _copy_jsonish(research_brief[key])
+        for key in RESEARCH_HANDOFF_KEYS
+        if isinstance(research_brief.get(key), dict)
+    }
+
+
+def _blocked_next_actions(*sources: Any) -> list[str]:
+    actions: list[str] = []
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        _extend_unique_strings(actions, source.get("blocked_next_actions", []))
+        next_input = source.get("next_candidate_input")
+        if isinstance(next_input, dict):
+            _extend_unique_strings(actions, next_input.get("blocked_next_actions", []))
+    return actions
+
+
+def _extend_unique_strings(target: list[str], values: Any) -> None:
+    if isinstance(values, str):
+        values = [values]
+    if not isinstance(values, list):
+        return
+    for value in values:
+        text = str(value).strip()
+        if text and text not in target:
+            target.append(text)
+
+
+def _copy_jsonish(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): _copy_jsonish(nested) for key, nested in value.items()}
+    if isinstance(value, list):
+        return [_copy_jsonish(item) for item in value]
+    return value
 
 
 def _number(value: Any) -> float | None:
@@ -232,6 +390,15 @@ def _ranking_id(generated_at: str) -> str:
 def _safe_path_component(value: str) -> str:
     cleaned = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "_" for ch in value)
     return cleaned.strip("._") or "ranking"
+
+
+def _safe_token(value: Any) -> str | None:
+    if value is None:
+        return None
+    token = "".join(
+        ch.lower() if ch.isalnum() else "_" for ch in str(value).strip()
+    ).strip("_")
+    return token or None
 
 
 def _resolve(path: Path, root: Path) -> Path:

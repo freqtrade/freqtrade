@@ -23,6 +23,7 @@ from freqtrade_ext.bot_factory.freqai_backtest import (
     freqai_identifier,
     freqai_model_name,
     load_json_config,
+    sanitize_freqai_identifier,
     selected_pairs,
 )
 from freqtrade_ext.bot_factory.freqai_checks import (
@@ -53,6 +54,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--strategy-path", default="user_data/strategies")
     parser.add_argument("--freqaimodel", default=None)
     parser.add_argument("--freqaimodel-path", default=None)
+    parser.add_argument(
+        "--freqai-identifier",
+        default=None,
+        help="Candidate-specific FreqAI identifier passed to checked child wrappers.",
+    )
     parser.add_argument("--timeframe", default=None)
     parser.add_argument("--timerange", required=True)
     parser.add_argument("--pairs", nargs="*", default=None)
@@ -120,6 +126,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.freqai_identifier:
+        args.freqai_identifier = sanitize_freqai_identifier(args.freqai_identifier)
     config_path = Path(args.config)
     _require_file(config_path, "config")
     _require_file(Path(args.freqai_runner_script), "FreqAI runner script")
@@ -192,6 +200,7 @@ def main() -> int:
         pairs=args.pairs,
         freqaimodel=args.freqaimodel,
         freqaimodel_path=args.freqaimodel_path,
+        freqai_identifier=args.freqai_identifier,
         data_format_ohlcv=args.data_format_ohlcv,
         userdir=args.userdir,
         datadir=args.datadir,
@@ -233,6 +242,7 @@ def main() -> int:
             pairs=args.pairs,
             freqaimodel=args.freqaimodel,
             freqaimodel_path=args.freqaimodel_path,
+            freqai_identifier=args.freqai_identifier,
             data_format_ohlcv=args.data_format_ohlcv,
             userdir=args.userdir,
             datadir=args.datadir,
@@ -402,7 +412,7 @@ def _build_manifest(
         timerange=args.timerange,
         pairs=selected_pairs(config, args.pairs),
         freqaimodel=freqai_model_name(config, args.freqaimodel),
-        freqai_identifier=freqai_identifier(config),
+        freqai_identifier=args.freqai_identifier or freqai_identifier(config),
         dependency_status=dependency_status,
         stages=stages,
         artifact_paths=artifact_paths,

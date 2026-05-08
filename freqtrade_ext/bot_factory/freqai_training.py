@@ -45,6 +45,7 @@ def build_checked_freqai_backtest_command(
     pairs: Sequence[str] | None = None,
     freqaimodel: str | None = None,
     freqaimodel_path: str | None = None,
+    freqai_identifier: str | None = None,
     data_format_ohlcv: str = "parquet",
     userdir: str | None = None,
     datadir: str | None = None,
@@ -82,6 +83,7 @@ def build_checked_freqai_backtest_command(
         pairs=pairs,
         freqaimodel=freqaimodel,
         freqaimodel_path=freqaimodel_path,
+        freqai_identifier=freqai_identifier,
         userdir=userdir,
         datadir=datadir,
         trading_mode=trading_mode,
@@ -110,6 +112,7 @@ def build_checked_walk_forward_command(
     pairs: Sequence[str] | None = None,
     freqaimodel: str | None = None,
     freqaimodel_path: str | None = None,
+    freqai_identifier: str | None = None,
     data_format_ohlcv: str = "parquet",
     userdir: str | None = None,
     datadir: str | None = None,
@@ -162,6 +165,7 @@ def build_checked_walk_forward_command(
         pairs=pairs,
         freqaimodel=freqaimodel,
         freqaimodel_path=freqaimodel_path,
+        freqai_identifier=freqai_identifier,
         userdir=userdir,
         datadir=datadir,
         trading_mode=trading_mode,
@@ -315,6 +319,7 @@ def _append_common_freqai_args(
     pairs: Sequence[str] | None,
     freqaimodel: str | None,
     freqaimodel_path: str | None,
+    freqai_identifier: str | None,
     userdir: str | None,
     datadir: str | None,
     trading_mode: str | None,
@@ -329,6 +334,8 @@ def _append_common_freqai_args(
         cmd.extend(["--freqaimodel", freqaimodel])
     if freqaimodel_path:
         cmd.extend(["--freqaimodel-path", freqaimodel_path])
+    if freqai_identifier:
+        cmd.extend(["--freqai-identifier", freqai_identifier])
     if timeframe:
         cmd.extend(["--timeframe", timeframe])
     if pairs:
