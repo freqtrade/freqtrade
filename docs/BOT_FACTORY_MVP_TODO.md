@@ -13275,3 +13275,56 @@ candidate.
 - [ ] Remaining limitation: this is still safety plumbing, not positive market
   evidence. It does not create a new thesis, run a new Edge Discovery probe,
   generate a profitable strategy, or make any candidate paper-ready.
+
+### Follow-up on 2026-05-09 JST for research-first edge gates
+
+- [x] Branch decision completed before implementation:
+  `docs\BOT_FACTORY_BRANCH_DECISION.md` compares `develop` with
+  `codex/bot-factory-candidate-factory-completion` and selects a stacked PR
+  target of `codex/bot-factory-candidate-factory-completion`.
+- [x] Added best / normal / stress cost-scenario modeling:
+  `freqtrade_ext\bot_factory\cost_model.py` defines explicit scenario fields,
+  pair/timeframe/order-type/liquidity/volatility override matching, and
+  default scenarios where `normal` remains compatible with legacy
+  `all_in_cost_bps=12.0`.
+- [x] Extended Edge Discovery to report event-level post-cost metrics under
+  Freqtrade-aligned next-candle-open entry semantics:
+  `freqtrade_ext\bot_factory\edge_discovery.py` now emits
+  `event_level_post_cost_edge_report`, `research_gate`,
+  `candidate_generation_allowed`, and `candidate_generation_result`.
+- [x] Added random-entry, shuffled-signal, and shifted-signal negative controls
+  to Edge Discovery horizon scoring. A thesis that does not beat controls is
+  reported as `no candidate generated`.
+- [x] Kept direct strategy code generation blocked from Edge Discovery alone:
+  `strategy_codegen_allowed=false` remains unchanged, and candidate generation
+  requires the new research gate to pass.
+- [x] Added docs:
+  - `docs\BOT_FACTORY_COST_MODEL_AUDIT.md`
+  - `docs\BOT_FACTORY_EDGE_DISCOVERY_REPORT.md`
+  - `docs\BOT_FACTORY_NEXT_RESEARCH_PLAN.md`
+- [x] Verification so far:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_edge_discovery.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe -m pytest tests -q
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  git diff --check
+  ```
+
+  Results: compile passed; initial Edge Discovery focused test found two
+  compatibility issues, which were fixed; focused cost/gate tests passed
+  7 tests; full Edge Discovery focused tests passed 16 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; final compile
+  passed; `git diff --check` passed with the existing LF-to-CRLF warning for
+  this doc. After final candidate-generation gate tightening, the combined
+  focused selector passed 20 tests and full `tests\test_bot_factory.py` passed
+  again. Full `tests -q` was attempted but stopped during collection because
+  the local venv is missing `freqtrade_client` and `optuna`.
+- [ ] Remaining limitation: this implementation adds research-first gates and
+  reports only. It does not evaluate a new real thesis, does not generate a
+  strategy candidate, and does not make any candidate paper-ready. Candidate
+  generation result for this increment is `no candidate generated`.

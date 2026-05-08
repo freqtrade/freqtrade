@@ -125,6 +125,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-data-span-days", type=float, default=0.0)
     parser.add_argument("--min-passing-horizon-count", type=int, default=1)
     parser.add_argument("--max-horizon-count", type=int, default=5)
+    parser.add_argument("--min-negative-control-delta-bps", type=float, default=1.0)
     parser.add_argument("--edge-discovery-id", default=None)
     parser.add_argument(
         "--output-root",
@@ -178,6 +179,11 @@ def build_inputs_from_args(
         min_data_span_days=args.min_data_span_days,
         min_passing_horizon_count=args.min_passing_horizon_count,
         max_horizon_count=args.max_horizon_count,
+        min_negative_control_delta_bps=getattr(
+            args,
+            "min_negative_control_delta_bps",
+            1.0,
+        ),
         edge_discovery_id=args.edge_discovery_id,
         output_root=Path(args.output_root),
         reviewer_notes=list(args.reviewer_note or []),

@@ -36,6 +36,11 @@ from freqtrade_ext.bot_factory.data_quality import (
     check_order_book_parquet,
     pair_to_ohlcv_filename,
 )
+from freqtrade_ext.bot_factory.cost_model import (
+    CostModelContext,
+    cost_scenarios_from_spec,
+    default_cost_scenarios,
+)
 from freqtrade_ext.bot_factory.edge_discovery import (
     EdgeDiscoveryInputs,
     build_edge_discovery,
@@ -13646,6 +13651,313 @@ def test_edge_discovery_builds_multi_horizon_cost_edge_artifact(tmp_path):
     assert "Concentration Diagnostics" in report_text
     assert "max_day_event_share" in report_text
     assert "hypothesis_scope: cross_asset" in report_text
+
+
+def test_cost_model_supports_default_scenarios_and_context_override():
+    defaults = default_cost_scenarios()
+    assert defaults["normal"].total_cost_bps == 12.0
+    assert defaults["stress"].total_cost_bps >= defaults["normal"].total_cost_bps * 1.5
+
+    scenarios = cost_scenarios_from_spec(
+        {
+            "pair": "BTC/USDT:USDT",
+            "timeframe": "5m",
+            "order_type": "maker",
+            "cost_model": {
+                "overrides": [
+                    {
+                        "pair": "BTC/USDT:USDT",
+                        "timeframe": "5m",
+                        "order_type": "maker",
+                        "scenarios": [
+                            {
+                                "scenario_name": "normal",
+                                "fee_bps_entry": 1.0,
+                                "fee_bps_exit": 1.0,
+                                "spread_bps": 0.5,
+                                "slippage_bps_entry": 0.25,
+                                "slippage_bps_exit": 0.25,
+                                "adverse_selection_bps": 2.0,
+                                "no_fill_rate": 0.2,
+                                "partial_fill_rate": 0.3,
+                                "exit_taker_rate": 0.4,
+                                "stress_multiplier": 1.0,
+                            },
+                            {
+                                "scenario_name": "stress",
+                                "fee_bps_entry": 1.0,
+                                "fee_bps_exit": 1.0,
+                                "spread_bps": 0.5,
+                                "slippage_bps_entry": 0.25,
+                                "slippage_bps_exit": 0.25,
+                                "adverse_selection_bps": 2.0,
+                                "no_fill_rate": 0.3,
+                                "partial_fill_rate": 0.4,
+                                "exit_taker_rate": 0.8,
+                                "stress_multiplier": 2.0,
+                            },
+                        ],
+                    }
+                ]
+            },
+        },
+        context=CostModelContext(
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+        ),
+    )
+
+    assert set(scenarios) == {"best", "normal", "stress"}
+    assert scenarios["normal"]["total_cost_bps"] == 5.0
+    assert scenarios["stress"]["total_cost_bps"] == 10.0
+    assert scenarios["normal"]["no_fill_rate"] == 0.2
+    assert scenarios["normal"]["partial_fill_rate"] == 0.3
+    assert scenarios["normal"]["adverse_selection_bps"] == 2.0
+
+
+def test_edge_discovery_uses_next_candle_open_entry_semantics(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    spec_path = tmp_path / "edge_spec.json"
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    rows = [
+        {
+            "date": start,
+            "open": 100.0,
+            "high": 100.0,
+            "low": 100.0,
+            "close": 100.0,
+            "volume": 1000.0,
+        },
+        {
+            "date": start + pd.Timedelta(minutes=5),
+            "open": 100.0,
+            "high": 111.0,
+            "low": 100.0,
+            "close": 110.0,
+            "volume": 1000.0,
+        },
+        {
+            "date": start + pd.Timedelta(minutes=10),
+            "open": 200.0,
+            "high": 201.0,
+            "low": 199.0,
+            "close": 200.5,
+            "volume": 1000.0,
+        },
+        {
+            "date": start + pd.Timedelta(minutes=15),
+            "open": 201.0,
+            "high": 221.0,
+            "low": 200.0,
+            "close": 220.0,
+            "volume": 1000.0,
+        },
+    ]
+    pd.DataFrame(rows).to_csv(ohlcv_path, index=False)
+    spec_path.write_text(
+        json.dumps(
+            {
+                "factory": "research_edge_discovery_spec",
+                "thesis_id": "TH-NEXT-OPEN-001",
+                "mechanism_class": "next_open_semantics_probe",
+                "hypothesis_scope": "cross_asset",
+                "instrument_universe": ["BTC/USDT:USDT", "ETH/USDT:USDT"],
+                "conditions": [
+                    {
+                        "feature": "return_bps",
+                        "operator": ">",
+                        "value": 500.0,
+                        "lookback_candles": 1,
+                    }
+                ],
+                "horizons": [1],
+                "all_in_cost_bps": 1.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_edge_discovery(
+        EdgeDiscoveryInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            edge_spec_path=spec_path,
+            min_sample_count=1,
+            min_profitable_windows_ratio=0.0,
+            created_at="2026-05-07T00:00:00+00:00",
+        )
+    )
+
+    sample = artifact["horizon_results"][0]["sample_preview"][0]
+    assert sample["event_time"] == "2026-01-01T00:05:00+00:00"
+    assert sample["entry_time"] == "2026-01-01T00:10:00+00:00"
+    assert sample["entry_semantics"] == "next_candle_open"
+    assert sample["entry_price_type"] == "open"
+    assert sample["entry_price"] == 200.0
+
+
+def test_edge_discovery_research_gate_passes_synthetic_positive_case(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    spec_path = tmp_path / "edge_spec.json"
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    event_indices = {10, 50, 90, 130, 170, 210}
+    rows = []
+    for index in range(240):
+        close = 100.0
+        open_ = 100.0
+        if index in event_indices:
+            close = 102.0
+        if index - 2 in event_indices:
+            close = 103.0
+        rows.append(
+            {
+                "date": start + pd.Timedelta(days=index),
+                "open": open_,
+                "high": max(open_, close) + 0.5,
+                "low": min(open_, close) - 0.5,
+                "close": close,
+                "volume": 1000.0,
+            }
+        )
+    pd.DataFrame(rows).to_csv(ohlcv_path, index=False)
+    spec_path.write_text(
+        json.dumps(
+            {
+                "factory": "research_edge_discovery_spec",
+                "thesis_id": "TH-RESEARCH-GATE-PASS-001",
+                "mechanism_class": "rare_forced_flow_reversal",
+                "hypothesis_scope": "cross_asset",
+                "instrument_universe": ["BTC/USDT:USDT", "ETH/USDT:USDT"],
+                "market_structure_domains": ["ohlcv"],
+                "conditions": [
+                    {
+                        "feature": "return_bps",
+                        "operator": ">",
+                        "value": 100.0,
+                        "lookback_candles": 1,
+                    }
+                ],
+                "horizons": [1],
+                "cost_model": {
+                    "scenarios": [
+                        {"scenario_name": "best", "total_cost_bps": 1.0},
+                        {"scenario_name": "normal", "total_cost_bps": 2.0},
+                        {"scenario_name": "stress", "total_cost_bps": 3.0},
+                    ]
+                },
+                "cooldown_candles": 5,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_edge_discovery(
+        EdgeDiscoveryInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            edge_spec_path=spec_path,
+            min_sample_count=5,
+            min_profitable_windows_ratio=0.7,
+            min_calendar_window_count=3,
+            min_profitable_calendar_windows_ratio=0.6,
+            min_negative_control_delta_bps=1.0,
+            created_at="2026-05-07T00:00:00+00:00",
+        )
+    )
+
+    report = artifact["event_level_post_cost_edge_report"]
+    assert artifact["status"] == "passed"
+    assert artifact["candidate_generation_allowed"] is True
+    assert report["passes_research_gate"] is True
+    assert report["net_edge_bps_normal"] >= 6.0
+    assert report["net_edge_bps_stress"] > 0.0
+    assert report["lower_confidence_bound_bps"] > 0.0
+    assert report["negative_control_random_entry_delta_bps"] >= 1.0
+    assert report["negative_control_shuffled_signal_delta_bps"] >= 1.0
+    assert report["negative_control_shifted_signal_delta_bps"] >= 1.0
+
+
+def test_edge_discovery_research_gate_blocks_negative_controls_and_reports_no_candidate(
+    tmp_path,
+):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    spec_path = tmp_path / "edge_spec.json"
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    pd.DataFrame(
+        [
+            {
+                "date": start + pd.Timedelta(days=index),
+                "open": 100.0 + index,
+                "high": 101.0 + index,
+                "low": 99.0 + index,
+                "close": 100.0 + index,
+                "volume": 1000.0,
+            }
+            for index in range(90)
+        ]
+    ).to_csv(ohlcv_path, index=False)
+    spec_path.write_text(
+        json.dumps(
+            {
+                "factory": "research_edge_discovery_spec",
+                "thesis_id": "TH-NEGATIVE-CONTROL-BLOCK-001",
+                "mechanism_class": "market_beta_disguised_as_signal",
+                "hypothesis_scope": "cross_asset",
+                "instrument_universe": ["BTC/USDT:USDT", "ETH/USDT:USDT"],
+                "conditions": [
+                    {
+                        "feature": "return_bps",
+                        "operator": ">",
+                        "value": 0.0,
+                        "lookback_candles": 1,
+                    }
+                ],
+                "horizons": [1],
+                "cost_model": {
+                    "scenarios": [
+                        {"scenario_name": "best", "total_cost_bps": 1.0},
+                        {"scenario_name": "normal", "total_cost_bps": 1.0},
+                        {"scenario_name": "stress", "total_cost_bps": 1.5},
+                    ]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_edge_discovery(
+        EdgeDiscoveryInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            edge_spec_path=spec_path,
+            min_sample_count=20,
+            min_profitable_windows_ratio=0.7,
+            min_negative_control_delta_bps=1.0,
+            created_at="2026-05-07T00:00:00+00:00",
+        )
+    )
+
+    report = artifact["event_level_post_cost_edge_report"]
+    gate_blockers = {
+        check["name"] for check in artifact["research_gate"]["blockers"]
+    }
+    assert artifact["status"] == "passed"
+    assert artifact["candidate_generation_allowed"] is False
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+    assert report["passes_research_gate"] is False
+    assert "random_entry_control_beaten" in gate_blockers
+    assert "shuffled_signal_control_beaten" in gate_blockers
+    assert "no candidate generated" == report["candidate_generation_result"]
+
+    _, report_path = write_edge_discovery_artifacts(
+        artifact,
+        root_dir=tmp_path,
+        output_root=tmp_path / "registry" / "strategies" / "research_decisions",
+    )
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "candidate_generation_result: no candidate generated" in report_text
+    assert "negative_control_random_entry_delta_bps" in report_text
 
 
 def test_edge_discovery_supports_liquidation_context_features(tmp_path):

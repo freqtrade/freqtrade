@@ -709,20 +709,32 @@ def _event_returns(
     *,
     hold_candles: int,
     funding_rate: pd.DataFrame | None = None,
+    entry_semantics: str = "same_candle_close",
 ) -> list[dict[str, Any]]:
     candle_times = list(ohlcv["date"])
     closes = list(ohlcv["close"])
+    opens = list(ohlcv["open"]) if "open" in ohlcv.columns else closes
     rows: list[dict[str, Any]] = []
+    semantics = str(entry_semantics or "same_candle_close").strip().lower()
     for event_time in events["date"]:
-        entry_index = int(ohlcv["date"].searchsorted(event_time, side="left"))
+        if semantics == "next_candle_open":
+            entry_index = int(ohlcv["date"].searchsorted(event_time, side="right"))
+            entry_price_type = "open"
+        else:
+            entry_index = int(ohlcv["date"].searchsorted(event_time, side="left"))
+            entry_price_type = "close"
         exit_index = entry_index + hold_candles
         if entry_index < 0 or exit_index >= len(ohlcv):
             continue
-        entry_close = float(closes[entry_index])
+        entry_price = (
+            float(opens[entry_index])
+            if entry_price_type == "open"
+            else float(closes[entry_index])
+        )
         exit_close = float(closes[exit_index])
-        if entry_close <= 0.0:
+        if entry_price <= 0.0:
             continue
-        price_return_bps = 10000.0 * (exit_close / entry_close - 1.0)
+        price_return_bps = 10000.0 * (exit_close / entry_price - 1.0)
         funding_adjustment_bps = _funding_adjustment_bps(
             funding_rate,
             entry_time=candle_times[entry_index],
@@ -734,7 +746,10 @@ def _event_returns(
                 "event_time": _timestamp_to_str(event_time),
                 "entry_time": _timestamp_to_str(candle_times[entry_index]),
                 "exit_time": _timestamp_to_str(candle_times[exit_index]),
-                "entry_close": round(entry_close, 8),
+                "entry_semantics": semantics,
+                "entry_price_type": entry_price_type,
+                "entry_price": round(entry_price, 8),
+                "entry_close": round(float(closes[entry_index]), 8),
                 "exit_close": round(exit_close, 8),
                 "price_return_bps": round(price_return_bps, 6),
                 "funding_adjustment_bps": round(funding_adjustment_bps, 6),
