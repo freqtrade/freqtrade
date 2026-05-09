@@ -99,6 +99,37 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 cost-model scenario override merge fixes.
+
+- [x] Fixed `freqtrade_ext/bot_factory/cost_model.py` so partial scenario
+  overrides that only change non-price fields, such as `no_fill_rate`, inherit
+  the fallback `total_cost_bps_override` instead of silently reverting to the
+  component-sum default. Explicit `total_cost_bps=0` remains preserved.
+- [x] Fixed selected contextual `cost_model.overrides` so they merge onto base
+  `cost_model.scenarios` instead of replacing the whole scenario source. Base
+  scenarios such as a shared stress profile now survive when an override only
+  adjusts the normal scenario.
+- [x] Added regression coverage for inherited total-cost preservation on
+  non-price scenario overrides and base-scenario retention when a selected
+  override supplies only one scenario.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 30 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
 Checked on 2026-05-09 JST for PR #8 final local-falsification pair fallback fix.
 
 - [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so

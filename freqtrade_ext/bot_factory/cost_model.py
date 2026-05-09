@@ -5,6 +5,15 @@ from typing import Any, Mapping
 
 
 _SCENARIO_NAMES = ("best", "normal", "stress")
+_TOTAL_COST_COMPONENT_FIELDS = (
+    "fee_bps_entry",
+    "fee_bps_exit",
+    "spread_bps",
+    "slippage_bps_entry",
+    "slippage_bps_exit",
+    "adverse_selection_bps",
+    "stress_multiplier",
+)
 
 
 @dataclass(frozen=True)
@@ -140,19 +149,24 @@ def cost_scenarios_from_spec(
                 fallback=defaults["normal"],
                 context=context,
             )
+        _apply_scenario_mappings(defaults, model.get("scenarios"), context=context)
         selected = _select_override(model, context)
-        raw_scenarios = selected.get("scenarios") if selected else model.get("scenarios")
-        if isinstance(raw_scenarios, list):
-            for item in raw_scenarios:
-                if not isinstance(item, Mapping):
-                    continue
-                name = _scenario_name(item.get("scenario_name"))
-                if name in _SCENARIO_NAMES:
-                    defaults[name] = _scenario_from_mapping(
-                        item,
-                        fallback=defaults[name],
-                        context=context,
-                    )
+        if selected is not None:
+            selected_normal_override = _float_or_none(selected.get("all_in_cost_bps"))
+            if selected_normal_override is not None:
+                defaults["normal"] = _scenario_from_mapping(
+                    {
+                        **defaults["normal"].to_dict(),
+                        "total_cost_bps": selected_normal_override,
+                    },
+                    fallback=defaults["normal"],
+                    context=context,
+                )
+            _apply_scenario_mappings(
+                defaults,
+                selected.get("scenarios"),
+                context=context,
+            )
     return {name: defaults[name].to_dict() for name in _SCENARIO_NAMES}
 
 
@@ -208,6 +222,26 @@ def _override_matches(item: Mapping[str, Any], context: CostModelContext) -> boo
     return True
 
 
+def _apply_scenario_mappings(
+    scenarios: dict[str, CostScenario],
+    raw_scenarios: Any,
+    *,
+    context: CostModelContext,
+) -> None:
+    if not isinstance(raw_scenarios, list):
+        return
+    for item in raw_scenarios:
+        if not isinstance(item, Mapping):
+            continue
+        name = _scenario_name(item.get("scenario_name"))
+        if name in _SCENARIO_NAMES:
+            scenarios[name] = _scenario_from_mapping(
+                item,
+                fallback=scenarios[name],
+                context=context,
+            )
+
+
 def _scenario_from_mapping(
     data: Mapping[str, Any],
     *,
@@ -241,7 +275,7 @@ def _scenario_from_mapping(
         stress_multiplier=_coalesce_float(
             data.get("stress_multiplier"), fallback.stress_multiplier
         ),
-        total_cost_bps_override=_float_or_none(data.get("total_cost_bps")),
+        total_cost_bps_override=_total_cost_override_from_mapping(data, fallback),
         pair=_string_or_none(data.get("pair")) or context.pair,
         timeframe=_string_or_none(data.get("timeframe")) or context.timeframe,
         order_type=_string_or_none(data.get("order_type")) or context.order_type,
@@ -250,6 +284,21 @@ def _scenario_from_mapping(
             _string_or_none(data.get("volatility_regime")) or context.volatility_regime
         ),
     )
+
+
+def _total_cost_override_from_mapping(
+    data: Mapping[str, Any], fallback: CostScenario
+) -> float | None:
+    parsed = _float_or_none(data.get("total_cost_bps"))
+    if parsed is not None:
+        return parsed
+    has_price_component_override = any(
+        _float_or_none(data.get(field)) is not None
+        for field in _TOTAL_COST_COMPONENT_FIELDS
+    )
+    if has_price_component_override:
+        return None
+    return fallback.total_cost_bps_override
 
 
 def _scenario_name(value: Any) -> str | None:

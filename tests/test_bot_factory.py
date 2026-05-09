@@ -13785,6 +13785,27 @@ def test_cost_model_preserves_zero_top_level_all_in_cost_bps():
     assert scenarios["normal"]["total_cost_bps"] == 0.0
 
 
+def test_cost_model_preserves_inherited_total_cost_for_non_price_scenario_override():
+    scenarios = cost_scenarios_from_spec(
+        {
+            "all_in_cost_bps": 0,
+            "cost_model": {
+                "scenarios": [
+                    {
+                        "scenario_name": "normal",
+                        "no_fill_rate": 0.25,
+                        "partial_fill_rate": 0.4,
+                    }
+                ]
+            },
+        }
+    )
+
+    assert scenarios["normal"]["total_cost_bps"] == 0.0
+    assert scenarios["normal"]["no_fill_rate"] == 0.25
+    assert scenarios["normal"]["partial_fill_rate"] == 0.4
+
+
 def test_cost_model_selects_most_specific_matching_override():
     scenarios = cost_scenarios_from_spec(
         {
@@ -13812,6 +13833,33 @@ def test_cost_model_selects_most_specific_matching_override():
     )
 
     assert scenarios["normal"]["total_cost_bps"] == 4.0
+
+
+def test_cost_model_merges_selected_override_with_base_scenarios():
+    scenarios = cost_scenarios_from_spec(
+        {
+            "pair": "ETH/USDT:USDT",
+            "timeframe": "5m",
+            "cost_model": {
+                "scenarios": [
+                    {"scenario_name": "normal", "total_cost_bps": 8.0},
+                    {"scenario_name": "stress", "total_cost_bps": 30.0},
+                ],
+                "overrides": [
+                    {
+                        "pair": "ETH/USDT:USDT",
+                        "timeframe": "5m",
+                        "scenarios": [
+                            {"scenario_name": "normal", "total_cost_bps": 4.0}
+                        ],
+                    }
+                ],
+            },
+        }
+    )
+
+    assert scenarios["normal"]["total_cost_bps"] == 4.0
+    assert scenarios["stress"]["total_cost_bps"] == 30.0
 
 
 def test_edge_discovery_uses_next_candle_open_entry_semantics(tmp_path):
