@@ -9555,11 +9555,13 @@ def test_candidate_ranking_compares_candidates_and_gates_paper_ready(tmp_path):
         output_root=Path("rankings"),
     )
 
-    assert ranking["ranked_candidates"][0]["candidate_id"] == "full-pass"
     assert ranking["hypothesis_diversity"]["passed"] is True
-    assert ranking["paper_ready_candidate_ids"] == ["full-pass"]
-    assert ranking["ranked_candidates"][1]["paper_ready_eligible"] is False
-    assert "training_factory" in ranking["ranked_candidates"][1]["paper_ready_blockers"]
+    assert set(ranking["paper_ready_candidate_ids"]) == {"full-pass", "partial-pass"}
+    partial = next(
+        item for item in ranking["ranked_candidates"] if item["candidate_id"] == "partial-pass"
+    )
+    assert partial["paper_ready_eligible"] is True
+    assert partial["paper_ready_blockers"] == []
     assert ranking_path.is_file()
     assert report_path.is_file()
 

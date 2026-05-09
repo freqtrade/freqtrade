@@ -99,6 +99,35 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-10 JST for PR #7 skipped optional ranking checks review follow-up.
+
+- [x] Fixed the new PR #7 review finding on Candidate Ranking paper-ready
+  blockers. `freqtrade_ext/bot_factory/candidate_ranking.py` now treats
+  `training_factory`, `training_strategy_identity`, and
+  `training_markdown_report` with `status="skipped"` as non-blocking optional
+  checks, while missing or failed training checks still block paper readiness.
+- [x] Updated ranking regression coverage so a rule-based candidate with passing
+  historical and walk-forward chains plus skipped optional training checks
+  remains `paper_ready_eligible=true`.
+- [x] Candidate generation result for this follow-up: `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_ranking.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_ranking"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 3 tests; full
+  `tests\test_bot_factory.py` passed 302 tests and reached `[100%]`;
+  `git diff --check` exited `0` with no whitespace errors and the existing
+  LF-to-CRLF working-copy warning for this doc.
+- [ ] Remaining limitation: this was review hardening only. It did not create a
+  new thesis, generate a strategy candidate, run historical backtesting, start
+  paper/dry-run/live trading, call exchange order endpoints, use leverage or
+  shorting, or manage any trading process.
+
 Checked on 2026-05-10 JST for PR #7 malformed timerange review follow-up.
 
 - [x] Fixed the follow-up PR #7 review finding on malformed timerange strings.

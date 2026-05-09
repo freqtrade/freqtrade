@@ -14,6 +14,11 @@ RESEARCH_HANDOFF_KEYS = (
     "structural_data_quality_handoff",
     "structural_data_capability_handoff",
 )
+OPTIONAL_SKIPPED_PAPER_READY_CHECKS = {
+    "training_factory",
+    "training_strategy_identity",
+    "training_markdown_report",
+}
 
 
 @dataclass(frozen=True)
@@ -102,7 +107,7 @@ def _candidate_row(manifest: dict[str, Any], manifest_path: Path, root: Path) ->
         "training_markdown_report",
     ]
     missing_or_failed = [
-        name for name in required_chain if checks.get(name, {}).get("status") != "pass"
+        name for name in required_chain if _paper_ready_check_blocks(name, checks.get(name))
     ]
     paper_ready_eligible = recommendation == "pass" and not missing_or_failed
     reasons = _ranking_reasons(manifest, checks, missing_or_failed)
@@ -160,6 +165,15 @@ def _ranking_reasons(
             "paper_ready_blocked_until_full_historical_walk_forward_training_artifact_chain_passes"
         )
     return list(dict.fromkeys(reasons))
+
+
+def _paper_ready_check_blocks(name: str, check: dict[str, Any] | None) -> bool:
+    status = (check or {}).get("status")
+    if status == "pass":
+        return False
+    if status == "skipped" and name in OPTIONAL_SKIPPED_PAPER_READY_CHECKS:
+        return False
+    return True
 
 
 def _score(
