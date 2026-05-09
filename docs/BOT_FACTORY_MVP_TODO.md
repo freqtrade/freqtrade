@@ -99,6 +99,39 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 populated instrument-column selection fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so instrument
+  column resolution ignores empty or placeholder-only labels and, when an event
+  label is present, filters OHLCV on a populated `pair`, `symbol`, or
+  `instrument` column that actually contains that label. Mixed schemas where
+  `pair` is placeholder-only and real IDs live in `symbol` no longer collapse
+  local falsification samples to zero.
+- [x] Applied the same populated-column selection to
+  `freqtrade_ext/bot_factory/edge_discovery.py` price-series and pair-alignment
+  helpers so Edge Discovery diagnostics use the evidence-bearing instrument
+  column instead of the first merely present column.
+- [x] Added regression coverage for Edge Discovery price-frame filtering and
+  local falsification event-return calculation with `pair="unknown"` and valid
+  `symbol` labels.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report or populated_symbol_column"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 33 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
 Checked on 2026-05-09 JST for PR #8 research-gate horizon selection fix.
 
 - [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` so

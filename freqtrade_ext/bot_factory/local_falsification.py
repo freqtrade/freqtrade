@@ -19,6 +19,18 @@ _MARK_PRICE_FEATURES = (
     "mark_price_gap_delta_bps",
     "mark_price_return_bps",
 )
+_EMPTY_INSTRUMENT_LABELS = {
+    "-",
+    "--",
+    "n/a",
+    "na",
+    "nan",
+    "none",
+    "null",
+    "placeholder",
+    "undefined",
+    "unknown",
+}
 
 
 @dataclass(frozen=True)
@@ -802,9 +814,11 @@ def _event_returns(
 def _price_frame_for_event(ohlcv: pd.DataFrame, event_label: str | None) -> pd.DataFrame:
     if event_label is None:
         return ohlcv.sort_values("date").reset_index(drop=True)
-    column = _instrument_column(ohlcv)
+    column = _instrument_column_for_label(ohlcv, event_label)
     if column is None:
-        return ohlcv.sort_values("date").reset_index(drop=True)
+        if _instrument_column(ohlcv) is None:
+            return ohlcv.sort_values("date").reset_index(drop=True)
+        return ohlcv.iloc[0:0].copy()
     labels = ohlcv[column].map(_string_evidence_or_none)
     subset = ohlcv[labels == event_label]
     if subset.empty:
@@ -825,10 +839,35 @@ def _is_multi_instrument_frame(frame: pd.DataFrame) -> bool:
 
 
 def _instrument_column(frame: pd.DataFrame) -> str | None:
-    for column in ("pair", "symbol", "instrument"):
-        if column in frame.columns:
+    candidates = _instrument_column_candidates(frame)
+    return candidates[0] if candidates else None
+
+
+def _instrument_column_for_label(frame: pd.DataFrame, label: str) -> str | None:
+    for column in _instrument_column_candidates(frame):
+        labels = {
+            value
+            for value in frame[column].map(_string_evidence_or_none)
+            if value is not None
+        }
+        if label in labels:
             return column
     return None
+
+
+def _instrument_column_candidates(frame: pd.DataFrame) -> list[str]:
+    ranked: list[tuple[int, int, str]] = []
+    for priority, column in enumerate(("pair", "symbol", "instrument")):
+        if column not in frame.columns:
+            continue
+        labels = {
+            value
+            for value in frame[column].map(_string_evidence_or_none)
+            if value is not None
+        }
+        if labels:
+            ranked.append((-len(labels), priority, column))
+    return [column for _count, _priority, column in sorted(ranked)]
 
 
 def _event_instrument_label(event: dict[str, Any]) -> tuple[str | None, str | None]:
@@ -848,6 +887,8 @@ def _string_evidence_or_none(value: Any) -> str | None:
     except (TypeError, ValueError):
         pass
     text = str(value).strip()
+    if text.lower() in _EMPTY_INSTRUMENT_LABELS:
+        return None
     return text or None
 
 

@@ -73,6 +73,18 @@ _PARAMETER_SEARCH_KEYS = {
     "threshold_grid",
     "values",
 }
+_EMPTY_INSTRUMENT_LABELS = {
+    "-",
+    "--",
+    "n/a",
+    "na",
+    "nan",
+    "none",
+    "null",
+    "placeholder",
+    "undefined",
+    "unknown",
+}
 
 
 @dataclass(frozen=True)
@@ -1492,14 +1504,33 @@ def _string_label(value: Any) -> str | None:
     except (TypeError, ValueError):
         pass
     text = str(value).strip()
+    if text.lower() in _EMPTY_INSTRUMENT_LABELS:
+        return None
     return text or None
 
 
 def _instrument_column(frame: pd.DataFrame) -> str | None:
-    for column in ("pair", "symbol", "instrument"):
-        if column in frame.columns:
+    candidates = _instrument_column_candidates(frame)
+    return candidates[0] if candidates else None
+
+
+def _instrument_column_for_label(frame: pd.DataFrame, label: str) -> str | None:
+    for column in _instrument_column_candidates(frame):
+        labels = _instrument_label_set(frame, column)
+        if label in labels:
             return column
     return None
+
+
+def _instrument_column_candidates(frame: pd.DataFrame) -> list[str]:
+    ranked: list[tuple[int, int, str]] = []
+    for priority, column in enumerate(("pair", "symbol", "instrument")):
+        if column not in frame.columns:
+            continue
+        labels = _instrument_label_set(frame, column)
+        if labels:
+            ranked.append((-len(labels), priority, column))
+    return [column for _count, _priority, column in sorted(ranked)]
 
 
 def _instrument_label_set(
@@ -1529,7 +1560,7 @@ def _price_frame_for_label(
         if _is_multi_instrument_ohlcv(frame):
             return frame.iloc[0:0].copy()
         return frame.reset_index(drop=True)
-    column = _instrument_column(frame)
+    column = _instrument_column_for_label(frame, label)
     if column is None:
         return frame.iloc[0:0].copy()
     labels = frame[column].map(_string_label)
