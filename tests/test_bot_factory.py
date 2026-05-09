@@ -14816,6 +14816,113 @@ def test_local_falsification_builds_cost_edge_artifact(tmp_path):
     assert "profitable_calendar_windows_ratio" in report_text
 
 
+def test_local_falsification_labeled_events_fall_back_to_single_price_series(
+    tmp_path,
+):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    event_path = tmp_path / "events.csv"
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    rows = [
+        {
+            "date": start + pd.Timedelta(hours=index),
+            "open": 100.0 + index,
+            "high": 101.0 + index,
+            "low": 99.0 + index,
+            "close": 100.0 + index,
+            "volume": 1000.0,
+        }
+        for index in range(6)
+    ]
+    pd.DataFrame(rows).to_csv(ohlcv_path, index=False)
+    pd.DataFrame(
+        {
+            "date": [rows[index]["date"] for index in range(3)],
+            "pair": ["BTC/USDT:USDT"] * 3,
+        }
+    ).to_csv(event_path, index=False)
+
+    artifact = build_local_falsification(
+        LocalFalsificationInputs(
+            root_dir=tmp_path,
+            thesis_id="TH-LABELED-SINGLE-SERIES-001",
+            mechanism_class="single_series_labeled_event_study",
+            ohlcv_path=ohlcv_path,
+            event_path=event_path,
+            hold_candles=1,
+            all_in_cost_bps=0.0,
+            min_sample_count=3,
+            min_profitable_windows_ratio=1.0,
+            created_at="2026-05-09T00:00:00+00:00",
+        )
+    )
+
+    assert artifact["status"] == "passed"
+    assert artifact["sample_count"] == 3
+    sample = artifact["sample_preview"][0]
+    assert sample["pair"] == "BTC/USDT:USDT"
+    assert sample["price_series_instrument_unverified"] is True
+    assert "price_series_instrument_column" not in sample
+
+
+def test_local_falsification_filters_labeled_events_to_matching_price_series(
+    tmp_path,
+):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    event_path = tmp_path / "events.csv"
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    rows = []
+    btc_closes = [500.0, 1000.0, 1.0, 1.0]
+    eth_closes = [100.0, 100.0, 105.0, 105.0]
+    for index in range(4):
+        for pair, closes in (
+            ("BTC/USDT:USDT", btc_closes),
+            ("ETH/USDT:USDT", eth_closes),
+        ):
+            close = closes[index]
+            rows.append(
+                {
+                    "date": start + pd.Timedelta(hours=index),
+                    "pair": pair,
+                    "open": close,
+                    "high": close + 1.0,
+                    "low": close - 1.0,
+                    "close": close,
+                    "volume": 1000.0,
+                }
+            )
+    pd.DataFrame(rows).to_csv(ohlcv_path, index=False)
+    pd.DataFrame(
+        {
+            "date": [start + pd.Timedelta(hours=1)],
+            "pair": ["ETH/USDT:USDT"],
+        }
+    ).to_csv(event_path, index=False)
+
+    artifact = build_local_falsification(
+        LocalFalsificationInputs(
+            root_dir=tmp_path,
+            thesis_id="TH-LOCAL-PAIR-PRICE-MATCH-001",
+            mechanism_class="local_pair_price_alignment_probe",
+            ohlcv_path=ohlcv_path,
+            event_path=event_path,
+            hold_candles=1,
+            all_in_cost_bps=0.0,
+            min_sample_count=1,
+            min_profitable_windows_ratio=1.0,
+            created_at="2026-05-09T00:00:00+00:00",
+        )
+    )
+
+    assert artifact["status"] == "passed"
+    assert artifact["sample_count"] == 1
+    sample = artifact["sample_preview"][0]
+    assert sample["pair"] == "ETH/USDT:USDT"
+    assert sample["entry_price"] == 100.0
+    assert sample["exit_price"] == 105.0
+    assert sample["price_series_instrument"] == "ETH/USDT:USDT"
+    assert sample["price_series_instrument_column"] == "pair"
+
+
 def test_local_falsification_can_include_realized_long_funding_adjustment(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     event_path = tmp_path / "events.csv"

@@ -99,6 +99,38 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 final local-falsification pair fallback fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so
+  `_load_ohlcv()` keeps `pair`, `symbol`, or `instrument` columns when the
+  OHLCV input provides them. Labeled events are still evaluated against the
+  matching price-series subset before entry/exit indexes are resolved.
+- [x] Added a graceful single-series fallback for local falsification only:
+  when events carry a label but OHLCV has no instrument column, `_event_returns()`
+  now uses the unfiltered single price series instead of skipping every event.
+  Sample rows mark this as `price_series_instrument_unverified=true`; multi-pair
+  Edge Discovery gates still require aligned instrument price-series evidence.
+- [x] Added regression coverage proving labeled single-series local
+  falsification does not collapse to zero samples, and that labeled ETH events
+  with combined BTC/ETH OHLCV are priced from the ETH series rather than BTC.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 28 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
 Checked on 2026-05-09 JST for PR #8 remaining P2 review fixes.
 
 - [x] Fixed `freqtrade_ext/bot_factory/cost_model.py` override selection so

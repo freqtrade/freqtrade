@@ -436,16 +436,26 @@ def _load_ohlcv(path: Path) -> tuple[pd.DataFrame | None, str | None]:
             frame = pd.read_csv(path)
     except Exception as exc:
         return None, f"read_error: {exc}"
-    missing = [column for column in ("date", "close") if column not in frame.columns]
+    required = ("date", "close")
+    missing = [column for column in required if column not in frame.columns]
     if missing:
         return None, f"missing_columns: {', '.join(missing)}"
     frame = frame.copy()
     frame["date"] = pd.to_datetime(frame["date"], utc=True, errors="coerce")
     frame["close"] = pd.to_numeric(frame["close"], errors="coerce")
+    if "open" in frame.columns:
+        frame["open"] = pd.to_numeric(frame["open"], errors="coerce")
     frame = frame.dropna(subset=["date", "close"]).sort_values("date")
     if frame.empty:
         return None, "empty_after_date_close_cleaning"
-    return frame[["date", "close"]].reset_index(drop=True), None
+    if "open" in frame.columns:
+        frame["open"] = frame["open"].fillna(frame["close"])
+    optional = [
+        column
+        for column in ("open", "pair", "symbol", "instrument")
+        if column in frame.columns
+    ]
+    return frame[[*required, *optional]].reset_index(drop=True), None
 
 
 def _ohlcv_coverage(frame: pd.DataFrame | None) -> dict[str, Any]:
@@ -779,10 +789,12 @@ def _event_returns(
         }
         if event_label is not None:
             row[event_label_column or "pair"] = event_label
-            row["price_series_instrument"] = event_label
             instrument_column = _instrument_column(price_frame)
             if instrument_column is not None:
+                row["price_series_instrument"] = event_label
                 row["price_series_instrument_column"] = instrument_column
+            else:
+                row["price_series_instrument_unverified"] = True
         rows.append(row)
     return rows
 
@@ -792,7 +804,7 @@ def _price_frame_for_event(ohlcv: pd.DataFrame, event_label: str | None) -> pd.D
         return ohlcv.sort_values("date").reset_index(drop=True)
     column = _instrument_column(ohlcv)
     if column is None:
-        return ohlcv.iloc[0:0].copy()
+        return ohlcv.sort_values("date").reset_index(drop=True)
     labels = ohlcv[column].map(_string_evidence_or_none)
     subset = ohlcv[labels == event_label]
     if subset.empty:
