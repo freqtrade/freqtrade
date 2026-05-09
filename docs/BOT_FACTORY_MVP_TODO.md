@@ -11,18 +11,18 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Candidate Factory Direction Guardrails (Non-Subordinate to ML Tuning)
 
-- [ ] Prevent the iteration loop from degrading into repeated per-parameter tweaking.
-- [ ] Require each generated candidate to declare a hypothesis-level `thesis_id`,
+- [x] Prevent the iteration loop from degrading into repeated per-parameter tweaking.
+- [x] Require each generated candidate to declare a hypothesis-level `thesis_id`,
   `thesis_type`, and falsification criteria (not just threshold changes).
-- [ ] Add a local `research_brief.json` artifact step that records recent literature
+- [x] Add a local `research_brief.json` artifact step that records recent literature
   references, why each reference is relevant, and which candidate hypotheses it
   motivates.
-- [ ] Add loop budget controls that cap retries per thesis and force exploration of
+- [x] Add loop budget controls that cap retries per thesis and force exploration of
   distinct hypothesis families after repeated failures.
-- [ ] Add normalized failure taxonomy outputs (for example:
+- [x] Add normalized failure taxonomy outputs (for example:
   `FAIL_OVERFIT_WF_GAP`, `FAIL_COST_SENSITIVE`, `FAIL_REGIME_FRAGILE`) so
   iteration inputs are evidence-driven instead of parameter-only.
-- [ ] Gate promotion to later stages on hypothesis diversity plus walk-forward
+- [x] Gate promotion to later stages on hypothesis diversity plus walk-forward
   robustness, not on single-run backtest improvement.
 
 ## Current Reusable Work
@@ -98,6 +98,425 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 - [x] Add reviewer notes and promotion recommendations.
 
 ## Latest Verification
+
+Checked on 2026-05-10 JST for PR #7 trend-continuation and generated-file static-check review follow-up.
+
+- [x] Fixed the new PR #7 review finding on `trend_continuation` exits.
+  Generated `trend_continuation` strategies now treat RSI exit as a high-RSI
+  target (`rsi >= sell_rsi_exit`) aligned with the other exit targets instead
+  of exiting on ordinary post-entry RSI cooldowns.
+- [x] Fixed the new PR #7 review finding on Candidate Evaluation static
+  safety checks. When generated metadata provides a `.py`
+  `generated_strategy_path`, the historical execution plan now passes that
+  generated file path directly to `scripts\bot_factory_static_check.py` instead
+  of broadening the scan to the parent strategies directory.
+- [x] Added regression coverage for both review findings: generated
+  `trend_continuation` code must use the high-RSI comparison, and candidate
+  evaluation must static-check the generated strategy file path.
+- [x] Candidate generation result for this follow-up: `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator_varies_logic_by_hypothesis_family or candidate_evaluation_static_check_uses_generated_strategy_file_path"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator or candidate_evaluation"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 2 tests; broader
+  strategy-code/candidate-evaluation selector reached `[100%]`; full
+  `tests\test_bot_factory.py` reached `[100%]`; `git diff --check` exited `0`
+  with no whitespace errors and the existing LF-to-CRLF working-copy warning
+  for this doc.
+- [ ] Remaining limitation: this was review hardening only. It did not create a
+  new thesis, generate a strategy candidate, run historical backtesting, start
+  paper/dry-run/live trading, call exchange order endpoints, use leverage or
+  shorting, or manage any trading process.
+
+Checked on 2026-05-10 JST for PR #7 skipped optional ranking checks review follow-up.
+
+- [x] Fixed the new PR #7 review finding on Candidate Ranking paper-ready
+  blockers. `freqtrade_ext/bot_factory/candidate_ranking.py` now treats
+  `training_factory`, `training_strategy_identity`, and
+  `training_markdown_report` with `status="skipped"` as non-blocking optional
+  checks, while missing or failed training checks still block paper readiness.
+- [x] Updated ranking regression coverage so a rule-based candidate with passing
+  historical and walk-forward chains plus skipped optional training checks
+  remains `paper_ready_eligible=true`.
+- [x] Candidate generation result for this follow-up: `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_ranking.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_ranking"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 3 tests; full
+  `tests\test_bot_factory.py` passed 302 tests and reached `[100%]`;
+  `git diff --check` exited `0` with no whitespace errors and the existing
+  LF-to-CRLF working-copy warning for this doc.
+- [ ] Remaining limitation: this was review hardening only. It did not create a
+  new thesis, generate a strategy candidate, run historical backtesting, start
+  paper/dry-run/live trading, call exchange order endpoints, use leverage or
+  shorting, or manage any trading process.
+
+Checked on 2026-05-10 JST for PR #7 malformed timerange review follow-up.
+
+- [x] Fixed the follow-up PR #7 review finding on malformed timerange strings.
+  Candidate iteration now blocks non-`YYYYMMDD-YYYYMMDD` timerange values with a
+  structured `timerange_values_valid` failure using `reason=invalid_format`
+  instead of silently treating them as valid.
+- [x] Added regression coverage for `2025-01-01-2025-02-01` style malformed
+  timeranges returning a blocked iteration plan.
+- [x] Prior resolved review comments were mapped to response commit
+  `7cb3b83cf`; this follow-up malformed timerange review is mapped to this
+  follow-up commit.
+- [x] Candidate generation result for this follow-up: `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_iteration.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_iteration"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 7 tests; full
+  `tests\test_bot_factory.py` passed 302 tests and reached `[100%]`;
+  `git diff --check` exited `0` with no whitespace errors and the existing
+  LF-to-CRLF working-copy warning for this doc.
+- [ ] Remaining limitation: this was review hardening only. It did not create a
+  new thesis, generate a strategy candidate, run historical backtesting, start
+  paper/dry-run/live trading, call exchange order endpoints, use leverage or
+  shorting, or manage any trading process.
+
+Checked on 2026-05-09 JST for PR #7 final review response and PR #8 stack audit.
+
+- [x] Confirmed PR #7 (`codex/bot-factory-candidate-factory-completion`) includes
+  the PR #8 research-first edge gate stack via merge commit `dc6fec6ed3`.
+- [x] Fixed unresolved PR #7 review findings:
+  - invalid candidate-iteration timerange calendar dates now return a structured
+    `timerange_values_valid` blocker instead of raising `ValueError`;
+  - `volatility_breakout` breakout-failure exits now compare against the prior
+    rolling low, so the exit branch is reachable;
+  - Bybit open-interest and long/short-ratio request failures now return
+    structured blocked artifacts instead of propagating transport exceptions;
+  - long/short-ratio output drops zero short-ratio rows before deriving
+    `long_short_ratio`, avoiding NaN rows in generated parquet/CSV output.
+- [x] Reconfirmed the research-first gate wiring: Edge Discovery sets
+  `proposal_generation_allowed` and `candidate_generation_allowed` from
+  `research_gate.passes_research_gate`, and the proposal generator blocks legacy
+  proposal flags when the Edge Discovery research gate fails.
+- [x] Candidate generation result for this audit: `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\bybit_open_interest.py freqtrade_ext\bot_factory\bybit_long_short_ratio.py freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_iteration or volatility_breakout or bybit_open_interest or edge_discovery or research_gate"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 33 tests; full
+  `tests\test_bot_factory.py` passed 301 tests and reached `[100%]`;
+  `git diff --check` exited `0` with no whitespace errors and the existing
+  LF-to-CRLF working-copy warning for this doc.
+- [ ] Remaining limitation: this was review hardening only. It did not create a
+  new thesis, generate a strategy candidate, run historical backtesting, start
+  paper/dry-run/live trading, call exchange order endpoints, use leverage or
+  shorting, or manage any trading process.
+
+Checked on 2026-05-09 JST for PR #8 event-label matching and shifted-control fixes.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so event
+  instrument labels are chosen by matching the available OHLCV instrument
+  columns. If an event row has both a coarse `pair` label and a populated
+  `symbol` that matches the price series, local falsification now evaluates the
+  event against the `symbol` price subset instead of the coarse mixed slice.
+- [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` negative controls so
+  shifted controls preserve the requested sample count near time-series
+  boundaries by shifting within the same pair's eligible dates instead of
+  clamping several events onto one boundary timestamp.
+- [x] Added regression coverage for event-label selection with coarse
+  `pair`/specific `symbol` rows and for shifted future controls preserving
+  sample count and pair evidence near the right boundary.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report or populated_symbol_column or local_events_grouped_features"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 36 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 local-event grouped instrument scan fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_events.py` so local OHLCV
+  feature grouping scans all candidate instrument columns and ignores empty or
+  placeholder labels such as `unknown`. A placeholder-only `pair` column no
+  longer prevents grouped `shift`, rolling mean, and rolling std features from
+  using a populated `symbol` or `instrument` column.
+- [x] Added regression coverage proving `return_bps` and `sma_distance_bps`
+  stay grouped by populated `symbol` when BTC and ETH rows share timestamps and
+  `pair="unknown"`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report or populated_symbol_column or local_events_grouped_features"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 34 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 populated instrument-column selection fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so instrument
+  column resolution ignores empty or placeholder-only labels and, when an event
+  label is present, filters OHLCV on a populated `pair`, `symbol`, or
+  `instrument` column that actually contains that label. Mixed schemas where
+  `pair` is placeholder-only and real IDs live in `symbol` no longer collapse
+  local falsification samples to zero.
+- [x] Applied the same populated-column selection to
+  `freqtrade_ext/bot_factory/edge_discovery.py` price-series and pair-alignment
+  helpers so Edge Discovery diagnostics use the evidence-bearing instrument
+  column instead of the first merely present column.
+- [x] Added regression coverage for Edge Discovery price-frame filtering and
+  local falsification event-return calculation with `pair="unknown"` and valid
+  `symbol` labels.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report or populated_symbol_column"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 33 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 research-gate horizon selection fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` so
+  `_event_level_post_cost_report()` only selects a `passes_research_gate=true`
+  horizon when that same horizon also has `status="passed"`. Structurally
+  failing horizons can no longer drive the event-level research gate to true
+  while a different horizon satisfies the overall `passing_horizon_count`.
+- [x] When no structurally passing horizon also passes the research gate, the
+  report now prefers the best structurally passing horizon for diagnostics; if
+  none exists, it falls back to the prior best-horizon diagnostic path.
+- [x] Added regression coverage proving a structurally failed horizon with
+  `passes_research_gate=true` is ignored in favor of a structurally passed
+  horizon whose research gate fails, preserving `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 31 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 cost-model scenario override merge fixes.
+
+- [x] Fixed `freqtrade_ext/bot_factory/cost_model.py` so partial scenario
+  overrides that only change non-price fields, such as `no_fill_rate`, inherit
+  the fallback `total_cost_bps_override` instead of silently reverting to the
+  component-sum default. Explicit `total_cost_bps=0` remains preserved.
+- [x] Fixed selected contextual `cost_model.overrides` so they merge onto base
+  `cost_model.scenarios` instead of replacing the whole scenario source. Base
+  scenarios such as a shared stress profile now survive when an override only
+  adjusts the normal scenario.
+- [x] Added regression coverage for inherited total-cost preservation on
+  non-price scenario overrides and base-scenario retention when a selected
+  override supplies only one scenario.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 30 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 final local-falsification pair fallback fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so
+  `_load_ohlcv()` keeps `pair`, `symbol`, or `instrument` columns when the
+  OHLCV input provides them. Labeled events are still evaluated against the
+  matching price-series subset before entry/exit indexes are resolved.
+- [x] Added a graceful single-series fallback for local falsification only:
+  when events carry a label but OHLCV has no instrument column, `_event_returns()`
+  now uses the unfiltered single price series instead of skipping every event.
+  Sample rows mark this as `price_series_instrument_unverified=true`; multi-pair
+  Edge Discovery gates still require aligned instrument price-series evidence.
+- [x] Added regression coverage proving labeled single-series local
+  falsification does not collapse to zero samples, and that labeled ETH events
+  with combined BTC/ETH OHLCV are priced from the ETH series rather than BTC.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 28 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 remaining P2 review fixes.
+
+- [x] Fixed `freqtrade_ext/bot_factory/cost_model.py` override selection so
+  matching overrides are ranked by selector specificity. A generic override no
+  longer wins over a later pair/timeframe/order-type-specific override.
+- [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` negative-control
+  eligible start timestamps so `next_candle_open` controls include the last
+  valid event timestamp for the configured holding period.
+- [x] Added regression tests for most-specific cost override selection and the
+  negative-control eligible timestamp off-by-one case.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 15 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with no warnings.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 multi-pair price-series alignment hardening.
+
+- [x] Hardened `freqtrade_ext/bot_factory/local_falsification.py` so
+  `_event_returns()` resolves entry and exit indexes inside the OHLCV subset
+  matching the event's `pair`, `symbol`, or `instrument` label. Events with a
+  label that has no matching OHLCV instrument are skipped; multi-instrument
+  OHLCV events without labels cannot create return evidence.
+- [x] Hardened `freqtrade_ext/bot_factory/edge_discovery.py` negative controls
+  so random entries sample within the same pair, shuffled controls preserve
+  pair distribution, shifted controls move inside the same pair time series,
+  and control rows retain pair evidence.
+- [x] Hardened `freqtrade_ext/bot_factory/local_events.py` OHLCV feature
+  calculation so `return_bps`, `sma_distance_bps`, `volume_zscore`, and other
+  rolling or shifted features are computed per instrument when combined
+  multi-pair OHLCV is supplied.
+- [x] Added regression coverage proving an ETH event at a shared timestamp is
+  evaluated against the ETH price series, not the BTC row; label-only
+  single-stream data cannot satisfy `not_single_pair_dependent`; and random,
+  shuffled, and shifted controls remain pair-aware.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 13 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with CRLF working-copy warnings only.
+- [ ] Remaining limitation: this validates local combined-OHLCV price-series
+  alignment for Edge Discovery evidence, but it is still not a strategy
+  candidate and does not start backtesting, paper, dry-run, live trading,
+  exchange order placement, leverage, shorting, or process control.
+
+Checked on 2026-05-09 JST for PR #8 research-first Edge Discovery gate hardening.
+
+- [x] Hardened `freqtrade_ext/bot_factory/cost_model.py` so top-level
+  `all_in_cost_bps=0` is preserved and only `None` falls back to 12.0.
+- [x] Hardened `freqtrade_ext/bot_factory/edge_discovery.py`,
+  `freqtrade_ext/bot_factory/local_events.py`, and
+  `freqtrade_ext/bot_factory/local_falsification.py` so
+  `pair_concentration` is computed from actual event-return pair evidence
+  (`pair`, `symbol`, or `instrument`) rather than declared
+  `instrument_universe`; event rows without pair evidence are treated as
+  single-pair dependent.
+- [x] Clarified `next_candle_open` event-study semantics: with
+  `hold_candles=1`, entry is the next candle open and exit is that same
+  candle close. Event-return samples now record `exit_price_type` and
+  `exit_price`.
+- [x] Tied `proposal_generation_allowed` to
+  `candidate_generation_allowed` and updated proposal/codegen handoffs so a
+  status-passed Edge Discovery artifact with a failed research gate cannot
+  advance through the legacy proposal flag.
+- [x] Added regression coverage in `tests/test_bot_factory.py` for zero-cost
+  top-level specs, one-candle next-open exit semantics, actual multi-pair
+  evidence, declared-multi-symbol false positives, negative-control no-candidate
+  behavior, and legacy proposal-flag blocking.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 10 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with CRLF working-copy warnings only.
+- [ ] Remaining limitation: this hardens the research gate and preserves the
+  PR's `no candidate generated` posture. It does not create or promote a
+  trading candidate, start backtesting/paper/live trading, model maker fill
+  probability as a standalone gate, or estimate effective independent sample
+  count for overlapping events and cooldown windows.
 
 Checked on 2026-05-04 UTC for Strategy Code Generator mode extension.
 
@@ -1840,16 +2259,18 @@ Checked on 2026-04-26 JST.
 
 ## Strategy Generation / Candidate Factory TODO
 
-Status: Strategy Proposal Generator and Strategy Code Generator v1 baseline
-implemented. Full AI/ML/hybrid strategy generation, Candidate Evaluation
-Pipeline, Candidate Ranking / Registry, Iteration / Improvement Loop, and paper
-deployment remain unimplemented. This section organizes the next safe Bot
-Factory work after the Phase 1/2 evaluation pipeline and the Phase 3
-local-artifact readiness gates. It must stay limited to local artifacts,
-dependency checks, static checks, OHLCV quality checks, historical `freqtrade
-backtesting`, FreqAI validation when applicable, walk-forward evaluation,
-training factory orchestration, and local reports until a later explicitly
-approved paper path exists.
+Status: Strategy Proposal Generator, Strategy Code Generator, local-artifact
+Candidate Evaluation, Candidate Ranking / Registry, and Iteration planning
+foundations are implemented. They remain historical-safe and metadata/local
+artifact driven. Candidate evaluation still does not execute the full
+backtest, walk-forward, and training subprocess chain internally, and paper
+deployment remains out of scope until explicitly requested and preflight
+approved. This section organizes the remaining safe Bot Factory work after the
+Phase 1/2 evaluation pipeline and the Phase 3 local-artifact readiness gates.
+It must stay limited to local artifacts, dependency checks, static checks,
+OHLCV quality checks, historical `freqtrade backtesting`, FreqAI validation
+when applicable, walk-forward evaluation, training factory orchestration, and
+local reports until a later explicitly approved paper path exists.
 
 Project intent guardrail:
 
@@ -1867,6 +2288,14 @@ Project intent guardrail:
   generation and evaluation: either extend the code generator to support
   FreqAI/hybrid ML candidates, or implement enough Candidate Evaluation
   Pipeline to compare the current baseline against future ML/hybrid candidates.
+- Direction correction after 32 candidates / 40 tried hypothesis families:
+  do not keep adding another supported strategy variant as the default next
+  step. The current evidence has `paper_ready_count=0`, and the supported
+  generator variants are effectively exhausted as a source of new positive
+  evidence. The next safe default phase is Edge Discovery / Research Lab:
+  identify post-cost market effects first, then permit research selection,
+  proposal generation, and codegen only after a pre-proposal local
+  falsification artifact passes against the latest failure memory.
 
 Safety boundaries for all generated candidates:
 
@@ -1880,6 +2309,189 @@ Safety boundaries for all generated candidates:
 - Keep JSON, CSV, Markdown, and local logs as the source of truth. MLflow may be
   optional, but it must not replace local artifacts.
 
+### Edge Discovery / Research Lab Pivot
+
+Status: required before any additional default candidate-family generation.
+This phase exists because generating more Freqtrade strategy files has not
+found a profitable or paper-ready candidate. The factory must first discover
+and falsify fee-adjusted market effects from local historical evidence.
+
+- [x] Add an `edge_discovery` local artifact schema under
+  `registry/strategies/research_decisions/<id>/` that records hypothesis,
+  source data paths, feature definitions, horizon(s), cost assumptions,
+  sample counts, calendar-window stability, and blocked follow-up actions.
+  - 2026-05-07 JST: added `research_edge_discovery` artifacts written as
+    `edge_discovery.json` plus `edge_discovery_report.md`.
+- [x] Build an edge-surface runner that evaluates fixed, theory-named feature
+  conditions across multiple forward horizons without writing strategy code.
+  It must report gross edge, all-in-cost bps, net edge, win rate, sample count,
+  date span, calendar-window counts, and concentration diagnostics.
+  - 2026-05-07 JST: v1 runner added in
+    `freqtrade_ext/bot_factory/edge_discovery.py` with CLI
+    `scripts/bot_factory_build_edge_discovery.py`. It reports gross/price edge,
+    funding adjustment, all-in costs, net edge, win rate, sample count, data
+    span, rolling windows, and quarterly calendar windows across multiple
+    horizons.
+  - 2026-05-07 JST: added explicit event concentration diagnostics to
+    `edge_discovery.json` and `edge_discovery_report.md`, including active day,
+    week, month, and quarter counts plus max event share by each bucket.
+- [x] Support data-first breadth before codegen: BTC/ETH OHLCV, funding,
+  mark-price, open-interest, long/short ratio, and locally supplied
+  order-book snapshot quality reports. Do not treat current REST orderbook
+  snapshots as historical data unless a timestamped local parquet exists.
+  - 2026-05-07 JST: v1 reuses the closed-context feature surface from
+    `local_events`, supports informative OHLCV for cross-asset probes, and
+    records order-book quality report JSON paths without treating current
+    snapshot REST data as historical features.
+- [x] Add cross-asset / multi-pair extension points before single-strategy
+  generation resumes. The first implementation can stay local and long-only,
+  but the artifact schema must be able to distinguish single-asset,
+  cross-asset, market-neutral, funding/basis, and microstructure hypotheses.
+  - 2026-05-07 JST: `research_edge_discovery` artifacts now record
+    `hypothesis_scope`, `instrument_universe`, and
+    `market_structure_domains`. Supported scopes are `single_asset`,
+    `cross_asset`, `market_neutral`, `funding_basis`, and `microstructure`;
+    `cross_asset` and `market_neutral` specs are blocked unless the instrument
+    universe contains at least two instruments.
+- [x] Add a promotion gate from edge discovery to research selection:
+  proposal/codegen is blocked unless the edge artifact passes minimum sample,
+  minimum data-span, positive post-cost net edge, walk/calendar stability, and
+  prior-failure novelty checks against the latest synthesis/map.
+  - 2026-05-07 JST: proposal generation now requires at least one passing
+    `research_edge_discovery` artifact for the same thesis, and codegen rejects
+    accepted proposal metadata that lacks a passing `edge_discovery_handoff`.
+  - 2026-05-07 JST: failed or blocked `research_edge_discovery` artifacts can
+    now be supplied to failure synthesis with `--edge-discovery-json`. Valid
+    failed edge theses/mechanisms are carried into synthesis, causal-map
+    guidance, and research-selection novelty blockers before any proposal is
+    written.
+- [x] Add an explicit anti-parameter-search rule: scanning many thresholds is
+  not evidence. Any threshold used by the edge runner must be either fixed by
+  the research brief, chosen from a tiny predeclared grid with correction /
+  holdout reporting, or recorded as exploratory and ineligible for proposal
+  generation.
+  - 2026-05-07 JST: v1 blocks `threshold_grid`, `parameter_grid`,
+    `search_space`, `hyperopt`, `optimization`, `values`, `min/max/step`, and
+    related grid markers in edge specs or conditions. This is intentionally
+    stricter than a corrected-grid workflow; tiny-grid/holdout reporting is
+    still a future extension.
+- [x] Update failure synthesis and causal maps to ingest failed edge-discovery
+  artifacts so rejected mechanisms block future research selection before any
+  strategy proposal is written.
+- [x] Keep Strategy Proposal Generator and Strategy Code Generator paused as
+  the default action until at least one edge-discovery artifact passes the gate
+  above. Existing codegen paths remain available only for already-approved
+  handoff tests and should not be used to create a new smoke candidate by
+  default.
+  - 2026-05-07 JST: `scripts/bot_factory_generate_strategy_proposal.py` now
+    requires `--edge-discovery-json`; `build_strategy_proposal` blocks missing,
+    failed, mismatched-thesis, unsafe, parameter-search, or direct-codegen edge
+    artifacts; `build_strategy_code` blocks accepted/crafted metadata without a
+    passing proposal-stage edge-discovery handoff.
+
+2026-05-07 JST implementation note:
+
+- Added `freqtrade_ext/bot_factory/edge_discovery.py` and
+  `scripts/bot_factory_build_edge_discovery.py`.
+- Added focused tests in `tests/test_bot_factory.py` for multi-horizon
+  post-cost edge evidence, parameter-grid blocking, and CLI argument mapping.
+- Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\edge_discovery.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery or local_event_builder or local_falsification"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_build_edge_discovery.py --help`
+  - `git diff --check`
+- Results: compile passed; focused pytest passed 3 tests and reached `[100%]`;
+  adjacent local event/falsification focused pytest passed 23 tests and reached
+  `[100%]`; CLI help rendered; `git diff --check` passed with only existing
+  LF-to-CRLF working-copy warnings.
+- Post-verification cleanup removed 33 workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`; follow-up cache count was `0`.
+- This does not produce a profitable candidate and does not authorize strategy
+  codegen; it only creates the evidence layer that must pass before normal
+  proposal/codegen resumes.
+
+2026-05-07 JST proposal/codegen handoff gate note:
+
+- Added proposal-stage `edge_discovery_handoff` metadata and codegen-stage
+  verification of that handoff.
+- `StrategyProposalInputs.evidence_paths` accepts `edge_discovery` /
+  `research_edge_discovery` JSON labels. A proposal is blocked unless at least
+  one artifact has `factory=research_edge_discovery`, `status=passed`, matching
+  `thesis_id`, positive post-cost net edge, passing anti-parameter-search
+  policy, safe historical-only scope, and direct strategy codegen disabled.
+- `scripts/bot_factory_generate_strategy_proposal.py` requires
+  `--edge-discovery-json`, making the default CLI path unavailable without
+  passing Edge Discovery evidence.
+- Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery or edge_discovery_handoff or strategy_proposal_generator_writes_safe_markdown or strategy_proposal_generator_blocks_without_passing_edge_discovery or strategy_code_generator_blocks_accepted_metadata_without_edge_discovery_handoff or strategy_code_generator_writes_long_only_strategy"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_proposal_generator or strategy_code_generator"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --help`
+  - `git diff --check`
+- Results: compile passed; focused handoff tests passed 7 tests and reached
+  `[100%]`; proposal/codegen focused regression passed; full
+  `tests/test_bot_factory.py` passed and reached `[100%]`; proposal CLI help
+  rendered with required `--edge-discovery-json`; `git diff --check` passed
+ with only existing LF-to-CRLF working-copy warnings.
+- Post-verification cleanup removed 33 workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`; follow-up cache count was `0`.
+
+2026-05-07 JST edge rejection memory note:
+
+- `CandidateFailureSynthesisInputs` now accepts `edge_discovery_paths`, and
+  `scripts/bot_factory_synthesize_candidate_failures.py` exposes
+  `--edge-discovery-json`.
+- Valid `research_edge_discovery` artifacts with `status=failed` or
+  `status=blocked`, safe historical-only scope, passing anti-parameter-search
+  metadata, and no method-level blockers are stored as edge rejection memory.
+  Invalid edge artifacts, such as parameter-search artifacts, are counted but
+  do not block future thesis selection.
+- `candidate_failure_map.py` carries validated edge rejections into
+  `research_selection_guidance.validated_edge_discovery_rejections` and adds
+  required research questions for materially different edge hypotheses.
+- `research_selection.py` now includes edge-discovery failed thesis IDs and
+  mechanism classes in novelty assessment and blocks repeated rejected edge
+  mechanisms with
+  `research_thesis_outside_failure_synthesis_edge_rejections`.
+- Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_failure_synthesis.py freqtrade_ext\bot_factory\candidate_failure_map.py freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery_rejection or local_rejection or research_selection_gate_blocks_validated_edge_discovery_rejection or research_selection_gate_ignores_invalid_edge_discovery_rejection"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_failure_synthesis or causal_failure_map or research_selection_gate"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --help`
+  - `git diff --check`
+- Results: compile passed; focused edge/local rejection pytest passed 8 tests;
+  broader synthesis/map/research-selection pytest passed 30 tests; full
+  `tests/test_bot_factory.py` passed and reached `[100%]`; synthesis CLI help
+  rendered with `--edge-discovery-json`; `git diff --check` passed with only
+  existing LF-to-CRLF working-copy warnings.
+- Post-verification cleanup removed 33 workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`; follow-up cache count was `0`.
+- This still does not produce a profitable or paper-ready candidate. It closes
+  the failed-edge memory loop so the factory stops repeating rejected
+  mechanisms before proposal/codegen.
+
+2026-05-07 JST edge concentration diagnostics note:
+
+- `freqtrade_ext/bot_factory/edge_discovery.py` now records
+  `concentration_diagnostics` in each edge artifact.
+- The report includes a dedicated "Concentration Diagnostics" section with
+  active day/week/month/quarter counts and max event share per bucket.
+- Focused verification:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\edge_discovery.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery"`
+- Final verification also ran:
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+  - `git diff --check`
+- Results: compile passed; edge discovery focused pytest passed 8 tests and
+  reached `[100%]`; full `tests/test_bot_factory.py` passed and reached
+  `[100%]`; `git diff --check` passed with only existing LF-to-CRLF
+  working-copy warnings.
+- Post-verification cleanup removed 33 workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`; follow-up cache count was `0`.
+
 ### Strategy Proposal Generator
 
 - [x] Add a proposal generator that creates a clear market hypothesis from
@@ -1892,6 +2504,9 @@ Safety boundaries for all generated candidates:
   `strategy_name`, `strategy_type`, `target_exchange`, `target_symbols`,
   `timeframe`, `spot_or_futures`, `long_short`, source inputs, and proposal
   status.
+- [x] Require structured theory/literature references with publication or
+  version date, relevance rationale, and motivated thesis IDs so proposals
+  remain theory-first rather than parameter-search-first.
 - [x] Require explicit `Required Data`, `Entry Logic`, `Exit Logic`,
   `Risk Logic`, `Expected Failure Cases`, `Backtest Plan`, and
   `Rejection Conditions`.
@@ -2326,3 +2941,10809 @@ Follow-up on 2026-05-05 UTC for candidate evaluation recommendation semantics an
   ```
 
   Result: blocked by the same Python 3.10 vs 3.11 `datetime.UTC` limitation.
+
+Follow-up on 2026-05-06 JST for Strategy Generation / Candidate Factory cleanup and completion.
+
+- [x] Preserved the core implementation from the interrupted CLI goal and
+  removed unrelated `/goals` handoff documentation from the intended Bot
+  Factory diff.
+- [x] Extended strategy proposal inputs with generator mode, thesis metadata,
+  evidence references, normalized failure taxonomy, retry budgets, strategy
+  logic variants, feature/target intent, rule filters, and risk profile fields.
+- [x] Extended strategy-code generation with strategy logic variants
+  (`mean_reversion_pullback`, `trend_continuation`, and
+  `volatility_breakout`), variant-specific defaults, novelty metadata, and
+  targeted safety handling for FreqAI target shifts.
+- [x] Enriched candidate evaluation manifests, records, reports, and index rows
+  with artifact path contracts for static checks, historical backtests,
+  walk-forward reports, and training reports while preserving historical-safe
+  metadata-driven orchestration.
+- [x] Added candidate ranking artifacts and CLI support that gate paper-ready
+  eligibility on recommendation, identity, backtest, walk-forward, and training
+  artifact chains before producing ranking JSON and Markdown reports.
+- [x] Added candidate iteration artifacts and CLI support that convert failed
+  candidate evidence into bounded revision inputs while blocking unsafe live,
+  leverage, shorting, future-data, parameter-only, and already-passing
+  revisions.
+- [x] Removed generated proposal/strategy smoke artifacts from the intended
+  source diff because the candidate evaluation smoke run was interrupted before
+  a complete candidate evidence chain was produced.
+- [x] Verification commands run:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  ```
+
+  Result: passed with `ok=true`; wrote
+  `registry\strategies\checks\20260506T074257Z_freqai_env.json`.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile `
+    freqtrade_ext\bot_factory\strategy_proposals.py `
+    freqtrade_ext\bot_factory\strategy_code.py `
+    freqtrade_ext\bot_factory\candidate_evaluation.py `
+    freqtrade_ext\bot_factory\candidate_ranking.py `
+    freqtrade_ext\bot_factory\candidate_iteration.py `
+    scripts\bot_factory_generate_strategy_proposal.py `
+    scripts\bot_factory_evaluate_candidate.py `
+    scripts\bot_factory_rank_candidates.py `
+    scripts\bot_factory_iterate_candidate.py `
+    tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: passed; pytest emitted a Windows temp-directory cleanup
+  `PermissionError` during `atexit`, but the test command exited with code 0.
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true` with existing review warnings in local strategy files;
+  wrote `registry\strategies\checks\20260506T074643Z_static_check.json`.
+- [x] Remaining limitation: candidate evaluation still validates and aggregates
+  local historical artifacts and command previews; it does not execute the full
+  backtest, walk-forward, or training subprocess chain internally. Paper
+  deployment remains intentionally out of scope.
+
+Follow-up on 2026-05-06 JST for theory-first candidate guardrails.
+
+- [x] Started from the required handoff status command:
+
+  ```powershell
+  git status --short --untracked-files=all
+  ```
+
+  Result: working tree already contained docs-only user/prior-agent changes:
+  `docs/BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md` deleted and
+  `docs/BOT_FACTORY_MVP_TODO.md` modified. These changes were preserved.
+- [x] Added structured theory/literature reference support to
+  `freqtrade_ext/bot_factory/strategy_proposals.py` and
+  `scripts/bot_factory_generate_strategy_proposal.py`. Proposal metadata now
+  requires at least one `research_references` entry with `reference_id`,
+  `title`, `source`, `published_at`, relevance rationale, and
+  `motivated_thesis_ids`; it also writes the structured references into
+  proposal metadata and the proposal-side `research_brief` contract.
+- [x] Updated `registry/strategies/proposals/TEMPLATE.md` and proposal
+  Markdown rendering so `Research References` is a first-class proposal section
+  aligned with the required metadata.
+- [x] Updated `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` so
+  the next-agent handoff reflects the current theory-first proposal/code,
+  local-artifact evaluation, ranking, and iteration foundations instead of
+  sending future work back to already-implemented generator-mode tasks.
+- [x] Added opt-in historical-safe candidate execution wiring to
+  `freqtrade_ext/bot_factory/candidate_evaluation.py` and
+  `scripts/bot_factory_evaluate_candidate.py`. The default mode still only
+  aggregates local artifacts. When `--execute-historical-chain` is explicitly
+  supplied, candidate evaluation constructs and runs only existing checked
+  Bot Factory wrappers in order: static strategy check, FreqAI validation when
+  applicable, OHLCV quality check, historical backtest, walk-forward when
+  windows are supplied, and FreqAI training when a training timerange is
+  supplied. The execution manifest records commands, logs, expected artifact
+  paths, result codes, and safety scope flags showing no paper/dry-run/live
+  startup or order placement.
+- [x] Added focused fake-runner coverage in `tests/test_bot_factory.py` proving
+  the opt-in execution path calls only the checked wrapper scripts in the
+  expected order and feeds produced artifacts back into recommendation checks.
+- [x] Added execution blocker coverage proving the opt-in path refuses to run
+  when required config, timerange, or strategy path inputs are missing.
+- [x] Added wrapper-failure coverage proving the opt-in path stops after the
+  first failed checked wrapper while preserving command logs, return code, and
+  partial artifact paths in `candidate_execution`.
+- [x] Exposed the candidate-evaluation CLI argument mapping as
+  `build_inputs_from_args(...)` and added focused test coverage proving the
+  new `--execute-historical-chain`, run-id, timeframe, timerange, pair,
+  walk-forward, training, Python executable, artifact-input, and output-root
+  flags map into `CandidateEvaluationInputs`.
+- [x] Added Windows-friendly `@path` support for
+  `scripts/bot_factory_generate_strategy_proposal.py --research-reference` so
+  structured research-reference JSON can be supplied from a local file when
+  PowerShell strips inline JSON quotes. Added focused test coverage for the
+  file-backed parser path, including a root constraint so `@path` cannot read
+  arbitrary files outside the workspace.
+- [x] Hardened `freqtrade_ext/bot_factory/strategy_code.py` so generated
+  candidate metadata and `research_brief.json` preserve structured research
+  references, candidate identity, thesis fields, relevance rationale, and
+  motivated thesis IDs. Code generation blocks if references are missing,
+  unstructured, lack relevance, or do not map to the current `thesis_id`.
+- [x] Hardened `freqtrade_ext/bot_factory/candidate_ranking.py` so
+  `paper_ready_eligible` requires a passing local artifact chain plus
+  hypothesis-family diversity across supplied candidate manifests. A single
+  full-chain candidate is now blocked from `paper_ready_candidate_ids` with the
+  `hypothesis_diversity` blocker.
+- [x] Extended `freqtrade_ext/bot_factory/candidate_evaluation.py` so
+  candidate manifests, records, reports, and `next_candidate_input` preserve
+  `research_brief` and structured `research_references` from proposal/generated
+  metadata. Candidate evaluation now records a `research_brief` check so the
+  theory trail remains available to ranking and iteration.
+- [x] Updated focused tests in `tests/test_bot_factory.py` for structured
+  research references, research-brief thesis mapping, candidate-evaluation
+  preservation, and diversity-gated ranking.
+- [x] Verification commands run:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_evaluate_candidate.py tests\test_bot_factory.py
+  ```
+
+  Result: passed.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: passed with exit code 0.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_evaluation.py scripts\bot_factory_evaluate_candidate.py tests\test_bot_factory.py
+  ```
+
+  Result: passed after adding CLI execution-flag mapping coverage.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: passed after adding CLI execution-flag mapping coverage.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  ```
+
+  Result: passed after adding root-constrained `@path` research-reference
+  support.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: passed after adding root-constrained `@path` research-reference
+  support.
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  ```
+
+  Result: `ok=true`, 7 files checked, existing review warnings only; wrote
+  `registry\strategies\checks\20260506T082629Z_static_check.json`.
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  ```
+
+  Result: `ok=true` on Python 3.12.4; `lightgbm`, `xgboost`, `tensorboard`,
+  and `datasieve` installed; wrote
+  `registry\strategies\checks\20260506T082630Z_freqai_env.json`.
+- [x] Generated a theory-backed local proposal smoke candidate using the
+  file-backed research-reference path:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py `
+    --created-at 2026-05-06T09:00:00+09:00 `
+    --strategy-name LongOnlyCryptoVolumeTrendCandidate `
+    --strategy-type trend_following `
+    --target-exchange bybit `
+    --target-symbol BTC/USDT:USDT `
+    --timeframe 5m `
+    --spot-or-futures futures `
+    --long-short long_only `
+    --research-reference @registry\strategies\proposals\20260506T090000JST_LongOnlyCryptoVolumeTrendCandidate.research_reference.json `
+    --generator-mode rule_based `
+    --thesis-id TH-CRYPTO-TSMOM-VOL-001 `
+    --thesis-type trend_continuation `
+    --strategy-logic-variant trend_continuation `
+    ...
+  ```
+
+  Result: first attempt correctly blocked unsafe wording/invalid retry limit;
+  regenerated with one-way-long wording and `parameter_only_retry_limit=1`.
+  Final result: `status=accepted`, `code_generation_eligible=true`,
+  `research_reference_count=1`. Artifacts:
+  `registry\strategies\proposals\20260506T000000Z_LongOnlyCryptoVolumeTrendCandidate.md`,
+  `registry\strategies\proposals\20260506T000000Z_LongOnlyCryptoVolumeTrendCandidate.metadata.json`,
+  and
+  `registry\strategies\proposals\20260506T090000JST_LongOnlyCryptoVolumeTrendCandidate.research_reference.json`.
+- [x] Generated strategy code for the smoke candidate:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T000000Z_LongOnlyCryptoVolumeTrendCandidate.metadata.json `
+    --candidate-id 20260506T090000JST_volume_trend_smoke `
+    --created-at 2026-05-06T09:05:00+09:00
+  ```
+
+  Result: `status=generated`, `candidate_evaluation_eligible=true`,
+  `static_check_ok=true`. Artifacts were written under
+  `registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\`.
+- [x] Ran pre-backtest generated-strategy syntax, static, and OHLCV checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\LongOnlyCryptoVolumeTrendCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: compile passed; static check `ok=true`, 1 generated file checked,
+  report `registry\strategies\checks\20260506T084120Z_static_check.json`;
+  OHLCV check `ok=true`, 8995 rows, no duplicate timestamps, no missing
+  intervals, report
+  `registry\strategies\checks\20260506T084115Z_ohlcv_quality.json`.
+- [x] Ran a real historical-safe candidate execution-chain smoke using the
+  checked wrappers only and the secret-free Phase 2 config
+  `user_data\config_freqai_phase2_safe.json`:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T000000Z_LongOnlyCryptoVolumeTrendCandidate.metadata.json `
+    --generated-metadata-json registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\metadata.json `
+    --candidate-id 20260506T090000JST_volume_trend_smoke `
+    --config user_data\config_freqai_phase2_safe.json `
+    --strategy-path registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke `
+    --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet `
+    --execute-historical-chain `
+    --execution-run-id 20260506T090000JST_volume_trend_smoke_exec `
+    --python .\.venv\Scripts\python.exe `
+    --timeframe 5m `
+    --timerange 20250101-20250103 `
+    --pairs BTC/USDT:USDT `
+    --walk-forward-window 20250101-20250103 `
+    --walk-forward-window 20250103-20250105 `
+    --reviewer-note "Real historical-safe execution-chain smoke only; no paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: command exited `1` because the candidate recommendation is `retry`.
+  This is expected gate behavior, not an infrastructure failure. The execution
+  manifest records `candidate_execution.status=completed`; static, OHLCV,
+  historical backtest, and walk-forward wrapper subprocesses all returned
+  `0`. Candidate artifacts:
+  `registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json`,
+  `candidate_record.json`, `candidate_report.md`, `metrics_summary.json`,
+  and append-only `registry\strategies\candidates\index.jsonl`.
+- [x] Recorded real smoke performance evidence:
+  - Historical backtest artifacts:
+    `data\backtests\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke_exec_historical\`.
+    Metrics: `trade_count=1`, `total_return_pct=0.02839862`,
+    `profit_factor=0.0`, `sortino=-100.0`; gate failed on low trade count,
+    profit factor, and sortino. Trades export confirms `is_short=False` and
+    `leverage=1.0`.
+  - Walk-forward artifacts:
+    `data\walk_forward\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke_exec_walk_forward\`.
+    Metrics: two completed windows, `pass_rate=0.0`,
+    `profitable_windows_ratio=0.5`, `max_single_window_profit_dependency=1.0`;
+    recommendation `fail`.
+- [x] Final verification after the smoke and CLI hardening:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_evaluate_candidate.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\LongOnlyCryptoVolumeTrendCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; pytest passed; static strategy check `ok=true` with
+  existing review warnings only, report
+  `registry\strategies\checks\20260506T084515Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4, report
+  `registry\strategies\checks\20260506T084516Z_freqai_env.json`.
+  After tightening `@path` to the workspace root, the focused compile and
+  `pytest tests\test_bot_factory.py -q` checks were rerun and passed again.
+- [x] Remaining limitation: this increment proves the theory-first proposal,
+  code generation, and real rule-based historical execution-chain wiring, but
+  the generated candidate is not profitable, not passing, not paper-ready, and
+  must only feed thesis-guided iteration. FreqAI/hybrid generated-candidate
+  training execution was not real-smoke verified in this session. This work did
+  not start paper/dry-run/live trading, promote a strategy, call exchange order
+  endpoints, use secrets, enable leverage above `1.0`, or add shorting.
+
+Follow-up on 2026-05-06 JST for real two-family iteration and ranking.
+
+- [x] Hardened `freqtrade_ext/bot_factory/candidate_iteration.py` so iteration
+  plans now preserve `research_brief`, structured `research_references`, and a
+  `failure_evidence_summary` copied from failed candidate checks. The planner
+  now blocks revisions missing a theory trail and, when
+  `force_distinct_hypothesis_family=true`, writes `requires_new_thesis_id=true`
+  and `requires_new_research_references=true` instead of silently reusing the
+  failed thesis.
+- [x] Added focused tests proving candidate iteration carries failed
+  walk-forward evidence, preserves research references, blocks missing
+  research briefs, and forces a new thesis/research contract for distinct
+  hypothesis-family retries.
+- [x] Verification after iteration hardening:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_iteration.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: both passed.
+- [x] Ran the iteration planner against the failed
+  `LongOnlyCryptoVolumeTrendCandidate` real-smoke manifest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_iterate_candidate.py `
+    --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json `
+    --proposal-metadata-json registry\strategies\proposals\20260506T000000Z_LongOnlyCryptoVolumeTrendCandidate.metadata.json `
+    --generated-metadata-json registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\metadata.json `
+    --revision-id 20260506T091500JST_volume_trend_retry_plan `
+    --reviewer-finding "Historical backtest produced only 1 trade, so the evidence is too sparse for acceptance." `
+    --reviewer-finding "Walk-forward failed with pass_rate 0.0, profitable_windows_ratio 0.5, and single-window dependency 1.0." `
+    --changed-assumption "Move from immediate trend continuation to a distinct volatility expansion hypothesis family before generating another proposal." `
+    --changed-data-requirement "Use the same local BTC 5m OHLCV evidence plus a broader historical timerange when data availability allows; do not narrow the evaluation window after failure." `
+    --unchanged-rejection-rule "Keep static and OHLCV checks mandatory before any historical wrapper." `
+    --unchanged-rejection-rule "Reject if walk-forward pass rate remains below threshold or profit depends on one narrow window." `
+    --unchanged-rejection-rule "Reject if trades violate one-way long scope or stake risk assumptions." `
+    --prior-timerange 20250101-20250105 `
+    --proposed-timerange 20250101-20250201
+  ```
+
+  Result: `action=revise`, `evaluation_allowed_by_this_plan=false`.
+  Artifacts:
+  `registry\strategies\reviews\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T091500JST_volume_trend_retry_plan\iteration_plan.json`,
+  `proposal_revision_input.json`, and `iteration_report.md`.
+- [x] Generated a distinct volatility-breakout proposal from new theory
+  references, not by tuning the failed trend parameters. Research-reference
+  artifacts:
+  `registry\strategies\proposals\20260506T092000JST_LongOnlyCryptoVolatilityBreakoutCandidate.jump_dynamics_reference.json`
+  and
+  `registry\strategies\proposals\20260506T092000JST_LongOnlyCryptoVolatilityBreakoutCandidate.range_vol_reference.json`.
+  The proposal cites:
+  - `doi:10.1007/s42521-024-00116-1`, "Understanding temporal dynamics of
+    jumps in cryptocurrency markets: evidence from tick-by-tick data",
+    published `2024-08-08`.
+  - `doi:10.1080/13504851.2024.2363295`, "Beyond GARCH in cryptocurrency
+    volatility modelling: superiority of range-based estimators", published
+    `2024-06-10`.
+
+  Proposal generation result: `status=accepted`,
+  `code_generation_eligible=true`, `strategy_logic_variant=volatility_breakout`,
+  `thesis_id=TH-CRYPTO-VOL-BREAKOUT-001`, `research_reference_count=2`.
+  Artifacts:
+  `registry\strategies\proposals\20260506T002000Z_LongOnlyCryptoVolatilityBreakoutCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T002000Z_LongOnlyCryptoVolatilityBreakoutCandidate.metadata.json`.
+- [x] Generated strategy code for
+  `LongOnlyCryptoVolatilityBreakoutCandidate`:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T002000Z_LongOnlyCryptoVolatilityBreakoutCandidate.metadata.json `
+    --candidate-id 20260506T092000JST_vol_breakout_smoke `
+    --created-at 2026-05-06T09:25:00+09:00
+  ```
+
+  Result: `status=generated`, `candidate_evaluation_eligible=true`,
+  `static_check_ok=true`. Artifacts:
+  `registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\`.
+- [x] Ran pre-backtest generated-strategy syntax, static, and OHLCV checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\LongOnlyCryptoVolatilityBreakoutCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: compile passed; generated static check `ok=true`, report
+  `registry\strategies\checks\20260506T085344Z_static_check.json`; OHLCV
+  check `ok=true`, 8995 rows, report
+  `registry\strategies\checks\20260506T085338Z_ohlcv_quality.json`.
+- [x] Ran a second real historical-safe execution-chain smoke for the distinct
+  volatility-breakout candidate using checked wrappers only:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T002000Z_LongOnlyCryptoVolatilityBreakoutCandidate.metadata.json `
+    --generated-metadata-json registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\metadata.json `
+    --candidate-id 20260506T092000JST_vol_breakout_smoke `
+    --config user_data\config_freqai_phase2_safe.json `
+    --strategy-path registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke `
+    --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet `
+    --execute-historical-chain `
+    --execution-run-id 20260506T092000JST_vol_breakout_smoke_exec `
+    --python .\.venv\Scripts\python.exe `
+    --timeframe 5m `
+    --timerange 20250101-20250110 `
+    --pairs BTC/USDT:USDT `
+    --walk-forward-window 20250101-20250104 `
+    --walk-forward-window 20250104-20250107 `
+    --walk-forward-window 20250107-20250110 `
+    --reviewer-note "Real historical-safe distinct-hypothesis smoke only; no paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: command exited `1` because the candidate recommendation is `retry`.
+  Infrastructure completed: static, OHLCV, historical backtest, and
+  walk-forward wrappers returned `0`; candidate manifest:
+  `registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json`.
+  Historical metrics:
+  `trade_count=21`, `total_return_pct=-0.080348392`,
+  `profit_factor=0.8432949141917558`, `sortino=-4.188222065187427`.
+  Walk-forward metrics: 3 completed windows, `pass_rate=0.0`,
+  `profitable_windows_ratio=0.6666666666666666`,
+  `max_single_window_profit_dependency=0.9315819174836077`; recommendation
+  `fail`.
+- [x] Ranked the two real smoke candidates:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py `
+    --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json `
+    --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json `
+    --ranking-id 20260506T093000JST_real_smoke_two_family_ranking `
+    --reviewer-note "Ranked two real historical-safe smoke candidates only; neither is approved for paper or promotion."
+  ```
+
+  Result: `candidate_count=2`,
+  `best_candidate_id=20260506T092000JST_vol_breakout_smoke`,
+  `paper_ready_candidate_ids=[]`. Hypothesis diversity is present across
+  `trend_continuation` and `volatility_breakout`, but both candidates are
+  blocked from paper readiness by failed historical/walk-forward gates.
+  Artifacts:
+  `registry\strategies\candidates\rankings\20260506T093000JST_real_smoke_two_family_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Scanned the new generated proposal, strategy, candidate, execution,
+  iteration, ranking, backtest, and walk-forward artifacts for known local
+  credential values from `user_data\config.json`; no matches were found.
+- [x] Final verification after two-family iteration/ranking:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_iterate_candidate.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\LongOnlyCryptoVolumeTrendCandidate.py registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\LongOnlyCryptoVolatilityBreakoutCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  ```
+
+  Results: compile passed; pytest passed; static strategy check `ok=true` with
+  existing review warnings only, report
+  `registry\strategies\checks\20260506T085719Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4, report
+  `registry\strategies\checks\20260506T085720Z_freqai_env.json`.
+- [x] Remaining limitation: two distinct theory-backed rule-based families
+  have now been generated, evaluated, iterated, and ranked, but neither is
+  profitable, passing, paper-ready, or promotable. The project still needs
+  further theory research and candidate generation, and FreqAI/hybrid
+  generated-candidate training execution remains unverified for new candidates.
+
+Follow-up on 2026-05-06 JST for real hybrid FreqAI candidate smoke.
+
+- [x] Added a third distinct theory-backed candidate family, this time through
+  generated `hybrid_ml` FreqAI strategy code rather than another rule-only
+  template or parameter retry. Research-reference artifacts:
+  `registry\strategies\proposals\20260506T094000JST_LongOnlyHybridMLReturnFilterCandidate.ml_cross_section_reference.json`
+  and
+  `registry\strategies\proposals\20260506T094000JST_LongOnlyHybridMLReturnFilterCandidate.intricacy_reference.json`.
+  The proposal cites:
+  - `doi:10.1016/j.irfa.2024.103244`, "Machine learning and the cross-section
+    of cryptocurrency returns", published `2024-07`.
+  - `doi:10.1016/j.econlet.2024.111746`, "Intricacy of cryptocurrency
+    returns", published `2024-06`.
+
+  Proposal generation command:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py `
+    --created-at 2026-05-06T09:40:00+09:00 `
+    --strategy-name LongOnlyHybridMLReturnFilterCandidate `
+    --strategy-type hybrid_ml_return_filter `
+    --target-exchange bybit `
+    --target-symbol BTC/USDT:USDT `
+    --timeframe 5m `
+    --spot-or-futures futures `
+    --long-short long_only `
+    --summary "Long-only BTC/USDT futures hybrid ML candidate that keeps explicit rule structure but gates entries with a FreqAI return forecast, testing whether non-linear technical interactions improve over the failed rule-only families." `
+    --hypothesis "If crypto return predictability depends on non-linear interactions among momentum, volatility, and volume predictors, then a LightGBM-style FreqAI return filter should reject low-quality rule entries and improve robustness versus rule-only trend and volatility breakout candidates." `
+    --market-condition "Regimes where recent technical, range, and volume features contain useful next-horizon return information; expected to fail when the FreqAI label is noisy, nonstationary, or too sparse for local training." `
+    --entry-logic "Use one-way long rule structure with trend or breakout context, but require the FreqAI future-return forecast to exceed a positive threshold before entry." `
+    --exit-logic "Exit on rule-based momentum cooling, breakout failure, timeout, stop, or ROI; do not use predicted future candles outside FreqAI target generation." `
+    --risk-logic "One-way long, leverage fixed at 1.0, historical wrapper evaluation only, no exchange order endpoints, no bot startup." `
+    --required-data "Local historical OHLCV parquet for BTC/USDT:USDT Bybit futures at 5m timeframe and FreqAI-safe derived technical features only." `
+    --parameters "Use generator defaults for hybrid_ml with target future_return, label horizon 12 candles, and a positive prediction threshold; this proposal tests ML gating theory, not threshold optimization." `
+    --expected-failure-case "FAIL_COST_SENSITIVE if ML gating still admits churn; FAIL_REGIME_FRAGILE if the learned relation is unstable across walk-forward windows; FAIL_OVERFIT_WF_GAP if training improves one window only." `
+    --backtest-plan "Run generated strategy static scan, FreqAI feature/label validation, OHLCV quality check, FreqAI historical backtest, walk-forward windows, and FreqAI training factory through checked Bot Factory wrappers only." `
+    --rejection-condition "Reject if static, FreqAI validation, or OHLCV checks fail; reject if historical/walk-forward gates fail, if ML target shifts appear outside set_freqai_targets, if trades violate one-way long scope or leverage 1.0 assumptions, or if training artifacts are missing." `
+    --generator-mode hybrid_ml `
+    --thesis-id TH-CRYPTO-HYBRID-ML-RETURN-001 `
+    --thesis-type hybrid_ml_return_filter `
+    --thesis-statement "Non-linear interactions among crypto technical predictors can be used as a FreqAI return filter over explicit long-only rule entries, improving robustness over rule-only candidates." `
+    --falsification-criteria "Falsified if FreqAI validation fails, if historical and walk-forward artifacts do not improve trade quality, if training artifacts are missing, or if performance remains dependent on one narrow window." `
+    --novelty-vs-previous "Distinct from the failed rule-only trend and volatility families by adding a model-gated return forecast while keeping interpretable long-only rule constraints." `
+    --evidence-ref local:ranking:20260506T093000JST_real_smoke_two_family_ranking `
+    --evidence-ref local_ohlcv:user_data/data/bybit/futures/BTC_USDT_USDT-5m-futures.parquet `
+    --research-reference @registry\strategies\proposals\20260506T094000JST_LongOnlyHybridMLReturnFilterCandidate.ml_cross_section_reference.json `
+    --research-reference @registry\strategies\proposals\20260506T094000JST_LongOnlyHybridMLReturnFilterCandidate.intricacy_reference.json `
+    --failure-taxonomy-code FAIL_COST_SENSITIVE `
+    --failure-taxonomy-code FAIL_REGIME_FRAGILE `
+    --failure-taxonomy-code FAIL_OVERFIT_WF_GAP `
+    --retry-budget-per-thesis 2 `
+    --thesis-retry-count 0 `
+    --parameter-only-retry-limit 1 `
+    --parameter-only-retry-count 0 `
+    --force-distinct-hypothesis-family `
+    --strategy-logic-variant trend_continuation `
+    --feature rsi_momentum `
+    --feature ema_trend `
+    --feature atr_expansion `
+    --feature volume_zscore `
+    --target-definition future_return `
+    --label-horizon 12 `
+    --prediction-threshold 0.001 `
+    --rule-filter one_way_long `
+    --rule-filter leverage_1 `
+    --rule-filter freqai_return_filter `
+    --risk-policy "max leverage 1.0; one-way long; FreqAI prediction gates entries but never starts live or paper trading" `
+    --reviewer-note "Generated FreqAI/hybrid path smoke; historical-safe only."
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `generator_mode=hybrid_ml`, `strategy_logic_variant=trend_continuation`,
+  `thesis_id=TH-CRYPTO-HYBRID-ML-RETURN-001`, `research_reference_count=2`.
+  Artifacts:
+  `registry\strategies\proposals\20260506T004000Z_LongOnlyHybridMLReturnFilterCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T004000Z_LongOnlyHybridMLReturnFilterCandidate.metadata.json`.
+- [x] Generated strategy code for
+  `LongOnlyHybridMLReturnFilterCandidate`:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T004000Z_LongOnlyHybridMLReturnFilterCandidate.metadata.json `
+    --candidate-id 20260506T094000JST_hybrid_ml_smoke `
+    --created-at 2026-05-06T09:45:00+09:00
+  ```
+
+  Result: `status=generated`, `candidate_evaluation_eligible=true`,
+  `static_check_ok=true`. Artifacts:
+  `registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\LongOnlyHybridMLReturnFilterCandidate.py`,
+  `metadata.json`, `static_check.json`, and `research_brief.json`.
+- [x] Ran pre-backtest generated-strategy syntax, static, FreqAI feature/label,
+  and OHLCV checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\LongOnlyHybridMLReturnFilterCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_validate_freqai_strategy.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: compile passed; generated static check `ok=true`, report
+  `registry\strategies\checks\20260506T090059Z_static_check.json`; FreqAI
+  validation `ok=true`, feature columns `%-pct-change`, `%-volume-z`, and
+  `%-atr`, target column `&-future_return`, report
+  `registry\strategies\checks\20260506T090059Z_freqai_validation.json`; OHLCV
+  check `ok=true`, report
+  `registry\strategies\checks\20260506T090110Z_ohlcv_quality.json`.
+- [x] Ran a real historical-safe generated hybrid ML execution-chain smoke
+  using checked wrappers only:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T004000Z_LongOnlyHybridMLReturnFilterCandidate.metadata.json `
+    --generated-metadata-json registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\metadata.json `
+    --candidate-id 20260506T094000JST_hybrid_ml_smoke `
+    --config user_data\config_freqai_phase2_safe.json `
+    --strategy-path registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke `
+    --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet `
+    --execute-historical-chain `
+    --execution-run-id 20260506T094000JST_hybrid_ml_smoke_exec `
+    --python .\.venv\Scripts\python.exe `
+    --timeframe 5m `
+    --timerange 20250101-20250110 `
+    --pairs BTC/USDT:USDT `
+    --walk-forward-window 20250101-20250104 `
+    --walk-forward-window 20250104-20250107 `
+    --walk-forward-window 20250107-20250110 `
+    --training-timerange 20250101-20250110 `
+    --reviewer-note "Real historical-safe generated hybrid ML smoke only; no paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: command exited `1` because the candidate recommendation is `retry`.
+  Infrastructure completed: static, FreqAI validation, OHLCV, historical FreqAI
+  backtest, walk-forward, and FreqAI training factory wrapper subprocesses all
+  returned `0`; candidate manifest:
+  `registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\candidate_manifest.json`.
+  Historical metrics:
+  `trade_count=0`, `total_return_pct=0.0`, `profit_factor=0.0`,
+  `sortino=0.0`, `max_drawdown_pct=0.0`; gate failed because no trades were
+  produced. Walk-forward metrics: 3 completed windows, `pass_rate=0.0`,
+  `profitable_windows_ratio=0.0`, `total_return_pct=0.0`,
+  `max_single_window_profit_dependency=null`; recommendation `fail`.
+  Training factory artifacts:
+  `data\freqai_training\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke_exec_training\training_manifest.json`
+  and `training_report.md`; training status `completed`, one stage completed,
+  stage return code `0`, but stage recommendation `fail`.
+- [x] Ranked the three real smoke candidates across distinct hypothesis
+  families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py `
+    --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json `
+    --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json `
+    --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\candidate_manifest.json `
+    --ranking-id 20260506T100000JST_real_smoke_three_family_ranking `
+    --reviewer-note "Real generated smoke ranking across trend, volatility, and hybrid ML families only; no paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: `candidate_count=3`,
+  `best_candidate_id=20260506T094000JST_hybrid_ml_smoke`,
+  `paper_ready_candidate_ids=[]`. Hypothesis diversity is present across
+  `trend_continuation`, `volatility_breakout`, and
+  `hybrid_ml_return_filter`, but all candidates remain blocked by failed
+  historical, walk-forward, and/or training gates. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T100000JST_real_smoke_three_family_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Scanned the new generated hybrid proposal, strategy, candidate,
+  execution, FreqAI, walk-forward, training, and three-family ranking text
+  artifacts for known local credential values from `user_data\config.json`:
+
+  ```powershell
+  Get-ChildItem -Path registry\strategies\proposals,registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate,registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate,registry\strategies\candidates\executions\LongOnlyHybridMLReturnFilterCandidate,data\freqai\LongOnlyHybridMLReturnFilterCandidate,data\walk_forward\LongOnlyHybridMLReturnFilterCandidate,data\freqai_training\LongOnlyHybridMLReturnFilterCandidate -Recurse -File | Where-Object { $_.Extension -in '.json','.md','.txt','.csv','.py','.log' } | Select-String -Pattern 'Zensin4646|92858281|hjkJcx|tanaka' -List
+  ```
+
+  Result: no matches.
+- [x] Final verification after hybrid FreqAI smoke and three-family ranking:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_iterate_candidate.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\LongOnlyCryptoVolumeTrendCandidate.py registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\LongOnlyCryptoVolatilityBreakoutCandidate.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\LongOnlyHybridMLReturnFilterCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; focused pytest passed; static strategy check
+  `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T090932Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T090943Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+
+Follow-up on 2026-05-06 JST for sixth theory-backed intraday session liquidity candidate.
+
+- [x] Added a sixth distinct hypothesis-family path,
+  `intraday_session_liquidity_reclaim`, so the next candidate is not another
+  parameter-only retry inside the five failed families. The code path now
+  supports timestamp-derived `hour_utc`/`weekday`, same-day `session_vwap`,
+  `session_window`, `weekday_liquidity`, `prior_vwap_discount`,
+  `vwap_reclaim`, `volume_filter`, and `controlled_atr` checks in:
+  `freqtrade_ext/bot_factory/strategy_proposals.py`,
+  `freqtrade_ext/bot_factory/strategy_code.py`,
+  `freqtrade_ext/bot_factory/signal_diagnostics.py`,
+  `scripts/bot_factory_generate_strategy_proposal.py`, and
+  `tests/test_bot_factory.py`.
+- [x] Focused verification for the new logic variant passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "intraday_session_liquidity or session_liquidity"
+  ```
+
+  Results: compile passed; focused pytest selected the new
+  intraday/session-liquidity coverage and passed `2` tests.
+- [x] Created structured public research-reference artifacts for the new thesis
+  under `registry\strategies\proposals\`:
+  `20260506T214500JST_LongOnlyIntradaySessionLiquidityCandidate.intraday_dynamics_reference.json`
+  (`doi:10.1016/j.iref.2024.103658`),
+  `20260506T214500JST_LongOnlyIntradaySessionLiquidityCandidate.price_discovery_reference.json`
+  (`doi:10.1016/j.ribaf.2022.101625`), and
+  `20260506T214500JST_LongOnlyIntradaySessionLiquidityCandidate.time_effects_reference.json`
+  (`doi:10.1016/j.frl.2019.04.023`).
+- [x] Generated the accepted proposal for
+  `LongOnlyIntradaySessionLiquidityCandidate`:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlyIntradaySessionLiquidityCandidate --strategy-type intraday_session_liquidity --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --summary "Long-only intraday session liquidity candidate for historical evaluation." --hypothesis "BTC 5m signals may be more reliable during weekday London-New York overlap windows when price reclaims same-day VWAP with relative volume confirmation and controlled ATR." --market-condition "Liquid BTC/USDT futures, historical OHLCV only, UTC session timing derived from candle timestamps." --entry-logic "Enter long only on closed candles during weekday UTC 13-20 session when the previous close was below same-day VWAP, close crosses back above session VWAP, volume is above local mean, ATR is not excessively expanded, and volume is positive." --exit-logic "Exit when close loses same-day session VWAP, UTC hour reaches the post-session exit window, RSI reaches the generated target, or the timeout exit triggers." --risk-logic "Long-only historical evaluation with leverage capped at 1.0, no exchange execution, no secrets, and no promotion from this command." --required-data "BTC/USDT:USDT 5m OHLCV parquet with UTC date, open, high, low, close, and volume columns." --parameters "buy_volume_window, buy_volume_factor, buy_rsi_window, sell_rsi_exit, sell_timeout_candles, and generated fixed UTC session window." --expected-failure-case "Session effect may be unstable across weeks or dominated by one window." --expected-failure-case "VWAP reclaim may create too few trades or negative post-cost expectancy." --expected-failure-case "Relative volume and ATR filters may still select fragile regimes." --backtest-plan "Run static checks, OHLCV validation, signal diagnostics, full January 2025 historical backtest, and four walk-forward windows before any ranking decision." --rejection-condition "Reject if historical total return is negative after costs, trade count is too low, walk-forward pass rate is below gate, or profit depends on one window." --rejection-condition "Reject if signal diagnostics show zero entries or if the session filter alone explains almost all surviving rows." --generator-mode rule_based --thesis-id TH-CRYPTO-INTRADAY-SESSION-LIQ-001 --thesis-type intraday_session_liquidity --thesis-statement "Weekday intraday liquidity concentration can make same-day VWAP reclaim during London-New York overlap a distinct BTC 5m mechanism, separate from generic trend, breakout, pullback, ML-return, and downside-shock families." --falsification-criteria "Falsified if local historical and walk-forward artifacts show too few trades, negative post-cost return, low pass rate, or one-window profit dependency." --novelty-vs-previous "Distinct from the five failed families because it uses timestamp-derived session timing and same-day VWAP reclaim as the primary market mechanism rather than EMA trend alignment, rolling-high breakout, FreqAI return gate, pullback recovery, or downside shock." --evidence-ref local:synthesis:registry/strategies/synthesis/20260506T211500JST_five_family_failure_synthesis_with_downside_shock/candidate_failure_synthesis.json --evidence-ref local:ranking:registry/strategies/candidates/rankings/20260506T211000JST_five_family_with_downside_shock_ranking/candidate_ranking.json --evidence-ref local:downside_signal:registry/strategies/diagnostics/LongOnlyDownsideLiquidityShockCandidate/20260506T204500JST_downside_liquidity_shock_smoke/20260506T205000JST_downside_liquidity_shock_signal_diagnostics/signal_diagnostics.json --research-reference @registry/strategies/proposals/20260506T214500JST_LongOnlyIntradaySessionLiquidityCandidate.intraday_dynamics_reference.json --research-reference @registry/strategies/proposals/20260506T214500JST_LongOnlyIntradaySessionLiquidityCandidate.price_discovery_reference.json --research-reference @registry/strategies/proposals/20260506T214500JST_LongOnlyIntradaySessionLiquidityCandidate.time_effects_reference.json --failure-taxonomy-code FAIL_COST_SENSITIVE --failure-taxonomy-code FAIL_REGIME_FRAGILE --failure-taxonomy-code FAIL_OVERFIT_WF_GAP --retry-budget-per-thesis 2 --thesis-retry-count 0 --parameter-only-retry-limit 1 --parameter-only-retry-count 0 --force-distinct-hypothesis-family --strategy-logic-variant intraday_session_liquidity_reclaim --feature hour_utc --feature weekday --feature session_vwap --feature session_vwap_distance --feature volume_mean --feature atr_regime --rule-filter session_window --rule-filter weekday_liquidity --rule-filter vwap_reclaim --rule-filter volume_filter --rule-filter controlled_atr --risk-policy "max leverage 1.0; one-way long; intraday session liquidity reclaim; no paper or execution process" --created-at 2026-05-06T21:45:00+09:00 --reviewer-note "New thesis proposal only; intraday session liquidity reclaim; no code generation, backtest, paper, dry-run, exchange execution, secrets, leverage, inverse exposure, or promotion."
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `generator_mode=rule_based`,
+  `strategy_logic_variant=intraday_session_liquidity_reclaim`,
+  `thesis_id=TH-CRYPTO-INTRADAY-SESSION-LIQ-001`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T124500Z_LongOnlyIntradaySessionLiquidityCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T124500Z_LongOnlyIntradaySessionLiquidityCandidate.metadata.json`.
+- [x] Generated strategy code for the accepted proposal:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T124500Z_LongOnlyIntradaySessionLiquidityCandidate.metadata.json --candidate-id 20260506T215000JST_session_liquidity_smoke --created-at 2026-05-06T21:50:00+09:00
+  ```
+
+  Result: `status=generated`, `static_check_ok=true`, and
+  `candidate_evaluation_eligible=true`. Artifacts:
+  `registry\strategies\generated\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\LongOnlyIntradaySessionLiquidityCandidate.py`,
+  `metadata.json`, `research_brief.json`, and `static_check.json`.
+- [x] Ran pre-evaluation static and OHLCV checks before historical backtesting:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m --output registry\strategies\checks\20260506T215000JST_session_liquidity_ohlcv.json
+  ```
+
+  Results: static check `ok=true`; OHLCV quality `ok=true`, `row_count=8995`,
+  no duplicate timestamps, and no missing intervals. Artifacts:
+  `registry\strategies\checks\20260506T105301Z_static_check.json` and
+  `registry\strategies\checks\20260506T215000JST_session_liquidity_ohlcv.json`.
+- [x] Ran signal diagnostics for the generated rule-based session candidate:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T215500JST_session_liquidity_signal_diagnostics --reviewer-note "Signal diagnostics only for intraday session liquidity candidate; no backtest, paper, dry-run, live, exchange execution, secrets, leverage, inverse exposure, or promotion."
+  ```
+
+  Result: `status=completed`, `entry_count=25`,
+  `zero_entry_signal=false`, no diagnosis codes, and rarest component
+  `vwap_reclaim`. Component cumulative counts were `session_window=2976`,
+  `weekday_liquidity=2208`, `prior_vwap_discount=845`,
+  `vwap_reclaim=51`, `volume_filter=33`, and `controlled_atr=25`.
+  Artifact:
+  `registry\strategies\diagnostics\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\20260506T215500JST_session_liquidity_signal_diagnostics\signal_diagnostics.json`.
+- [x] Ran the historical-only checked candidate-evaluation chain:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T124500Z_LongOnlyIntradaySessionLiquidityCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\metadata.json --candidate-id 20260506T215000JST_session_liquidity_smoke --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --execute-historical-chain --execution-run-id 20260506T215000JST_session_liquidity_smoke_exec --python .\.venv\Scripts\python.exe --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --walk-forward-window 20250101-20250108 --walk-forward-window 20250108-20250115 --walk-forward-window 20250115-20250122 --walk-forward-window 20250122-20250201 --reviewer-note "Intraday session liquidity reclaim smoke only; checked historical backtesting wrappers only; no paper, dry-run, live, exchange execution, secrets, leverage, inverse exposure, or promotion."
+  ```
+
+  Result: the evaluation command exited `1` because the candidate remained
+  `recommendation=retry`; all checked subprocesses completed with return code
+  `0`. Historical metrics were `trade_count=21`,
+  `total_return_pct=-0.42297835199999995`,
+  `profit_factor=0.4223009033119537`,
+  `max_drawdown_pct=0.47976619199999965`, and
+  `sortino=-6.312875004031087`. Walk-forward completed 4/4 windows but failed
+  with `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=-0.422978352`, and
+  `max_drawdown_pct_any_window=0.28793604649968696`. Artifacts:
+  `registry\strategies\candidates\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\candidate_manifest.json`,
+  `data\backtests\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke_exec_historical\metrics.json`,
+  and
+  `data\walk_forward\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke_exec_walk_forward\walk_forward_metrics.json`.
+- [x] Re-ranked the six current theory families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\candidate_manifest.json --ranking-id 20260506T221000JST_six_family_with_session_liquidity_ranking --reviewer-note "Six-family local ranking after intraday session liquidity smoke; reads historical-safe artifacts only; no promotion."
+  ```
+
+  Result: `candidate_count=6`, `paper_ready_candidate_ids=[]`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`. The new
+  session-liquidity candidate ranked third with score `37.825342` but is not
+  paper-ready. Artifact:
+  `registry\strategies\candidates\rankings\20260506T221000JST_six_family_with_session_liquidity_ranking\candidate_ranking.json`.
+- [x] Regenerated failure synthesis using all six candidate manifests plus
+  signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T221000JST_six_family_with_session_liquidity_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\20260506T215500JST_session_liquidity_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T221500JST_six_family_failure_synthesis_with_session_liquidity --reviewer-note "Six-family synthesis after intraday session liquidity smoke; historical artifacts and diagnostics only; no code generation, backtest, or promotion in this command."
+  ```
+
+  Result: `status=completed`, `candidate_count=6`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and
+  `requires_new_thesis_id=true`. The synthesis marks all six current families
+  as walk-forward failures and records failed families:
+  `trend_continuation`, `volatility_breakout`, `hybrid_ml_return_filter`,
+  `liquidity_mean_reversion`, `downside_liquidity_shock_reversal`, and
+  `intraday_session_liquidity`. Preferred artifact:
+  `registry\strategies\synthesis\20260506T221500JST_six_family_failure_synthesis_with_session_liquidity\candidate_failure_synthesis.json`.
+- [x] Remaining limitation: six distinct theory-backed candidates have now
+  been generated, locally checked, ranked, and synthesized, but none is
+  profitable, passing, paper-ready, promotable, or suitable for live/paper
+  startup. The latest synthesis still requires a new thesis ID and new
+  structured research references; parameter-only threshold loosening remains
+  blocked.
+- [x] Final verification after adding the intraday session liquidity candidate
+  and updating the handoff documentation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\LongOnlyIntradaySessionLiquidityCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; `tests\test_bot_factory.py -q` passed; static
+  strategy check `ok=true`, 7 files checked, existing review warnings only,
+  report `registry\strategies\checks\20260506T110121Z_static_check.json`;
+  FreqAI dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T110126Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+
+Follow-up on 2026-05-06 JST for a fifth downside liquidity shock family.
+
+- [x] Added a new supported theory/code-generation variant,
+  `downside_liquidity_shock_reversal`, to the proposal generator, strategy
+  code generator, generated signal diagnostics, CLI choices, and focused Bot
+  Factory tests. The variant is intentionally distinct from the failed
+  trend-continuation, volatility-breakout, hybrid ML return-filter, and
+  liquidity-pullback families: it tests a closed-candle downside shock plus
+  RSI washout/recovery, quiet-volume regime, and local-low reclaim, without
+  using the failed EMA trend alignment as an entry gate.
+- [x] Added three structured research-reference artifacts for the new thesis:
+  `registry\strategies\proposals\20260506T203500JST_LongOnlyDownsideLiquidityShockCandidate.liquidity_provision_2025_reference.json`,
+  `registry\strategies\proposals\20260506T203500JST_LongOnlyDownsideLiquidityShockCandidate.intraday_reversal_reference.json`,
+  and
+  `registry\strategies\proposals\20260506T203500JST_LongOnlyDownsideLiquidityShockCandidate.volume_liquidity_reference.json`.
+  These record DOI references `10.1016/j.jbankfin.2025.107411`,
+  `10.1016/j.najef.2022.101733`, and
+  `10.1016/j.jbankfin.2022.106547` as local structured inputs for thesis
+  `TH-CRYPTO-DOWNSIDE-LIQ-SHOCK-001`.
+- [x] Focused verification before generating the real candidate:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "downside_liquidity_shock or signal_diagnostics_supports_downside"
+  ```
+
+  Results: compile passed; 2 focused tests passed.
+- [x] Generated and accepted the new theory-first proposal:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlyDownsideLiquidityShockCandidate --strategy-type rule_based --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --generator-mode rule_based --thesis-id TH-CRYPTO-DOWNSIDE-LIQ-SHOCK-001 --thesis-type downside_liquidity_shock_reversal --strategy-logic-variant downside_liquidity_shock_reversal --created-at 2026-05-06T20:35:00+09:00 --reviewer-note "New thesis proposal only; theory-first downside liquidity shock reversal; no code generation, backtest, paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  The actual command also included the full summary, market, entry, exit,
+  risk, required-data, parameter, backtest-plan, rejection-condition,
+  evidence-ref, feature, rule-filter, and research-reference arguments recorded
+  in the proposal metadata command array. Result: `status=accepted`,
+  `code_generation_eligible=true`, `generator_mode=rule_based`,
+  `strategy_logic_variant=downside_liquidity_shock_reversal`,
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T113500Z_LongOnlyDownsideLiquidityShockCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T113500Z_LongOnlyDownsideLiquidityShockCandidate.metadata.json`.
+- [x] Generated strategy code and confirmed the generated static scan passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T113500Z_LongOnlyDownsideLiquidityShockCandidate.metadata.json --candidate-id 20260506T204500JST_downside_liquidity_shock_smoke --created-at 2026-05-06T20:45:00+09:00
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m --output registry\strategies\checks\20260506T204500JST_downside_liquidity_shock_ohlcv.json
+  ```
+
+  Results: generated metadata `status=generated`,
+  `candidate_evaluation_eligible=true`; generated strategy contains
+  `downside_shock`, `rsi_washout`, `rsi_recovered`, `quiet_volume`, and
+  `local_low_reclaim`; the shared template still computes EMA columns but they
+  are not used in the entry condition for this variant. Static check returned
+  `ok=true`, report
+  `registry\strategies\checks\20260506T103826Z_static_check.json`. OHLCV
+  quality returned `ok=true`, `rows=8995`, no duplicate timestamps, and no
+  missing intervals; report
+  `registry\strategies\checks\20260506T204500JST_downside_liquidity_shock_ohlcv.json`.
+  Generated artifacts:
+  `registry\strategies\generated\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\LongOnlyDownsideLiquidityShockCandidate.py`,
+  `metadata.json`, and `research_brief.json`.
+- [x] Ran signal diagnostics before historical evaluation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T205000JST_downside_liquidity_shock_signal_diagnostics --reviewer-note "Signal diagnostics only for downside liquidity shock candidate; no backtest, paper, dry-run, live, exchange orders, secrets, leverage, inverse exposure, or promotion."
+  ```
+
+  Results: `status=completed`, `entry_count=36`,
+  `zero_entry_signal=false`, and no diagnosis codes. Top bottlenecks were
+  `rsi_recovered` with individual count 385 and cumulative count 82,
+  `downside_shock` with individual count 2042, and `rsi_washout` with
+  individual count 1988. Artifact:
+  `registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json`.
+- [x] Ran the checked historical-only candidate evaluation chain:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T113500Z_LongOnlyDownsideLiquidityShockCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\metadata.json --candidate-id 20260506T204500JST_downside_liquidity_shock_smoke --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --execute-historical-chain --execution-run-id 20260506T204500JST_downside_liquidity_shock_smoke_exec --python .\.venv\Scripts\python.exe --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --walk-forward-window 20250101-20250108 --walk-forward-window 20250108-20250115 --walk-forward-window 20250115-20250122 --walk-forward-window 20250122-20250201 --reviewer-note "Downside liquidity shock reversal smoke only; checked historical backtesting wrappers only; no paper, dry-run, live, exchange orders, secrets, leverage, inverse exposure, or promotion."
+  ```
+
+  Result: wrapper subprocesses completed, but the candidate returned
+  `recommendation=retry` and failed promotion gates. Historical metrics:
+  `trade_count=32`, `total_return_pct=-0.12753034399999996`,
+  `profit_factor=0.8227529290082864`,
+  `max_drawdown_pct=0.3487125677902778`, and `sortino=-6.949095728723941`.
+  Walk-forward completed 4/4 windows but returned `recommendation=fail`,
+  `pass_rate=0.0`, `profitable_windows_ratio=0.5`,
+  `total_return_pct=-0.09874762400000003`, and
+  `max_single_window_profit_dependency=0.9473567258931345`. Artifacts:
+  `registry\strategies\candidates\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\candidate_manifest.json`,
+  `data\backtests\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke_exec_historical\metrics.json`,
+  and
+  `data\walk_forward\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke_exec_walk_forward\walk_forward_metrics.json`.
+- [x] Re-ranked and synthesized the current five-family evidence:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\candidate_manifest.json --ranking-id 20260506T211000JST_five_family_with_downside_shock_ranking --reviewer-note "Five-family local ranking after downside liquidity shock smoke; reads historical-safe artifacts only; no promotion."
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T211000JST_five_family_with_downside_shock_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T211500JST_five_family_failure_synthesis_with_downside_shock --reviewer-note "Five-family synthesis after downside liquidity shock smoke; historical artifacts and diagnostics only; no code generation, backtest, or promotion in this command."
+  ```
+
+  Ranking result: `candidate_count=5`,
+  `paper_ready_candidate_ids=[]`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`. The new
+  downside-shock candidate ranked fourth with score `19.872148`. Synthesis
+  result: `status=completed`, `candidate_count=5`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and `requires_new_thesis_id=true`.
+  The synthesis now records five failed families to avoid as the default next
+  path: `downside_liquidity_shock_reversal`,
+  `hybrid_ml_return_filter`, `liquidity_mean_reversion`,
+  `trend_continuation`, and `volatility_breakout`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T211000JST_five_family_with_downside_shock_ranking\candidate_ranking.json`
+  and
+  `registry\strategies\synthesis\20260506T211500JST_five_family_failure_synthesis_with_downside_shock\candidate_failure_synthesis.json`.
+- [x] Remaining limitation: the fifth family improved signal availability
+  compared with the zero-entry liquidity and hybrid candidates, but it is still
+  negative after costs and fails walk-forward gates. There is still no
+  profitable, passing, paper-ready, promotable, or live-trading candidate. The
+  next Bot Factory increment must start from the new five-family synthesis,
+  use a new thesis ID plus new structured references, and avoid
+  parameter-only threshold loosening.
+- [x] Final verification after adding the downside-shock variant and five-family
+  artifacts:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\LongOnlyDownsideLiquidityShockCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; `tests\test_bot_factory.py` passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T104134Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T104135Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: three distinct theory-backed generated families
+  have now been evaluated and ranked, including a real generated hybrid FreqAI
+  path through training factory, but no candidate is profitable, passing,
+  paper-ready, or promotable. The hybrid ML candidate proves the pipeline can
+  run the generated FreqAI path, not that the strategy works; it produced zero
+  trades and remains `retry`. This work did not start paper/dry-run/live
+  trading, promote a strategy, call exchange order endpoints, use secrets,
+  enable leverage above `1.0`, or add shorting.
+
+Follow-up on 2026-05-06 JST for a fourth theory-backed family.
+
+- [x] Generated a fourth distinct theory-backed proposal,
+  `LongOnlyCryptoLiquidityPullbackCandidate`, to test a liquidity-conditioned
+  mean-reversion/pullback thesis rather than tuning failed trend, breakout, or
+  hybrid ML thresholds. Research-reference artifacts:
+  `registry\strategies\proposals\20260506T101500JST_LongOnlyCryptoLiquidityPullbackCandidate.intraday_reversal_reference.json`,
+  `registry\strategies\proposals\20260506T101500JST_LongOnlyCryptoLiquidityPullbackCandidate.short_reversal_liquidity_reference.json`,
+  and
+  `registry\strategies\proposals\20260506T101500JST_LongOnlyCryptoLiquidityPullbackCandidate.volume_liquidity_reference.json`.
+  The proposal cites:
+  - `doi:10.1016/j.najef.2022.101733`, "Intraday return predictability in the
+    cryptocurrency markets: Momentum, reversal, or both", published `2022-11`.
+  - `doi:10.1016/j.irfa.2021.101908`, "Up or down? Short-term reversal,
+    momentum, and liquidity effects in cryptocurrency markets", published
+    `2021-11`.
+  - `doi:10.1016/j.jbankfin.2022.106547`, "Trading volume and liquidity
+    provision in cryptocurrency markets", published `2022-09`.
+
+  Proposal generation command:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --created-at 2026-05-06T10:15:00+09:00 --strategy-name LongOnlyCryptoLiquidityPullbackCandidate --strategy-type liquidity_mean_reversion --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long_only --summary "Long-only BTC/USDT futures liquidity pullback candidate testing whether closed-candle overreaction after RSI drawdown can revert when volume confirms tradable liquidity." --hypothesis "If intraday crypto returns include liquidity-dependent reversal after temporary overreaction, then a one-way long pullback-recovery rule should find more robust trades than the failed trend, volatility breakout, and hybrid ML return-filter candidates." --market-condition "Best suited to non-crash regimes where BTC remains liquid, pullbacks are temporary, and closed-candle volume confirms execution-quality participation; expected to fail when the pair behaves as pure momentum or when costs dominate small reversals." --entry-logic "Enter one-way long only after RSI has shown a pullback, RSI recovers above a confirmation level, fast EMA is not below slow EMA, and closed-candle volume is above its local mean." --exit-logic "Exit on RSI mean-reversion target, momentum failure, timeout, ROI, or stoploss using closed candles only." --risk-logic "One-way long, leverage fixed at 1.0, historical wrapper evaluation only, no exchange order endpoints, no bot startup." --required-data "Local historical OHLCV parquet for BTC/USDT:USDT Bybit futures at 5m timeframe; closed candles only; derived RSI, EMA, ATR, and volume mean features." --parameters "Use generator defaults for mean_reversion_pullback; this proposal tests a distinct liquidity-pullback thesis, not parameter optimization." --expected-failure-case "FAIL_COST_SENSITIVE if the reversal edge is too small after fees; FAIL_REGIME_FRAGILE if BTC high-liquidity windows behave as momentum; FAIL_OVERFIT_WF_GAP if any profit depends on one narrow window." --backtest-plan "Run generated strategy syntax check, static scan, OHLCV quality check, historical backtest, and walk-forward windows through checked Bot Factory wrappers only." --rejection-condition "Reject if static or OHLCV checks fail; reject if historical or walk-forward gates fail, if trade count is too low, if profit depends on one window, or if trades violate one-way long scope or leverage 1.0 assumptions." --generator-mode rule_based --thesis-id TH-CRYPTO-LIQ-PULLBACK-001 --thesis-type liquidity_mean_reversion --thesis-statement "Liquidity-conditioned intraday overreaction in crypto can create long-only pullback-recovery opportunities when volume confirms tradable participation." --falsification-criteria "Falsified if local historical and walk-forward artifacts show too few trades, negative or zero post-cost return, low pass rate, or dependency on one narrow window." --novelty-vs-previous "Distinct from trend continuation, volatility breakout, and hybrid ML return-filter families by testing liquidity-conditioned intraday reversal after pullback rather than breakout continuation or ML gating." --evidence-ref local:ranking:20260506T100000JST_real_smoke_three_family_ranking --evidence-ref local_ohlcv:user_data/data/bybit/futures/BTC_USDT_USDT-5m-futures.parquet --research-reference "@registry\strategies\proposals\20260506T101500JST_LongOnlyCryptoLiquidityPullbackCandidate.intraday_reversal_reference.json" --research-reference "@registry\strategies\proposals\20260506T101500JST_LongOnlyCryptoLiquidityPullbackCandidate.short_reversal_liquidity_reference.json" --research-reference "@registry\strategies\proposals\20260506T101500JST_LongOnlyCryptoLiquidityPullbackCandidate.volume_liquidity_reference.json" --failure-taxonomy-code FAIL_COST_SENSITIVE --failure-taxonomy-code FAIL_REGIME_FRAGILE --failure-taxonomy-code FAIL_OVERFIT_WF_GAP --retry-budget-per-thesis 2 --thesis-retry-count 0 --parameter-only-retry-limit 1 --parameter-only-retry-count 0 --force-distinct-hypothesis-family --strategy-logic-variant mean_reversion_pullback --reviewer-note "Generated fourth theory-family liquidity pullback smoke; historical-safe only; no paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `generator_mode=rule_based`,
+  `strategy_logic_variant=mean_reversion_pullback`,
+  `thesis_id=TH-CRYPTO-LIQ-PULLBACK-001`, `research_reference_count=3`.
+  Artifacts:
+  `registry\strategies\proposals\20260506T011500Z_LongOnlyCryptoLiquidityPullbackCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T011500Z_LongOnlyCryptoLiquidityPullbackCandidate.metadata.json`.
+- [x] Generated strategy code for
+  `LongOnlyCryptoLiquidityPullbackCandidate`:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T011500Z_LongOnlyCryptoLiquidityPullbackCandidate.metadata.json --candidate-id 20260506T101500JST_liquidity_pullback_smoke --created-at 2026-05-06T10:20:00+09:00
+  ```
+
+  Result: `status=generated`, `candidate_evaluation_eligible=true`,
+  `static_check_ok=true`. Artifacts:
+  `registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\LongOnlyCryptoLiquidityPullbackCandidate.py`,
+  `metadata.json`, `static_check.json`, and `research_brief.json`.
+- [x] Ran pre-backtest generated-strategy syntax, static, and OHLCV checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\LongOnlyCryptoLiquidityPullbackCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: compile passed; generated static check `ok=true`, report
+  `registry\strategies\checks\20260506T091435Z_static_check.json`; OHLCV
+  check `ok=true`, 8995 rows, no duplicate timestamps, no missing intervals,
+  report `registry\strategies\checks\20260506T091426Z_ohlcv_quality.json`.
+- [x] Ran a real historical-safe execution-chain smoke for the fourth family
+  using checked wrappers only and a broader local timerange:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T011500Z_LongOnlyCryptoLiquidityPullbackCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\metadata.json --candidate-id 20260506T101500JST_liquidity_pullback_smoke --config user_data\config_freqai_phase2_safe.json --strategy-path registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --execute-historical-chain --execution-run-id 20260506T101500JST_liquidity_pullback_smoke_exec --python .\.venv\Scripts\python.exe --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --walk-forward-window 20250101-20250108 --walk-forward-window 20250108-20250115 --walk-forward-window 20250115-20250122 --walk-forward-window 20250122-20250201 --reviewer-note "Real historical-safe fourth-family liquidity pullback smoke only; no paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: command exited `1` because the candidate recommendation is `retry`.
+  Infrastructure completed: static, OHLCV, historical backtest, and
+  walk-forward wrapper subprocesses all returned `0`; candidate manifest:
+  `registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json`.
+  Historical metrics:
+  `trade_count=0`, `total_return_pct=0.0`, `profit_factor=0.0`,
+  `sortino=0.0`, `max_drawdown_pct=0.0`. Walk-forward metrics: 4 completed
+  windows, `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=0.0`, `max_single_window_profit_dependency=null`;
+  recommendation `fail`.
+- [x] Ranked the four real smoke candidates:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --ranking-id 20260506T103000JST_real_smoke_four_family_ranking --reviewer-note "Real generated smoke ranking across trend, volatility, hybrid ML, and liquidity pullback families only; no paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: `candidate_count=4`,
+  `best_candidate_id=20260506T094000JST_hybrid_ml_smoke`,
+  `paper_ready_candidate_ids=[]`. Hypothesis diversity is present across
+  `trend_continuation`, `volatility_breakout`, `hybrid_ml_return_filter`, and
+  `liquidity_mean_reversion`, but all candidates remain blocked by failed
+  historical, walk-forward, and/or training gates. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T103000JST_real_smoke_four_family_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Ran the iteration planner on the failed fourth-family candidate. The
+  first two wording attempts correctly produced `action=reject` because the
+  conservative safety scanner treated `order-flow` and `non-secret` as unsafe
+  revision text. The final safe wording produced `action=revise` while keeping
+  `evaluation_allowed_by_this_plan=false` and requiring a new thesis ID plus
+  new research references:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_iterate_candidate.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --proposal-metadata-json registry\strategies\proposals\20260506T011500Z_LongOnlyCryptoLiquidityPullbackCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\metadata.json --revision-id 20260506T104500JST_liquidity_pullback_safe_retry_plan --reviewer-finding "Historical backtest over 20250101-20250201 produced zero trades, so this generated rule set is overconstrained or mismatched to the available BTC 5m regime." --reviewer-finding "Walk-forward completed 4/4 windows but every window produced zero trades, giving pass_rate 0.0 and profitable_windows_ratio 0.0." --reviewer-finding "The failed thesis is not evidence for parameter-only loosening; it should force either a materially different market-mechanism thesis or a richer diagnostics layer before another code generation attempt." --changed-assumption "Move away from liquidity pullback RSI recovery as the next default hypothesis; consider regime classification, historical microstructure proxies from existing local stores, or multi-timeframe context if available and safe." --changed-data-requirement "Before another strategy generation pass, inspect whether local OHLCV alone is too weak for this thesis and whether allowed local feature stores can add sanitized historical-only liquidity proxies." --unchanged-rejection-rule "Keep static and OHLCV checks mandatory before any historical wrapper." --unchanged-rejection-rule "Reject zero-trade candidates and do not treat zero drawdown as safety evidence." --unchanged-rejection-rule "Reject if walk-forward pass rate remains below threshold or all profit depends on one narrow window." --prior-timerange 20250101-20250201 --proposed-timerange 20250101-20250201
+  ```
+
+  Result: `action=revise`, `evaluation_allowed_by_this_plan=false`. Artifacts:
+  `registry\strategies\reviews\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T104500JST_liquidity_pullback_safe_retry_plan\iteration_plan.json`,
+  `proposal_revision_input.json`, and `iteration_report.md`.
+- [x] Scanned the new generated fourth-family proposal, strategy, candidate,
+  execution, backtest, walk-forward, ranking, and iteration text artifacts for
+  known local credential values from `user_data\config.json`; no matches were
+  found.
+- [x] Final verification after fourth-family smoke and ranking:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_iterate_candidate.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\LongOnlyCryptoVolumeTrendCandidate.py registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\LongOnlyCryptoVolatilityBreakoutCandidate.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\LongOnlyHybridMLReturnFilterCandidate.py registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\LongOnlyCryptoLiquidityPullbackCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; focused pytest passed; static strategy check
+  `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T091948Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T091956Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: four distinct theory-backed generated families
+  have now been evaluated and ranked, but no candidate is profitable, passing,
+  paper-ready, or promotable. The fourth family adds useful negative evidence:
+  the current rule generator's liquidity pullback variant produced zero trades
+  across the full local January 2025 BTC 5m dataset, so the next useful work is
+  not parameter-only loosening. It should add richer historical diagnostics or
+  move to a materially different research-backed thesis using safe local
+  features.
+
+Follow-up on 2026-05-06 JST for generated signal diagnostics.
+
+- [x] Added a historical-only generated candidate signal diagnostics layer:
+  `freqtrade_ext/bot_factory/signal_diagnostics.py` and
+  `scripts/bot_factory_diagnose_candidate_signals.py`. The CLI reads generated
+  metadata plus local OHLCV parquet or CSV files, recomputes generator-aligned
+  indicator inputs with pandas, and writes local JSON/Markdown artifacts with
+  per-entry-condition individual, cumulative, and all-except counts. It does
+  not start backtesting, paper/dry-run/live trading, exchange order placement,
+  or bot process control.
+- [x] Added focused diagnostics coverage in `tests/test_bot_factory.py` for
+  zero-entry component explanation, report writing, safety-scope flags, and
+  workspace path blocking.
+- [x] Ran the narrow verification for the new diagnostics layer:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_diagnose_candidate_signals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Results: compile passed; focused Bot Factory pytest passed.
+- [x] Ran diagnostics on the failed fourth-family liquidity pullback candidate:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T105000JST_liquidity_pullback_signal_diagnostics --reviewer-note "Signal diagnostics only; no backtest, paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: `status=completed`, `row_count=8928`, `entry_count=0`,
+  `zero_entry_signal=true`, `first_zero_component=trend_filter`, and
+  `diagnosis_codes=["ZERO_ENTRY_SIGNALS"]`. Component counts showed
+  `pullback_seen` matched 935 rows, `rsi_recovered` matched 424 rows, and
+  the cumulative chain had 73 rows after pullback plus RSI recovery. Adding
+  the generated EMA trend filter reduced the cumulative count to 0; its
+  `all_except_count=39` makes it the clearest bottleneck in this zero-trade
+  rule set. Artifacts:
+  `registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json`
+  and `signal_diagnostics_report.md`.
+- [x] Scanned the new diagnostics JSON and Markdown artifacts for known local
+  credential values from `user_data\config.json`; no matches were found.
+- [x] Final verification after adding generated signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_iterate_candidate.py scripts\bot_factory_diagnose_candidate_signals.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\LongOnlyCryptoVolumeTrendCandidate.py registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\LongOnlyCryptoVolatilityBreakoutCandidate.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\LongOnlyHybridMLReturnFilterCandidate.py registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\LongOnlyCryptoLiquidityPullbackCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; focused Bot Factory pytest passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T093257Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T093301Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: diagnostics now explains why the fourth candidate
+  produced no entries, but this is still negative evidence only. No generated
+  candidate is profitable, passing, paper-ready, or promotable. The next useful
+  AI-factory step is to feed this bottleneck evidence into a materially new
+  research-backed thesis or a broader diagnostics pass across all failed
+  candidates, not to loosen parameters inside the failed family by default.
+
+Follow-up on 2026-05-06 JST for failure synthesis into next theory brief.
+
+- [x] Added a local failure-synthesis layer that converts failed candidate
+  ranking evidence plus signal diagnostics into the next AI theory/code
+  generation input without doing parameter-only optimization:
+  `freqtrade_ext/bot_factory/candidate_failure_synthesis.py` and
+  `scripts/bot_factory_synthesize_candidate_failures.py`.
+- [x] Added focused synthesis tests in `tests/test_bot_factory.py` for:
+  zero-trade and negative-return candidate aggregation, signal-bottleneck
+  import, `requires_new_thesis_id=true`, `requires_new_research_references=true`,
+  `parameter_only_retry_allowed=false`, blocked next actions, report writing,
+  and workspace path blocking.
+- [x] Ran the narrow verification for the new synthesis layer:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Results: compile passed; focused Bot Factory pytest passed.
+- [x] Ran historical-only signal diagnostics over the full local January 2025
+  BTC 5m OHLCV range for the other three real generated candidates so the
+  synthesis could cover all four families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T110500JST_volume_trend_signal_diagnostics --reviewer-note "Signal diagnostics only for four-family synthesis; no backtest, paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T111000JST_vol_breakout_signal_diagnostics --reviewer-note "Signal diagnostics only for four-family synthesis; no backtest, paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T111500JST_hybrid_ml_signal_diagnostics --reviewer-note "Signal diagnostics only for four-family synthesis; no backtest, paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Results: trend-continuation diagnostics completed with `entry_count=45`;
+  volatility-breakout diagnostics completed with `entry_count=375`; hybrid ML
+  diagnostics completed with `entry_count=0`, `first_zero_component=ml_filter`,
+  and `diagnosis_codes=["ZERO_ENTRY_SIGNALS","ML_FILTER_UNAVAILABLE"]` because
+  raw OHLCV does not contain generated model-prediction columns. Artifacts were
+  written under `registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\...`,
+  `registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\...`,
+  and `registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\...`.
+- [x] Ran the first failure synthesis using the four-family ranking plus the
+  liquidity signal diagnostics, then regenerated the preferred synthesis using
+  all four signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T103000JST_real_smoke_four_family_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\20260506T111500JST_hybrid_ml_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --synthesis-id 20260506T112000JST_four_family_failure_synthesis_all_signal_diagnostics --reviewer-note "Failure synthesis with all four signal diagnostics; converts failed ranking and diagnostics into next theory/code-generation input; no backtest, paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: `status=completed`, `candidate_count=4`, `paper_ready_count=0`,
+  `requires_new_thesis_id=true`, `requires_new_research_references=true`,
+  `parameter_only_retry_allowed=false`. The synthesis records failed families
+  `hybrid_ml_return_filter`, `liquidity_mean_reversion`,
+  `trend_continuation`, and `volatility_breakout`; zero-trade candidates
+  `20260506T094000JST_hybrid_ml_smoke` and
+  `20260506T101500JST_liquidity_pullback_smoke`; negative-return candidate
+  `20260506T092000JST_vol_breakout_smoke`; and walk-forward failure for all
+  four candidates. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T112000JST_four_family_failure_synthesis_all_signal_diagnostics\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] The generated `next_research_brief` blocks
+  `parameter_only_threshold_loosen`,
+  `repeat_failed_hypothesis_family_without_new_evidence`,
+  `paper_or_dry_run_or_live_start`, `exchange_order_endpoint_use`, and
+  `promotion_from_failed_smoke`. It asks for a distinct market mechanism with
+  new structured references, model-prediction diagnostics before judging the
+  hybrid ML gate, and an explanation for why the liquidity pullback
+  `trend_filter` eliminates surviving setup rows.
+- [x] Scanned the new diagnostics and synthesis artifacts for known local
+  credential values from `user_data\config.json`; no matches were found.
+- [x] Final verification after adding failure synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_iterate_candidate.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\LongOnlyCryptoVolumeTrendCandidate.py registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\LongOnlyCryptoVolatilityBreakoutCandidate.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\LongOnlyHybridMLReturnFilterCandidate.py registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\LongOnlyCryptoLiquidityPullbackCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; focused Bot Factory pytest passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T094225Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T094231Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the factory now has a local evidence-to-theory
+  synthesis artifact, but it still has no profitable, passing, paper-ready, or
+  promotable strategy. The next productive step is to use
+  `candidate_failure_synthesis.json` as the input to a new research-backed
+  thesis/proposal or to implement model-prediction diagnostics for the hybrid
+  path, not to tune thresholds inside the four failed families.
+
+Follow-up on 2026-05-06 JST for hybrid FreqAI prediction diagnostics.
+
+- [x] Added local FreqAI prediction artifact diagnostics:
+  `freqtrade_ext/bot_factory/freqai_prediction_diagnostics.py` and
+  `scripts/bot_factory_diagnose_freqai_predictions.py`. The command reads
+  generated metadata, local `backtesting_predictions` feather/CSV files,
+  optional signal diagnostics, FreqAI metadata, and training manifests; then
+  reports expected target-column presence, model label columns, alternate
+  prediction targets, `do_predict` coverage, threshold counts, and
+  target-mismatch diagnosis codes. It does not run backtesting, training,
+  paper/dry-run/live trading, exchange order placement, or process control.
+- [x] Extended failure synthesis so
+  `scripts/bot_factory_synthesize_candidate_failures.py` can accept
+  `--freqai-prediction-diagnostics-json` and carry target mismatch evidence
+  into `next_research_brief`.
+- [x] Added focused tests in `tests/test_bot_factory.py` for FreqAI prediction
+  target mismatch detection, alternate target threshold counts, `do_predict`
+  coverage, safety-scope flags, report writing, workspace path blocking, and
+  synthesis import of FreqAI prediction diagnostics.
+- [x] Ran the narrow verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\freqai_prediction_diagnostics.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_diagnose_freqai_predictions.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Results: compile passed; focused Bot Factory pytest passed.
+- [x] Ran FreqAI prediction diagnostics on the failed hybrid ML candidate:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_freqai_predictions.py --generated-metadata-json registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\metadata.json --predictions-dir user_data\models\phase2_long_only_lightgbm_v1\backtesting_predictions --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\20260506T111500JST_hybrid_ml_signal_diagnostics\signal_diagnostics.json --freqai-metadata-json data\freqai\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke_exec_historical\freqai_metadata.json --training-manifest-json data\freqai_training\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke_exec_training\training_manifest.json --diagnostics-id 20260506T113000JST_hybrid_ml_prediction_diagnostics --reviewer-note "FreqAI prediction diagnostics only; reads local prediction artifacts and starts no backtest, training, paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: `status=completed`, `prediction_file_count=4`, `row_count=1152`,
+  expected target `&-future_return`, but
+  `expected_target_column_present=false`. Saved FreqAI predictions and model
+  metadata expose `&-long_return`, producing
+  `PREDICTION_TARGET_MISMATCH` and `MODEL_LABEL_MISMATCH`. The alternate
+  `&-long_return` predictions have `above_threshold_count=374` at threshold
+  `0.001`, with `do_predict` valid for all 1152 rows. Artifact:
+  `registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\20260506T113000JST_hybrid_ml_prediction_diagnostics\freqai_prediction_diagnostics.json`
+  and `freqai_prediction_diagnostics_report.md`.
+- [x] Regenerated the preferred failure synthesis with all four signal
+  diagnostics plus hybrid FreqAI prediction diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T103000JST_real_smoke_four_family_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\20260506T111500JST_hybrid_ml_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\20260506T113000JST_hybrid_ml_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T113500JST_four_family_failure_synthesis_with_freqai_prediction_diagnostics --reviewer-note "Failure synthesis with all signal diagnostics plus hybrid FreqAI prediction diagnostics; converts failed evidence into next theory/code-generation input; no backtest, paper, dry-run, live, exchange orders, secrets, leverage, or promotion."
+  ```
+
+  Result: `status=completed`, `candidate_count=4`, `paper_ready_count=0`,
+  `requires_new_thesis_id=true`, `requires_new_research_references=true`,
+  `parameter_only_retry_allowed=false`, and
+  `freqai_target_mismatch_candidate_ids=["20260506T094000JST_hybrid_ml_smoke"]`.
+  The `next_research_brief` now asks why the generated hybrid candidate
+  expected `&-future_return` while stored FreqAI predictions and model labels
+  expose `&-long_return`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T113500JST_four_family_failure_synthesis_with_freqai_prediction_diagnostics\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Scanned the new FreqAI prediction diagnostics and regenerated synthesis
+  artifacts for known local credential values from `user_data\config.json`; no
+  matches were found.
+- [x] Final verification after adding hybrid FreqAI prediction diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py freqtrade_ext\bot_factory\freqai_prediction_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_iterate_candidate.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_synthesize_candidate_failures.py scripts\bot_factory_diagnose_freqai_predictions.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\LongOnlyCryptoVolumeTrendCandidate.py registry\strategies\generated\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\LongOnlyCryptoVolatilityBreakoutCandidate.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T094000JST_hybrid_ml_smoke\LongOnlyHybridMLReturnFilterCandidate.py registry\strategies\generated\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\LongOnlyCryptoLiquidityPullbackCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; focused Bot Factory pytest passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T095315Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T095321Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this increment identifies a concrete hybrid-ML
+  infrastructure mismatch, not a profitable strategy. Before judging the
+  hybrid thesis or adjusting thresholds, the factory should align
+  `target_definition`, generated `set_freqai_targets`, FreqAI model label list,
+  and candidate-specific FreqAI identifiers or non-destructive cache policy.
+
+Follow-up on 2026-05-06 JST for candidate-scoped FreqAI identifiers.
+
+- [x] Added deterministic candidate-scoped FreqAI identifiers so generated
+  `freqai` and `hybrid_ml` candidates no longer default to a shared config
+  identifier such as `phase2_long_only_lightgbm_v1`. The strategy code
+  generator now records `freqai_identifier`,
+  `freqai_identifier_policy="candidate_specific"`,
+  `freqai_expected_target_column`, and a `freqai_cache_policy` that forbids
+  reusing model or prediction caches from another generated candidate or target
+  label.
+- [x] Updated checked historical-safe FreqAI wrappers to accept
+  `--freqai-identifier`. `scripts/bot_factory_run_freqai_backtest.py` now
+  writes a minimal non-secret `freqai_identifier_override.json` under the run
+  artifact directory and passes it to Freqtrade as an additional config. The
+  override contains only:
+
+  ```json
+  {
+    "freqai": {
+      "identifier": "<candidate-scoped-id>"
+    }
+  }
+  ```
+
+  The base config path remains local source input, but generated metadata now
+  records `freqai_identifier_source="override"` when this path is used.
+- [x] Updated candidate evaluation execution planning so ML candidates pass the
+  generated or derived candidate-specific identifier through the historical
+  FreqAI backtest, walk-forward, and training factory commands. This prevents
+  the specific failure mode diagnosed earlier: generated hybrid code expecting
+  `&-future_return` while stale saved predictions/model labels expose
+  `&-long_return`.
+- [x] Extended FreqAI prediction diagnostics to compare generated
+  `freqai_identifier` against observed identifiers in FreqAI metadata and
+  training manifests. New diagnosis codes include
+  `FREQAI_IDENTIFIER_MATCH` and `FREQAI_IDENTIFIER_MISMATCH`.
+- [x] Added focused tests in `tests/test_bot_factory.py` for deterministic
+  candidate identifier generation, non-secret override config writing,
+  generated FreqAI metadata/cache policy, training/walk-forward command
+  propagation, candidate evaluation command propagation, CLI mapping, and
+  prediction-diagnostic identifier mismatch detection.
+- [x] Verification after adding candidate-scoped FreqAI identifiers:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\freqai_backtest.py freqtrade_ext\bot_factory\freqai_training.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\freqai_prediction_diagnostics.py scripts\bot_factory_run_freqai_backtest.py scripts\bot_factory_run_freqai_training.py scripts\bot_factory_run_walk_forward.py scripts\bot_factory_evaluate_candidate.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  ```
+
+  Results: compile passed; focused Bot Factory pytest passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T100616Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T100617Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this is an infrastructure consistency fix, not a
+  profitable or paper-ready strategy. The old hybrid run artifacts still show
+  the historical mismatch until the candidate is regenerated or re-evaluated
+  through the new candidate-scoped identifier path. No paper, dry-run, live
+  trading, exchange order, leverage, shorting, or process-control command was
+  started by this increment.
+
+Follow-up on 2026-05-06 JST for FreqAI start calls and merged prediction signal diagnostics.
+
+- [x] Fixed generated ML strategy integration so `freqai` and `hybrid_ml`
+  candidates call `self.freqai.start(dataframe, metadata, self)` inside
+  `populate_indicators`. The previous generated hybrid artifact defined
+  FreqAI feature and target methods but never started the FreqAI pipeline, so
+  candidate-scoped identifiers alone could not generate fresh prediction
+  artifacts.
+- [x] Hardened FreqAI strategy validation so strategies that define
+  `feature_engineering_*` or `set_freqai_targets` but never call
+  `self.freqai.start(...)` are rejected with `freqai_start_required`.
+- [x] Added optional FreqAI prediction merging to signal diagnostics:
+  `scripts/bot_factory_diagnose_candidate_signals.py` now accepts
+  `--freqai-predictions-dir` and left-joins local prediction feather/CSV
+  files by `date`. This keeps OHLCV-only diagnostics unchanged while allowing
+  hybrid ML no-trade analysis to distinguish missing predictions from
+  non-overlapping rule and ML gates.
+- [x] Verified the first regenerated start-call hybrid artifact:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T004000Z_LongOnlyHybridMLReturnFilterCandidate.metadata.json --candidate-id 20260506T194500JST_hybrid_ml_freqai_start_smoke --created-at 2026-05-06T19:45:00+09:00
+  .\.venv\Scripts\python.exe scripts\bot_factory_validate_freqai_strategy.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T194500JST_hybrid_ml_freqai_start_smoke\LongOnlyHybridMLReturnFilterCandidate.py --output registry\strategies\checks\20260506T194500JST_hybrid_freqai_start_validation.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T194500JST_hybrid_ml_freqai_start_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m --output registry\strategies\checks\20260506T194500JST_hybrid_freqai_start_ohlcv.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T004000Z_LongOnlyHybridMLReturnFilterCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T194500JST_hybrid_ml_freqai_start_smoke\metadata.json --candidate-id 20260506T194500JST_hybrid_ml_freqai_start_smoke --config user_data\config_freqai_phase2_safe.json --strategy-path registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T194500JST_hybrid_ml_freqai_start_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --execute-historical-chain --execution-run-id 20260506T194500JST_hybrid_ml_freqai_start_smoke_exec --python .\.venv\Scripts\python.exe --timeframe 5m --timerange 20250101-20250110 --pairs BTC/USDT:USDT --walk-forward-window 20250101-20250104 --walk-forward-window 20250104-20250107 --walk-forward-window 20250107-20250110 --training-timerange 20250101-20250110 --reviewer-note "FreqAI start-call hybrid smoke only; checked historical backtesting wrappers only; no paper, dry-run, live, exchange orders, secrets, leverage, shorting, or promotion."
+  ```
+
+  Results: generated code contains `self.freqai.start(...)`; FreqAI validation,
+  static check, and OHLCV quality passed. The checked historical chain stopped
+  at historical backtest returncode `1`, with
+  `candidate_execution.status=failed` and `recommendation=fail`, because
+  `20250101-20250110` did not provide enough pre-timerange data for
+  `train_period_days=2`. FreqAI attempted to train from `2024-12-30` while
+  the local OHLCV starts at `2025-01-01`, causing all training data to be
+  dropped due to NaNs. This was recorded as an infrastructure/timerange
+  blocker, not a strategy-performance result.
+- [x] Generated and evaluated a fresh candidate-scoped hybrid artifact on a
+  later timerange with sufficient local training lead-in:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T004000Z_LongOnlyHybridMLReturnFilterCandidate.metadata.json --candidate-id 20260506T200000JST_hybrid_ml_freqai_timerange_smoke --created-at 2026-05-06T20:00:00+09:00
+  .\.venv\Scripts\python.exe scripts\bot_factory_validate_freqai_strategy.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\LongOnlyHybridMLReturnFilterCandidate.py --output registry\strategies\checks\20260506T200000JST_hybrid_freqai_timerange_validation.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m --output registry\strategies\checks\20260506T200000JST_hybrid_freqai_timerange_ohlcv.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T004000Z_LongOnlyHybridMLReturnFilterCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\metadata.json --candidate-id 20260506T200000JST_hybrid_ml_freqai_timerange_smoke --config user_data\config_freqai_phase2_safe.json --strategy-path registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --execute-historical-chain --execution-run-id 20260506T200000JST_hybrid_ml_freqai_timerange_smoke_exec --python .\.venv\Scripts\python.exe --timeframe 5m --timerange 20250105-20250115 --pairs BTC/USDT:USDT --walk-forward-window 20250105-20250108 --walk-forward-window 20250108-20250111 --walk-forward-window 20250111-20250115 --training-timerange 20250105-20250115 --reviewer-note "FreqAI start-call later-timerange hybrid smoke only; checked historical backtesting wrappers only; no paper, dry-run, live, exchange orders, secrets, leverage, shorting, or promotion."
+  ```
+
+  Results: `candidate_execution.status=completed`, all subprocess returncodes
+  were `0`, but the candidate remained `recommendation=retry`.
+  Historical metrics were `trade_count=0`, `total_return_pct=0.0`,
+  `profit_factor=0.0`, and `sortino=0.0`. Walk-forward completed 3/3 windows
+  but failed with `pass_rate=0.0`, `profitable_windows_ratio=0.0`, and
+  `total_return_pct=0.0`. Training factory completed one stage with no failed
+  subprocesses but returned `recommendation=fail` because the underlying
+  backtest had zero trades. Artifacts:
+  `registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json`,
+  `data\freqai\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke_exec_historical\`,
+  `data\walk_forward\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke_exec_walk_forward\`,
+  and
+  `data\freqai_training\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke_exec_training\`.
+- [x] Confirmed the regenerated hybrid candidate used fresh candidate-scoped
+  FreqAI artifacts. Historical metadata records
+  `freqai_identifier_source="override"` and
+  `freqai_identifier=bf_longonlyhybridmlreturnfiltercandidate_20260506t200000jst_hybrid_ml_freqai_timerang_5790af9a23`.
+  The matching `user_data\models\...\backtesting_predictions\` directory
+  contains 10 prediction feather files and 10 `sub-train-BTC_*` metadata
+  directories.
+- [x] Ran FreqAI prediction diagnostics on the fresh hybrid artifacts:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_freqai_predictions.py --generated-metadata-json registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\metadata.json --predictions-dir user_data\models\bf_longonlyhybridmlreturnfiltercandidate_20260506t200000jst_hybrid_ml_freqai_timerang_5790af9a23\backtesting_predictions --freqai-metadata-json data\freqai\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke_exec_historical\freqai_metadata.json --training-manifest-json data\freqai_training\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke_exec_training\training_manifest.json --diagnostics-id 20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics --reviewer-note "Prediction diagnostics for FreqAI start-call later-timerange smoke; local artifacts only; no backtest, paper, dry-run, live, exchange orders, secrets, leverage, shorting, or promotion."
+  ```
+
+  Results: `status=completed`, `prediction_file_count=10`, `row_count=2880`,
+  `expected_target_column="&-future_return"`,
+  `expected_target_column_present=true`, `model_label_columns=["&-future_return"]`,
+  `above_threshold_count=777`, `do_predict` positive for all rows, and
+  `FREQAI_IDENTIFIER_MATCH`. Artifact:
+  `registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json`.
+- [x] Ran merged prediction signal diagnostics for the no-trade hybrid:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --freqai-predictions-dir user_data\models\bf_longonlyhybridmlreturnfiltercandidate_20260506t200000jst_hybrid_ml_freqai_timerang_5790af9a23\backtesting_predictions --timerange 20250105-20250115 --diagnostics-id 20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics --reviewer-note "Signal diagnostics with local FreqAI predictions merged by date; no backtest, paper, dry-run, live, exchange orders, secrets, leverage, shorting, or promotion."
+  ```
+
+  Results: predictions merged cleanly by `date` with `prediction_file_count=10`,
+  `prediction_row_count=2880`, `matched_row_count=2880`, and
+  `target_column_present_after_merge=true`. Entry signals remained zero:
+  `entry_count=0`, `first_zero_component=ml_filter`, and
+  `diagnosis_codes=["ZERO_ENTRY_SIGNALS"]`. The ML filter itself had
+  `individual_count=777`, but those rows did not overlap with the 10 rows that
+  survived the preceding trend/momentum/ATR/volume gates. Artifact:
+  `registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json`.
+- [x] Re-ranked the current four families using the fresh hybrid candidate
+  instead of the stale pre-start hybrid smoke:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json --ranking-id 20260506T202000JST_current_four_family_with_freqai_start_ranking --reviewer-note "Current four-family ranking replaces stale pre-start Hybrid smoke with candidate-scoped FreqAI start-call Hybrid smoke; local historical artifacts only; no paper, dry-run, live, exchange orders, secrets, leverage, shorting, or promotion."
+  ```
+
+  Result: `candidate_count=4`, `paper_ready_candidate_ids=[]`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`. The fresh
+  hybrid ranked second, but it is still blocked by historical, walk-forward,
+  and training gates. Artifact:
+  `registry\strategies\candidates\rankings\20260506T202000JST_current_four_family_with_freqai_start_ranking\candidate_ranking.json`.
+- [x] Regenerated the current failure synthesis using the fresh hybrid
+  prediction and signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T202000JST_current_four_family_with_freqai_start_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T202500JST_current_four_family_failure_synthesis_with_freqai_start --reviewer-note "Current synthesis uses candidate-scoped FreqAI start-call Hybrid diagnostics with predictions merged into signal bottlenecks; local artifacts only; no code generation, backtest, paper, dry-run, live, exchange orders, secrets, leverage, shorting, or promotion."
+  ```
+
+  Result: `status=completed`, `candidate_count=4`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, `requires_new_thesis_id=true`, and no
+  FreqAI target mismatch for the fresh hybrid. The synthesis records zero-trade
+  candidates `20260506T101500JST_liquidity_pullback_smoke` and
+  `20260506T200000JST_hybrid_ml_freqai_timerange_smoke`; negative-return
+  candidate `20260506T092000JST_vol_breakout_smoke`; walk-forward failure for
+  all four current candidates; and a new research question asking why the
+  hybrid `ml_filter` eliminates the surviving setup rows. Preferred artifact:
+  `registry\strategies\synthesis\20260506T202500JST_current_four_family_failure_synthesis_with_freqai_start\candidate_failure_synthesis.json`.
+- [x] Remaining limitation: the FreqAI label/cache/start-call path is now
+  internally consistent for a regenerated hybrid candidate, but the strategy
+  still produced zero trades and failed historical, walk-forward, and training
+  gates. There is still no profitable, passing, paper-ready, or promotable
+  strategy. The next candidate should use the current synthesis as theory
+  input and should not loosen thresholds as a parameter-only retry.
+- [x] Final verification after adding FreqAI start-call enforcement and merged
+  prediction signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\freqai_checks.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\freqai_backtest.py freqtrade_ext\bot_factory\freqai_training.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\freqai_prediction_diagnostics.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_validate_freqai_strategy.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_run_freqai_backtest.py scripts\bot_factory_run_freqai_training.py scripts\bot_factory_run_walk_forward.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_diagnose_freqai_predictions.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\LongOnlyHybridMLReturnFilterCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; `tests\test_bot_factory.py` passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T102923Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T102924Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+
+Follow-up on 2026-05-06 JST for signed-volume imbalance theory branch.
+
+- [x] Added a seventh, distinct Strategy Generation family:
+  `signed_volume_imbalance_accumulation`. This maps thesis types such as
+  `signed_volume_imbalance`, `signed_volume_accumulation`, and
+  `order_flow_imbalance` to a closed-candle proxy for order-flow pressure:
+  candle-direction signed volume imbalance, close-location accumulation,
+  rolling-mid reclaim, controlled range, and a no-breakout-chase guard.
+- [x] Extended the proposal generator and code generator:
+  `freqtrade_ext/bot_factory/strategy_proposals.py`,
+  `freqtrade_ext/bot_factory/strategy_code.py`, and
+  `scripts/bot_factory_generate_strategy_proposal.py`. Generated strategies
+  now compute `signed_volume`, `signed_volume_imbalance`,
+  `close_location_value`, `close_location_mean`, `range_pct`,
+  `range_pct_mean`, and `rolling_mid`; entries require positive signed
+  imbalance, accumulated upper close location, midpoint reclaim, no rolling
+  high breakout chase, controlled range, and volume confirmation. Exits can
+  fire on imbalance reversal, close-location failure, midpoint loss, or RSI
+  target.
+- [x] Extended signal diagnostics for the new variant in
+  `freqtrade_ext/bot_factory/signal_diagnostics.py` and added focused tests in
+  `tests/test_bot_factory.py` for generated signed-volume strategy code and
+  signal component diagnostics.
+- [x] Ran the focused implementation verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "signed_volume_imbalance or signed_volume"
+  ```
+
+  Results: compile passed; focused Bot Factory pytest passed with 2 tests.
+- [x] Created structured research references for the new thesis using public
+  DOI sources:
+  `registry\strategies\proposals\20260506T223000JST_LongOnlySignedVolumeImbalanceCandidate.order_flow_toxicity_reference.json`,
+  `registry\strategies\proposals\20260506T223000JST_LongOnlySignedVolumeImbalanceCandidate.tick_rule_reference.json`,
+  and
+  `registry\strategies\proposals\20260506T223000JST_LongOnlySignedVolumeImbalanceCandidate.return_volume_tail_reference.json`.
+  The references cover Bitcoin order-flow toxicity and jumps
+  (`doi:10.1016/j.ribaf.2025.103163`), Bitcoin tick-rule accuracy
+  (`doi:10.1177/21582440211014504`), and cryptocurrency return-volume tail
+  dependence (`doi:10.1016/j.frl.2019.101326`).
+- [x] Generated and accepted the signed-volume proposal:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlySignedVolumeImbalanceCandidate --thesis-id TH-CRYPTO-SIGNED-VOLUME-IMBALANCE-001 --thesis-family signed_volume_imbalance --strategy-logic-variant signed_volume_imbalance_accumulation --created-at 2026-05-06T22:30:00+09:00 --research-reference-json registry\strategies\proposals\20260506T223000JST_LongOnlySignedVolumeImbalanceCandidate.order_flow_toxicity_reference.json --research-reference-json registry\strategies\proposals\20260506T223000JST_LongOnlySignedVolumeImbalanceCandidate.tick_rule_reference.json --research-reference-json registry\strategies\proposals\20260506T223000JST_LongOnlySignedVolumeImbalanceCandidate.return_volume_tail_reference.json --reviewer-note "Signed-volume imbalance accumulation proposal only; local proposal metadata only; no backtest, paper, dry-run, live, exchange execution, secrets, leverage, inverse exposure, or promotion."
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `generator_mode=rule_based`,
+  `strategy_logic_variant=signed_volume_imbalance_accumulation`,
+  `thesis_id=TH-CRYPTO-SIGNED-VOLUME-IMBALANCE-001`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T133000Z_LongOnlySignedVolumeImbalanceCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T133000Z_LongOnlySignedVolumeImbalanceCandidate.metadata.json`.
+- [x] Generated the signed-volume strategy:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T133000Z_LongOnlySignedVolumeImbalanceCandidate.metadata.json --candidate-id 20260506T223500JST_signed_imbalance_smoke --created-at 2026-05-06T22:35:00+09:00
+  ```
+
+  Result: `status=generated`, `static_check_ok=true`, and
+  `candidate_evaluation_eligible=true`. Artifacts:
+  `registry\strategies\generated\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\LongOnlySignedVolumeImbalanceCandidate.py`,
+  `metadata.json`, `research_brief.json`, and `static_check.json`.
+- [x] Ran pre-evaluation static and OHLCV checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m --output registry\strategies\checks\20260506T223500JST_signed_imbalance_ohlcv.json
+  ```
+
+  Results: generated-strategy static check `ok=true`, one file checked, no
+  findings, report
+  `registry\strategies\checks\20260506T110917Z_static_check.json`; OHLCV
+  quality `ok=true`, 8995 rows, no duplicate timestamps, no missing
+  intervals, report
+  `registry\strategies\checks\20260506T223500JST_signed_imbalance_ohlcv.json`.
+- [x] Ran local signal diagnostics before historical evaluation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T224000JST_signed_imbalance_signal_diagnostics --reviewer-note "Signal diagnostics only for signed-volume imbalance candidate; no backtest, paper, dry-run, live, exchange execution, secrets, leverage, inverse exposure, or promotion."
+  ```
+
+  Result: `status=completed`, `entry_count=2`,
+  `zero_entry_signal=false`, `diagnosis_codes=["LOW_ENTRY_SIGNALS"]`, and
+  rarest component `mid_reclaim`. Component cumulative counts were
+  `positive_signed_imbalance=2227`, `close_location_accumulation=411`,
+  `upper_close_location=274`, `mid_reclaim=11`,
+  `not_breakout_chase=8`, `controlled_range=7`, and `volume_filter=2`.
+  Artifact:
+  `registry\strategies\diagnostics\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\20260506T224000JST_signed_imbalance_signal_diagnostics\signal_diagnostics.json`.
+- [x] Ran the historical-only candidate evaluation chain:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T133000Z_LongOnlySignedVolumeImbalanceCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\metadata.json --candidate-id 20260506T223500JST_signed_imbalance_smoke --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --execute-historical-chain --execution-run-id 20260506T223500JST_signed_imbalance_smoke_exec --python .\.venv\Scripts\python.exe --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --walk-forward-window 20250101-20250108 --walk-forward-window 20250108-20250115 --walk-forward-window 20250115-20250122 --walk-forward-window 20250122-20250201 --reviewer-note "Signed-volume imbalance accumulation smoke only; checked historical backtesting wrappers only; no paper, dry-run, live, exchange execution, secrets, leverage, inverse exposure, or promotion."
+  ```
+
+  Result: command returned exit code `1` because the candidate remained
+  `recommendation=retry`, while historical and walk-forward subprocesses
+  completed with returncode `0`. Historical metrics were `trade_count=1`,
+  `total_return_pct=-0.010793492`, `profit_factor=0.0`, `sortino=-100.0`,
+  and `max_drawdown_pct=0.0` from the single-trade sample. Walk-forward
+  completed 4/4 windows but failed with `pass_rate=0.0`,
+  `profitable_windows_ratio=0.0`, and
+  `total_return_pct=-0.010793492`. Artifacts:
+  `registry\strategies\candidates\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\candidate_manifest.json`,
+  `data\backtests\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke_exec_historical\metrics.json`,
+  and
+  `data\walk_forward\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke_exec_walk_forward\walk_forward_metrics.json`.
+- [x] Re-ranked all seven real smoke families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\candidate_manifest.json --ranking-id 20260506T225000JST_seven_family_with_signed_imbalance_ranking --reviewer-note "Seven-family local ranking after signed-volume imbalance smoke; reads historical-safe artifacts only; no promotion."
+  ```
+
+  Result: `candidate_count=7`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. The signed-volume candidate ranked third
+  with score `39.966033` but `paper_ready=false`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T225000JST_seven_family_with_signed_imbalance_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all seven families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T225000JST_seven_family_with_signed_imbalance_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\20260506T215500JST_session_liquidity_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\20260506T224000JST_signed_imbalance_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T225500JST_seven_family_failure_synthesis_with_signed_imbalance --reviewer-note "Seven-family synthesis after signed-volume imbalance smoke; historical artifacts and diagnostics only; no code generation, backtest, or promotion in this command."
+  ```
+
+  Result: `status=completed`, `candidate_count=7`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`, and
+  `requires_new_thesis_id=true`. The synthesis now records failed families
+  `downside_liquidity_shock_reversal`, `hybrid_ml_return_filter`,
+  `intraday_session_liquidity`, `liquidity_mean_reversion`,
+  `signed_volume_imbalance`, `trend_continuation`, and
+  `volatility_breakout`; negative-return candidates include the signed-volume
+  smoke; and walk-forward failed for all seven candidates. The signed-volume
+  diagnostic is recorded as `LOW_ENTRY_SIGNALS` with top bottleneck
+  `mid_reclaim`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T225500JST_seven_family_failure_synthesis_with_signed_imbalance\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Final verification after adding the signed-volume imbalance family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\LongOnlySignedVolumeImbalanceCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; `tests\test_bot_factory.py` passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T112235Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T112236Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this seventh family is also not profitable,
+  passing, paper-ready, or promotable. The latest synthesis requires a new
+  `thesis_id`, new structured research references, and a distinct falsifiable
+  market mechanism outside all seven failed families. This increment did not
+  start paper trading, dry-run trading, live trading, exchange order
+  endpoints, leverage, shorting, promotion, or process control.
+
+Follow-up on 2026-05-06 JST for failure-synthesis novelty gating.
+
+- [x] Added a proposal-stage novelty gate so the Strategy Proposal Generator
+  can consume local `candidate_failure_synthesis.json` evidence before any
+  code generation is allowed. `scripts\bot_factory_generate_strategy_proposal.py`
+  now accepts `--failure-synthesis-json`, records it as
+  `candidate_failure_synthesis` evidence, and
+  `freqtrade_ext\bot_factory\strategy_proposals.py` blocks proposals that
+  violate synthesis constraints:
+  failed `thesis_id` reuse when `requires_new_thesis_id=true`, repeated failed
+  hypothesis-family reuse, parameter-only retry when
+  `parameter_only_retry_allowed=false`, and insufficient structured research
+  references when `requires_new_research_references=true`.
+- [x] Proposal metadata now records `failure_synthesis_constraints`, including
+  source synthesis path, source ranking path, failed-thesis match, current
+  family tokens, repeated-family matches, minimum required research reference
+  count, and blocked next actions. `local_candidate_failure_synthesis_json`
+  was added to allowed proposal evidence classes.
+- [x] Added focused tests in `tests\test_bot_factory.py` for: blocking failed
+  thesis/family repeats from synthesis evidence, accepting a distinct thesis
+  that satisfies the synthesis reference count, and CLI mapping of
+  `--failure-synthesis-json` into proposal evidence.
+- [x] Ran focused verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "failure_synthesis or strategy_proposal_generator"
+  ```
+
+  Results: compile passed; focused Bot Factory pytest passed with 10 tests.
+- [x] Ran a local blocked-repeat proposal smoke against the latest seven-family
+  synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name NoveltyGateBlockedSignedVolumeRepeatCandidate --strategy-type order_flow_imbalance --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --summary "Blocked novelty-gate smoke attempting to repeat the failed signed-volume imbalance family." --hypothesis "Repeat the failed signed-volume imbalance thesis to verify the failure-synthesis gate blocks repeated families before code generation." --market-condition "BTC/USDT futures closed-candle historical OHLCV only." --entry-logic "Would reuse signed-volume imbalance, close-location accumulation, and midpoint reclaim." --exit-logic "Would exit on imbalance fade or midpoint loss." --risk-logic "Long-only, leverage 1.0, no shorting, no live orders." --required-data "OHLCV closed candles only" --parameters "Signed-volume window and midpoint reclaim thresholds" --expected-failure-case "Repeated failed thesis family should be blocked by candidate failure synthesis." --backtest-plan "Run static checks, OHLCV quality checks, historical backtest, and walk-forward validation only if proposal is accepted; this smoke should stop before code generation." --rejection-condition "Reject if failure synthesis requires a new thesis id." --rejection-condition "Reject if the hypothesis family is already listed as failed without new evidence." --rejection-condition "Reject if parameter-only retry is requested." --generator-mode rule_based --thesis-id TH-CRYPTO-SIGNED-VOLUME-IMBALANCE-001 --thesis-type signed_volume_imbalance --thesis-statement "Repeated signed-volume imbalance thesis used only to test the novelty gate." --falsification-criteria "The proposal must be blocked before code generation because the latest synthesis requires a new thesis." --strategy-logic-variant signed_volume_imbalance_accumulation --research-reference "@registry\strategies\proposals\20260506T223000JST_LongOnlySignedVolumeImbalanceCandidate.order_flow_toxicity_reference.json" --research-reference "@registry\strategies\proposals\20260506T223000JST_LongOnlySignedVolumeImbalanceCandidate.tick_rule_reference.json" --failure-synthesis-json registry\strategies\synthesis\20260506T225500JST_seven_family_failure_synthesis_with_signed_imbalance\candidate_failure_synthesis.json --parameter-only-retry-count 0 --created-at 2026-05-06T23:10:00+09:00 --reviewer-note "Novelty gate blocked-repeat smoke only; proposal generation only; no code generation, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or promotion."
+  ```
+
+  Result: exit code `1` because the proposal was correctly `status=blocked`
+  and `code_generation_eligible=false`. Blockers included
+  `failure_synthesis_1_requires_new_thesis_id` and
+  `failure_synthesis_1_requires_new_hypothesis_family`; metadata also records
+  `failed_thesis_id_match=true` and
+  `repeated_family_matches=["signed_volume_imbalance"]`. Artifacts:
+  `registry\strategies\proposals\20260506T141000Z_NoveltyGateBlockedSignedVolumeRepeatCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T141000Z_NoveltyGateBlockedSignedVolumeRepeatCandidate.metadata.json`.
+- [x] Final verification after adding failure-synthesis novelty gating:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; `tests\test_bot_factory.py` passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T113141Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T113142Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this is a factory guardrail, not a profitable
+  strategy. With the latest seven-family synthesis supplied, all currently
+  supported strategy logic variants correspond to failed families, so the next
+  productive code-generation step is to add a genuinely new supported thesis
+  family with new structured research references. This increment did not
+  generate strategy code, run a backtest, start paper/dry-run/live trading,
+  call exchange order endpoints, use leverage or shorting, promote a
+  candidate, or manage any process.
+
+Follow-up on 2026-05-06 JST for entropy-regime thesis family.
+
+- [x] Added a new supported thesis family,
+  `entropy_regime_transition`, to keep the factory moving after the
+  seven-family failure synthesis instead of loosening thresholds inside failed
+  families. Code changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`. The generator now maps
+  `entropy_regime`, `entropy_regime_transition`,
+  `information_entropy_regime`, and `range_efficiency_entropy` thesis types to
+  `entropy_regime_transition`. Generated strategies compute closed-candle
+  `direction_entropy`, `direction_entropy_baseline`, `range_efficiency`,
+  `range_efficiency_mean`, and `entropy_drift`; entry logic requires low
+  directional entropy, expanding range efficiency, positive closed-candle
+  drift, midpoint hold, no rolling-high chase, and volume participation.
+- [x] Added structured research references for the new thesis:
+  `registry\strategies\proposals\20260506T232000JST_LongOnlyEntropyRegimeCandidate.crypto_entropy_reference.json`
+  and
+  `registry\strategies\proposals\20260506T232000JST_LongOnlyEntropyRegimeCandidate.permutation_entropy_method_reference.json`.
+  These cite `doi:10.1038/s41598-018-37773-3` and
+  `doi:10.1103/PhysRevLett.88.174102` and motivate an
+  information-regime mechanism rather than a parameter-only retry.
+- [x] Ran focused verification after adding the family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "entropy_regime or strategy_code_generator_supports_entropy or failure_synthesis"
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_diagnose_candidate_signals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "entropy_regime or signal_diagnostics_supports_entropy or failure_synthesis"
+  ```
+
+  Results: compile passed; focused pytest passed first with 4 tests, then with
+  5 tests after adding signal diagnostics support.
+- [x] Generated an accepted novelty-gated entropy proposal against the latest
+  seven-family synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlyEntropyRegimeCandidate --strategy-type entropy_regime --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --summary "Long-only entropy-regime transition candidate for BTC futures historical evaluation." --hypothesis "Directional entropy compression combined with rising range efficiency can mark a distinct information-regime transition in closed-candle BTC futures data." --market-condition "BTC/USDT futures closed-candle OHLCV with local historical artifacts only." --entry-logic "Enter long when directional entropy is below its rolling baseline, range efficiency is expanding, closed-candle drift is positive, price holds the rolling midpoint, and price is not chasing a rolling-high extension." --exit-logic "Exit when directional entropy expands back above baseline, range efficiency fades, price loses the rolling midpoint, RSI reaches the target zone, or timeout fires." --risk-logic "Long-only with leverage 1.0, strategy stoploss, timeout exit, and local artifact review before any promotion path." --required-data "OHLCV closed candles only" --parameters "Directional entropy lookback, entropy baseline window, range efficiency window, volume participation filter, RSI exit, and timeout" --expected-failure-case "Reject if entry signals are too sparse, returns are negative after costs, or walk-forward windows are unstable." --backtest-plan "Run static strategy checks, OHLCV quality checks, historical backtest, and multi-window walk-forward validation before ranking; reject on weak or non-profitable windows." --rejection-condition "Reject if walk-forward pass rate is zero or profitable windows are not robust." --rejection-condition "Reject if total return, profit factor, drawdown, or trade count fail candidate gates." --rejection-condition "Reject if signal diagnostics show low entry count or entropy conditions collapse to a failed trend or breakout family." --generator-mode rule_based --thesis-id TH-CRYPTO-ENTROPY-REGIME-001 --thesis-type entropy_regime --thesis-statement "Entropy compression and range-efficiency expansion define a falsifiable information-regime transition outside the seven failed families." --falsification-criteria "Falsify if closed-candle entropy-regime entries do not produce positive historical and walk-forward evidence after costs." --novelty-vs-previous "Introduces information entropy and range-efficiency regime features instead of trend, volatility breakout, mean reversion, session liquidity, signed-volume imbalance, downside shock, or ML-return-filter logic." --strategy-logic-variant entropy_regime_transition --research-reference "@registry\strategies\proposals\20260506T232000JST_LongOnlyEntropyRegimeCandidate.crypto_entropy_reference.json" --research-reference "@registry\strategies\proposals\20260506T232000JST_LongOnlyEntropyRegimeCandidate.permutation_entropy_method_reference.json" --failure-synthesis-json registry\strategies\synthesis\20260506T225500JST_seven_family_failure_synthesis_with_signed_imbalance\candidate_failure_synthesis.json --parameter-only-retry-count 0 --force-distinct-hypothesis-family --created-at 2026-05-06T23:20:00+09:00 --reviewer-note "Entropy proposal smoke only; proposal generation writes local metadata and does not run evaluation or promotion commands."
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=entropy_regime_transition`,
+  `thesis_id=TH-CRYPTO-ENTROPY-REGIME-001`, and
+  `research_reference_count=2`. Artifacts:
+  `registry\strategies\proposals\20260506T142000Z_LongOnlyEntropyRegimeCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T142000Z_LongOnlyEntropyRegimeCandidate.metadata.json`.
+- [x] Generated the entropy strategy:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T142000Z_LongOnlyEntropyRegimeCandidate.metadata.json --candidate-id 20260506T232500JST_entropy_regime_smoke --created-at 2026-05-06T23:25:00+09:00
+  ```
+
+  Result: `status=generated`, `strategy_code_generated=true`,
+  `candidate_evaluation_eligible=true`, and `static_check_ok=true`.
+  Artifacts:
+  `registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\LongOnlyEntropyRegimeCandidate.py`,
+  `metadata.json`, `research_brief.json`, and `static_check.json`.
+- [x] Ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\LongOnlyEntropyRegimeCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generated strategy compile passed; generated-directory static check
+  `ok=true`, 1 file checked, report
+  `registry\strategies\checks\20260506T114043Z_static_check.json`; OHLCV
+  quality `ok=true`, `rows=8995`, no duplicates, no missing intervals, report
+  `registry\strategies\checks\20260506T114038Z_ohlcv_quality.json`.
+- [x] Ran the historical backtest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyEntropyRegimeCandidate --strategy-path registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T233000JST_entropy_regime_smoke_exec_historical --reviewer-note "Entropy-regime historical smoke; local historical backtest only; no paper, dry-run, live, exchange order placement, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: wrapper completed and wrote artifacts, but the initial gate failed:
+  `total_return_pct=0.047607614`, `trade_count=2`,
+  `profit_factor=3.9301317203609494`, `max_drawdown_pct=0.016247601999998553`,
+  and `sortino=-100.0`; gate failures were `min_trades` and `min_sortino`.
+  Artifacts:
+  `data\backtests\LongOnlyEntropyRegimeCandidate\20260506T233000JST_entropy_regime_smoke_exec_historical\metrics.json`,
+  `trades.csv`, and `report.md`.
+- [x] Ran signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T233500JST_entropy_regime_signal_diagnostics --reviewer-note "Entropy-regime signal diagnostics after low-trade historical smoke; reads local OHLCV and generated metadata only; no backtest, paper, dry-run, live, orders, leverage, shorting, or promotion."
+  ```
+
+  Result: `status=completed`, `entry_count=9`,
+  `zero_entry_signal=false`, and `diagnosis_codes=[]`. Main constraints were
+  `low_directional_entropy` (`individual_count=108`) and `volume_filter`
+  (`cumulative_count=9`). Artifacts:
+  `registry\strategies\diagnostics\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\20260506T233500JST_entropy_regime_signal_diagnostics\signal_diagnostics.json`
+  and `signal_diagnostics_report.md`.
+- [x] Ran walk-forward validation. First attempt with the default FreqAI child
+  wrapper failed all windows because the configured FreqAI include timeframe
+  `1m` conflicts with the requested main `5m` timeframe. Re-ran with the
+  non-FreqAI historical backtest runner:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyEntropyRegimeCandidate --strategy-path registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T234500JST_entropy_regime_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --reviewer-note "Entropy-regime rule-based walk-forward smoke using the non-FreqAI backtest runner; historical windows only; no paper, dry-run, live, exchange order placement, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `recommendation=fail`, `completed_windows=4`,
+  `failed_windows=0`, `pass_rate=0.0`, `profitable_windows_ratio=0.25`,
+  `total_return_pct=0.047607614000000006`, and
+  `max_single_window_profit_dependency=1.0`. Windows had trade counts
+  `0`, `1`, `0`, and `1`; all window gates failed. Artifacts:
+  `data\walk_forward\LongOnlyEntropyRegimeCandidate\20260506T234500JST_entropy_regime_rule_walk_forward\walk_forward_metrics.json`
+  and `walk_forward_report.md`.
+- [x] Wrote the entropy candidate manifest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T142000Z_LongOnlyEntropyRegimeCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\metadata.json --candidate-id 20260506T232500JST_entropy_regime_smoke --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --static-check-json registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\static_check.json --ohlcv-quality-json registry\strategies\checks\20260506T114038Z_ohlcv_quality.json --backtest-metrics-json data\backtests\LongOnlyEntropyRegimeCandidate\20260506T233000JST_entropy_regime_smoke_exec_historical\metrics.json --backtest-trades-csv data\backtests\LongOnlyEntropyRegimeCandidate\20260506T233000JST_entropy_regime_smoke_exec_historical\trades.csv --backtest-report-md data\backtests\LongOnlyEntropyRegimeCandidate\20260506T233000JST_entropy_regime_smoke_exec_historical\report.md --walk-forward-metrics-json data\walk_forward\LongOnlyEntropyRegimeCandidate\20260506T234500JST_entropy_regime_rule_walk_forward\walk_forward_metrics.json --walk-forward-report-md data\walk_forward\LongOnlyEntropyRegimeCandidate\20260506T234500JST_entropy_regime_rule_walk_forward\walk_forward_report.md --reviewer-note "Entropy-regime candidate manifest after accepted novelty-gated proposal, generated code, historical backtest, signal diagnostics, and rule-based walk-forward; fail expected due low trades and weak walk-forward."
+  ```
+
+  Result: exit code `1` because `recommendation=fail`. Manifest artifacts:
+  `registry\strategies\candidates\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\candidate_manifest.json`,
+  `candidate_record.json`, `candidate_report.md`, `metrics_summary.json`, and
+  `artifact_paths.json`.
+- [x] Re-ranked all eight real smoke families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\candidate_manifest.json --ranking-id 20260506T235000JST_eight_family_with_entropy_regime_ranking --reviewer-note "Eight-family local ranking after entropy-regime smoke; reads historical-safe artifacts only; no promotion, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: `candidate_count=8`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T235000JST_eight_family_with_entropy_regime_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all eight families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T235000JST_eight_family_with_entropy_regime_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\20260506T215500JST_session_liquidity_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\20260506T224000JST_signed_imbalance_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\20260506T233500JST_entropy_regime_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T235500JST_eight_family_failure_synthesis_with_entropy_regime --reviewer-note "Eight-family synthesis after entropy-regime smoke; historical artifacts and diagnostics only; no code generation, backtest, paper, dry-run, live, exchange orders, leverage, shorting, promotion, or process control in this command."
+  ```
+
+  Result: `status=completed`, `candidate_count=8`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and `requires_new_thesis_id=true`.
+  Failed families now include `downside_liquidity_shock_reversal`,
+  `entropy_regime`, `hybrid_ml_return_filter`, `intraday_session_liquidity`,
+  `liquidity_mean_reversion`, `signed_volume_imbalance`,
+  `trend_continuation`, and `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T235500JST_eight_family_failure_synthesis_with_entropy_regime\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Final verification after adding the entropy-regime family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\LongOnlyEntropyRegimeCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; `tests\test_bot_factory.py` passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T114909Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T114910Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the entropy thesis passed novelty gating and was
+  code-generated/evaluated, but it is not profitable enough, passing,
+  paper-ready, or promotable. The latest synthesis now requires a ninth
+  distinct thesis outside all eight failed families, with new structured
+  research references. This increment did not start paper trading, dry-run
+  trading, live trading, exchange order endpoints, leverage above `1.0`,
+  shorting, promotion, or process control.
+
+Follow-up on 2026-05-06 JST for fractal long-memory thesis family.
+
+- [x] Added a ninth supported thesis family,
+  `fractal_long_memory_regime`, after the eight-family synthesis required a
+  new `thesis_id`, new research references, and no parameter-only retry. Code
+  changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`. The generator now maps
+  `fractal_long_memory`, `fractal_market_regime`, `hurst_persistence`,
+  `long_memory_regime`, and `variance_ratio_regime` thesis types to
+  `fractal_long_memory_regime`. Generated strategies compute closed-candle
+  `log_return`, rolling R/S `hurst_proxy`, `hurst_baseline`,
+  `fractal_efficiency`, `fractal_efficiency_mean`, and `fractal_drift`.
+  Entry logic requires persistent memory, efficient path, positive fractal
+  drift, midpoint hold, no rolling-high extension, and volume participation.
+- [x] Added structured research references for the new thesis:
+  `registry\strategies\proposals\20260506T235800JST_LongOnlyFractalMemoryCandidate.bitcoin_dynamic_hurst_reference.json`
+  and
+  `registry\strategies\proposals\20260506T235800JST_LongOnlyFractalMemoryCandidate.bitcoin_long_range_correlation_reference.json`.
+  These cite `doi:10.1016/j.econlet.2017.09.013` and
+  `doi:10.1016/j.physa.2017.11.025`, motivating a Hurst/long-range-correlation
+  mechanism rather than threshold loosening.
+- [x] Ran focused verification after adding the family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "fractal_long_memory or strategy_code_generator_supports_fractal or signal_diagnostics_supports_fractal or failure_synthesis"
+  ```
+
+  Results: compile passed; focused pytest passed with 5 tests.
+- [x] Follow-up fix: full pytest found that shared signal diagnostics compute
+  the Hurst proxy for every variant, including existing tests with
+  `buy_pullback_lookback` values below 8. Updated
+  `freqtrade_ext\bot_factory\strategy_code.py` and
+  `freqtrade_ext\bot_factory\signal_diagnostics.py` so rolling Hurst
+  `min_periods` uses `min(lookback, 8)` while the Hurst function still returns
+  `NaN` until at least 8 observations are available. Focused
+  `pytest tests\test_bot_factory.py -q -k "signal_diagnostics"` then passed
+  with 8 tests.
+- [x] Generated an accepted novelty-gated fractal long-memory proposal against
+  the latest eight-family synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlyFractalMemoryCandidate --strategy-type fractal_long_memory --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --summary "Long-only fractal long-memory regime candidate using closed-candle Hurst proxy and path efficiency after eight failed Bot Factory families." --hypothesis "BTC 5m returns may alternate between memoryless and persistent regimes; a long-only entry is allowed only when rolling Hurst behavior, fractal path efficiency, and positive drift align without chasing a rolling-high extension." --market-condition "Local BTC/USDT futures historical 5m candles after eight prior hypothesis families failed gates; target periods where the closed-candle path shows persistent positive memory and controlled extension." --entry-logic "Compute rolling log returns, R/S Hurst proxy, fractal efficiency, fractal drift, and rolling midpoint; enter long only when persistent_memory_regime, efficient_path, positive_fractal_drift, midline_hold, not_range_extension, volume_filter, and volume_positive are all true." --exit-logic "Exit when the Hurst proxy decays, fractal efficiency falls below its baseline, price loses the rolling midpoint, RSI reaches the target, or timeout protection triggers." --risk-logic "Long-only with leverage fixed at 1.0, no short signals, local historical artifacts as source of truth, and no process start or promotion from this proposal." --required-data "Local Bybit BTC/USDT:USDT 5m OHLCV parquet" --required-data "Eight-family failure synthesis JSON" --required-data "Structured Hurst and Bitcoin long-range-correlation research references" --parameters "buy_pullback_lookback controls rolling Hurst and fractal efficiency lookback" --parameters "buy_volume_window controls baselines for Hurst and fractal efficiency" --parameters "buy_volume_factor controls closed-candle volume participation filter" --expected-failure-case "Hurst proxy may be unstable on short 5m windows and produce too few robust entries." --expected-failure-case "Fractal persistence may still be cost-sensitive if entries cluster during choppy regimes." --expected-failure-case "Walk-forward may fail if the local January 2025 sample has isolated memory regimes." --backtest-plan "Run static strategy checks and OHLCV quality validation first, then local historical backtest and rule-based walk-forward on BTC/USDT:USDT 5m January 2025 windows." --rejection-condition "Reject if proposal repeats any failed thesis id or failed family from the eight-family synthesis." --rejection-condition "Reject if generated code fails static checks, produces no meaningful historical trades, or fails walk-forward robustness gates." --rejection-condition "Reject any paper, dry-run, live, exchange order placement, shorting, leverage above 1.0, process control, or promotion path." --generator-mode rule_based --thesis-id TH-CRYPTO-FRACTAL-MEMORY-001 --thesis-type fractal_long_memory --thesis-statement "Rolling Hurst behavior and fractal path efficiency identify a distinct Bitcoin long-memory regime that can be falsified with local closed-candle artifacts." --falsification-criteria "Falsify if static checks fail, entries are zero or sparse, historical gates fail, or walk-forward windows show regime fragility or single-window dependency." --novelty-vs-previous "Distinct from trend continuation, volatility breakout, liquidity mean reversion, hybrid ML return filtering, downside liquidity shock reversal, intraday session liquidity, signed volume imbalance, and entropy-regime families because it tests long-memory scaling and path efficiency rather than momentum confirmation, breakout level, liquidity reclaim, volume imbalance, FreqAI labels, session timing, or directional entropy compression." --research-reference @registry\strategies\proposals\20260506T235800JST_LongOnlyFractalMemoryCandidate.bitcoin_dynamic_hurst_reference.json --research-reference @registry\strategies\proposals\20260506T235800JST_LongOnlyFractalMemoryCandidate.bitcoin_long_range_correlation_reference.json --failure-taxonomy-code FAIL_COST_SENSITIVE --failure-taxonomy-code FAIL_REGIME_FRAGILE --failure-taxonomy-code FAIL_OVERFIT_WF_GAP --retry-budget-per-thesis 3 --thesis-retry-count 0 --parameter-only-retry-limit 1 --parameter-only-retry-count 0 --force-distinct-hypothesis-family --strategy-logic-variant fractal_long_memory_regime --feature log_return --feature hurst_proxy --feature fractal_efficiency --feature fractal_efficiency_mean --feature fractal_drift --feature rolling_mid --rule-filter persistent_memory_regime --rule-filter efficient_path --rule-filter positive_fractal_drift --rule-filter midline_hold --rule-filter not_range_extension --rule-filter volume_filter --failure-synthesis-json registry\strategies\synthesis\20260506T235500JST_eight_family_failure_synthesis_with_entropy_regime\candidate_failure_synthesis.json --reviewer-note "Fractal long-memory proposal after eight failed families; local historical artifacts only; no paper, dry-run, live, exchange order placement, leverage above 1.0, shorting, promotion, or process control." --created-at 2026-05-06T14:58:00+00:00
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=fractal_long_memory_regime`,
+  `thesis_id=TH-CRYPTO-FRACTAL-MEMORY-001`, and
+  `research_reference_count=2`. Artifacts:
+  `registry\strategies\proposals\20260506T145800Z_LongOnlyFractalMemoryCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T145800Z_LongOnlyFractalMemoryCandidate.metadata.json`.
+- [x] Generated the fractal long-memory strategy and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T145800Z_LongOnlyFractalMemoryCandidate.metadata.json --candidate-id 20260506T235900JST_fractal_memory_smoke --created-at 2026-05-06T23:59:00+09:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\LongOnlyFractalMemoryCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-directory
+  static check `ok=true`, 1 file checked, report
+  `registry\strategies\checks\20260506T115852Z_static_check.json`; OHLCV
+  quality `ok=true`, `rows=8995`, no duplicates, no missing intervals, report
+  `registry\strategies\checks\20260506T115849Z_ohlcv_quality.json`.
+- [x] Ran the historical backtest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyFractalMemoryCandidate --strategy-path registry\strategies\generated\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T235950JST_fractal_memory_smoke_exec_historical --reviewer-note "Fractal long-memory historical smoke; local historical backtest only; no paper, dry-run, live, exchange order placement, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: wrapper completed and wrote artifacts, but the initial gate failed:
+  `total_return_pct=-0.71052109`, `trade_count=66`,
+  `profit_factor=0.36863196318993147`,
+  `max_drawdown_pct=0.8488930947586758`, and
+  `sortino=-26.229503002219857`; gate failures were `min_trades`,
+  `min_profit_factor`, and `min_sortino`. Artifacts:
+  `data\backtests\LongOnlyFractalMemoryCandidate\20260506T235950JST_fractal_memory_smoke_exec_historical\metrics.json`,
+  `trades.csv`, and `report.md`.
+- [x] Ran signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T235955JST_fractal_memory_signal_diagnostics --reviewer-note "Fractal long-memory signal diagnostics after failing historical smoke; reads local OHLCV and generated metadata only; no backtest, paper, dry-run, live, orders, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `entry_count=290`,
+  `zero_entry_signal=false`, and `diagnosis_codes=[]`. Main bottleneck:
+  `volume_filter` (`individual_count=3374`, `cumulative_count=290`,
+  `all_except_count=760`). Artifacts:
+  `registry\strategies\diagnostics\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\20260506T235955JST_fractal_memory_signal_diagnostics\signal_diagnostics.json`
+  and `signal_diagnostics_report.md`.
+- [x] Ran rule-based walk-forward validation with the non-FreqAI backtest
+  runner:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyFractalMemoryCandidate --strategy-path registry\strategies\generated\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T235958JST_fractal_memory_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --reviewer-note "Fractal long-memory rule-based walk-forward smoke using the non-FreqAI backtest runner; historical windows only; no paper, dry-run, live, exchange order placement, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `recommendation=fail`, `completed_windows=4`,
+  `failed_windows=0`, `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=-0.7105210900000001`, and all four windows were negative.
+  Artifacts:
+  `data\walk_forward\LongOnlyFractalMemoryCandidate\20260506T235958JST_fractal_memory_rule_walk_forward\walk_forward_metrics.json`
+  and `walk_forward_report.md`.
+- [x] Wrote the fractal candidate manifest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T145800Z_LongOnlyFractalMemoryCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\metadata.json --candidate-id 20260506T235900JST_fractal_memory_smoke --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --static-check-json registry\strategies\generated\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\static_check.json --ohlcv-quality-json registry\strategies\checks\20260506T115849Z_ohlcv_quality.json --backtest-metrics-json data\backtests\LongOnlyFractalMemoryCandidate\20260506T235950JST_fractal_memory_smoke_exec_historical\metrics.json --backtest-trades-csv data\backtests\LongOnlyFractalMemoryCandidate\20260506T235950JST_fractal_memory_smoke_exec_historical\trades.csv --backtest-report-md data\backtests\LongOnlyFractalMemoryCandidate\20260506T235950JST_fractal_memory_smoke_exec_historical\report.md --walk-forward-metrics-json data\walk_forward\LongOnlyFractalMemoryCandidate\20260506T235958JST_fractal_memory_rule_walk_forward\walk_forward_metrics.json --walk-forward-report-md data\walk_forward\LongOnlyFractalMemoryCandidate\20260506T235958JST_fractal_memory_rule_walk_forward\walk_forward_report.md --reviewer-note "Fractal long-memory candidate manifest after accepted novelty-gated proposal, generated code, historical backtest, signal diagnostics, and rule-based walk-forward; fail expected due negative returns and failed walk-forward."
+  ```
+
+  Result: exit code `1` because `recommendation=retry` but required gates
+  failed. Manifest artifacts:
+  `registry\strategies\candidates\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\candidate_manifest.json`,
+  `candidate_record.json`, `candidate_report.md`, `metrics_summary.json`, and
+  `artifact_paths.json`.
+- [x] Re-ranked all nine real smoke families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\candidate_manifest.json --ranking-id 20260506T235959JST_nine_family_with_fractal_memory_ranking --reviewer-note "Nine-family ranking with fractal long-memory candidate added; historical artifacts only; no paper, dry-run, live, exchange orders, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `candidate_count=9`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T235959JST_nine_family_with_fractal_memory_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all nine families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T235959JST_nine_family_with_fractal_memory_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\20260506T224000JST_signed_imbalance_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\20260506T215500JST_session_liquidity_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\20260506T233500JST_entropy_regime_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\20260506T235955JST_fractal_memory_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T235959JST_nine_family_failure_synthesis_with_fractal_memory --reviewer-note "Nine-family synthesis after fractal long-memory smoke; historical artifacts and diagnostics only; no code generation, backtest, paper, dry-run, live, exchange orders, leverage, shorting, promotion, or process control in this command."
+  ```
+
+  Result: `status=completed`, `candidate_count=9`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and `requires_new_thesis_id=true`.
+  Failed families now include `downside_liquidity_shock_reversal`,
+  `entropy_regime`, `fractal_long_memory`, `hybrid_ml_return_filter`,
+  `intraday_session_liquidity`, `liquidity_mean_reversion`,
+  `signed_volume_imbalance`, `trend_continuation`, and
+  `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T235959JST_nine_family_failure_synthesis_with_fractal_memory\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Final verification after adding the fractal long-memory family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\LongOnlyFractalMemoryCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; `tests\test_bot_factory.py` passed; static strategy
+  check `ok=true`, 7 files checked, existing review warnings only, report
+  `registry\strategies\checks\20260506T120555Z_static_check.json`; FreqAI
+  dependency check `ok=true` on Python 3.12.4 with `lightgbm=4.6.0`,
+  `xgboost=3.0.5`, `tensorboard=2.20.0`, and `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T120556Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the fractal long-memory thesis passed novelty
+  gating and was code-generated/evaluated, but it is negative, not passing,
+  not paper-ready, and not promotable. The latest synthesis now requires a
+  tenth distinct thesis outside all nine failed families, with new structured
+  research references. This increment did not start paper trading, dry-run
+  trading, live trading, exchange order endpoints, leverage above `1.0`,
+  shorting, promotion, or process control.
+
+Follow-up on 2026-05-06 JST for semivariance asymmetry thesis family.
+
+- [x] Added a tenth supported thesis family,
+  `semivariance_asymmetry_regime`, after the nine-family synthesis required a
+  new `thesis_id`, new research references, and no parameter-only retry. Code
+  changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`. The generator now maps
+  `good_bad_volatility`, `realized_semivariance`,
+  `semivariance_asymmetry`, `semivariance_regime`, and
+  `upside_downside_volatility` thesis types to
+  `semivariance_asymmetry_regime`. Generated strategies compute closed-candle
+  `upside_semivariance`, `downside_semivariance`,
+  `downside_semivariance_mean`, `semivariance_balance`,
+  `semivariance_balance_mean`, and `semivariance_drift`. Entry logic requires
+  good-volatility dominance, bad-volatility decay, positive drift, midpoint
+  hold, controlled range, no rolling-high extension, and volume participation.
+- [x] Added structured research references for the new thesis:
+  `registry\strategies\proposals\20260506T211000JST_LongOnlySemivarianceAsymmetryCandidate.realized_semivariance_reference.json`
+  and
+  `registry\strategies\proposals\20260506T211000JST_LongOnlySemivarianceAsymmetryCandidate.good_bad_volatility_reference.json`.
+  These cite `doi:10.1093/acprof:oso/9780199549498.003.0007` and
+  `doi:10.1162/REST_a_00503`, motivating realized upside/downside variation
+  asymmetry rather than threshold loosening.
+- [x] Ran focused verification after adding the family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "semivariance or strategy_code_generator_supports_semivariance or signal_diagnostics_supports_semivariance or failure_synthesis"
+  ```
+
+  Results: compile passed; focused pytest passed with 5 tests.
+- [x] Generated an accepted novelty-gated semivariance proposal against the
+  latest nine-family synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlySemivarianceAsymmetryCandidate --strategy-type semivariance_asymmetry --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --summary "Long-only realized semivariance asymmetry candidate using upside/downside realized variation after nine failed Bot Factory families." --hypothesis "BTC 5m candles may contain regimes where upside realized semivariance dominates downside realized semivariance while bad volatility is decaying; long entries should be allowed only when that asymmetry aligns with positive drift and controlled range expansion." --market-condition "Local BTC/USDT futures historical 5m candles after nine prior hypothesis families failed gates; target periods where good volatility dominates bad volatility without chasing a rolling-high extension." --entry-logic "Compute rolling log returns, upside semivariance, downside semivariance, semivariance balance, semivariance drift, rolling midpoint, and range percentage; enter long only when good_volatility_dominance, bad_volatility_decay, positive_semivariance_drift, midline_hold, controlled_range, not_range_extension, volume_filter, and volume_positive are all true." --exit-logic "Exit when downside semivariance spikes, semivariance balance turns negative, price loses the rolling midpoint, RSI reaches the target, or timeout protection triggers." --risk-logic "Long-only with leverage fixed at 1.0, no short signals, local historical artifacts as source of truth, and no process start or promotion from this proposal." --required-data "Local Bybit BTC/USDT:USDT 5m OHLCV parquet" --required-data "Nine-family failure synthesis JSON" --required-data "Structured realized semivariance and good/bad volatility research references" --parameters "buy_pullback_lookback controls rolling semivariance and drift lookback" --parameters "buy_volume_window controls baselines for downside semivariance and volume" --parameters "buy_volume_factor controls closed-candle volume participation filter" --expected-failure-case "Semivariance asymmetry may be cost-sensitive if good-volatility dominance occurs inside noisy candles." --expected-failure-case "Bad-volatility decay may produce too many weak entries after realized downside risk normalizes." --expected-failure-case "Walk-forward may fail if the January 2025 sample has no durable good-volatility regime." --backtest-plan "Run static strategy checks and OHLCV quality validation first, then local historical backtest and rule-based walk-forward on BTC/USDT:USDT 5m January 2025 windows." --rejection-condition "Reject if proposal repeats any failed thesis id or failed family from the nine-family synthesis." --rejection-condition "Reject if generated code fails static checks, produces negative historical expectancy, or fails walk-forward robustness gates." --rejection-condition "Reject any paper, dry-run, live, exchange order placement, shorting, leverage above 1.0, process control, or promotion path." --generator-mode rule_based --thesis-id TH-CRYPTO-SEMIVARIANCE-ASYMMETRY-001 --thesis-type semivariance_asymmetry --thesis-statement "Upside versus downside realized semivariance identifies a distinct good-volatility regime that can be falsified with local closed-candle artifacts." --falsification-criteria "Falsify if static checks fail, entries are zero or sparse, historical gates fail, or walk-forward windows show negative returns or single-window dependency." --novelty-vs-previous "Distinct from trend continuation, volatility breakout, liquidity mean reversion, hybrid ML return filtering, downside liquidity shock reversal, intraday session liquidity, signed volume imbalance, entropy-regime, and fractal long-memory families because it tests realized upside/downside variation asymmetry rather than momentum confirmation, breakout level, liquidity reclaim, volume imbalance, FreqAI labels, session timing, directional entropy compression, or Hurst path scaling." --research-reference @registry\strategies\proposals\20260506T211000JST_LongOnlySemivarianceAsymmetryCandidate.realized_semivariance_reference.json --research-reference @registry\strategies\proposals\20260506T211000JST_LongOnlySemivarianceAsymmetryCandidate.good_bad_volatility_reference.json --failure-taxonomy-code FAIL_COST_SENSITIVE --failure-taxonomy-code FAIL_REGIME_FRAGILE --failure-taxonomy-code FAIL_OVERFIT_WF_GAP --retry-budget-per-thesis 3 --thesis-retry-count 0 --parameter-only-retry-limit 1 --parameter-only-retry-count 0 --force-distinct-hypothesis-family --strategy-logic-variant semivariance_asymmetry_regime --feature upside_semivariance --feature downside_semivariance --feature downside_semivariance_mean --feature semivariance_balance --feature semivariance_drift --feature range_pct --rule-filter good_volatility_dominance --rule-filter bad_volatility_decay --rule-filter positive_semivariance_drift --rule-filter midline_hold --rule-filter controlled_range --rule-filter not_range_extension --rule-filter volume_filter --failure-synthesis-json registry\strategies\synthesis\20260506T235959JST_nine_family_failure_synthesis_with_fractal_memory\candidate_failure_synthesis.json --reviewer-note "Semivariance asymmetry proposal after nine failed families; local historical artifacts only; no paper, dry-run, live, exchange order placement, leverage above 1.0, shorting, promotion, or process control." --created-at 2026-05-06T12:15:00+00:00
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=semivariance_asymmetry_regime`,
+  `thesis_id=TH-CRYPTO-SEMIVARIANCE-ASYMMETRY-001`, and
+  `research_reference_count=2`. Artifacts:
+  `registry\strategies\proposals\20260506T121500Z_LongOnlySemivarianceAsymmetryCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T121500Z_LongOnlySemivarianceAsymmetryCandidate.metadata.json`.
+- [x] Generated the semivariance strategy and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T121500Z_LongOnlySemivarianceAsymmetryCandidate.metadata.json --candidate-id 20260506T211500JST_semivariance_asymmetry_smoke --created-at 2026-05-06T21:15:00+09:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\LongOnlySemivarianceAsymmetryCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-directory
+  static check `ok=true`, 1 file checked, report
+  `registry\strategies\checks\20260506T121205Z_static_check.json`; OHLCV
+  quality `ok=true`, `rows=8995`, no duplicates, no missing intervals, report
+  `registry\strategies\checks\20260506T121201Z_ohlcv_quality.json`.
+- [x] Ran the historical backtest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlySemivarianceAsymmetryCandidate --strategy-path registry\strategies\generated\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T211800JST_semivariance_asymmetry_smoke_exec_historical --reviewer-note "Semivariance asymmetry historical smoke; local historical backtest only; no paper, dry-run, live, exchange order placement, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: wrapper completed and wrote artifacts, but the initial gate failed:
+  `total_return_pct=-1.405133739`, `trade_count=159`,
+  `profit_factor=0.3856342313738779`,
+  `max_drawdown_pct=1.4469039549831204`, and
+  `sortino=-60.80804107565447`; gate failures were `min_trades`,
+  `min_profit_factor`, and `min_sortino`. Artifacts:
+  `data\backtests\LongOnlySemivarianceAsymmetryCandidate\20260506T211800JST_semivariance_asymmetry_smoke_exec_historical\metrics.json`,
+  `trades.csv`, and `report.md`.
+- [x] Ran signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T212000JST_semivariance_signal_diagnostics --reviewer-note "Semivariance asymmetry signal diagnostics after failing historical smoke; reads local OHLCV and generated metadata only; no backtest, paper, dry-run, live, orders, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `entry_count=361`,
+  `zero_entry_signal=false`, and `diagnosis_codes=[]`. Main bottleneck:
+  `volume_filter` (`individual_count=3733`, `cumulative_count=361`,
+  `all_except_count=1478`). Artifacts:
+  `registry\strategies\diagnostics\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\20260506T212000JST_semivariance_signal_diagnostics\signal_diagnostics.json`
+  and `signal_diagnostics_report.md`.
+- [x] Ran rule-based walk-forward validation with the non-FreqAI backtest
+  runner:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlySemivarianceAsymmetryCandidate --strategy-path registry\strategies\generated\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T212500JST_semivariance_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --reviewer-note "Semivariance asymmetry rule-based walk-forward smoke using the non-FreqAI backtest runner; historical windows only; no paper, dry-run, live, exchange order placement, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `recommendation=fail`, `completed_windows=4`,
+  `failed_windows=0`, `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=-1.405133739`, and all four windows were negative.
+  Artifacts:
+  `data\walk_forward\LongOnlySemivarianceAsymmetryCandidate\20260506T212500JST_semivariance_rule_walk_forward\walk_forward_metrics.json`
+  and `walk_forward_report.md`.
+- [x] Wrote the semivariance candidate manifest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T121500Z_LongOnlySemivarianceAsymmetryCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\metadata.json --candidate-id 20260506T211500JST_semivariance_asymmetry_smoke --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --static-check-json registry\strategies\generated\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\static_check.json --ohlcv-quality-json registry\strategies\checks\20260506T121201Z_ohlcv_quality.json --backtest-metrics-json data\backtests\LongOnlySemivarianceAsymmetryCandidate\20260506T211800JST_semivariance_asymmetry_smoke_exec_historical\metrics.json --backtest-trades-csv data\backtests\LongOnlySemivarianceAsymmetryCandidate\20260506T211800JST_semivariance_asymmetry_smoke_exec_historical\trades.csv --backtest-report-md data\backtests\LongOnlySemivarianceAsymmetryCandidate\20260506T211800JST_semivariance_asymmetry_smoke_exec_historical\report.md --walk-forward-metrics-json data\walk_forward\LongOnlySemivarianceAsymmetryCandidate\20260506T212500JST_semivariance_rule_walk_forward\walk_forward_metrics.json --walk-forward-report-md data\walk_forward\LongOnlySemivarianceAsymmetryCandidate\20260506T212500JST_semivariance_rule_walk_forward\walk_forward_report.md --reviewer-note "Semivariance asymmetry candidate manifest after accepted novelty-gated proposal, generated code, historical backtest, signal diagnostics, and rule-based walk-forward; fail expected due negative returns and failed walk-forward."
+  ```
+
+  Result: exit code `1` because `recommendation=retry` but required gates
+  failed. Manifest artifacts:
+  `registry\strategies\candidates\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\candidate_manifest.json`,
+  `candidate_record.json`, `candidate_report.md`, `metrics_summary.json`, and
+  `artifact_paths.json`.
+- [x] Re-ranked all ten real smoke families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\candidate_manifest.json --ranking-id 20260506T213000JST_ten_family_with_semivariance_ranking --reviewer-note "Ten-family ranking with semivariance asymmetry candidate added; historical artifacts only; no paper, dry-run, live, exchange orders, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `candidate_count=10`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T213000JST_ten_family_with_semivariance_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all ten families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T213000JST_ten_family_with_semivariance_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\20260506T224000JST_signed_imbalance_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\20260506T215500JST_session_liquidity_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\20260506T233500JST_entropy_regime_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\20260506T235955JST_fractal_memory_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\20260506T212000JST_semivariance_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T213500JST_ten_family_failure_synthesis_with_semivariance --reviewer-note "Ten-family synthesis after semivariance asymmetry smoke; historical artifacts and diagnostics only; no code generation, backtest, paper, dry-run, live, exchange orders, leverage, shorting, promotion, or process control in this command."
+  ```
+
+  Result: `status=completed`, `candidate_count=10`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and `requires_new_thesis_id=true`.
+  Failed families now include `downside_liquidity_shock_reversal`,
+  `entropy_regime`, `fractal_long_memory`, `hybrid_ml_return_filter`,
+  `intraday_session_liquidity`, `liquidity_mean_reversion`,
+  `semivariance_asymmetry`, `signed_volume_imbalance`,
+  `trend_continuation`, and `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T213500JST_ten_family_failure_synthesis_with_semivariance\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Ran final verification for this semivariance increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\LongOnlySemivarianceAsymmetryCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; full `tests\test_bot_factory.py` passed; static
+  check returned `ok=true` for 7 files with existing review warnings only
+  (`user_data\strategies\5mV1.py:304` and
+  `user_data\strategies\FreqAICustomStrategy.py:390`, `391`, `393`, `807`),
+  report
+  `registry\strategies\checks\20260506T121926Z_static_check.json`; FreqAI
+  dependency check returned `ok=true` on Python `3.12.4` with
+  `lightgbm=4.6.0`, `xgboost=3.0.5`, `tensorboard=2.20.0`, and
+  `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T121927Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the semivariance asymmetry thesis passed novelty
+  gating and was code-generated/evaluated, but it is negative, not passing,
+  not paper-ready, and not promotable. The latest synthesis now requires an
+  eleventh distinct thesis outside all ten failed families, with new
+  structured research references. This increment did not start paper trading,
+  dry-run trading, live trading, exchange order endpoints, leverage above
+  `1.0`, shorting, promotion, or process control.
+
+Follow-up on 2026-05-06 JST for funding-pressure carry thesis family.
+
+- [x] Added an eleventh supported thesis family, `funding_pressure_carry`,
+  after the ten-family synthesis required a new `thesis_id`, new research
+  references, and no parameter-only retry. Code changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `freqtrade_ext\bot_factory\data_quality.py`,
+  `freqtrade_ext\bot_factory\candidate_evaluation.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`,
+  `scripts\bot_factory_diagnose_candidate_signals.py`,
+  `scripts\bot_factory_check_funding_rate.py`,
+  `scripts\bot_factory_evaluate_candidate.py`, and
+  `tests\test_bot_factory.py`. The generator now maps `funding_carry`,
+  `funding_pressure`, `funding_pressure_carry`, `perpetual_funding`, and
+  `perpetual_funding_pressure` thesis types to `funding_pressure_carry`.
+  Generated strategies can request local 8h `funding_rate` informative data,
+  merge it into 5m candles, and compute closed-candle `funding_rate`,
+  `funding_rate_mean`, `funding_rate_abs_mean`, `funding_pressure`, and
+  `funding_pressure_delta`.
+- [x] Added funding-rate data quality validation for signed rate series:
+  `freqtrade_ext\bot_factory\data_quality.py` now exposes
+  `check_funding_rate_parquet`, and
+  `scripts\bot_factory_check_funding_rate.py` writes
+  `registry\strategies\checks\*_funding_rate_quality.json`. Candidate
+  evaluation can record an optional `funding_rate_quality_check` step through
+  `--funding-rate-quality-json`.
+- [x] Added structured research references for the new thesis:
+  `registry\strategies\proposals\20260506T214000JST_LongOnlyFundingPressureCarryCandidate.perpetual_pricing_reference.json`,
+  `registry\strategies\proposals\20260506T214000JST_LongOnlyFundingPressureCarryCandidate.funding_arbitrage_reference.json`,
+  and
+  `registry\strategies\proposals\20260506T214000JST_LongOnlyFundingPressureCarryCandidate.funding_predictability_reference.json`.
+  These cite `doi:10.3386/w32936`, `doi:10.1016/j.bcra.2025.100354`, and
+  `doi:10.2139/ssrn.5576424`, motivating a funding-pressure carry mechanism
+  rather than threshold loosening.
+- [x] Ran focused verification after adding funding-pressure support:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_diagnose_candidate_signals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "funding_pressure or semivariance or failure_synthesis"
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\data_quality.py scripts\bot_factory_check_funding_rate.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "funding_rate_quality or funding_pressure"
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_evaluation.py scripts\bot_factory_evaluate_candidate.py
+  ```
+
+  Results: compile passed; focused funding/semivariance pytest passed with 7
+  tests; funding-rate quality focused pytest passed with 3 tests; candidate
+  evaluation compile passed.
+- [x] First funding-pressure proposal attempt at
+  `2026-05-06T12:45:00+00:00` was blocked by a false positive
+  `no_order_endpoint_dependency` safety wording match because the proposal text
+  included the exact forbidden phrase `exchange order placement` in a negated
+  rejection condition. Artifacts:
+  `registry\strategies\proposals\20260506T124500Z_LongOnlyFundingPressureCarryCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T124500Z_LongOnlyFundingPressureCarryCandidate.metadata.json`.
+- [x] Generated an accepted novelty-gated funding-pressure proposal against
+  the latest ten-family synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlyFundingPressureCarryCandidate --strategy-type funding_pressure_carry --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --summary "Long-only perpetual funding-pressure carry candidate using local funding-rate informative data after ten failed Bot Factory families." --hypothesis "BTC perpetuals may contain long-only regimes where negative funding pressure pays carry while spot-equivalent price remains resilient and funding pressure starts to release; entries should require funding pressure, price resilience, controlled range, and volume participation." --market-condition "Local BTC/USDT:USDT futures historical 5m candles with local 8h funding-rate data after ten prior hypothesis families failed gates; target negative funding-pressure episodes where price does not break down." --entry-logic "Merge local 8h funding-rate data into closed 5m candles; compute funding_rate, funding_rate_mean, funding_rate_abs_mean, funding_pressure, funding_pressure_delta, rolling midpoint, range percentage, and volume baseline; enter long only when negative_funding_pressure, funding_pressure_releasing, price_resilience, not_positive_crowding, controlled_range, volume_filter, and volume_positive are all true." --exit-logic "Exit when funding turns expensive, funding pressure disappears, price loses the rolling midpoint, RSI reaches the target, or timeout protection triggers." --risk-logic "Long-only with leverage fixed at 1.0, no short signals, local historical artifacts as source of truth, and no process start or promotion from this proposal." --required-data "Local Bybit BTC/USDT:USDT 5m OHLCV parquet" --required-data "Local Bybit BTC/USDT:USDT 8h funding-rate parquet" --required-data "Ten-family failure synthesis JSON" --required-data "Structured perpetual funding and funding-rate predictability research references" --parameters "buy_pullback_lookback controls funding-pressure and resilience lookback" --parameters "buy_volume_window controls funding-rate and volume baselines" --parameters "buy_volume_factor controls closed-candle volume participation filter" --expected-failure-case "Funding-pressure episodes may be sparse in the January 2025 local sample." --expected-failure-case "Negative funding may coincide with fragile price action, causing zero or negative expectancy despite carry motivation." --expected-failure-case "Walk-forward may fail if funding-pressure release is venue-specific or dominated by one short episode." --backtest-plan "Run static strategy checks, OHLCV quality validation, funding-rate quality validation, local historical backtest, signal diagnostics with funding-rate merge, and rule-based walk-forward on BTC/USDT:USDT 5m January 2025 windows." --rejection-condition "Reject if proposal repeats any failed thesis id or failed family from the ten-family synthesis." --rejection-condition "Reject if generated code fails static checks, produces zero entries, negative historical expectancy, or fails walk-forward robustness gates." --rejection-condition "Reject any paper, dry-run, live, venue execution, shorting, leverage above 1.0, process control, or promotion path." --generator-mode rule_based --thesis-id TH-CRYPTO-FUNDING-PRESSURE-CARRY-001 --thesis-type funding_pressure_carry --thesis-statement "Perpetual funding pressure identifies a distinct carry/resilience regime that can be falsified with local closed-candle OHLCV and funding-rate artifacts." --falsification-criteria "Falsify if static checks fail, funding-rate quality fails, entries are zero or sparse, historical gates fail, or walk-forward windows show negative returns or single-window dependency." --novelty-vs-previous "Distinct from trend continuation, volatility breakout, liquidity mean reversion, hybrid ML return filtering, downside liquidity shock reversal, intraday session liquidity, signed volume imbalance, entropy-regime, fractal long-memory, and semivariance asymmetry families because it tests perpetual funding pressure and carry/resilience rather than price-only momentum, breakout levels, liquidity reclaim, FreqAI labels, session timing, order-flow imbalance, entropy compression, Hurst scaling, or upside/downside realized variation." --research-reference @registry\strategies\proposals\20260506T214000JST_LongOnlyFundingPressureCarryCandidate.perpetual_pricing_reference.json --research-reference @registry\strategies\proposals\20260506T214000JST_LongOnlyFundingPressureCarryCandidate.funding_arbitrage_reference.json --research-reference @registry\strategies\proposals\20260506T214000JST_LongOnlyFundingPressureCarryCandidate.funding_predictability_reference.json --failure-taxonomy-code FAIL_SPARSE_FUNDING_SIGNAL --failure-taxonomy-code FAIL_PRICE_RESILIENCE_BREAK --failure-taxonomy-code FAIL_OVERFIT_WF_GAP --retry-budget-per-thesis 3 --thesis-retry-count 0 --parameter-only-retry-limit 1 --parameter-only-retry-count 0 --force-distinct-hypothesis-family --strategy-logic-variant funding_pressure_carry --feature funding_rate --feature funding_rate_mean --feature funding_rate_abs_mean --feature funding_pressure --feature funding_pressure_delta --feature rolling_mid --rule-filter negative_funding_pressure --rule-filter funding_pressure_releasing --rule-filter price_resilience --rule-filter not_positive_crowding --rule-filter controlled_range --rule-filter volume_filter --failure-synthesis-json registry\strategies\synthesis\20260506T213500JST_ten_family_failure_synthesis_with_semivariance\candidate_failure_synthesis.json --reviewer-note "Funding-pressure carry proposal after ten failed families; local historical artifacts only; no paper, dry-run, live, venue execution, leverage above 1.0, shorting, promotion, or process control." --created-at 2026-05-06T12:46:00+00:00
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=funding_pressure_carry`,
+  `thesis_id=TH-CRYPTO-FUNDING-PRESSURE-CARRY-001`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T124600Z_LongOnlyFundingPressureCarryCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T124600Z_LongOnlyFundingPressureCarryCandidate.metadata.json`.
+- [x] Generated the funding-pressure strategy and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T124600Z_LongOnlyFundingPressureCarryCandidate.metadata.json --candidate-id 20260506T214600JST_funding_pressure_smoke --created-at 2026-05-06T21:46:00+09:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\LongOnlyFundingPressureCarryCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-directory
+  static check `ok=true`, 1 file checked, report
+  `registry\strategies\checks\20260506T123112Z_static_check.json`; base OHLCV
+  quality `ok=true`, `rows=8995`, no duplicates, no missing intervals, report
+  `registry\strategies\checks\20260506T123104Z_ohlcv_quality.json`; the
+  standard OHLCV checker correctly failed the funding parquet because funding
+  rates are signed and OHLCV high/low/close fields are not applicable, report
+  `registry\strategies\checks\20260506T123108Z_ohlcv_quality.json`; the new
+  funding-rate checker returned `ok=true`, `rows=197`, no duplicates, no
+  missing intervals, and no findings, report
+  `registry\strategies\checks\20260506T123301Z_funding_rate_quality.json`.
+- [x] Ran the historical backtest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyFundingPressureCarryCandidate --strategy-path registry\strategies\generated\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T214900JST_funding_pressure_smoke_exec_historical --reviewer-note "Funding-pressure carry historical smoke; local historical backtest only using local OHLCV and funding-rate data; no paper, dry-run, live, venue execution, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: wrapper completed and wrote artifacts, but produced zero trades:
+  `total_return_pct=0.0`, `trade_count=0`, `profit_factor=0.0`,
+  `max_drawdown_pct=0.0`, and `sortino=0.0`; gate failures were `min_trades`,
+  `min_profit_factor`, and `min_sortino`. Artifacts:
+  `data\backtests\LongOnlyFundingPressureCarryCandidate\20260506T214900JST_funding_pressure_smoke_exec_historical\metrics.json`,
+  `trades.csv`, and `report.md`.
+- [x] Ran signal diagnostics with local funding-rate merge:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --funding-rate-parquet user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T215000JST_funding_pressure_signal_diagnostics --reviewer-note "Funding-pressure signal diagnostics after zero-trade historical smoke; reads local OHLCV, funding-rate, and generated metadata only; no backtest, paper, dry-run, live, venue execution, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `entry_count=0`, `zero_entry_signal=true`,
+  `first_zero_component=not_positive_crowding`,
+  `diagnosis_codes=["ZERO_ENTRY_SIGNALS"]`, and funding merge
+  `matched_row_count=8737`. Component evidence:
+  `negative_funding_pressure` individual `187`, cumulative `187`,
+  all-except `31`; `funding_pressure_releasing` individual `360`,
+  cumulative `7`, all-except `37`; `price_resilience` individual `4500`,
+  cumulative `3`, all-except `0`; `not_positive_crowding` individual `7392`,
+  cumulative `0`, all-except `1`. Artifacts:
+  `registry\strategies\diagnostics\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\20260506T215000JST_funding_pressure_signal_diagnostics\signal_diagnostics.json`
+  and `signal_diagnostics_report.md`.
+- [x] Ran rule-based walk-forward validation with the non-FreqAI backtest
+  runner:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyFundingPressureCarryCandidate --strategy-path registry\strategies\generated\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T215500JST_funding_pressure_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --reviewer-note "Funding-pressure carry rule-based walk-forward smoke using the non-FreqAI backtest runner; historical OHLCV and funding-rate data only; no paper, dry-run, live, venue execution, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `recommendation=fail`, `completed_windows=4`,
+  `failed_windows=0`, `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=0.0`, `max_single_window_profit_dependency=null`, and all
+  four windows produced zero trades. Artifacts:
+  `data\walk_forward\LongOnlyFundingPressureCarryCandidate\20260506T215500JST_funding_pressure_rule_walk_forward\walk_forward_metrics.json`
+  and `walk_forward_report.md`.
+- [x] Wrote the funding-pressure candidate manifest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T124600Z_LongOnlyFundingPressureCarryCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\metadata.json --candidate-id 20260506T214600JST_funding_pressure_smoke --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --static-check-json registry\strategies\generated\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\static_check.json --ohlcv-quality-json registry\strategies\checks\20260506T123104Z_ohlcv_quality.json --funding-rate-quality-json registry\strategies\checks\20260506T123301Z_funding_rate_quality.json --backtest-metrics-json data\backtests\LongOnlyFundingPressureCarryCandidate\20260506T214900JST_funding_pressure_smoke_exec_historical\metrics.json --backtest-trades-csv data\backtests\LongOnlyFundingPressureCarryCandidate\20260506T214900JST_funding_pressure_smoke_exec_historical\trades.csv --backtest-report-md data\backtests\LongOnlyFundingPressureCarryCandidate\20260506T214900JST_funding_pressure_smoke_exec_historical\report.md --walk-forward-metrics-json data\walk_forward\LongOnlyFundingPressureCarryCandidate\20260506T215500JST_funding_pressure_rule_walk_forward\walk_forward_metrics.json --walk-forward-report-md data\walk_forward\LongOnlyFundingPressureCarryCandidate\20260506T215500JST_funding_pressure_rule_walk_forward\walk_forward_report.md --reviewer-note "Funding-pressure carry candidate manifest after accepted novelty-gated proposal, generated code, OHLCV and funding-rate quality checks, zero-trade historical backtest, signal diagnostics, and rule-based walk-forward; fail expected due zero entries and failed walk-forward."
+  ```
+
+  Result: exit code `1` because `recommendation=retry` but required gates
+  failed. Manifest artifacts:
+  `registry\strategies\candidates\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\candidate_manifest.json`,
+  `candidate_record.json`, `candidate_report.md`, `metrics_summary.json`, and
+  `artifact_paths.json`.
+- [x] Re-ranked all eleven real smoke families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\candidate_manifest.json --ranking-id 20260506T220000JST_eleven_family_with_funding_pressure_ranking --reviewer-note "Eleven-family ranking with funding-pressure carry candidate added; historical artifacts only; no paper, dry-run, live, venue execution, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `candidate_count=11`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T220000JST_eleven_family_with_funding_pressure_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all eleven families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T220000JST_eleven_family_with_funding_pressure_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\20260506T224000JST_signed_imbalance_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\20260506T215500JST_session_liquidity_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\20260506T233500JST_entropy_regime_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\20260506T235955JST_fractal_memory_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\20260506T212000JST_semivariance_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\20260506T215000JST_funding_pressure_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T220500JST_eleven_family_failure_synthesis_with_funding_pressure --reviewer-note "Eleven-family synthesis after funding-pressure carry smoke; historical artifacts and diagnostics only; no code generation, backtest, paper, dry-run, live, venue execution, leverage, shorting, promotion, or process control in this command."
+  ```
+
+  Result: `status=completed`, `candidate_count=11`, `paper_ready_count=0`,
+  `zero_trade_count=3`, `negative_return_count=6`,
+  `walk_forward_failed_count=11`, `parameter_only_retry_allowed=false`, and
+  `requires_new_thesis_id=true`. Failed families now include
+  `downside_liquidity_shock_reversal`, `entropy_regime`,
+  `fractal_long_memory`, `funding_pressure_carry`,
+  `hybrid_ml_return_filter`, `intraday_session_liquidity`,
+  `liquidity_mean_reversion`, `semivariance_asymmetry`,
+  `signed_volume_imbalance`, `trend_continuation`, and
+  `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T220500JST_eleven_family_failure_synthesis_with_funding_pressure\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Fixed one backward-compatibility issue found by the full Bot Factory
+  test suite after adding `--funding-rate-quality-json`: legacy direct
+  `build_inputs_from_args(SimpleNamespace(...))` test inputs did not define
+  `funding_rate_quality_json`. `scripts\bot_factory_evaluate_candidate.py` now
+  uses `getattr(..., None)` for that optional field, preserving older call
+  sites while still mapping the new CLI argument.
+- [x] Ran final verification for this funding-pressure increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\LongOnlyFundingPressureCarryCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: full compile passed; full `tests\test_bot_factory.py` passed after
+  the optional CLI mapping fix; static check returned `ok=true` for 7 files
+  with existing review warnings only (`user_data\strategies\5mV1.py:304` and
+  `user_data\strategies\FreqAICustomStrategy.py:390`, `391`, `393`, `807`),
+  report
+  `registry\strategies\checks\20260506T124627Z_static_check.json`; funding-rate
+  quality returned `ok=true`, `rows=197`, no findings, report
+  `registry\strategies\checks\20260506T124633Z_funding_rate_quality.json`;
+  FreqAI dependency check returned `ok=true` on Python `3.12.4` with
+  `lightgbm=4.6.0`, `xgboost=3.0.5`, `tensorboard=2.20.0`, and
+  `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T124628Z_freqai_env.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the funding-pressure carry thesis passed novelty
+  gating and was code-generated/evaluated, and its local funding-rate data
+  quality check passed, but it produced zero entries, failed historical gates,
+  failed walk-forward, and is not passing, not paper-ready, and not promotable.
+  The latest synthesis now requires a twelfth distinct thesis outside all
+  eleven failed families, with new structured research references. This
+  increment did not start paper trading, dry-run trading, live trading, venue
+  execution, exchange order endpoints, leverage above `1.0`, shorting,
+  promotion, or process control.
+
+Follow-up on 2026-05-06 JST for realized-skewness tail-shape thesis family.
+
+- [x] Completion audit before continuing: the objective remains incomplete
+  because no profitable, paper-ready, or promotable candidate exists. The
+  latest eleven-family synthesis required a twelfth distinct `thesis_id`, new
+  structured research references, and no parameter-only retry.
+- [x] Added a twelfth supported thesis family,
+  `realized_skewness_tail_shape`, using higher realized moments of closed
+  5-minute returns rather than parameter-only threshold search. Code changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`. Generated strategies compute
+  `realized_skewness`, `realized_skewness_mean`, `realized_kurtosis`,
+  `realized_kurtosis_mean`, `max_return`, `max_return_mean`, `min_return`, and
+  `tail_shape_drift`. Entry logic requires `low_realized_skewness`,
+  `kurtosis_risk_premium`, `lottery_tail_cooling`,
+  `positive_tail_shape_drift`, `midline_hold`, `controlled_range`,
+  `volume_filter`, and positive volume.
+- [x] Added structured research references:
+  `registry\strategies\proposals\20260506T225000JST_LongOnlyRealizedSkewnessTailCandidate.crypto_higher_moments_reference.json`
+  and
+  `registry\strategies\proposals\20260506T225000JST_LongOnlyRealizedSkewnessTailCandidate.realized_skewness_reference.json`.
+  These cite `doi:10.1016/j.frl.2020.101536` and
+  `doi:10.1016/j.jfineco.2015.02.009`, motivating realized skewness,
+  kurtosis, and extreme positive-return cooling as a separate theory family.
+- [x] Ran focused verification after adding the family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "realized_skewness or funding_pressure or semivariance"
+  ```
+
+  Results: compile passed; focused pytest passed with 6 tests.
+- [x] Generated an accepted novelty-gated realized-skewness proposal against
+  the latest eleven-family synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlyRealizedSkewnessTailCandidate --strategy-type realized_skewness_tail --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --summary "Long-only realized skewness tail-shape candidate using higher realized moments after eleven failed Bot Factory families." --hypothesis "BTC 5m futures may contain regimes where low realized skewness relative to baseline, elevated realized kurtosis, and cooling positive lottery tails are followed by compensated long-side drift; entries should require higher-moment tail shape, midpoint hold, controlled range, and volume participation." --market-condition "Local BTC/USDT:USDT futures historical 5m candles after eleven prior hypothesis families failed gates; target higher-moment tail-shape regimes rather than price-only momentum, liquidity reclaim, funding carry, or semivariance asymmetry." --entry-logic "Compute closed-candle log returns, rolling realized skewness, rolling realized kurtosis, local skewness and kurtosis baselines, rolling maximum return, maximum-return baseline, tail-shape drift, rolling midpoint, range percentage, and volume baseline; enter long only when low_realized_skewness, kurtosis_risk_premium, lottery_tail_cooling, positive_tail_shape_drift, midline_hold, controlled_range, volume_filter, and volume_positive are all true." --exit-logic "Exit when lottery-like positive skew reemerges, the kurtosis premium disappears, price loses the rolling midpoint, RSI reaches the target, or timeout protection triggers." --risk-logic "Long-only with leverage fixed at 1.0, no short signals, local historical artifacts as source of truth, and no process start or promotion from this proposal." --required-data "Local Bybit BTC/USDT:USDT 5m OHLCV parquet" --required-data "Eleven-family failure synthesis JSON" --required-data "Structured realized skewness, higher-moment, and crypto extreme-return research references" --parameters "buy_pullback_lookback controls rolling realized skewness, kurtosis, max-return, and tail-shape drift windows" --parameters "buy_volume_window controls local higher-moment and volume baselines" --parameters "buy_volume_factor controls closed-candle volume participation filter" --expected-failure-case "Higher-moment tail-shape signals may be sparse in the January 2025 local BTC sample." --expected-failure-case "Low realized skewness can reflect unresolved crash risk rather than compensated future drift." --expected-failure-case "Elevated realized kurtosis may be cost-sensitive or depend on one narrow episode, causing walk-forward failure." --backtest-plan "Run static strategy checks and OHLCV quality validation first, then local historical backtest, signal diagnostics, candidate manifest, ranking, and rule-based walk-forward on BTC/USDT:USDT 5m January 2025 windows." --rejection-condition "Reject if proposal repeats any failed thesis id or failed family from the eleven-family synthesis." --rejection-condition "Reject if generated code fails static checks, produces zero or sparse entries, negative historical expectancy, or fails walk-forward robustness gates." --rejection-condition "Reject any paper, dry-run, live, venue execution, shorting, leverage above 1.0, process control, or promotion path." --generator-mode rule_based --thesis-id TH-CRYPTO-REALIZED-SKEWNESS-TAIL-001 --thesis-type realized_skewness_tail --thesis-statement "Realized skewness and kurtosis from intraday closed-candle returns identify a distinct higher-moment tail-shape regime that can be falsified with local OHLCV artifacts." --falsification-criteria "Falsify if static checks fail, entries are zero or sparse, historical gates fail, or walk-forward windows show negative returns, zero pass rate, or single-window dependency." --novelty-vs-previous "Distinct from trend continuation, breakout, liquidity mean reversion, hybrid ML return filtering, downside liquidity shock reversal, intraday session liquidity, signed volume imbalance, entropy-regime, fractal long-memory, semivariance asymmetry, and funding-pressure carry because it tests realized third and fourth moments plus extreme positive-return cooling rather than momentum confirmation, range breakout, liquidity reclaim, FreqAI labels, session timing, order-flow imbalance, entropy compression, Hurst scaling, upside/downside variance, or perpetual funding." --research-reference @registry\strategies\proposals\20260506T225000JST_LongOnlyRealizedSkewnessTailCandidate.crypto_higher_moments_reference.json --research-reference @registry\strategies\proposals\20260506T225000JST_LongOnlyRealizedSkewnessTailCandidate.realized_skewness_reference.json --failure-taxonomy-code FAIL_COST_SENSITIVE --failure-taxonomy-code FAIL_REGIME_FRAGILE --failure-taxonomy-code FAIL_OVERFIT_WF_GAP --retry-budget-per-thesis 3 --thesis-retry-count 0 --parameter-only-retry-limit 1 --parameter-only-retry-count 0 --force-distinct-hypothesis-family --strategy-logic-variant realized_skewness_tail_shape --feature realized_skewness --feature realized_skewness_mean --feature realized_kurtosis --feature realized_kurtosis_mean --feature max_return --feature max_return_mean --feature tail_shape_drift --rule-filter low_realized_skewness --rule-filter kurtosis_risk_premium --rule-filter lottery_tail_cooling --rule-filter positive_tail_shape_drift --rule-filter midline_hold --rule-filter controlled_range --rule-filter volume_filter --failure-synthesis-json registry\strategies\synthesis\20260506T220500JST_eleven_family_failure_synthesis_with_funding_pressure\candidate_failure_synthesis.json --reviewer-note "Realized-skewness tail-shape proposal after eleven failed families; local historical artifacts only; no paper, dry-run, live, venue execution, leverage above 1.0, shorting, promotion, or process control." --created-at 2026-05-06T13:50:00+00:00
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=realized_skewness_tail_shape`,
+  `thesis_id=TH-CRYPTO-REALIZED-SKEWNESS-TAIL-001`, and
+  `research_reference_count=2`. Artifacts:
+  `registry\strategies\proposals\20260506T135000Z_LongOnlyRealizedSkewnessTailCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T135000Z_LongOnlyRealizedSkewnessTailCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T135000Z_LongOnlyRealizedSkewnessTailCandidate.metadata.json --candidate-id 20260506T225000JST_realized_skewness_tail_smoke --created-at 2026-05-06T22:50:00+09:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\LongOnlyRealizedSkewnessTailCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-directory
+  static check `ok=true`, 1 file checked, report
+  `registry\strategies\checks\20260506T125456Z_static_check.json`; OHLCV
+  quality `ok=true`, `rows=8995`, no duplicates, no missing intervals, report
+  `registry\strategies\checks\20260506T125451Z_ohlcv_quality.json`.
+- [x] Ran the historical backtest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyRealizedSkewnessTailCandidate --strategy-path registry\strategies\generated\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T225500JST_realized_skewness_tail_smoke_exec_historical --reviewer-note "Realized-skewness tail-shape historical smoke; local historical backtest only using local OHLCV data; no paper, dry-run, live, venue execution, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: wrapper completed and wrote artifacts, but the initial gate failed:
+  `total_return_pct=-0.33654470599999997`, `trade_count=34`,
+  `profit_factor=0.29897417029856044`,
+  `max_drawdown_pct=0.40137508000000255`, and
+  `sortino=-13.922726698874877`; gate failures were `min_trades`,
+  `min_profit_factor`, and `min_sortino`. Artifacts:
+  `data\backtests\LongOnlyRealizedSkewnessTailCandidate\20260506T225500JST_realized_skewness_tail_smoke_exec_historical\metrics.json`,
+  `trades.csv`, and `report.md`.
+- [x] Ran signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T225600JST_realized_skewness_tail_signal_diagnostics --reviewer-note "Realized-skewness tail-shape signal diagnostics after failing historical smoke; reads local OHLCV and generated metadata only; no backtest, paper, dry-run, live, venue execution, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `entry_count=76`,
+  `zero_entry_signal=false`, and `diagnosis_codes=[]`. Main bottleneck:
+  `volume_filter` (`individual_count=3452`, `cumulative_count=76`,
+  `all_except_count=384`). Artifacts:
+  `registry\strategies\diagnostics\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\20260506T225600JST_realized_skewness_tail_signal_diagnostics\signal_diagnostics.json`
+  and `signal_diagnostics_report.md`.
+- [x] Ran rule-based walk-forward validation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyRealizedSkewnessTailCandidate --strategy-path registry\strategies\generated\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T230000JST_realized_skewness_tail_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --reviewer-note "Realized-skewness tail-shape rule-based walk-forward smoke using the non-FreqAI backtest runner; historical OHLCV data only; no paper, dry-run, live, venue execution, leverage above 1.0, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `recommendation=fail`, `completed_windows=4`,
+  `failed_windows=0`, `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=-0.33654470599999997`,
+  `max_drawdown_pct_any_window=0.1315832123755127`, and all four windows were
+  negative. Artifacts:
+  `data\walk_forward\LongOnlyRealizedSkewnessTailCandidate\20260506T230000JST_realized_skewness_tail_rule_walk_forward\walk_forward_metrics.json`
+  and `walk_forward_report.md`.
+- [x] Wrote the realized-skewness candidate manifest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T135000Z_LongOnlyRealizedSkewnessTailCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\metadata.json --candidate-id 20260506T225000JST_realized_skewness_tail_smoke --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --static-check-json registry\strategies\generated\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\static_check.json --ohlcv-quality-json registry\strategies\checks\20260506T125451Z_ohlcv_quality.json --backtest-metrics-json data\backtests\LongOnlyRealizedSkewnessTailCandidate\20260506T225500JST_realized_skewness_tail_smoke_exec_historical\metrics.json --backtest-trades-csv data\backtests\LongOnlyRealizedSkewnessTailCandidate\20260506T225500JST_realized_skewness_tail_smoke_exec_historical\trades.csv --backtest-report-md data\backtests\LongOnlyRealizedSkewnessTailCandidate\20260506T225500JST_realized_skewness_tail_smoke_exec_historical\report.md --walk-forward-metrics-json data\walk_forward\LongOnlyRealizedSkewnessTailCandidate\20260506T230000JST_realized_skewness_tail_rule_walk_forward\walk_forward_metrics.json --walk-forward-report-md data\walk_forward\LongOnlyRealizedSkewnessTailCandidate\20260506T230000JST_realized_skewness_tail_rule_walk_forward\walk_forward_report.md --reviewer-note "Realized-skewness tail-shape candidate manifest after accepted novelty-gated proposal, generated code, OHLCV quality check, negative historical backtest, signal diagnostics, and failed rule-based walk-forward."
+  ```
+
+  Result: exit code `1` because `recommendation=retry` but required gates
+  failed. Manifest artifacts:
+  `registry\strategies\candidates\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\candidate_manifest.json`,
+  `candidate_record.json`, `candidate_report.md`, `metrics_summary.json`, and
+  `artifact_paths.json`.
+- [x] Re-ranked all twelve real smoke families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\candidate_manifest.json --candidate-manifest-json registry\strategies\candidates\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\candidate_manifest.json --ranking-id 20260506T230500JST_twelve_family_with_realized_skewness_tail_ranking --reviewer-note "Twelve-family ranking with realized-skewness tail-shape candidate added; historical artifacts only; no paper, dry-run, live, venue execution, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `candidate_count=12`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T230500JST_twelve_family_with_realized_skewness_tail_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all twelve families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T230500JST_twelve_family_with_realized_skewness_tail_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\20260506T224000JST_signed_imbalance_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\20260506T215500JST_session_liquidity_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\20260506T233500JST_entropy_regime_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\20260506T235955JST_fractal_memory_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\20260506T212000JST_semivariance_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\20260506T215000JST_funding_pressure_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\20260506T225600JST_realized_skewness_tail_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T231000JST_twelve_family_failure_synthesis_with_realized_skewness_tail --reviewer-note "Twelve-family synthesis after realized-skewness tail-shape smoke; historical artifacts and diagnostics only; no code generation, backtest, paper, dry-run, live, venue execution, leverage, shorting, promotion, or process control in this command."
+  ```
+
+  Result: `status=completed`, `candidate_count=12`, `paper_ready_count=0`,
+  `zero_trade_count=3`, `negative_return_count=7`,
+  `walk_forward_failed_count=12`, `parameter_only_retry_allowed=false`, and
+  `requires_new_thesis_id=true`. Failed families now include
+  `downside_liquidity_shock_reversal`, `entropy_regime`,
+  `fractal_long_memory`, `funding_pressure_carry`,
+  `hybrid_ml_return_filter`, `intraday_session_liquidity`,
+  `liquidity_mean_reversion`, `realized_skewness_tail`,
+  `semivariance_asymmetry`, `signed_volume_imbalance`,
+  `trend_continuation`, and `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T231000JST_twelve_family_failure_synthesis_with_realized_skewness_tail\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Ran final verification for this realized-skewness increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\LongOnlyRealizedSkewnessTailCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: full compile passed; full `tests\test_bot_factory.py` passed;
+  static check returned `ok=true` for 7 files with existing review warnings
+  only (`user_data\strategies\5mV1.py:304` and
+  `user_data\strategies\FreqAICustomStrategy.py:390`, `391`, `393`, `807`),
+  report `registry\strategies\checks\20260506T130133Z_static_check.json`;
+  FreqAI dependency check returned `ok=true` on Python `3.12.4` with
+  `lightgbm=4.6.0`, `xgboost=3.0.5`, `tensorboard=2.20.0`, and
+  `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T130134Z_freqai_env.json`; funding-rate
+  quality still returned `ok=true`, `rows=197`, no findings, report
+  `registry\strategies\checks\20260506T130143Z_funding_rate_quality.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the realized-skewness tail-shape thesis passed
+  novelty gating and was code-generated/evaluated, but it is negative, not
+  passing, not paper-ready, and not promotable. The latest synthesis now
+  requires a thirteenth distinct thesis outside all twelve failed families,
+  with at least two new structured research references. This increment did not
+  start paper trading, dry-run trading, live trading, venue execution,
+  exchange order endpoints, leverage above `1.0`, shorting, promotion, or
+  process control.
+
+Follow-up on 2026-05-06 JST for calendar-turnover seasonality thesis family.
+
+- [x] Completion audit before continuing: the objective remains incomplete
+  because no profitable, paper-ready, or promotable candidate exists. The
+  latest twelve-family synthesis required a thirteenth distinct `thesis_id`,
+  at least two structured research references, and no parameter-only retry.
+- [x] Added a thirteenth supported thesis family,
+  `calendar_turnover_seasonality`, using day-of-week and weekend turnover
+  seasonality from Bitcoin calendar-effect literature rather than parameter
+  tuning. Code changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`. Generated strategies compute
+  `calendar_turnover_ratio`, `calendar_turnover_ratio_mean`,
+  `weekend_turnover_baseline`, `weekday_turnover_baseline`, and
+  `calendar_drift`; entry logic requires `calendar_risk_window`,
+  `weekend_discount_context`, `turnover_recovery`,
+  `positive_calendar_drift`, `midline_hold`, `controlled_range`,
+  `not_breakout_chase`, and positive volume.
+- [x] Added structured research references:
+  `registry\strategies\proposals\20260506T231500JST_LongOnlyCalendarTurnoverCandidate.bitcoin_calendar_turnover_reference.json`,
+  `registry\strategies\proposals\20260506T231500JST_LongOnlyCalendarTurnoverCandidate.bitcoin_day_of_week_reference.json`,
+  and
+  `registry\strategies\proposals\20260506T231500JST_LongOnlyCalendarTurnoverCandidate.hourly_day_of_week_reference.json`.
+  These cite `doi:10.1016/j.frl.2019.04.023`,
+  `doi:10.1016/j.frl.2018.12.004`, and `doi:10.24136/oc.2022.022`.
+- [x] Ran focused verification after adding the family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "calendar_turnover or realized_skewness"
+  ```
+
+  Results: compile passed; focused pytest passed with 4 tests.
+- [x] The first proposal attempt was intentionally left as a blocked artifact
+  because it demonstrated the static proposal guard: negated safety terms in
+  the free-text proposal and `parameter_only_retry_limit=0` blocked code
+  generation even though the thesis was distinct and had 3 references.
+  Artifact:
+  `registry\strategies\proposals\20260506T141500Z_LongOnlyCalendarTurnoverCandidate.metadata.json`.
+- [x] Regenerated an accepted novelty-gated calendar-turnover proposal against
+  the latest twelve-family synthesis. Exact executed command is recorded in
+  `registry\strategies\proposals\20260506T141600Z_LongOnlyCalendarTurnoverCandidate.metadata.json`
+  under `command`.
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=calendar_turnover_seasonality`,
+  `thesis_id=TH-CRYPTO-CALENDAR-TURNOVER-001`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T141600Z_LongOnlyCalendarTurnoverCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T141600Z_LongOnlyCalendarTurnoverCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T141600Z_LongOnlyCalendarTurnoverCandidate.metadata.json --candidate-id 20260506T231600JST_calendar_turnover_smoke --created-at 2026-05-06T23:16:00+09:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke\LongOnlyCalendarTurnoverCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-directory
+  static check `ok=true`, 1 file checked, report
+  `registry\strategies\checks\20260506T131650Z_static_check.json`; OHLCV
+  quality `ok=true`, `rows=8995`, no duplicates, no missing intervals, report
+  `registry\strategies\checks\20260506T131647Z_ohlcv_quality.json`.
+- [x] Ran historical backtest, signal diagnostics, and rule-based
+  walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyCalendarTurnoverCandidate --strategy-path registry\strategies\generated\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T232000JST_calendar_turnover_smoke_exec_historical --reviewer-note "Calendar-turnover seasonality historical smoke; local closed-candle OHLCV backtest only, long-only leverage 1.0, no operational startup or promotion."
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T232100JST_calendar_turnover_signal_diagnostics --reviewer-note "Calendar-turnover signal diagnostics after failing historical smoke; reads local OHLCV and generated metadata only."
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyCalendarTurnoverCandidate --strategy-path registry\strategies\generated\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T232500JST_calendar_turnover_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --reviewer-note "Calendar-turnover rule-based walk-forward smoke using local historical OHLCV only."
+  ```
+
+  Results: historical backtest wrote artifacts but failed gates with
+  `total_return_pct=-0.437619035`, `trade_count=28`,
+  `profit_factor=0.1385374891419549`,
+  `max_drawdown_pct=0.4388136099387865`, and
+  `sortino=-15.799177819812716`; signal diagnostics completed with
+  `entry_count=52`, `zero_entry_signal=false`, `diagnosis_codes=[]`, and top
+  bottleneck `turnover_recovery`; walk-forward completed 4/4 windows but failed
+  with `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=-0.598601605`, and all windows negative. Artifacts:
+  `data\backtests\LongOnlyCalendarTurnoverCandidate\20260506T232000JST_calendar_turnover_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke\20260506T232100JST_calendar_turnover_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyCalendarTurnoverCandidate\20260506T232500JST_calendar_turnover_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the calendar-turnover candidate manifest and ranked all thirteen
+  real smoke families. Exact executed ranking command is recorded in
+  `registry\strategies\candidates\rankings\20260506T233000JST_thirteen_family_with_calendar_turnover_ranking\candidate_ranking.json`
+  under `command`.
+
+  Manifest command:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T141600Z_LongOnlyCalendarTurnoverCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke\metadata.json --candidate-id 20260506T231600JST_calendar_turnover_smoke --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --static-check-json registry\strategies\generated\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke\static_check.json --ohlcv-quality-json registry\strategies\checks\20260506T131647Z_ohlcv_quality.json --backtest-metrics-json data\backtests\LongOnlyCalendarTurnoverCandidate\20260506T232000JST_calendar_turnover_smoke_exec_historical\metrics.json --backtest-trades-csv data\backtests\LongOnlyCalendarTurnoverCandidate\20260506T232000JST_calendar_turnover_smoke_exec_historical\trades.csv --backtest-report-md data\backtests\LongOnlyCalendarTurnoverCandidate\20260506T232000JST_calendar_turnover_smoke_exec_historical\report.md --walk-forward-metrics-json data\walk_forward\LongOnlyCalendarTurnoverCandidate\20260506T232500JST_calendar_turnover_rule_walk_forward\walk_forward_metrics.json --walk-forward-report-md data\walk_forward\LongOnlyCalendarTurnoverCandidate\20260506T232500JST_calendar_turnover_rule_walk_forward\walk_forward_report.md --reviewer-note "Calendar-turnover candidate manifest after accepted novelty-gated proposal, generated code, OHLCV quality check, negative historical backtest, signal diagnostics, and failed rule-based walk-forward."
+  ```
+
+  Result: manifest command exited `1` because the candidate recommendation is
+  `retry` while gates failed; artifacts were still written under
+  `registry\strategies\candidates\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke\`.
+  Ranking result: `candidate_count=13`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T233000JST_thirteen_family_with_calendar_turnover_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all thirteen families:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260506T233000JST_thirteen_family_with_calendar_turnover_ranking\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoLiquidityPullbackCandidate\20260506T101500JST_liquidity_pullback_smoke\20260506T105000JST_liquidity_pullback_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201500JST_hybrid_freqai_timerange_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyFundingPressureCarryCandidate\20260506T214600JST_funding_pressure_smoke\20260506T215000JST_funding_pressure_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySignedVolumeImbalanceCandidate\20260506T223500JST_signed_imbalance_smoke\20260506T224000JST_signed_imbalance_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyRealizedSkewnessTailCandidate\20260506T225000JST_realized_skewness_tail_smoke\20260506T225600JST_realized_skewness_tail_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyIntradaySessionLiquidityCandidate\20260506T215000JST_session_liquidity_smoke\20260506T215500JST_session_liquidity_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyFractalMemoryCandidate\20260506T235900JST_fractal_memory_smoke\20260506T235955JST_fractal_memory_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlySemivarianceAsymmetryCandidate\20260506T211500JST_semivariance_asymmetry_smoke\20260506T212000JST_semivariance_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolatilityBreakoutCandidate\20260506T092000JST_vol_breakout_smoke\20260506T111000JST_vol_breakout_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyDownsideLiquidityShockCandidate\20260506T204500JST_downside_liquidity_shock_smoke\20260506T205000JST_downside_liquidity_shock_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCryptoVolumeTrendCandidate\20260506T090000JST_volume_trend_smoke\20260506T110500JST_volume_trend_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyEntropyRegimeCandidate\20260506T232500JST_entropy_regime_smoke\20260506T233500JST_entropy_regime_signal_diagnostics\signal_diagnostics.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke\20260506T232100JST_calendar_turnover_signal_diagnostics\signal_diagnostics.json --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json --synthesis-id 20260506T233500JST_thirteen_family_failure_synthesis_with_calendar_turnover --reviewer-note "Thirteen-family synthesis after calendar-turnover smoke; local historical artifacts and diagnostics only."
+  ```
+
+  Result: `status=completed`, `candidate_count=13`, `paper_ready_count=0`,
+  `zero_trade_count=3`, `negative_return_count=8`,
+  `walk_forward_failed_count=13`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `calendar_turnover`, `downside_liquidity_shock_reversal`,
+  `entropy_regime`, `fractal_long_memory`, `funding_pressure_carry`,
+  `hybrid_ml_return_filter`, `intraday_session_liquidity`,
+  `liquidity_mean_reversion`, `realized_skewness_tail`,
+  `semivariance_asymmetry`, `signed_volume_imbalance`,
+  `trend_continuation`, and `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T233500JST_thirteen_family_failure_synthesis_with_calendar_turnover\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Ran final verification for this calendar-turnover increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCalendarTurnoverCandidate\20260506T231600JST_calendar_turnover_smoke\LongOnlyCalendarTurnoverCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: full compile passed; full `tests\test_bot_factory.py` passed;
+  static check returned `ok=true` for 7 files with existing review warnings
+  only (`user_data\strategies\5mV1.py:304` and
+  `user_data\strategies\FreqAICustomStrategy.py:390`, `391`, `393`, `807`),
+  report `registry\strategies\checks\20260506T132337Z_static_check.json`;
+  FreqAI dependency check returned `ok=true` on Python `3.12.4` with
+  `lightgbm=4.6.0`, `xgboost=3.0.5`, `tensorboard=2.20.0`, and
+  `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T132339Z_freqai_env.json`;
+  funding-rate quality returned `ok=true`, `rows=197`, no findings, report
+  `registry\strategies\checks\20260506T132342Z_funding_rate_quality.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the calendar-turnover seasonality thesis passed
+  novelty gating and was code-generated/evaluated, but it is negative, not
+  passing, not paper-ready, and not promotable. The latest synthesis now
+  requires a fourteenth distinct thesis outside all thirteen failed families,
+  with at least two structured research references. This increment did not
+  start paper trading, dry-run trading, live trading, venue execution,
+  exchange order endpoints, leverage above `1.0`, shorting, promotion, or
+  process control.
+
+Follow-up on 2026-05-06 JST for Amihud illiquidity premium thesis family.
+
+- [x] Completion audit before continuing: the objective remains incomplete
+  because no profitable, paper-ready, or promotable candidate exists. The
+  latest thirteen-family synthesis required a fourteenth distinct `thesis_id`,
+  at least two structured research references, and no parameter-only retry.
+- [x] Added a fourteenth supported thesis family,
+  `amihud_illiquidity_premium`, using absolute closed-candle return divided by
+  dollar volume as an Amihud-style price-impact feature rather than threshold
+  optimization. Code changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`. Generated strategies compute
+  `dollar_volume`, `amihud_illiquidity`, `amihud_illiquidity_mean`,
+  `amihud_illiquidity_delta`, and `illiquidity_drift`; entry logic requires
+  `price_impact_premium`, `illiquidity_releasing`, `not_extreme_impact`,
+  `price_resilience`, `positive_illiquidity_drift`, `controlled_range`,
+  `volume_floor`, and positive volume.
+- [x] Added structured research references:
+  `registry\strategies\proposals\20260506T234000JST_LongOnlyAmihudIlliquidityCandidate.amihud_illiquidity_reference.json`,
+  `registry\strategies\proposals\20260506T234000JST_LongOnlyAmihudIlliquidityCandidate.bitcoin_liquidity_reference.json`,
+  and
+  `registry\strategies\proposals\20260506T234000JST_LongOnlyAmihudIlliquidityCandidate.crypto_liquidity_efficiency_reference.json`.
+  These cite `doi:10.1016/S1386-4181(01)00024-6`,
+  `doi:10.1177/03128962211069615`, and
+  `doi:10.1016/j.econlet.2018.04.003`.
+- [x] Ran focused verification after adding the family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "amihud or calendar_turnover"
+  ```
+
+  Results: compile passed; focused pytest passed with 4 tests.
+- [x] Generated an accepted novelty-gated Amihud illiquidity proposal against
+  the latest thirteen-family synthesis. Exact executed command is recorded in
+  `registry\strategies\proposals\20260506T144000Z_LongOnlyAmihudIlliquidityCandidate.metadata.json`
+  under `command`.
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=amihud_illiquidity_premium`,
+  `thesis_id=TH-CRYPTO-AMIHUD-ILLIQUIDITY-001`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T144000Z_LongOnlyAmihudIlliquidityCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T144000Z_LongOnlyAmihudIlliquidityCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T144000Z_LongOnlyAmihudIlliquidityCandidate.metadata.json --candidate-id 20260506T234000JST_amihud_illiquidity_smoke --created-at 2026-05-06T23:40:00+09:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyAmihudIlliquidityCandidate\20260506T234000JST_amihud_illiquidity_smoke\LongOnlyAmihudIlliquidityCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyAmihudIlliquidityCandidate\20260506T234000JST_amihud_illiquidity_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-directory
+  static check `ok=true`, 1 file checked, report
+  `registry\strategies\checks\20260506T133047Z_static_check.json`; OHLCV
+  quality `ok=true`, `rows=8995`, no duplicates, no missing intervals, report
+  `registry\strategies\checks\20260506T133043Z_ohlcv_quality.json`.
+- [x] Ran historical backtest, signal diagnostics, and rule-based
+  walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyAmihudIlliquidityCandidate --strategy-path registry\strategies\generated\LongOnlyAmihudIlliquidityCandidate\20260506T234000JST_amihud_illiquidity_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T234500JST_amihud_illiquidity_smoke_exec_historical --reviewer-note "Amihud illiquidity premium historical smoke; local closed-candle OHLCV backtest only, long-only leverage 1.0, no operational startup or promotion."
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyAmihudIlliquidityCandidate\20260506T234000JST_amihud_illiquidity_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T234600JST_amihud_illiquidity_signal_diagnostics --reviewer-note "Amihud illiquidity signal diagnostics after failing historical smoke; reads local OHLCV and generated metadata only."
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyAmihudIlliquidityCandidate --strategy-path registry\strategies\generated\LongOnlyAmihudIlliquidityCandidate\20260506T234000JST_amihud_illiquidity_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T235000JST_amihud_illiquidity_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --reviewer-note "Amihud illiquidity rule-based walk-forward smoke using local historical OHLCV only."
+  ```
+
+  Results: historical backtest wrote artifacts but failed gates with
+  `total_return_pct=-0.21688571`, `trade_count=19`,
+  `profit_factor=0.12808642465419795`,
+  `max_drawdown_pct=0.22796556403656532`, and
+  `sortino=-18.27490029434258`; signal diagnostics completed with
+  `entry_count=32`, `zero_entry_signal=false`, `diagnosis_codes=[]`, and top
+  bottleneck `price_impact_premium`; walk-forward completed 4/4 windows but
+  failed with `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=-0.21688571`, and all windows negative. Artifacts:
+  `data\backtests\LongOnlyAmihudIlliquidityCandidate\20260506T234500JST_amihud_illiquidity_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyAmihudIlliquidityCandidate\20260506T234000JST_amihud_illiquidity_smoke\20260506T234600JST_amihud_illiquidity_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyAmihudIlliquidityCandidate\20260506T235000JST_amihud_illiquidity_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the Amihud illiquidity candidate manifest and ranked all fourteen
+  real smoke families. Manifest command exited `1` because the candidate
+  recommendation is `retry` while gates failed; artifacts were still written
+  under
+  `registry\strategies\candidates\LongOnlyAmihudIlliquidityCandidate\20260506T234000JST_amihud_illiquidity_smoke\`.
+  Ranking result: `candidate_count=14`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T235500JST_fourteen_family_with_amihud_illiquidity_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all fourteen families:
+
+  Result: `status=completed`, `candidate_count=14`, `paper_ready_count=0`,
+  `zero_trade_count=3`, `negative_return_count=9`,
+  `walk_forward_failed_count=14`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `amihud_illiquidity`, `calendar_turnover`,
+  `downside_liquidity_shock_reversal`, `entropy_regime`,
+  `fractal_long_memory`, `funding_pressure_carry`,
+  `hybrid_ml_return_filter`, `intraday_session_liquidity`,
+  `liquidity_mean_reversion`, `realized_skewness_tail`,
+  `semivariance_asymmetry`, `signed_volume_imbalance`,
+  `trend_continuation`, and `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T235900JST_fourteen_family_failure_synthesis_with_amihud_illiquidity\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Ran final verification for this Amihud illiquidity increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyAmihudIlliquidityCandidate\20260506T234000JST_amihud_illiquidity_smoke\LongOnlyAmihudIlliquidityCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: full compile passed; full `tests\test_bot_factory.py` passed;
+  static check returned `ok=true` for 7 files with existing review warnings
+  only (`user_data\strategies\5mV1.py:304` and
+  `user_data\strategies\FreqAICustomStrategy.py:390`, `391`, `393`, `807`),
+  report `registry\strategies\checks\20260506T133552Z_static_check.json`;
+  FreqAI dependency check returned `ok=true` on Python `3.12.4` with
+  `lightgbm=4.6.0`, `xgboost=3.0.5`, `tensorboard=2.20.0`, and
+  `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T133554Z_freqai_env.json`;
+  funding-rate quality returned `ok=true`, `rows=197`, no findings, report
+  `registry\strategies\checks\20260506T133559Z_funding_rate_quality.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the Amihud illiquidity thesis passed novelty
+  gating and was code-generated/evaluated, but it is negative, not passing,
+  not paper-ready, and not promotable. The latest synthesis now requires a
+  fifteenth distinct thesis outside all fourteen failed families, with at
+  least two structured research references. This increment did not start paper
+  trading, dry-run trading, live trading, venue execution, exchange order
+  endpoints, leverage above `1.0`, shorting, promotion, or process control.
+
+Follow-up on 2026-05-06 JST for BTC/ETH cross-asset lead-lag thesis family.
+
+- [x] Completion audit before continuing: the objective remains incomplete
+  because the fourteen-family synthesis had `paper_ready_count=0` and required
+  a fifteenth distinct theory-first thesis with at least two structured
+  references. No parameter-only retry was allowed.
+- [x] Added a fifteenth supported thesis family, `cross_asset_lead_lag`, using
+  ETH 5m closed-candle OHLCV as a read-only informative series for BTC. Code
+  changes: `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`,
+  `scripts\bot_factory_diagnose_candidate_signals.py`, and
+  `tests\test_bot_factory.py`. Generated strategies compute
+  `eth_log_return`, `eth_lead_return`, `eth_lead_return_mean`,
+  `btc_log_return`, `eth_btc_return_spread`, `eth_btc_spread_mean`, and
+  `cross_asset_drift`; entry logic requires `eth_positive_lead`,
+  `btc_lag_discount`, `spread_not_extreme`, `btc_resilience`,
+  `positive_cross_asset_drift`, `controlled_range`, and `volume_filter`.
+- [x] Added structured research references:
+  `registry\strategies\proposals\20260506T235945JST_LongOnlyCrossAssetLeadLagCandidate.btc_eth_lead_lag_reference.json`
+  and
+  `registry\strategies\proposals\20260506T235945JST_LongOnlyCrossAssetLeadLagCandidate.intraday_predictability_reference.json`.
+  These cite `doi:10.1016/j.ribaf.2019.06.012` and
+  `doi:10.1016/j.najef.2022.101733`.
+- [x] Downloaded and validated ETH historical OHLCV for the informative
+  series:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_download_data.py --config user_data\config.json --pairs ETH/USDT:USDT --timeframes 5m --timerange 20250101-20250201 --trading-mode futures
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: download added the missing January 2025 ETH futures candles; ETH
+  OHLCV quality returned `ok=true`, `rows=8996`, no duplicate timestamps, no
+  missing intervals, latest report
+  `registry\strategies\checks\20260506T135038Z_ohlcv_quality.json`.
+- [x] Ran focused verification after adding the family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_diagnose_candidate_signals.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cross_asset_lead_lag"
+  ```
+
+  Results: compile passed; focused pytest passed with 2 tests.
+- [x] Generated an accepted novelty-gated cross-asset proposal against the
+  latest fourteen-family synthesis. The first generation attempt was blocked
+  because `parameter_only_retry_limit=0` violates the current proposal schema;
+  the accepted rerun used schema-valid `parameter_only_retry_limit=1` while
+  still keeping `parameter_only_retry_count=0` and
+  `force_distinct_hypothesis_family=true`.
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=cross_asset_lead_lag`,
+  `thesis_id=TH-CROSS-ASSET-LEAD-LAG-001`, and
+  `research_reference_count=2`. Artifacts:
+  `registry\strategies\proposals\20260506T145945Z_LongOnlyCrossAssetLeadLagCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T145945Z_LongOnlyCrossAssetLeadLagCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T145945Z_LongOnlyCrossAssetLeadLagCandidate.metadata.json --candidate-id 20260506T235945JST_cross_asset_lead_lag_smoke --created-at 2026-05-06T14:59:45+00:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyCrossAssetLeadLagCandidate\20260506T235945JST_cross_asset_lead_lag_smoke\LongOnlyCrossAssetLeadLagCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyCrossAssetLeadLagCandidate\20260506T235945JST_cross_asset_lead_lag_smoke\LongOnlyCrossAssetLeadLagCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-file
+  static check `ok=true`, report
+  `registry\strategies\checks\20260506T135037Z_static_check.json`; BTC OHLCV
+  quality `ok=true`, `rows=8995`, report
+  `registry\strategies\checks\20260506T135033Z_ohlcv_quality.json`; ETH OHLCV
+  quality `ok=true`, `rows=8996`, report
+  `registry\strategies\checks\20260506T135038Z_ohlcv_quality.json`.
+- [x] Ran historical backtest, signal diagnostics with ETH informative OHLCV,
+  and rule-based walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyCrossAssetLeadLagCandidate --strategy-path registry\strategies\generated\LongOnlyCrossAssetLeadLagCandidate\20260506T235945JST_cross_asset_lead_lag_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T235946JST_cross_asset_lead_lag_smoke_exec_historical
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyCrossAssetLeadLagCandidate\20260506T235945JST_cross_asset_lead_lag_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-parquet user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T235947JST_cross_asset_lead_lag_signal_diagnostics
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyCrossAssetLeadLagCandidate --strategy-path registry\strategies\generated\LongOnlyCrossAssetLeadLagCandidate\20260506T235945JST_cross_asset_lead_lag_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --run-id 20260506T235948JST_cross_asset_lead_lag_rule_walk_forward --reviewer-note "Cross-asset lead-lag rule-based walk-forward using local BTC/ETH historical OHLCV only."
+  ```
+
+  Results: historical backtest failed gates with
+  `total_return_pct=-1.431901468`, `trade_count=132`,
+  `profit_factor=0.19664075195129493`,
+  `max_drawdown_pct=1.4330841132835799`, and
+  `sortino=-71.98442217231677`; signal diagnostics completed with
+  `entry_count=336`, `zero_entry_signal=false`,
+  `informative_ohlcv_merge.matched_row_count=8928`, and top bottleneck
+  `volume_filter`; walk-forward completed 4/4 windows but failed with
+  `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=-1.4319014680000002`, and all four windows negative.
+  Artifacts:
+  `data\backtests\LongOnlyCrossAssetLeadLagCandidate\20260506T235946JST_cross_asset_lead_lag_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyCrossAssetLeadLagCandidate\20260506T235945JST_cross_asset_lead_lag_smoke\20260506T235947JST_cross_asset_lead_lag_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyCrossAssetLeadLagCandidate\20260506T235948JST_cross_asset_lead_lag_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the cross-asset candidate manifest and ranked all fifteen real
+  smoke families. Manifest command exited `1` because the candidate
+  recommendation is `retry` while gates failed; artifacts were still written
+  under
+  `registry\strategies\candidates\LongOnlyCrossAssetLeadLagCandidate\20260506T235945JST_cross_asset_lead_lag_smoke\`.
+  Ranking result: `candidate_count=15`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T235949JST_fifteen_family_with_cross_asset_lead_lag_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all fifteen families:
+
+  Result: `status=completed`, `candidate_count=15`, `paper_ready_count=0`,
+  `zero_trade_count=3`, `negative_return_count=10`,
+  `walk_forward_failed_count=15`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `amihud_illiquidity`, `btc_eth_lead_lag`, `calendar_turnover`,
+  `downside_liquidity_shock_reversal`, `entropy_regime`,
+  `fractal_long_memory`, `funding_pressure_carry`,
+  `hybrid_ml_return_filter`, `intraday_session_liquidity`,
+  `liquidity_mean_reversion`, `realized_skewness_tail`,
+  `semivariance_asymmetry`, `signed_volume_imbalance`,
+  `trend_continuation`, and `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T235950JST_fifteen_family_failure_synthesis_with_cross_asset_lead_lag\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Ran final verification for this cross-asset lead-lag increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCrossAssetLeadLagCandidate\20260506T235945JST_cross_asset_lead_lag_smoke\LongOnlyCrossAssetLeadLagCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: full compile passed; full `tests\test_bot_factory.py` passed;
+  static check returned `ok=true` for 7 files with existing review warnings
+  only (`user_data\strategies\5mV1.py:304` and
+  `user_data\strategies\FreqAICustomStrategy.py:390`, `391`, `393`, `807`),
+  report `registry\strategies\checks\20260506T135802Z_static_check.json`;
+  FreqAI dependency check returned `ok=true` on Python `3.12.4` with
+  `lightgbm=4.6.0`, `xgboost=3.0.5`, `tensorboard=2.20.0`, and
+  `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T135803Z_freqai_env.json`;
+  funding-rate quality returned `ok=true`, `rows=197`, no findings, report
+  `registry\strategies\checks\20260506T135809Z_funding_rate_quality.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the BTC/ETH cross-asset lead-lag thesis passed
+  novelty gating and was code-generated/evaluated, but it is negative, not
+  passing, not paper-ready, and not promotable. The latest synthesis now
+  requires a sixteenth distinct thesis outside all fifteen failed families,
+  with at least two structured research references. This increment did not
+  start paper trading, dry-run trading, live trading, venue execution,
+  exchange order endpoints, leverage above `1.0`, shorting, promotion, or
+  process control.
+
+Follow-up on 2026-05-06 JST for variance-ratio regime thesis family.
+
+- [x] Started from the fifteen-family failure synthesis:
+  `registry\strategies\synthesis\20260506T235950JST_fifteen_family_failure_synthesis_with_cross_asset_lead_lag\candidate_failure_synthesis.json`.
+  The synthesis had `candidate_count=15`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and `requires_new_thesis_id=true`, so
+  the next candidate had to be a new theory-first family, not parameter
+  threshold tuning.
+- [x] Added a sixteenth supported thesis family,
+  `variance_ratio_regime_switch`, using closed-candle variance ratio and
+  first-lag return autocorrelation to test random-walk-deviation regimes.
+  Code changes: `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`. Generated strategies compute
+  `variance_ratio`, `variance_ratio_mean`, `variance_ratio_delta`,
+  `return_autocorr`, `autocorr_mean`, `regime_drift`, and
+  `normalized_regime_return`; entry logic requires
+  `variance_ratio_expansion`, `positive_autocorr_regime`,
+  `positive_regime_drift`, `controlled_regime_return`,
+  `midline_resilience`, `controlled_range`, and `volume_filter`.
+- [x] Added structured research references:
+  `registry\strategies\proposals\20260506T235951JST_LongOnlyVarianceRatioRegimeCandidate.variance_ratio_reference.json`,
+  `registry\strategies\proposals\20260506T235951JST_LongOnlyVarianceRatioRegimeCandidate.bitcoin_inefficiency_reference.json`,
+  and
+  `registry\strategies\proposals\20260506T235951JST_LongOnlyVarianceRatioRegimeCandidate.bitcoin_efficiency_followup_reference.json`.
+  These cite `doi:10.1093/rfs/1.1.41`,
+  `doi:10.1016/j.econlet.2016.09.019`, and
+  `doi:10.1016/j.econlet.2016.10.033`.
+- [x] Ran focused implementation verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "variance_ratio_regime_switch"
+  ```
+
+  Results: compile passed; focused pytest passed with 2 tests.
+- [x] Generated an accepted novelty-gated variance-ratio proposal against the
+  latest fifteen-family synthesis. The first generation attempt was blocked
+  because `parameter_only_retry_limit=0` violates the current proposal schema;
+  the accepted rerun used schema-valid `parameter_only_retry_limit=1` while
+  still keeping `parameter_only_retry_count=0` and
+  `force_distinct_hypothesis_family=true`.
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=variance_ratio_regime_switch`,
+  `thesis_id=THESIS-VARIANCE-RATIO-REGIME-20260506T145951Z`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T145951Z_LongOnlyVarianceRatioRegimeCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T145951Z_LongOnlyVarianceRatioRegimeCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T145951Z_LongOnlyVarianceRatioRegimeCandidate.metadata.json --candidate-id 20260506T235951JST_variance_ratio_regime_smoke --created-at 2026-05-06T14:59:51+00:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyVarianceRatioRegimeCandidate\20260506T235951JST_variance_ratio_regime_smoke\LongOnlyVarianceRatioRegimeCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyVarianceRatioRegimeCandidate\20260506T235951JST_variance_ratio_regime_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-folder
+  static check `ok=true`, report
+  `registry\strategies\checks\20260506T141147Z_static_check.json`; BTC OHLCV
+  quality `ok=true`, `rows=8995`, report
+  `registry\strategies\checks\20260506T141143Z_ohlcv_quality.json`.
+- [x] Ran historical backtest, signal diagnostics, and rule-based
+  walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyVarianceRatioRegimeCandidate --strategy-path registry\strategies\generated\LongOnlyVarianceRatioRegimeCandidate\20260506T235951JST_variance_ratio_regime_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T235952JST_variance_ratio_regime_smoke_exec_historical
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyVarianceRatioRegimeCandidate\20260506T235951JST_variance_ratio_regime_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T235953JST_variance_ratio_regime_signal_diagnostics --reviewer-note "Historical backtest failed initial gates; diagnostics run to record variance-ratio/autocorrelation bottlenecks before any iteration."
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyVarianceRatioRegimeCandidate --strategy-path registry\strategies\generated\LongOnlyVarianceRatioRegimeCandidate\20260506T235951JST_variance_ratio_regime_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T235954JST_variance_ratio_regime_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --min-pass-rate 0.75 --min-profitable-windows-ratio 0.75 --reviewer-note "Variance-ratio candidate walk-forward after initial backtest failed gates; historical-only verification, no promotion."
+  ```
+
+  Results: historical backtest failed gates with
+  `total_return_pct=-0.324340064`, `trade_count=25`,
+  `profit_factor=0.372702266238621`,
+  `max_drawdown_pct=0.4479938240000024`, and
+  `sortino=-13.886449707992519`; signal diagnostics completed with
+  `entry_count=52`, `zero_entry_signal=false`, no diagnosis codes, and top
+  bottleneck `volume_filter`; walk-forward completed 4/4 windows but failed
+  with `pass_rate=0.0`, `profitable_windows_ratio=0.25`,
+  `total_return_pct=-0.32434006400000004`, and only the final window
+  positive. Artifacts:
+  `data\backtests\LongOnlyVarianceRatioRegimeCandidate\20260506T235952JST_variance_ratio_regime_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyVarianceRatioRegimeCandidate\20260506T235951JST_variance_ratio_regime_smoke\20260506T235953JST_variance_ratio_regime_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyVarianceRatioRegimeCandidate\20260506T235954JST_variance_ratio_regime_rule_walk_forward\walk_forward_metrics.json`.
+  Note: an earlier walk-forward command with `--ohlcv-file` failed because the
+  rule-based backtest runner does not accept that argument; OHLCV quality had
+  already been checked separately, and the corrected run above overwrote the
+  run-id with completed window metrics.
+- [x] Wrote the variance-ratio candidate manifest and ranked all sixteen real
+  smoke families. Manifest command exited `1` because the candidate
+  recommendation is `retry` while gates failed; artifacts were still written
+  under
+  `registry\strategies\candidates\LongOnlyVarianceRatioRegimeCandidate\20260506T235951JST_variance_ratio_regime_smoke\`.
+  Ranking result: `candidate_count=16`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T235955JST_sixteen_family_with_variance_ratio_regime_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all sixteen families:
+
+  Result: `status=completed`, `candidate_count=16`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `amihud_illiquidity`, `btc_eth_lead_lag`, `calendar_turnover`,
+  `downside_liquidity_shock_reversal`, `entropy_regime`,
+  `fractal_long_memory`, `funding_pressure_carry`,
+  `hybrid_ml_return_filter`, `intraday_session_liquidity`,
+  `liquidity_mean_reversion`, `realized_skewness_tail`,
+  `semivariance_asymmetry`, `signed_volume_imbalance`,
+  `trend_continuation`, `variance_ratio_regime`, and
+  `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T235956JST_sixteen_family_failure_synthesis_with_variance_ratio_regime\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Ran final verification for this variance-ratio increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyVarianceRatioRegimeCandidate\20260506T235951JST_variance_ratio_regime_smoke\LongOnlyVarianceRatioRegimeCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: full compile passed; full `tests\test_bot_factory.py` passed;
+  static check returned `ok=true` for 7 files with existing review warnings
+  only (`user_data\strategies\5mV1.py:304` and
+  `user_data\strategies\FreqAICustomStrategy.py:390`, `391`, `393`, `807`),
+  report `registry\strategies\checks\20260506T141642Z_static_check.json`;
+  FreqAI dependency check returned `ok=true` on Python `3.12.4` with
+  `lightgbm=4.6.0`, `xgboost=3.0.5`, `tensorboard=2.20.0`, and
+  `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T141643Z_freqai_env.json`;
+  funding-rate quality returned `ok=true`, `rows=197`, no findings, report
+  `registry\strategies\checks\20260506T141707Z_funding_rate_quality.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the variance-ratio regime thesis passed novelty
+  gating and was code-generated/evaluated, but it is negative, not passing,
+  not paper-ready, and not promotable. The latest synthesis now requires a
+  seventeenth distinct thesis outside all sixteen failed families, with at
+  least two structured research references. This increment did not start paper
+  trading, dry-run trading, live trading, venue execution, exchange order
+  endpoints, leverage above `1.0`, shorting, promotion, or process control.
+
+Follow-up on 2026-05-06 JST for BTC/ETH cointegration spread thesis family.
+
+- [x] Started from the sixteen-family failure synthesis:
+  `registry\strategies\synthesis\20260506T235956JST_sixteen_family_failure_synthesis_with_variance_ratio_regime\candidate_failure_synthesis.json`.
+  The synthesis had `candidate_count=16`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and `requires_new_thesis_id=true`, so
+  the next candidate again had to be a new theory-first family, not parameter
+  threshold tuning.
+- [x] Added a seventeenth supported thesis family,
+  `cross_asset_cointegration_spread`, using local BTC/ETH log-ratio
+  z-scores, ratio reversion turns, and ETH drift support to test
+  cointegration-style spread reversion. This is distinct from the failed
+  `btc_eth_lead_lag` family because it does not use ETH return timing as the
+  edge. Code changes: `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`. Generated strategies compute `eth_close`,
+  `btc_eth_log_ratio`, `btc_eth_ratio_mean`, `btc_eth_ratio_zscore`,
+  `btc_eth_ratio_zscore_delta`, and `eth_regime_drift`; entry logic requires
+  `btc_discount_to_eth`, `spread_reversion_turn`, `eth_market_support`,
+  `btc_resilience`, `cointegration_spread_not_extreme`, `controlled_range`,
+  and `volume_filter`.
+- [x] Added structured research references:
+  `registry\strategies\proposals\20260506T235957JST_LongOnlyCrossAssetCointegrationCandidate.statistical_arbitrage_reference.json`,
+  `registry\strategies\proposals\20260506T235957JST_LongOnlyCrossAssetCointegrationCandidate.crypto_common_factors_reference.json`,
+  and
+  `registry\strategies\proposals\20260506T235957JST_LongOnlyCrossAssetCointegrationCandidate.cointegrated_pairs_reference.json`.
+  These cite `doi:10.1108/SEF-08-2018-0264`,
+  `doi:10.1007/s10203-021-00318-x`, and
+  `doi:10.1186/s40854-024-00702-7`.
+- [x] Ran focused implementation verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cross_asset_cointegration_spread"
+  ```
+
+  Results: compile passed; focused pytest passed with 2 tests.
+- [x] Generated an accepted novelty-gated cointegration proposal against the
+  latest sixteen-family synthesis. An initial generation attempt exited `1`
+  due to missing required CLI fields, and a second attempt wrote blocked
+  artifacts because the safety text listed forbidden deployment terms in a
+  way the proposal safety scanner treats as non-negated dependencies. The
+  accepted rerun used local-historical wording while preserving the same
+  `thesis_id`, research references, and novelty gate inputs.
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=cross_asset_cointegration_spread`,
+  `thesis_id=THESIS-CROSS-ASSET-COINTEGRATION-20260506T145957Z`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T145957Z_LongOnlyCrossAssetCointegrationCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T145957Z_LongOnlyCrossAssetCointegrationCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T145957Z_LongOnlyCrossAssetCointegrationCandidate.metadata.json --candidate-id 20260506T235957JST_cross_asset_cointegration_smoke --created-at 2026-05-06T14:59:57+00:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyCrossAssetCointegrationCandidate\20260506T235957JST_cross_asset_cointegration_smoke\LongOnlyCrossAssetCointegrationCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyCrossAssetCointegrationCandidate\20260506T235957JST_cross_asset_cointegration_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-folder
+  static check `ok=true`, report
+  `registry\strategies\checks\20260506T143150Z_static_check.json`; BTC OHLCV
+  quality `ok=true`, `rows=8995`, report
+  `registry\strategies\checks\20260506T143145Z_ohlcv_quality.json`; ETH
+  informative OHLCV quality `ok=true`, `rows=8996`, report
+  `registry\strategies\checks\20260506T143152Z_ohlcv_quality.json`.
+- [x] Ran historical backtest, signal diagnostics, and rule-based
+  walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyCrossAssetCointegrationCandidate --strategy-path registry\strategies\generated\LongOnlyCrossAssetCointegrationCandidate\20260506T235957JST_cross_asset_cointegration_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T235958JST_cross_asset_cointegration_smoke_exec_historical
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyCrossAssetCointegrationCandidate\20260506T235957JST_cross_asset_cointegration_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-parquet user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T235958JST_cross_asset_cointegration_signal_diagnostics --reviewer-note "Historical backtest failed initial gates; diagnostics run to record BTC/ETH cointegration spread bottlenecks before any iteration."
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyCrossAssetCointegrationCandidate --strategy-path registry\strategies\generated\LongOnlyCrossAssetCointegrationCandidate\20260506T235957JST_cross_asset_cointegration_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T235959JST_cross_asset_cointegration_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --min-pass-rate 0.75 --min-profitable-windows-ratio 0.75 --reviewer-note "Cross-asset cointegration spread rule-based walk-forward using local BTC/ETH historical OHLCV only."
+  ```
+
+  Results: historical backtest failed gates with
+  `total_return_pct=-1.365657864`, `trade_count=103`,
+  `profit_factor=0.24388391371201643`,
+  `max_drawdown_pct=1.3791347563258318`, and
+  `sortino=-31.224341592260014`; signal diagnostics completed with
+  `entry_count=303`, `zero_entry_signal=false`, no diagnosis codes,
+  informative ETH merge `matched_row_count=8928`, rarest component
+  `btc_discount_to_eth`, and top bottleneck `volume_filter`; walk-forward
+  completed 4/4 windows but failed with `pass_rate=0.0`,
+  `profitable_windows_ratio=0.0`, `total_return_pct=-1.365657864`, and all
+  four windows negative. Artifacts:
+  `data\backtests\LongOnlyCrossAssetCointegrationCandidate\20260506T235958JST_cross_asset_cointegration_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyCrossAssetCointegrationCandidate\20260506T235957JST_cross_asset_cointegration_smoke\20260506T235958JST_cross_asset_cointegration_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyCrossAssetCointegrationCandidate\20260506T235959JST_cross_asset_cointegration_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the cointegration candidate manifest and ranked all seventeen real
+  smoke families. Manifest command exited `1` because the candidate
+  recommendation is `retry` while gates failed; artifacts were still written
+  under
+  `registry\strategies\candidates\LongOnlyCrossAssetCointegrationCandidate\20260506T235957JST_cross_asset_cointegration_smoke\`.
+  Ranking result: `candidate_count=17`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. The cointegration candidate ranked 12th
+  with score `33.852576`. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T235959JST_seventeen_family_with_cross_asset_cointegration_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all seventeen families:
+
+  Result: `status=completed`, `candidate_count=17`, `paper_ready_count=0`,
+  `zero_trade_count=3`, `negative_return_count=12`,
+  `walk_forward_failed_count=17`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `amihud_illiquidity`, `btc_eth_cointegration`, `btc_eth_lead_lag`,
+  `calendar_turnover`, `downside_liquidity_shock_reversal`, `entropy_regime`,
+  `fractal_long_memory`, `funding_pressure_carry`,
+  `hybrid_ml_return_filter`, `intraday_session_liquidity`,
+  `liquidity_mean_reversion`, `realized_skewness_tail`,
+  `semivariance_asymmetry`, `signed_volume_imbalance`,
+  `trend_continuation`, `variance_ratio_regime`, and
+  `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T235959JST_seventeen_family_failure_synthesis_with_cross_asset_cointegration\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Ran final verification for this BTC/ETH cointegration increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCrossAssetCointegrationCandidate\20260506T235957JST_cross_asset_cointegration_smoke\LongOnlyCrossAssetCointegrationCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: full compile passed; full `tests\test_bot_factory.py` passed;
+  static check returned `ok=true` for 7 files with existing review warnings
+  only (`user_data\strategies\5mV1.py:304` and
+  `user_data\strategies\FreqAICustomStrategy.py:390`, `391`, `393`, `807`),
+  report `registry\strategies\checks\20260506T143818Z_static_check.json`;
+  FreqAI dependency check returned `ok=true` on Python `3.12.4` with
+  `lightgbm=4.6.0`, `xgboost=3.0.5`, `tensorboard=2.20.0`, and
+  `datasieve=0.1.9`, report
+  `registry\strategies\checks\20260506T143820Z_freqai_env.json`;
+  funding-rate quality returned `ok=true`, `rows=197`, no findings, report
+  `registry\strategies\checks\20260506T143824Z_funding_rate_quality.json`;
+  `git diff --check` passed with existing LF-to-CRLF working-copy warnings for
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: the BTC/ETH cointegration spread thesis passed
+  novelty gating and was code-generated/evaluated, but it is negative, fails
+  all walk-forward windows, is not paper-ready, and is not promotable. The
+  latest synthesis now requires an eighteenth distinct thesis outside all
+  seventeen failed families, with at least two structured research
+  references. This increment did not start paper trading, dry-run trading,
+  live trading, venue execution, exchange order endpoints, leverage above
+  `1.0`, shorting, promotion, or process control.
+
+Follow-up on 2026-05-06 JST for BTC/ETH correlation-recovery thesis family.
+
+- [x] Started from the seventeen-family failure synthesis:
+  `registry\strategies\synthesis\20260506T235959JST_seventeen_family_failure_synthesis_with_cross_asset_cointegration\candidate_failure_synthesis.json`.
+  The synthesis had `candidate_count=17`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and `requires_new_thesis_id=true`, so
+  the next candidate had to be a new theory-first family outside the failed
+  BTC/ETH lead-lag and BTC/ETH cointegration families, not a threshold retry.
+- [x] Added an eighteenth supported thesis family,
+  `cross_asset_correlation_recovery`, using local BTC/ETH return-correlation
+  baselines, correlation recovery deltas, BTC-vs-ETH relative returns, and ETH
+  drift support to test dynamic correlation regime recovery. Code changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`. Generated strategies compute
+  `btc_eth_return_corr`, `btc_eth_corr_mean`, `btc_eth_corr_delta`,
+  `btc_eth_relative_return`, `btc_eth_relative_return_mean`, and
+  `eth_regime_drift`; entry logic requires `correlation_breakdown`,
+  `correlation_recovery`, `btc_relative_recovery`, `eth_market_support`,
+  `btc_resilience`, `controlled_range`, and `volume_filter`.
+- [x] Added structured research references:
+  `registry\strategies\proposals\20260506T235959JST_LongOnlyCrossAssetCorrelationCandidate.dynamic_equicorrelation_reference.json`,
+  `registry\strategies\proposals\20260506T235959JST_LongOnlyCrossAssetCorrelationCandidate.connectedness_reference.json`,
+  and
+  `registry\strategies\proposals\20260506T235959JST_LongOnlyCrossAssetCorrelationCandidate.high_frequency_connectedness_reference.json`.
+  These cite `doi:10.1016/j.qref.2021.04.002`,
+  `doi:10.1016/j.irfa.2018.12.002`, and
+  `doi:10.1016/j.jbef.2021.100562`.
+- [x] Ran focused implementation verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cross_asset_correlation_recovery"
+  ```
+
+  Results: compile passed; focused pytest passed with 2 tests.
+- [x] Generated an accepted novelty-gated correlation-recovery proposal
+  against the latest seventeen-family synthesis. The first generation attempt
+  wrote blocked artifacts because the structured research references used
+  `THESIS-CROSS-ASSET-CORRELATION-20260506T145960Z` while the proposal used
+  `THESIS-CROSS-ASSET-CORRELATION-20260506T145959Z`; after correcting
+  `motivated_thesis_ids`, the same theory-first proposal was accepted.
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=cross_asset_correlation_recovery`,
+  `thesis_id=THESIS-CROSS-ASSET-CORRELATION-20260506T145959Z`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T145959Z_LongOnlyCrossAssetCorrelationCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T145959Z_LongOnlyCrossAssetCorrelationCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T145959Z_LongOnlyCrossAssetCorrelationCandidate.metadata.json --candidate-id 20260506T235959JST_cross_asset_correlation_smoke --created-at 2026-05-06T14:59:59+00:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke\LongOnlyCrossAssetCorrelationCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-folder
+  static check `ok=true`, report
+  `registry\strategies\checks\20260506T145425Z_static_check.json`; BTC OHLCV
+  quality `ok=true`, `rows=8995`, report
+  `registry\strategies\checks\20260506T145421Z_ohlcv_quality.json`; ETH
+  informative OHLCV quality `ok=true`, `rows=8996`, report
+  `registry\strategies\checks\20260506T145425Z_ohlcv_quality.json`.
+- [x] Ran historical backtest, signal diagnostics, and rule-based
+  walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyCrossAssetCorrelationCandidate --strategy-path registry\strategies\generated\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260506T235959JST_cross_asset_correlation_smoke_exec_historical
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-parquet user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260506T235959JST_cross_asset_correlation_signal_diagnostics --reviewer-note "Historical backtest produced zero trades; diagnostics run to record BTC/ETH correlation-recovery bottlenecks before any iteration."
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyCrossAssetCorrelationCandidate --strategy-path registry\strategies\generated\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260506T235959JST_cross_asset_correlation_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --min-pass-rate 0.75 --min-profitable-windows-ratio 0.75 --reviewer-note "Cross-asset correlation-recovery rule-based walk-forward using local BTC/ETH historical OHLCV only."
+  ```
+
+  Results: historical backtest failed gates with `trade_count=0`,
+  `total_return_pct=0.0`, `profit_factor=0.0`,
+  `max_drawdown_pct=0.0`, and `sortino=0.0`; signal diagnostics completed
+  with `entry_count=0`, `zero_entry_signal=true`,
+  `diagnosis_codes=["ZERO_ENTRY_SIGNALS"]`,
+  `first_zero_component=eth_market_support`, rarest component
+  `correlation_breakdown`, and top bottleneck `correlation_breakdown`;
+  walk-forward completed 4/4 windows but failed with `pass_rate=0.0`,
+  `profitable_windows_ratio=0.0`, `total_return_pct=0.0`, and all four
+  windows zero-trade. Artifacts:
+  `data\backtests\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke\20260506T235959JST_cross_asset_correlation_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the correlation-recovery candidate manifest and ranked all
+  eighteen real smoke families. Manifest command exited `1` because the
+  candidate recommendation is `retry` while gates failed; artifacts were still
+  written under
+  `registry\strategies\candidates\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke\`.
+  Ranking result: `candidate_count=18`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`, and
+  `paper_ready_candidate_ids=[]`. The correlation candidate ranked 4th with
+  score `40.0`, but this is not paper-ready because it is zero-trade. Artifacts:
+  `registry\strategies\candidates\rankings\20260506T235959JST_eighteen_family_with_cross_asset_correlation_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Regenerated failure synthesis across all eighteen families:
+
+  Result: `status=completed`, `candidate_count=18`, `paper_ready_count=0`,
+  `zero_trade_count=4`, `negative_return_count=12`,
+  `walk_forward_failed_count=18`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `amihud_illiquidity`, `btc_eth_cointegration`,
+  `btc_eth_correlation_recovery`, `btc_eth_lead_lag`, `calendar_turnover`,
+  `downside_liquidity_shock_reversal`, `entropy_regime`,
+  `fractal_long_memory`, `funding_pressure_carry`,
+  `hybrid_ml_return_filter`, `intraday_session_liquidity`,
+  `liquidity_mean_reversion`, `realized_skewness_tail`,
+  `semivariance_asymmetry`, `signed_volume_imbalance`,
+  `trend_continuation`, `variance_ratio_regime`, and
+  `volatility_breakout`. Preferred artifacts:
+  `registry\strategies\synthesis\20260506T235959JST_eighteen_family_failure_synthesis_with_cross_asset_correlation\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Fixed and verified the final correlation-recovery handoff. Initial full
+  pytest verification exposed that diagnostics could call rolling correlation
+  with `min_periods=8` when a test configured `buy_volume_window=4`, raising
+  `ValueError: min_periods 8 must be <= window 4`. Updated
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`, and the generated
+  `LongOnlyCrossAssetCorrelationCandidate.py` artifact to use
+  `corr_min_periods = min(volume_window, 8)` / `min(correlation_window, 8)`.
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke\LongOnlyCrossAssetCorrelationCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "signal_diagnostics_explains_zero_entry_components or signal_diagnostics_merges_freqai_prediction_artifacts or cross_asset_correlation_recovery"
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_iterate_candidate.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyCrossAssetCointegrationCandidate\20260506T235957JST_cross_asset_cointegration_smoke\LongOnlyCrossAssetCointegrationCandidate.py registry\strategies\generated\LongOnlyCrossAssetCorrelationCandidate\20260506T235959JST_cross_asset_correlation_smoke\LongOnlyCrossAssetCorrelationCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: focused compile passed; focused pytest passed with 4 tests; full
+  compile passed; full `tests\test_bot_factory.py -q` passed; user strategy
+  static check `ok=true` with the existing warning-only findings, report
+  `registry\strategies\checks\20260506T150342Z_static_check.json`; FreqAI env
+  check `ok=true`, report
+  `registry\strategies\checks\20260506T150343Z_freqai_env.json`; funding-rate
+  quality check on `BTC_USDT_USDT-8h-funding_rate.parquet` `ok=true`,
+  `rows=197`, report
+  `registry\strategies\checks\20260506T150435Z_funding_rate_quality.json`; and
+  `git diff --check` passed with only the expected LF-to-CRLF warnings for
+  docs/TEMPLATE files. A prior funding-rate command used the stale local path
+  `BTC_USDT_USDT-8h-funding_rate-futures.parquet` and correctly failed
+  `file_exists`, writing
+  `registry\strategies\checks\20260506T150406Z_funding_rate_quality.json`;
+  the corrected path above is the passing local source of truth.
+- [x] Remaining limitation: the BTC/ETH correlation-recovery thesis passed
+  novelty gating and was code-generated/evaluated, but it produced zero
+  trades, is not paper-ready, and is not promotable. The latest synthesis now
+  requires a nineteenth distinct thesis outside all eighteen failed families,
+  with at least two structured research references. This increment did not
+  start paper trading, dry-run trading, live trading, venue execution,
+  exchange order endpoints, leverage above `1.0`, shorting, promotion, or
+  process control.
+
+Follow-up on 2026-05-07 JST for market beta drawdown-carry thesis family.
+
+- [x] Started from the eighteen-family failure synthesis:
+  `registry\strategies\synthesis\20260506T235959JST_eighteen_family_failure_synthesis_with_cross_asset_correlation\candidate_failure_synthesis.json`.
+  It required a nineteenth distinct thesis outside all eighteen failed
+  families, new structured references, and no parameter-only retry.
+- [x] Added a nineteenth supported thesis family,
+  `market_beta_drawdown_carry`, for drawdown-controlled BTC beta carry. This
+  family treats long BTC exposure as a compensated market risk-premium only
+  after a moderate recent-high drawdown and only when realized volatility is
+  inside a local risk budget. Code changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`.
+- [x] Added structured references tied to thesis
+  `THESIS-MARKET-BETA-DRAWDOWN-CARRY-20260506T151500Z`:
+  `registry\strategies\proposals\20260507T001500JST_LongOnlyMarketBetaDrawdownCarryCandidate.crypto_risk_return_reference.json`,
+  `registry\strategies\proposals\20260507T001500JST_LongOnlyMarketBetaDrawdownCarryCandidate.common_factors_reference.json`,
+  and
+  `registry\strategies\proposals\20260507T001500JST_LongOnlyMarketBetaDrawdownCarryCandidate.volatility_managed_reference.json`.
+- [x] Focused code verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "market_beta_drawdown_carry"
+  ```
+
+  Results: compile passed; focused pytest passed with 2 tests.
+- [x] Generated accepted novelty-gated proposal with the eighteen-family
+  synthesis supplied:
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=market_beta_drawdown_carry`,
+  `thesis_id=THESIS-MARKET-BETA-DRAWDOWN-CARRY-20260506T151500Z`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T151500Z_LongOnlyMarketBetaDrawdownCarryCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T151500Z_LongOnlyMarketBetaDrawdownCarryCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T151500Z_LongOnlyMarketBetaDrawdownCarryCandidate.metadata.json --candidate-id 20260507T001500JST_market_beta_drawdown_carry_smoke --created-at 2026-05-06T15:15:00+00:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_smoke\LongOnlyMarketBetaDrawdownCarryCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: code generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-folder
+  static check `ok=true`, report
+  `registry\strategies\checks\20260506T151925Z_static_check.json`; BTC 5m
+  OHLCV quality check `ok=true`, `rows=8995`, report
+  `registry\strategies\checks\20260506T151917Z_ohlcv_quality.json`.
+- [x] Ran historical-only backtest, signal diagnostics, and walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyMarketBetaDrawdownCarryCandidate --strategy-path registry\strategies\generated\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260507T001500JST_market_beta_drawdown_carry_smoke_exec_historical
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260507T001500JST_market_beta_drawdown_carry_signal_diagnostics --reviewer-note "Historical backtest was positive but still below readiness audit; diagnostics record market-beta drawdown-carry signal bottlenecks before ranking."
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyMarketBetaDrawdownCarryCandidate --strategy-path registry\strategies\generated\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260507T001500JST_market_beta_drawdown_carry_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --min-pass-rate 0.75 --min-profitable-windows-ratio 0.75 --reviewer-note "Market beta drawdown-carry rule-based walk-forward using local BTC historical OHLCV only."
+  ```
+
+  Results: this is the first positive full-month real smoke candidate, but it
+  still failed readiness gates. Historical metrics:
+  `trade_count=32`, `total_return_pct=0.36291935900000016`,
+  `profit_factor=1.1484070966527722`,
+  `max_drawdown_pct=1.0858858426983407`, and
+  `sortino=1.2844078968685824`. Signal diagnostics:
+  `entry_count=450`, `zero_entry_signal=false`, rarest component
+  `participation_floor`, and no diagnosis codes. Walk-forward:
+  `recommendation=fail`, `pass_rate=0.0`,
+  `profitable_windows_ratio=0.5`, `total_return_pct=0.30646605099999985`,
+  and `max_single_window_profit_dependency=0.925001394501805`. Artifacts:
+  `data\backtests\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_smoke\20260507T001500JST_market_beta_drawdown_carry_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the candidate manifest. The command exited `1` because the
+  candidate recommendation is `retry` while walk-forward gates failed; local
+  artifacts were still written under
+  `registry\strategies\candidates\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_smoke\`.
+- [x] Ranked all nineteen real smoke families. An intermediate ranking
+  `20260507T001500JST_nineteen_family_with_market_beta_drawdown_carry_ranking`
+  accidentally ranked only the new manifest and is superseded by:
+  `registry\strategies\candidates\rankings\20260507T001501JST_nineteen_family_with_market_beta_drawdown_carry_ranking\candidate_ranking.json`.
+  Corrected ranking result: `candidate_count=19`,
+  `best_candidate_id=20260506T101500JST_liquidity_pullback_smoke`,
+  `paper_ready_candidate_ids=[]`. The market beta candidate ranked 15th with
+  score `22.449281`, recommendation `retry`.
+- [x] Regenerated failure synthesis across all nineteen families:
+
+  Result: `status=completed`, `candidate_count=19`, `paper_ready_count=0`,
+  `zero_trade_count=4`, `negative_return_count=12`,
+  `walk_forward_failed_count=19`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `market_beta_drawdown_carry`. Preferred artifacts:
+  `registry\strategies\synthesis\20260507T001501JST_nineteen_family_failure_synthesis_with_market_beta_drawdown_carry\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Updated
+  `docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` so the next
+  agent starts from the corrected nineteen-family ranking/synthesis, treats
+  `market_beta_drawdown_carry` as a failed family to avoid repeating by
+  default, and targets a twentieth distinct thesis.
+- [x] Ran final verification for this market-beta drawdown-carry increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py freqtrade_ext\bot_factory\freqai_prediction_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_iterate_candidate.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_synthesize_candidate_failures.py scripts\bot_factory_diagnose_freqai_predictions.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyMarketBetaDrawdownCarryCandidate\20260507T001500JST_market_beta_drawdown_carry_smoke\LongOnlyMarketBetaDrawdownCarryCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: compile passed; full `tests\test_bot_factory.py` passed; static
+  check returned `ok=true` with existing warnings in `user_data\strategies`;
+  FreqAI dependency check returned `ok=true`; funding-rate quality check
+  returned `ok=true`, `rows=197`, no duplicate timestamps, and no missing
+  intervals. New verification artifacts:
+  `registry\strategies\checks\20260506T152846Z_static_check.json`,
+  `registry\strategies\checks\20260506T152847Z_freqai_env.json`, and
+  `registry\strategies\checks\20260506T152852Z_funding_rate_quality.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: the market beta drawdown-carry candidate is useful
+  progress because it is positive on the full January 2025 historical smoke,
+  but it is not profitable robustly enough, not walk-forward passing, not
+  paper-ready, and not promotable. The latest synthesis requires a twentieth
+  distinct thesis outside all nineteen failed families, with at least two
+  structured research references. This increment did not start paper trading,
+  dry-run trading, live trading, venue execution, exchange order endpoints,
+  leverage above `1.0`, shorting, promotion, or process control.
+
+Follow-up on 2026-05-07 JST for regime-state reentry thesis family.
+
+- [x] Started from the nineteen-family failure synthesis:
+  `registry\strategies\synthesis\20260507T001501JST_nineteen_family_failure_synthesis_with_market_beta_drawdown_carry\candidate_failure_synthesis.json`.
+  It required a twentieth distinct thesis outside all nineteen failed
+  families, new structured references, and no parameter-only retry.
+- [x] Added a twentieth supported thesis family, `regime_state_reentry`, for a
+  closed-candle bull-state reentry proxy. The generated rule set requires
+  multi-horizon positive drift, stable negative-return frequency, controlled
+  volatility, trendline support, bullish reentry, intact drawdown, and local
+  participation. Code changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`.
+- [x] Added structured references tied to thesis
+  `THESIS-REGIME-STATE-REENTRY-20260506T153500Z`:
+  `registry\strategies\proposals\20260507T003500JST_LongOnlyRegimeStateReentryCandidate.hamilton_regime_reference.json`
+  (`doi:10.2307/1912559`),
+  `registry\strategies\proposals\20260507T003500JST_LongOnlyRegimeStateReentryCandidate.bull_bear_reference.json`
+  (`doi:10.1080/07350015.2000.10524851`), and
+  `registry\strategies\proposals\20260507T003500JST_LongOnlyRegimeStateReentryCandidate.crypto_regime_switching_reference.json`
+  (`doi:10.1016/j.frl.2022.103193`).
+- [x] Focused code verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "regime_state_reentry"
+  ```
+
+  Results: compile passed; focused pytest passed with 2 tests.
+- [x] Generated accepted novelty-gated proposal with the nineteen-family
+  synthesis supplied:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --proposal-id LongOnlyRegimeStateReentryCandidate --created-at 2026-05-06T15:35:00+00:00 --strategy-name LongOnlyRegimeStateReentryCandidate --thesis-id THESIS-REGIME-STATE-REENTRY-20260506T153500Z --thesis-statement "BTC 5m long-only entries should only be taken when a local bull-state proxy is intact and a closed bullish reentry occurs after controlled pullback pressure, because regime-switching return persistence can compensate costs only inside stable positive-drift states." --hypothesis "A regime-state reentry filter using positive multi-horizon drift, stable negative-return frequency, controlled realized volatility, trendline support, bullish reentry candles, and participation floor will avoid weak/noisy states better than repeating failed trend, volatility, mean-reversion, funding, cross-asset, liquidity, entropy, fractal, higher-moment, calendar, Amihud, or beta-drawdown families." --risk-model "Long-only BTC/USDT:USDT, no shorts, no leverage above 1.0, fixed stoploss, conservative ROI exits, and historical-only closed-candle features." --generator-mode rule_based --strategy-logic-variant regime_state_reentry --timeframe 5m --timerange 20250101-20250201 --pair BTC/USDT:USDT --research-reference-json registry\strategies\proposals\20260507T003500JST_LongOnlyRegimeStateReentryCandidate.hamilton_regime_reference.json --research-reference-json registry\strategies\proposals\20260507T003500JST_LongOnlyRegimeStateReentryCandidate.bull_bear_reference.json --research-reference-json registry\strategies\proposals\20260507T003500JST_LongOnlyRegimeStateReentryCandidate.crypto_regime_switching_reference.json --failure-synthesis-json registry\strategies\synthesis\20260507T001501JST_nineteen_family_failure_synthesis_with_market_beta_drawdown_carry\candidate_failure_synthesis.json
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `generator_mode=rule_based`, `strategy_logic_variant=regime_state_reentry`,
+  `thesis_id=THESIS-REGIME-STATE-REENTRY-20260506T153500Z`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T153500Z_LongOnlyRegimeStateReentryCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T153500Z_LongOnlyRegimeStateReentryCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T153500Z_LongOnlyRegimeStateReentryCandidate.metadata.json --candidate-id 20260507T003500JST_regime_state_reentry_smoke --created-at 2026-05-06T15:35:00+00:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_smoke\LongOnlyRegimeStateReentryCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Results: code generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-folder
+  static check `ok=true`, report
+  `registry\strategies\checks\20260506T154619Z_static_check.json`; BTC 5m
+  OHLCV quality check `ok=true`, `rows=8995`, report
+  `registry\strategies\checks\20260506T154600Z_ohlcv_quality.json`.
+- [x] Ran historical-only backtest, signal diagnostics, and walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyRegimeStateReentryCandidate --strategy-path registry\strategies\generated\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260507T003500JST_regime_state_reentry_smoke_exec_historical
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260507T003500JST_regime_state_reentry_signal_diagnostics --reviewer-note "Historical backtest was negative; diagnostics record regime-state reentry bottlenecks before ranking."
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyRegimeStateReentryCandidate --strategy-path registry\strategies\generated\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260507T003500JST_regime_state_reentry_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --min-pass-rate 0.75 --min-profitable-windows-ratio 0.75 --reviewer-note "Regime-state reentry rule-based walk-forward using local BTC historical OHLCV only."
+  ```
+
+  Results: historical backtest failed gates with `trade_count=180`,
+  `total_return_pct=-2.0567343780000003`,
+  `profit_factor=0.5041520570492957`,
+  `max_drawdown_pct=2.0567343779999985`, and
+  `sortino=-80.33297116523825`. Exported trades confirmed long-only
+  constraints with `is_short=false` and `leverage=1.0`. Signal diagnostics:
+  `entry_count=676`, `zero_entry_signal=false`,
+  `diagnosis_codes=[]`, rarest component `positive_regime_drift`, and top
+  bottleneck `participation_floor`. Walk-forward completed 4/4 windows but
+  failed with `recommendation=fail`, `pass_rate=0.0`,
+  `profitable_windows_ratio=0.0`,
+  `total_return_pct=-2.0766407420000004`, and all four windows negative.
+  Artifacts:
+  `data\backtests\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_smoke\20260507T003500JST_regime_state_reentry_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the candidate manifest. The command exited `1` because the
+  candidate recommendation is `retry` while gates failed; local artifacts were
+  still written under
+  `registry\strategies\candidates\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_smoke\`.
+- [x] Ranked all twenty real smoke families:
+  `registry\strategies\candidates\rankings\20260507T003501JST_twenty_family_with_regime_state_reentry_ranking\candidate_ranking.json`.
+  Result: `candidate_count=20`,
+  `best_candidate_id=20260506T200000JST_hybrid_ml_freqai_timerange_smoke`,
+  and `paper_ready_candidate_ids=[]`. The regime-state candidate ranked 14th
+  with score `31.199875`, recommendation `retry`.
+- [x] Regenerated failure synthesis across all twenty families:
+
+  Result: `status=completed`, `candidate_count=20`, `paper_ready_count=0`,
+  `zero_trade_count=4`, `negative_return_count=13`,
+  `walk_forward_failed_count=20`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `regime_state_reentry`. Preferred artifacts:
+  `registry\strategies\synthesis\20260507T003501JST_twenty_family_failure_synthesis_with_regime_state_reentry\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Updated
+  `docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` so the next
+  agent starts from the twenty-family ranking/synthesis, treats
+  `regime_state_reentry` as a failed family to avoid repeating by default, and
+  targets a twenty-first distinct thesis.
+- [x] Ran final verification for this regime-state reentry increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py freqtrade_ext\bot_factory\freqai_prediction_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_iterate_candidate.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_synthesize_candidate_failures.py scripts\bot_factory_diagnose_freqai_predictions.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyRegimeStateReentryCandidate\20260507T003500JST_regime_state_reentry_smoke\LongOnlyRegimeStateReentryCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: compile passed; full `tests\test_bot_factory.py` passed with the
+  existing pandas fragmentation warning in signal diagnostics; static check
+  returned `ok=true` with existing warning-only findings in
+  `user_data\strategies`; FreqAI dependency check returned `ok=true`;
+  funding-rate quality check returned `ok=true`, `rows=197`, no duplicate
+  timestamps, and no missing intervals. New verification artifacts:
+  `registry\strategies\checks\20260506T155553Z_static_check.json`,
+  `registry\strategies\checks\20260506T155554Z_freqai_env.json`, and
+  `registry\strategies\checks\20260506T155556Z_funding_rate_quality.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: the regime-state reentry thesis passed novelty
+  gating and was code-generated/evaluated, but it is negative, fails all
+  walk-forward windows, is not paper-ready, and is not promotable. The latest
+  synthesis now requires a twenty-first distinct thesis outside all twenty
+  failed families, with at least two structured research references. This
+  increment did not start paper trading, dry-run trading, live trading, venue
+  execution, exchange order endpoints, leverage above `1.0`, shorting,
+  promotion, or process control.
+
+Follow-up on 2026-05-07 JST for mark-price dislocation reclaim thesis family.
+
+- [x] Started from the twenty-family failure synthesis:
+  `registry\strategies\synthesis\20260507T003501JST_twenty_family_failure_synthesis_with_regime_state_reentry\candidate_failure_synthesis.json`.
+  It required a twenty-first distinct thesis outside all twenty failed
+  families, new structured references, and no parameter-only retry.
+- [x] Added a twenty-first supported thesis family,
+  `mark_price_dislocation_reclaim`, for a same-instrument perpetual
+  fair-value dislocation mechanism using local 4h mark-price candles. Code
+  changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `freqtrade_ext\bot_factory\data_quality.py`,
+  `freqtrade_ext\bot_factory\candidate_evaluation.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`,
+  `scripts\bot_factory_check_mark_price.py`,
+  `scripts\bot_factory_evaluate_candidate.py`, and
+  `tests\test_bot_factory.py`.
+- [x] Added structured references tied to thesis
+  `THESIS-MARK-PRICE-DISLOCATION-20260506T161500Z`:
+  `registry\strategies\proposals\20260507T011500JST_LongOnlyMarkPriceDislocationCandidate.bybit_mark_price_reference.json`,
+  `registry\strategies\proposals\20260507T011500JST_LongOnlyMarkPriceDislocationCandidate.bitcoin_futures_price_discovery_reference.json`,
+  and
+  `registry\strategies\proposals\20260507T011500JST_LongOnlyMarkPriceDislocationCandidate.futures_price_discovery_reference.json`.
+- [x] Focused implementation verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\data_quality.py scripts\bot_factory_check_mark_price.py tests\test_bot_factory.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "mark_price or mark_price_dislocation_reclaim"
+  ```
+
+  Results: compile passed; focused pytest passed with 3 tests and the existing
+  pandas fragmentation warnings in signal diagnostics.
+- [x] Generated accepted novelty-gated proposal with the twenty-family
+  synthesis supplied. An initial full-field proposal was blocked because the
+  risk text included scanner-triggering `can_short` wording; the corrected
+  long-only wording was accepted:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlyMarkPriceDislocationCandidate --strategy-type mark_price_dislocation_reclaim --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --summary "Long-only BTC perpetual fair-value dislocation reclaim using local 4h mark-price candles as the fair-value anchor." --hypothesis "A long-only BTC 5m strategy using local 4h mark-price candles should enter only during last-vs-mark discounts that are reclaiming with participation and range controls, then exit when fair value is reclaimed or the mark gap deteriorates." --market-condition "BTC/USDT:USDT 5m futures candles during January 2025 with local 4h mark-price candles available; no live data and no exchange order endpoints." --entry-logic "Require last price below mark-price fair value by a material discount, positive gap delta showing reclaim, intact mark-price support, non-extreme discount, close above rolling midpoint, controlled range, and participation floor." --exit-logic "Exit when fair value is reclaimed, the last-vs-mark gap deteriorates, midpoint resilience is lost, RSI reaches the exit threshold, or timeout occurs." --risk-logic "Long exposure only, leverage fixed at 1.0, fixed stoploss, ROI and timeout exits, and historical evaluation only." --required-data "BTC/USDT:USDT 5m futures OHLCV and BTC/USDT:USDT 4h mark-price candles from local parquet files." --parameters "Fixed theory parameters: 4h mark-price informative merge, mark gap <= -0.006, gap delta > 0, mark trend > -0.005, discount >= -0.035, range budget 1.6x local mean, and volume floor 0.5x local mean." --expected-failure-case "Reject if mark-price data is unavailable, entries are zero or sparse, historical return is negative after costs, walk-forward pass rate is below threshold, or profit depends on one window." --backtest-plan "Run static checks, validate BTC futures and mark-price parquet inputs, then run historical backtest and four-window walk-forward over 20250101-20250201 using checked Bot Factory wrappers only." --rejection-condition "Reject if historical gates or walk-forward gates fail; do not promote from a single positive month or any failed smoke chain." --generator-mode rule_based --thesis-id THESIS-MARK-PRICE-DISLOCATION-20260506T161500Z --thesis-type mark_price_dislocation_reclaim --thesis-statement "BTC perpetual last price dislocations below the 4h mark-price fair-value anchor can offer long-only reclaim entries when the discount is contracting, mark-price support is intact, and the discount is not in an extreme stress tail." --falsification-criteria "Falsified if local mark-price merge works but historical and walk-forward results are negative, zero-trade, or concentrated in one window." --novelty-vs-previous "Distinct from the twenty failed families because it uses same-instrument 4h mark-price fair-value dislocation rather than trend, volatility breakout, pullback, funding, cross-asset, entropy, fractal, semivariance, higher moments, calendar, illiquidity, market beta, or regime-state proxies." --strategy-logic-variant mark_price_dislocation_reclaim --failure-taxonomy-code FAIL_COST_SENSITIVE --failure-taxonomy-code FAIL_REGIME_FRAGILE --research-reference @registry\strategies\proposals\20260507T011500JST_LongOnlyMarkPriceDislocationCandidate.bybit_mark_price_reference.json --research-reference @registry\strategies\proposals\20260507T011500JST_LongOnlyMarkPriceDislocationCandidate.bitcoin_futures_price_discovery_reference.json --research-reference @registry\strategies\proposals\20260507T011500JST_LongOnlyMarkPriceDislocationCandidate.futures_price_discovery_reference.json --failure-synthesis-json registry\strategies\synthesis\20260507T003501JST_twenty_family_failure_synthesis_with_regime_state_reentry\candidate_failure_synthesis.json --risk-policy long_only_leverage_1 --reviewer-note "Twenty prior distinct families failed; this proposal uses local 4h mark-price side data and a fair-value dislocation mechanism instead of AI parameter optimization." --created-at 2026-05-06T16:15:00+00:00
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `generator_mode=rule_based`,
+  `strategy_logic_variant=mark_price_dislocation_reclaim`,
+  `thesis_id=THESIS-MARK-PRICE-DISLOCATION-20260506T161500Z`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T161500Z_LongOnlyMarkPriceDislocationCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T161500Z_LongOnlyMarkPriceDislocationCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T161500Z_LongOnlyMarkPriceDislocationCandidate.metadata.json --candidate-id 20260507T011500JST_mark_price_dislocation_smoke --created-at 2026-05-06T16:15:00+00:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_smoke\LongOnlyMarkPriceDislocationCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_smoke
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_mark_price.py user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --timeframe 4h
+  ```
+
+  Results: code generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-folder
+  static check `ok=true`, report
+  `registry\strategies\checks\20260506T160916Z_static_check.json`; BTC 5m
+  OHLCV quality check `ok=true`, `rows=8995`, report
+  `registry\strategies\checks\20260506T160912Z_ohlcv_quality.json`; generic
+  OHLCV validation on the 4h mark parquet correctly failed because mark-price
+  candles have null volume, so `scripts\bot_factory_check_mark_price.py` was
+  added and the mark-price quality check passed with `ok=true`, `rows=997`,
+  no duplicate timestamps, and no missing intervals, report
+  `registry\strategies\checks\20260506T161141Z_mark_price_quality.json`.
+- [x] Ran historical-only backtest, signal diagnostics, and walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyMarkPriceDislocationCandidate --strategy-path registry\strategies\generated\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_smoke --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260507T011500JST_mark_price_dislocation_smoke_exec_historical
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_smoke\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --timerange 20250101-20250201 --diagnostics-id 20260507T011500JST_mark_price_dislocation_signal_diagnostics --reviewer-note "Historical mark-price dislocation backtest was negative; diagnostics record fair-value dislocation/reclaim bottlenecks before ranking."
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyMarkPriceDislocationCandidate --strategy-path registry\strategies\generated\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_smoke --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260507T011500JST_mark_price_dislocation_rule_walk_forward --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --min-pass-rate 0.75 --min-profitable-windows-ratio 0.75 --reviewer-note "Mark-price dislocation reclaim rule-based walk-forward using local BTC historical OHLCV and 4h mark-price data only."
+  ```
+
+  Results: historical backtest failed gates with `trade_count=51`,
+  `total_return_pct=-0.901716537`,
+  `profit_factor=0.3544814788243831`,
+  `max_drawdown_pct=0.9360849296512312`, and
+  `sortino=-19.437942829690122`. Exported trades confirmed long-only
+  constraints with `is_short=false` and `leverage=1.0`. Signal diagnostics
+  completed with mark-price informative merge `matched_row_count=8881`,
+  `entry_count=95`, `zero_entry_signal=false`, rarest component
+  `mark_discount_pressure`, and top bottleneck `mark_discount_pressure`.
+  Walk-forward completed 4/4 windows but failed with `recommendation=fail`,
+  `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=-0.9017165370000001`; window 1 was zero-trade and windows
+  2-4 were negative. Artifacts:
+  `data\backtests\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_smoke\20260507T011500JST_mark_price_dislocation_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the candidate manifest. The command exited `1` because the
+  candidate recommendation is `retry` while gates failed; local artifacts were
+  still written under
+  `registry\strategies\candidates\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_smoke\`.
+- [x] Ranked all twenty-one real smoke families. Intermediate rankings
+  `20260507T011501JST_twenty_one_family_with_mark_price_dislocation_ranking`
+  and
+  `20260507T011502JST_twenty_one_family_with_mark_price_dislocation_ranking`
+  accidentally ranked only the new manifest and are superseded by:
+  `registry\strategies\candidates\rankings\20260507T011503JST_twenty_one_family_with_mark_price_dislocation_ranking\candidate_ranking.json`.
+  Corrected ranking result: `candidate_count=21`,
+  `best_candidate_id=20260506T200000JST_hybrid_ml_freqai_timerange_smoke`,
+  and `paper_ready_candidate_ids=[]`. The mark-price candidate ranked 11th,
+  recommendation `retry`.
+- [x] Regenerated failure synthesis across all twenty-one families:
+
+  Result: `status=completed`, `candidate_count=21`, `paper_ready_count=0`,
+  `zero_trade_count=4`, `negative_return_count=14`,
+  `walk_forward_failed_count=21`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `mark_price_dislocation_reclaim`. Preferred artifacts:
+  `registry\strategies\synthesis\20260507T011503JST_twenty_one_family_failure_synthesis_with_mark_price_dislocation\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Updated
+  `docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` so the next
+  agent starts from the twenty-one-family ranking/synthesis, treats
+  `mark_price_dislocation_reclaim` as a failed family to avoid repeating by
+  default, and targets a twenty-second distinct thesis.
+- [x] Ran final verification for this mark-price dislocation increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py freqtrade_ext\bot_factory\freqai_prediction_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_generate_strategy_code.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_check_mark_price.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_iterate_candidate.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_synthesize_candidate_failures.py scripts\bot_factory_diagnose_freqai_predictions.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyMarkPriceDislocationCandidate\20260507T011500JST_mark_price_dislocation_smoke\LongOnlyMarkPriceDislocationCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_mark_price.py user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --timeframe 4h
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_funding_rate.py user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --timeframe 8h
+  git diff --check
+  ```
+
+  Results: compile passed; full `tests\test_bot_factory.py` passed with 146
+  tests and the existing pandas fragmentation warning in signal diagnostics;
+  static check returned `ok=true` with existing warning-only findings in
+  `user_data\strategies`; mark-price quality check returned `ok=true`,
+  `rows=997`, no duplicate timestamps, and no missing intervals; FreqAI
+  dependency check returned `ok=true`; funding-rate quality check returned
+  `ok=true`, `rows=197`, no duplicate timestamps, and no missing intervals.
+  New verification artifacts:
+  `registry\strategies\checks\20260506T162204Z_static_check.json`,
+  `registry\strategies\checks\20260506T162208Z_mark_price_quality.json`,
+  `registry\strategies\checks\20260506T162205Z_freqai_env.json`, and
+  `registry\strategies\checks\20260506T162210Z_funding_rate_quality.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: the mark-price dislocation reclaim thesis passed
+  novelty gating and was code-generated/evaluated, but it is negative, has no
+  profitable walk-forward windows, is not paper-ready, and is not promotable.
+  The latest synthesis now requires a twenty-second distinct thesis outside
+  all twenty-one failed families, with at least two structured research
+  references. This increment did not start paper trading, dry-run trading, live
+  trading, venue execution, exchange order endpoints, leverage above `1.0`,
+  shorting, promotion, or process control.
+
+Follow-up on 2026-05-07 JST for microstructure spread-reversion thesis family
+and direction correction.
+
+- [x] Started from the twenty-one-family failure synthesis:
+  `registry\strategies\synthesis\20260507T011503JST_twenty_one_family_failure_synthesis_with_mark_price_dislocation\candidate_failure_synthesis.json`.
+  It required a twenty-second distinct thesis outside all twenty-one failed
+  families, new structured references, and no parameter-only retry.
+- [x] Added a twenty-second supported thesis family,
+  `microstructure_spread_reversion`, for an OHLCV-derived microstructure
+  spread-compression mechanism. Code changes:
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+  `scripts\bot_factory_generate_strategy_proposal.py`, and
+  `tests\test_bot_factory.py`.
+- [x] Added structured references tied to thesis
+  `THESIS-MICROSTRUCTURE-SPREAD-20260506T163000Z`:
+  `registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.roll_spread_reference.json`,
+  `registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.corwin_schultz_reference.json`,
+  and
+  `registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.crypto_liquidity_measure_reference.json`.
+- [x] Focused implementation verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k microstructure
+  ```
+
+  Results: compile passed; focused pytest passed with 2 tests and the existing
+  pandas fragmentation warnings in signal diagnostics.
+- [x] Generated accepted novelty-gated proposal with the twenty-one-family
+  synthesis supplied:
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `generator_mode=rule_based`,
+  `strategy_logic_variant=microstructure_spread_reversion`,
+  `thesis_id=THESIS-MICROSTRUCTURE-SPREAD-20260506T163000Z`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T163000Z_LongOnlyMicrostructureSpreadCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T163000Z_LongOnlyMicrostructureSpreadCandidate.metadata.json`.
+- [x] Generated strategy code and ran pre-backtest checks:
+
+  Results: code generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`; generated strategy compile passed; generated-folder
+  static check `ok=true`, report
+  `registry\strategies\checks\20260506T163335Z_static_check.json`; BTC 5m
+  OHLCV quality check `ok=true`, `rows=8995`, report
+  `registry\strategies\checks\20260506T163332Z_ohlcv_quality.json`.
+- [x] Ran historical-only backtest, signal diagnostics, and walk-forward:
+
+  Results: historical backtest failed gates with `trade_count=162`,
+  `total_return_pct=-2.046597466`, `profit_factor=0.160493071193835`,
+  `max_drawdown_pct=2.046597466000003`, and
+  `sortino=-57.31247274157497`. Exported trades confirmed long-only
+  constraints with `is_short=false` and `leverage=1.0`. Signal diagnostics
+  completed with `entry_count=248`, `zero_entry_signal=false`,
+  `diagnosis_codes=[]`, rarest component `spread_compressing`, and top
+  bottleneck `spread_compressing`. Walk-forward completed 4/4 windows but
+  failed with `recommendation=fail`, `pass_rate=0.0`,
+  `profitable_windows_ratio=0.0`, `total_return_pct=-2.046597466`, and all
+  four windows negative. Artifacts:
+  `data\backtests\LongOnlyMicrostructureSpreadCandidate\20260507T013000JST_microstructure_spread_smoke_exec_historical\metrics.json`,
+  `registry\strategies\diagnostics\LongOnlyMicrostructureSpreadCandidate\20260507T013000JST_microstructure_spread_smoke\20260507T013000JST_microstructure_spread_signal_diagnostics\signal_diagnostics.json`,
+  and
+  `data\walk_forward\LongOnlyMicrostructureSpreadCandidate\20260507T013000JST_microstructure_spread_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the candidate manifest. The command exited `1` because the
+  candidate recommendation is `retry` while gates failed; local artifacts were
+  still written under
+  `registry\strategies\candidates\LongOnlyMicrostructureSpreadCandidate\20260507T013000JST_microstructure_spread_smoke\`.
+- [x] Ranked all twenty-two real smoke families:
+  `registry\strategies\candidates\rankings\20260507T013001JST_twenty_two_family_with_microstructure_spread_ranking\candidate_ranking.json`.
+  Result: `candidate_count=22`,
+  `best_candidate_id=20260506T200000JST_hybrid_ml_freqai_timerange_smoke`,
+  and `paper_ready_candidate_ids=[]`.
+- [x] Regenerated failure synthesis across all twenty-two families:
+
+  Result: `status=completed`, `candidate_count=22`, `paper_ready_count=0`,
+  `zero_trade_count=4`, `negative_return_count=15`,
+  `walk_forward_failed_count=22`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `paper_or_live_promotion_allowed=false`. Failed families now include
+  `microstructure_spread_reversion`. Preferred artifacts:
+  `registry\strategies\synthesis\20260507T013001JST_twenty_two_family_failure_synthesis_with_microstructure_spread\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Added `docs\BOT_FACTORY_GOAL_AUDIT.md` and updated
+  `docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` with the
+  direction correction: do not add a twenty-third strategy family as the next
+  default action. The next high-leverage increment should be a research
+  selection gate that consumes the twenty-two-family synthesis and decides
+  whether a theory is worth coding before generator extension.
+- [x] Ran final verification for this microstructure spread and direction
+  correction increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py registry\strategies\generated\LongOnlyMicrostructureSpreadCandidate\20260507T013000JST_microstructure_spread_smoke\LongOnlyMicrostructureSpreadCandidate.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; full `tests\test_bot_factory.py` passed with 148
+  tests and the existing pandas fragmentation warning in signal diagnostics;
+  static check returned `ok=true` with existing warning-only findings in
+  `user_data\strategies`; BTC 5m OHLCV quality check returned `ok=true`,
+  `rows=8995`, no duplicate timestamps, and no missing intervals; FreqAI
+  dependency check returned `ok=true`. New verification artifacts:
+  `registry\strategies\checks\20260506T164523Z_static_check.json`,
+  `registry\strategies\checks\20260506T164524Z_ohlcv_quality.json`, and
+  `registry\strategies\checks\20260506T164524Z_freqai_env.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation and direction correction: the microstructure
+  spread-reversion thesis passed novelty gating and was code-generated and
+  evaluated, but it is negative, fails all walk-forward windows, is not
+  paper-ready, and is not promotable. The latest synthesis now requires a new
+  thesis ID and structured references if another candidate is ever attempted,
+  but the next default action should not be candidate number twenty-three.
+  Implement a research selection gate first, as recorded in
+  `docs\BOT_FACTORY_GOAL_AUDIT.md`. This increment did not start paper
+  trading, dry-run trading, live trading, venue execution, exchange order
+  endpoints, leverage above `1.0`, shorting, promotion, or process control.
+
+Follow-up on 2026-05-07 JST for the research selection gate direction
+correction.
+
+- [x] Added a pre-proposal research selection gate:
+  `freqtrade_ext\bot_factory\research_selection.py` and
+  `scripts\bot_factory_select_research_thesis.py`. The gate consumes a local
+  candidate failure synthesis plus a proposed thesis, mechanism class,
+  novelty rationale, required data, local falsification paths, edge rationale,
+  cost exposure, stop conditions, and structured research references. It writes
+  `research_decision.json` and `research_decision_report.md` only; it does not
+  generate strategy code, run backtests, start paper/dry-run/live trading, call
+  exchange order endpoints, promote candidates, or manage bot processes.
+- [x] Gate decisions now explicitly expose
+  `proposal_generation_allowed`, `code_generation_allowed`,
+  `code_generation_permission`, blockers, deferrals, novelty matches against
+  failed families, failed thesis ID matches, and a historical-only safety
+  scope.
+- [x] Added focused tests in `tests\test_bot_factory.py` covering:
+  distinct local-falsifiable thesis approval, repeated failed-family blocking,
+  and stale research-reference thesis mapping blocking.
+- [x] Focused verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k research_selection
+  ```
+
+  Results: compile passed; focused pytest passed with 3 tests.
+- [x] Ran a real local gate smoke against the latest twenty-two-family
+  synthesis to prove repeated failed families stop before proposal generation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py --failure-synthesis-json registry\strategies\synthesis\20260507T013001JST_twenty_two_family_failure_synthesis_with_microstructure_spread\candidate_failure_synthesis.json --thesis-id THESIS-MICROSTRUCTURE-SPREAD-20260506T163000Z --thesis-family microstructure_spread_reversion --mechanism-class roll_spread_reversion --thesis-statement "Repeat check for the failed microstructure spread-reversion thesis after the twenty-two-family synthesis." --mechanism-summary "Closed-candle OHLCV spread proxies were already evaluated and failed all walk-forward windows." --novelty-rationale "No novelty is claimed; this smoke run proves the research selection gate blocks repeated failed families before proposal generation." --required-data "Local BTC/USDT futures 5m closed-candle OHLCV" --local-data-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --edge-rationale "No new edge source beyond the failed spread-compression thesis is supplied." --transaction-cost-exposure "Fee and slippage drag remain material because the prior candidate traded frequently and all windows were negative." --falsification-plan "Use local historical closed-candle OHLCV and the latest failure synthesis to reject repeat attempts before proposal generation." --stop-condition "Block if the thesis_id appears in failed_thesis_ids." --stop-condition "Block if the family appears in prior_hypothesis_families_to_avoid_as_default." --stop-condition "Block if no new structured research motivation is supplied." --research-reference @registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.roll_spread_reference.json --research-reference @registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.corwin_schultz_reference.json --research-reference @registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.crypto_liquidity_measure_reference.json --decision-id 20260507T020000JST_repeat_microstructure_research_gate_block --created-at 2026-05-06T17:00:00+00:00 --reviewer-note "Expected blocked research-selection smoke for direction correction."
+  ```
+
+  Result: expected exit code `1`, `status=blocked`,
+  `proposal_generation_allowed=false`, `code_generation_allowed=false`,
+  `blocker_count=2`, and `deferral_count=0`. The blockers were
+  `thesis_id_outside_failed_thesis_ids` and
+  `thesis_family_outside_failed_families`. Artifacts:
+  `registry\strategies\research_decisions\20260507T020000JST_repeat_microstructure_research_gate_block\research_decision.json`
+  and `research_decision_report.md`.
+- [x] Ran final verification for the research selection gate increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; full `tests\test_bot_factory.py` passed with 151
+  tests and the existing pandas fragmentation warnings in signal diagnostics;
+  static check returned `ok=true` with existing warning-only findings in
+  `user_data\strategies`; BTC 5m OHLCV quality check returned `ok=true`,
+  `rows=8995`, no duplicate timestamps, and no missing intervals; FreqAI
+  dependency check returned `ok=true`. New verification artifacts:
+  `registry\strategies\checks\20260506T170040Z_static_check.json`,
+  `registry\strategies\checks\20260506T170040Z_ohlcv_quality.json`, and
+  `registry\strategies\checks\20260506T170041Z_freqai_env.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: this gate improves direction control and prevents
+  repeated weak theory/code generation, but profitability is still not
+  achieved. The next candidate should only be generated after a distinct thesis
+  receives `status=approved_for_proposal_generation` from this gate and then
+  passes the existing proposal/code-generation/evaluation gates. This increment
+  did not start paper trading, dry-run trading, live trading, venue execution,
+  exchange order endpoints, leverage above `1.0`, shorting, promotion, or
+  process control.
+
+Follow-up on 2026-05-07 JST for proposal-generator enforcement of research
+decisions.
+
+- [x] Connected research selection decisions to proposal generation:
+  `scripts\bot_factory_generate_strategy_proposal.py` now accepts
+  `--research-decision-json`, maps it into local evidence with label
+  `research_decision`, and
+  `freqtrade_ext\bot_factory\strategy_proposals.py` records
+  `research_decision_constraints`.
+- [x] Proposal generation now blocks when a supplied failure synthesis requires
+  a new thesis/research references but no research decision is supplied. When
+  a `research_decision.json` is supplied, it must be from
+  `factory=research_selection_gate`, have
+  `status=approved_for_proposal_generation`,
+  `proposal_generation_allowed=true`, match the proposal `thesis_id`, keep
+  `code_generation_allowed=false`, preserve historical-only safety scope, and
+  include references that motivate the current thesis.
+- [x] Added/updated focused tests in `tests\test_bot_factory.py` covering:
+  accepted distinct synthesis thesis with approved research decision, blocked
+  missing research decision after synthesis, blocked unapproved research
+  decision, and CLI evidence mapping for `--research-decision-json`.
+- [x] Focused verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_proposal_generator or strategy_proposal_cli or research_selection"
+  ```
+
+  Results: compile passed; focused pytest passed with 15 tests.
+- [x] Ran a real local proposal-generator enforcement smoke with the latest
+  blocked research decision:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name ResearchDecisionBlockedMicrostructureRepeatCandidate --strategy-type microstructure_spread --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --summary "Blocked repeat proposal smoke for the failed microstructure spread thesis." --hypothesis "Closed-candle spread compression was already tested and remains rejected by the research decision gate." --market-condition "Local BTC/USDT futures 5m historical closed-candle OHLCV only." --entry-logic "Do not proceed to implementation because the research decision is blocked." --exit-logic "No implementation path is allowed from this blocked proposal smoke." --risk-logic "Long-only scope with leverage 1.0 and no shorting." --required-data "Local BTC/USDT futures 5m closed-candle OHLCV" --parameters "No parameter search is allowed for this blocked repeat." --expected-failure-case "Repeat of failed microstructure spread family remains rejected." --backtest-plan "If ever approved, run static checks, OHLCV quality check, historical backtest, and walk-forward validation before any candidate evaluation." --rejection-condition "Reject when research_decision.json is blocked." --rejection-condition "Reject when failure synthesis reports the thesis_id or family as failed." --thesis-id THESIS-MICROSTRUCTURE-SPREAD-20260506T163000Z --thesis-type microstructure_spread_reversion --thesis-statement "Repeat check for the failed microstructure spread-reversion thesis after the twenty-two-family synthesis." --falsification-criteria "Rejected by the latest local research decision before proposal acceptance." --novelty-vs-previous "No novelty; this smoke verifies proposal generator enforcement of research decisions." --strategy-logic-variant microstructure_spread_reversion --research-reference @registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.roll_spread_reference.json --research-reference @registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.corwin_schultz_reference.json --research-reference @registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.crypto_liquidity_measure_reference.json --failure-synthesis-json registry\strategies\synthesis\20260507T013001JST_twenty_two_family_failure_synthesis_with_microstructure_spread\candidate_failure_synthesis.json --research-decision-json registry\strategies\research_decisions\20260507T020000JST_repeat_microstructure_research_gate_block\research_decision.json --created-at 2026-05-06T17:10:00+00:00 --created-by-agent codex --reviewer-note "Expected blocked proposal smoke for research-decision enforcement."
+  ```
+
+  Result: expected exit code `1`, `status=blocked`,
+  `code_generation_eligible=false`, `strategy_logic_variant=microstructure_spread_reversion`,
+  and `research_reference_count=3`. The metadata records
+  `research_decision_constraints[0].status=blocked`,
+  `proposal_generation_allowed=false`, `code_generation_allowed=false`, and
+  blocker `research_decision_1_approved_for_proposal_generation`. Artifacts:
+  `registry\strategies\proposals\20260506T171000Z_ResearchDecisionBlockedMicrostructureRepeatCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T171000Z_ResearchDecisionBlockedMicrostructureRepeatCandidate.metadata.json`.
+- [x] Ran final verification for the proposal-generator research-decision
+  enforcement increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; full `tests\test_bot_factory.py` passed with 153
+  tests and the existing pandas fragmentation warnings in signal diagnostics;
+  static check returned `ok=true` with existing warning-only findings in
+  `user_data\strategies`; BTC 5m OHLCV quality check returned `ok=true`,
+  `rows=8995`, no duplicate timestamps, and no missing intervals; FreqAI
+  dependency check returned `ok=true`. New verification artifacts:
+  `registry\strategies\checks\20260506T170801Z_static_check.json`,
+  `registry\strategies\checks\20260506T170802Z_ohlcv_quality.json`, and
+  `registry\strategies\checks\20260506T170802Z_freqai_env.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: proposal enforcement prevents bypassing the new
+  research gate, but profitability is still unachieved. The next useful step
+  is to supply a genuinely distinct thesis to the research selection gate or
+  improve the failure-synthesis/selection scoring if no thesis can pass. This
+  increment did not generate strategy code, run backtests, start paper trading,
+  start dry-run/live trading, call exchange order endpoints, use leverage above
+  `1.0`, short, promote, or manage bot processes.
+
+Follow-up on 2026-05-07 JST for causal failure mapping.
+
+- [x] Added a cross-candidate causal failure map builder:
+  `freqtrade_ext\bot_factory\candidate_failure_map.py` and
+  `scripts\bot_factory_build_causal_failure_map.py`. It consumes an existing
+  local `candidate_failure_synthesis.json` and writes
+  `causal_failure_map.json` plus `causal_failure_map_report.md`; it does not
+  generate strategy code, run backtests, start paper/dry-run/live trading, call
+  exchange order endpoints, promote candidates, or manage bot processes.
+- [x] The map classifies candidate failures into causal categories such as
+  `zero_trade_or_signal_sparsity`, `entry_exists_negative_edge`,
+  `walk_forward_fragility`, `no_profitable_walk_forward_windows`,
+  `cost_sensitive_mechanism`, `regime_fragile_mechanism`,
+  `overfit_or_window_dependency`, `ml_rule_alignment_failure`,
+  `training_or_artifact_gap`, and `thesis_rejected_after_entries`. It also
+  emits research-selection guidance with required questions and blocked next
+  actions.
+- [x] Added focused tests in `tests\test_bot_factory.py` covering causal
+  category assignment, research-selection guidance, report writing, and
+  workspace path safety.
+- [x] Focused verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_failure_map.py scripts\bot_factory_build_causal_failure_map.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k candidate_failure_map
+  ```
+
+  Results: compile passed; focused pytest passed with 2 tests.
+- [x] Built a real causal failure map from the latest twenty-two-family
+  synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T013001JST_twenty_two_family_failure_synthesis_with_microstructure_spread\candidate_failure_synthesis.json --map-id 20260507T021500JST_twenty_two_family_causal_failure_map --reviewer-note "Causal failure map for twenty-two failed Bot Factory families before selecting any twenty-third thesis."
+  ```
+
+  Result: `status=completed`, `candidate_count=22`, `category_count=10`, and
+  `requires_research_decision_before_proposal=true`. Dominant categories:
+  `regime_fragile_mechanism=22`, `walk_forward_fragility=22`,
+  `cost_sensitive_mechanism=21`, `no_profitable_walk_forward_windows=16`, and
+  `entry_exists_negative_edge=15`. Additional key counts:
+  `zero_trade_or_signal_sparsity=4`, `ml_rule_alignment_failure=1`, and
+  `training_or_artifact_gap=1`. Artifacts:
+  `registry\strategies\failure_maps\20260507T021500JST_twenty_two_family_causal_failure_map\causal_failure_map.json`
+  and `causal_failure_map_report.md`.
+- [x] Ran final verification for the causal failure map increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_failure_map.py scripts\bot_factory_build_causal_failure_map.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: compile passed; full `tests\test_bot_factory.py` passed with 155
+  tests and the existing pandas fragmentation warnings in signal diagnostics;
+  static check returned `ok=true` with existing warning-only findings in
+  `user_data\strategies`; BTC 5m OHLCV quality check returned `ok=true`,
+  `rows=8995`, no duplicate timestamps, and no missing intervals; FreqAI
+  dependency check returned `ok=true`. New verification artifacts:
+  `registry\strategies\checks\20260506T171546Z_static_check.json`,
+  `registry\strategies\checks\20260506T171547Z_ohlcv_quality.json`, and
+  `registry\strategies\checks\20260506T171548Z_freqai_env.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: the causal map improves the negative knowledge
+  base for theory selection, but profitability is still unachieved. The next
+  thesis must answer the map's required research questions, especially why a
+  proposed mechanism should beat fees/slippage and survive walk-forward
+  regimes, before proposal generation is allowed. This increment did not
+  generate strategy code, run backtests, start paper trading, start
+  dry-run/live trading, call exchange order endpoints, use leverage above
+  `1.0`, short, promote, or manage bot processes.
+
+Follow-up on 2026-05-07 JST for causal failure map enforcement in research
+selection.
+
+- [x] Connected the causal failure map to the pre-proposal research selection
+  gate. `ResearchSelectionInputs` now accepts `causal_failure_map_path` and
+  repeated `causal_failure_responses`; `scripts\bot_factory_select_research_thesis.py`
+  now accepts `--causal-failure-map-json` and repeated
+  `--causal-failure-response "CATEGORY=RATIONALE"` inputs.
+- [x] When a causal map is supplied, the gate now blocks thesis selection if
+  the map is missing, unparseable, not from `candidate_failure_map`, not
+  `status=completed`, built from a different failure synthesis, missing
+  research-selection guidance, or missing responses to the top three dominant
+  failure categories. For the latest map those required categories are
+  `regime_fragile_mechanism`, `walk_forward_fragility`, and
+  `cost_sensitive_mechanism`.
+- [x] The research decision output now records `causal_failure_map`,
+  `causal_failure_responses`, required categories, response categories, and
+  missing response categories. The Markdown report includes a `Causal Failure
+  Map` section when a map is supplied.
+- [x] Added focused tests in `tests\test_bot_factory.py` covering a passing
+  causal-map response set, missing responses, and mismatched map/synthesis
+  identity.
+- [x] Focused verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection"
+  ```
+
+  Results: compile passed; focused pytest passed with 6 tests.
+- [x] Re-ran the repeated microstructure thesis through the research selection
+  gate using the latest twenty-two-family synthesis and causal failure map:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py --failure-synthesis-json registry\strategies\synthesis\20260507T013001JST_twenty_two_family_failure_synthesis_with_microstructure_spread\candidate_failure_synthesis.json --causal-failure-map-json registry\strategies\failure_maps\20260507T021500JST_twenty_two_family_causal_failure_map\causal_failure_map.json --causal-failure-response "regime_fragile_mechanism=Repeated spread thesis has no new regime segmentation beyond the failed walk-forward evidence." --causal-failure-response "walk_forward_fragility=Latest walk-forward evidence has zero passing windows, so this repeat remains rejected before proposal generation." --causal-failure-response "cost_sensitive_mechanism=Prior frequent entries were negative after costs; no new cost edge is supplied." --thesis-id THESIS-MICROSTRUCTURE-SPREAD-20260506T163000Z --thesis-family microstructure_spread_reversion --mechanism-class roll_spread_reversion --thesis-statement "Repeat check for a microstructure spread reversion thesis after the latest failed spread family evidence." --mechanism-summary "Closed-candle Roll and high-low spread proxies are compared against local BTC futures returns, but this repeat supplies no new family-level mechanism." --novelty-rationale "This is intentionally expected to be blocked because it repeats the failed microstructure spread reversion family." --required-data "Local BTC/USDT futures 5m closed-candle OHLCV" --local-data-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --edge-rationale "Any expected edge would need spread compression to overcome fee and turnover costs, but no new evidence is supplied here." --transaction-cost-exposure "Spread reversion can be cost-sensitive when entries are frequent; reject if costs dominate historical splits." --falsification-plan "Use local historical closed-candle OHLCV and walk-forward splits; reject if the family remains negative or has no profitable windows." --stop-condition "Block proposal generation when the thesis family repeats failed synthesis families." --stop-condition "Block proposal generation without causal responses to dominant failure categories." --stop-condition "Reject before code generation if walk-forward evidence remains negative after costs." --research-reference "@registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.roll_spread_reference.json" --research-reference "@registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.corwin_schultz_reference.json" --research-reference "@registry\strategies\proposals\20260507T013000JST_LongOnlyMicrostructureSpreadCandidate.crypto_liquidity_measure_reference.json" --decision-id 20260507T022000JST_repeat_microstructure_research_gate_block_with_causal_map --created-at 2026-05-06T17:20:00+00:00
+  ```
+
+  Result: expected exit code `1`, `status=blocked`,
+  `proposal_generation_allowed=false`, `code_generation_allowed=false`,
+  `blocker_count=2`, and `deferral_count=0`. The causal map checks passed:
+  `causal_failure_map_matches_failure_synthesis=pass` and
+  `causal_failure_responses_cover_required_categories=pass` with
+  `missing_response_categories=[]`. The remaining blockers were
+  `thesis_id_outside_failed_thesis_ids` and
+  `thesis_family_outside_failed_families`. Artifacts:
+  `registry\strategies\research_decisions\20260507T022000JST_repeat_microstructure_research_gate_block_with_causal_map\research_decision.json`
+  and `research_decision_report.md`.
+- [x] Ran broad verification for the causal-map-enforced research selection
+  increment:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: full `tests\test_bot_factory.py` passed with 158 tests and the
+  existing pandas fragmentation warnings in signal diagnostics; static check
+  returned `ok=true` with existing warning-only findings in
+  `user_data\strategies`; BTC 5m OHLCV quality check returned `ok=true`,
+  `rows=8995`, no duplicate timestamps, and no missing intervals; FreqAI
+  dependency check returned `ok=true`. New verification artifacts:
+  `registry\strategies\checks\20260506T172551Z_static_check.json`,
+  `registry\strategies\checks\20260506T172551Z_ohlcv_quality.json`, and
+  `registry\strategies\checks\20260506T172552Z_freqai_env.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: this closes the drift loop for repeated candidate
+  generation, but it does not prove profitability. The next thesis must pass
+  the research selection gate with a new thesis ID, a distinct family outside
+  the failed set, structured references, local falsification data, and explicit
+  responses to the causal failure map before proposal generation is allowed.
+  This increment did not generate strategy code, run backtests, start paper
+  trading, start dry-run/live trading, call exchange order endpoints, use
+  leverage above `1.0`, short, promote, or manage bot processes.
+
+Follow-up on 2026-05-07 JST for causal failure response quality gating.
+
+- [x] Hardened the research selection gate so causal failure responses cannot
+  be placeholder text or parameter-only tuning claims. When a causal map is
+  supplied, each required dominant category response now records word count,
+  category-specific missing evidence groups, and whether it relies only on
+  parameter/threshold tuning.
+- [x] Added blocker checks:
+  `causal_failure_responses_are_substantive`,
+  `causal_failure_responses_address_category_evidence`, and
+  `causal_failure_responses_not_parameter_only`. For the current top three
+  categories the gate requires regime/state evidence for
+  `regime_fragile_mechanism`, walk-forward/window evidence for
+  `walk_forward_fragility`, and cost/edge evidence for
+  `cost_sensitive_mechanism`.
+- [x] The research decision output and Markdown report now include
+  `weak_response_categories`, `category_evidence_gaps`,
+  `parameter_only_response_categories`, and `response_quality_by_category` for
+  causal map inputs.
+- [x] Added focused tests in `tests\test_bot_factory.py` proving that thin
+  causal responses and parameter-only response text are blocked before
+  proposal generation.
+- [x] Focused verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection"
+  ```
+
+  Results: compile passed; focused pytest passed with 8 tests.
+- [x] Re-generated the latest repeated-microstructure research decision with
+  the new quality checks:
+  `registry\strategies\research_decisions\20260507T022000JST_repeat_microstructure_research_gate_block_with_causal_map\research_decision.json`.
+  Result: expected exit code `1`, `status=blocked`, `blocker_count=2`,
+  `deferral_count=0`. New causal response quality checks passed:
+  `weak_response_categories=[]`, `category_evidence_gaps=[]`,
+  `parameter_only_response_categories=[]`, and the three new quality checks
+  had `status=pass`. The remaining blockers are still the repeated failed
+  thesis ID and failed family.
+- [x] Ran broad verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: full `tests\test_bot_factory.py` passed with 160 tests and the
+  existing pandas fragmentation warnings in signal diagnostics; static check
+  returned `ok=true` with existing warning-only findings in
+  `user_data\strategies`; BTC 5m OHLCV quality check returned `ok=true`,
+  `rows=8995`, no duplicate timestamps, and no missing intervals; FreqAI
+  dependency check returned `ok=true`. New verification artifacts:
+  `registry\strategies\checks\20260506T173356Z_static_check.json`,
+  `registry\strategies\checks\20260506T173356Z_ohlcv_quality.json`, and
+  `registry\strategies\checks\20260506T173357Z_freqai_env.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: this is still a deterministic quality gate, not
+  proof of profitable theory selection. It reduces low-value AI drift by
+  blocking thin or parameter-only causal answers before proposal generation,
+  but the next accepted thesis still needs independent evidence and profitable
+  historical/walk-forward results. This increment did not generate strategy
+  code, run backtests, start paper trading, start dry-run/live trading, call
+  exchange order endpoints, use leverage above `1.0`, short, promote, or
+  manage bot processes.
+
+Follow-up on 2026-05-07 JST for Bot Factory Git hygiene.
+
+- [x] Reduced Git status noise by classifying Bot Factory runtime outputs as
+  local artifacts instead of normal Git-managed files. Added `.gitignore`
+  coverage for `data\freqai\**`, `data\freqai_training\**`,
+  `data\walk_forward\**`, and generated `registry\strategies\{candidates,
+  diagnostics,failure_maps,generated,proposals,research_decisions,reviews,
+  synthesis}\**` outputs while preserving already tracked seed/template files
+  such as `registry\strategies\proposals\TEMPLATE.md`.
+- [x] Verified the effect with:
+
+  ```powershell
+  git ls-files --others --exclude-standard
+  git status --short --untracked-files=all
+  git clean -ndX data registry/strategies
+  ```
+
+  Result: untracked files visible to Git dropped from the large runtime output
+  set to `scripts=7`, `freqtrade_ext=5`, and `docs=1`. Remaining visible
+  untracked files are implementation/docs artifacts, not bulk backtest,
+  walk-forward, FreqAI, proposal, ranking, synthesis, or diagnostic run
+  outputs. `git clean -ndX data registry/strategies` was dry-run only and
+  showed ignored runtime directories/check JSONs that can be deleted later if
+  local artifact retention is not needed.
+- [x] No generated runtime artifacts were deleted in this cleanup. Local JSON,
+  Markdown, CSV, zip, and log artifacts remain on disk but are no longer
+  default Git candidates.
+
+Follow-up on 2026-05-07 JST for proposal-stage enforcement of causal research
+decisions.
+
+- [x] Hardened the proposal generator so a stale or weak
+  `research_decision.json` cannot bypass the stronger research selection gate.
+  When a supplied failure synthesis requires a research decision,
+  `freqtrade_ext\bot_factory\strategy_proposals.py` now requires the decision
+  to include an available `causal_failure_map`, complete causal responses, and
+  passing causal response quality fields before proposal generation can be
+  accepted.
+- [x] Added proposal-stage blocker checks:
+  `research_decision_1_uses_causal_failure_map`,
+  `research_decision_1_causal_failure_responses_complete`, and
+  `research_decision_1_causal_response_quality_passed`. The metadata
+  `research_decision_constraints` now records whether the causal map was used,
+  required categories, missing response categories, weak response categories,
+  category evidence gaps, and parameter-only response categories.
+- [x] Added focused tests in `tests\test_bot_factory.py` proving that proposal
+  generation blocks an approved-looking research decision when it lacks a
+  causal map or contains weak/parameter-only causal quality fields.
+- [x] Focused verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_proposal_generator"
+  ```
+
+  Results: compile passed; focused pytest passed with 11 tests.
+- [x] Broad verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_freqai_env.py
+  git diff --check
+  ```
+
+  Results: full `tests\test_bot_factory.py` passed with 162 tests and the
+  existing pandas fragmentation warnings in signal diagnostics; static check
+  returned `ok=true` with existing warning-only findings in
+  `user_data\strategies`; BTC 5m OHLCV quality check returned `ok=true`,
+  `rows=8995`, no duplicate timestamps, and no missing intervals; FreqAI
+  dependency check returned `ok=true`. New verification artifacts:
+  `registry\strategies\checks\20260506T174350Z_static_check.json`,
+  `registry\strategies\checks\20260506T174350Z_ohlcv_quality.json`, and
+  `registry\strategies\checks\20260506T174351Z_freqai_env.json`.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: this closes a proposal-stage bypass but still does
+  not prove profitability. It ensures proposal generation cannot proceed from
+  missing, weak, or parameter-only research-gate evidence when failure
+  synthesis requires theory selection. The next accepted proposal still needs
+  independent theory evidence, generated code, historical evaluation,
+  walk-forward robustness, ranking, and failure synthesis before paper
+  readiness can be considered. This increment did not generate strategy code,
+  run backtests, start paper trading, start dry-run/live trading, call
+  exchange order endpoints, use leverage above `1.0`, short, promote, or
+  manage bot processes.
+
+Follow-up on 2026-05-07 JST for parameter-only thesis blocking in research
+selection.
+
+- [x] Hardened the research selection gate against the user's explicit
+  non-goal: AI-assisted parameter optimization. In addition to the existing
+  causal-response quality checks,
+  `freqtrade_ext\bot_factory\research_selection.py` now scans the core thesis
+  fields (`thesis_statement`, `mechanism_summary`, `novelty_rationale`,
+  `edge_rationale`, `falsification_plan`, and `stop_conditions`) and blocks
+  proposal approval when they contain only threshold/lookback/hyperopt/grid
+  search/ROI/stoploss tuning claims without a substantive market mechanism,
+  historical evidence, or falsification path.
+- [x] Research decision JSON and Markdown reports now include a
+  `research_quality` section with `parameter_only_research_allowed=false`,
+  the exact `parameter_only_field_names`, excerpts, and detected parameter
+  terms. This makes the reason for blocking auditable before proposal
+  generation.
+- [x] Added focused regression coverage in `tests\test_bot_factory.py` proving
+  that parameter-only core thesis text is blocked by
+  `research_thesis_not_parameter_only`.
+- [x] Verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused research-selection pytest passed with
+  9 tests; full `tests\test_bot_factory.py` passed with 163 tests and the
+  existing pandas fragmentation warnings in signal diagnostics.
+  `git diff --check` exited `0` with LF-to-CRLF warnings only.
+- [x] Remaining limitation: this prevents parameter-only thesis drift at the
+  research selection gate, but it does not select a profitable theory. The
+  next accepted thesis still needs independent research evidence, causal-map
+  responses, generated strategy code, historical evaluation, walk-forward
+  robustness, ranking, and failure synthesis before paper readiness can be
+  considered. This increment did not generate strategy code, run backtests,
+  start paper trading, start dry-run/live trading, call exchange order
+  endpoints, use leverage above `1.0`, short, promote, or manage bot
+  processes.
+
+Follow-up on 2026-05-07 JST for liquidity recovery horizon research-to-code
+candidate.
+
+- [x] Used the causal-map-enforced research gate for a new theory branch,
+  `liquidity_recovery_horizon`, rather than adding another template by
+  default. The decision consumed the twenty-two-family failure synthesis and
+  causal failure map, answered `regime_fragile_mechanism`,
+  `walk_forward_fragility`, and `cost_sensitive_mechanism`, and was approved
+  for proposal generation with no blockers or deferrals. Artifacts:
+  `registry\strategies\research_decisions\20260507T033000JST_liquidity_recovery_horizon_research_gate\research_decision.json`
+  and `research_decision_report.md`.
+- [x] Added `liquidity_recovery_horizon` as a supported proposal/code/signal
+  diagnostics variant after research approval. The generator now emits
+  closed-candle liquidity recovery features:
+  `liquidity_stress_recent`, `liquidity_recovery_score`,
+  `liquidity_recovery_anchor`, `volume_recovery_ratio`,
+  `amihud_illiquidity_ratio`, `range_recovery_ratio`, and
+  `recovery_horizon_return`; entry filters wait for recent stress,
+  normalization, recovered participation, remaining recovery-anchor discount,
+  an upward recovery turn, and controlled cost proxies.
+- [x] Generated an accepted local proposal from the approved research decision:
+  `registry\strategies\proposals\20260506T183500Z_LongOnlyLiquidityRecoveryHorizonCandidate.metadata.json`
+  and `.md`. The first proposal attempt was correctly blocked by conservative
+  forbidden-dependency text matching on negated safety wording; the accepted
+  rerun removed those false-positive phrases from free text while preserving
+  the actual historical-only safety scope.
+- [x] Generated local strategy code only, without starting paper/dry-run/live
+  trading or exchange order processes:
+  `registry\strategies\generated\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001\LongOnlyLiquidityRecoveryHorizonCandidate.py`
+  and `metadata.json`. Code generation returned `status=generated`,
+  `strategy_code_generated=true`, `candidate_evaluation_eligible=true`, and
+  generated static check `ok=true`.
+- [x] Ran pre-backtest checks and one historical-safe backtest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001\LongOnlyLiquidityRecoveryHorizonCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001\LongOnlyLiquidityRecoveryHorizonCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyLiquidityRecoveryHorizonCandidate --strategy-path registry\strategies\generated\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001 --timeframe 5m --timerange 20250101-20250103 --pairs BTC/USDT:USDT --run-id liquidity_recovery_horizon_001_20250101_20250103
+  ```
+
+  Results: generated strategy compile passed; static check `ok=true`, report
+  `registry\strategies\checks\20260506T180222Z_static_check.json`; OHLCV
+  check `ok=true`, `rows=8995`, report
+  `registry\strategies\checks\20260506T180217Z_ohlcv_quality.json`.
+  Historical backtest completed but failed gates: `trade_count=3`,
+  `total_return_pct=-0.047765749999999996`, `profit_factor=0.0`,
+  `win_rate=0.0`, `expectancy=-0.0016871966012226873`. Artifacts:
+  `data\backtests\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001_20250101_20250103\metrics.json`,
+  `trades.csv`, and `report.md`.
+- [x] Ran signal diagnostics and candidate evaluation for negative evidence:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250103 --diagnostics-id liquidity_recovery_horizon_001_20250101_20250103_signal_diagnostics
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T183500Z_LongOnlyLiquidityRecoveryHorizonCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001\metadata.json --candidate-id liquidity_recovery_horizon_001 --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001\LongOnlyLiquidityRecoveryHorizonCandidate.py --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --static-check-json registry\strategies\checks\20260506T180222Z_static_check.json --ohlcv-quality-json registry\strategies\checks\20260506T180217Z_ohlcv_quality.json --backtest-metrics-json data\backtests\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001_20250101_20250103\metrics.json --backtest-trades-csv data\backtests\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001_20250101_20250103\trades.csv --backtest-report-md data\backtests\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001_20250101_20250103\report.md
+  ```
+
+  Results: diagnostics completed with `entry_count=9`, `zero_entry_signal=false`,
+  `first_zero_component=null`, and rarest component `below_recovery_anchor`.
+  Candidate manifest recommendation is `fail`; historical backtest check
+  failed, and walk-forward artifacts are still missing. Artifacts:
+  `registry\strategies\diagnostics\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001\liquidity_recovery_horizon_001_20250101_20250103_signal_diagnostics\signal_diagnostics.json`
+  and
+  `registry\strategies\candidates\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001\candidate_manifest.json`.
+- [x] Verification passed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "liquidity_recovery_horizon or strategy_code_generator_supports or signal_diagnostics_supports"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Results: compile passed; focused pytest passed with 38 tests; full
+  `tests\test_bot_factory.py` passed with 165 tests and existing pandas
+  fragmentation warnings in signal diagnostics.
+- [x] Remaining limitation: this is a complete research-to-code-to-negative
+  historical evidence loop for one new theory, not a profitable or paper-ready
+  strategy. The latest candidate has low trade count and negative expectancy;
+  no walk-forward, ranking refresh across all candidates, updated failure
+  synthesis, causal failure map refresh, paper trading, dry-run/live trading,
+  exchange order endpoint use, leverage above `1.0`, shorting, promotion, or
+  process management was started.
+
+### Repository hygiene follow-up on 2026-05-07 JST
+
+- [x] Reviewed the large working tree after Bot Factory runs with:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff -- .gitignore
+  git diff --name-status
+  git clean -Xdn -- .pytest_cache
+  git clean -Xdn -- registry data user_data
+  ```
+
+  Result: `.gitignore` now keeps Bot Factory runtime outputs out of Git:
+  `data\backtests\`, `data\freqai\`, `data\freqai_training\`,
+  `data\walk_forward\`, and generated `registry\strategies\` artifacts are
+  ignored while `.gitkeep` placeholders and
+  `registry\strategies\proposals\TEMPLATE.md` remain trackable.
+- [x] Deleted only disposable local caches:
+
+  ```powershell
+  .pytest_cache
+  freqtrade_ext\__pycache__
+  freqtrade_ext\bot_factory\__pycache__
+  scripts\__pycache__
+  tests\__pycache__
+  registry\strategies\generated\**\__pycache__
+  user_data\strategies\__pycache__
+  ```
+
+  Result: no Python `__pycache__` directories remain under the checked Bot
+  Factory paths. Historical outputs, generated candidates, manifests,
+  diagnostics, synthesis, causal maps, research decisions, OHLCV parquet,
+  FreqAI model outputs, and logs were intentionally kept local because they are
+  the current evidence trail and are already ignored by Git.
+- [x] Remaining Git-visible changes after cleanup are source/doc/test changes
+  and new Bot Factory modules/scripts, not disposable generated runtime output.
+
+### Follow-up on 2026-05-07 JST for refreshed 23-family failure evidence
+
+- [x] Refreshed candidate ranking to include the failed
+  `liquidity_recovery_horizon_001` manifest without reintroducing older
+  superseded hybrid interim candidates:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py `
+    --candidate-manifest-json <22 manifests from 20260507T013001JST ranking> `
+    --candidate-manifest-json registry\strategies\candidates\LongOnlyLiquidityRecoveryHorizonCandidate\liquidity_recovery_horizon_001\candidate_manifest.json `
+    --ranking-id 20260507T041500JST_twenty_three_family_with_liquidity_recovery_ranking `
+    --reviewer-note "Twenty-third family adds liquidity recovery horizon initial historical failure; no paper-ready candidate should be promoted without refreshed synthesis and causal map."
+  ```
+
+  Result: `candidate_count=23`,
+  `best_candidate_id=20260506T200000JST_hybrid_ml_freqai_timerange_smoke`,
+  and `paper_ready_candidate_ids=[]`. Artifacts:
+  `registry\strategies\candidates\rankings\20260507T041500JST_twenty_three_family_with_liquidity_recovery_ranking\candidate_ranking.json`
+  and `candidate_ranking_report.md`.
+- [x] Refreshed failure synthesis using the 23 ranked manifests, all 23
+  matching signal diagnostics, and the fresh hybrid FreqAI prediction
+  diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py `
+    --ranking-json registry\strategies\candidates\rankings\20260507T041500JST_twenty_three_family_with_liquidity_recovery_ranking\candidate_ranking.json `
+    --signal-diagnostics-json <23 matching signal_diagnostics.json files> `
+    --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json `
+    --synthesis-id 20260507T041600JST_twenty_three_family_failure_synthesis_with_liquidity_recovery `
+    --reviewer-note "Twenty-third liquidity recovery horizon candidate adds low-sample negative-edge evidence; refresh prevents new research gates from relying only on the previous twenty-two-family synthesis."
+  ```
+
+  Result: `status=completed`, `candidate_count=23`, `paper_ready_count=0`,
+  `zero_trade_count=4`, `negative_return_count=16`,
+  `walk_forward_failed_count=23`, `parameter_only_retry_allowed=false`, and
+  `requires_new_thesis_id=true`. The failed families list now includes
+  `liquidity_recovery_horizon`. Artifacts:
+  `registry\strategies\synthesis\20260507T041600JST_twenty_three_family_failure_synthesis_with_liquidity_recovery\candidate_failure_synthesis.json`
+  and `candidate_failure_synthesis_report.md`.
+- [x] Refreshed causal failure map from the 23-family synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py `
+    --synthesis-json registry\strategies\synthesis\20260507T041600JST_twenty_three_family_failure_synthesis_with_liquidity_recovery\candidate_failure_synthesis.json `
+    --map-id 20260507T041700JST_twenty_three_family_causal_failure_map_with_liquidity_recovery `
+    --reviewer-note "Causal map refreshed after liquidity recovery horizon initial historical failure; next thesis selection must answer updated twenty-three-family failure evidence before proposal generation."
+  ```
+
+  Result: `status=completed`, `candidate_count=23`, `category_count=10`,
+  and `requires_research_decision_before_proposal=true`. Dominant categories:
+  `regime_fragile_mechanism=23`, `walk_forward_fragility=23`,
+  `cost_sensitive_mechanism=22`, `no_profitable_walk_forward_windows=17`,
+  and `entry_exists_negative_edge=16`. Artifacts:
+  `registry\strategies\failure_maps\20260507T041700JST_twenty_three_family_causal_failure_map_with_liquidity_recovery\causal_failure_map.json`
+  and `causal_failure_map_report.md`.
+- [x] Remaining limitation: no current research decision has been approved
+  against the refreshed 23-family causal map. Any 24th thesis must pass
+  `scripts\bot_factory_select_research_thesis.py` against the refreshed
+  synthesis/map before proposal generation. No code generation, backtest,
+  paper/dry-run/live trading, exchange order endpoint use, leverage above
+  `1.0`, shorting, promotion, or process management was started in this
+  refresh.
+- [x] Ran a blocked-repeat research gate smoke after the refresh to verify that
+  the previously approved `liquidity_recovery_horizon` thesis is now rejected
+  by the 23-family evidence:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py `
+    --failure-synthesis-json registry\strategies\synthesis\20260507T041600JST_twenty_three_family_failure_synthesis_with_liquidity_recovery\candidate_failure_synthesis.json `
+    --causal-failure-map-json registry\strategies\failure_maps\20260507T041700JST_twenty_three_family_causal_failure_map_with_liquidity_recovery\causal_failure_map.json `
+    --thesis-id TH-LIQUIDITY-RECOVERY-HORIZON-20260507 `
+    --thesis-family liquidity_recovery_horizon `
+    --decision-id 20260507T042500JST_repeat_liquidity_recovery_research_gate_block_with_23_map
+  ```
+
+  Result: expected non-zero exit because the decision was blocked:
+  `status=blocked`, `proposal_generation_allowed=false`,
+  `code_generation_allowed=false`, `blocker_count=2`, `deferral_count=0`.
+  Blockers were `thesis_id_outside_failed_thesis_ids` and
+  `thesis_family_outside_failed_families`; repeated failed family match was
+  `liquidity_recovery_horizon`. Artifact:
+  `registry\strategies\research_decisions\20260507T042500JST_repeat_liquidity_recovery_research_gate_block_with_23_map\research_decision.json`.
+- [x] Hardened proposal-stage research decision enforcement against stale
+  approvals. The proposal generator now requires a research decision's causal
+  map `source_synthesis_id` to match one of the supplied failure synthesis
+  artifacts when that synthesis requires a research decision. This prevents a
+  thesis approved against an older 22-family map from being reused with the
+  refreshed 23-family synthesis.
+
+  Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_proposal_generator_accepts_distinct_synthesis_thesis or stale_causal_map or research_decision"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Results: compile passed; focused pytest passed with 6 tests; full
+  `tests\test_bot_factory.py` passed with 166 tests and the existing pandas
+  fragmentation warnings in signal diagnostics.
+
+### Follow-up on 2026-05-07 JST for worktree organization checkpoint
+
+- [x] Paused new thesis/code generation work after the worktree grew large and
+  re-centered on the user request to separate Git-worthy source changes from
+  disposable or local-only artifacts.
+- [x] Rechecked the visible worktree:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff --name-status
+  git ls-files --others --exclude-standard
+  git ls-files --deleted
+  ```
+
+  Result: Git-visible changes are source/doc/test changes and new Bot Factory
+  helper modules/scripts. The only deleted tracked file is
+  `docs\BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md`, which remains a user decision:
+  either stage the deletion if intentional or restore it if the runbook should
+  remain.
+- [x] Deleted only disposable local caches found in the active Bot Factory
+  paths:
+
+  ```powershell
+  .pytest_cache
+  freqtrade_ext\bot_factory\__pycache__
+  scripts\__pycache__
+  tests\__pycache__
+  ```
+
+  Result: those cache directories were removed. No candidate manifests,
+  backtest outputs, walk-forward outputs, diagnostics, research decisions,
+  FreqAI model outputs, logs, or OHLCV data were deleted.
+- [x] Confirmed that the local evidence trail remains ignored by Git through
+  `.gitignore`, including `data\backtests\**`, `data\freqai\**`,
+  `data\freqai_training\**`, `data\walk_forward\**`,
+  `registry\strategies\candidates\**`,
+  `registry\strategies\diagnostics\**`,
+  `registry\strategies\failure_maps\**`,
+  `registry\strategies\generated\**`,
+  `registry\strategies\research_decisions\**`, and
+  `registry\strategies\synthesis\**`.
+- [x] Current Git inclusion recommendation:
+  include `.gitignore`, Bot Factory source modules, Bot Factory scripts,
+  focused tests, and Bot Factory docs/templates as implementation evidence;
+  keep generated registry/data/user_data outputs local and ignored; do not
+  resolve `docs\BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md` deletion without an
+  explicit decision.
+
+### Follow-up on 2026-05-07 JST for bipower jump-decay proposal intake
+
+- [x] Added proposal-generator intake support for the research-approved
+  `bipower_jump_decay` hypothesis family as the initial intake step before the
+  later code-generation/evaluation checkpoint below. The proposal layer now
+  accepts the variant, maps related thesis aliases such as
+  `realized_multipower_jump_decay`, emits jump/continuous-variance feature
+  defaults, and records non-parameter-only rule filters:
+  `positive_jump_detected`, `jump_dominates_continuous_variance`,
+  `continuous_variance_decaying`, `post_jump_drift_positive`,
+  `not_overextended_after_jump`, and `volume_positive`.
+- [x] Generated an accepted proposal artifact from the approved 23-family
+  research decision only:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py `
+    --strategy-name LongOnlyBipowerJumpDecayCandidate `
+    --strategy-type bipower_jump_decay `
+    --strategy-logic-variant bipower_jump_decay `
+    --thesis-id TH-BIPOWER-JUMP-DECAY-20260507 `
+    --thesis-type realized_multipower_jump_decay `
+    --failure-synthesis-json registry\strategies\synthesis\20260507T041600JST_twenty_three_family_failure_synthesis_with_liquidity_recovery\candidate_failure_synthesis.json `
+    --research-decision-json registry\strategies\research_decisions\20260507T043500JST_bipower_jump_decay_research_gate\research_decision.json `
+    --created-at 2026-05-07T04:45:00+09:00
+  ```
+
+  Result: `status=accepted`, `generator_mode=rule_based`,
+  `strategy_logic_variant=bipower_jump_decay`, `research_reference_count=3`.
+  Artifacts:
+  `registry\strategies\proposals\20260506T194500Z_LongOnlyBipowerJumpDecayCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T194500Z_LongOnlyBipowerJumpDecayCandidate.metadata.json`.
+  These generated proposal artifacts remain local evidence and are ignored by
+  Git under the Bot Factory runtime-output rules.
+- [x] Hardened strategy-code metadata for unsupported explicit variants. If an
+  accepted proposal names a variant that the code generator does not support,
+  blocked metadata preserves the explicit variant name and leaves
+  `parameter_defaults={}` instead of presenting a fallback family. The
+  `bipower_jump_decay` variant was intentionally moved out of that blocked
+  path in the later code-generation/evaluation checkpoint below.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "bipower_jump_decay or stale_causal_map or strategy_proposal_generator_accepts_distinct_synthesis_thesis"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Results: compile passed; focused pytest passed with 4 tests; full
+  `tests\test_bot_factory.py` passed with 168 tests and the existing pandas
+  fragmentation warnings in signal diagnostics.
+- [x] Remaining limitation at this intake checkpoint: proposal acceptance was
+  not profitability evidence. The later checkpoint below implemented
+  `bipower_jump_decay` code generation, diagnostics, historical evaluation,
+  walk-forward evaluation, ranking, synthesis, and causal-map refresh, and the
+  candidate failed those evaluation gates. No promotion, paper trading,
+  dry-run trading, live trading, exchange order endpoint use, leverage above
+  `1.0`, shorting, or process control was started.
+
+### Follow-up on 2026-05-07 JST for bipower jump-decay codegen and negative evaluation
+
+- [x] Implemented `bipower_jump_decay` strategy-code and signal-diagnostics
+  support. Generated strategies now compute realized variance, bipower
+  variation, jump variation, jump ratio, continuous variance decay, positive
+  jump events, post-jump drift, jump follow-through, and overextension
+  features. Entry logic requires a recent positive jump, jump variation
+  dominating continuous variance, decaying continuous variance, positive
+  post-jump drift, no overextension, and positive volume. Exit logic reacts to
+  continuous variance re-expansion, fading jump ratio, negative post-jump
+  drift, or RSI exit conditions.
+- [x] Ran focused compile/tests for the new support:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "bipower_jump_decay"
+  ```
+
+  Result: compile passed; focused pytest passed with 3 tests and the existing
+  pandas fragmentation warnings in signal diagnostics.
+- [x] Generated local strategy code from the accepted proposal:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T194500Z_LongOnlyBipowerJumpDecayCandidate.metadata.json `
+    --candidate-id 20260507T045500JST_bipower_jump_decay_codegen `
+    --created-at 2026-05-07T04:55:00+09:00
+  ```
+
+  Result: `status=generated`, `strategy_code_generated=true`,
+  `candidate_evaluation_eligible=true`, and `static_check_ok=true`.
+  Artifacts:
+  `registry\strategies\generated\LongOnlyBipowerJumpDecayCandidate\20260507T045500JST_bipower_jump_decay_codegen\LongOnlyBipowerJumpDecayCandidate.py`,
+  `metadata.json`, and `static_check.json`.
+- [x] Rechecked data quality and static safety before historical evaluation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyBipowerJumpDecayCandidate\20260507T045500JST_bipower_jump_decay_codegen
+  ```
+
+  Results: OHLCV quality `ok=true` for 8995 rows from
+  `2025-01-01T00:00:00+00:00` to `2025-02-01T05:30:00+00:00`, with no
+  duplicate or missing intervals; generated strategy static check `ok=true`
+  with no findings. Artifacts:
+  `registry\strategies\checks\20260506T185241Z_ohlcv_quality.json` and
+  `registry\strategies\checks\20260506T185325Z_static_check.json`.
+- [x] Ran signal diagnostics on the generated bipower candidate:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py `
+    --generated-metadata-json registry\strategies\generated\LongOnlyBipowerJumpDecayCandidate\20260507T045500JST_bipower_jump_decay_codegen\metadata.json `
+    --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet `
+    --timerange 20250101-20250201 `
+    --diagnostics-id 20260507T050000JST_bipower_jump_decay_signal_diagnostics
+  ```
+
+  Result: `status=completed`, `entry_count=511`,
+  `zero_entry_signal=false`, `first_zero_component=null`, and
+  `diagnosis_codes=[]`. Artifact:
+  `registry\strategies\diagnostics\LongOnlyBipowerJumpDecayCandidate\20260507T045500JST_bipower_jump_decay_codegen\20260507T050000JST_bipower_jump_decay_signal_diagnostics\signal_diagnostics.json`.
+- [x] Ran historical-only backtest through the Bot Factory wrapper:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py `
+    --config user_data\config.json `
+    --strategy LongOnlyBipowerJumpDecayCandidate `
+    --strategy-path registry\strategies\generated\LongOnlyBipowerJumpDecayCandidate\20260507T045500JST_bipower_jump_decay_codegen `
+    --timeframe 5m `
+    --timerange 20250101-20250201 `
+    --pairs BTC/USDT:USDT `
+    --run-id 20260507T050500JST_bipower_jump_decay_historical `
+    --data-format-ohlcv parquet
+  ```
+
+  Result: gate `fail`; `total_return_pct=-2.393940186`,
+  `trade_count=159`, `profit_factor=0.2204711202447723`,
+  `win_rate=24.53%`, `expectancy=-0.0015096479`,
+  `max_drawdown_pct=2.447073369289071`, and
+  `sortino=-76.51412131065698`. Artifacts:
+  `data\backtests\LongOnlyBipowerJumpDecayCandidate\20260507T050500JST_bipower_jump_decay_historical\metrics.json`,
+  `report.md`, and `trades.csv`.
+- [x] Ran four-window historical walk-forward through the Bot Factory
+  walk-forward wrapper and non-FreqAI backtest runner:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py `
+    --config user_data\config.json `
+    --strategy LongOnlyBipowerJumpDecayCandidate `
+    --strategy-path registry\strategies\generated\LongOnlyBipowerJumpDecayCandidate\20260507T045500JST_bipower_jump_decay_codegen `
+    --runner-script scripts\bot_factory_run_backtest.py `
+    --timeframe 5m `
+    --pairs BTC/USDT:USDT `
+    --output-root data\walk_forward `
+    --run-id 20260507T051000JST_bipower_jump_decay_walk_forward `
+    --data-format-ohlcv parquet `
+    --window 20250101-20250108 `
+    --window 20250108-20250115 `
+    --window 20250115-20250122 `
+    --window 20250122-20250201
+  ```
+
+  Result: `status=completed` but recommendation `fail`;
+  `completed_windows=4/4`, `pass_rate=0.0`,
+  `profitable_windows_ratio=0.0`, `total_return_pct=-2.368185648`,
+  and `max_drawdown_pct_any_window=0.8061621670000022`. All four windows had
+  negative returns. Artifact:
+  `data\walk_forward\LongOnlyBipowerJumpDecayCandidate\20260507T051000JST_bipower_jump_decay_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the full candidate evaluation manifest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py `
+    --generated-metadata-json registry\strategies\generated\LongOnlyBipowerJumpDecayCandidate\20260507T045500JST_bipower_jump_decay_codegen\metadata.json `
+    --ohlcv-quality-json registry\strategies\checks\20260506T185241Z_ohlcv_quality.json `
+    --backtest-metrics-json data\backtests\LongOnlyBipowerJumpDecayCandidate\20260507T050500JST_bipower_jump_decay_historical\metrics.json `
+    --walk-forward-metrics-json data\walk_forward\LongOnlyBipowerJumpDecayCandidate\20260507T051000JST_bipower_jump_decay_walk_forward\walk_forward_metrics.json `
+    --candidate-id 20260507T051000JST_bipower_jump_decay_full_eval
+  ```
+
+  Result: expected non-zero recommendation path with `recommendation=retry`,
+  `historical_backtest=fail`, `walk_forward=fail`, and paper/live promotion
+  not authorized. Artifact:
+  `registry\strategies\candidates\LongOnlyBipowerJumpDecayCandidate\20260507T051000JST_bipower_jump_decay_full_eval\candidate_manifest.json`.
+- [x] Refreshed the all-candidate ranking with the bipower failure:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py `
+    --candidate-manifest-json <23 manifests from 20260507T041500JST ranking> `
+    --candidate-manifest-json registry\strategies\candidates\LongOnlyBipowerJumpDecayCandidate\20260507T051000JST_bipower_jump_decay_full_eval\candidate_manifest.json `
+    --ranking-id 20260507T051500JST_twenty_four_family_with_bipower_jump_decay_ranking `
+    --reviewer-note "Twenty-fourth family adds bipower jump-decay full historical and walk-forward failure evidence; no paper-ready candidate should be promoted."
+  ```
+
+  Result: `candidate_count=24`,
+  `best_candidate_id=20260506T200000JST_hybrid_ml_freqai_timerange_smoke`,
+  and `paper_ready_candidate_ids=[]`. Artifact:
+  `registry\strategies\candidates\rankings\20260507T051500JST_twenty_four_family_with_bipower_jump_decay_ranking\candidate_ranking.json`.
+- [x] Refreshed failure synthesis and causal map from the 24-family evidence:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py `
+    --ranking-json registry\strategies\candidates\rankings\20260507T051500JST_twenty_four_family_with_bipower_jump_decay_ranking\candidate_ranking.json `
+    --signal-diagnostics-json <24 matching signal_diagnostics.json files> `
+    --freqai-prediction-diagnostics-json registry\strategies\diagnostics\LongOnlyHybridMLReturnFilterCandidate\20260506T200000JST_hybrid_ml_freqai_timerange_smoke\20260506T201000JST_hybrid_freqai_timerange_prediction_diagnostics\freqai_prediction_diagnostics.json `
+    --synthesis-id 20260507T052000JST_twenty_four_family_failure_synthesis_with_bipower_jump_decay `
+    --reviewer-note "Twenty-fourth bipower jump-decay candidate failed historical and walk-forward gates; refresh negative knowledge before any further thesis selection."
+
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py `
+    --synthesis-json registry\strategies\synthesis\20260507T052000JST_twenty_four_family_failure_synthesis_with_bipower_jump_decay\candidate_failure_synthesis.json `
+    --map-id 20260507T052500JST_twenty_four_family_causal_failure_map_with_bipower_jump_decay `
+    --reviewer-note "Causal map refreshed after bipower jump-decay historical and walk-forward failure; next thesis selection must answer updated twenty-four-family evidence."
+  ```
+
+  Results: synthesis `status=completed`, `candidate_count=24`,
+  `paper_ready_count=0`, `negative_return_count=17`,
+  `walk_forward_failed_count=24`, `parameter_only_retry_allowed=false`, and
+  `requires_new_thesis_id=true`; causal map `status=completed`,
+  `candidate_count=24`, `category_count=10`, and
+  `requires_research_decision_before_proposal=true`. Dominant categories:
+  `regime_fragile_mechanism=24`, `walk_forward_fragility=24`,
+  `cost_sensitive_mechanism=23`, `no_profitable_walk_forward_windows=18`,
+  and `entry_exists_negative_edge=17`. Artifacts:
+  `registry\strategies\synthesis\20260507T052000JST_twenty_four_family_failure_synthesis_with_bipower_jump_decay\candidate_failure_synthesis.json`
+  and
+  `registry\strategies\failure_maps\20260507T052500JST_twenty_four_family_causal_failure_map_with_bipower_jump_decay\causal_failure_map.json`.
+- [x] Final verification and hygiene pass for this checkpoint:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_failure_map.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\freqai_backtest.py freqtrade_ext\bot_factory\freqai_checks.py freqtrade_ext\bot_factory\freqai_prediction_diagnostics.py freqtrade_ext\bot_factory\freqai_training.py freqtrade_ext\bot_factory\research_selection.py freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\strategy_proposals.py scripts\bot_factory_build_causal_failure_map.py scripts\bot_factory_check_funding_rate.py scripts\bot_factory_check_mark_price.py scripts\bot_factory_diagnose_candidate_signals.py scripts\bot_factory_diagnose_freqai_predictions.py scripts\bot_factory_evaluate_candidate.py scripts\bot_factory_generate_strategy_proposal.py scripts\bot_factory_rank_candidates.py scripts\bot_factory_run_freqai_backtest.py scripts\bot_factory_run_freqai_training.py scripts\bot_factory_run_walk_forward.py scripts\bot_factory_select_research_thesis.py scripts\bot_factory_synthesize_candidate_failures.py tests\test_bot_factory.py
+  git diff --check
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Results: compile passed; `git diff --check` passed with only existing
+  LF-to-CRLF working-copy warnings; full `tests\test_bot_factory.py` passed
+  with the existing pandas fragmentation warnings in signal diagnostics.
+  Post-test `__pycache__` directories under `freqtrade_ext\bot_factory`,
+  `scripts`, and `tests` were deleted again as disposable cache output.
+- [x] Remaining limitation: the latest candidate is a clean negative result,
+  not a profitable or paper-ready strategy. The refreshed evidence says there
+  are still no paper-ready candidates across 24 families, and the next action
+  must be a new research decision against the 24-family synthesis/map rather
+  than parameter-only tweaking. No paper trading, dry-run trading, live
+  trading, exchange order endpoint use, leverage above `1.0`, shorting,
+  promotion, or process control was started.
+
+### Follow-up on 2026-05-07 JST for material causal-category research gate
+
+- [x] Tightened the research selection gate so causal responses must cover the
+  top three dominant causal failure categories plus any material category that
+  covers at least 70% of failed candidates. This makes the latest 24-family
+  map require responses for `regime_fragile_mechanism`,
+  `walk_forward_fragility`, `cost_sensitive_mechanism`,
+  `no_profitable_walk_forward_windows`, and `entry_exists_negative_edge`
+  before proposal generation. The intent is to prevent a new thesis from
+  answering only the generic top-three failure causes while ignoring broad
+  no-profitable-window and entry-negative-edge evidence.
+- [x] Added category-specific evidence requirements for
+  `no_profitable_walk_forward_windows`, `overfit_or_window_dependency`, and
+  `thesis_rejected_after_entries` so those responses must discuss the
+  relevant walk-forward, profitability, dependency, thesis, entry, and reject
+  evidence rather than generic wording or parameter tuning.
+- [x] Added focused regression coverage:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection_gate"
+  ```
+
+  Result: compile passed; focused pytest passed with 10 tests.
+- [x] Ran a real local research-gate smoke against the latest 24-family
+  synthesis/map with only top-three causal responses:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py `
+    --failure-synthesis-json registry\strategies\synthesis\20260507T052000JST_twenty_four_family_failure_synthesis_with_bipower_jump_decay\candidate_failure_synthesis.json `
+    --causal-failure-map-json registry\strategies\failure_maps\20260507T052500JST_twenty_four_family_causal_failure_map_with_bipower_jump_decay\causal_failure_map.json `
+    --thesis-id TH-MATERIAL-CATEGORY-GATE-SMOKE-20260507 `
+    --thesis-family closed_candle_liquidity_resilience_smoke `
+    --mechanism-class closed_candle_resilience_reclaim `
+    --causal-failure-response "regime_fragile_mechanism=..." `
+    --causal-failure-response "walk_forward_fragility=..." `
+    --causal-failure-response "cost_sensitive_mechanism=..." `
+    --research-reference @registry\strategies\research_decisions\20260507T053000JST_material_category_gate_top3_only_block_smoke\reference_a.json `
+    --research-reference @registry\strategies\research_decisions\20260507T053000JST_material_category_gate_top3_only_block_smoke\reference_b.json `
+    --decision-id 20260507T053000JST_material_category_gate_top3_only_block_smoke
+  ```
+
+  Result: expected non-zero exit with `status=blocked`,
+  `proposal_generation_allowed=false`, `code_generation_allowed=false`,
+  `blocker_count=1`, and blocker
+  `causal_failure_responses_cover_required_categories`. Required categories
+  were `regime_fragile_mechanism`, `walk_forward_fragility`,
+  `cost_sensitive_mechanism`, `no_profitable_walk_forward_windows`, and
+  `entry_exists_negative_edge`; missing categories were
+  `no_profitable_walk_forward_windows` and `entry_exists_negative_edge`.
+  Artifact:
+  `registry\strategies\research_decisions\20260507T053000JST_material_category_gate_top3_only_block_smoke\research_decision.json`.
+- [x] Updated `docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` so
+  the next handoff starts from the refreshed 24-family ranking/synthesis/map,
+  treats the bipower jump-decay candidate as failed evidence, and requires
+  dominant/material causal category responses before any proposal generation.
+- [x] Final verification and hygiene pass:
+
+  ```powershell
+  git diff --check
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: `git diff --check` passed with only existing LF-to-CRLF
+  working-copy warnings; full `tests\test_bot_factory.py` passed with the
+  existing pandas fragmentation warnings in signal diagnostics. Post-test
+  `__pycache__` directories under `freqtrade_ext\bot_factory`, `scripts`, and
+  `tests` were deleted again as disposable cache output.
+- [x] Remaining limitation: this improves research-selection discipline, not
+  profitability. There are still no paper-ready candidates. No code
+  generation, backtest, walk-forward run, paper trading, dry-run trading, live
+  trading, exchange order endpoint use, leverage above `1.0`, shorting,
+  promotion, or process control was started by this gate-tightening smoke.
+
+### Follow-up on 2026-05-07 JST for proposal-stage material-category enforcement
+
+- [x] Hardened proposal-stage research decision enforcement so the proposal
+  generator recomputes the current dominant/material causal category policy
+  from the research decision's embedded causal-map summary. A research
+  decision can no longer claim `missing_response_categories=[]` while omitting
+  material categories such as `no_profitable_walk_forward_windows` and
+  `entry_exists_negative_edge` from `required_categories_to_address` or
+  `response_categories`.
+- [x] Added blocker
+  `research_decision_<n>_causal_required_categories_match_current_policy`.
+  It blocks proposal generation when the decision does not expose current
+  policy evidence or when expected dominant/material categories are absent
+  from the claimed required categories or response categories.
+- [x] Added focused regression coverage:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_decision"
+  ```
+
+  Result: compile passed; focused pytest passed with 6 tests. The new test
+  `test_strategy_proposal_generator_blocks_research_decision_missing_material_causal_categories`
+  builds a crafted approved research decision with matching
+  `source_synthesis_id=synth-test` and no weak/missing self-reported causal
+  categories, but only top-three required categories. Proposal generation is
+  blocked because the current policy expects
+  `no_profitable_walk_forward_windows` and `entry_exists_negative_edge` too.
+- [x] Final verification and hygiene pass:
+
+  ```powershell
+  git diff --check
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: `git diff --check` passed with only existing LF-to-CRLF
+  working-copy warnings; full `tests\test_bot_factory.py` passed with the
+  existing pandas fragmentation warnings in signal diagnostics. Post-test
+  `__pycache__` directories under `freqtrade_ext\bot_factory`, `scripts`, and
+  `tests` were deleted again as disposable cache output.
+- [x] Remaining limitation: this closes a proposal-stage bypass. It does not
+  produce a profitable strategy or change paper readiness. No code generation,
+  backtest, walk-forward run, paper trading, dry-run trading, live trading,
+  exchange order endpoint use, leverage above `1.0`, shorting, promotion, or
+  process control was started by this enforcement increment.
+
+### Follow-up on 2026-05-07 JST for directional-change overshoot research/proposal intake
+
+- [x] Ran a new theory-first research selection gate against the refreshed
+  24-family synthesis/map for a distinct `directional_change_overshoot`
+  thesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py `
+    --failure-synthesis-json registry\strategies\synthesis\20260507T052000JST_twenty_four_family_failure_synthesis_with_bipower_jump_decay\candidate_failure_synthesis.json `
+    --causal-failure-map-json registry\strategies\failure_maps\20260507T052500JST_twenty_four_family_causal_failure_map_with_bipower_jump_decay\causal_failure_map.json `
+    --thesis-id TH-DIRECTIONAL-CHANGE-OVERSHOOT-20260507 `
+    --thesis-family directional_change_overshoot `
+    --mechanism-class event_time_overshoot_continuation_reversal `
+    --causal-failure-response "regime_fragile_mechanism=..." `
+    --causal-failure-response "walk_forward_fragility=..." `
+    --causal-failure-response "cost_sensitive_mechanism=..." `
+    --causal-failure-response "no_profitable_walk_forward_windows=..." `
+    --causal-failure-response "entry_exists_negative_edge=..." `
+    --research-reference @registry\strategies\research_decisions\20260507T054500JST_directional_change_overshoot_research_gate\reference_a.json `
+    --research-reference @registry\strategies\research_decisions\20260507T054500JST_directional_change_overshoot_research_gate\reference_b.json `
+    --research-reference @registry\strategies\research_decisions\20260507T054500JST_directional_change_overshoot_research_gate\reference_c.json `
+    --decision-id 20260507T054500JST_directional_change_overshoot_research_gate
+  ```
+
+  Result: `status=approved_for_proposal_generation`,
+  `proposal_generation_allowed=true`, `code_generation_allowed=false`,
+  `blocker_count=0`, and `deferral_count=0`. Required material categories
+  were `regime_fragile_mechanism`, `walk_forward_fragility`,
+  `cost_sensitive_mechanism`, `no_profitable_walk_forward_windows`, and
+  `entry_exists_negative_edge`; all were answered with no weak,
+  evidence-gap, or parameter-only causal response categories. Artifact:
+  `registry\strategies\research_decisions\20260507T054500JST_directional_change_overshoot_research_gate\research_decision.json`.
+- [x] Added proposal-generator intake support for
+  `directional_change_overshoot`, including aliases such as
+  `directional_change_event_time`, `event_time_overshoot`, and
+  `intrinsic_time_overshoot`, default features for directional-change state,
+  event age, overshoot return/length/ratio, event-time trend, adverse reversal
+  distance, and turnover proxy, plus rule filters for confirmed
+  directional-change events, persisted overshoot, positive event-time trend,
+  absent adverse reversal, controlled turnover, and positive volume.
+- [x] Generated an accepted proposal artifact from the approved 24-family
+  research decision:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py `
+    --strategy-name LongOnlyDirectionalChangeOvershootCandidate `
+    --strategy-type directional_change_overshoot `
+    --strategy-logic-variant directional_change_overshoot `
+    --thesis-id TH-DIRECTIONAL-CHANGE-OVERSHOOT-20260507 `
+    --thesis-type directional_change_overshoot `
+    --failure-synthesis-json registry\strategies\synthesis\20260507T052000JST_twenty_four_family_failure_synthesis_with_bipower_jump_decay\candidate_failure_synthesis.json `
+    --research-decision-json registry\strategies\research_decisions\20260507T054500JST_directional_change_overshoot_research_gate\research_decision.json `
+    --created-at 2026-05-07T05:50:00+09:00
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `generator_mode=rule_based`,
+  `strategy_logic_variant=directional_change_overshoot`,
+  `thesis_id=TH-DIRECTIONAL-CHANGE-OVERSHOOT-20260507`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T205000Z_LongOnlyDirectionalChangeOvershootCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T205000Z_LongOnlyDirectionalChangeOvershootCandidate.metadata.json`.
+- [x] Verified code generation does not silently fall back to another family
+  before directional-change codegen is intentionally implemented:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T205000Z_LongOnlyDirectionalChangeOvershootCandidate.metadata.json `
+    --candidate-id 20260507T055500JST_directional_change_overshoot_codegen_block `
+    --created-at 2026-05-07T05:55:00+09:00
+  ```
+
+  Result: expected non-zero exit with `status=blocked`,
+  `strategy_logic_variant=directional_change_overshoot`,
+  `strategy_code_generated=false`,
+  `candidate_evaluation_eligible=false`, `static_check_ok=false`, and blocker
+  `strategy_logic_variant_supported`. Artifact:
+  `registry\strategies\generated\LongOnlyDirectionalChangeOvershootCandidate\20260507T055500JST_directional_change_overshoot_codegen_block\metadata.json`.
+- [x] Added focused tests:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "directional_change_overshoot"
+  ```
+
+  Result: compile passed; focused pytest passed with 2 tests covering proposal
+  acceptance and intentional codegen blocking.
+- [x] Final verification and hygiene pass:
+
+  ```powershell
+  git diff --check
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: `git diff --check` passed with only existing LF-to-CRLF
+  working-copy warnings; full `tests\test_bot_factory.py` passed with the
+  existing pandas fragmentation warnings in signal diagnostics. Post-test
+  `__pycache__` directories under `freqtrade_ext\bot_factory`, `scripts`, and
+  `tests` were deleted again as disposable cache output.
+- [x] Remaining limitation: directional-change overshoot is approved for
+  proposal generation only and has an accepted proposal artifact, but strategy
+  code generation is intentionally blocked until a directional-change codegen
+  path is implemented and tested. No backtest, walk-forward run, paper
+  trading, dry-run trading, live trading, exchange order endpoint use,
+  leverage above `1.0`, shorting, promotion, or process control was started.
+
+### Worktree organization checkpoint on 2026-05-07 JST
+
+- [x] Paused new implementation work after user concern that the branch looked
+  unfocused and contained too many file changes.
+- [x] Started from the required handoff command:
+
+  ```powershell
+  git status --short --untracked-files=all
+  ```
+
+  Result: remaining Git-visible changes are scoped to `.gitignore`, Bot
+  Factory docs, `freqtrade_ext\bot_factory\`, Bot Factory scripts,
+  `registry\strategies\proposals\TEMPLATE.md`, and
+  `tests\test_bot_factory.py`. No generated backtest/proposal/candidate data is
+  Git-visible after the ignore rules.
+- [x] Classified Git-visible files for review/staging:
+  - Keep as source/doc/test changes:
+    `.gitignore`, `docs\BOT_FACTORY_MVP_TODO.md`,
+    `docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`,
+    `docs\BOT_FACTORY_GOAL_AUDIT.md`,
+    `freqtrade_ext\bot_factory\candidate_failure_map.py`,
+    `freqtrade_ext\bot_factory\candidate_failure_synthesis.py`,
+    `freqtrade_ext\bot_factory\freqai_prediction_diagnostics.py`,
+    `freqtrade_ext\bot_factory\research_selection.py`,
+    `freqtrade_ext\bot_factory\signal_diagnostics.py`,
+    the modified Bot Factory modules and scripts, proposal `TEMPLATE.md`, and
+    `tests\test_bot_factory.py`.
+  - Keep local and out of Git: generated strategy proposals, generated
+    strategies, candidate manifests/rankings, diagnostics, failure maps,
+    synthesis outputs, backtests, walk-forward outputs, FreqAI training outputs,
+    OHLCV data, logs, SQLite runtime files, and `.venv`.
+  - Deleted tracked file requiring owner decision:
+    `docs\BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md`. It is preserved as a deletion
+    in the worktree and was not restored or force-removed.
+- [x] Confirmed `.gitignore` now keeps runtime evidence and generated outputs
+  out of Git while preserving directory placeholders and proposal
+  `TEMPLATE.md`:
+
+  ```powershell
+  git diff -- .gitignore
+  ```
+
+  Result: added ignore coverage for `data\freqai`, `data\freqai_training`,
+  `data\walk_forward`, strategy candidates, diagnostics, failure maps,
+  generated strategies, proposals, research decisions, reviews, and synthesis.
+- [x] Dry-run inspected ignored deletion candidates:
+
+  ```powershell
+  git clean -ndX
+  ```
+
+  Result: dry-run included disposable caches, but also `.venv`, local OHLCV
+  data, backtest/walk-forward outputs, generated proposals/strategies, research
+  decisions, failure maps, and other local evidence. No broad `git clean` was
+  run because those artifacts are useful local evidence for the Bot Factory
+  audit trail.
+- [x] Removed only disposable caches:
+
+  ```powershell
+  Remove-Item .pytest_cache and .venv-excluded __pycache__ directories
+  ```
+
+  Result: `removed=38`; follow-up check found no `.venv`-external
+  `__pycache__` directories. `.venv` itself and its package caches were left
+  untouched.
+- [x] Remaining worktree risk: the branch is still large because it contains
+  several Bot Factory increments in one worktree. Before commit/PR, split the
+  review mentally or with staged hunks into: ignore/hygiene, theory-first
+  proposal guardrails, evaluation/ranking/iteration pipeline, failure
+  synthesis/causal map/diagnostics, material research/proposal gates, and
+  directional-change proposal intake. Do not commit local generated artifacts.
+
+### Follow-up on 2026-05-07 JST for directional-change overshoot codegen/evaluation
+
+- [x] Implemented deliberate `directional_change_overshoot` strategy-code and
+  signal-diagnostics support instead of silently falling back to an existing
+  family. The generator now emits directional-change state, event age,
+  overshoot return/length/ratio, event-time trend, adverse reversal distance,
+  turnover proxy, and matching entry/exit tags for the accepted
+  `LongOnlyDirectionalChangeOvershootCandidate` proposal.
+- [x] Added focused regression coverage and verified the new family path:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "directional_change_overshoot"
+  ```
+
+  Result: compile passed; focused pytest passed with 3 tests after adding the
+  missing diagnostics default for `sell_timeout_candles`.
+- [x] Generated the directional-change strategy code from the accepted
+  proposal:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T205000Z_LongOnlyDirectionalChangeOvershootCandidate.metadata.json `
+    --candidate-id 20260507T061500JST_directional_change_overshoot_codegen `
+    --created-at 2026-05-07T06:15:00+09:00
+  ```
+
+  Result: `status=generated`, `strategy_code_generated=true`,
+  `candidate_evaluation_eligible=true`, and `static_check_ok=true`.
+  Artifacts:
+  `registry\strategies\generated\LongOnlyDirectionalChangeOvershootCandidate\20260507T061500JST_directional_change_overshoot_codegen\metadata.json`
+  and generated strategy code under the same directory.
+- [x] Re-ran generated-code compile, static check, and known OHLCV quality
+  validation before any historical backtest:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyDirectionalChangeOvershootCandidate\20260507T061500JST_directional_change_overshoot_codegen\LongOnlyDirectionalChangeOvershootCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyDirectionalChangeOvershootCandidate\20260507T061500JST_directional_change_overshoot_codegen
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Result: compile passed; static check `ok=true`; OHLCV quality `ok=true`
+  with 8995 rows from `2025-01-01T00:00:00+00:00` to
+  `2025-02-01T05:30:00+00:00`, no duplicate rows, and no missing intervals.
+- [x] Ran local signal diagnostics only:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py `
+    --generated-metadata-json registry\strategies\generated\LongOnlyDirectionalChangeOvershootCandidate\20260507T061500JST_directional_change_overshoot_codegen\metadata.json `
+    --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet `
+    --timerange 20250101-20250201 `
+    --diagnostics-id 20260507T062000JST_directional_change_overshoot_signal_diagnostics `
+    --reviewer-note "Directional-change overshoot generated-code signal diagnostics only; no paper, dry-run, live, exchange orders, leverage, shorting, or promotion."
+  ```
+
+  Result: `status=completed`, `entry_count=706`,
+  `zero_entry_signal=false`, `first_zero_component=null`, and
+  `diagnosis_codes=[]`. Artifact:
+  `registry\strategies\diagnostics\LongOnlyDirectionalChangeOvershootCandidate\20260507T061500JST_directional_change_overshoot_codegen\20260507T062000JST_directional_change_overshoot_signal_diagnostics\signal_diagnostics.json`.
+- [x] Ran historical-safe backtest wrapper only:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py `
+    --config user_data\config.json `
+    --strategy LongOnlyDirectionalChangeOvershootCandidate `
+    --strategy-path registry\strategies\generated\LongOnlyDirectionalChangeOvershootCandidate\20260507T061500JST_directional_change_overshoot_codegen `
+    --timeframe 5m `
+    --timerange 20250101-20250201 `
+    --pairs BTC/USDT:USDT `
+    --run-id 20260507T062500JST_directional_change_overshoot_historical `
+    --data-format-ohlcv parquet `
+    --reviewer-note "Directional-change overshoot historical wrapper backtest only; no paper, dry-run, live, exchange orders, leverage, shorting, or promotion."
+  ```
+
+  Result: wrapper exited `0`, but performance failed:
+  `total_return_pct=-3.2605379719999994`, `trade_count=253`,
+  `profit_factor=0.3464660896687346`, `win_rate=0.2766798418972332`,
+  `sortino=-93.24140769163247`,
+  `max_drawdown_pct=3.308262864000006`, and
+  `expectancy=-0.0012722095136511002`. Artifacts are under
+  `data\backtests\LongOnlyDirectionalChangeOvershootCandidate\20260507T062500JST_directional_change_overshoot_historical\`.
+- [x] Ran rule-wrapper walk-forward evaluation after discarding two failed
+  command-shape attempts as local evidence:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py `
+    --config user_data\config.json `
+    --strategy LongOnlyDirectionalChangeOvershootCandidate `
+    --strategy-path registry\strategies\generated\LongOnlyDirectionalChangeOvershootCandidate\20260507T061500JST_directional_change_overshoot_codegen `
+    --runner-script scripts\bot_factory_run_backtest.py `
+    --timeframe 5m `
+    --pairs BTC/USDT:USDT `
+    --run-id 20260507T064500JST_directional_change_overshoot_walk_forward_rule_wrapper `
+    --data-format-ohlcv parquet `
+    --window 20250101-20250108 `
+    --window 20250108-20250115 `
+    --window 20250115-20250122 `
+    --window 20250122-20250201 `
+    --reviewer-note "Directional-change overshoot rule-based walk-forward via checked historical backtest wrapper only; OHLCV quality prechecked separately; no paper, dry-run, live, exchange orders, leverage, shorting, or promotion."
+  ```
+
+  Result: `status=completed`, `recommendation=fail`, `completed_windows=4`,
+  `failed_windows=0`, `pass_rate=0.0`, `profitable_windows_ratio=0.0`,
+  `total_return_pct=-3.24521717`, and every walk-forward window had negative
+  return. Artifact:
+  `data\walk_forward\LongOnlyDirectionalChangeOvershootCandidate\20260507T064500JST_directional_change_overshoot_walk_forward_rule_wrapper\walk_forward_metrics.json`.
+- [x] Evaluated and rejected the candidate from local artifacts:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py `
+    --proposal-metadata-json registry\strategies\proposals\20260506T205000Z_LongOnlyDirectionalChangeOvershootCandidate.metadata.json `
+    --generated-metadata-json registry\strategies\generated\LongOnlyDirectionalChangeOvershootCandidate\20260507T061500JST_directional_change_overshoot_codegen\metadata.json `
+    --candidate-id 20260507T064500JST_directional_change_overshoot_full_eval `
+    --static-check-json registry\strategies\generated\LongOnlyDirectionalChangeOvershootCandidate\20260507T061500JST_directional_change_overshoot_codegen\static_check.json `
+    --ohlcv-quality-json registry\strategies\checks\20260506T194416Z_ohlcv_quality.json `
+    --backtest-metrics-json data\backtests\LongOnlyDirectionalChangeOvershootCandidate\20260507T062500JST_directional_change_overshoot_historical\metrics.json `
+    --backtest-trades-csv data\backtests\LongOnlyDirectionalChangeOvershootCandidate\20260507T062500JST_directional_change_overshoot_historical\trades.csv `
+    --backtest-report-md data\backtests\LongOnlyDirectionalChangeOvershootCandidate\20260507T062500JST_directional_change_overshoot_historical\report.md `
+    --walk-forward-metrics-json data\walk_forward\LongOnlyDirectionalChangeOvershootCandidate\20260507T064500JST_directional_change_overshoot_walk_forward_rule_wrapper\walk_forward_metrics.json `
+    --walk-forward-report-md data\walk_forward\LongOnlyDirectionalChangeOvershootCandidate\20260507T064500JST_directional_change_overshoot_walk_forward_rule_wrapper\walk_forward_report.md `
+    --reviewer-note "Directional-change overshoot completed codegen, static/OHLCV/signal diagnostics, historical backtest, and rule-wrapper walk-forward. Evidence is negative; do not promote."
+  ```
+
+  Result: expected non-zero exit because the recommendation is `retry`.
+  Candidate manifest:
+  `registry\strategies\candidates\LongOnlyDirectionalChangeOvershootCandidate\20260507T064500JST_directional_change_overshoot_full_eval\candidate_manifest.json`.
+- [x] Refreshed ranking, failure synthesis, and causal map with the
+  directional-change failure:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --ranking-id 20260507T065000JST_twenty_five_family_with_directional_change_overshoot_ranking ...
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --synthesis-id 20260507T065500JST_twenty_five_family_failure_synthesis_with_directional_change_overshoot ...
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --map-id 20260507T070000JST_twenty_five_family_causal_failure_map_with_directional_change_overshoot ...
+  ```
+
+  Results: ranking has `candidate_count=25` and
+  `paper_ready_candidate_ids=[]`; synthesis has `candidate_count=25`,
+  `paper_ready_count=0`, `zero_trade_count=4`, `negative_return_count=18`,
+  `walk_forward_failed_count=25`, `parameter_only_retry_allowed=false`, and
+  `paper_or_live_promotion_allowed=false`; causal map has
+  `candidate_count=25`, `category_count=10`, and
+  `requires_research_decision_before_proposal=true`. Latest artifacts:
+  `registry\strategies\candidates\rankings\20260507T065000JST_twenty_five_family_with_directional_change_overshoot_ranking\candidate_ranking.json`,
+  `registry\strategies\synthesis\20260507T065500JST_twenty_five_family_failure_synthesis_with_directional_change_overshoot\candidate_failure_synthesis.json`,
+  and
+  `registry\strategies\failure_maps\20260507T070000JST_twenty_five_family_causal_failure_map_with_directional_change_overshoot\causal_failure_map.json`.
+- [x] Remaining limitation: this produced a properly evaluated negative
+  result, not a profitable or paper-ready strategy. No paper trading,
+  dry-run trading, live trading, exchange order endpoint, leverage above
+  `1.0`, shorting, promotion, or bot process control was started.
+
+### Follow-up on 2026-05-07 JST for research selection scoring
+
+- [x] Added a research selection score/rubric so the next thesis gate is not
+  only a field-presence checklist. The score covers novelty against the failed
+  set, structured dated references mapped to the thesis, local closed-candle
+  falsification data, causal failure response quality, and mechanism plus
+  falsification substance. The latest causal map now publishes
+  `minimum_research_selection_score=80`.
+- [x] Updated:
+  - `freqtrade_ext\bot_factory\candidate_failure_map.py`
+  - `freqtrade_ext\bot_factory\research_selection.py`
+  - `freqtrade_ext\bot_factory\strategy_proposals.py`
+  - `scripts\bot_factory_select_research_thesis.py`
+  - `tests\test_bot_factory.py`
+- [x] Verified focused behavior:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py freqtrade_ext\bot_factory\candidate_failure_map.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection_gate or candidate_failure_map"
+  ```
+
+  Result: compile passed; focused pytest passed with 20 tests after adding
+  proposal-stage score enforcement. Coverage now
+  confirms the score reaches `100.0` for a complete causal-map-backed research
+  decision, blocks a below-minimum score with
+  `research_selection_score_meets_minimum`, blocks crafted proposal-stage
+  research decisions through
+  `research_decision_1_research_selection_score_passed`, and renders the
+  rubric in failure map reports.
+- [x] Regenerated the latest local causal failure map from the 25-family
+  synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py `
+    --synthesis-json registry\strategies\synthesis\20260507T065500JST_twenty_five_family_failure_synthesis_with_directional_change_overshoot\candidate_failure_synthesis.json `
+    --map-id 20260507T073000JST_twenty_five_family_causal_failure_map_with_research_selection_score `
+    --reviewer-note "Causal map regenerated after adding research selection score/rubric; local artifact only, no code generation, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or promotion."
+  ```
+
+  Result: `status=completed`, `candidate_count=25`, `category_count=10`,
+  `requires_research_decision_before_proposal=true`. The JSON and report
+  include `minimum_research_selection_score=80` and the five-component rubric.
+  Artifacts:
+  `registry\strategies\failure_maps\20260507T073000JST_twenty_five_family_causal_failure_map_with_research_selection_score\causal_failure_map.json`
+  and
+  `registry\strategies\failure_maps\20260507T073000JST_twenty_five_family_causal_failure_map_with_research_selection_score\causal_failure_map_report.md`.
+- [x] Remaining limitation: this improves theory selection discipline, but it
+  does not create a profitable or paper-ready strategy. No code generation,
+  historical backtest, walk-forward run, paper trading, dry-run trading, live
+  trading, exchange order endpoint use, leverage above `1.0`, shorting,
+  promotion, or process control was started by this increment.
+
+### Follow-up on 2026-05-07 JST for required research question responses
+
+- [x] Tightened the theory-first gate so causal-map required questions must be
+  answered explicitly. The latest failure map now sets
+  `requires_research_question_responses=true`; the research selection CLI
+  accepts repeated `--research-question-response` values in `1=RATIONALE` or
+  `QUESTION=RATIONALE` form.
+- [x] Updated research selection and proposal-stage enforcement:
+  - `freqtrade_ext\bot_factory\candidate_failure_map.py`
+  - `freqtrade_ext\bot_factory\research_selection.py`
+  - `freqtrade_ext\bot_factory\strategy_proposals.py`
+  - `scripts\bot_factory_select_research_thesis.py`
+  - `tests\test_bot_factory.py`
+- [x] Added regression coverage for missing required-question responses at
+  both gate layers. Focused verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\candidate_failure_map.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection_gate or candidate_failure_map or research_decision"
+  ```
+
+  Result: compile passed; focused pytest passed with 21 tests.
+- [x] Regenerated the latest local causal failure map:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py `
+    --synthesis-json registry\strategies\synthesis\20260507T065500JST_twenty_five_family_failure_synthesis_with_directional_change_overshoot\candidate_failure_synthesis.json `
+    --map-id 20260507T074500JST_twenty_five_family_causal_failure_map_with_question_responses `
+    --reviewer-note "Causal map regenerated after requiring explicit responses to required research questions; local artifact only, no code generation, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or promotion."
+  ```
+
+  Result: `status=completed`, `candidate_count=25`, `category_count=10`,
+  `requires_research_decision_before_proposal=true`, and the artifact contains
+  `requires_research_question_responses=true` plus
+  `minimum_research_selection_score=80`. Artifacts:
+  `registry\strategies\failure_maps\20260507T074500JST_twenty_five_family_causal_failure_map_with_question_responses\causal_failure_map.json`
+  and
+  `registry\strategies\failure_maps\20260507T074500JST_twenty_five_family_causal_failure_map_with_question_responses\causal_failure_map_report.md`.
+- [x] Remaining limitation: this prevents another bypass in the research path,
+  but still does not create a profitable or paper-ready strategy. No code
+  generation, historical backtest, walk-forward run, paper trading, dry-run
+  trading, live trading, exchange order endpoint use, leverage above `1.0`,
+  shorting, promotion, or process control was started by this increment.
+
+### Follow-up on 2026-05-07 JST for range-quarticity proposal intake
+
+- [x] Added proposal-stage intake support for the approved
+  `range_quarticity_vol_of_vol_state` research family without enabling
+  strategy code generation. Updated:
+  - `freqtrade_ext\bot_factory\strategy_proposals.py`
+  - `scripts\bot_factory_generate_strategy_proposal.py`
+  - `tests\test_bot_factory.py`
+- [x] Verified that the proposal layer accepts the new theory family, infers
+  range-quarticity features and rule filters, and that codegen blocks until
+  explicit support is implemented:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "range_quarticity or strategy_proposal_generator_accepts_directional_change_overshoot_after_research_gate or strategy_code_generator_supports_directional_change_overshoot"
+  ```
+
+  Result: compile passed; focused pytest passed with 4 tests.
+- [x] Generated the accepted proposal from the approved research decision:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlyRangeQuarticityVolOfVolCandidate --strategy-type range_quarticity_vol_of_vol_state --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --strategy-logic-variant range_quarticity_vol_of_vol_state --failure-synthesis-json registry\strategies\synthesis\20260507T065500JST_twenty_five_family_failure_synthesis_with_directional_change_overshoot\candidate_failure_synthesis.json --research-decision-json registry\strategies\research_decisions\20260507T082500JST_range_quarticity_vol_of_vol_research_gate\research_decision.json --created-at 2026-05-07T08:35:00+09:00 ...
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `generator_mode=rule_based`,
+  `strategy_logic_variant=range_quarticity_vol_of_vol_state`,
+  `thesis_id=TH-RANGE-QUARTICITY-VOL-OF-VOL-20260507`, and
+  `research_reference_count=3`. Artifacts:
+  `registry\strategies\proposals\20260506T233500Z_LongOnlyRangeQuarticityVolOfVolCandidate.md`
+  and
+  `registry\strategies\proposals\20260506T233500Z_LongOnlyRangeQuarticityVolOfVolCandidate.metadata.json`.
+- [x] Confirmed the code generator does not silently fall back to an older
+  family:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T233500Z_LongOnlyRangeQuarticityVolOfVolCandidate.metadata.json --candidate-id range_quarticity_vol_of_vol_001 --created-at 2026-05-07T08:40:00+09:00
+  ```
+
+  Result: expected non-zero exit with `status=blocked`,
+  `strategy_code_generated=false`, `candidate_evaluation_eligible=false`, and
+  blocker `strategy_logic_variant_supported`. Artifact:
+  `registry\strategies\generated\LongOnlyRangeQuarticityVolOfVolCandidate\range_quarticity_vol_of_vol_001\metadata.json`.
+- [x] Remaining limitation: this is a theory-gated accepted proposal only.
+  It is not a generated strategy, not backtested, not walk-forward evaluated,
+  and not profitable or paper-ready. No historical backtest, walk-forward run,
+  paper trading, dry-run trading, live trading, exchange order endpoint use,
+  leverage above `1.0`, shorting, promotion, or process control was started by
+  this increment.
+
+### Follow-up on 2026-05-07 JST for range-quarticity codegen and evaluation
+
+- [x] Implemented explicit `range_quarticity_vol_of_vol_state` strategy code
+  generation and signal diagnostics support. Updated:
+  - `freqtrade_ext\bot_factory\strategy_code.py`
+  - `freqtrade_ext\bot_factory\signal_diagnostics.py`
+  - `tests\test_bot_factory.py`
+- [x] Added regression coverage for generated code, range-quarticity signal
+  components, and unknown-variant no-fallback blocking:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "range_quarticity or unknown_strategy_logic_variant"
+  ```
+
+  Result: compile passed; focused pytest passed with 4 tests. The existing
+  pandas `PerformanceWarning: DataFrame is highly fragmented` remains in
+  `signal_diagnostics.py`.
+- [x] Generated the range-quarticity strategy:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260506T233500Z_LongOnlyRangeQuarticityVolOfVolCandidate.metadata.json --candidate-id 20260507T091000JST_range_quarticity_vol_of_vol_codegen --created-at 2026-05-07T09:10:00+09:00
+  ```
+
+  Result: `status=generated`, `strategy_code_generated=true`,
+  `candidate_evaluation_eligible=true`, and `static_check_ok=true`. Artifact:
+  `registry\strategies\generated\LongOnlyRangeQuarticityVolOfVolCandidate\20260507T091000JST_range_quarticity_vol_of_vol_codegen\metadata.json`.
+- [x] Ran required pre-backtest static and OHLCV checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyRangeQuarticityVolOfVolCandidate\20260507T091000JST_range_quarticity_vol_of_vol_codegen\LongOnlyRangeQuarticityVolOfVolCandidate.py --output registry\strategies\checks\20260507T091500JST_range_quarticity_static_check.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m --output registry\strategies\checks\20260507T091500JST_range_quarticity_ohlcv_quality.json
+  ```
+
+  Results: static check `ok=true`; OHLCV quality `ok=true`, `rows=8995`,
+  `duplicate_timestamps=0`, and `missing_intervals=0`.
+- [x] Ran signal diagnostics:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyRangeQuarticityVolOfVolCandidate\20260507T091000JST_range_quarticity_vol_of_vol_codegen\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timerange 20250101-20250201 --diagnostics-id 20260507T091700JST_range_quarticity_signal_diagnostics
+  ```
+
+  Result: `status=completed`, `entry_count=250`,
+  `zero_entry_signal=false`, and `diagnosis_codes=[]`. Artifact:
+  `registry\strategies\diagnostics\LongOnlyRangeQuarticityVolOfVolCandidate\20260507T091000JST_range_quarticity_vol_of_vol_codegen\20260507T091700JST_range_quarticity_signal_diagnostics\signal_diagnostics.json`.
+- [x] Ran historical backtest and walk-forward evaluation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyRangeQuarticityVolOfVolCandidate --strategy-path registry\strategies\generated\LongOnlyRangeQuarticityVolOfVolCandidate\20260507T091000JST_range_quarticity_vol_of_vol_codegen --timeframe 5m --timerange 20250101-20250201 --pairs BTC/USDT:USDT --run-id 20260507T092000JST_range_quarticity_historical --data-format-ohlcv parquet
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyRangeQuarticityVolOfVolCandidate --strategy-path registry\strategies\generated\LongOnlyRangeQuarticityVolOfVolCandidate\20260507T091000JST_range_quarticity_vol_of_vol_codegen --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --run-id 20260507T092500JST_range_quarticity_rule_walk_forward --data-format-ohlcv parquet --window 20250101-20250108 --window 20250108-20250115 --window 20250115-20250122 --window 20250122-20250201 --min-pass-rate 0.75 --min-profitable-windows-ratio 0.75
+  ```
+
+  Results: historical backtest had `trade_count=92`,
+  `total_return_pct=-0.8648079839999998`,
+  `profit_factor=0.5266356841671438`,
+  `win_rate=0.41304347826086957`, and
+  `expectancy=-0.0009154096999555411`. Walk-forward completed all four
+  windows with `recommendation=fail`, `pass_rate=0.0`,
+  `profitable_windows_ratio=0.0`, `total_return_pct=-0.8648079839999999`, and
+  all windows negative. Artifacts:
+  `data\backtests\LongOnlyRangeQuarticityVolOfVolCandidate\20260507T092000JST_range_quarticity_historical\metrics.json`
+  and
+  `data\walk_forward\LongOnlyRangeQuarticityVolOfVolCandidate\20260507T092500JST_range_quarticity_rule_walk_forward\walk_forward_metrics.json`.
+- [x] Wrote the candidate manifest and refreshed aggregate failure evidence:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260506T233500Z_LongOnlyRangeQuarticityVolOfVolCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyRangeQuarticityVolOfVolCandidate\20260507T091000JST_range_quarticity_vol_of_vol_codegen\metadata.json --candidate-id range_quarticity_vol_of_vol_001 ...
+  .\.venv\Scripts\python.exe scripts\bot_factory_rank_candidates.py --ranking-id 20260507T093100JST_thirty_candidate_with_range_quarticity_ranking ...
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T093100JST_thirty_candidate_with_range_quarticity_ranking\candidate_ranking.json --synthesis-id 20260507T093500JST_thirty_candidate_failure_synthesis_with_range_quarticity ...
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T093500JST_thirty_candidate_failure_synthesis_with_range_quarticity\candidate_failure_synthesis.json --map-id 20260507T094000JST_thirty_candidate_causal_failure_map_with_range_quarticity
+  ```
+
+  Results: candidate manifest returned expected non-zero exit with
+  `recommendation=retry`; refreshed ranking has `candidate_count=30` and
+  `paper_ready_candidate_ids=[]`; refreshed synthesis has
+  `paper_ready_count=0`, `zero_trade_count=7`, `negative_return_count=20`,
+  `walk_forward_failed_count=30`, `parameter_only_retry_allowed=false`, and
+  `paper_or_live_promotion_allowed=false`; refreshed causal map has
+  `candidate_count=30`, `category_count=10`,
+  `requires_research_question_responses=true`, and
+  `minimum_research_selection_score=80`. Latest artifacts:
+  `registry\strategies\candidates\LongOnlyRangeQuarticityVolOfVolCandidate\range_quarticity_vol_of_vol_001\candidate_manifest.json`,
+  `registry\strategies\candidates\rankings\20260507T093100JST_thirty_candidate_with_range_quarticity_ranking\candidate_ranking.json`,
+  `registry\strategies\synthesis\20260507T093500JST_thirty_candidate_failure_synthesis_with_range_quarticity\candidate_failure_synthesis.json`, and
+  `registry\strategies\failure_maps\20260507T094000JST_thirty_candidate_causal_failure_map_with_range_quarticity\causal_failure_map.json`.
+- [x] Remaining limitation: this produced another evaluated negative result,
+  not a profitable or paper-ready strategy. No paper trading, dry-run trading,
+  live trading, exchange order endpoint use, leverage above `1.0`, shorting,
+  promotion, or bot process control was started.
+
+### Follow-up on 2026-05-07 JST for risk-weighted causal research scoring
+
+- [x] Improved the research-selection loop after 30 failed candidates without
+  adding another candidate family. `candidate_failure_map.py` now emits
+  prevalence/severity-based `causal_risk_weights` for each failure category,
+  including response-focus guidance and whether the category is required for
+  the next research decision. `research_selection.py` now records
+  `research_selection_score_v2` with weighted causal-response scoring, category
+  scores, unanswered required risk weight, and the risk weights consumed by the
+  decision report.
+- [x] Added focused coverage for risk-weighted causal maps and weighted
+  research-selection scoring:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_failure_map.py freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_failure_map or research_selection_gate or research_selection_score"
+  ```
+
+  Result: compile passed; focused pytest passed 15 tests.
+- [x] Regenerated the latest local causal failure map from the 30-candidate
+  synthesis with risk weights:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T093500JST_thirty_candidate_failure_synthesis_with_range_quarticity\candidate_failure_synthesis.json --map-id 20260507T103000JST_thirty_candidate_causal_failure_map_with_risk_weights --reviewer-note "Causal failure map regenerated with prevalence/severity risk weights for research selection scoring; local artifact only, no proposal generation, code generation, backtest, paper, dry-run, live, exchange orders, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `candidate_count=30`, `category_count=10`,
+  and `requires_research_decision_before_proposal=true`. Top required risk
+  weights are `cost_sensitive_mechanism=100.0`,
+  `no_profitable_walk_forward_windows=100.0`,
+  `regime_fragile_mechanism=100.0`, and
+  `walk_forward_fragility=100.0`. The latest map artifact is
+  `registry\strategies\failure_maps\20260507T103000JST_thirty_candidate_causal_failure_map_with_risk_weights\causal_failure_map.json`.
+- [x] Re-ran broader verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: full Bot Factory pytest passed; `git diff --check` passed with only
+  the existing LF-to-CRLF working-copy warnings for `.gitignore`,
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this is a selection-quality improvement only. It
+  does not create a profitable or paper-ready strategy and did not start
+  proposal generation, code generation, historical backtesting, walk-forward
+  evaluation, paper trading, dry-run trading, live trading, exchange order
+  endpoint use, leverage above `1.0`, shorting, promotion, or process control.
+
+### Follow-up on 2026-05-07 JST for proposal-stage risk-weighted gate enforcement
+
+- [x] Closed a proposal-stage bypass after adding risk-weighted research
+  scoring. `strategy_proposals.py` now blocks a research decision that consumes
+  a causal map with `causal_risk_weights` unless the decision also carries
+  `research_selection_score_v2` weighted causal score details. Proposal
+  metadata now records `causal_risk_weights_present`,
+  `missing_required_risk_weight_categories`,
+  `research_selection_score_version`, `weighted_causal_score_available`,
+  `weighted_response_score`, and `unanswered_required_risk_weight`.
+- [x] Added focused regression coverage:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "risk_weighted_decision or research_decision_below_selection_score or research_selection_score"
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests.
+- [x] Re-ran broader verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: full Bot Factory pytest passed; `git diff --check` passed with only
+  the existing LF-to-CRLF working-copy warnings for `.gitignore`,
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this hardens the research-to-proposal gate only.
+  It does not create a profitable or paper-ready strategy and did not start
+  proposal generation, code generation, historical backtesting, walk-forward
+  evaluation, paper trading, dry-run trading, live trading, exchange order
+  endpoint use, leverage above `1.0`, shorting, promotion, or process control.
+
+### Follow-up on 2026-05-07 JST for high-risk cost-response quantification
+
+- [x] Tightened the risk-weighted research gate for the dominant
+  `cost_sensitive_mechanism` failure mode. When a causal map marks
+  `cost_sensitive_mechanism` with `risk_score >= 80`, the causal response now
+  must include quantified cost/edge evidence such as bps, basis points, `%`, or
+  an explicit numeric fee/slippage/turnover/spread reference. A qualitative
+  "fees matter" statement is no longer enough for high-risk cost-sensitive
+  maps.
+- [x] Added focused coverage:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "quantified_cost_response or research_selection_score_weights_unanswered_causal_risk or research_selection_gate_accepts_causal_failure_map_responses"
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests.
+- [x] Re-ran broader verification after the high-risk cost-response gate change:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: full Bot Factory pytest passed; `git diff --check` passed with only
+  LF-to-CRLF working-copy warnings for `.gitignore`,
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this improves the research gate's cost-sensitivity
+  discipline only. It does not create a profitable or paper-ready strategy and
+  did not start proposal generation, code generation, historical backtesting,
+  walk-forward evaluation, paper trading, dry-run trading, live trading,
+  exchange order endpoint use, leverage above `1.0`, shorting, promotion, or
+  process control.
+
+### Follow-up on 2026-05-07 JST for worktree hygiene classification
+
+- [x] Rechecked the large working tree before adding another strategy family:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff --name-status
+  git diff --numstat
+  git ls-files --others --exclude-standard
+  git diff -- .gitignore
+  ```
+
+  Result: current non-ignored working tree has 20 tracked file changes plus 13
+  untracked source or documentation files. The intended source/documentation
+  diff is Bot Factory code, focused scripts, focused tests, docs, `.gitignore`,
+  and the proposal template. Generated local artifacts remain outside the
+  intended Git diff.
+- [x] Classified artifact policy in `docs/BOT_FACTORY_GOAL_AUDIT.md`.
+  `data/backtests/`, `data/freqai/`, `data/freqai_training/`,
+  `data/walk_forward/`, and generated
+  `registry/strategies/{candidates,diagnostics,failure_maps,generated,proposals,research_decisions,reviews,synthesis}/`
+  outputs should remain ignored unless a future task explicitly asks to
+  preserve a specific complete evidence artifact.
+- [x] Cleaned generated test/runtime caches outside `.venv` with a
+  path-guarded PowerShell cleanup. Result: `removed=33`,
+  `remaining_pycache_outside_venv=0`, `pytest_cache_exists=False`.
+- [x] Re-ran hygiene verification after the docs-only classification update:
+
+  ```powershell
+  git diff --check
+  ```
+
+  Result: passed with only the existing LF-to-CRLF working-copy warnings for
+  `.gitignore`, `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this is Git hygiene and handoff clarity only. It
+  does not create a profitable or paper-ready strategy. The deletion of
+  `docs/BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md` remains judgment-waiting and was
+  not silently restored or committed.
+
+### Follow-up on 2026-05-07 JST for local falsification-backed cost gate
+
+- [x] Hardened the high-risk cost-sensitive research gate so quantified text is
+  no longer enough by itself. `scripts/bot_factory_select_research_thesis.py`
+  now accepts `--local-falsification-json`, and
+  `freqtrade_ext\bot_factory\research_selection.py` blocks research decisions
+  that consume a causal map where `cost_sensitive_mechanism` has
+  `risk_score >= 80` unless at least one local JSON artifact:
+  - exists inside the workspace,
+  - parses as a JSON object,
+  - matches the current `thesis_id`,
+  - records `expected_edge_bps` and `all_in_cost_bps`,
+  - has positive net edge after all-in cost,
+  - has sample count at least `20`.
+- [x] Updated handoff docs:
+  `docs/BOT_FACTORY_GOAL_AUDIT.md` and
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` now state that
+  high-risk `cost_sensitive_mechanism` requires local falsification JSON
+  evidence, not only bps wording in the causal response.
+- [x] Added focused regression coverage in `tests\test_bot_factory.py`:
+  high-risk quantified cost responses now block without local falsification
+  evidence and approve only when a thesis-matched local artifact shows
+  `18.0` bps expected edge, `12.0` bps all-in cost, and `64` samples.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "quantified_cost_response or research_selection_gate_accepts_causal_failure_map_responses or research_selection_score_weights_unanswered_causal_risk"
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests.
+- [x] Re-ran broader verification and CLI surface check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py --help
+  git diff --check
+  ```
+
+  Result: full Bot Factory pytest passed; the research selection CLI help now
+  shows `--local-falsification-json`; `git diff --check` passed with only the
+  existing LF-to-CRLF working-copy warnings for `.gitignore`,
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this is still a research-gate hardening increment.
+  It does not create a profitable or paper-ready strategy and did not start
+  proposal generation, code generation, historical backtesting, walk-forward
+  evaluation, paper trading, dry-run trading, live trading, exchange order
+  endpoint use, leverage above `1.0`, shorting, promotion, or process control.
+
+### Follow-up on 2026-05-07 JST for local falsification artifact generation
+
+- [x] Added local pre-proposal falsification evidence generation:
+  - `freqtrade_ext\bot_factory\local_falsification.py`
+  - `scripts\bot_factory_build_local_falsification.py`
+  The command consumes local closed-candle OHLCV plus a local event timestamp
+  file and writes `local_falsification.json` /
+  `local_falsification_report.md` evidence for `--local-falsification-json`.
+  The artifact records `expected_edge_bps`, `all_in_cost_bps`, `net_edge_bps`,
+  sample count, win rate, and split-window profitability. It writes local
+  artifacts only and does not generate strategy code, run backtests, start
+  paper/dry-run/live trading, call exchange order endpoints, use shorting, use
+  leverage above `1.0`, or manage processes.
+- [x] Added focused tests proving:
+  - positive closed-candle event evidence writes a passing local falsification
+    artifact with positive net edge after all-in cost,
+  - negative event evidence fails on `expected_edge_exceeds_all_in_cost`.
+- [x] Updated handoff docs:
+  `docs/BOT_FACTORY_GOAL_AUDIT.md` and
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` now include the
+  local falsification artifact generator as the source for research-gate
+  cost/edge evidence.
+- [x] Focused verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_local_falsification.py freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_falsification or quantified_cost_response"
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests.
+- [x] Re-ran broader verification and CLI surface check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --help
+  git diff --check
+  ```
+
+  Result: full Bot Factory pytest passed; the new CLI help lists
+  `--thesis-id`, `--mechanism-class`, `--ohlcv-path`, `--event-file`,
+  `--hold-candles`, `--all-in-cost-bps`, `--min-sample-count`, and
+  `--min-profitable-windows-ratio`; `git diff --check` passed with only the
+  existing LF-to-CRLF working-copy warnings for `.gitignore`,
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this produces local event-study falsification
+  evidence only. It still requires a thesis-specific event timestamp file and
+  does not itself discover a profitable theory, create a strategy proposal,
+  generate strategy code, run historical backtests, run walk-forward
+  evaluation, or make any paper-ready claim.
+
+### Follow-up on 2026-05-07 JST for local falsification trust boundary
+
+- [x] Tightened the research gate so high-risk cost evidence cannot be satisfied
+  by an arbitrary hand-written JSON with plausible numbers. In
+  `freqtrade_ext\bot_factory\research_selection.py`, a
+  `--local-falsification-json` artifact now must:
+  - have `factory=research_local_falsification`,
+  - preserve historical-only safety scope,
+  - avoid backtest, strategy-code-generation, paper/dry-run/live, order,
+    shorting, leverage-above-`1.0`, and process-control flags,
+  - still match the current `thesis_id`, pass sample count, and show positive
+    net edge after all-in cost.
+- [x] Added regression coverage in `tests\test_bot_factory.py` proving a
+  crafted JSON with matching `thesis_id`, `expected_edge_bps`,
+  `all_in_cost_bps`, and `sample_count` is blocked when the factory and safety
+  scope are missing, while a scoped Bot Factory local falsification artifact is
+  accepted.
+- [x] Updated handoff docs:
+  `docs/BOT_FACTORY_GOAL_AUDIT.md` and
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`.
+- [x] Focused verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "quantified_cost_response or local_falsification"
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests after fixing the test
+  fixture directory creation to use `exist_ok=True`.
+- [x] Re-ran broader verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: full Bot Factory pytest passed; `git diff --check` passed with only
+  the existing LF-to-CRLF working-copy warnings for `.gitignore`,
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this is a trust-boundary hardening increment. It
+  does not create a profitable or paper-ready strategy and did not start
+  proposal generation, code generation, historical backtesting, walk-forward
+  evaluation, paper trading, dry-run trading, live trading, exchange order
+  endpoint use, leverage above `1.0`, shorting, promotion, or process control.
+
+### Follow-up on 2026-05-07 JST for local research event generation
+
+- [x] Added local event timestamp generation so local falsification no longer
+  depends on a completely hand-authored event timestamp file:
+  - `freqtrade_ext\bot_factory\local_events.py`
+  - `scripts\bot_factory_build_local_events.py`
+  The command consumes local closed-candle OHLCV and a local
+  `factory=research_local_event_spec` JSON with explicit AND conditions over
+  supported past/current closed-candle features: `hour_utc`, `weekday`,
+  `return_bps`, `range_pct`, `sma_distance_bps`, and `volume_zscore`. It
+  writes `events.csv`,
+  `local_events.json`, and `local_events_report.md` artifacts for
+  `bot_factory_build_local_falsification.py`.
+- [x] Safety and scope: the event builder performs no parameter search or
+  optimization, blocks unsupported future-return or unrecognized features, and
+  does not generate strategy code, run backtests, start paper/dry-run/live
+  trading, call exchange order endpoints, use shorting, use leverage above
+  `1.0`, or manage processes.
+- [x] Added focused tests in `tests\test_bot_factory.py` proving:
+  - a closed-candle return event spec writes `events.csv` and can feed local
+    falsification evidence with positive net edge after all-in cost,
+  - an unsupported future-return feature is blocked before event generation.
+- [x] Updated handoff docs:
+  `docs/BOT_FACTORY_GOAL_AUDIT.md` and
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`.
+- [x] Focused verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py scripts\bot_factory_build_local_events.py freqtrade_ext\bot_factory\local_falsification.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder or local_falsification"
+  ```
+
+  Result: compile passed; focused pytest passed 4 tests.
+- [x] Re-ran broader verification and CLI surface check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --help
+  git diff --check
+  ```
+
+  Result: full Bot Factory pytest passed; the new local event CLI help lists
+  `--ohlcv-path`, `--event-spec-json`, `--event-id`, and `--output-root`;
+  `git diff --check` passed with only the existing LF-to-CRLF working-copy
+  warnings for `.gitignore`, `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this creates a safe theory-event-to-falsification
+  artifact path, not a profitable strategy. It still requires a distinct
+  research thesis and explicit event spec before proposal generation, and it
+  does not run historical backtests, walk-forward evaluation, paper trading, or
+  promotion.
+
+### Follow-up on 2026-05-07 JST for local falsification event-source trust chain
+
+- [x] Linked local falsification evidence back to the local event builder. The
+  event builder now records the emitted `events.csv` path in `local_events.json`,
+  and `scripts\bot_factory_build_local_falsification.py` accepts
+  `--event-source-json`.
+- [x] `freqtrade_ext\bot_factory\local_falsification.py` now validates the
+  supplied event source artifact before treating the falsification as fully
+  sourced: `factory=research_local_event_builder`, `status=completed`, matching
+  `thesis_id`, matching `events.csv`, matching source OHLCV path, and
+  historical-only closed-candle safety scope.
+- [x] Hardened `freqtrade_ext\bot_factory\research_selection.py` so high-risk
+  `cost_sensitive_mechanism` evidence must pass the Bot Factory
+  `event_source` checks as well as factory, safety, thesis, bps edge/cost, and
+  sample-count checks. A hand-written `local_falsification.json` with plausible
+  numbers but no valid Bot Factory event source is now blocked.
+- [x] Updated handoff docs:
+  `docs/BOT_FACTORY_GOAL_AUDIT.md` and
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`.
+- [x] Focused verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_build_local_events.py scripts\bot_factory_build_local_falsification.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder or local_falsification or quantified_cost_response"
+  ```
+
+  Result: compile passed; focused pytest passed 5 tests.
+- [x] Re-ran broader verification and CLI surface check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --help
+  git diff --check
+  ```
+
+  Result: full Bot Factory pytest passed with the existing
+  `signal_diagnostics.py` pandas fragmentation warnings; the falsification CLI
+  help lists `--event-source-json`; `git diff --check` passed with only the
+  existing LF-to-CRLF working-copy warnings for `.gitignore`,
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this is a provenance hardening increment. It does
+  not create a profitable or paper-ready strategy and did not start proposal
+  generation, code generation, historical backtesting, walk-forward evaluation,
+  paper trading, dry-run trading, live trading, exchange order endpoint use,
+  leverage above `1.0`, shorting, promotion, or process control.
+
+### Follow-up on 2026-05-07 JST for pre-proposal volatility-managed momentum falsification
+
+- [x] Applied the latest 30-candidate failure-map direction before attempting
+  another proposal or generator extension. The tested thesis was
+  `TH-VOL-MANAGED-MOMENTUM-20260507` /
+  `volatility_managed_momentum_state`: short-horizon BTC momentum should only
+  be considered if the current candle remains range-contained, so the idea is
+  not plain threshold loosening of failed trend/breakout families.
+- [x] Wrote a single fixed local event spec before running the event builder:
+  `registry\strategies\research_decisions\20260507T120000JST_volatility_managed_momentum_event_spec.json`.
+  The spec used local BTC 5m closed-candle OHLCV only and required:
+  `return_bps(12) >= 15.0`, `sma_distance_bps(24) >= 5.0`,
+  `range_pct(1) <= 0.2625`, `volume_zscore(48) <= 1.5`, with
+  `cooldown_candles=6`. This was a one-shot theory screen, not a parameter
+  search.
+- [x] Built the local event source:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T120000JST_volatility_managed_momentum_event_spec.json --event-id 20260507T120000JST_volatility_managed_momentum_event_study --created-at 2026-05-07T12:00:00+09:00 --reviewer-note "Pre-proposal local event study only; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: `status=completed`, `event_count=547`, `blocker_count=0`. Artifacts:
+  `registry\strategies\research_decisions\20260507T120000JST_volatility_managed_momentum_event_study\local_events.json`,
+  `events.csv`, and `local_events_report.md`.
+- [x] Ran event-source-linked local falsification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-VOL-MANAGED-MOMENTUM-20260507 --mechanism-class volatility_managed_momentum_state --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T120000JST_volatility_managed_momentum_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T120000JST_volatility_managed_momentum_event_study\local_events.json --hold-candles 6 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --falsification-id 20260507T120500JST_volatility_managed_momentum_local_falsification --created-at 2026-05-07T12:05:00+09:00 --reviewer-note "Pre-proposal cost/edge falsification only; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: `status=failed`, `sample_count=546`,
+  `expected_edge_bps=0.189233`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-11.810767`, `profitable_windows_ratio=0.0`. The event-source
+  chain passed (`factory_valid`, `status_completed`, `thesis_matches`,
+  `event_path_matches`, `ohlcv_path_matches`, and `safety_scope_valid`), but
+  the falsification blockers were `expected_edge_exceeds_all_in_cost` and
+  `profitable_windows_ratio_sufficient`.
+- [x] Decision: do not run research approval, proposal generation, code
+  generation, historical backtesting, walk-forward evaluation, paper trading,
+  dry-run trading, live trading, exchange order endpoint use, leverage above
+  `1.0`, shorting, promotion, or process control for this thesis. The local
+  evidence rejects it before proposal/codegen.
+
+### Follow-up on 2026-05-07 JST for prior local falsification rejection gating
+
+- [x] Wired failed pre-proposal local falsification evidence back into the
+  research selection gate. `ResearchSelectionInputs` and
+  `scripts\bot_factory_select_research_thesis.py` now accept
+  `--prior-local-falsification-json`.
+- [x] `freqtrade_ext\bot_factory\research_selection.py` now parses prior
+  `local_falsification.json` artifacts and blocks research selection when a
+  valid failed/rejected artifact matches the current `thesis_id` or
+  `mechanism_class`. This turns pre-proposal local falsification failures into
+  machine-readable rejection memory instead of only a Markdown note.
+- [x] Added focused regression coverage in `tests\test_bot_factory.py` proving
+  that a prior failed `factory=research_local_falsification` artifact with
+  historical-only safety scope blocks a repeated
+  `closed_candle_resilience_reclaim` mechanism through
+  `research_thesis_not_previously_rejected_by_local_falsification`.
+- [x] Focused verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "prior_local_falsification or quantified_cost_response or research_selection_gate_blocks_repeated_failed_family"
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests.
+- [x] Re-ran broader verification and CLI surface check:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py --help
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: the research selection CLI help lists
+  `--prior-local-falsification-json`; full Bot Factory pytest passed with the
+  existing `signal_diagnostics.py` pandas fragmentation warnings; `git diff
+  --check` passed with only the existing LF-to-CRLF working-copy warnings for
+  `.gitignore`, `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this is rejection-memory plumbing. It does not
+  create a profitable or paper-ready strategy and did not start proposal
+  generation, code generation, historical backtesting, walk-forward evaluation,
+  paper trading, dry-run trading, live trading, exchange order endpoint use,
+  leverage above `1.0`, shorting, promotion, or process control.
+
+### Follow-up on 2026-05-07 JST for real prior-rejection research gate smoke
+
+- [x] Ran the actual `TH-VOL-MANAGED-MOMENTUM-20260507` failed local
+  falsification artifact through the research selection gate as both current
+  cost/edge evidence and prior rejection evidence. The command consumed:
+  - latest 30-candidate failure synthesis,
+  - latest risk-weighted causal failure map,
+  - `registry\strategies\research_decisions\20260507T120500JST_volatility_managed_momentum_local_falsification\local_falsification.json`,
+  - two structured research references for time-series momentum and
+    volatility-managed portfolios.
+- [x] Command result:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py --failure-synthesis-json registry\strategies\synthesis\20260507T093500JST_thirty_candidate_failure_synthesis_with_range_quarticity\candidate_failure_synthesis.json --causal-failure-map-json registry\strategies\failure_maps\20260507T103000JST_thirty_candidate_causal_failure_map_with_risk_weights\causal_failure_map.json --thesis-id TH-VOL-MANAGED-MOMENTUM-20260507 --thesis-family volatility_managed_momentum_state --mechanism-class volatility_managed_momentum_state --local-falsification-json registry\strategies\research_decisions\20260507T120500JST_volatility_managed_momentum_local_falsification\local_falsification.json --prior-local-falsification-json registry\strategies\research_decisions\20260507T120500JST_volatility_managed_momentum_local_falsification\local_falsification.json --decision-id 20260507T121000JST_volatility_managed_momentum_prior_rejection_gate ...
+  ```
+
+  Result: `status=blocked`, `research_selection_score=100.0`,
+  `proposal_generation_allowed=false`, `code_generation_allowed=false`,
+  `blocker_count=2`, `deferral_count=0`.
+- [x] Confirmed blocker names:
+  - `research_thesis_not_previously_rejected_by_local_falsification`,
+  - `local_falsification_cost_edge_exceeds_costs`.
+- [x] Artifacts:
+  `registry\strategies\research_decisions\20260507T121000JST_volatility_managed_momentum_prior_rejection_gate\research_decision.json`
+  and `research_decision_report.md`. These are local generated research
+  artifacts and remain ignored by Git.
+- [x] Decision: even with a passing research score and complete causal-map
+  responses, this thesis is blocked because the local event-source-linked
+  falsification already rejected its post-cost edge. No proposal generation,
+  code generation, historical backtest, walk-forward evaluation, paper trading,
+  dry-run trading, live trading, exchange order endpoint use, leverage above
+  `1.0`, shorting, promotion, or process control was started.
+
+### Follow-up on 2026-05-07 JST for local event UTC session feature support
+
+- [x] Extended the local event builder's fixed, closed-candle feature set with
+  timestamp-derived `hour_utc` and `weekday` features in
+  `freqtrade_ext\bot_factory\local_events.py`. This allows session/calendar
+  research theses to be falsified before proposal/codegen without introducing
+  parameter search or future-return features.
+- [x] Added focused regression coverage in `tests\test_bot_factory.py` proving
+  that a `factory=research_local_event_spec` using `hour_utc == 13` and a
+  weekday filter generates the expected UTC session event timestamps while
+  preserving historical-only safety scope.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused local event builder pytest passed 3 tests;
+  full Bot Factory pytest passed with the existing `signal_diagnostics.py`
+  pandas fragmentation warnings; `git diff --check` passed with only the
+  existing LF-to-CRLF working-copy warnings for `.gitignore`,
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+- [x] Remaining limitation: this is pre-proposal event-source infrastructure.
+  It does not discover a profitable theory, generate a strategy proposal,
+  generate strategy code, run historical backtests, run walk-forward
+  evaluation, start paper/dry-run/live trading, call exchange order endpoints,
+  use leverage above `1.0`, short, promote, or manage bot processes.
+
+### Follow-up on 2026-05-07 JST for UTC session downside reversal local screen
+
+- [x] Used the new timestamp-derived local event features for a single fixed
+  pre-proposal theory screen, not a parameter search:
+  `TH-UTC-SESSION-DOWNSIDE-REVERSAL-20260507` /
+  `utc_session_downside_reversal_event`. The fixed event spec requires weekday
+  UTC 13-16 candles, a 12-candle downside move, below-SMA context,
+  positive volume z-score, and a non-crash-like current range. Artifact:
+  `registry\strategies\research_decisions\20260507T123000JST_utc_session_downside_reversal_event_spec.json`.
+- [x] Rechecked the local BTC 5m OHLCV input before the screen:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  ```
+
+  Result: `ok=true`, `rows=8995`,
+  `start=2025-01-01T00:00:00+00:00`,
+  `end=2025-02-01T05:30:00+00:00`, `duplicate_timestamps=0`,
+  `missing_intervals=0`. The generated quality artifact remains local/ignored:
+  `registry\strategies\checks\20260506T230923Z_ohlcv_quality.json`.
+- [x] Built the local event source:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T123000JST_utc_session_downside_reversal_event_spec.json --event-id 20260507T123000JST_utc_session_downside_reversal_event_study --created-at 2026-05-07T12:30:00+09:00 --reviewer-note "Pre-proposal UTC session downside reversal event study only; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: `status=completed`, `event_count=15`, `blocker_count=0`.
+  Artifacts:
+  `registry\strategies\research_decisions\20260507T123000JST_utc_session_downside_reversal_event_study\local_events.json`,
+  `events.csv`, and `local_events_report.md`.
+- [x] Ran event-source-linked local falsification without proposal/codegen:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-UTC-SESSION-DOWNSIDE-REVERSAL-20260507 --mechanism-class utc_session_downside_reversal_event --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T123000JST_utc_session_downside_reversal_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T123000JST_utc_session_downside_reversal_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --falsification-id 20260507T123500JST_utc_session_downside_reversal_local_falsification --created-at 2026-05-07T12:35:00+09:00 --reviewer-note "Pre-proposal cost/edge falsification only; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: expected non-zero exit with `status=failed`,
+  `expected_edge_bps=44.614166`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=32.614166`, `sample_count=15`,
+  `min_sample_count=20`, `profitable_windows_ratio=0.75`, and blocker
+  `event_sample_count_sufficient`. The event source trust-chain checks passed.
+  Artifact:
+  `registry\strategies\research_decisions\20260507T123500JST_utc_session_downside_reversal_local_falsification\local_falsification.json`.
+- [x] Decision: do not proceed to research approval, proposal generation,
+  strategy code generation, historical backtest, walk-forward evaluation,
+  paper trading, dry-run trading, live trading, exchange order endpoint use,
+  leverage above `1.0`, shorting, promotion, or process control. The gross
+  local signal is interesting, but current local BTC data only provides 15
+  matched events, below the minimum sample gate; threshold loosening would be
+  parameter-style overfitting. This short-history result was later superseded
+  by the long-history recheck below.
+
+### Follow-up on 2026-05-07 JST for long-history UTC session downside screen
+
+- [x] Added `--prepend` support to the safe historical data download wrapper
+  `scripts\bot_factory_download_data.py`, so Bot Factory can extend OHLCV data
+  before an existing local parquet start date without using `--erase` or
+  touching trading/order paths. Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile scripts\bot_factory_download_data.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_download_data.py --help
+  ```
+
+  Result: compile passed and CLI help lists `--prepend`.
+- [x] Extended local BTC/USDT:USDT futures 5m OHLCV from the previous
+  one-month window to a longer `20240101-20250201` range using historical
+  data only:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_download_data.py --config user_data\config.json --pairs BTC/USDT:USDT --timeframes 5m --timerange 20240101-20250201 --trading-mode futures --prepend --quality-output registry\strategies\checks\20260507T124500JST_btc_5m_20240101_20250201_ohlcv_quality.json
+  ```
+
+  Result: wrapper passed `--prepend`; Freqtrade downloaded 105999 additional
+  5m futures candles, plus related funding-rate and mark candles, and wrote
+  the requested local quality report. No trade, paper, dry-run, live,
+  exchange order endpoint, leverage, shorting, promotion, or process-control
+  path was started.
+- [x] Rechecked the expanded BTC 5m parquet:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m --output registry\strategies\checks\20260507T124600JST_btc_5m_20240101_20250201_ohlcv_quality_recheck.json
+  ```
+
+  Result: `ok=true`, `rows=114401`,
+  `start=2024-01-01T00:00:00+00:00`,
+  `end=2025-02-01T05:20:00+00:00`, `duplicate_timestamps=0`,
+  `missing_intervals=0`, and no OHLCV integrity findings.
+- [x] Re-ran the exact same fixed
+  `TH-UTC-SESSION-DOWNSIDE-REVERSAL-20260507` event spec against the expanded
+  data. No thresholds or conditions were changed:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T123000JST_utc_session_downside_reversal_event_spec.json --event-id 20260507T124700JST_utc_session_downside_reversal_long_event_study --created-at 2026-05-07T12:47:00+09:00 --reviewer-note "Pre-proposal UTC session downside reversal long-history event study only; same fixed spec as the short screen; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: `status=completed`, `event_count=230`, `blocker_count=0`.
+- [x] Re-ran event-source-linked local falsification on the expanded data:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-UTC-SESSION-DOWNSIDE-REVERSAL-20260507 --mechanism-class utc_session_downside_reversal_event --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T124700JST_utc_session_downside_reversal_long_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T124700JST_utc_session_downside_reversal_long_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --falsification-id 20260507T124800JST_utc_session_downside_reversal_long_local_falsification --created-at 2026-05-07T12:48:00+09:00 --reviewer-note "Pre-proposal long-history cost/edge falsification only; same fixed spec as the short screen; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: expected non-zero exit with `status=failed`,
+  `sample_count=230`, `expected_edge_bps=-0.272956`,
+  `all_in_cost_bps=12.0`, `net_edge_bps=-12.272956`,
+  `profitable_windows_ratio=0.25`, and blockers
+  `expected_edge_exceeds_all_in_cost` and
+  `profitable_windows_ratio_sufficient`. Event source trust-chain checks
+  passed.
+- [x] Decision: reject this thesis before research approval/proposal/codegen.
+  The one-month positive edge was not robust after adding independent 2024
+  data. Do not loosen thresholds or recycle this as a fresh session-reversal
+  idea without a new theory and prior-falsification evidence.
+
+### Follow-up on 2026-05-07 JST for local falsification data-span gate
+
+- [x] Hardened local pre-proposal falsification evidence against short-history
+  false positives. `freqtrade_ext\bot_factory\local_falsification.py` now
+  records `ohlcv_row_count`, `data_start`, `data_end`, `data_span_days`, and
+  `min_data_span_days`, and blocks artifacts through
+  `ohlcv_data_span_sufficient` when the caller supplies a minimum data-span
+  requirement.
+- [x] Added CLI support in `scripts\bot_factory_build_local_falsification.py`:
+  `--min-data-span-days`. The command summary now prints `data_span_days`.
+- [x] Hardened the high-risk cost evidence path in
+  `freqtrade_ext\bot_factory\research_selection.py`: local falsification
+  artifacts used to satisfy high-risk `cost_sensitive_mechanism` evidence must
+  now include at least `180.0` days of source OHLCV span in addition to factory,
+  safety, event-source, thesis, sample-count, and positive net-edge checks.
+  Short-span evidence fails with `insufficient_data_span`.
+- [x] Regression coverage added/updated in `tests\test_bot_factory.py`:
+  - local falsification blocks positive-edge artifacts when
+    `min_data_span_days` is not met,
+  - research selection blocks otherwise valid high-risk cost evidence when
+    `data_span_days < 180.0`,
+  - research selection still approves high-risk cost evidence when the artifact
+    has sufficient source span.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_build_local_falsification.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_falsification or quantified_cost_response"
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --help
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 5 tests; CLI help lists
+  `--min-data-span-days`; full Bot Factory pytest passed with the existing
+  `signal_diagnostics.py` pandas fragmentation warnings; `git diff --check`
+  passed with only the existing LF-to-CRLF working-copy warnings.
+- [x] Reissued the long-history UTC session downside falsification artifact
+  with the new data-span gate:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-UTC-SESSION-DOWNSIDE-REVERSAL-20260507 --mechanism-class utc_session_downside_reversal_event --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T124700JST_utc_session_downside_reversal_long_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T124700JST_utc_session_downside_reversal_long_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T125500JST_utc_session_downside_reversal_long_local_falsification_span_checked --created-at 2026-05-07T12:55:00+09:00 --reviewer-note "Pre-proposal long-history cost/edge falsification with minimum data-span gate; same fixed spec as prior screen; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: expected non-zero exit with `status=failed`,
+  `sample_count=230`, `data_span_days=397.222222`,
+  `expected_edge_bps=-0.272956`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-12.272956`, and `profitable_windows_ratio=0.25`.
+  The data-span gate passed; cost-edge and window-stability gates failed.
+- [x] Remaining limitation: this improves evidence quality and prevents
+  short-history false positives, but it does not produce a profitable or
+  paper-ready candidate.
+
+### Follow-up on 2026-05-07 JST for long-history volatility-managed momentum recheck
+
+- [x] Re-ran the exact same fixed
+  `TH-VOL-MANAGED-MOMENTUM-20260507` event spec against the expanded BTC 5m
+  data. No thresholds or conditions were changed from the prior local screen:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T120000JST_volatility_managed_momentum_event_spec.json --event-id 20260507T130000JST_volatility_managed_momentum_long_event_study --created-at 2026-05-07T13:00:00+09:00 --reviewer-note "Pre-proposal long-history volatility-managed momentum event study only; same fixed spec as prior screen; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: `status=completed`, `event_count=6965`, `blocker_count=0`.
+- [x] Re-ran event-source-linked local falsification with the data-span gate:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-VOL-MANAGED-MOMENTUM-20260507 --mechanism-class volatility_managed_momentum_state --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T130000JST_volatility_managed_momentum_long_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T130000JST_volatility_managed_momentum_long_event_study\local_events.json --hold-candles 6 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T130500JST_volatility_managed_momentum_long_local_falsification_span_checked --created-at 2026-05-07T13:05:00+09:00 --reviewer-note "Pre-proposal long-history cost/edge falsification with minimum data-span gate; same fixed spec as prior screen; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: expected non-zero exit with `status=failed`,
+  `sample_count=6964`, `data_span_days=397.222222`,
+  `expected_edge_bps=0.333213`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-11.666787`, and `profitable_windows_ratio=0.0`.
+  The data-span and event-source trust-chain gates passed; cost-edge and
+  window-stability gates failed.
+- [x] Decision: keep this thesis rejected before research approval,
+  proposal generation, or code generation. The larger 2024-2025 sample
+  confirms the gross edge is far below plausible all-in cost, and no split
+  window was profitable after costs. Do not retry this `thesis_id` or
+  `mechanism_class` as a fresh candidate without a materially new theory and
+  explicit prior-falsification handling.
+
+### Follow-up on 2026-05-07 JST for futures context local event features
+
+- [x] Extended local pre-proposal event generation beyond OHLCV-only screens
+  without adding parameter search:
+  - `scripts\bot_factory_build_local_events.py` now accepts optional
+    `--funding-rate-path` and `--mark-price-path`.
+  - `freqtrade_ext\bot_factory\local_events.py` can use closed-candle
+    historical futures-context features:
+    `funding_rate_bps`, `funding_rate_delta_bps`,
+    `mark_price_gap_bps`, `mark_price_gap_delta_bps`, and
+    `mark_price_return_bps`.
+  - Funding and mark data are joined with backward `merge_asof`, so event
+    generation uses only context known at or before each OHLCV candle.
+  - Event artifacts now record `auxiliary_sources`,
+    `condition_diagnostics`, and `cumulative_condition_match_counts` so a
+    blocked theory leaves machine-readable evidence about which condition or
+    condition combination failed.
+  - `scripts\bot_factory_build_local_events.py` now also accepts optional
+    `--failure-synthesis-json`. When supplied, the event builder blocks specs
+    whose `thesis_id` or `mechanism_class` repeats a failed thesis/family from
+    the synthesis, unless `--allow-failed-thesis-or-family` is explicitly set
+    for diagnostics.
+  - `freqtrade_ext\bot_factory\local_falsification.py` now accepts event
+    sources whose safety scope is `closed_candle_local_market_data_only`, while
+    still requiring historical-only local data and blocking future data,
+    strategy code generation, backtests, paper/dry-run/live trading, exchange
+    orders, shorting, leverage above `1.0`, and process control.
+- [x] Added focused regression coverage in `tests\test_bot_factory.py`:
+  - local event generation can combine funding-rate and mark-price features,
+  - artifacts preserve condition diagnostics and cumulative match counts,
+  - local falsification trust-chain validation accepts the new historical
+    local-market-data safety scope,
+  - missing required futures context blocks before event generation,
+  - a supplied failure synthesis blocks event specs that repeat a failed
+    mechanism class before event generation.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_local_events.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder"
+  ```
+
+  Result: compile passed; focused local event builder pytest passed 6 tests.
+- [x] Wrote a single fixed funding/mark dislocation event spec before running
+  the event builder:
+  `registry\strategies\research_decisions\20260507T132000JST_funding_mark_dislocation_event_spec.json`.
+  The theory was that long-only BTC perpetual events may have edge when traded
+  price is below mark fair value while funding is negative but becoming less
+  negative, implying short-side pressure is releasing. The fixed conditions
+  were `funding_rate_bps <= -1.0`,
+  `funding_rate_delta_bps >= 0.25`,
+  `mark_price_gap_bps <= -5.0`,
+  `mark_price_gap_delta_bps >= 1.0` over 6 candles, and
+  `return_bps >= 0.0` over 3 candles, with `cooldown_candles=12`.
+- [x] Ran the fixed futures-context local event study:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --funding-rate-path user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --mark-price-path user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --failure-synthesis-json registry\strategies\synthesis\20260507T093500JST_thirty_candidate_failure_synthesis_with_range_quarticity\candidate_failure_synthesis.json --event-spec-json registry\strategies\research_decisions\20260507T132000JST_funding_mark_dislocation_event_spec.json --event-id 20260507T132000JST_funding_mark_dislocation_event_study --created-at 2026-05-07T13:20:00+09:00 --reviewer-note "Pre-proposal funding plus mark dislocation local event study only; fixed theory screen with failure-synthesis guard; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control."
+  ```
+
+  Result: expected non-zero exit with `status=blocked`, `event_count=0`, and
+  `blocker_count=1` on `events_generated`. Source parsing passed:
+  funding-rate rows `1293`, mark-price rows `3191`, and OHLCV rows came from
+  the expanded BTC 5m local parquet. The supplied failure synthesis parsed
+  successfully with `failed_thesis_id_count=26` and `failed_family_count=26`;
+  this new compound `funding_mark_dislocation_reclaim` mechanism did not match
+  prior failed families, so the only blocker remained event absence.
+  Individual condition counts were not empty (`funding_rate_bps_1=1025`,
+  `funding_rate_delta_bps_1=25824`,
+  `mark_price_gap_bps_1=51328`,
+  `mark_price_gap_delta_bps_6=55621`,
+  `return_bps_3=57677`), but cumulative matching fell to `0` after combining
+  negative funding with improving funding. This means the fixed theory's
+  prerequisite state was absent in the local sample, so no local
+  falsification, proposal generation, code generation, backtest, paper/dry-run,
+  live trading, exchange order, leverage, short, promotion, or process-control
+  step was run.
+- [x] Decision: reject this exact fixed funding/mark dislocation screen as
+  unsupported by local event evidence. Do not loosen the funding threshold or
+  rerun it as a parameter search; a future attempt needs a materially different
+  theory or a separately justified futures-context mechanism.
+
+### Follow-up on 2026-05-07 JST for failure-synthesis guarded local falsification evidence
+
+- [x] Closed the remaining trust gap between failure synthesis, local event
+  generation, and high-risk cost evidence. `freqtrade_ext\bot_factory\local_falsification.py`
+  now propagates the originating `local_events.json`
+  `failure_synthesis_summary` into its `event_source` summary and records
+  whether the event source consumed failure synthesis, parsed it, avoided
+  repeated failed thesis IDs/families, and did not use
+  `allow_failed_thesis_or_family`.
+- [x] Hardened `freqtrade_ext\bot_factory\research_selection.py` so a
+  high-risk `cost_sensitive_mechanism` local falsification artifact must have
+  `event_source_failure_synthesis_guard_valid=true` in addition to the existing
+  factory, safety, event-source path, thesis, sample-count, data-span, and
+  positive net-edge checks. An otherwise valid local falsification JSON whose
+  event source lacks the failure-synthesis guard now blocks with
+  `local_falsification_cost_evidence_event_source_failure_synthesis_guarded`
+  and artifact reason
+  `event_source_failure_synthesis_guard_missing_or_failed`.
+- [x] Updated focused regression coverage in `tests\test_bot_factory.py`:
+  - local event builder output with a non-repeating failure synthesis now
+    passes the guard through local falsification evidence,
+  - high-risk research selection rejects otherwise valid local falsification
+    evidence when the event-source failure-synthesis guard is missing,
+  - high-risk research selection still approves guarded local falsification
+    evidence with sufficient edge, sample count, and data span.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder or local_falsification or quantified_cost_response"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 11 tests; full
+  `tests\test_bot_factory.py` passed 195 tests with the existing pandas
+  `PerformanceWarning` noise from `signal_diagnostics.py`; `git diff --check`
+  passed with only existing LF-to-CRLF warnings for `.gitignore`,
+  `docs/BOT_FACTORY_MVP_TODO.md`,
+  `docs/BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`, and
+  `registry/strategies/proposals/TEMPLATE.md`.
+
+### Follow-up on 2026-05-07 JST for mark-discount reclaim local research selection
+
+- [x] Ran a new fixed pre-proposal theory screen without strategy code or
+  parameter search:
+  `TH-MARK-DISCOUNT-RECLAIM-20260507` /
+  `mark_discount_reclaim_continuation`. The fixed event spec is
+  `registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_spec.json`.
+  The theory tests long-only BTC perpetual events where traded price is at
+  least `5.0` bps below mark fair value, the discount is closing by at least
+  `1.0` bps over six closed candles, and the three-candle return is
+  non-negative. This differs from the rejected funding-plus-mark screen because
+  it removes the funding-rate condition and tests last-vs-mark reclaim directly.
+- [x] Ran local event generation with the latest failure synthesis guard:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --mark-price-path user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --failure-synthesis-json registry\strategies\synthesis\20260507T093500JST_thirty_candidate_failure_synthesis_with_range_quarticity\candidate_failure_synthesis.json --event-spec-json registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_spec.json --event-id 20260507T141000JST_mark_discount_reclaim_event_study --created-at 2026-05-07T14:10:00+09:00 --reviewer-note "Pre-proposal mark discount reclaim local event study only; fixed theory screen with failure-synthesis guard; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `status=completed`, `event_count=3259`, `blocker_count=0`.
+  Artifacts were written under
+  `registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_study\`.
+- [x] Ran event-source-linked local falsification with the data-span and
+  failure-synthesis guard:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-MARK-DISCOUNT-RECLAIM-20260507 --mechanism-class mark_discount_reclaim_continuation --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_study\local_events.json --hold-candles 6 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T141500JST_mark_discount_reclaim_local_falsification --created-at 2026-05-07T14:15:00+09:00 --reviewer-note "Pre-proposal mark discount reclaim cost/edge falsification only; fixed event spec; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, promotion, or process control."
+  ```
+
+  Result: `status=passed`, `expected_edge_bps=16.121508`,
+  `all_in_cost_bps=12.0`, `net_edge_bps=4.121508`,
+  `sample_count=3259`, `data_span_days=397.222222`,
+  `profitable_windows_ratio=1.0`, `blocker_count=0`.
+  Artifact:
+  `registry\strategies\research_decisions\20260507T141500JST_mark_discount_reclaim_local_falsification\local_falsification.json`.
+- [x] Ran research selection against the latest 30-candidate failure synthesis
+  and risk-weighted causal map. A first attempt
+  (`20260507T142000JST_mark_discount_reclaim_research_selection`) correctly
+  blocked because the cost response used field-style `expected_edge_bps=...`
+  wording instead of explicit `bps` text and the safety scanner matched
+  blocked runtime terms in stop-condition prose. The corrected rerun
+  (`20260507T142500JST_mark_discount_reclaim_research_selection`) passed:
+  `status=approved_for_proposal_generation`,
+  `proposal_generation_allowed=true`, `code_generation_allowed=false`,
+  `research_selection_score=100.0`, `minimum_research_selection_score=80.0`,
+  `blocker_count=0`, `deferral_count=0`. Exact command arguments are recorded
+  in the decision artifact:
+  `registry\strategies\research_decisions\20260507T142500JST_mark_discount_reclaim_research_selection\research_decision.json`.
+- [x] Current limitation: this is pre-proposal approval only. No proposal
+  artifact, strategy code, static strategy check, historical backtest,
+  walk-forward evaluation, candidate ranking, paper/dry-run/live startup,
+  exchange order placement, leverage, shorting, promotion, or process-control
+  step was run from this result.
+
+### Follow-up on 2026-05-07 JST for mark-discount reclaim codegen, backtest failure, and integrated synthesis
+
+- [x] Added first-class generator support for
+  `mark_discount_reclaim_continuation`:
+  - `freqtrade_ext\bot_factory\strategy_proposals.py` now recognizes the
+    variant and emits mark-close, mark-gap, six-candle gap delta, and
+    three-candle return features plus the fixed rule filters.
+  - `freqtrade_ext\bot_factory\strategy_code.py` now generates the variant's
+    mark informative pair, `mark_price_gap_delta_6`, `return_3`, entry
+    conditions, and exit conditions.
+  - `freqtrade_ext\bot_factory\signal_diagnostics.py` now supports the same
+    variant and reports component counts for `mark_discount_pressure`,
+    `six_candle_discount_reclaim`, and `short_return_nonnegative`.
+  - Proposal metadata now records numeric `parameter_overrides` parsed from
+    `Parameters` section `key=value` text. Code generation applies only known,
+    range-checked overrides and maps `local_falsification_hold_candles` to
+    `sell_timeout_candles` so future generated code can align timeout defaults
+    with local falsification horizons instead of silently using an unrelated
+    longer timeout.
+- [x] Generated an accepted proposal from the approved research decision:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --strategy-name LongOnlyMarkDiscountReclaimCandidate --strategy-type mark_discount_reclaim --target-exchange bybit --target-symbol "BTC/USDT:USDT" --timeframe 5m --spot-or-futures futures --long-short long-only --summary "Long-only BTC mark-discount reclaim candidate based on an approved local research decision and pre-proposal falsification evidence." --hypothesis "BTC perpetual traded price can temporarily undershoot mark fair value; when the discount is at least 5 bps, starts closing over six closed candles, and recent return is non-negative, the reclaim state may produce long-only edge after costs." --market-condition "Local BTC/USDT:USDT 5m OHLCV plus local mark-price context, using closed-candle historical joins only." --entry-logic "Enter long only when mark_price_gap_bps <= -5.0, mark_price_gap_delta_bps over 6 candles >= 1.0, return_bps over 3 candles >= 0.0, and generated safety guards preserve closed-candle causality." --exit-logic "Exit when the discount is mostly reclaimed, the six-candle reclaim slope turns negative, the three-candle return turns negative, or the generated RSI target condition fires." --risk-logic "Long-only, 1.0 leverage assumption, fixed all-in cost gate of 12.0 bps, no parameter-only retry, and rejection if historical evaluation cannot exceed cost after static checks." --required-data "Local BTC/USDT:USDT 5m OHLCV parquet" --required-data "Local BTC/USDT:USDT mark-price parquet joined backward to closed candles" --parameters "mark_price_gap_bps_max=-5.0; mark_price_gap_delta_6_bps_min=1.0; return_3_bps_min=0.0; all_in_cost_bps=12.0; local_falsification_hold_candles=6; timeframe=5m; mark_context_timeframe=4h" --expected-failure-case "Cost sensitivity may erase edge if mark-discount events cluster in high-spread periods; regime fragility may appear when mark deviations persist instead of reclaiming." --backtest-plan "Generate supported strategy code, run static strategy checks, validate local OHLCV and mark-price inputs, then run historical backtesting and walk-forward evaluation before any promotion decision." --rejection-condition "Reject if static checks fail, local data quality fails, historical expectancy is not above the 12.0 bps cost gate, walk-forward windows fail, or generated code violates Bot Factory safety rules." --generator-mode rule_based --thesis-id TH-MARK-DISCOUNT-RECLAIM-20260507 --thesis-type mark_discount_reclaim --thesis-statement "BTC perpetual traded price may temporarily undershoot mark fair value; when the mark discount is at least 5 bps and starts closing on closed candles while short-horizon return is non-negative, the reclaim state can produce long-only edge before proposal generation." --falsification-criteria "Reject if local falsification expected edge does not exceed 12.0 bps all-in cost over at least 20 events and 180 days." --novelty-vs-previous "Distinct from the rejected funding-confirmed mark screen because it removes funding confirmation and uses a dedicated mark-discount-reclaim thesis plus approved local falsification evidence." --evidence-ref "research_decision=registry\strategies\research_decisions\20260507T142500JST_mark_discount_reclaim_research_selection\research_decision.json" --evidence-ref "local_falsification=registry\strategies\research_decisions\20260507T141500JST_mark_discount_reclaim_local_falsification\local_falsification.json" --evidence-ref "local_events=registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_study\local_events.json" --research-reference "@registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_study\bybit_mark_price_reference.json" --research-reference "@registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_study\bitcoin_futures_price_discovery_reference.json" --failure-taxonomy-code FAIL_COST_SENSITIVE --retry-budget-per-thesis 1 --thesis-retry-count 0 --parameter-only-retry-limit 1 --parameter-only-retry-count 0 --force-distinct-hypothesis-family --strategy-logic-variant mark_discount_reclaim_continuation --feature mark_close --feature mark_price_gap --feature mark_price_gap_delta_6 --feature return_3 --feature volume_mean --rule-filter mark_discount_pressure --rule-filter six_candle_discount_reclaim --rule-filter short_return_nonnegative --risk-policy "Reject parameter-only loosening; require closed-candle mark evidence and cost-aware evaluation before ranking." --reviewer-note "Approved research selection score 100.0; local falsification sample_count=3259, data_span_days=397.222222, expected_edge_bps=16.121508, all_in_cost_bps=12.0, net_edge_bps=4.121508." --failure-synthesis-json registry\strategies\synthesis\20260507T093500JST_thirty_candidate_failure_synthesis_with_range_quarticity\candidate_failure_synthesis.json --research-decision-json registry\strategies\research_decisions\20260507T142500JST_mark_discount_reclaim_research_selection\research_decision.json --evidence-path "research_decision=registry\strategies\research_decisions\20260507T142500JST_mark_discount_reclaim_research_selection\research_decision.json" --evidence-path "local_falsification=registry\strategies\research_decisions\20260507T141500JST_mark_discount_reclaim_local_falsification\local_falsification.json" --evidence-path "local_events=registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_study\local_events.json" --evidence-path "events_csv=registry\strategies\research_decisions\20260507T141000JST_mark_discount_reclaim_event_study\events.csv" --created-by-agent codex --created-at 2026-05-07T14:50:00+09:00
+  ```
+
+  Result: `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=mark_discount_reclaim_continuation`,
+  `research_reference_count=2`. Artifacts:
+  `registry\strategies\proposals\20260507T055000Z_LongOnlyMarkDiscountReclaimCandidate.md`
+  and
+  `registry\strategies\proposals\20260507T055000Z_LongOnlyMarkDiscountReclaimCandidate.metadata.json`.
+- [x] Generated strategy code and verified static/data prerequisites:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260507T055000Z_LongOnlyMarkDiscountReclaimCandidate.metadata.json --candidate-id mark_discount_reclaim_001 --created-by-agent codex --created-at 2026-05-07T14:55:00+09:00
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\LongOnlyMarkDiscountReclaimCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\LongOnlyMarkDiscountReclaimCandidate.py --output registry\strategies\generated\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\static_check_manual.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_mark_price.py user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --timeframe 4h
+  ```
+
+  Results: code generation `status=generated`,
+  `candidate_evaluation_eligible=true`, `static_check_ok=true`; generated
+  strategy `py_compile` passed; manual static check returned `ok=true`,
+  `files_checked=1`, `findings=[]`; OHLCV quality returned `ok=true`,
+  `rows=114401`, `missing_intervals=0`; mark-price quality returned
+  `ok=true`, `rows=3191`, `missing_intervals=0`.
+- [x] Ran historical backtesting through the checked wrapper:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyMarkDiscountReclaimCandidate --strategy-path registry\strategies\generated\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001 --timeframe 5m --timerange 20240101-20250201 --pairs BTC/USDT:USDT --run-id mark_discount_reclaim_001_20240101_20250201 --reviewer-note "Accepted proposal 20260507T055000Z; local falsification net_edge_bps=4.121508 after 12.0 bps cost; generated code static check ok; OHLCV and mark quality ok."
+  ```
+
+  Result: completed but failed gates. Metrics:
+  `total_return_pct=-37.832122396`, `trade_count=4192`,
+  `win_rate=0.21302480916030533`, `profit_factor=0.244072592568329`,
+  `max_drawdown_pct=37.83212239599998`,
+  `sortino=-168.6116978183358`, `expectancy=-0.0012260004522204482`.
+  Initial recommendation was `fail` / `retry_with_modification`.
+  Artifact root:
+  `data\backtests\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001_20240101_20250201\`.
+- [x] Ran signal diagnostics after adding variant support:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --timerange 20240101-20250201 --diagnostics-id 20260507T151000JST_mark_discount_reclaim_001_signal_diagnostics --reviewer-note "Backtest gate failed despite accepted proposal; diagnose signal counts and condition bottlenecks against local OHLCV plus mark context."
+  ```
+
+  Result: `status=completed`, `row_count=114336`,
+  `entry_signal_count=9603`, `zero_entry_signal=false`,
+  `first_zero_component=null`. The failure is not a zero-entry problem; the
+  generated strategy produced many entries and still had negative edge.
+  Diagnostics artifact:
+  `registry\strategies\diagnostics\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\20260507T151000JST_mark_discount_reclaim_001_signal_diagnostics\signal_diagnostics.json`.
+- [x] Registered the failed candidate, then refreshed ranking, synthesis, and
+  causal map over all candidate manifests:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py --proposal-metadata-json registry\strategies\proposals\20260507T055000Z_LongOnlyMarkDiscountReclaimCandidate.metadata.json --generated-metadata-json registry\strategies\generated\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\metadata.json --candidate-id mark_discount_reclaim_001 --config user_data\config.json --strategy-path registry\strategies\generated\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001 --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --static-check-json registry\strategies\generated\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\static_check_manual.json --ohlcv-quality-json registry\strategies\checks\20260507T002830Z_ohlcv_quality.json --mark-price-quality-json registry\strategies\checks\20260507T002846Z_mark_price_quality.json --backtest-metrics-json data\backtests\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001_20240101_20250201\metrics.json --backtest-trades-csv data\backtests\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001_20240101_20250201\trades.csv --backtest-report-md data\backtests\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001_20240101_20250201\report.md --reviewer-note "Accepted proposal and generated code passed static/data checks, but full historical backtest failed: total_return_pct=-37.832122396, profit_factor=0.244073, max_drawdown_pct=37.832122, sortino=-168.611698. Signal diagnostics completed with entry_signal_count=9603, so failure is not zero-entry but loss profile and code-vs-event-study mismatch."
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\20260507T151000JST_mark_discount_reclaim_001_signal_diagnostics\signal_diagnostics.json --synthesis-id 20260507T154000JST_all_candidates_with_mark_discount_reclaim_001_failure_synthesis --reviewer-note "Integrated failure synthesis after 31 candidates, including mark_discount_reclaim_001. Latest candidate failed with nonzero/high entries, negative expectancy, and code-vs-event-study mismatch; do not loosen thresholds or repeat failed families."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T154000JST_all_candidates_with_mark_discount_reclaim_001_failure_synthesis\candidate_failure_synthesis.json --map-id 20260507T154500JST_all_candidates_with_mark_discount_reclaim_001_causal_failure_map --reviewer-note "Integrated causal map over 31 failed candidates, including new mark_discount_reclaim_001 historical failure with nonzero entries and negative edge."
+  ```
+
+  Result: candidate evaluation wrote
+  `registry\strategies\candidates\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\candidate_manifest.json`
+  with `recommendation=fail` and `FAIL_COST_SENSITIVE`; integrated ranking
+  covered `candidate_count=31` and had no paper-ready candidates; integrated
+  failure synthesis completed with `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and `requires_new_thesis_id=true`;
+  integrated causal map completed with `candidate_count=31`,
+  `category_count=9`, and
+  `requires_research_decision_before_proposal=true`.
+- [x] Latest integrated failed families now include
+  `mark_discount_reclaim` in addition to the prior failed families. The next
+  proposal must consume the newer edge-aware artifacts:
+  `registry\strategies\synthesis\20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis\candidate_failure_synthesis.json`
+  and
+  `registry\strategies\failure_maps\20260507T161500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_causal_failure_map\causal_failure_map.json`.
+  Do not loosen thresholds or repeat `mark_discount_reclaim` as the next
+  default action. A future rerun of this family needs materially new evidence
+  that specifically addresses the local-event-to-generated-strategy mismatch.
+- [x] Verification after source changes:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "mark_discount_reclaim or mark_price_dislocation or signal_diagnostics_supports_mark or strategy_code_generator_supports_mark"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 6 tests; full
+  `tests\test_bot_factory.py` passed 197 tests. Existing pandas
+  `PerformanceWarning` noise from `signal_diagnostics.py` remains.
+
+### Follow-up on 2026-05-07 JST for generated-entry edge diagnostics
+
+- [x] Added generated-entry edge diagnostics to
+  `freqtrade_ext\bot_factory\signal_diagnostics.py` and
+  `scripts\bot_factory_diagnose_candidate_signals.py`. Signal diagnostics now
+  estimates the fixed-hold forward return of the generated entry mask itself,
+  subtracts optional all-in cost bps, reports chronological window stability,
+  and emits `GENERATED_ENTRY_EDGE_NEGATIVE_AFTER_COST` /
+  `GENERATED_ENTRY_EDGE_WINDOW_FRAGILE` when the generated entries fail after
+  costs. This is diagnostic-only; it does not run backtesting, paper trading,
+  dry-run trading, live trading, exchange order endpoints, promotion, or
+  process control.
+- [x] Propagated generated-entry edge failures into
+  `freqtrade_ext\bot_factory\candidate_failure_synthesis.py` and
+  `freqtrade_ext\bot_factory\candidate_failure_map.py`. The edge-aware causal
+  map now has a `generated_entry_negative_edge` category and required research
+  question text explaining why a generated entry set can fail even when
+  pre-proposal local falsification looked acceptable.
+- [x] Re-ran the failed mark-discount candidate diagnostics with the
+  pre-proposal horizon and cost:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --timerange 20240101-20250201 --entry-edge-hold-candles 6 --entry-edge-all-in-cost-bps 12.0 --entry-edge-min-profitable-windows-ratio 0.5 --diagnostics-id 20260507T160000JST_mark_discount_reclaim_001_signal_edge_diagnostics --reviewer-note "Generated-entry edge diagnostics added after local event study/backtest mismatch; hold_candles=6 and all_in_cost_bps=12.0 match the pre-proposal falsification screen."
+  ```
+
+  Result: `status=completed`, `entry_count=9603`,
+  `zero_entry_signal=false`, `generated_entry_edge.status=fail`,
+  `sample_count=9603`, `net_edge_bps=-12.323858`,
+  `profitable_windows_ratio=0.0`, and diagnosis codes
+  `GENERATED_ENTRY_EDGE_NEGATIVE_AFTER_COST` plus
+  `GENERATED_ENTRY_EDGE_WINDOW_FRAGILE`. Artifact:
+  `registry\strategies\diagnostics\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\20260507T160000JST_mark_discount_reclaim_001_signal_edge_diagnostics\signal_diagnostics.json`.
+- [x] Refreshed the 31-candidate synthesis and causal map using that
+  edge-aware diagnostics artifact:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\20260507T160000JST_mark_discount_reclaim_001_signal_edge_diagnostics\signal_diagnostics.json --synthesis-id 20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis --reviewer-note "Refresh 31-candidate synthesis after adding generated-entry edge diagnostics for mark_discount_reclaim_001; generated entry set has net_edge_bps=-12.323858 and profitable_windows_ratio=0.0."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis\candidate_failure_synthesis.json --map-id 20260507T161500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_causal_failure_map --reviewer-note "Refresh after adding generated_entry_negative_edge category and required research question propagation from edge-aware synthesis."
+  ```
+
+  Results: edge-aware synthesis completed with `candidate_count=31`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`, and
+  `requires_new_thesis_id=true`; edge-aware causal map completed with
+  `candidate_count=31`, `category_count=10`, and
+  `requires_research_decision_before_proposal=true`. The next research
+  selection must consume:
+  `registry\strategies\synthesis\20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis\candidate_failure_synthesis.json`
+  and
+  `registry\strategies\failure_maps\20260507T161500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_causal_failure_map\causal_failure_map.json`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\signal_diagnostics.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py freqtrade_ext\bot_factory\candidate_failure_map.py scripts\bot_factory_diagnose_candidate_signals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "signal_diagnostics_reports_generated_entry_edge or candidate_failure_map_builds_causal_categories or signal_diagnostics_supports_mark_discount"
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests with the existing
+  pandas `PerformanceWarning` noise from `signal_diagnostics.py`.
+
+### Follow-up on 2026-05-07 JST for mark fair-value momentum lag
+
+- [x] Carried a distinct thesis through the research-selection gate after the
+  edge-aware 31-candidate synthesis/map required a new thesis before proposal
+  generation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py --failure-synthesis-json registry\strategies\synthesis\20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis\candidate_failure_synthesis.json --causal-failure-map-json registry\strategies\failure_maps\20260507T161500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_causal_failure_map\causal_failure_map.json --thesis-id TH-MARK-FAIR-VALUE-MOMENTUM-LAG-20260507 --thesis-family mark_fair_value_momentum_lag --mechanism-class mark_fair_value_momentum_lag --local-falsification-json registry\strategies\research_decisions\20260507T162500JST_mark_fair_value_momentum_lag_local_falsification\local_falsification.json --decision-id 20260507T164000JST_mark_fair_value_momentum_lag_research_selection --created-at 2026-05-07T16:40:00+09:00
+  ```
+
+  Result: `status=approved_for_proposal_generation`,
+  `proposal_generation_allowed=true`, `code_generation_allowed=false`,
+  `research_selection_score=100.0`, and `blocker_count=0`. Artifact:
+  `registry\strategies\research_decisions\20260507T164000JST_mark_fair_value_momentum_lag_research_selection\research_decision.json`.
+- [x] The pre-proposal local event and falsification artifacts looked
+  acceptable but are now treated only as hypothesis-screen evidence, not
+  profitability evidence. Local events completed with
+  `combined_match_count_before_cooldown=13584`, `cooldown_candles=12`, and
+  `event_count=2274`. Local falsification passed over `data_span_days=397.222222`
+  with `sample_count=2274`, `expected_edge_bps=27.99047`,
+  `all_in_cost_bps=12.0`, `net_edge_bps=15.99047`, and
+  `profitable_windows_ratio=1.0`. Artifacts:
+  `registry\strategies\research_decisions\20260507T162000JST_mark_fair_value_momentum_lag_event_study\local_events.json`
+  and
+  `registry\strategies\research_decisions\20260507T162500JST_mark_fair_value_momentum_lag_local_falsification\local_falsification.json`.
+- [x] Added `mark_fair_value_momentum_lag` support to proposal generation,
+  strategy code generation, and signal diagnostics. The generated strategy
+  uses closed-candle 4h mark-price momentum, 12-candle traded-price lag,
+  current range budget, participation floor, and an explicit event-cooldown
+  component so diagnostics can check the generated entry mask rather than only
+  the pre-proposal event study.
+- [x] Generated the accepted proposal and second generated candidate after
+  adding the cooldown-preserving generated entry path:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py --created-at 2026-05-07T07:55:00+00:00 --strategy-name LongOnlyMarkFairValueMomentumLagCandidate --strategy-type mark_fair_value_momentum_lag --target-exchange bybit --target-symbol BTC/USDT:USDT --timeframe 5m --spot-or-futures futures --long-short long-only --generator-mode rule_based --strategy-logic-variant mark_fair_value_momentum_lag --research-decision-json registry\strategies\research_decisions\20260507T164000JST_mark_fair_value_momentum_lag_research_selection\research_decision.json --failure-synthesis-json registry\strategies\synthesis\20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis\candidate_failure_synthesis.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260507T075500Z_LongOnlyMarkFairValueMomentumLagCandidate.metadata.json --candidate-id mark_fair_value_momentum_lag_002 --created-by-agent codex --created-at 2026-05-07T07:56:00+00:00
+  ```
+
+  Results: proposal `status=accepted`, `code_generation_eligible=true`,
+  `strategy_logic_variant=mark_fair_value_momentum_lag`; generated metadata
+  `status=generated`, `candidate_evaluation_eligible=true`, and
+  `static_check_ok=true`. Artifacts:
+  `registry\strategies\proposals\20260507T075500Z_LongOnlyMarkFairValueMomentumLagCandidate.metadata.json`
+  and
+  `registry\strategies\generated\LongOnlyMarkFairValueMomentumLagCandidate\mark_fair_value_momentum_lag_002\metadata.json`.
+- [x] Stopped before historical backtest interpretation because generated-entry
+  diagnostics failed on the full available local BTC 5m range:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_diagnose_candidate_signals.py --generated-metadata-json registry\strategies\generated\LongOnlyMarkFairValueMomentumLagCandidate\mark_fair_value_momentum_lag_002\metadata.json --ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-parquet user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --timerange 20240101-20250201 --entry-edge-hold-candles 12 --entry-edge-all-in-cost-bps 12.0 --entry-edge-min-profitable-windows-ratio 0.5 --diagnostics-id 20260507T170500JST_mark_fair_value_momentum_lag_002_full_signal_edge_diagnostics --reviewer-note "Cooldown-preserving full local-data generated-entry edge check for mark_fair_value_momentum_lag_002 before historical backtest interpretation."
+  ```
+
+  Result: `status=completed`, `entry_count=2775`,
+  `zero_entry_signal=false`, `generated_entry_edge.status=fail`,
+  `sample_count=2775`, `expected_edge_bps=0.95015`,
+  `net_edge_bps=-11.04985`, `profitable_windows_ratio=0.0`, and diagnosis
+  codes `GENERATED_ENTRY_EDGE_NEGATIVE_AFTER_COST` plus
+  `GENERATED_ENTRY_EDGE_WINDOW_FRAGILE`. Artifact:
+  `registry\strategies\diagnostics\LongOnlyMarkFairValueMomentumLagCandidate\mark_fair_value_momentum_lag_002\20260507T170500JST_mark_fair_value_momentum_lag_002_full_signal_edge_diagnostics\signal_diagnostics.json`.
+- [x] Remaining limitation: do not backtest, promote, paper-start, or treat
+  `mark_fair_value_momentum_lag_002` as viable. The local event screen and
+  generated diagnostics still disagree materially: local events had
+  `event_count=2274` and positive post-cost edge, while the generated
+  cooldown-preserving entry mask had `entry_count=2775` and negative post-cost
+  edge in all four windows. The next concrete task is to align
+  `local_events.py` and `signal_diagnostics.py` feature construction before
+  another proposal/codegen attempt, especially mark-price merge timing,
+  rolling-window `min_periods`, event cooldown semantics, and any generated
+  condition differences.
+- [x] Verification for this generator/diagnostics support:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\signal_diagnostics.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "mark_fair_value_momentum_lag"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 2 tests; full
+  `tests\test_bot_factory.py` passed 200 tests. Existing pandas
+  `PerformanceWarning` noise from `signal_diagnostics.py` remains.
+
+### Follow-up on 2026-05-07 JST for closed-candle context merge alignment
+
+- [x] Fixed the local pre-proposal event builder so funding-rate and mark-price
+  context is aligned to closed-candle availability instead of being merged at
+  the informative candle open timestamp. `local_events.py` now infers the base
+  and context candle intervals and uses `context_date + context_interval -
+  base_interval` before `merge_asof`, matching the generated strategy and
+  `signal_diagnostics.py` informative merge semantics.
+- [x] Updated local-event tests so futures-context features are unavailable
+  until the context candle is closed. The synthetic 4h context over 1h OHLCV
+  now produces events at `2026-01-01T07:00:00+00:00` and
+  `2026-01-01T11:00:00+00:00`, not at the context candle opens.
+- [x] Re-ran the mark fair-value momentum lag local event study after the
+  closed-context merge fix:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --mark-price-path user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --event-spec-json registry\strategies\research_decisions\20260507T162000JST_mark_fair_value_momentum_lag_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis\candidate_failure_synthesis.json --event-id 20260507T172500JST_mark_fair_value_momentum_lag_closed_context_event_study --reviewer-note "Re-run mark fair-value momentum lag local event study after closed-candle context merge alignment; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control." --created-at 2026-05-07T17:25:00+09:00
+  ```
+
+  Result: `status=completed`, `event_count=2775`, `blocker_count=0`.
+  The corrected local event mask now matches the generated diagnostics path:
+  `combined_match_count_before_cooldown=20169`, `cooldown_candles=12`, and
+  `event_count=2775`. Artifact:
+  `registry\strategies\research_decisions\20260507T172500JST_mark_fair_value_momentum_lag_closed_context_event_study\local_events.json`.
+- [x] Re-ran local falsification on the corrected closed-context event set:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-MARK-FAIR-VALUE-MOMENTUM-LAG-20260507 --mechanism-class mark_fair_value_momentum_lag --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T172500JST_mark_fair_value_momentum_lag_closed_context_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T172500JST_mark_fair_value_momentum_lag_closed_context_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T173000JST_mark_fair_value_momentum_lag_closed_context_falsification --reviewer-note "Closed-context rerun after aligning local event builder to generated/Freqtrade informative merge semantics; expected to reject the earlier positive pre-proposal screen if generated-entry edge mismatch was caused by context timing." --created-at 2026-05-07T17:30:00+09:00
+  ```
+
+  Result: expected non-zero exit with `status=failed`,
+  `expected_edge_bps=0.95015`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-11.04985`, `sample_count=2775`,
+  `data_span_days=397.222222`, `profitable_windows_ratio=0.0`, and
+  `blocker_count=2`. Artifact:
+  `registry\strategies\research_decisions\20260507T173000JST_mark_fair_value_momentum_lag_closed_context_falsification\local_falsification.json`.
+- [x] Interpretation: the prior positive pre-proposal local falsification for
+  `TH-MARK-FAIR-VALUE-MOMENTUM-LAG-20260507` was a context-timing false
+  positive. The corrected event builder reproduces the generated-entry
+  diagnostics and rejects the thesis before proposal/codegen. Do not use the
+  older approved research decision or accepted proposal as current evidence for
+  this thesis.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder or mark_fair_value_momentum_lag"
+  ```
+
+  Result: compile passed; focused local-event pytest passed 6 tests; combined
+  local-event/mark-fair-value focused pytest passed 8 tests with the existing
+  pandas `PerformanceWarning` noise from `signal_diagnostics.py`.
+
+### Follow-up on 2026-05-07 JST for stale context-evidence guard
+
+- [x] Added explicit closed-context alignment metadata to local event artifacts.
+  `local_events.py` now records `context_merge.semantics=
+  closed_context_candle_availability_v1`, the required context sources, base
+  and context intervals, closed-context shift seconds, and
+  `closed_context_candle_alignment`. The safety scope also records
+  `closed_context_candle_alignment` so downstream gates can distinguish current
+  closed-candle context evidence from older open-timestamp context screens.
+- [x] Added downstream validation in local falsification and research
+  selection. `local_falsification.py` now checks
+  `event_source_closed_context_candle_alignment_valid` whenever a local-event
+  JSON source is supplied. `research_selection.py` now rejects high-risk
+  cost-edge falsification artifacts whose event source used funding/mark
+  context without `closed_context_candle_availability_v1` proof, preventing the
+  older false-positive mark fair-value local screen from authorizing a later
+  proposal after event-builder semantics changed.
+- [x] Re-ran the mark fair-value momentum lag local event study with alignment
+  metadata:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --mark-price-path user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --event-spec-json registry\strategies\research_decisions\20260507T162000JST_mark_fair_value_momentum_lag_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis\candidate_failure_synthesis.json --event-id 20260507T183500JST_mark_fair_value_momentum_lag_closed_context_event_study_v2 --reviewer-note "Re-run mark fair-value momentum lag local event study after adding closed-context alignment metadata; no strategy code, backtest, paper, dry-run, live, exchange orders, leverage, shorting, or process control." --created-at 2026-05-07T18:35:00+09:00
+  ```
+
+  Result: `status=completed`, `event_count=2775`, `blocker_count=0`,
+  `context_merge.semantics=closed_context_candle_availability_v1`,
+  `context_features_used=true`, `required_contexts=["mark_price"]`,
+  `base_interval_seconds=300.0`, `closed_context_candle_alignment=true`,
+  `combined_match_count_before_cooldown=20169`, and `cooldown_candles=12`.
+  Artifact:
+  `registry\strategies\research_decisions\20260507T183500JST_mark_fair_value_momentum_lag_closed_context_event_study_v2\local_events.json`.
+- [x] Re-ran local falsification against the metadata-bearing event source:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-MARK-FAIR-VALUE-MOMENTUM-LAG-20260507 --mechanism-class mark_fair_value_momentum_lag --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T183500JST_mark_fair_value_momentum_lag_closed_context_event_study_v2\events.csv --event-source-json registry\strategies\research_decisions\20260507T183500JST_mark_fair_value_momentum_lag_closed_context_event_study_v2\local_events.json --hold-candles 12 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2 --reviewer-note "Closed-context rerun with event-source alignment metadata; expected to reject the mark fair-value momentum lag thesis before proposal/codegen." --created-at 2026-05-07T18:40:00+09:00
+  ```
+
+  Result: expected non-zero exit with `status=failed`,
+  `expected_edge_bps=0.95015`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-11.04985`, `sample_count=2775`,
+  `data_span_days=397.222222`, `profitable_windows_ratio=0.0`,
+  `blocker_count=2`, and event-source alignment check
+  `event_source_closed_context_candle_alignment_valid=pass`. Artifact:
+  `registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder or local_falsification or research_selection"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 24 tests; full
+  `tests\test_bot_factory.py` passed, with the existing pandas
+  `PerformanceWarning` noise from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this prevents stale context evidence from
+  authorizing future research selection, but it does not itself produce a
+  profitable or paper-ready candidate. The next candidate attempt still needs a
+  fresh research-selection-approved thesis with current local falsification
+  evidence and the latest failure synthesis/map.
+
+### Follow-up on 2026-05-07 JST for real stale-positive research gate validation
+
+- [x] Ran the older positive
+  `TH-MARK-FAIR-VALUE-MOMENTUM-LAG-20260507` local falsification artifact
+  through the updated research-selection gate to prove it can no longer
+  authorize a proposal after the closed-context alignment schema change:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py --failure-synthesis-json registry\strategies\synthesis\20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis\candidate_failure_synthesis.json --causal-failure-map-json registry\strategies\failure_maps\20260507T161500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_causal_failure_map\causal_failure_map.json --thesis-id TH-MARK-FAIR-VALUE-MOMENTUM-LAG-20260507 --thesis-family mark_fair_value_momentum_lag --mechanism-class mark_fair_value_momentum_lag --local-falsification-json registry\strategies\research_decisions\20260507T162500JST_mark_fair_value_momentum_lag_local_falsification\local_falsification.json --decision-id 20260507T185500JST_mark_fair_value_stale_context_research_selection_guard_clean --reviewer-note "Validation run for stale context evidence; local JSON decision artifact only." --created-at 2026-05-07T18:55:00+09:00
+  ```
+
+  The full command also supplied the required thesis fields, local data paths,
+  two structured mark/price-discovery references, all causal-failure responses,
+  and all seven research-question responses from the latest edge-aware causal
+  map.
+- [x] Result: expected non-zero exit with `status=blocked`,
+  `proposal_generation_allowed=false`, `code_generation_allowed=false`,
+  `research_selection_score=100.0`, `minimum_research_selection_score=80.0`,
+  `blocker_count=3`, and `deferral_count=0`. The only blockers were:
+  `local_falsification_cost_evidence_event_source_valid`,
+  `local_falsification_cost_evidence_event_source_context_alignment_valid`, and
+  `local_falsification_cost_edge_exceeds_costs`.
+- [x] The stale artifact itself still reported positive numbers
+  (`expected_edge_bps=27.99047`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=15.99047`, `sample_count=2274`,
+  `data_span_days=397.222222`), but the updated gate set
+  `event_source_valid=false`, `event_source_context_alignment_valid=false`,
+  `cost_edge_passes=false`, and failure reasons
+  `event_source_invalid` plus
+  `event_source_context_alignment_missing_or_invalid`. Artifact:
+  `registry\strategies\research_decisions\20260507T185500JST_mark_fair_value_stale_context_research_selection_guard_clean\research_decision.json`.
+- [ ] Remaining limitation: this validates the stale-positive block on a real
+  artifact, but no new profitable candidate exists. The next productive step is
+  a genuinely new, non-parameter-retuning thesis with current local
+  falsification evidence.
+
+### Follow-up on 2026-05-07 JST for low-range volume-absorption local screen
+
+- [x] Tried one fresh fixed pre-proposal thesis without strategy code or
+  parameter search:
+  `TH-LOW-RANGE-VOLUME-ABSORPTION-20260507` /
+  `low_range_volume_absorption`. The thesis tested whether low 5m range,
+  depressed volume, positive 12-candle drift, and positive 48-candle SMA
+  distance indicate quiet absorption before continued drift. The fixed event
+  spec used local BTC 5m OHLCV only, `cooldown_candles=12`, and no funding or
+  mark context:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T190500JST_low_range_volume_absorption_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T160500JST_all_candidates_with_mark_discount_reclaim_001_edge_aware_failure_synthesis\candidate_failure_synthesis.json --event-id 20260507T190500JST_low_range_volume_absorption_event_study --reviewer-note "Fixed low-range volume-absorption local screen before any candidate artifact advancement; local historical OHLCV only." --created-at 2026-05-07T19:05:00+09:00
+  ```
+
+  Result: `status=completed`, `event_count=78`, `blocker_count=0`,
+  `combined_match_count_before_cooldown=95`, `cooldown_candles=12`,
+  `context_features_used=false`, and `closed_context_candle_alignment=true`.
+  Artifact:
+  `registry\strategies\research_decisions\20260507T190500JST_low_range_volume_absorption_event_study\local_events.json`.
+- [x] Ran local falsification before any proposal/codegen:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-LOW-RANGE-VOLUME-ABSORPTION-20260507 --mechanism-class low_range_volume_absorption --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T190500JST_low_range_volume_absorption_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T190500JST_low_range_volume_absorption_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T191000JST_low_range_volume_absorption_local_falsification --reviewer-note "Fixed low-range volume-absorption local falsification; reject unless 12-candle net edge clears 12 bps cost gate across sufficient historical span." --created-at 2026-05-07T19:10:00+09:00
+  ```
+
+  Result: expected non-zero exit with `status=failed`,
+  `expected_edge_bps=-4.16165`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-16.16165`, `sample_count=78`,
+  `data_span_days=397.222222`, `profitable_windows_ratio=0.0`,
+  and `blocker_count=2`. The event-source alignment check passed, so the
+  rejection is genuine negative edge after costs, not a stale-evidence issue.
+  Artifact:
+  `registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json`.
+- [x] Interpretation: do not promote, propose, codegen, or retune this thesis.
+  It gives another negative research-screen result and should be treated as a
+  rejected local-falsification artifact if this mechanism class is considered
+  again.
+
+### Follow-up on 2026-05-07 JST for local falsification rejection memory
+
+- [x] Added failed local falsification artifacts to candidate failure
+  synthesis inputs. `candidate_failure_synthesis.py` now accepts
+  `local_falsification_paths`, records valid failed/rejected/blocked
+  `research_local_falsification` artifacts, merges their thesis IDs and
+  mechanism classes into the aggregate failure memory, and emits a report
+  section for local falsification rejections. The CLI now supports repeated
+  `--local-falsification-json` inputs.
+- [x] Refreshed synthesis with the two current pre-proposal rejections:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\20260507T160000JST_mark_discount_reclaim_001_signal_edge_diagnostics\signal_diagnostics.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --synthesis-id 20260507T192000JST_all_candidates_with_local_falsification_rejections --reviewer-note "Refresh synthesis with failed pre-proposal local falsification evidence; local JSON only."
+  ```
+
+  Result: `status=completed`, `candidate_count=31`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=2`. Artifact:
+  `registry\strategies\synthesis\20260507T192000JST_all_candidates_with_local_falsification_rejections\candidate_failure_synthesis.json`.
+  The aggregate failed local thesis IDs are
+  `TH-LOW-RANGE-VOLUME-ABSORPTION-20260507` and
+  `TH-MARK-FAIR-VALUE-MOMENTUM-LAG-20260507`; failed local mechanisms are
+  `low_range_volume_absorption` and `mark_fair_value_momentum_lag`.
+- [x] Refreshed the causal failure map from that synthesis:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T192000JST_all_candidates_with_local_falsification_rejections\candidate_failure_synthesis.json --map-id 20260507T192500JST_all_candidates_with_local_falsification_rejections_causal_map --reviewer-note "Refresh causal map after adding pre-proposal local falsification rejection memory; local JSON only."
+  ```
+
+  Result: `status=completed`, `candidate_count=31`, `category_count=10`,
+  and `requires_research_decision_before_proposal=true`. Artifact:
+  `registry\strategies\failure_maps\20260507T192500JST_all_candidates_with_local_falsification_rejections_causal_map\causal_failure_map.json`.
+  Its research-selection guidance now includes both failed local thesis IDs and
+  both failed local mechanism classes in the avoid lists.
+- [ ] Remaining limitation: this is failure-memory hygiene, not profitability.
+  It helps prevent repeated rejected theses, but no profitable or paper-ready
+  candidate exists yet.
+
+### Follow-up on 2026-05-07 JST for thin-book dislocation reversion local screen
+
+- [x] Tried one fresh fixed pre-proposal thesis without threshold search:
+  `TH-THIN-BOOK-DISLOCATION-REVERSION-20260507` /
+  `thin_book_dislocation_reversion`. The thesis tested whether a sharp
+  six-candle downside move, wide current range, below-average volume, and
+  negative 48-candle SMA distance represent a thin-book dislocation likely to
+  revert over the next six candles. This was intentionally distinct from the
+  prior high-volume downside shock and liquidity recovery families. The fixed
+  event spec used local BTC 5m OHLCV only, `cooldown_candles=6`, and no funding
+  or mark context:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T193500JST_thin_book_dislocation_reversion_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T192000JST_all_candidates_with_local_falsification_rejections\candidate_failure_synthesis.json --event-id 20260507T193500JST_thin_book_dislocation_reversion_event_study --reviewer-note "Fixed thin-book dislocation reversion local screen; local historical OHLCV only." --created-at 2026-05-07T19:35:00+09:00
+  ```
+
+  Result: `status=completed`, `event_count=1516`, and `blocker_count=0`.
+  Artifact:
+  `registry\strategies\research_decisions\20260507T193500JST_thin_book_dislocation_reversion_event_study\local_events.json`.
+- [x] Ran local falsification before any proposal/codegen:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-THIN-BOOK-DISLOCATION-REVERSION-20260507 --mechanism-class thin_book_dislocation_reversion --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T193500JST_thin_book_dislocation_reversion_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T193500JST_thin_book_dislocation_reversion_event_study\local_events.json --hold-candles 6 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T194000JST_thin_book_dislocation_reversion_local_falsification --reviewer-note "Fixed thin-book dislocation reversion local falsification; reject unless six-candle net edge clears the cost gate across sufficient history." --created-at 2026-05-07T19:40:00+09:00
+  ```
+
+  Result: expected non-zero exit with `status=failed`,
+  `expected_edge_bps=1.802646`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-10.197354`, `sample_count=1516`,
+  `data_span_days=397.222222`, `profitable_windows_ratio=0.0`, and
+  `blocker_count=2`. Artifact:
+  `registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json`.
+- [x] Refreshed failure synthesis and causal map with all three failed local
+  falsification screens:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\20260507T160000JST_mark_discount_reclaim_001_signal_edge_diagnostics\signal_diagnostics.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json --synthesis-id 20260507T195000JST_all_candidates_with_three_local_falsification_rejections --reviewer-note "Refresh synthesis after adding thin-book dislocation reversion local rejection; local JSON only."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T195000JST_all_candidates_with_three_local_falsification_rejections\candidate_failure_synthesis.json --map-id 20260507T195500JST_all_candidates_with_three_local_falsification_rejections_causal_map --reviewer-note "Refresh causal map after adding thin-book dislocation reversion rejection memory; local JSON only."
+  ```
+
+  Results: synthesis completed with `candidate_count=31`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=3`; causal map completed with
+  `candidate_count=31`, `category_count=10`, and
+  `requires_research_decision_before_proposal=true`. Artifacts:
+  `registry\strategies\synthesis\20260507T195000JST_all_candidates_with_three_local_falsification_rejections\candidate_failure_synthesis.json`
+  and
+  `registry\strategies\failure_maps\20260507T195500JST_all_candidates_with_three_local_falsification_rejections_causal_map\causal_failure_map.json`.
+  The avoid lists now include
+  `TH-THIN-BOOK-DISLOCATION-REVERSION-20260507` and
+  `thin_book_dislocation_reversion`.
+- [ ] Remaining limitation: this is another negative pre-proposal local screen.
+  Do not propose, codegen, backtest, or retune this thesis; it only improves
+  rejection memory. The factory still has no profitable or paper-ready
+  candidate.
+
+### Follow-up on 2026-05-07 JST for open-interest context support and data gap
+
+- [x] Added an open-interest data-quality checker so the factory can gate
+  derivatives-structure theses on real local data availability instead of
+  continuing OHLCV-only variants. New API:
+  `check_open_interest_parquet`; new CLI:
+  `scripts\bot_factory_check_open_interest.py`. The checker accepts a `date`
+  column plus one of `open_interest`, `open`, or `close`, validates numeric
+  non-negative values, duplicate/sorted timestamps, and expected intervals.
+- [x] Added open-interest context features to the local event builder:
+  `open_interest`, `open_interest_delta_pct`, and
+  `open_interest_zscore`. `scripts\bot_factory_build_local_events.py` now
+  accepts `--open-interest-path`. These features use the same
+  closed-context-candle availability semantics as funding-rate and mark-price
+  context so a higher-timeframe open-interest candle is not merged before it is
+  closed.
+- [x] Verified the new implementation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\local_events.py scripts\bot_factory_build_local_events.py scripts\bot_factory_check_open_interest.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "open_interest or local_event_builder_supports_futures_context_features or funding_rate_quality_check or mark_price_quality_check"
+  ```
+
+  Result: compile passed; focused pytest passed 6 tests.
+- [x] Checked the current local Bybit futures data directory before adding the
+  downloader. Available files were BTC/ETH 5m futures OHLCV, BTC/ETH 4h mark,
+  BTC/ETH 8h funding-rate, and leverage tiers; no open-interest, liquidation,
+  or order-book parquet was present at that point.
+- [x] Recorded the open-interest data gap with the new checker:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_open_interest.py user_data\data\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --timeframe 1h --output registry\strategies\checks\20260507T201000JST_open_interest_data_gap_check.json --no-fail
+  ```
+
+  Result: report `ok=false`, `expected_timeframe=1h`,
+  `expected_interval_seconds=3600`, and finding `file_exists` error because
+  `user_data\data\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet` does
+  not exist. Artifact:
+  `registry\strategies\checks\20260507T201000JST_open_interest_data_gap_check.json`.
+- [ ] Remaining limitation: this enables theory-first open-interest screens
+  once data is present, but it does not itself produce a profitable candidate.
+  Do not keep creating OHLCV-only near-duplicates; the next materially distinct
+  thesis should either use local structural derivatives data or explicitly
+  justify why it can be falsified without it.
+
+### Follow-up on 2026-05-07 JST for Bybit open-interest download and first screen
+
+- [x] Added a public Bybit V5 open-interest downloader for local research data.
+  New module: `bybit_open_interest.py`; new CLI:
+  `scripts\bot_factory_download_bybit_open_interest.py`. The downloader uses
+  Bybit's public market open-interest endpoint only, requires no API keys, and
+  records safety metadata showing no order endpoint, exchange process, leverage
+  change, or shorting action.
+- [x] Verified the downloader with fake API-response tests and focused
+  open-interest tests:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\bybit_open_interest.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\local_events.py scripts\bot_factory_download_bybit_open_interest.py scripts\bot_factory_check_open_interest.py scripts\bot_factory_build_local_events.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "bybit_open_interest or open_interest"
+  ```
+
+  Result: compile passed; focused pytest passed 5 tests.
+- [x] Downloaded BTCUSDT public open-interest data for the full local OHLCV
+  evaluation span:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_download_bybit_open_interest.py --symbol BTCUSDT --category linear --interval-time 1h --timerange 20240101-20250201 --output user_data\data\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --max-pages 100 --timeout-seconds 20
+  ```
+
+  Result: `status=completed`, `row_count=9529`, `page_count=48`,
+  `truncated=false`, `api_key_required=false`, `api_key_used=false`, and
+  `order_endpoint_used=false`. Artifact:
+  `user_data\data\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet`.
+- [x] Checked the downloaded open-interest data quality:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_open_interest.py user_data\data\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --timeframe 1h --output registry\strategies\checks\20260507T203000JST_open_interest_long_quality_check.json
+  ```
+
+  Result: `ok=true`, `rows=9529`, `start=2024-01-01T00:00:00+00:00`,
+  `end=2025-02-01T00:00:00+00:00`, `duplicate_timestamps=0`,
+  `missing_intervals=0`, and no findings. Artifact:
+  `registry\strategies\checks\20260507T203000JST_open_interest_long_quality_check.json`.
+- [x] Tried one fixed structural-data thesis:
+  `TH-OPEN-INTEREST-DELEVERAGING-REBOUND-20260507` /
+  `open_interest_deleveraging_rebound`. The fixed screen tested whether a
+  one-hour open-interest contraction during a downside/high-volume range event
+  signals forced deleveraging exhaustion and a 12-candle rebound:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --open-interest-path user_data\data\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --event-spec-json registry\strategies\research_decisions\20260507T204000JST_open_interest_deleveraging_rebound_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T195000JST_all_candidates_with_three_local_falsification_rejections\candidate_failure_synthesis.json --event-id 20260507T204000JST_open_interest_deleveraging_rebound_event_study --reviewer-note "Fixed open-interest deleveraging rebound local screen; public Bybit market data and local OHLCV only." --created-at 2026-05-07T20:40:00+09:00
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-OPEN-INTEREST-DELEVERAGING-REBOUND-20260507 --mechanism-class open_interest_deleveraging_rebound --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T204000JST_open_interest_deleveraging_rebound_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T204000JST_open_interest_deleveraging_rebound_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T204500JST_open_interest_deleveraging_rebound_local_falsification --reviewer-note "Fixed open-interest deleveraging rebound local falsification; reject unless net edge clears cost across sufficient history." --created-at 2026-05-07T20:45:00+09:00
+  ```
+
+  Results: event study completed with `event_count=203` and `blocker_count=0`.
+  Local falsification failed with `expected_edge_bps=7.363403`,
+  `all_in_cost_bps=12.0`, `net_edge_bps=-4.636597`,
+  `sample_count=203`, `data_span_days=397.222222`,
+  `profitable_windows_ratio=0.25`, and `blocker_count=2`.
+- [x] Refreshed synthesis and causal map with the open-interest rejection:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\20260507T160000JST_mark_discount_reclaim_001_signal_edge_diagnostics\signal_diagnostics.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T204500JST_open_interest_deleveraging_rebound_local_falsification\local_falsification.json --synthesis-id 20260507T205000JST_all_candidates_with_open_interest_rejection --reviewer-note "Refresh synthesis after adding open-interest deleveraging rebound local rejection; local JSON only."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T205000JST_all_candidates_with_open_interest_rejection\candidate_failure_synthesis.json --map-id 20260507T205500JST_all_candidates_with_open_interest_rejection_causal_map --reviewer-note "Refresh causal map after adding open-interest deleveraging rebound rejection memory; local JSON only."
+  ```
+
+  Results: synthesis completed with `local_falsification_rejection_count=4`;
+  causal map completed with `candidate_count=31`, `category_count=10`, and
+  `requires_research_decision_before_proposal=true`. The avoid lists include
+  `TH-OPEN-INTEREST-DELEVERAGING-REBOUND-20260507` and
+  `open_interest_deleveraging_rebound`.
+- [ ] Remaining limitation: this was the first real structural-data local
+  screen and it still failed after costs. It should not be promoted, codegen'd,
+  backtested, or retuned. BTC open-interest data is now available locally, but
+  liquidation and order-book data remain absent.
+
+### Follow-up on 2026-05-07 JST for open-interest impulse continuation screen
+
+- [x] Tried a second fixed structural-data thesis with the same downloaded
+  BTCUSDT 1h open-interest data, but a different mechanism:
+  `TH-OPEN-INTEREST-IMPULSE-CONTINUATION-20260507` /
+  `open_interest_impulse_continuation`. The thesis tested whether a one-hour
+  open-interest expansion during an upside/high-volume range impulse supports
+  short-horizon continuation. This was not a retune of the deleveraging-rebound
+  thesis; it used the opposite open-interest sign and opposite price impulse
+  direction.
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --open-interest-path user_data\data\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --event-spec-json registry\strategies\research_decisions\20260507T211000JST_open_interest_impulse_continuation_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T205000JST_all_candidates_with_open_interest_rejection\candidate_failure_synthesis.json --event-id 20260507T211000JST_open_interest_impulse_continuation_event_study --reviewer-note "Fixed open-interest impulse continuation local screen; public Bybit market data and local OHLCV only." --created-at 2026-05-07T21:10:00+09:00
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-OPEN-INTEREST-IMPULSE-CONTINUATION-20260507 --mechanism-class open_interest_impulse_continuation --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T211000JST_open_interest_impulse_continuation_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T211000JST_open_interest_impulse_continuation_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T211500JST_open_interest_impulse_continuation_local_falsification --reviewer-note "Fixed open-interest impulse continuation local falsification; reject unless net edge clears cost across sufficient history." --created-at 2026-05-07T21:15:00+09:00
+  ```
+
+  Results: event study completed with `event_count=204` and `blocker_count=0`.
+  Local falsification failed with `expected_edge_bps=5.360183`,
+  `all_in_cost_bps=12.0`, `net_edge_bps=-6.639817`,
+  `sample_count=204`, `data_span_days=397.222222`,
+  `profitable_windows_ratio=0.0`, and `blocker_count=2`.
+- [x] Refreshed synthesis and causal map with the second open-interest
+  rejection:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\20260507T160000JST_mark_discount_reclaim_001_signal_edge_diagnostics\signal_diagnostics.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T204500JST_open_interest_deleveraging_rebound_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T211500JST_open_interest_impulse_continuation_local_falsification\local_falsification.json --synthesis-id 20260507T212000JST_all_candidates_with_two_open_interest_rejections --reviewer-note "Refresh synthesis after adding open-interest impulse continuation local rejection; local JSON only."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T212000JST_all_candidates_with_two_open_interest_rejections\candidate_failure_synthesis.json --map-id 20260507T212500JST_all_candidates_with_two_open_interest_rejections_causal_map --reviewer-note "Refresh causal map after adding open-interest impulse continuation rejection memory; local JSON only."
+  ```
+
+  Results: synthesis completed with `local_falsification_rejection_count=5`;
+  causal map completed with `candidate_count=31`, `category_count=10`, and
+  `requires_research_decision_before_proposal=true`. The avoid lists include
+  `TH-OPEN-INTEREST-IMPULSE-CONTINUATION-20260507` and
+  `open_interest_impulse_continuation`.
+- [ ] Remaining limitation: both fixed open-interest mechanisms tested so far
+  fail after costs. Do not continue with simple sign-flipped OI/price impulse
+  variants. The next structural thesis needs a materially new mechanism,
+  preferably liquidation/order-book evidence or a stronger research-selection
+  rationale before proposal/codegen.
+
+### Follow-up on 2026-05-07 JST for structural data quality gating in research selection
+
+- [x] Added a structural-data quality gate to `research_selection.py`. Research
+  selection now detects open-interest, liquidation, order-book, market-depth,
+  and book/depth-imbalance terms across the thesis family, mechanism, thesis
+  text, required data, and falsification plan. When a structural-data thesis is
+  proposed, at least one supplied local data quality report must exist, parse,
+  and have `ok=true`.
+- [x] Added CLI support:
+  `scripts\bot_factory_select_research_thesis.py --local-data-quality-report-json`.
+  The decision artifact now records `local_data_quality_report_paths`, and the
+  Markdown report includes a Local Data Quality Reports section.
+- [x] Added focused tests proving that an open-interest thesis with only a data
+  path is blocked by `structural_data_quality_report_present`, while the same
+  thesis with a passing quality report avoids that blocker.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection_gate_requires_quality_report_for_structural_data or research_selection_gate_accepts_passing_structural_quality_report"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 2 tests; full
+  `tests\test_bot_factory.py` passed with the existing pandas
+  `PerformanceWarning` noise from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this is a gate-hardening increment, not a new
+  profitable thesis. It prevents unverified structural-data claims from moving
+  toward proposal/codegen, but liquidation/order-book historical data is still
+  absent.
+
+### Follow-up on 2026-05-07 JST for proposal-stage structural data quality continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_proposals.py` so proposal
+  generation also detects structural-data claims: open-interest, liquidation,
+  order-book, market-depth, and book/depth-imbalance terms across proposal
+  thesis, hypothesis, market condition, entry logic, required data, rejection
+  conditions, features, and rule filters.
+- [x] Proposal generation now blocks structural-data proposals unless a local
+  `research_decision.json` is supplied and that decision carries passing local
+  data quality evidence. The proposal-stage check verifies that the research
+  decision records `local_data_quality_report_paths`, those report paths still
+  resolve inside the workspace and exist, and the decision's
+  `local_data_quality_reports_valid` plus
+  `structural_data_quality_report_present` checks passed.
+- [x] Proposal metadata now records `structural_data_requirement` and
+  proposal-side `research_decision_constraints` fields for structural data
+  quality report paths, path existence, decision-check pass status, and final
+  `structural_data_quality_report_gate_passed`.
+- [x] Added CLI evidence support:
+  `scripts\bot_factory_generate_strategy_proposal.py --local-data-quality-json`.
+  This keeps local quality reports visible in proposal evidence alongside the
+  required research decision.
+- [x] Added focused tests proving proposal generation blocks an open-interest
+  proposal when the research decision lacks passing quality-report evidence,
+  and accepts the same structural-data proposal when the research decision
+  carries a passing local quality report and the report path exists.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py scripts\bot_factory_generate_strategy_proposal.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_proposal_cli_maps_failure_synthesis_to_evidence or strategy_proposal_generator_blocks_structural_data_without_quality_reported_research_decision or strategy_proposal_generator_accepts_structural_data_with_quality_reported_research_decision"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with the existing pandas
+  `PerformanceWarning` noise from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this closes a stale-evidence handoff gap between
+  research selection and proposal generation, but it is still gate hardening,
+  not a profitable or paper-ready candidate. Liquidation/order-book historical
+  data remains absent.
+
+### Follow-up on 2026-05-07 JST for codegen structural data handoff guard
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_code.py` so code generation
+  detects structural-data proposal metadata and does not trust old proposal
+  artifacts by default. The codegen gate reads the proposal's
+  `structural_data_requirement` when present, or scans core metadata fields for
+  open-interest, liquidation, order-book, market-depth, and
+  book/depth-imbalance terms.
+- [x] Code generation now blocks structural-data proposals unless the proposal
+  metadata carries a passing `structural_data_quality_report_gate_passed`
+  handoff inside `research_decision_constraints`, with quality report paths
+  present, existing, and backed by passing research-selection quality checks.
+- [x] Code generation also blocks structural-data proposals until an explicitly
+  supported structural-data code-generation variant exists. This prevents
+  producing OHLCV-only strategy code from an open-interest/order-book thesis
+  merely because the research/proposal gates passed.
+- [x] Generated metadata and `research_brief.json` now preserve
+  `structural_data_requirement` and `structural_data_quality_handoff`, so later
+  evaluation and iteration can see whether the codegen handoff was blocked or
+  satisfied.
+- [x] Added focused tests proving that codegen blocks stale structural metadata
+  with no quality handoff and also blocks a quality-approved open-interest
+  proposal until structural code-generation support is implemented.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator_blocks_structural_data_without_quality_handoff or strategy_code_generator_blocks_structural_data_until_logic_supported"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 2 tests; full
+  `tests\test_bot_factory.py` passed with the existing pandas
+  `PerformanceWarning` noise from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this prevents false structural-data codegen, but it
+  still does not implement an open-interest, liquidation, or order-book
+  strategy-code variant and does not produce a profitable or paper-ready
+  candidate.
+
+### Follow-up on 2026-05-07 JST for open-interest crowded short squeeze screen
+
+- [x] Tried a third fixed open-interest thesis with the downloaded BTCUSDT 1h
+  open-interest data:
+  `TH-OPEN-INTEREST-CROWDED-SHORT-SQUEEZE-20260507` /
+  `open_interest_crowded_short_squeeze`. This was not a retune of the prior
+  open-interest tests. It tested whether one-hour open-interest expansion while
+  price is falling, below its 24-hour SMA, and trading in muted range/volume
+  can indicate crowded short positioning and a 12-candle rebound.
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --open-interest-path user_data\data\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --event-spec-json registry\strategies\research_decisions\20260507T223000JST_open_interest_crowded_short_squeeze_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T212000JST_all_candidates_with_two_open_interest_rejections\candidate_failure_synthesis.json --event-id 20260507T223000JST_open_interest_crowded_short_squeeze_event_study --reviewer-note "Fixed crowded-short squeeze local screen; public Bybit open-interest data and local OHLCV only." --created-at 2026-05-07T22:30:00+09:00
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-OPEN-INTEREST-CROWDED-SHORT-SQUEEZE-20260507 --mechanism-class open_interest_crowded_short_squeeze --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T223000JST_open_interest_crowded_short_squeeze_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T223000JST_open_interest_crowded_short_squeeze_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12.0 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T223500JST_open_interest_crowded_short_squeeze_local_falsification --reviewer-note "Fixed crowded-short squeeze local falsification; reject unless 12-candle rebound edge clears cost across sufficient history." --created-at 2026-05-07T22:35:00+09:00
+  ```
+
+  Results: event study completed with `event_count=115` and
+  `blocker_count=0`. Local falsification failed with
+  `expected_edge_bps=5.035758`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-6.964242`, `sample_count=115`,
+  `data_span_days=397.222222`, `profitable_windows_ratio=0.0`, and
+  `blocker_count=2`.
+- [x] Refreshed synthesis and causal map with the third open-interest
+  rejection:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --signal-diagnostics-json registry\strategies\diagnostics\LongOnlyMarkDiscountReclaimCandidate\mark_discount_reclaim_001\20260507T160000JST_mark_discount_reclaim_001_signal_edge_diagnostics\signal_diagnostics.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T204500JST_open_interest_deleveraging_rebound_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T211500JST_open_interest_impulse_continuation_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T223500JST_open_interest_crowded_short_squeeze_local_falsification\local_falsification.json --synthesis-id 20260507T224000JST_all_candidates_with_three_open_interest_rejections --reviewer-note "Refresh synthesis after adding crowded-short squeeze local rejection; local JSON only."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T224000JST_all_candidates_with_three_open_interest_rejections\candidate_failure_synthesis.json --map-id 20260507T224500JST_all_candidates_with_three_open_interest_rejections_causal_map --reviewer-note "Refresh causal map after adding crowded-short squeeze rejection memory; local JSON only."
+  ```
+
+  Results: synthesis completed with
+  `local_falsification_rejection_count=6`; causal map completed with
+  `candidate_count=31`, `category_count=10`, and
+  `requires_research_decision_before_proposal=true`. The avoid lists include
+  `TH-OPEN-INTEREST-CROWDED-SHORT-SQUEEZE-20260507` and
+  `open_interest_crowded_short_squeeze`.
+- [ ] Remaining limitation: three fixed open-interest mechanisms now fail
+  after costs. Do not continue with small OI threshold retunes or simple
+  sign/condition rearrangements. The next structural-data thesis needs
+  materially new data such as liquidation/order-book evidence, or a stronger
+  research-selection rationale before proposal/codegen.
+
+### Follow-up on 2026-05-07 JST for structural data capability report
+
+- [x] Added a machine-readable structural-data capability report so the AI
+  factory does not assume unavailable historical data or move structural-data
+  theses into code generation prematurely. New module:
+  `freqtrade_ext\bot_factory\structural_data_capabilities.py`; new CLI:
+  `scripts\bot_factory_report_structural_data_capabilities.py`.
+- [x] Official Bybit docs checked on 2026-05-07 JST:
+  open-interest has a public REST market endpoint
+  (`https://bybit-exchange.github.io/docs/v5/market/open-interest`);
+  all-liquidation is documented as a public websocket topic
+  (`https://bybit-exchange.github.io/docs/v5/websocket/public/all-liquidation`);
+  REST orderbook is a current market endpoint
+  (`https://bybit-exchange.github.io/docs/v5/market/orderbook`) and public
+  orderbook websocket is a live stream
+  (`https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook`).
+- [x] Generated the current local capability report:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_report_structural_data_capabilities.py --open-interest-path user_data\data\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --open-interest-quality-report-json registry\strategies\checks\20260507T203000JST_open_interest_long_quality_check.json --output registry\strategies\checks\20260507T225500JST_structural_data_capabilities.json --created-at 2026-05-07T22:55:00+09:00
+  ```
+
+  Result: `local_research_usable=["open_interest"]`,
+  `blocked_without_new_data=["liquidation", "order_book"]`,
+  `must_not_codegen=["open_interest", "liquidation", "order_book"]`, and
+  `blocker_count=3`. Safety metadata records `api_key_required=false`,
+  `order_endpoint_used=false`, and
+  `trade_or_paper_process_started=false`.
+- [x] Added focused tests proving that a local open-interest file plus a
+  passing quality report is usable for local research only, while liquidation
+  and order-book remain blocked without new historical local data:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\structural_data_capabilities.py scripts\bot_factory_report_structural_data_capabilities.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "structural_data_capability_report"
+  ```
+
+  Result: compile passed; focused pytest passed 2 tests.
+- [ ] Remaining limitation: this is a capability guard, not a profitable
+  strategy. It explicitly blocks structural-data codegen and marks
+  liquidation/order-book historical research as unavailable until local
+  historical data and quality checks exist.
+
+### Follow-up on 2026-05-07 JST for research-selection structural capability gate
+
+- [x] Connected the structural-data capability report to
+  `freqtrade_ext\bot_factory\research_selection.py`. Structural-data theses
+  now require a valid Bot Factory
+  `factory=structural_data_capability_report` artifact in addition to the
+  existing passing local data quality report.
+- [x] Research selection now classifies structural terms into data classes:
+  `open_interest`, `liquidation`, and `order_book`. It blocks the thesis when
+  any required class is absent from the capability report's
+  `proposal_guidance.local_research_usable` list. This prevents a fake or
+  generic quality JSON from advancing a liquidation/order-book thesis when the
+  current capability report says those classes are blocked without new data.
+- [x] Added CLI support:
+  `scripts\bot_factory_select_research_thesis.py --structural-data-capability-report-json`.
+  Decision artifacts now preserve
+  `thesis.structural_data_capability_report_paths`, and Markdown reports show a
+  Structural Data Capability Reports section.
+- [x] Added focused tests proving that a passing open-interest quality report
+  also needs a capability report and that a liquidation thesis with a generic
+  passing quality report is still blocked when the capability report only marks
+  open-interest as locally research-usable.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py scripts\bot_factory_select_research_thesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection_gate_requires_quality_report_for_structural_data or research_selection_gate_accepts_passing_structural_quality_report or research_selection_gate_blocks_structural_class_without_capability_support"
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests.
+- [ ] Remaining limitation: this closes the research-selection path. A
+  proposal-stage continuity check should still be added so a manually crafted
+  or stale `research_decision.json` without capability-report evidence cannot
+  bypass the new gate.
+
+### Follow-up on 2026-05-07 JST for proposal-stage structural capability continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_proposals.py` so proposal
+  generation re-checks structural-data capability evidence in supplied
+  `research_decision.json` artifacts. The proposal gate no longer relies only
+  on `local_data_quality_report_paths`; it also verifies
+  `thesis.structural_data_capability_report_paths`, checks that those paths
+  exist inside the workspace, parses each report, verifies
+  `factory=structural_data_capability_report`, and recomputes whether the
+  proposal's required structural classes are included in
+  `proposal_guidance.local_research_usable`.
+- [x] Proposal research-decision checks now block structural-data proposals
+  when the research decision lacks passing
+  `structural_data_capability_reports_valid`,
+  `structural_data_capability_report_present`, or
+  `structural_data_capability_supports_required_classes` evidence.
+- [x] Proposal metadata now records capability continuity fields in
+  `research_decision_constraints`, including capability report paths, path
+  existence, parsed report validity, usable classes, unsupported required
+  classes, and final capability gate/support status.
+- [x] Added focused tests proving that quality evidence without capability
+  evidence blocks structural proposal generation, while quality + capability
+  evidence allows proposal acceptance but still leaves structural strategy code
+  generation blocked until a real structural codegen variant exists.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_proposal_generator_blocks_structural_data_without_quality_reported_research_decision or strategy_proposal_generator_accepts_structural_data_with_quality_reported_research_decision or strategy_proposal_generator_blocks_structural_data_without_capability_reported_research_decision or strategy_code_generator_blocks_structural_data_until_logic_supported"
+  ```
+
+  Result: compile passed; focused pytest passed 4 tests.
+- [ ] Remaining limitation: this closes the research-to-proposal continuity
+  bypass. Structural code generation remains intentionally unsupported; if a
+  real structural codegen variant is added later, codegen should also require
+  the capability fields preserved in proposal metadata.
+
+### Follow-up on 2026-05-07 JST for codegen structural capability handoff
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_code.py` so strategy code
+  generation now recomputes a proposal-stage
+  `structural_data_capability_handoff` from
+  `research_decision_constraints`. Structural-data proposals now need both a
+  passing quality handoff and a passing capability handoff before codegen can
+  proceed to any future structural-data variant.
+- [x] Added blocker check
+  `structural_data_capability_handoff_passed`. It requires capability report
+  paths, path-existence evidence, report-validity evidence, structural
+  capability checks, required-class support, and no unsupported required
+  structural class.
+- [x] Codegen metadata and the embedded `research_brief` now preserve
+  `structural_data_capability_handoff` next to
+  `structural_data_quality_handoff` for auditability.
+- [x] Added focused tests proving that stale/manually crafted structural
+  proposal metadata with passing quality evidence but missing capability
+  evidence is blocked at codegen, while proposal metadata with quality +
+  capability evidence still remains blocked by
+  `structural_data_code_generation_supported` until a real structural codegen
+  variant exists.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator_blocks_structural_data"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this is still a safety/continuity guard, not a
+  profitable candidate. Structural data remains local-research-only until a
+  verified historical data ingestion path and a supported codegen variant are
+  implemented.
+
+### Follow-up on 2026-05-07 JST for worktree hygiene recheck after codegen capability handoff
+
+- [x] Re-checked the worktree after the structural capability/codegen guard
+  increment. Current non-ignored state is 21 tracked changes plus 22 untracked
+  Bot Factory source/script/doc files. `git ls-files --others
+  --exclude-standard` lists only docs, `freqtrade_ext\bot_factory\*.py`, and
+  `scripts\bot_factory_*.py`; generated `data\`, `registry\strategies\...`,
+  and `user_data\` artifacts are not leaking into the Git candidate set.
+- [x] Classified files that should remain Git candidates for this Bot Factory
+  increment:
+  `.gitignore`, Bot Factory docs, `freqtrade_ext\bot_factory\*.py`,
+  `scripts\bot_factory_*.py`, focused tests in `tests\test_bot_factory.py`,
+  and `registry\strategies\proposals\TEMPLATE.md`.
+- [x] Classified files that should stay ignored and should not be added to
+  Git: `data\backtests\**`, `data\freqai\**`,
+  `data\freqai_training\**`, `data\walk_forward\**`,
+  `registry\strategies\checks\*.json`,
+  `registry\strategies\candidates\**`,
+  `registry\strategies\diagnostics\**`,
+  `registry\strategies\failure_maps\**`,
+  `registry\strategies\generated\**`,
+  `registry\strategies\proposals\**` except
+  `registry\strategies\proposals\TEMPLATE.md`,
+  `registry\strategies\research_decisions\**`,
+  `registry\strategies\reviews\**`,
+  `registry\strategies\synthesis\**`, and runtime `user_data\*` artifacts.
+- [x] Confirmed representative generated artifacts are ignored by actual
+  `.gitignore` rules with `git check-ignore -v`, including backtests,
+  FreqAI outputs, walk-forward logs, checks JSON, generated proposals,
+  research decisions, synthesis artifacts, `user_data\logs`,
+  `user_data\data`, and `user_data\models` contents.
+- [x] Safe deletion candidates are limited to generated caches such as
+  `.pytest_cache\` and `__pycache__\`. Broader ignored artifacts should not be
+  deleted automatically because local JSON/CSV/Markdown artifacts remain the
+  audit trail for rejected hypotheses and verification evidence.
+- [ ] Owner decision remains required for
+  `docs\BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md`, which is currently deleted in
+  the worktree. Accept deletion only if its relevant content is superseded by
+  `docs\BOT_FACTORY_MVP_TODO.md` and `docs\BOT_FACTORY_GOAL_AUDIT.md`;
+  otherwise restore or merge it deliberately.
+- [x] Verification:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff --name-status
+  git ls-files --others --exclude-standard
+  git diff -- .gitignore
+  git check-ignore -v <representative generated artifact paths>
+  ```
+
+  Result: non-ignored files are limited to source/script/doc/test/template
+  changes; representative runtime artifacts are ignored; no generated strategy
+  run outputs need to be added to Git.
+
+### Follow-up on 2026-05-07 JST for proposal/codegen local falsification handoff
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_proposals.py` so proposal
+  generation now derives a `local_falsification_handoff` from supplied
+  `research_decision.json` artifacts. A high-risk
+  `cost_sensitive_mechanism` causal map (`risk_score >= 80`) now requires the
+  research decision to preserve passing local falsification evidence before a
+  proposal can be accepted.
+- [x] The proposal gate now blocks high-risk decisions that have a passing
+  weighted causal response but no local falsification handoff. The handoff
+  requires artifact presence, parseability, thesis match, positive net edge
+  after all-in cost, valid Bot Factory factory/safety/event-source flags,
+  closed-context alignment, and a passing failure-synthesis guard.
+- [x] Proposal metadata now records handoff continuity fields in
+  `research_decision_constraints`, including required/pass status, artifact
+  counts, parseability counts, matching-thesis counts, passing cost-edge
+  counts, artifact paths, and local-falsification blocker names.
+- [x] Extended `freqtrade_ext\bot_factory\strategy_code.py` so codegen reads
+  those proposal metadata fields and blocks stale accepted proposals with
+  `local_falsification_handoff_passed` before strategy code generation.
+  Codegen metadata and the embedded research brief now preserve
+  `local_falsification_handoff`.
+- [x] Added focused tests proving that:
+  - high-risk research decisions without a local falsification handoff block
+    proposal generation,
+  - high-risk research decisions with a passing handoff can still be accepted
+    as proposals,
+  - stale accepted proposal metadata without a passing local falsification
+    handoff blocks codegen.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "high_risk_decision or risk_weighted_decision_without_weighted_score or high_risk_proposal_without_local_falsification_handoff"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 4 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this closes a stale evidence handoff path only. It
+  does not create a profitable or paper-ready strategy and does not permit
+  paper, dry-run, live trading, exchange order placement, leverage above `1.0`,
+  shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for candidate failure synthesis local falsification rejection validation
+
+- [x] Hardened
+  `freqtrade_ext\bot_factory\candidate_failure_synthesis.py` so failed,
+  rejected, or blocked `research_local_falsification` artifacts are counted as
+  valid local rejections only when they also preserve historical-only safety
+  scope, a valid Bot Factory local event source, closed-context alignment, and
+  a passing failure-synthesis guard.
+- [x] Candidate failure synthesis now separates all supplied local
+  falsification rejection artifacts from the subset counted as valid
+  rejections. Aggregate output records artifact count, valid rejection count,
+  invalid rejection count, validation flags, event-source summary, and failure
+  reasons.
+- [x] Updated `tests\test_bot_factory.py` so the positive synthesis case uses
+  a fully validated local falsification rejection artifact, and added a
+  crafted/unsafe failed artifact test proving that factory/status alone no
+  longer pollutes `local_falsification_failed_thesis_ids` or the next research
+  brief.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_failure_synthesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_failure_synthesis"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this improves the failure-memory input to the next
+  research cycle, but it still does not create a profitable or paper-ready
+  strategy and does not authorize paper, dry-run, live trading, exchange order
+  placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for research selection validated local rejection memory
+
+- [x] Added end-to-end regression coverage in `tests\test_bot_factory.py`
+  proving that a candidate failure synthesis built from a fully validated
+  local falsification rejection feeds the rejected mechanism class into
+  research selection novelty checks and blocks a repeated thesis family.
+- [x] Added the complementary regression proving that an invalid/crafted local
+  falsification failure is retained as an invalid synthesis artifact but does
+  not populate `local_falsification_failed_mechanism_classes`, does not enter
+  `hypothesis_families_tried`, and does not block a new research selection.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_rejection_from_synthesis or candidate_failure_synthesis or prior_local_falsification_rejection"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 6 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this fixes and documents memory continuity from
+  validated local rejections into research selection. It does not create a
+  profitable or paper-ready candidate, and it does not authorize paper,
+  dry-run, live trading, exchange order placement, leverage above `1.0`,
+  shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for research selection local rejection provenance
+
+- [x] Extended `freqtrade_ext\bot_factory\research_selection.py` so
+  `novelty_assessment` now records validated local falsification rejection
+  memory separately from generic failed-family memory:
+  `local_falsification_failed_thesis_ids`,
+  `local_falsification_failed_thesis_id_match`,
+  `local_falsification_failed_mechanism_tokens`, and
+  `local_falsification_failed_mechanism_class_matches`.
+- [x] Added an explicit blocker,
+  `research_thesis_outside_failure_synthesis_local_rejections`, when the
+  proposed thesis ID or mechanism class is already present in validated local
+  rejection memory from the latest synthesis. The research selection score's
+  `novelty_against_failure_set` component now includes the same provenance in
+  its details, and the Markdown report renders the local rejection matches.
+- [x] Strengthened the validated-local-rejection research selection tests to
+  assert the new provenance fields, explicit blocker, and score details.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_rejection_from_synthesis or research_selection_gate_blocks_repeated_failed_family or prior_local_falsification_rejection"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 4 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this improves research-selection traceability and
+  reduces repeat-risk, but it does not create a profitable or paper-ready
+  candidate and does not authorize paper, dry-run, live trading, exchange order
+  placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for proposal-stage local rejection novelty continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_proposals.py` so proposal
+  generation no longer trusts an `approved_for_proposal_generation`
+  `research_decision.json` when its `novelty_assessment` still reports a
+  failed thesis ID, repeated failed family, or validated local falsification
+  rejection match.
+- [x] Added explicit proposal blockers:
+  `research_decision_<n>_novelty_assessment_passed` and
+  `research_decision_<n>_outside_failure_synthesis_local_rejections`. Proposal
+  metadata now preserves the research decision's
+  `local_falsification_failed_thesis_ids`,
+  `local_falsification_failed_thesis_id_match`,
+  `local_falsification_failed_mechanism_tokens`, and
+  `local_falsification_failed_mechanism_class_matches` inside
+  `research_decision_constraints`.
+- [x] Added a crafted approved research-decision regression test proving that
+  local rejection novelty matches still block proposal generation even when the
+  decision's status and `proposal_generation_allowed` flag claim approval.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_rejection_novelty or unapproved_research_decision or high_risk_decision or research_decision_below_selection_score"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 5 tests after a first
+  focused run exposed and fixed a missing `novelty_assessment` extraction in
+  the proposal gate; full `tests\test_bot_factory.py` passed with existing
+  pandas `PerformanceWarning` warnings from `signal_diagnostics.py`; diff
+  check passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this closes a proposal-stage continuity bypass for
+  local rejection novelty. It does not create a profitable or paper-ready
+  candidate and does not authorize paper, dry-run, live trading, exchange order
+  placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for codegen-stage local rejection novelty continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_code.py` so strategy code
+  generation revalidates accepted proposal metadata before emitting code. The
+  new `research_decision_novelty_handoff` summary is stored in generated
+  metadata and `research_brief`.
+- [x] Added codegen blocker
+  `research_decision_novelty_handoff_passed` when
+  `research_decision_constraints` still carry failed thesis ID matches,
+  repeated failed-family matches, or validated local falsification rejection
+  matches from the research decision.
+- [x] Added a regression test proving that stale/crafted accepted proposal
+  metadata with local rejection novelty evidence cannot bypass proposal-stage
+  blockers and reach generated strategy code.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_decision_local_rejection_novelty_handoff or high_risk_proposal_without_local_falsification_handoff or structural_data_without_quality_handoff"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this closes a codegen-stage stale proposal bypass
+  for local rejection novelty. It does not create a profitable or paper-ready
+  candidate and does not authorize paper, dry-run, live trading, exchange order
+  placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for failure-map local rejection research questions
+
+- [x] Extended `freqtrade_ext\bot_factory\candidate_failure_map.py` so
+  validated local falsification rejections from
+  `candidate_failure_synthesis.json` are carried into causal failure map
+  research guidance instead of remaining only in synthesis-level prose.
+- [x] `research_selection_guidance` now records
+  `validated_local_falsification_rejections`, promotes local falsification
+  rejection prompts into `required_research_questions`, and blocks
+  `retry_validated_local_rejection_by_parameter_tuning` as an explicit next
+  action.
+- [x] The causal failure map Markdown report now includes a
+  `Validated Local Falsification Rejections` section so next agents can see
+  the rejected thesis/mechanism, net edge, and walk-forward profitability
+  context without reopening raw local falsification artifacts.
+- [x] Added focused coverage in
+  `test_candidate_failure_map_builds_causal_categories` proving validated
+  local rejection memory appears in guidance, required research questions,
+  blocked next actions, and the rendered report.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_failure_map.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_failure_map_builds_causal_categories"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 1 test; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this improves failure-map-to-selection guidance
+  continuity, but it does not create a profitable or paper-ready candidate and
+  does not authorize paper, dry-run, live trading, exchange order placement,
+  leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for research-selection local rejection question continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\research_selection.py` so
+  `validated_local_falsification_rejections` from causal failure map guidance
+  are preserved in the research selection decision artifact instead of being
+  visible only in the upstream map.
+- [x] The research selection Markdown report now renders validated local
+  falsification rejections under the causal failure map section, including
+  thesis ID, mechanism class, net edge, and profitable-window context.
+- [x] Added
+  `test_research_selection_gate_requires_local_rejection_question_response`
+  proving that a local-rejection required research question from the failure
+  map is blocked when unanswered, becomes visible in the decision/report, and
+  allows approval only after a substantive indexed response is supplied.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_rejection_question_response or missing_required_research_question_responses or accepts_causal_failure_map_responses"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this improves map-to-selection auditability and
+  question enforcement for validated local rejections. It does not create a
+  profitable or paper-ready candidate and does not authorize paper, dry-run,
+  live trading, exchange order placement, leverage above `1.0`, shorting, or
+  process control.
+
+### Follow-up on 2026-05-07 JST for proposal-stage research question continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_proposals.py` so proposal
+  generation no longer trusts a research decision's reported
+  `missing_research_question_response_indexes` alone. When a causal failure
+  map requires research-question responses, proposal generation now
+  recomputes missing indexes from `required_research_questions` and
+  `research_question_response_indexes`.
+- [x] The proposal blocker
+  `research_decision_<n>_research_question_responses_complete` now includes
+  required question text, supplied response indexes, reported missing indexes,
+  and recomputed missing indexes in check details. Proposal metadata preserves
+  the same fields inside `research_decision_constraints` for auditability.
+- [x] Added
+  `test_strategy_proposal_generator_recomputes_missing_research_question_responses`
+  proving a crafted approved research decision cannot hide an unanswered
+  required question by leaving `missing_research_question_response_indexes`
+  empty.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "recomputes_missing_research_question_responses or blocks_missing_research_question_responses or local_rejection_question_response"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this closes a proposal-stage crafted decision
+  bypass for required research questions. It does not create a profitable or
+  paper-ready candidate and does not authorize paper, dry-run, live trading,
+  exchange order placement, leverage above `1.0`, shorting, or process
+  control.
+
+### Follow-up on 2026-05-07 JST for codegen-stage research question continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_code.py` so accepted
+  proposal metadata is revalidated before code generation when
+  `research_decision_constraints` say causal-map research-question responses
+  were required.
+- [x] Added `research_decision_question_handoff_passed`, which recomputes
+  missing required-question indexes from `required_research_questions` and
+  `research_question_response_indexes`, unions them with proposal-stage
+  reported/computed missing indexes, and blocks code generation on missing or
+  weak required-question responses.
+- [x] Generated metadata and `research_brief` now include
+  `research_decision_question_handoff`, preserving required question text,
+  supplied response indexes, reported missing indexes, upstream computed
+  missing indexes, codegen recomputed missing indexes, and failed paths.
+- [x] Added
+  `test_strategy_code_generator_blocks_research_decision_question_handoff`
+  proving crafted accepted proposal metadata cannot hide an unanswered
+  required research question by leaving proposal-stage missing-index fields
+  empty.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_decision_question_handoff or research_decision_local_rejection_novelty_handoff or recomputes_missing_research_question_responses"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this closes a codegen-stage crafted proposal
+  bypass for required research questions. It does not create a profitable or
+  paper-ready candidate and does not authorize paper, dry-run, live trading,
+  exchange order placement, leverage above `1.0`, shorting, or process
+  control.
+
+### Follow-up on 2026-05-07 JST for iteration blocked-action continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\candidate_iteration.py` so the
+  iteration loop carries `blocked_next_actions` from `next_candidate_input`,
+  research briefs, and failure-evidence summaries into both the iteration plan
+  and `proposal_revision_input`.
+- [x] Added iteration check `revision_avoids_blocked_next_actions`, which
+  normalizes revision text from changed assumptions, changed parameters, and
+  changed data requirements, then blocks revisions that repeat a causal failure
+  map blocked action such as
+  `retry_validated_local_rejection_by_parameter_tuning`.
+- [x] Added
+  `test_candidate_iteration_blocks_causal_failure_map_blocked_next_action`
+  proving a revision cannot repackage a validated local rejection retry as a
+  parameter-tuning assumption even when reviewer findings and research brief
+  are present.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_iteration.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_iteration_blocks_causal_failure_map_blocked_next_action or candidate_iteration_plan_preserves_lineage or candidate_iteration_force_distinct or candidate_iteration_requires_research_brief"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 4 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this closes an iteration-loop path back into
+  blocked local-rejection parameter tuning. It does not create a profitable or
+  paper-ready candidate and does not authorize paper, dry-run, live trading,
+  exchange order placement, leverage above `1.0`, shorting, or process
+  control.
+
+### Follow-up on 2026-05-07 JST for evaluation-to-iteration blocked-action continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\candidate_evaluation.py` so
+  `blocked_next_actions` from generated/proposal research briefs and proposal
+  `failure_synthesis_constraints` / `research_decision_constraints` are
+  preserved in the candidate manifest's `research_brief` and
+  `next_candidate_input`.
+- [x] Added
+  `test_candidate_evaluation_carries_blocked_next_actions_to_iteration`
+  proving a normal candidate manifest carries
+  `retry_validated_local_rejection_by_parameter_tuning` into the iteration
+  loop, where `revision_avoids_blocked_next_actions` blocks an attempted
+  retry-as-parameter-tuning revision.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\candidate_iteration.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_evaluation_carries_blocked_next_actions_to_iteration or candidate_iteration_blocks_causal_failure_map_blocked_next_action or candidate_evaluation_writes_manifest_and_index"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this preserves blocked-action memory through the
+  local evaluation-to-iteration handoff, but it does not create a profitable or
+  paper-ready candidate and does not authorize paper, dry-run, live trading,
+  exchange order placement, leverage above `1.0`, shorting, or process
+  control.
+
+### Follow-up on 2026-05-07 JST for evaluation research handoff preservation
+
+- [x] Extended `freqtrade_ext\bot_factory\candidate_evaluation.py` so candidate
+  manifests preserve codegen/proposal research handoff summaries inside
+  `research_brief`: `research_decision_question_handoff`,
+  `research_decision_novelty_handoff`, `local_falsification_handoff`,
+  `structural_data_quality_handoff`, and
+  `structural_data_capability_handoff`.
+- [x] Added
+  `test_candidate_evaluation_preserves_research_handoff_summaries` proving
+  `research_decision_question_handoff` and
+  `research_decision_novelty_handoff` survive candidate evaluation instead of
+  being stripped during manifest summarization.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_evaluation.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_evaluation_preserves_research_handoff_summaries or candidate_evaluation_carries_blocked_next_actions_to_iteration or candidate_evaluation_writes_manifest_and_index"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this preserves research handoff auditability
+  through candidate evaluation, but it does not create a profitable or
+  paper-ready candidate and does not authorize paper, dry-run, live trading,
+  exchange order placement, leverage above `1.0`, shorting, or process
+  control.
+
+### Follow-up on 2026-05-07 JST for ranking research handoff continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\candidate_ranking.py` so ranked
+  candidate rows preserve `blocked_next_actions`, a compact `research_brief`,
+  and `research_handoff_summary` entries for
+  `research_decision_question_handoff`,
+  `research_decision_novelty_handoff`, `local_falsification_handoff`,
+  `structural_data_quality_handoff`, and
+  `structural_data_capability_handoff`.
+- [x] Extended
+  `freqtrade_ext\bot_factory\candidate_failure_synthesis.py` so failure
+  synthesis can use ranking-level research context even when the original
+  candidate manifest is unavailable, then carries preserved blocked actions
+  and handoff summaries into `aggregate_failure_summary` and
+  `next_research_brief`.
+- [x] Added
+  `test_candidate_ranking_preserves_research_handoff_context` and
+  `test_candidate_failure_synthesis_uses_ranking_research_context_without_manifest`
+  proving ranking and downstream synthesis no longer drop research-question,
+  novelty, and blocked-action context.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\candidate_failure_synthesis.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_ranking_preserves_research_handoff_context or candidate_failure_synthesis_uses_ranking_research_context_without_manifest or candidate_failure_synthesis_builds_theory_first_next_brief or candidate_ranking_compares_candidates_and_gates_paper_ready"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 4 tests after correcting
+  blocked-action ordering; full `tests\test_bot_factory.py` passed with
+  existing pandas `PerformanceWarning` warnings from `signal_diagnostics.py`;
+  diff check passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this closes a ranking-to-failure-synthesis context
+  drop, but it does not create a profitable or paper-ready candidate and does
+  not authorize paper, dry-run, live trading, exchange order placement,
+  leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for failure-map research handoff continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\candidate_failure_map.py` so
+  `research_selection_guidance` preserves synthesis-level
+  `research_handoff_summaries` and merges synthesis/aggregate
+  `blocked_next_actions` instead of emitting only the local default blocked
+  action list.
+- [x] Extended `freqtrade_ext\bot_factory\research_selection.py` so causal
+  failure map constraints and the rendered decision summary preserve
+  `research_handoff_summaries` for downstream proposal/codegen auditability.
+- [x] Added regression coverage to
+  `test_candidate_failure_map_builds_causal_categories` and added
+  `test_research_selection_gate_preserves_causal_map_handoff_summaries`,
+  proving ranking/synthesis handoff context survives the failure-map and
+  research-selection stages.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_failure_map.py freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_failure_map_builds_causal_categories or research_selection_gate_preserves_causal_map_handoff_summaries or research_selection_gate_blocks_causal_failure_map_synthesis_mismatch"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this preserves handoff context through failure map
+  and research selection, but it does not create a profitable or paper-ready
+  candidate and does not authorize paper, dry-run, live trading, exchange
+  order placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for proposal research handoff continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\research_selection.py` so the
+  research decision `causal_failure_map` summary preserves
+  `blocked_next_actions` as well as `research_handoff_summaries`.
+- [x] Extended `freqtrade_ext\bot_factory\strategy_proposals.py` so proposal
+  `research_decision_constraints` preserve causal-map
+  `blocked_next_actions` and `research_handoff_summaries`, and proposal
+  `research_brief` merges those fields with failure-synthesis constraints for
+  downstream codegen/evaluation auditability.
+- [x] Added regression coverage to
+  `test_strategy_proposal_generator_accepts_distinct_synthesis_thesis` and
+  `test_research_selection_gate_preserves_causal_map_handoff_summaries`,
+  proving research-selection blocked action and handoff context survives into
+  accepted proposal metadata.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py freqtrade_ext\bot_factory\strategy_proposals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_proposal_generator_accepts_distinct_synthesis_thesis or research_selection_gate_preserves_causal_map_handoff_summaries or strategy_proposal_generator_requires_research_decision_after_synthesis"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this preserves blocked-action and handoff context
+  into proposal metadata, but it does not create a profitable or paper-ready
+  candidate and does not authorize paper, dry-run, live trading, exchange
+  order placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for codegen/evaluation handoff summary continuity
+
+- [x] Extended `freqtrade_ext\bot_factory\strategy_code.py` so generated
+  metadata and generated `research_brief.json` preserve proposal-level
+  `blocked_next_actions` and `research_handoff_summaries` alongside the
+  named research-decision/local/structural handoff summaries.
+- [x] Extended `freqtrade_ext\bot_factory\candidate_evaluation.py` so
+  candidate evaluation manifests preserve generic `research_handoff_summaries`
+  from generated/proposal metadata, generated/proposal research briefs, and
+  research decision constraints.
+- [x] Added regression coverage to
+  `test_strategy_code_generator_blocks_research_decision_question_handoff` and
+  `test_candidate_evaluation_preserves_research_handoff_summaries`, proving
+  generic handoff summaries and blocked actions survive codegen and candidate
+  evaluation.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator_blocks_research_decision_question_handoff or candidate_evaluation_preserves_research_handoff_summaries or candidate_evaluation_carries_blocked_next_actions_to_iteration"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; diff check
+  passed with existing CRLF warnings only.
+- [ ] Remaining limitation: this preserves generic handoff context through
+  codegen and candidate evaluation, but it does not create a profitable or
+  paper-ready candidate and does not authorize paper, dry-run, live trading,
+  exchange order placement, leverage above `1.0`, shorting, or process
+  control.
+
+### Follow-up on 2026-05-07 JST for worktree hygiene recheck after codegen/evaluation handoff
+
+- [x] Rechecked the large worktree after the codegen/evaluation handoff
+  summary increment:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff --stat
+  git diff --name-status
+  git ls-files --others --exclude-standard
+  git ls-files --others --ignored --exclude-standard data/freqai data/freqai_training data/walk_forward registry/strategies/candidates registry/strategies/diagnostics registry/strategies/failure_maps registry/strategies/generated registry/strategies/research_decisions registry/strategies/reviews registry/strategies/synthesis registry/strategies/proposals
+  ```
+
+  Result: visible Git candidates remain scoped to `.gitignore`, Bot Factory
+  docs, Bot Factory modules under `freqtrade_ext\bot_factory\`, Bot Factory
+  CLIs under `scripts\`, focused `tests\test_bot_factory.py` coverage, and
+  `registry\strategies\proposals\TEMPLATE.md`.
+- [x] Current non-ignored untracked files are all Bot Factory source/script/doc
+  files: `docs\BOT_FACTORY_GOAL_AUDIT.md`, 10 modules under
+  `freqtrade_ext\bot_factory\`, and 11 `scripts\bot_factory_*.py` entrypoints.
+  These should remain Git candidates for review; they are not disposable
+  runtime output.
+- [x] Current ignored Bot Factory artifact counts are local-only evidence, not
+  Git candidates: `data\freqai` 58, `data\freqai_training` 72,
+  `data\walk_forward` 1761, `registry\strategies\candidates` 382,
+  `registry\strategies\diagnostics` 70,
+  `registry\strategies\failure_maps` 34,
+  `registry\strategies\generated` 133,
+  `registry\strategies\proposals` 135,
+  `registry\strategies\research_decisions` 134,
+  `registry\strategies\reviews` 12, and
+  `registry\strategies\synthesis` 68.
+- [x] Safe deletion remains limited to generated caches such as
+  `.pytest_cache\` and non-`.venv` `__pycache__\`. Those were removed after
+  pytest with a path-guarded cleanup (`removed=33`). Broader ignored JSON,
+  CSV, Markdown, zip, and log artifacts were not deleted because they are the
+  local evidence trail for rejected hypotheses, diagnostics, and verification
+  runs.
+- [ ] Owner decision still required for
+  `docs\BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md`, which is currently a tracked
+  deletion. Accept the deletion only if the useful runbook content is
+  superseded by `docs\BOT_FACTORY_MVP_TODO.md`,
+  `docs\BOT_FACTORY_GOAL_AUDIT.md`, and the next-agent prompt; otherwise
+  restore or merge it deliberately.
+- [ ] Before commit/PR, review the large source diff in logical groups instead
+  of as one undifferentiated change: ignore/hygiene and docs, structural and
+  local falsification gates, research selection/proposal/codegen handoffs,
+  evaluation/ranking/iteration handoffs, diagnostics/failure synthesis/failure
+  map tooling, and focused test coverage.
+
+### Follow-up on 2026-05-07 JST for funding-neutral impulse drift local rejection
+
+- [x] Used the latest 31-candidate failure synthesis/map before considering
+  another thesis family. Latest inputs were
+  `registry\strategies\synthesis\20260507T224000JST_all_candidates_with_three_open_interest_rejections\candidate_failure_synthesis.json`
+  and
+  `registry\strategies\failure_maps\20260507T224500JST_all_candidates_with_three_open_interest_rejections_causal_map\causal_failure_map.json`.
+- [x] Created a proposal-prep event spec for
+  `TH-FUNDING-NEUTRAL-IMPULSE-DRIFT-20260507` /
+  `funding_neutral_impulse_drift` under ignored local artifacts:
+  `registry\strategies\research_decisions\20260507T230000JST_funding_neutral_impulse_drift_event_spec.json`.
+  The thesis tested whether short-horizon BTC upward impulse has positive
+  closed-candle drift only when funding is not already crowded positive,
+  separating spot-led demand from fee-sensitive leveraged chase before any
+  proposal or code generation.
+- [x] Built closed-candle local events:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --funding-rate-path user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --event-spec-json registry\strategies\research_decisions\20260507T230000JST_funding_neutral_impulse_drift_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T224000JST_all_candidates_with_three_open_interest_rejections\candidate_failure_synthesis.json --event-id 20260507T230000JST_funding_neutral_impulse_drift_event_study --created-at 2026-05-07T14:00:00+00:00 --reviewer-note "Pre-proposal local screen only; do not generate code, start trading, or tune parameters."
+  ```
+
+  Result: `status=completed`, `event_count=475`, `blocker_count=0`.
+  Artifacts:
+  `registry\strategies\research_decisions\20260507T230000JST_funding_neutral_impulse_drift_event_study\local_events.json`,
+  `local_events_report.md`, and `events.csv`.
+- [x] Ran proposal-before-code local falsification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-FUNDING-NEUTRAL-IMPULSE-DRIFT-20260507 --mechanism-class funding_neutral_impulse_drift --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T230000JST_funding_neutral_impulse_drift_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T230000JST_funding_neutral_impulse_drift_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12 --min-sample-count 200 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T230500JST_funding_neutral_impulse_drift_local_falsification --created-at 2026-05-07T14:05:00+00:00 --reviewer-note "Pre-proposal local falsification only; reject if cost-adjusted edge or window stability fails."
+  ```
+
+  Result: command wrote artifacts and exited non-zero because the falsification
+  status is intentionally `failed`: `expected_edge_bps=-2.15646`,
+  `all_in_cost_bps=12.0`, `net_edge_bps=-14.15646`, `sample_count=475`,
+  `data_span_days=397.222222`, `profitable_windows_ratio=0.0`, and
+  `blocker_count=2`. Failed checks were `expected_edge_exceeds_all_in_cost`
+  and `profitable_windows_ratio_sufficient`.
+- [x] Refreshed failure memory with the new validated local rejection:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T204500JST_open_interest_deleveraging_rebound_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T211500JST_open_interest_impulse_continuation_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T223500JST_open_interest_crowded_short_squeeze_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T230500JST_funding_neutral_impulse_drift_local_falsification\local_falsification.json --synthesis-id 20260507T230600JST_all_candidates_with_funding_neutral_impulse_rejection --reviewer-note "Carry the failed funding-neutral impulse drift local falsification into rejection memory before any new proposal or code generation."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T230600JST_all_candidates_with_funding_neutral_impulse_rejection\candidate_failure_synthesis.json --map-id 20260507T231000JST_all_candidates_with_funding_neutral_impulse_rejection_causal_map --reviewer-note "Refresh causal failure map after rejecting funding-neutral impulse drift in local pre-proposal falsification."
+  ```
+
+  Result: synthesis completed with `candidate_count=31`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=7`. The refreshed causal map completed
+  with `category_count=8` and
+  `requires_research_decision_before_proposal=true`.
+- [ ] Remaining limitation: this intentionally rejected another unprofitable
+  pre-proposal thesis and improved failure memory. It does not create a
+  profitable or paper-ready candidate, does not authorize proposal/codegen for
+  this thesis, and does not authorize paper, dry-run, live trading, exchange
+  order placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for funding-adjusted local falsification edge
+
+- [x] Extended `freqtrade_ext\bot_factory\local_falsification.py` and
+  `scripts\bot_factory_build_local_falsification.py` with optional
+  `--funding-rate-path` support. When supplied, local falsification now adds
+  realized long funding payments between each event entry and exit to the
+  measured edge:
+  `long_funding_adjustment_bps = -sum(funding_rate * 10000)` for funding
+  timestamps after entry and up to exit.
+- [x] The artifact now separates `expected_price_edge_bps`,
+  `expected_funding_adjustment_bps`, and combined `expected_edge_bps`, while
+  preserving existing behavior when no funding-rate path is supplied.
+  Funding-adjusted artifacts mark `closed_candle_ohlcv_only=false` and
+  `closed_candle_local_market_data_only=true` in safety scope.
+- [x] Added focused coverage:
+  `test_local_falsification_can_include_realized_long_funding_adjustment`
+  proves a flat-price event set can pass only because negative historical
+  funding produces realized long funding income; existing price-only cost-edge
+  tests still pass.
+- [x] Added a guard so funding-aware local event sources cannot be judged by
+  price returns alone. If `local_events.json` records `funding_rate` in
+  `context_merge.required_contexts`, local falsification now requires
+  `--funding-rate-path`; otherwise the artifact is blocked by
+  `funding_rate_path_present_for_funding_event_source`.
+- [x] Added focused coverage:
+  `test_local_falsification_requires_funding_path_for_funding_event_source`
+  proves a funding-context event source fails local falsification when the
+  funding-rate path is omitted.
+- [x] Re-ran the funding-neutral impulse drift screen with realized funding:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-FUNDING-NEUTRAL-IMPULSE-DRIFT-20260507 --mechanism-class funding_neutral_impulse_drift --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T230000JST_funding_neutral_impulse_drift_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T230000JST_funding_neutral_impulse_drift_event_study\local_events.json --funding-rate-path user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --hold-candles 12 --all-in-cost-bps 12 --min-sample-count 200 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T231500JST_funding_neutral_impulse_drift_funding_adjusted_local_falsification --created-at 2026-05-07T14:15:00+00:00 --reviewer-note "Funding-adjusted pre-proposal local falsification; include realized long funding payments before judging funding-aware thesis."
+  ```
+
+  Result: command wrote artifacts and exited non-zero because status remains
+  `failed`: `expected_price_edge_bps=-2.15646`,
+  `expected_funding_adjustment_bps=-0.048684`,
+  `expected_edge_bps=-2.205144`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-14.205144`, `sample_count=475`,
+  `data_span_days=397.222222`, `profitable_windows_ratio=0.0`, and
+  `blocker_count=2`.
+- [x] Refreshed failure memory using the funding-adjusted rejection instead of
+  the earlier price-only artifact:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T204500JST_open_interest_deleveraging_rebound_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T211500JST_open_interest_impulse_continuation_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T223500JST_open_interest_crowded_short_squeeze_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T231500JST_funding_neutral_impulse_drift_funding_adjusted_local_falsification\local_falsification.json --synthesis-id 20260507T232000JST_all_candidates_with_funding_adjusted_impulse_rejection --reviewer-note "Carry the funding-adjusted failed local falsification into rejection memory before any new proposal or code generation."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T232000JST_all_candidates_with_funding_adjusted_impulse_rejection\candidate_failure_synthesis.json --map-id 20260507T232500JST_all_candidates_with_funding_adjusted_impulse_rejection_causal_map --reviewer-note "Refresh causal failure map after funding-adjusted rejection of funding-neutral impulse drift."
+  ```
+
+  Result: synthesis completed with `candidate_count=31`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=7`. The refreshed causal map completed
+  with `category_count=8` and
+  `requires_research_decision_before_proposal=true`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_local_falsification.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_falsification_requires_funding_path_for_funding_event_source or local_falsification_can_include_realized_long_funding_adjustment or local_falsification_builds_cost_edge_artifact or local_falsification_blocks_cost_edge_below_cost"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 4 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this fixes funding-aware pre-proposal accounting
+  and strengthens a rejection, but it still does not create a profitable or
+  paper-ready candidate and does not authorize paper, dry-run, live trading,
+  exchange order placement, leverage above `1.0`, shorting, or process
+  control.
+
+### Follow-up on 2026-05-07 JST for Bybit long/short ratio structural data
+
+- [x] Added public Bybit V5 account long/short ratio ingestion for local Bot
+  Factory research screens. The downloader uses the official public market
+  data endpoint `GET /v5/market/account-ratio` and normalizes
+  `buyRatio`/`sellRatio` into `long_account_ratio`,
+  `short_account_ratio`, and computed `long_short_ratio`. It uses no API keys,
+  no account endpoints, and no order endpoints.
+- [x] Added files:
+  `freqtrade_ext\bot_factory\bybit_long_short_ratio.py`,
+  `scripts\bot_factory_download_bybit_long_short_ratio.py`, and
+  `scripts\bot_factory_check_long_short_ratio.py`.
+- [x] Extended `freqtrade_ext\bot_factory\data_quality.py` with
+  `check_long_short_ratio_parquet`, including required timestamp checks,
+  numeric checks, `[0, 1]` account-ratio bounds, duplicate/sorted timestamp
+  checks, interval checks, and warning-level consistency checks for
+  long-plus-short ratio sums and computed `long_short_ratio`.
+- [x] Extended structural capability reporting so `long_short_ratio` can be
+  marked as local-research usable only when both a local file and a passing
+  quality report exist. It remains `strategy_codegen_supported=false`, so it
+  may guide theory selection and local event studies but must not be silently
+  emitted into generated Freqtrade strategy code.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\bybit_long_short_ratio.py freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\structural_data_capabilities.py scripts\bot_factory_download_bybit_long_short_ratio.py scripts\bot_factory_check_long_short_ratio.py scripts\bot_factory_report_structural_data_capabilities.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "long_short_ratio or structural_data_capability_report_marks"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 6 tests; full
+  `tests\test_bot_factory.py` passed with the existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; `git diff
+  --check` passed with CRLF normalization warnings only. Post-test cache
+  cleanup removed 33 workspace-local `.pytest_cache`/`__pycache__` targets
+  outside `.venv`, leaving 0 remaining cache targets.
+- [ ] Remaining limitation: this adds another theory-first structural data
+  input, not a profitable candidate. It does not authorize proposal/codegen
+  from long/short ratio without a passing local quality report and explicit
+  research decision, and it does not authorize paper, dry-run, live trading,
+  exchange order placement, leverage above `1.0`, shorting, or process
+  control.
+
+### Follow-up on 2026-05-07 JST for long/short ratio local event context
+
+- [x] Connected the new long/short account-ratio input to
+  `freqtrade_ext\bot_factory\local_events.py`, so pre-proposal local event
+  studies can reference crowding-style context features after local data has
+  been downloaded and quality checked.
+- [x] Added supported local event features:
+  `long_account_ratio`, `long_account_ratio_delta_bps`,
+  `long_short_ratio`, and `long_short_ratio_zscore`. These are merged with the
+  same closed-context candle alignment semantics used for funding, mark price,
+  and open interest:
+  `closed_context_candle_availability_v1`.
+- [x] Extended `scripts\bot_factory_build_local_events.py` with
+  `--long-short-ratio-path`. Event studies that reference long/short ratio
+  features now require a parseable local long/short ratio parquet/CSV and
+  report `long_short_ratio` under `auxiliary_sources` and `context_merge`.
+- [x] Added regression coverage:
+  `test_local_event_builder_supports_long_short_ratio_context_features`
+  proves that 4h long/short ratio context is shifted onto 1h OHLCV only after
+  the context candle is closed, producing events at the expected aligned base
+  candles.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py scripts\bot_factory_build_local_events.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "long_short_ratio or local_event_builder_supports_open_interest_context_features or local_event_builder_blocks_missing_required_futures_context"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 8 tests; full
+  `tests\test_bot_factory.py` passed with the existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; `git diff
+  --check` passed with CRLF normalization warnings only. Post-test cache
+  cleanup removed 33 workspace-local `.pytest_cache`/`__pycache__` targets
+  outside `.venv`, leaving 0 remaining cache targets.
+- [ ] Remaining limitation: this makes long/short ratio usable for local
+  pre-proposal research screens, but it does not create a profitable or
+  paper-ready candidate and does not authorize proposal/codegen without a
+  passing local event/falsification path, paper, dry-run, live trading,
+  exchange order placement, leverage above `1.0`, shorting, or process
+  control.
+
+### Follow-up on 2026-05-07 JST for structural data safe paths and long/short sample rejection
+
+- [x] Found and fixed a real worktree hazard: storing structural parquet files
+  directly under `user_data\data\bybit\futures` made Freqtrade
+  `download-data` migration parse `BTC_USDT_USDT-1h-long_short_ratio.parquet`
+  as an invalid `CandleType`, raising `ValueError: 'long_short_ratio' is not a
+  valid CandleType`. Structural market data must not live in the Freqtrade
+  OHLCV datadir.
+- [x] Moved generated structural parquet files to the dedicated ignored
+  runtime tree `data\market_structure\bybit\futures\` and changed downloader
+  defaults for both `default_bybit_open_interest_path` and
+  `default_bybit_long_short_ratio_path` to that tree. Added
+  `data\market_structure\**` to `.gitignore` while keeping
+  `data\market_structure\.gitkeep` as a tracked placeholder.
+- [x] Re-ran public OHLCV download after the move:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_download_data.py --config user_data\config.json --pairs BTC/USDT:USDT --timeframes 5m --timerange 20260401-20260507 --trading-mode futures --quality-output registry\strategies\checks\20260507T151000Z_btc_5m_ohlcv_quality_after_long_short_context.json
+  ```
+
+  Result: command completed with no CandleType error and wrote a passing OHLCV
+  report: `ok=true`, `rows=246895`, `start=2024-01-01T00:00:00+00:00`,
+  `end=2026-05-07T06:30:00+00:00`, `duplicate_timestamps=0`,
+  `missing_intervals=0`, `findings=[]`.
+- [x] Re-ran structural quality/capability reports on safe paths:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_long_short_ratio.py data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --timeframe 1h --output registry\strategies\checks\20260507T151500Z_long_short_ratio_quality_safe_path.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_open_interest.py data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --timeframe 1h --output registry\strategies\checks\20260507T152500Z_open_interest_quality_safe_path.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_report_structural_data_capabilities.py --open-interest-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --open-interest-quality-report-json registry\strategies\checks\20260507T152500Z_open_interest_quality_safe_path.json --long-short-ratio-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --long-short-ratio-quality-report-json registry\strategies\checks\20260507T151500Z_long_short_ratio_quality_safe_path.json --output registry\strategies\checks\20260507T153000Z_structural_data_capabilities_safe_paths.json --created-at 2026-05-07T15:30:00+09:00
+  ```
+
+  Result: long/short ratio quality `ok=true`, `rows=865`,
+  `duplicate_timestamps=0`, `missing_intervals=0`, `findings=[]`; open
+  interest quality `ok=true`, `rows=9529`, `duplicate_timestamps=0`,
+  `missing_intervals=0`, `findings=[]`; structural capability
+  `local_research_usable=["open_interest","long_short_ratio"]`,
+  `must_not_codegen=["open_interest","long_short_ratio","liquidation","order_book"]`.
+- [x] Ran a fixed, non-parameter-sweep long/short ratio pre-proposal screen:
+  `TH-LONG-SHORT-FLUSH-REBOUND-20260507` /
+  `long_short_crowding_flush_rebound`. After matching OHLCV and structural
+  data periods, local events completed with `event_count=8` and
+  `blocker_count=0`.
+- [x] Local falsification intentionally failed because the sample gate did not
+  clear, despite a positive observed sample edge:
+  `expected_edge_bps=49.356695`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=37.356695`, `sample_count=8`, `data_span_days=857.270833`,
+  `profitable_windows_ratio=1.0`, `blocker_count=1`. This must be treated as
+  insufficient evidence, not a promotable candidate.
+- [x] Refreshed failure memory:
+  `registry\strategies\synthesis\20260507T155000JST_all_candidates_with_long_short_sample_rejection\candidate_failure_synthesis.json`
+  completed with `candidate_count=31`, `paper_ready_count=0`,
+  `requires_new_thesis_id=true`, and `local_falsification_rejection_count=8`.
+  The refreshed causal map
+  `registry\strategies\failure_maps\20260507T155500JST_all_candidates_with_long_short_sample_rejection_causal_map\causal_failure_map.json`
+  completed with `category_count=8` and
+  `requires_research_decision_before_proposal=true`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\bybit_open_interest.py freqtrade_ext\bot_factory\bybit_long_short_ratio.py freqtrade_ext\bot_factory\local_events.py scripts\bot_factory_download_bybit_open_interest.py scripts\bot_factory_download_bybit_long_short_ratio.py scripts\bot_factory_build_local_events.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "open_interest_default_path or long_short_ratio_default_path or local_event_builder_supports_long_short_ratio_context_features or structural_data_capability_report_marks"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 5 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; `git diff
+  --check` passed with CRLF normalization warnings only. Post-test cache
+  cleanup removed 33 workspace-local `.pytest_cache`/`__pycache__` targets
+  outside `.venv`, leaving 0 remaining cache targets.
+- [ ] Remaining limitation: safe paths and long/short local research support
+  are now stronger, but no profitable or paper-ready candidate exists. The
+  latest long/short thesis is rejected for insufficient sample size and must
+  not be promoted, code-generated, paper-started, retuned by thresholds, or
+  used for exchange-facing action.
+
+### Follow-up on 2026-05-07 JST for extended long/short ratio falsification
+
+- [x] Rechecked the fixed long/short crowding thesis without changing
+  thresholds by extending the public Bybit long/short ratio history instead
+  of tuning parameters:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_download_bybit_long_short_ratio.py --symbol BTCUSDT --category linear --period 1h --timerange 20240101-20260507 --output data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --limit 500 --max-pages 100
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_long_short_ratio.py data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --timeframe 1h --output registry\strategies\checks\20260507T160000Z_long_short_ratio_quality_extended_safe_path.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_report_structural_data_capabilities.py --open-interest-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --open-interest-quality-report-json registry\strategies\checks\20260507T152500Z_open_interest_quality_safe_path.json --long-short-ratio-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --long-short-ratio-quality-report-json registry\strategies\checks\20260507T160000Z_long_short_ratio_quality_extended_safe_path.json --output registry\strategies\checks\20260507T160500Z_structural_data_capabilities_extended_long_short.json --created-at 2026-05-07T16:05:00+09:00
+  ```
+
+  Result: long/short download completed with `row_count=20569`,
+  `page_count=42`, `truncated=false`, `api_key_used=false`, and
+  `order_endpoint_used=false`. Quality passed with `ok=true`,
+  `duplicate_timestamps=0`, `missing_intervals=0`, and `findings=[]`.
+- [x] Re-ran the same fixed event spec as a diagnostic rerun after history
+  extension. Because the same thesis had already been rejected for small
+  sample size, the command used `--allow-failed-thesis-or-family` explicitly
+  and did not change thresholds:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --long-short-ratio-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --event-spec-json registry\strategies\research_decisions\20260507T153500JST_long_short_flush_rebound_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T155000JST_all_candidates_with_long_short_sample_rejection\candidate_failure_synthesis.json --allow-failed-thesis-or-family --event-id 20260507T161000JST_long_short_flush_rebound_extended_event_study --created-at 2026-05-07T16:10:00+09:00 --reviewer-note "Diagnostic rerun after extending long/short ratio history; same fixed conditions, no threshold tuning, no proposal/codegen/trading."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-LONG-SHORT-FLUSH-REBOUND-20260507 --mechanism-class long_short_crowding_flush_rebound --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T161000JST_long_short_flush_rebound_extended_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T161000JST_long_short_flush_rebound_extended_event_study\local_events.json --hold-candles 12 --all-in-cost-bps 12 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T161500JST_long_short_flush_rebound_extended_local_falsification --created-at 2026-05-07T16:15:00+09:00 --reviewer-note "Extended-history long/short crowding flush rebound local falsification; same fixed conditions, reject unless sample, span, post-cost edge, and stability gates pass."
+  ```
+
+  Result: local events completed with `event_count=608` and
+  `blocker_count=0`. Local falsification failed with
+  `expected_edge_bps=1.288089`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-10.711911`, `sample_count=608`,
+  `data_span_days=857.270833`, `profitable_windows_ratio=0.25`, and
+  `blocker_count=2`. Failed gates were post-cost edge and profitable-window
+  stability, not sample size.
+- [x] Refreshed failure memory using the extended-history rejection:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T204500JST_open_interest_deleveraging_rebound_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T211500JST_open_interest_impulse_continuation_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T223500JST_open_interest_crowded_short_squeeze_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T231500JST_funding_neutral_impulse_drift_funding_adjusted_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T161500JST_long_short_flush_rebound_extended_local_falsification\local_falsification.json --synthesis-id 20260507T162000JST_all_candidates_with_long_short_extended_rejection --reviewer-note "Replace the earlier small-sample long/short note with extended-history local falsification: sample is sufficient but cost edge and window stability fail."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T162000JST_all_candidates_with_long_short_extended_rejection\candidate_failure_synthesis.json --map-id 20260507T162500JST_all_candidates_with_long_short_extended_rejection_causal_map --reviewer-note "Refresh causal failure map after extended-history rejection of long/short crowding flush rebound."
+  ```
+
+  Result: synthesis completed with `candidate_count=31`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=7`. The causal map completed with
+  `category_count=8` and `requires_research_decision_before_proposal=true`.
+- [x] Verification: no code changed during this extended-history rerun after
+  the prior passing test suite. `git diff --check` passed with CRLF
+  normalization warnings only. Post-script cache cleanup removed 2
+  workspace-local `__pycache__` targets outside `.venv`, leaving 0 remaining
+  cache targets.
+- [ ] Remaining limitation: extending history resolved the sample weakness by
+  turning the long/short thesis into a clear cost/stability rejection. It still
+  does not create a profitable or paper-ready candidate and does not authorize
+  proposal generation, code generation, paper trading, dry-run/live trading,
+  order placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for negative funding uncrowded carry screen
+
+- [x] Tested a distinct fixed thesis, not a parameter retune:
+  `TH-NEGATIVE-FUNDING-UNCROWDED-CARRY-20260507` /
+  `negative_funding_uncrowded_long_carry`. The hypothesis required negative
+  funding, non-dominant long-account crowding, no active one-hour downside
+  acceleration, and price below its one-day SMA before an 8h long-only
+  funding-adjusted hold.
+- [x] Built local events with closed BTC 5m OHLCV, local 8h funding, and local
+  1h long/short account ratio:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --funding-rate-path user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --long-short-ratio-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --event-spec-json registry\strategies\research_decisions\20260507T163000JST_negative_funding_uncrowded_carry_event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T162000JST_all_candidates_with_long_short_extended_rejection\candidate_failure_synthesis.json --event-id 20260507T163000JST_negative_funding_uncrowded_carry_event_study --created-at 2026-05-07T16:30:00+09:00 --reviewer-note "Pre-proposal fixed screen using closed funding and long/short context; no threshold tuning, proposal, codegen, or trading."
+  ```
+
+  Result: local events completed with `event_count=1` and `blocker_count=0`.
+- [x] Ran funding-adjusted local falsification without changing conditions:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-NEGATIVE-FUNDING-UNCROWDED-CARRY-20260507 --mechanism-class negative_funding_uncrowded_long_carry --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T163000JST_negative_funding_uncrowded_carry_event_study\events.csv --event-source-json registry\strategies\research_decisions\20260507T163000JST_negative_funding_uncrowded_carry_event_study\local_events.json --funding-rate-path user_data\data\bybit\futures\BTC_USDT_USDT-8h-funding_rate.parquet --hold-candles 96 --all-in-cost-bps 12 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T163500JST_negative_funding_uncrowded_carry_local_falsification --created-at 2026-05-07T16:35:00+09:00 --reviewer-note "Funding-adjusted fixed local falsification for negative funding uncrowded carry; reject unless sample, span, post-cost edge, and stability gates pass."
+  ```
+
+  Result: command wrote artifacts and exited non-zero because status is
+  intentionally `failed`: `expected_price_edge_bps=13.079717`,
+  `expected_funding_adjustment_bps=0.7656`,
+  `expected_edge_bps=13.845317`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=1.845317`, `sample_count=1`,
+  `data_span_days=857.270833`, `profitable_windows_ratio=1.0`, and
+  `blocker_count=1`. This is a small-sample rejection, not a promotable
+  signal.
+- [x] Refreshed failure memory:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T153500JST_all_candidates_with_mark_discount_reclaim_001\candidate_ranking.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T204500JST_open_interest_deleveraging_rebound_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T211500JST_open_interest_impulse_continuation_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T223500JST_open_interest_crowded_short_squeeze_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T231500JST_funding_neutral_impulse_drift_funding_adjusted_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T161500JST_long_short_flush_rebound_extended_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T163500JST_negative_funding_uncrowded_carry_local_falsification\local_falsification.json --synthesis-id 20260507T164000JST_all_candidates_with_negative_funding_sample_rejection --reviewer-note "Carry negative funding uncrowded carry failed local falsification into memory; observed edge is not promotable because sample_count=1."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T164000JST_all_candidates_with_negative_funding_sample_rejection\candidate_failure_synthesis.json --map-id 20260507T164500JST_all_candidates_with_negative_funding_sample_rejection_causal_map --reviewer-note "Refresh causal failure map after negative funding uncrowded carry sample rejection."
+  ```
+
+  Result: synthesis completed with `candidate_count=31`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=8`. The causal map completed with
+  `category_count=8` and `requires_research_decision_before_proposal=true`.
+- [x] Verification: no code changed during this fixed-thesis screen after the
+  prior passing test suite. `git diff --check` passed with CRLF normalization
+  warnings only. Post-script cache cleanup removed 2 workspace-local
+  `__pycache__` targets outside `.venv`, leaving 0 remaining cache targets.
+- [ ] Remaining limitation: this is another pre-proposal rejection. It does
+  not create a profitable or paper-ready candidate and does not authorize
+  proposal generation, code generation, paper trading, dry-run/live trading,
+  order placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for local falsification calendar windows
+
+- [x] Extended `freqtrade_ext\bot_factory\local_falsification.py` so local
+  falsification artifacts now include fixed quarterly calendar-window
+  diagnostics in addition to the existing equal-sample `window_summaries`.
+  New artifact fields:
+  `calendar_window_frequency`, `calendar_window_count`,
+  `profitable_calendar_window_count`,
+  `profitable_calendar_windows_ratio`, and
+  `calendar_window_summaries`.
+- [x] Calendar-window summaries include `calendar_window`,
+  `start_event_time`, `end_event_time`, `sample_count`,
+  `expected_price_edge_bps`, `expected_funding_adjustment_bps`,
+  `expected_edge_bps`, `net_edge_bps`, `win_rate`, and `profitable`. This
+  directly supports the causal failure map requirement to inspect
+  window-level edge before proposal generation.
+- [x] Existing pass/fail gates are intentionally unchanged. The current
+  `profitable_windows_ratio` gate still uses the previous equal-sample
+  windows for backwards compatibility; quarterly calendar windows are added as
+  explicit diagnostic evidence for research review and proposal gating.
+- [x] Updated the Markdown report renderer to include
+  `profitable_calendar_windows_ratio`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_falsification.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_falsification_builds_cost_edge_artifact or local_falsification_can_include_realized_long_funding_adjustment or local_falsification_blocks_cost_edge_below_cost"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this improves pre-proposal falsification
+  diagnostics, but it does not create a profitable or paper-ready candidate
+  and does not authorize proposal generation, code generation, paper trading,
+  dry-run/live trading, order placement, leverage above `1.0`, shorting, or
+  process control.
+
+### Follow-up on 2026-05-07 JST for calendar-window failure-memory handoff
+
+- [x] Extended `freqtrade_ext\bot_factory\candidate_failure_synthesis.py` so
+  validated local falsification rejections preserve quarterly
+  calendar-window diagnostics from `local_falsification.json`:
+  `calendar_window_frequency`, `calendar_window_count`,
+  `profitable_calendar_windows_ratio`, and compact
+  `calendar_window_summaries`.
+- [x] Extended `freqtrade_ext\bot_factory\candidate_failure_map.py` so causal
+  failure maps carry the same calendar-window rejection context into
+  `research_selection_guidance.validated_local_falsification_rejections`,
+  required local-rejection research questions, and the Markdown report.
+- [x] Extended `freqtrade_ext\bot_factory\research_selection.py` so research
+  selection decision reports render
+  `profitable_calendar_windows_ratio` for validated local falsification
+  rejections. This keeps fixed calendar-regime evidence visible before any
+  proposal generation.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_failure_synthesis.py freqtrade_ext\bot_factory\candidate_failure_map.py freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_failure_synthesis_builds_theory_first_next_brief or candidate_failure_map_builds_causal_categories or research_selection_gate_requires_local_rejection_question_response"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this closes a failure-memory evidence gap, but it
+  does not create a profitable or paper-ready candidate and does not authorize
+  proposal generation, code generation, paper trading, dry-run/live trading,
+  order placement, leverage above `1.0`, shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for calendar-window research response gating
+
+- [x] Hardened `freqtrade_ext\bot_factory\research_selection.py` so required
+  research questions that mention `calendar_window`,
+  `profitable_calendar_windows_ratio`, `calendar_window_summaries`,
+  `quarterly`, or `quarter` now require the indexed research-question answer
+  to explicitly address calendar-window evidence. If the answer is long enough
+  but omits that evidence, it is marked weak with
+  `missing_requirement_groups=["calendar_window_evidence"]` and blocks
+  research selection.
+- [x] Added focused regression coverage in `tests\test_bot_factory.py` proving
+  a calendar-window local-rejection question blocks an answer that only
+  discusses generic post-cost edge, then passes once the answer addresses
+  quarterly calendar-window evidence.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection_gate_requires_calendar_window_rejection_response or research_selection_gate_requires_local_rejection_question_response or candidate_failure_map_builds_causal_categories"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this prevents another research-selection bypass,
+  but it still does not create a profitable or paper-ready candidate and does
+  not authorize proposal generation, code generation, paper trading,
+  dry-run/live trading, order placement, leverage above `1.0`, shorting, or
+  process control.
+
+### Follow-up on 2026-05-07 JST for stale failure-synthesis selection guard
+
+- [x] Hardened `freqtrade_ext\bot_factory\research_selection.py` so research
+  selection checks the default local failure-synthesis registry
+  `registry\strategies\synthesis\**\candidate_failure_synthesis.json` and
+  blocks a supplied synthesis when another parseable Bot Factory synthesis has
+  a newer `generated_at`. The decision records
+  `failure_synthesis_latest_checked`, `failure_synthesis_is_latest`,
+  `latest_failure_synthesis_path`, and `latest_failure_synthesis_id` in
+  `novelty_assessment`.
+- [x] Added focused regression coverage proving a stale synthesis under the
+  default synthesis registry blocks with `failure_synthesis_is_latest`, while
+  existing causal-map/synthesis identity checks still work.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection_gate_blocks_stale_failure_synthesis or research_selection_gate_blocks_causal_failure_map_synthesis_mismatch or research_selection_gate_accepts_causal_failure_map_responses"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: compile passed; focused pytest passed 3 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`.
+- [ ] Remaining limitation: this prevents stale negative-memory bypass at
+  research selection, but it still does not create a profitable or paper-ready
+  candidate and does not authorize proposal generation, code generation, paper
+  trading, dry-run/live trading, order placement, leverage above `1.0`,
+  shorting, or process control.
+
+### Follow-up on 2026-05-07 JST for stale failure-synthesis proposal guard
+
+- [x] Hardened `freqtrade_ext\bot_factory\strategy_proposals.py` so proposal
+  generation independently checks the default local failure-synthesis registry
+  `registry\strategies\synthesis\**\candidate_failure_synthesis.json` and
+  blocks a supplied synthesis when another parseable Bot Factory synthesis has
+  a newer `generated_at`. This closes the bypass where an old approved
+  `research_decision.json` could be paired with its matching old synthesis
+  after newer local failure memory existed.
+- [x] Proposal metadata now records latest-synthesis freshness in
+  `failure_synthesis_constraints`:
+  `failure_synthesis_latest_checked`, `failure_synthesis_is_latest`,
+  `latest_failure_synthesis_path`, `latest_failure_synthesis_id`, and
+  `latest_failure_synthesis_generated_at`. Research-decision constraints also
+  preserve the corresponding `novelty_assessment` freshness fields and block
+  decisions that explicitly report `failure_synthesis_is_latest=false`.
+- [x] Added focused regression coverage in `tests\test_bot_factory.py` proving
+  stale failure synthesis blocks before proposal generation with
+  `failure_synthesis_1_is_latest` and stale decision freshness blocks with
+  `research_decision_1_failure_synthesis_was_latest`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_proposals.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_proposal_generator_blocks_stale_failure_synthesis or research_selection_gate_blocks_stale_failure_synthesis"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: compile passed; focused pytest passed 2 tests; full
+  `tests\test_bot_factory.py` passed with existing pandas
+  `PerformanceWarning` warnings from `signal_diagnostics.py`; `git diff
+  --check` passed with CRLF normalization warnings only. Post-test cache
+  cleanup removed 33 workspace-local `.pytest_cache`/`__pycache__` targets
+  outside `.venv`, leaving 0 remaining cache targets.
+- [ ] Remaining limitation: this prevents stale failure-memory bypass at the
+  proposal stage, but it still does not create a profitable or paper-ready
+  candidate and does not authorize proposal generation, code generation, paper
+  trading, dry-run/live trading, order placement, leverage above `1.0`,
+  shorting, or process control.
+
+### Worktree inventory on 2026-05-07 JST
+
+- [x] Ran the requested worktree cleanup inventory:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff --stat
+  git ls-files --others --ignored --exclude-standard | ForEach-Object { ($_ -split '/')[0] } | Group-Object | Sort-Object Count -Descending | Select-Object -First 20 Count, Name
+  git ls-files --others --exclude-standard | ForEach-Object { $parts = $_ -split '/'; if ($parts.Length -ge 2) { $parts[0] + '/' + $parts[1] } else { $_ } } | Group-Object | Sort-Object Name | Select-Object Count, Name
+  ```
+
+  Result: tracked-file diff is large at `33,114` insertions and `2,655`
+  deletions across 22 tracked files. This is mainly Bot Factory source,
+  tests, docs, and `.gitignore`, not cache noise.
+- [x] Current ignored/generated inventory:
+  `ignored_total_count=25434`, with `.venv=21603` and
+  `ignored_non_venv_count=3831`. The largest non-`.venv` groups are
+  `data/walk_forward=1940`, `registry/strategies/candidates=393`,
+  `data/backtests=361`, `registry/strategies/checks=252`,
+  `registry/strategies/research_decisions=193`,
+  `registry/strategies/generated=137`,
+  `registry/strategies/proposals=137`,
+  `registry/strategies/synthesis=86`,
+  `registry/strategies/diagnostics=74`,
+  `data/freqai_training=72`, `data/freqai=58`, `user_data=56`,
+  `registry/strategies/failure_maps=50`, `registry/strategies/reviews=18`,
+  `data/market_structure=2`, plus one `.vscode` path and one `docker` path.
+  These are not commit candidates. `data` and `registry` contain local
+  runtime/evaluation artifacts and should remain ignored except for deliberate
+  placeholders or templates.
+- [x] Current untracked-but-not-ignored inventory is source/docs scaffolding,
+  not disposable output: `data/market_structure/.gitkeep`,
+  `docs/BOT_FACTORY_GOAL_AUDIT.md`, 10 new
+  `freqtrade_ext\bot_factory\*.py` modules, and 14 new `scripts\*.py` Bot
+  Factory CLIs.
+- [x] Commit candidates to keep:
+  `.gitignore`, Bot Factory source under `freqtrade_ext\bot_factory\`, Bot
+  Factory CLIs under `scripts\`, focused `tests\test_bot_factory.py`,
+  `docs\BOT_FACTORY_MVP_TODO.md`,
+  `docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`,
+  `docs\BOT_FACTORY_GOAL_AUDIT.md`,
+  `registry\strategies\proposals\TEMPLATE.md`, and
+  `data\market_structure\.gitkeep`.
+- [x] Do not commit by default:
+  `.venv`, local `user_data`, generated `data` contents other than
+  `.gitkeep`, generated `registry` artifacts other than deliberate templates,
+  `.pytest_cache`, and `__pycache__`.
+- [x] Immediate deletion candidates: none after cache cleanup. The latest
+  cache check removed 33 `.pytest_cache`/`__pycache__` targets outside
+  `.venv` and a follow-up count returned `cache_target_count=0`. Generated `data` and
+  `registry` artifacts are reproducible/runtime outputs, but they also contain
+  audit evidence for this Bot Factory session; do not delete them without an
+  explicit cleanup decision.
+- [ ] Owner decision still required:
+  `docs\BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md` is deleted in the worktree.
+  Decide whether to keep that deletion, restore it, or migrate any useful
+  content into the current TODO/audit docs before committing.
+
+### Follow-up on 2026-05-07 JST for crowding-unwind reaccumulation research selection
+
+- [x] Validated the available local structural market data for the next
+  theory-first screen:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_open_interest.py data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --timeframe 1h
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_long_short_ratio.py data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --timeframe 1h
+  ```
+
+  Result: both reports returned `ok=true`; open interest had `rows=9529`,
+  `start=2024-01-01T00:00:00+00:00`,
+  `end=2025-02-01T00:00:00+00:00`; long/short account ratio had
+  `rows=20569`, `start=2024-01-01T00:00:00+00:00`,
+  `end=2026-05-07T00:00:00+00:00`. Reports:
+  `registry\strategies\checks\20260507T074805Z_open_interest_quality.json`
+  and
+  `registry\strategies\checks\20260507T074806Z_long_short_ratio_quality.json`.
+- [x] Created a local event spec for a distinct
+  `crowding_unwind_reaccumulation` thesis, avoiding the failed standalone OI,
+  account-ratio, funding, mark-price, and liquidity-pullback families. The
+  spec requires closed-context 1h open-interest contraction, account-ratio
+  washout, price reacceptance above a 12h moving average, and non-withdrawn
+  volume. Artifact:
+  `registry\strategies\research_decisions\20260507T165500JST_crowding_unwind_reaccumulation_event_spec\event_spec.json`.
+- [x] Built local closed-candle events:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T165500JST_crowding_unwind_reaccumulation_event_spec\event_spec.json --open-interest-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --long-short-ratio-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --failure-synthesis-json registry\strategies\synthesis\20260507T164000JST_all_candidates_with_negative_funding_sample_rejection\candidate_failure_synthesis.json --event-id 20260507T165500JST_crowding_unwind_reaccumulation_events --created-at 2026-05-07T16:55:00+09:00
+  ```
+
+  Result: `status=completed`, `event_count=491`, `blocker_count=0`.
+  Artifacts:
+  `registry\strategies\research_decisions\20260507T165500JST_crowding_unwind_reaccumulation_events\local_events.json`,
+  `local_events_report.md`, and `events.csv`.
+- [x] Ran proposal-before local falsification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-CROWDING-UNWIND-REACCUMULATION-20260507 --mechanism-class crowding_unwind_reaccumulation --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T165500JST_crowding_unwind_reaccumulation_events\events.csv --event-source-json registry\strategies\research_decisions\20260507T165500JST_crowding_unwind_reaccumulation_events\local_events.json --hold-candles 72 --all-in-cost-bps 12 --min-sample-count 100 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T170000JST_crowding_unwind_reaccumulation_local_falsification --created-at 2026-05-07T17:00:00+09:00
+  ```
+
+  Result: `status=passed`, `expected_edge_bps=22.397636`,
+  `all_in_cost_bps=12.0`, `net_edge_bps=10.397636`,
+  `sample_count=491`, `data_span_days=857.270833`,
+  `profitable_windows_ratio=0.75`, and `blocker_count=0`. Artifacts:
+  `registry\strategies\research_decisions\20260507T170000JST_crowding_unwind_reaccumulation_local_falsification\local_falsification.json`
+  and `local_falsification_report.md`.
+- [x] Added structured research-reference JSON artifacts for the thesis:
+  `market_liquidity_funding_liquidity_reference.json`
+  (`doi:10.1093/rfs/hhn098`),
+  `flow_toxicity_liquidity_reference.json`
+  (`doi:10.1093/rfs/hhs053`), and
+  `perpetual_open_interest_reference.json`
+  (`doi:10.5195/ledger.2024.325`) under
+  `registry\strategies\research_decisions\20260507T170500JST_crowding_unwind_research_selection\`.
+- [x] Ran research selection against the latest synthesis/map. The first run
+  exposed dependency-scan false positives from prohibited words in a reviewer
+  note, and v2 exposed a missing walk-forward keyword in the causal response.
+  The corrected v3 command completed with:
+  `status=approved_for_proposal_generation`,
+  `proposal_generation_allowed=true`, `code_generation_allowed=false`,
+  `research_selection_score=100.0`, `minimum_research_selection_score=80.0`,
+  `blocker_count=0`, and `deferral_count=0`. Artifacts:
+  `registry\strategies\research_decisions\20260507T171500JST_crowding_unwind_reaccumulation_research_decision_v3\research_decision.json`
+  and `research_decision_report.md`. Post-script cache cleanup removed 2
+  workspace-local `__pycache__` targets outside `.venv`, leaving 0 remaining
+  cache targets.
+- [x] The earlier structural codegen blocker for local open-interest plus
+  account-ratio data was resolved in the follow-up below. The thesis still is
+  not yet a generated real candidate, backtest result, ranked candidate,
+  paper-ready candidate, or trading authorization.
+
+### Follow-up on 2026-05-07 JST for crowding-unwind local structural codegen
+
+- [x] Implemented a narrowly scoped local structural-data codegen path for
+  `crowding_unwind_reaccumulation`. Code changes:
+  `freqtrade_ext\bot_factory\structural_data_capabilities.py`,
+  `freqtrade_ext\bot_factory\strategy_proposals.py`,
+  `freqtrade_ext\bot_factory\strategy_code.py`,
+  `freqtrade_ext\bot_factory\research_selection.py`, and focused coverage in
+  `tests\test_bot_factory.py`.
+- [x] Capability reports now mark local open-interest and long/short
+  account-ratio data as `strategy_codegen_supported=true` only when the local
+  parquet exists and its quality report passes. Liquidation and order-book data
+  remain blocked for both local research and codegen until historical local
+  data and quality checks exist.
+- [x] Proposal/research structural detection now recognizes
+  `long_short_ratio`, `long/short account ratio`, and `account ratio` as the
+  `long_short_ratio` structural class. The new proposal/codegen variant is
+  explicit: `crowding_unwind_reaccumulation`; unsupported structural variants
+  still block at codegen.
+- [x] Generated strategies for this variant now read only local historical
+  parquet files:
+  `data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet`
+  and
+  `data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet`.
+  They merge context with closed-candle availability semantics equivalent to
+  `local_events.py` (`context_step - base_step` shift, backward as-of merge),
+  compute `open_interest_delta_pct_288`,
+  `long_short_ratio_zscore_864`, `sma_distance_bps_144`, and
+  `volume_zscore_288`, and use neutral fallback columns if the local parquet
+  is missing or unreadable. Generated code remains long-only
+  (`can_short = False`) and does not call live data, exchange order endpoints,
+  process control, secrets, leverage, paper, dry-run, or live trading.
+- [x] Refreshed the structural capability artifact after implementation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_report_structural_data_capabilities.py --open-interest-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --open-interest-quality-report-json registry\strategies\checks\20260507T074805Z_open_interest_quality.json --long-short-ratio-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --long-short-ratio-quality-report-json registry\strategies\checks\20260507T074806Z_long_short_ratio_quality.json --output registry\strategies\checks\20260507T083000Z_structural_data_capabilities_codegen_oi_lsr.json --created-at 2026-05-07T08:30:00+00:00
+  ```
+
+  Result: `local_research_usable=["open_interest","long_short_ratio"]`,
+  `blocked_without_new_data=["liquidation","order_book"]`,
+  `must_not_codegen=["liquidation","order_book"]`, and `blocker_count=2`
+  from the intentionally unsupported liquidation/order-book classes.
+- [x] Verification commands run:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\structural_data_capabilities.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\research_selection.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "structural_data_capability_report or structural_data_until_logic_supported or crowding_unwind_local_structural_parquet"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: `py_compile` passed; focused tests passed `5 passed`; full
+  `tests\test_bot_factory.py` passed. Existing pandas `PerformanceWarning`
+  warnings remain in `signal_diagnostics.py`. `git diff --check` passed with
+  existing LF-to-CRLF working-copy warnings only. Post-test cleanup removed 33
+  workspace-local `.pytest_cache` / `__pycache__` directories outside `.venv`,
+  leaving 0 remaining cache targets.
+- [x] Follow-up completed below: the real
+  `TH-CROWDING-UNWIND-REACCUMULATION-20260507` proposal and strategy were
+  generated and evaluated. The candidate failed historical and walk-forward
+  gates, so it is retry/research-failure evidence only, not a paper-ready
+  candidate or promotion authorization.
+
+### Follow-up on 2026-05-07 JST for crowding-unwind real candidate evaluation
+
+- [x] Refreshed structural capability evidence with the safe-path quality
+  reports before proposal generation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_report_structural_data_capabilities.py --open-interest-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --open-interest-quality-report-json registry\strategies\checks\20260507T152500Z_open_interest_quality_safe_path.json --long-short-ratio-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --long-short-ratio-quality-report-json registry\strategies\checks\20260507T160000Z_long_short_ratio_quality_extended_safe_path.json --output registry\strategies\checks\20260507T084000Z_structural_data_capabilities_codegen_oi_lsr_safe_path.json --created-at 2026-05-07T08:40:00+00:00
+  ```
+
+  Result: `local_research_usable=["open_interest","long_short_ratio"]`,
+  `must_not_codegen=["liquidation","order_book"]`, and `blocker_count=2`.
+- [x] Re-ran research selection with the safe-path capability report. Artifact:
+  `registry\strategies\research_decisions\20260507T084500Z_crowding_unwind_reaccumulation_research_decision_codegen_v4\research_decision.json`.
+  Result: `status=approved_for_proposal_generation`,
+  `proposal_generation_allowed=true`, `research_selection_score=100.0`, and
+  `blocker_count=0`.
+- [x] Generated the accepted proposal and strategy code:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_proposal.py ... --strategy-name LongOnlyCrowdingUnwindReaccumulationCandidate --strategy-logic-variant crowding_unwind_reaccumulation --research-decision-json registry\strategies\research_decisions\20260507T084500Z_crowding_unwind_reaccumulation_research_decision_codegen_v4\research_decision.json --evidence-path structural_capability=registry\strategies\checks\20260507T084000Z_structural_data_capabilities_codegen_oi_lsr_safe_path.json --created-at 2026-05-07T08:50:00+00:00
+  .\.venv\Scripts\python.exe scripts\bot_factory_generate_strategy_code.py --proposal-metadata-json registry\strategies\proposals\20260507T085000Z_LongOnlyCrowdingUnwindReaccumulationCandidate.metadata.json --candidate-id crowding_unwind_reaccumulation_001 --created-at 2026-05-07T08:55:00+00:00
+  ```
+
+  Results: proposal `status=accepted`, `code_generation_eligible=true`;
+  generated metadata `status=generated`, `static_check_ok=true`, and
+  `candidate_evaluation_eligible=true`. Artifacts:
+  `registry\strategies\proposals\20260507T085000Z_LongOnlyCrowdingUnwindReaccumulationCandidate.metadata.json`
+  and
+  `registry\strategies\generated\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001\metadata.json`.
+- [x] Added signal diagnostics support for the generated
+  `crowding_unwind_reaccumulation` structural variant and verified it with a
+  focused synthetic test. The real diagnostics command completed with:
+  `entry_count=929`, `generated_entry_edge.status=pass`,
+  `net_edge_bps=13.150967`, and `profitable_windows_ratio=0.5`. Artifact:
+  `registry\strategies\diagnostics\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001\crowding_unwind_reaccumulation_001_20240101_20260507_v2\signal_diagnostics.json`.
+- [x] Ran pre-backtest checks:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile registry\strategies\generated\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001\LongOnlyCrowdingUnwindReaccumulationCandidate.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_static_check.py registry\strategies\generated\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001\LongOnlyCrowdingUnwindReaccumulationCandidate.py --output registry\strategies\checks\20260507T090000Z_crowding_unwind_reaccumulation_static_check.json
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m --output registry\strategies\checks\20260507T090000Z_BTC_USDT_USDT_5m_ohlcv_quality.json
+  ```
+
+  Results: compile passed; static check `ok=true`; OHLCV quality `ok=true`,
+  `rows=246895`, `duplicate_timestamps=0`, `missing_intervals=0`.
+- [x] Ran historical backtest and candidate evaluation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy LongOnlyCrowdingUnwindReaccumulationCandidate --strategy-path registry\strategies\generated\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001 --timeframe 5m --timerange 20240101-20260507 --pairs BTC/USDT:USDT --run-id crowding_unwind_reaccumulation_001_20240101_20260507_dirpath --reviewer-note "Historical backtest for generated crowding-unwind candidate after static/OHLCV/diagnostics gates using strategy directory path; no paper, dry-run, live, orders, leverage above 1, shorting, promotion, or process control."
+  .\.venv\Scripts\python.exe scripts\bot_factory_evaluate_candidate.py ... --candidate-id crowding_unwind_reaccumulation_001 --backtest-metrics-json data\backtests\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001_20240101_20260507_dirpath\metrics.json
+  ```
+
+  Result: historical gate failed: `total_return_pct=-1.008043973`,
+  `trade_count=294`, `profit_factor=0.8187715323309974`,
+  `sortino=-0.5357142015667924`, `expectancy=-0.00030555340605617265`.
+  Artifact:
+  `data\backtests\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001_20240101_20260507_dirpath\metrics.json`.
+- [x] Inspected the historical `trades.csv` failure shape. The main
+  `crowding_or_resilience_exit` path had 280 trades, win rate `0.625`, average
+  win `0.003703`, average loss `-0.006361`, and near-flat aggregate edge.
+  The timeout path had 14 trades, win rate `0.1429`, average return
+  `-0.004999`, and 360-minute average duration. By half-year, 2024H1 and
+  2024H2 were both negative (`-0.046344` and `-0.054817` summed
+  profit-ratio), 2025H1 was slightly positive (`0.011329`), and 2025H2/2026YTD
+  produced zero trades. This confirms the failure is not zero-entry sparsity;
+  it is adverse payoff asymmetry, timeout drag, and regime fragility.
+- [x] Fixed a wrapper mismatch found during walk-forward: rule-based
+  `scripts\bot_factory_run_backtest.py` now accepts `--ohlcv-file` and writes
+  `ohlcv_quality.json` before backtesting, so
+  `scripts\bot_factory_run_walk_forward.py` can pass the same OHLCV precheck
+  argument to rule-based and FreqAI runners. Candidate evaluation now derives
+  a historical backtest gate from raw `metrics.json` when that file lacks a
+  `recommendation` key.
+- [x] Ran OHLCV-prechecked walk-forward:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --config user_data\config.json --strategy LongOnlyCrowdingUnwindReaccumulationCandidate --strategy-path registry\strategies\generated\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001 --runner-script scripts\bot_factory_run_backtest.py --timeframe 5m --pairs BTC/USDT:USDT --ohlcv-file user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --data-format-ohlcv parquet --run-id crowding_unwind_reaccumulation_001_wf_20240101_20260507_v3_ohlcv_file --window 20240101-20240701 --window 20240701-20250101 --window 20250101-20250701 --window 20250701-20260101 --window 20260101-20260507 --reviewer-note "Walk-forward evidence collection for failed crowding-unwind candidate using rule-based runner OHLCV precheck support; historical backtests only, no paper, dry-run, live, orders, leverage above 1, shorting, promotion, or process control."
+  ```
+
+  Result: walk-forward completed all five windows but failed gates:
+  `pass_rate=0.0`, `profitable_windows_ratio=0.2`,
+  `total_return_pct=-1.008043973`, and
+  `max_single_window_profit_dependency=1.0`. Window returns were
+  `-0.460684%`, `-0.652834%`, `0.105474%`, `0.0%`, and `0.0%`.
+  Artifact:
+  `data\walk_forward\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001_wf_20240101_20260507_v3_ohlcv_file\walk_forward_metrics.json`.
+- [x] Updated candidate manifest, iteration plan, and ranking:
+  `registry\strategies\candidates\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001\candidate_manifest.json`
+  now records `recommendation=retry`, `historical_backtest=fail`, and
+  `walk_forward=fail`; iteration
+  `registry\strategies\reviews\LongOnlyCrowdingUnwindReaccumulationCandidate\crowding_unwind_reaccumulation_001\crowding_unwind_reaccumulation_001_backtest_wf_fail_iteration\iteration_plan.json`
+  has `action=revise` and `evaluation_allowed_by_this_plan=false`; ranking
+  `registry\strategies\candidates\rankings\20260507T084500Z_crowding_unwind_reaccumulation_retry_ranking_gatefix\candidate_ranking.json`
+  has `paper_ready_candidate_ids=[]`.
+- [x] Refreshed aggregate failure memory from all local candidate manifests:
+  ranking
+  `registry\strategies\candidates\rankings\20260507T085500Z_all_candidates_with_crowding_unwind_rejection_ranking\candidate_ranking.json`
+  has `candidate_count=32` and `paper_ready_candidate_ids=[]`; synthesis
+  `registry\strategies\synthesis\20260507T090000Z_all_candidates_with_crowding_unwind_rejection\candidate_failure_synthesis.json`
+  has `candidate_count=32`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, and `requires_new_thesis_id=true`;
+  causal map
+  `registry\strategies\failure_maps\20260507T090500Z_all_candidates_with_crowding_unwind_rejection_causal_map\causal_failure_map.json`
+  has `candidate_count=32`, `category_count=9`, and
+  `requires_research_decision_before_proposal=true`. Dominant categories are
+  `regime_fragile_mechanism=32`, `walk_forward_fragility=32`,
+  `cost_sensitive_mechanism=31`,
+  `no_profitable_walk_forward_windows=25`, and
+  `entry_exists_negative_edge=22`.
+- [x] Verification commands run after wrapper/evaluation fixes:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile scripts\bot_factory_run_backtest.py freqtrade_ext\bot_factory\candidate_evaluation.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_evaluation_derives_backtest_gate or candidate_evaluation_writes_manifest_and_index or crowding_unwind_structural_variant"
+  ```
+
+  Results: compile passed; focused pytest passed `3 passed`. Existing pandas
+  `PerformanceWarning` warnings remain in `signal_diagnostics.py`.
+- [ ] Remaining limitation: the factory has stronger structural-codegen,
+  diagnostics, backtest, walk-forward, registry, ranking, and iteration
+  evidence, but still has no profitable, robust, paper-ready candidate. The
+  `crowding_unwind_reaccumulation` thesis must not be promoted or retried by
+  parameter-only threshold changes; the next research step must introduce a
+  materially different mechanism or explicit theory-backed exit/risk state and
+  pass local falsification before proposal/codegen.
+
+### Follow-up on 2026-05-07 JST for post-deleveraging volatility-compression rejection
+
+- [x] Tested a fixed exit/risk thesis rather than retuning the failed
+  `crowding_unwind_reaccumulation` thresholds:
+  `TH-POST-DELEVERAGING-VOL-COMPRESSION-20260507` /
+  `post_deleveraging_volatility_compression`. The thesis asked whether the
+  crowding unwind state only keeps edge after 30-minute price stabilization
+  and low current candle range, addressing the observed adverse payoff
+  asymmetry and timeout drag.
+- [x] Created fixed local event spec:
+  `registry\strategies\research_decisions\20260507T091000Z_post_deleveraging_volatility_compression_event_spec\event_spec.json`.
+  Conditions were open-interest contraction, long/short washout, price above
+  12h SMA, six-candle nonnegative return, current `range_pct <= 0.6`, and
+  non-withdrawn volume. No parameter search was run.
+- [x] Ran local events:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T091000Z_post_deleveraging_volatility_compression_event_spec\event_spec.json --open-interest-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --long-short-ratio-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --failure-synthesis-json registry\strategies\synthesis\20260507T090000Z_all_candidates_with_crowding_unwind_rejection\candidate_failure_synthesis.json --event-id 20260507T091000Z_post_deleveraging_volatility_compression_events --created-at 2026-05-07T09:10:00+00:00
+  ```
+
+  Result: `status=completed`, `event_count=387`, `blocker_count=0`.
+  Artifact:
+  `registry\strategies\research_decisions\20260507T091000Z_post_deleveraging_volatility_compression_events\local_events.json`.
+- [x] Ran 36-candle local falsification with the usual 12 bps all-in cost:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-POST-DELEVERAGING-VOL-COMPRESSION-20260507 --mechanism-class post_deleveraging_volatility_compression --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T091000Z_post_deleveraging_volatility_compression_events\events.csv --event-source-json registry\strategies\research_decisions\20260507T091000Z_post_deleveraging_volatility_compression_events\local_events.json --hold-candles 36 --all-in-cost-bps 12 --min-sample-count 100 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T091500Z_post_deleveraging_volatility_compression_local_falsification --created-at 2026-05-07T09:15:00+00:00
+  ```
+
+  Result: `status=failed`, `sample_count=387`,
+  `data_span_days=857.270833`, `expected_edge_bps=10.587168`,
+  `all_in_cost_bps=12.0`, `net_edge_bps=-1.412832`,
+  `profitable_windows_ratio=0.5`,
+  `profitable_calendar_windows_ratio=0.6`, and `blocker_count=1`
+  (`expected_edge_exceeds_all_in_cost`). Artifact:
+  `registry\strategies\research_decisions\20260507T091500Z_post_deleveraging_volatility_compression_local_falsification\local_falsification.json`.
+- [x] Refreshed aggregate failure memory with this local rejection:
+  synthesis
+  `registry\strategies\synthesis\20260507T092000Z_all_candidates_with_post_deleveraging_vol_compression_rejection\candidate_failure_synthesis.json`
+  has `candidate_count=32`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=1`; causal map
+  `registry\strategies\failure_maps\20260507T092500Z_all_candidates_with_post_deleveraging_vol_compression_rejection_causal_map\causal_failure_map.json`
+  requires a research decision before proposal and adds required questions to
+  avoid this validated local rejection.
+- [ ] Remaining limitation: this was a useful theory-first rejection, not a
+  new viable candidate. The next thesis must avoid both the generated
+  crowding-unwind failure and this fixed volatility-compression rejection
+  before proposal/codegen.
+
+### Follow-up on 2026-05-07 JST for theory-fixed generated parameters
+
+- [x] Closed a code-generation drift path where generated Freqtrade
+  `IntParameter` / `DecimalParameter` declarations were still emitted with
+  `optimize=True`. This could have let future agents accidentally treat the
+  generated strategy as a hyperopt surface instead of a theory-coded candidate.
+- [x] Updated `freqtrade_ext\bot_factory\strategy_code.py` so generated
+  strategy parameters keep `load=True` but use `optimize=False`. Generated
+  metadata now records `parameter_optimization_enabled=false`,
+  `parameter_optimization_policy=theory_fixed_parameters_no_freqtrade_hyperopt`,
+  and safety scope
+  `freqtrade_hyperopt_parameter_optimization=false`.
+- [x] Added focused coverage in `tests\test_bot_factory.py` proving generated
+  strategy code contains no `optimize=True`, emits ten `optimize=False`
+  declarations for the current rule-template parameters, and records the
+  metadata/safety policy plus the
+  `generated_code_freqtrade_hyperopt_disabled` generator check.
+- [x] Refreshed
+  `docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md` so current
+  handoff priority points at the 32-candidate aggregate ranking, synthesis,
+  and causal map:
+  `registry\strategies\candidates\rankings\20260507T085500Z_all_candidates_with_crowding_unwind_rejection_ranking\candidate_ranking.json`,
+  `registry\strategies\synthesis\20260507T092000Z_all_candidates_with_post_deleveraging_vol_compression_rejection\candidate_failure_synthesis.json`,
+  and
+  `registry\strategies\failure_maps\20260507T092500Z_all_candidates_with_post_deleveraging_vol_compression_rejection_causal_map\causal_failure_map.json`.
+  Older 31-candidate references are now historical/superseded context, not
+  current next-step instructions.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator_writes_long_only_strategy_and_metadata"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator"
+  Select-String -Path docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md -Pattern "Thirty-one|31-candidate|thirty-one|latest 31|current 31|20260507T164000JST|20260507T164500JST" -Context 1,2
+  git diff --check
+  ```
+
+  Results: compile passed; focused generated-parameter policy test passed
+  `1 passed`; broader strategy-code-generator test selection passed
+  `42 passed`; next-prompt stale-current search only returns historical or
+  explicitly superseded references; `git diff --check` passed with existing
+  CRLF working-copy warnings only.
+- [ ] Remaining limitation: this prevents the generated strategy surface from
+  silently becoming a Freqtrade hyperopt exercise. It does not by itself create
+  a profitable, robust, paper-ready candidate or authorize paper, dry-run,
+  live trading, exchange order placement, shorting, leverage above `1.0`, or
+  process control.
+
+### Follow-up on 2026-05-07 JST for evaluation-stage hyperopt-surface rejection
+
+- [x] Added an evaluation-stage guard in
+  `freqtrade_ext\bot_factory\candidate_evaluation.py` so candidate evaluation
+  rejects generated Strategy Code Generator artifacts that expose or fail to
+  prove disabled Freqtrade parameter optimization. This protects the pipeline
+  even if an older generated strategy file or crafted generated metadata is
+  supplied after code generation.
+- [x] The new `generated_parameter_optimization_policy` check applies to
+  generated strategy-code artifacts, verifies metadata
+  `parameter_optimization_enabled=false`, policy
+  `theory_fixed_parameters_no_freqtrade_hyperopt`, safety-scope
+  `freqtrade_hyperopt_parameter_optimization=false`, generator check
+  `generated_code_freqtrade_hyperopt_disabled=pass`, and the actual generated
+  strategy file containing `optimize=False` with no `optimize=True`.
+- [x] Added
+  `test_candidate_evaluation_rejects_generated_hyperopt_parameter_surface`
+  proving candidate evaluation rejects a strategy file containing
+  `optimize=True` even when generated metadata claims the hyperopt-disabled
+  check passed.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_evaluation.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_evaluation_rejects_generated_hyperopt_parameter_surface or candidate_evaluation_writes_manifest_and_index or candidate_evaluation_derives_backtest_gate"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_evaluation"
+  ```
+
+  Results: compile passed; focused policy/manifest/gate tests passed
+  `3 passed`; candidate-evaluation test selection passed `13 passed`.
+  `git diff --check` passed with existing CRLF working-copy warnings only.
+  Post-test cleanup removed 33 workspace-local `.pytest_cache` / `__pycache__`
+  directories outside `.venv`, leaving 0 remaining cache targets.
+- [ ] Remaining limitation: this is an anti-regression guard, not a profitable
+  strategy. It prevents old or crafted generated artifacts from entering
+  evaluation as a parameter-optimization surface, but the project still needs
+  a new theory-backed candidate that passes local falsification, diagnostics,
+  historical backtest, walk-forward, ranking, and readiness gates.
+
+### Follow-up on 2026-05-07 JST for mark-premium/OI continuation local screen
+
+- [x] Tested one new fixed pre-proposal thesis, not a parameter sweep:
+  `TH-MARK-PREMIUM-OI-CONTINUATION-20260507` /
+  `mark_premium_open_interest_continuation`. The mechanism asked whether a
+  positive mark-price premium that is expanding, one-hour open-interest
+  expansion, non-overcrowded long-account ratio, short-term nonnegative price
+  stabilization, and positive volume participation identify durable long-only
+  continuation. This deliberately differs from the failed mark-discount,
+  open-interest impulse, and crowding-unwind mechanisms.
+- [x] Created fixed event spec:
+  `registry\strategies\research_decisions\20260507T093000Z_mark_premium_open_interest_continuation_event_spec\event_spec.json`.
+  Conditions: `mark_price_gap_bps >= 2.0`,
+  `mark_price_gap_delta_bps >= 1.0` over 12 candles,
+  `open_interest_delta_pct >= 0.4` over 12 candles,
+  `long_account_ratio <= 0.52`, six-candle `return_bps >= 0.0`, and
+  `volume_zscore >= 0.0` over 288 candles. `cooldown_candles=12`.
+- [x] Ran local event generation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T093000Z_mark_premium_open_interest_continuation_event_spec\event_spec.json --mark-price-path user_data\data\bybit\futures\BTC_USDT_USDT-4h-mark.parquet --open-interest-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-open_interest.parquet --long-short-ratio-path data\market_structure\bybit\futures\BTC_USDT_USDT-1h-long_short_ratio.parquet --failure-synthesis-json registry\strategies\synthesis\20260507T092000Z_all_candidates_with_post_deleveraging_vol_compression_rejection\candidate_failure_synthesis.json --event-id 20260507T093000Z_mark_premium_open_interest_continuation_events --created-at 2026-05-07T09:30:00+00:00 --reviewer-note "Pre-proposal fixed local screen only; no codegen, backtest, paper, live trading, or parameter search."
+  ```
+
+  Result: `status=completed`, `event_count=33`, `blocker_count=0`.
+  Artifact:
+  `registry\strategies\research_decisions\20260507T093000Z_mark_premium_open_interest_continuation_events\local_events.json`.
+  Cumulative condition survival before cooldown dropped from 117,518 mark-gap
+  rows to 122 combined rows and 33 final events.
+- [x] Ran an exploratory low-sample local falsification gate with the same
+  fixed events:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-MARK-PREMIUM-OI-CONTINUATION-20260507 --mechanism-class mark_premium_open_interest_continuation --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T093000Z_mark_premium_open_interest_continuation_events\events.csv --event-source-json registry\strategies\research_decisions\20260507T093000Z_mark_premium_open_interest_continuation_events\local_events.json --hold-candles 36 --all-in-cost-bps 12 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T093500Z_mark_premium_open_interest_continuation_local_falsification --created-at 2026-05-07T09:35:00+00:00 --reviewer-note "Pre-proposal fixed local falsification only; no codegen, backtest, paper, live trading, or parameter search."
+  ```
+
+  Result: `status=passed`, `sample_count=33`,
+  `expected_edge_bps=43.837718`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=31.837718`, `profitable_windows_ratio=0.75`, but
+  `profitable_calendar_windows_ratio=0.5` with 32 of 33 events in `2024Q1`.
+- [x] Re-ran the same fixed events with the stricter pre-proposal sample gate:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-MARK-PREMIUM-OI-CONTINUATION-20260507 --mechanism-class mark_premium_open_interest_continuation --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T093000Z_mark_premium_open_interest_continuation_events\events.csv --event-source-json registry\strategies\research_decisions\20260507T093000Z_mark_premium_open_interest_continuation_events\local_events.json --hold-candles 36 --all-in-cost-bps 12 --min-sample-count 100 --min-profitable-windows-ratio 0.5 --min-data-span-days 180 --falsification-id 20260507T094000Z_mark_premium_open_interest_continuation_strict_sample_gate --created-at 2026-05-07T09:40:00+00:00 --reviewer-note "Strict pre-proposal sample gate for the same fixed thesis; no threshold tuning or codegen."
+  ```
+
+  Result: `status=failed`, `sample_count=33`,
+  `net_edge_bps=31.837718`, `profitable_windows_ratio=0.75`,
+  `blocker_count=1`, blocker `event_sample_count_sufficient`. Artifact:
+  `registry\strategies\research_decisions\20260507T094000Z_mark_premium_open_interest_continuation_strict_sample_gate\local_falsification.json`.
+- [x] Refreshed aggregate failure memory with this strict local rejection:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T085500Z_all_candidates_with_crowding_unwind_rejection_ranking\candidate_ranking.json --local-falsification-json registry\strategies\research_decisions\20260507T091500Z_post_deleveraging_volatility_compression_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T094000Z_mark_premium_open_interest_continuation_strict_sample_gate\local_falsification.json --synthesis-id 20260507T094500Z_all_candidates_with_mark_premium_oi_sample_rejection --reviewer-note "Added fixed mark-premium/OI continuation screen as a local rejection: promising post-cost edge but only 33 events and concentrated in 2024Q1, so do not proposal/codegen without broader evidence."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T094500Z_all_candidates_with_mark_premium_oi_sample_rejection\candidate_failure_synthesis.json --map-id 20260507T095000Z_all_candidates_with_mark_premium_oi_sample_rejection_causal_map --reviewer-note "Causal map refresh after fixed mark-premium/OI continuation local screen failed strict sample gate; require future research to avoid small-sample/Q1 concentration."
+  ```
+
+  Results: synthesis completed with `candidate_count=32`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=2`; causal map completed with
+  `candidate_count=32`, `category_count=8`, and
+  `requires_research_decision_before_proposal=true`. Artifacts:
+  `registry\strategies\synthesis\20260507T094500Z_all_candidates_with_mark_premium_oi_sample_rejection\candidate_failure_synthesis.json`
+  and
+  `registry\strategies\failure_maps\20260507T095000Z_all_candidates_with_mark_premium_oi_sample_rejection_causal_map\causal_failure_map.json`.
+- [x] Verification: `git diff --check` passed with existing CRLF
+  working-copy warnings only. Post-script cleanup removed 2 workspace-local
+  `__pycache__` directories outside `.venv`, leaving 0 remaining cache
+  targets.
+- [ ] Remaining limitation: this found an interesting but currently
+  non-actionable local edge. It must not go to proposal/codegen or be retuned
+  by loosening thresholds; future work needs a materially broader mechanism or
+  fresh evidence that survives sample-size and calendar-window stability gates.
+
+### Follow-up on 2026-05-07 JST for local falsification calendar stability gates
+
+- [x] Hardened `freqtrade_ext\bot_factory\local_falsification.py` so local
+  falsification can optionally require a minimum number of quarterly calendar
+  windows and a minimum profitable-quarter ratio. This closes the gap exposed
+  by the mark-premium/OI screen where the exploratory gate passed on aggregate
+  post-cost edge while 32 of 33 events were concentrated in `2024Q1`.
+- [x] Added CLI support in
+  `scripts\bot_factory_build_local_falsification.py`:
+  `--min-calendar-window-count` and
+  `--min-profitable-calendar-windows-ratio`. Both default to disabled behavior
+  for backward compatibility, so existing artifacts and tests are not
+  reinterpreted unless a caller opts into the stricter calendar gate.
+- [x] Added regression coverage in `tests\test_bot_factory.py` proving an
+  otherwise positive post-cost local edge fails when it spans only two
+  quarters and only one quarter is profitable while the caller requires at
+  least three quarters and a `0.75` profitable-quarter ratio. The failing
+  blockers are `calendar_window_count_sufficient` and
+  `profitable_calendar_windows_ratio_sufficient`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_local_falsification.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_falsification"
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --help
+  git diff --check
+  ```
+
+  Results: compile passed; focused pytest passed `11 passed`; CLI help showed
+  both new calendar stability options; `git diff --check` passed with existing
+  CRLF working-copy warnings only. Post-test cleanup removed 33
+  workspace-local `.pytest_cache` / `__pycache__` directories outside `.venv`.
+- [ ] Remaining limitation: this is a guardrail against fragile local evidence,
+  not a profitable strategy. No proposal, code generation, historical
+  backtest, paper trading, live trading, exchange order placement, shorting,
+  leverage above `1.0`, or process control was started by this increment.
+
+### Follow-up on 2026-05-07 JST for real mark-premium/OI calendar-gated rejection
+
+- [x] Re-ran the same fixed `TH-MARK-PREMIUM-OI-CONTINUATION-20260507` /
+  `mark_premium_open_interest_continuation` event set through the new calendar
+  stability gates without changing thresholds or events:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-MARK-PREMIUM-OI-CONTINUATION-20260507 --mechanism-class mark_premium_open_interest_continuation --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T093000Z_mark_premium_open_interest_continuation_events\events.csv --event-source-json registry\strategies\research_decisions\20260507T093000Z_mark_premium_open_interest_continuation_events\local_events.json --hold-candles 36 --all-in-cost-bps 12 --min-sample-count 20 --min-profitable-windows-ratio 0.5 --min-calendar-window-count 3 --min-profitable-calendar-windows-ratio 0.75 --min-data-span-days 180 --falsification-id 20260507T100000Z_mark_premium_open_interest_continuation_calendar_stability_gate --created-at 2026-05-07T10:00:00+00:00 --reviewer-note "Calendar-stability rerun of the same fixed mark-premium/OI events after adding explicit quarterly gates; no threshold tuning, codegen, backtest, paper, live trading, or parameter search."
+  ```
+
+  Result: command exited `1` as expected because the artifact failed gates.
+  The artifact still has positive aggregate edge:
+  `sample_count=33`, `expected_edge_bps=43.837718`,
+  `all_in_cost_bps=12.0`, `net_edge_bps=31.837718`,
+  `profitable_windows_ratio=0.75`, and `data_span_days=857.270833`.
+  It now fails specifically on calendar stability with
+  `calendar_window_count=2`, `min_calendar_window_count=3`,
+  `profitable_calendar_windows_ratio=0.5`,
+  `min_profitable_calendar_windows_ratio=0.75`, and blockers
+  `calendar_window_count_sufficient` plus
+  `profitable_calendar_windows_ratio_sufficient`. Quarter detail:
+  `2024Q1` has 32 events and `net_edge_bps=36.870255`; `2024Q4` has one event
+  and `net_edge_bps=-129.203462`. Artifact:
+  `registry\strategies\research_decisions\20260507T100000Z_mark_premium_open_interest_continuation_calendar_stability_gate\local_falsification.json`.
+- [x] Refreshed the aggregate failure synthesis and causal failure map from
+  the explicit calendar-gated rejection:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T085500Z_all_candidates_with_crowding_unwind_rejection_ranking\candidate_ranking.json --local-falsification-json registry\strategies\research_decisions\20260507T091500Z_post_deleveraging_volatility_compression_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T100000Z_mark_premium_open_interest_continuation_calendar_stability_gate\local_falsification.json --synthesis-id 20260507T100500Z_all_candidates_with_mark_premium_oi_calendar_rejection --reviewer-note "Refreshed failure memory after explicit calendar-stability gate: fixed mark-premium/OI screen has positive aggregate post-cost edge but only two quarterly windows and 0.5 profitable-quarter ratio, so no proposal/codegen without broader evidence."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T100500Z_all_candidates_with_mark_premium_oi_calendar_rejection\candidate_failure_synthesis.json --map-id 20260507T101000Z_all_candidates_with_mark_premium_oi_calendar_rejection_causal_map --reviewer-note "Causal map refresh after explicit mark-premium/OI calendar-stability rejection; require future research to avoid positive aggregate edge that is concentrated in too few quarterly windows."
+  ```
+
+  Results: synthesis completed with `candidate_count=32`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=2`; causal map completed with
+  `candidate_count=32`, `category_count=8`, and
+  `requires_research_decision_before_proposal=true`. Current artifacts:
+  `registry\strategies\synthesis\20260507T100500Z_all_candidates_with_mark_premium_oi_calendar_rejection\candidate_failure_synthesis.json`
+  and
+  `registry\strategies\failure_maps\20260507T101000Z_all_candidates_with_mark_premium_oi_calendar_rejection_causal_map\causal_failure_map.json`.
+- [x] Verification: `git diff --check` passed with existing CRLF
+  working-copy warnings only. Post-script cleanup removed 2 workspace-local
+  `__pycache__` directories outside `.venv`, leaving 0 remaining cache
+  targets.
+- [ ] Remaining limitation: this is a stronger rejection memory, not a new
+  profitable candidate. The positive aggregate edge must not be promoted,
+  code-generated, or retuned unless a materially broader theory provides
+  evidence that survives sample-size and quarterly stability gates.
+
+### Follow-up on 2026-05-07 JST for comprehensive local rejection memory refresh
+
+- [x] Found and corrected a handoff risk before selecting another thesis:
+  the newest parseable synthesis by `generated_at` was the
+  mark-premium/OI calendar-only refresh, but it did not include the later
+  closed-context `mark_fair_value_momentum_lag` rejection or the other recent
+  local falsification rejections already documented in the next-agent prompt.
+  This would make stale-memory guards treat an incomplete synthesis as
+  current.
+- [x] Rebuilt aggregate failure memory from the 32-candidate ranking plus the
+  recent validated local falsification set:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T085500Z_all_candidates_with_crowding_unwind_rejection_ranking\candidate_ranking.json --local-falsification-json registry\strategies\research_decisions\20260507T091500Z_post_deleveraging_volatility_compression_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T100000Z_mark_premium_open_interest_continuation_calendar_stability_gate\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T191000JST_low_range_volume_absorption_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T194000JST_thin_book_dislocation_reversion_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T204500JST_open_interest_deleveraging_rebound_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T211500JST_open_interest_impulse_continuation_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T223500JST_open_interest_crowded_short_squeeze_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T231500JST_funding_neutral_impulse_drift_funding_adjusted_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T161500JST_long_short_flush_rebound_extended_local_falsification\local_falsification.json --local-falsification-json registry\strategies\research_decisions\20260507T163500JST_negative_funding_uncrowded_carry_local_falsification\local_falsification.json --synthesis-id 20260507T110000Z_all_candidates_with_comprehensive_local_rejection_memory --reviewer-note "Refresh current failure memory from the 32-candidate ranking plus all validated recent local falsification rejections, including closed-context mark fair-value failure and mark-premium/OI calendar-stability failure; no proposal, codegen, trading, or parameter search."
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T110000Z_all_candidates_with_comprehensive_local_rejection_memory\candidate_failure_synthesis.json --map-id 20260507T110500Z_all_candidates_with_comprehensive_local_rejection_memory_causal_map --reviewer-note "Causal map refresh from comprehensive local rejection memory; require research selection to address all recent validated local falsification failures plus the 32-candidate ranking before any proposal/codegen."
+  ```
+
+  Results: synthesis completed with `candidate_count=32`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`,
+  `local_falsification_rejection_count=10`, and
+  `local_falsification_invalid_rejection_count=1`; causal map completed with
+  `candidate_count=32`, `category_count=8`,
+  `requires_research_decision_before_proposal=true`,
+  `minimum_research_selection_score=80`, 26 required research questions, and
+  10 validated local rejection contexts. Current artifacts:
+  `registry\strategies\synthesis\20260507T110000Z_all_candidates_with_comprehensive_local_rejection_memory\candidate_failure_synthesis.json`
+  and
+  `registry\strategies\failure_maps\20260507T110500Z_all_candidates_with_comprehensive_local_rejection_memory_causal_map\causal_failure_map.json`.
+- [x] Verification: `git diff --check` passed with existing CRLF
+  working-copy warnings only. Post-script cleanup removed 2 workspace-local
+  `__pycache__` directories outside `.venv`, leaving 0 remaining cache
+  targets.
+- [ ] Remaining limitation: this is memory repair and handoff correctness, not
+  a profitable candidate. The next thesis must consume this comprehensive map
+  and answer its required questions before any proposal/codegen.
+
+### Follow-up on 2026-05-07 JST for research-selection response template export
+
+- [x] Added a local template exporter so the next theory-first research
+  selection can answer the comprehensive causal map systematically instead of
+  hand-assembling 5 causal responses and 26 required question responses in one
+  long CLI command. The exported artifact now also includes a full
+  `select_research_thesis_command_template` PowerShell skeleton with the
+  current synthesis path, causal map path, thesis metadata placeholders, local
+  data/falsification/reference placeholders, all required causal responses, and
+  all indexed research-question responses. It also exports a fillable
+  `research_selection_input_template` plus a short
+  `--research-selection-input-json` command so an AI research pass can write a
+  structured JSON decision input instead of copying a long CLI. Code:
+  `freqtrade_ext\bot_factory\research_selection_template.py` and
+  `scripts\bot_factory_export_research_selection_template.py`; the selector
+  ingestion path is in `scripts\bot_factory_select_research_thesis.py`.
+- [x] The exporter reads `causal_failure_map.json`, accepts both existing
+  `factory=candidate_failure_map` artifacts and older/simple
+  `factory=causal_failure_map` fixtures, and writes
+  `research_selection_response_template.json` plus Markdown. It records
+  required causal failure responses, required research-question responses,
+  validated local falsification rejections, blocked next actions, CLI argument
+  templates, the fillable JSON input template, the short input-JSON selector
+  command, the full thesis-selection command template, checks, and
+  historical-only safety scope. It does not select a thesis, generate code, run
+  backtests, start trading, or manage processes.
+- [x] Added focused coverage in `tests\test_bot_factory.py` proving the
+  template exports causal response placeholders, indexed research-question
+  placeholders, a fillable JSON input template, short/full command skeletons
+  in JSON/Markdown, local rejection context, and no-codegen/no-paper safety
+  scope. Added selector-CLI coverage proving
+  `--research-selection-input-json` loads filled template fields into
+  `ResearchSelectionInputs`.
+- [x] Verification and concrete export:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\research_selection_template.py scripts\bot_factory_select_research_thesis.py scripts\bot_factory_export_research_selection_template.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "research_selection_template or research_selection_cli_loads_filled_input_json"
+  .\.venv\Scripts\python.exe scripts\bot_factory_export_research_selection_template.py --causal-failure-map-json registry\strategies\failure_maps\20260507T110500Z_all_candidates_with_comprehensive_local_rejection_memory_causal_map\causal_failure_map.json --template-id 20260507T111000Z_comprehensive_research_selection_response_template --created-at 2026-05-07T11:10:00+00:00 --reviewer-note "Template for answering the comprehensive causal map before selecting any new thesis; local artifact only, no proposal, codegen, backtest, trading, or parameter search."
+  .\.venv\Scripts\python.exe scripts\bot_factory_select_research_thesis.py --help
+  ```
+
+  Results: compile passed; focused pytest passed `2 passed`; the first real
+  export exposed a factory-name compatibility bug and blocked, then the
+  accepted-factory check was fixed and the real export completed with
+  `required_causal_failure_response_count=5`,
+  `required_research_question_response_count=26`,
+  `validated_local_falsification_rejection_count=10`, and
+  `blocker_count=0`. Artifact:
+  `registry\strategies\research_decisions\20260507T111000Z_comprehensive_research_selection_response_template\research_selection_response_template.json`.
+  After adding the full command skeleton and JSON-input ingestion, the compile,
+  focused pytest, selector `--help`, and concrete export were re-run; the
+  regenerated JSON contains `research_selection_input_template`,
+  `select_research_thesis_input_json_command_template`, and
+  `select_research_thesis_command_template` with all 5 causal-response and all
+  26 research-question placeholders.
+  `git diff --check` passed with existing CRLF working-copy warnings only.
+  Post-test cleanup removed 33 workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`, leaving 0 remaining cache
+  targets.
+- [ ] Remaining limitation: this prepares the research-selection input surface
+  but is not itself a new thesis, proposal, generated strategy, or profitable
+  candidate.
+
+### Follow-up on 2026-05-07 JST for volume-clock liquidity momentum local rejection
+
+- [x] Tested one fixed theory-backed pre-proposal thesis, not a parameter
+  sweep: `TH-VOLUME-CLOCK-LIQUIDITY-MOMENTUM-20260507` /
+  `volume_clock_liquidity_momentum`. The mechanism was motivated by intraday
+  crypto return-predictability literature: Wen, Bouri, Xu, and Zhao (2022),
+  `doi:10.1016/j.najef.2022.101733`, and Shen, Urquhart, and Wang, "Bitcoin
+  intraday time series momentum". The fixed local screen asked whether
+  London/New York overlap hours with positive 30-minute BTC futures return,
+  high volume z-score, and sufficient candle range produce positive post-cost
+  3-hour continuation.
+- [x] Added the fixed event spec:
+  `registry\strategies\research_decisions\20260507T112000Z_volume_clock_liquidity_momentum_event_spec\event_spec.json`.
+- [x] Ran the local event screen:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T112000Z_volume_clock_liquidity_momentum_event_spec\event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T110000Z_all_candidates_with_comprehensive_local_rejection_memory\candidate_failure_synthesis.json --event-id 20260507T112000Z_volume_clock_liquidity_momentum_events --created-at 2026-05-07T11:20:00+00:00 --reviewer-note "Pre-proposal fixed local screen for volume-clock liquidity momentum; no proposal, codegen, backtest, paper, live trading, or parameter search."
+  ```
+
+  Result: `status=completed`, `event_count=686`, `blocker_count=0`. Artifact:
+  `registry\strategies\research_decisions\20260507T112000Z_volume_clock_liquidity_momentum_events\local_events.json`.
+- [x] Ran local falsification with fixed costs and stability gates:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-VOLUME-CLOCK-LIQUIDITY-MOMENTUM-20260507 --mechanism-class volume_clock_liquidity_momentum --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T112000Z_volume_clock_liquidity_momentum_events\events.csv --event-source-json registry\strategies\research_decisions\20260507T112000Z_volume_clock_liquidity_momentum_events\local_events.json --hold-candles 36 --all-in-cost-bps 12 --min-sample-count 50 --min-profitable-windows-ratio 0.5 --min-calendar-window-count 3 --min-profitable-calendar-windows-ratio 0.75 --min-data-span-days 180 --falsification-id 20260507T112500Z_volume_clock_liquidity_momentum_local_falsification --created-at 2026-05-07T11:25:00+00:00 --reviewer-note "Pre-proposal fixed local falsification for volume-clock liquidity momentum; no threshold tuning, proposal, codegen, backtest, paper, live trading, or parameter search."
+  ```
+
+  Result: command exited `1` as expected because the artifact failed gates.
+  `sample_count=686`, `data_span_days=857.270833`,
+  `expected_edge_bps=0.255677`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-11.744323`, `profitable_windows_ratio=0.25`,
+  `blocker_count=3`. Artifact:
+  `registry\strategies\research_decisions\20260507T112500Z_volume_clock_liquidity_momentum_local_falsification\local_falsification.json`.
+- [x] Refreshed failure memory and causal-map/template handoff with the new
+  local rejection:
+
+  ```powershell
+  $paths = @(
+    "registry/strategies/research_decisions/20260507T091500Z_post_deleveraging_volatility_compression_local_falsification/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T100000Z_mark_premium_open_interest_continuation_calendar_stability_gate/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T184000JST_mark_fair_value_momentum_lag_closed_context_falsification_v2/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T191000JST_low_range_volume_absorption_local_falsification/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T194000JST_thin_book_dislocation_reversion_local_falsification/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T204500JST_open_interest_deleveraging_rebound_local_falsification/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T211500JST_open_interest_impulse_continuation_local_falsification/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T223500JST_open_interest_crowded_short_squeeze_local_falsification/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T231500JST_funding_neutral_impulse_drift_funding_adjusted_local_falsification/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T161500JST_long_short_flush_rebound_extended_local_falsification/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T163500JST_negative_funding_uncrowded_carry_local_falsification/local_falsification.json",
+    "registry/strategies/research_decisions/20260507T112500Z_volume_clock_liquidity_momentum_local_falsification/local_falsification.json"
+  )
+  $args = @("scripts\bot_factory_synthesize_candidate_failures.py", "--ranking-json", "registry\strategies\candidates\rankings\20260507T085500Z_all_candidates_with_crowding_unwind_rejection_ranking\candidate_ranking.json")
+  foreach ($path in $paths) { $args += @("--local-falsification-json", $path) }
+  $args += @("--synthesis-id", "20260507T113000Z_all_candidates_with_volume_clock_liquidity_momentum_rejection", "--reviewer-note", "Refresh current failure memory after fixed volume-clock liquidity momentum local screen failed post-cost and stability gates; no proposal, codegen, trading, or parameter search.")
+  & .\.venv\Scripts\python.exe @args
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_causal_failure_map.py --synthesis-json registry\strategies\synthesis\20260507T113000Z_all_candidates_with_volume_clock_liquidity_momentum_rejection\candidate_failure_synthesis.json --map-id 20260507T113500Z_all_candidates_with_volume_clock_liquidity_momentum_rejection_causal_map --reviewer-note "Causal map refresh after fixed volume-clock liquidity momentum local screen failed with negative post-cost edge; require future research to avoid intraday volume-clock momentum as a parameter-retuned trend/session variant."
+  .\.venv\Scripts\python.exe scripts\bot_factory_export_research_selection_template.py --causal-failure-map-json registry\strategies\failure_maps\20260507T113500Z_all_candidates_with_volume_clock_liquidity_momentum_rejection_causal_map\causal_failure_map.json --template-id 20260507T114000Z_volume_clock_rejection_research_selection_response_template --created-at 2026-05-07T11:40:00+00:00 --reviewer-note "Template refresh after volume-clock liquidity momentum fixed local screen failed; local artifact only, no proposal, codegen, backtest, trading, or parameter search."
+  ```
+
+  Results: synthesis completed with `candidate_count=32`,
+  `paper_ready_count=0`, `parameter_only_retry_allowed=false`,
+  `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=11`; causal map completed with
+  `candidate_count=32`, `category_count=8`, and
+  `requires_research_decision_before_proposal=true`; template export completed
+  with 5 required causal responses, 28 required research-question responses,
+  11 validated local rejection contexts, and `blocker_count=0`. Current
+  artifacts:
+  `registry\strategies\synthesis\20260507T113000Z_all_candidates_with_volume_clock_liquidity_momentum_rejection\candidate_failure_synthesis.json`,
+  `registry\strategies\failure_maps\20260507T113500Z_all_candidates_with_volume_clock_liquidity_momentum_rejection_causal_map\causal_failure_map.json`,
+  and
+  `registry\strategies\research_decisions\20260507T114000Z_volume_clock_rejection_research_selection_response_template\research_selection_response_template.json`.
+- [x] Verification: `git diff --check` passed with existing CRLF
+  working-copy warnings only. Post-script cleanup removed 2 workspace-local
+  `__pycache__` directories outside `.venv`, leaving 0 remaining cache
+  targets.
+- [ ] Remaining limitation: this is another pre-proposal local rejection, not
+  a viable candidate. Do not proposal/codegen or retune this mechanism; future
+  research must avoid intraday volume-clock momentum as a disguised
+  trend/session parameter retry.
+
+### Follow-up on 2026-05-07 JST for worktree cleanup ledger
+
+- [x] Paused new thesis/data expansion work and rechecked the worktree for
+  cleanup before continuing Bot Factory research:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff --stat
+  git ls-files --others --exclude-standard
+  git ls-files --others --ignored --exclude-standard
+  ```
+
+  Results: visible worktree has 50 paths: 21 modified tracked files, one
+  tracked deletion, and 28 untracked review candidates. The tracked diff is
+  `22 files changed, 33674 insertions(+), 2678 deletions(-)`.
+- [x] Classified current non-ignored untracked files as intended Bot Factory
+  review candidates, not generated junk: `docs/BOT_FACTORY_GOAL_AUDIT.md`, 11
+  modules under `freqtrade_ext\bot_factory\`, 15
+  `scripts\bot_factory_*.py` entrypoints, and
+  `data\market_structure\.gitkeep`.
+- [x] Confirmed ignored generated/runtime evidence should remain outside Git:
+  after cache cleanup, `ignored_total=25461`, `.venv=21603`, and
+  `ignored_non_venv=3858`. The large non-`.venv` groups are local evidence
+  roots such as `data\walk_forward`, `data\backtests`,
+  `registry\strategies\candidates`, `registry\strategies\generated`,
+  `registry\strategies\research_decisions`, and
+  `registry\strategies\synthesis`.
+- [x] Deleted only disposable workspace-local Python caches outside `.venv`
+  after path-guarding the resolved targets. Cleanup removed 28
+  `.pytest_cache` / `__pycache__` directories and a follow-up count returned
+  `cache_dir_count=0`.
+- [ ] Remaining cleanup decision: `docs\BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md`
+  is deleted in the worktree. Do not stage that deletion or restore it without
+  an owner decision. Do not silently delete ignored `data`, `registry`, or
+  `user_data` runtime evidence; it is the local audit trail for rejected
+  candidates and data checks.
+
+### Follow-up on 2026-05-07 JST for ETH 5m historical coverage expansion
+
+- [x] Rechecked local BTC/ETH 5m OHLCV coverage before continuing theory-first
+  research. BTC 5m futures was already `ok=true` with `rows=246895`, start
+  `2024-01-01T00:00:00+00:00`, end
+  `2026-05-07T06:30:00+00:00`, no duplicate timestamps, and no missing
+  intervals. ETH 5m futures was `ok=true` but shorter, with `rows=114403`,
+  start `2024-01-01T00:00:00+00:00`, end
+  `2025-02-01T05:30:00+00:00`, no duplicate timestamps, and no missing
+  intervals.
+- [x] Expanded only the missing ETH 5m historical window through the
+  historical-safe download wrapper:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_download_data.py --config user_data\config.json --pairs ETH/USDT:USDT --timeframes 5m --timerange 20250201-20260507 --trading-mode futures --quality-output registry\strategies\checks\20260507T103000Z_eth_5m_ohlcv_quality_append_2025_2026.json
+  ```
+
+  The command completed with return code `0`. It ran `freqtrade download-data`
+  with a temporary FreqAI-disabled overlay and did not start paper/dry-run/live
+  trading, order placement, leverage changes, shorting, or process control.
+  Freqtrade logged `dry_run enabled` while fetching public historical data.
+- [x] Post-download quality completed with `ok=true` in
+  `registry\strategies\checks\20260507T103000Z_eth_5m_ohlcv_quality_append_2025_2026.json`.
+  ETH 5m now has `rows=246941`, start `2024-01-01T00:00:00+00:00`, end
+  `2026-05-07T10:20:00+00:00`, `duplicate_timestamps=0`, and
+  `missing_intervals=0`. ETH futures companion public-data files were also
+  refreshed by Freqtrade:
+  `user_data\data\bybit\futures\ETH_USDT_USDT-4h-mark.parquet` and
+  `user_data\data\bybit\futures\ETH_USDT_USDT-8h-funding_rate.parquet`.
+- [x] Verified Git hygiene: `git check-ignore -v` confirms the updated ETH
+  data files are ignored by `user_data/*`, and the ETH quality report is
+  ignored by `registry/strategies/checks/*.json`. `git status --short
+  --untracked-files=all` did not gain Git-visible data artifacts from the
+  download.
+- [x] Verification: `git diff --check` passed with existing CRLF
+  working-copy warnings only. Post-check cleanup removed 28 workspace-local
+  `.pytest_cache` / `__pycache__` directories outside `.venv`, and a follow-up
+  count returned `cache_dir_count=0`.
+- [ ] Remaining limitation: this improves local coverage for future BTC/ETH
+  screens but is not a candidate, not positive evidence, and not a reason to
+  repeat failed BTC/ETH lead-lag, cointegration, or correlation mechanisms by
+  parameter changes. Any future cross-asset thesis must still pass the current
+  causal-map research selection and local falsification gates before
+  proposal/codegen.
+
+### Follow-up on 2026-05-07 JST for informative OHLCV local-event support
+
+- [x] Added proposal/codegen-preflight support for a second closed-candle OHLCV
+  file in local event studies. `freqtrade_ext\bot_factory\local_events.py` now
+  accepts `LocalEventBuildInputs.informative_ohlcv_path`, loads it with the
+  same OHLCV parser, merges it through the existing closed-context candle
+  alignment path, and records `informative_ohlcv` under `required_contexts`,
+  `auxiliary_sources`, and `context_merge`.
+- [x] Added fixed event-spec features for future BTC/ETH-style local screens:
+  `informative_return_bps`, `relative_return_bps`,
+  `informative_range_pct`, `informative_sma_distance_bps`, and
+  `informative_volume_zscore`. `relative_return_bps` is primary OHLCV return
+  minus informative OHLCV return over the same closed-candle lookback.
+- [x] Extended `scripts\bot_factory_build_local_events.py` with
+  `--informative-ohlcv-path`. The wrapper still writes local event artifacts
+  only; it does not select a thesis, generate a proposal, generate strategy
+  code, run backtests, start paper/dry-run/live trading, place orders, short,
+  increase leverage, or manage bot processes.
+- [x] Added focused tests in `tests\test_bot_factory.py` proving informative
+  OHLCV event specs produce events with `informative_return_bps` and
+  `relative_return_bps`, preserve source/auxiliary/context metadata, and that
+  the CLI maps `--informative-ohlcv-path` into `LocalEventBuildInputs`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py scripts\bot_factory_build_local_events.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "informative_ohlcv or local_event_cli_maps_informative"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event"
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --help
+  ```
+
+  Results: compile passed; focused informative-OHLCV pytest passed `2 passed`;
+  broader local-event pytest passed `10 passed`; CLI help shows
+  `--informative-ohlcv-path`.
+- [x] Final hygiene: `git diff --check` passed with existing CRLF
+  working-copy warnings only. Post-test cleanup removed 33 workspace-local
+  `.pytest_cache` / `__pycache__` directories outside `.venv`, and a follow-up
+  count returned `cache_dir_count=0`.
+- [ ] Remaining limitation: this is local cross-asset research infrastructure,
+  not a candidate and not positive evidence. It must not be used to rerun
+  failed BTC/ETH lead-lag, cointegration, or correlation families as threshold
+  tweaks. A future cross-asset thesis still needs current causal-map research
+  selection and fresh local falsification before proposal/codegen.
+
+### Follow-up on 2026-05-07 JST for BTC/ETH relative-strength continuation local rejection
+
+- [x] Tested one fixed, theory-backed, proposal/codegen-preflight screen using
+  the new informative OHLCV support:
+  `TH-CROSS-ASSET-RELATIVE-STRENGTH-CONTINUATION-20260507` /
+  `cross_asset_relative_strength_continuation`. Research references were
+  recorded in the event spec: `doi:10.1016/j.irfa.2024.103244`, SSRN
+  `4675565`, and `doi:10.1016/j.irfa.2021.101908`.
+- [x] Added the fixed event spec:
+  `registry\strategies\research_decisions\20260507T105000Z_cross_asset_relative_strength_continuation_event_spec\event_spec.json`.
+  Conditions: BTC `return_bps >= 50.0` over 12 candles, ETH
+  `informative_return_bps >= 20.0` over 12 candles,
+  `relative_return_bps >= 20.0` over 12 candles, BTC
+  `volume_zscore >= 0.5` over 288 candles, and `cooldown_candles=36`.
+- [x] Ran local event generation:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-path user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T105000Z_cross_asset_relative_strength_continuation_event_spec\event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T113000Z_all_candidates_with_volume_clock_liquidity_momentum_rejection\candidate_failure_synthesis.json --event-id 20260507T105000Z_cross_asset_relative_strength_continuation_events --created-at 2026-05-07T10:50:00+00:00 --reviewer-note "Fixed pre-proposal local screen using BTC primary OHLCV plus ETH informative OHLCV; no research selection approval, proposal generation, strategy codegen, backtest, trading, process control, or parameter search."
+  ```
+
+  Result: `status=completed`, `event_count=733`, `blocker_count=0`. Artifact:
+  `registry\strategies\research_decisions\20260507T105000Z_cross_asset_relative_strength_continuation_events\local_events.json`.
+- [x] Ran local falsification with fixed post-cost and stability gates:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_falsification.py --thesis-id TH-CROSS-ASSET-RELATIVE-STRENGTH-CONTINUATION-20260507 --mechanism-class cross_asset_relative_strength_continuation --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --event-file registry\strategies\research_decisions\20260507T105000Z_cross_asset_relative_strength_continuation_events\events.csv --event-source-json registry\strategies\research_decisions\20260507T105000Z_cross_asset_relative_strength_continuation_events\local_events.json --hold-candles 36 --all-in-cost-bps 12 --min-sample-count 50 --min-profitable-windows-ratio 0.5 --min-calendar-window-count 3 --min-profitable-calendar-windows-ratio 0.75 --min-data-span-days 365 --falsification-id 20260507T105500Z_cross_asset_relative_strength_continuation_local_falsification --created-at 2026-05-07T10:55:00+00:00 --reviewer-note "Fixed BTC/ETH relative-strength continuation pre-proposal falsification; no threshold tuning, proposal generation, strategy codegen, backtest, trading, process control, or parameter search."
+  ```
+
+  Result: command exited `1` as expected because the artifact failed gates.
+  `sample_count=733`, `data_span_days=857.270833`,
+  `expected_edge_bps=-5.614326`, `all_in_cost_bps=12.0`,
+  `net_edge_bps=-17.614326`, `win_rate=0.4693`,
+  `profitable_windows_ratio=0.0`, `calendar_window_count=10`,
+  `profitable_calendar_windows_ratio=0.0`, `blocker_count=3`. Artifact:
+  `registry\strategies\research_decisions\20260507T105500Z_cross_asset_relative_strength_continuation_local_falsification\local_falsification.json`.
+- [x] Refreshed current failure memory, causal map, and research-selection
+  response template with the new rejection. Current synthesis:
+  `registry\strategies\synthesis\20260507T111500Z_all_candidates_with_cross_asset_relative_strength_rejection\candidate_failure_synthesis.json`
+  with `candidate_count=32`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, `requires_new_thesis_id=true`, and
+  `local_falsification_rejection_count=12`. Current map:
+  `registry\strategies\failure_maps\20260507T112000Z_all_candidates_with_cross_asset_relative_strength_rejection_causal_map\causal_failure_map.json`
+  with `candidate_count=32`, `category_count=8`, and
+  `requires_research_decision_before_proposal=true`. Current template:
+  `registry\strategies\research_decisions\20260507T112500Z_cross_asset_relative_strength_rejection_research_selection_response_template\research_selection_response_template.json`
+  with 5 required causal responses, 30 required research-question responses,
+  12 validated local rejection contexts, and `blocker_count=0`.
+- [x] Verified artifact hygiene: `git check-ignore -v` confirms the event
+  spec, events, local falsification, synthesis, causal map, and template
+  artifacts are ignored by the intended `registry/strategies/**` rules.
+- [x] Verification: `git diff --check` passed with existing CRLF
+  working-copy warnings only. Post-script cleanup removed 2 workspace-local
+  `.pytest_cache` / `__pycache__` directories outside `.venv`, and a follow-up
+  count returned `cache_dir_count=0`.
+- [ ] Remaining limitation: this is another local rejection, not a viable
+  candidate. Do not proposal/codegen or retune this mechanism; future research
+  must avoid cross-asset relative-strength continuation as a disguised BTC/ETH
+  momentum parameter retry.
+
+### Follow-up on 2026-05-07 JST for full Bot Factory test sweep
+
+- [x] Ran the full Bot Factory test module after the informative-OHLCV
+  local-event implementation and the BTC/ETH relative-strength local
+  rejection:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Result: command exited `0` and reached `[100%]`. The only output issues were
+  existing `PerformanceWarning` warnings from
+  `freqtrade_ext\bot_factory\signal_diagnostics.py` about fragmented pandas
+  DataFrame inserts.
+- [x] Post-test cleanup removed 33 workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`. Final hygiene check:
+  `git diff --check` passed with existing CRLF working-copy warnings only, and
+  a follow-up count returned `cache_dir_count=0`.
+- [ ] Remaining limitation: this verifies the Bot Factory test module after
+  the latest local-event and local-rejection work, but it is not evidence of a
+  profitable, robust, or paper-ready candidate.
+
+### Follow-up on 2026-05-07 JST for signal diagnostics warning cleanup
+
+- [x] Reduced current Bot Factory pytest noise from
+  `freqtrade_ext\bot_factory\signal_diagnostics.py` by defragmenting the
+  diagnostics DataFrame before the broad cross-asset, higher-moment, and
+  liquidity feature block is appended. This keeps feature semantics unchanged
+  and only resets pandas block layout before many diagnostic columns are added.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\signal_diagnostics.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "signal_diagnostics"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  ```
+
+  Results: compile passed; focused `signal_diagnostics` pytest reached
+  `[100%]` with no warning summary; full Bot Factory pytest reached `[100%]`
+  with no warning summary.
+- [x] Post-test cleanup removed 33 workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`.
+- [ ] Remaining limitation: this improves verification clarity only. It does
+  not create a profitable, robust, or paper-ready candidate.
+
+### Follow-up on 2026-05-07 JST for cross-asset relative-strength repeat guard
+
+- [x] Re-ran the same BTC/ETH relative-strength local event spec against the
+  refreshed synthesis to confirm the anti-repeat guard blocks the rejected
+  thesis and mechanism:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-path user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --event-spec-json registry\strategies\research_decisions\20260507T105000Z_cross_asset_relative_strength_continuation_event_spec\event_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T111500Z_all_candidates_with_cross_asset_relative_strength_rejection\candidate_failure_synthesis.json --event-id 20260507T113000Z_cross_asset_relative_strength_repeat_guard --created-at 2026-05-07T11:30:00+00:00 --reviewer-note "Diagnostic repeat guard check: the same rejected BTC/ETH relative-strength thesis should be blocked by the refreshed failure synthesis; no proposal, codegen, backtest, trading, or parameter search."
+  ```
+
+  Result: command exited `1` as expected. Artifact
+  `registry\strategies\research_decisions\20260507T113000Z_cross_asset_relative_strength_repeat_guard\local_events.json`
+  has `status=blocked`, `event_count=0`, and `blocker_count=3`.
+- [x] Confirmed the blocking reasons: `event_spec_thesis_not_in_failure_synthesis`
+  matched `TH-CROSS-ASSET-RELATIVE-STRENGTH-CONTINUATION-20260507`, and
+  `event_spec_mechanism_not_in_failure_synthesis` matched
+  `cross_asset_relative_strength_continuation`. `events_generated` also failed
+  because the guard prevented event creation.
+- [x] Verified artifact hygiene: `git check-ignore -v` confirms the
+  repeat-guard `local_events.json` and `events.csv` are ignored by
+  `registry/strategies/research_decisions/**`.
+- [x] Verification: `git diff --check` passed with existing CRLF
+  working-copy warnings only. Post-script cleanup removed 2 workspace-local
+  `.pytest_cache` / `__pycache__` directories outside `.venv`, and a follow-up
+  count returned `cache_dir_count=0`.
+- [ ] Remaining limitation: this proves the repeat guard for one rejected
+  thesis/mechanism, but it is not a new thesis and not evidence of
+  profitability.
+
+### Follow-up on 2026-05-07 JST for worktree cleanup ledger refresh
+
+- [x] Rechecked the worktree after the informative-OHLCV implementation,
+  BTC/ETH relative-strength rejection, repeat-guard check, and warning cleanup:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff --stat
+  git ls-files --others --exclude-standard
+  git ls-files --others --ignored --exclude-standard
+  ```
+
+  Results: 50 visible paths: 21 modified tracked files, one tracked deletion,
+  and 28 non-ignored untracked review candidates. Current diff stat is
+  `22 files changed, 34090 insertions(+), 2678 deletions(-)`.
+- [x] Non-ignored untracked categories are unchanged: one audit doc, 11 modules
+  under `freqtrade_ext\bot_factory\`, 15 `scripts\bot_factory_*.py`
+  entrypoints, and `data\market_structure\.gitkeep`.
+- [x] Ignored inventory is now `ignored_total=25480`, `.venv=21603`, and
+  `ignored_non_venv=3877`. Newly generated cross-asset event, falsification,
+  synthesis, causal-map, template, and repeat-guard artifacts are local
+  runtime evidence and should not be added to Git.
+- [ ] Remaining cleanup decision is unchanged:
+  `docs\BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md` is deleted in the worktree. Do not
+  stage that deletion or restore it without an explicit owner decision.
+
+### Follow-up on 2026-05-07 JST for worktree cleanup classification
+
+- [x] Reconciled the large worktree diff against the TODO source of truth and
+  next-agent prompt:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff --stat
+  git ls-files --others --exclude-standard
+  git ls-files --others --ignored --exclude-standard
+  Select-String -Path docs\*.md -Pattern "BOT_FACTORY_GOAL_COMMAND_RUNBOOK|GOAL_COMMAND_RUNBOOK" -CaseSensitive
+  ```
+
+  Results: 50 visible paths remain: 21 modified tracked files, one tracked
+  deletion, and 28 non-ignored untracked review candidates. Current diff stat
+  is `22 files changed, 34116 insertions(+), 2678 deletions(-)`.
+- [x] Classified the 28 non-ignored untracked files as review candidates rather
+  than disposable runtime artifacts: one audit doc, one market-structure
+  `.gitkeep`, 11 Bot Factory modules, and 15 Bot Factory scripts.
+- [x] Confirmed ignored inventory should remain out of Git:
+  `ignored_total=25480`, `.venv=21603`, and `ignored_non_venv=3877`. The main
+  non-venv ignored groups are `data\walk_forward`, `registry\strategies`,
+  `data\backtests`, `data\freqai_training`, and `data\freqai`, all of which
+  are local runtime/evaluation evidence covered by the updated `.gitignore`.
+- [x] Confirmed no workspace-local `.pytest_cache` or `__pycache__` directories
+  remain outside `.venv` at this checkpoint (`cache_dir_count=0`).
+- [ ] Remaining cleanup decision: the tracked deletion of
+  `docs\BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md` is not safe to accept silently.
+  References still exist in `docs\BOT_FACTORY_GOAL_AUDIT.md`,
+  `docs\BOT_FACTORY_MVP_TODO.md`, and
+  `docs\BOT_FACTORY_STRATEGY_GENERATION_NEXT_AGENT_PROMPT.md`. Either keep the
+  deletion and migrate/accept those references intentionally, or restore the
+  file. Do not decide implicitly.
+- [ ] Remaining limitation: cleanup classification does not make any candidate
+  profitable or paper-ready. The next Bot Factory progress path still requires
+  a materially new research-backed thesis that passes local falsification
+  before proposal generation, strategy codegen, backtesting, or promotion.
+
+### Follow-up on 2026-05-07 JST for source-diff verification sweep
+
+- [x] Verified the large Bot Factory Python surface, including tracked and
+  untracked Bot Factory modules, Bot Factory CLI scripts, and the focused test
+  module:
+
+  ```powershell
+  $files = @(Get-ChildItem -Path freqtrade_ext\bot_factory -Filter *.py -File | ForEach-Object { $_.FullName }) + @(Get-ChildItem -Path scripts -Filter bot_factory_*.py -File | ForEach-Object { $_.FullName }) + @((Resolve-Path tests\test_bot_factory.py).Path); .\.venv\Scripts\python.exe -m py_compile @files
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder or local_falsification or candidate_failure_synthesis or research_selection_template or signal_diagnostics"
+  git diff --check
+  ```
+
+  Results: py_compile exited `0`; focused pytest reached `[100%]`; and
+  `git diff --check` passed with only existing LF-to-CRLF working-copy
+  warnings.
+- [x] Removed generated cache directories after verification: 3 after
+  py_compile and 32 after focused pytest. Final cache check returned
+  `cache_dir_count=0`.
+- [ ] Remaining limitation: this is source-diff hygiene, not profitability.
+  It verifies the current review-candidate Python surface more strongly, but
+  the factory still has `paper_ready_count=0` and needs a materially new
+  research-backed thesis with passing local falsification before proposal or
+  codegen should continue.
+
+### Follow-up on 2026-05-07 JST for supported variant coverage
+
+- [x] Checked whether the next safe step could reuse an existing supported
+  Strategy Code Generator variant. Current source exposes 28 supported
+  `ALLOWED_STRATEGY_LOGIC_VARIANTS`, while the latest synthesis records 40
+  tried hypothesis families across 32 candidates/local screens.
+- [x] Confirmed latest synthesis status:
+
+  ```powershell
+  $s = Get-Content registry\strategies\synthesis\20260507T111500Z_all_candidates_with_cross_asset_relative_strength_rejection\candidate_failure_synthesis.json -Raw | ConvertFrom-Json; $summary = $s.aggregate_failure_summary; "candidate_count=$($s.candidate_count)"; "paper_ready_count=$($summary.paper_ready_count)"; "hypothesis_families_tried_count=$(@($summary.hypothesis_families_tried).Count)"; "supported_strategy_logic_variant_count=28"; "blocked_next_actions=$($summary.blocked_next_actions -join ', ')"
+  ```
+
+  Results: `candidate_count=32`, `paper_ready_count=0`,
+  `hypothesis_families_tried_count=40`, and
+  `supported_strategy_logic_variant_count=28`.
+- [x] Rechecked cross-asset options before choosing any next thesis. BTC/ETH
+  lead-lag, cointegration spread, correlation recovery, and the later
+  relative-strength continuation local screen are all already failed or
+  locally rejected. Do not reuse them as threshold changes.
+- [ ] Remaining limitation: the current supported variant inventory is not a
+  source of new positive evidence. The next valid Strategy Generation step
+  must be a materially new, research-backed mechanism with a passing
+  pre-proposal local falsification artifact against the latest 32-candidate
+  failure memory before proposal/codegen should continue.
+
+### Follow-up on 2026-05-07 JST for order-book snapshot quality gate
+
+- [x] Added a local quality gate for timestamped order-book snapshot parquet
+  files without starting any collector, websocket, paper process, trade
+  process, or exchange-facing order endpoint. Bybit REST orderbook remains
+  treated as a current snapshot endpoint, not historical data; all-liquidation
+  remains a public realtime websocket topic, not a historical REST input.
+- [x] Implementation:
+  - `freqtrade_ext\bot_factory\data_quality.py` now exposes
+    `check_order_book_parquet()` and
+    `default_order_book_quality_output_path()`.
+  - `scripts\bot_factory_check_order_book.py` checks normalized top-of-book
+    snapshot parquet files with `date`, best bid, best ask, bid size, and ask
+    size columns, plus optional `depth_imbalance`.
+  - `freqtrade_ext\bot_factory\structural_data_capabilities.py` and
+    `scripts\bot_factory_report_structural_data_capabilities.py` now accept
+    `--order-book-quality-report-json`.
+- [x] Preserved the initial safety gate: a passing order-book quality report
+  removed `order_book` from `blocked_without_new_data`, but did not permit
+  codegen. The follow-up below adds local-event/Edge Discovery features, so
+  order-book snapshots may now become `local_research_usable` when local data
+  and quality reports pass; they still stay in `must_not_codegen`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\structural_data_capabilities.py scripts\bot_factory_check_order_book.py scripts\bot_factory_report_structural_data_capabilities.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "order_book_quality or structural_data_capability_report"
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_order_book.py --help
+  git diff --check
+  ```
+
+  Results: compile passed; focused pytest passed 6 tests and reached
+  `[100%]`; the new CLI help rendered; `git diff --check` passed with only
+  existing LF-to-CRLF working-copy warnings.
+- [x] Post-verification cleanup removed 33 workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`.
+- [ ] Remaining limitation for this initial increment: this was a data-quality
+  gate only. It did not supply local historical order-book data, did not permit
+  order-book strategy codegen, and did not create a profitable or paper-ready
+  candidate. The follow-up below adds local research features only.
+
+### Follow-up on 2026-05-07 JST for worktree cleanup inventory
+
+- [x] Rechecked the non-destructive cleanup position with:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git diff --name-status
+  git ls-files --others --exclude-standard
+  git ls-files --others --ignored --exclude-standard
+  git check-ignore -v data/market_structure/bybit/futures/BTC_USDT_USDT-1h-open_interest.parquet data/market_structure/bybit/futures/BTC_USDT_USDT-1h-long_short_ratio.parquet registry/strategies/research_decisions/example.json data/backtests/example.json user_data/data/bybit/futures/example.parquet
+  Select-String -Path docs\*.md -Pattern "BOT_FACTORY_GOAL_COMMAND_RUNBOOK" -CaseSensitive
+  ```
+
+- [x] Current non-ignored untracked files are source or source-like review
+  candidates, not disposable runtime artifacts: `docs/BOT_FACTORY_GOAL_AUDIT.md`,
+  `data/market_structure/.gitkeep`, 12 new `freqtrade_ext/bot_factory/*.py`
+  modules, and 17 new `scripts/bot_factory_*.py` CLIs.
+- [x] Current ignored runtime inventory remains outside Git management:
+  `ignored_total=25480`, grouped as `.venv=21603`, `data=2433`,
+  `registry=1386`, `user_data=56`, `.vscode=1`, and `docker=1`.
+- [x] Representative runtime paths are ignored by the intended rules:
+  `data/market_structure/**`, `registry/strategies/research_decisions/**`,
+  `data/backtests/**`, and `user_data/*`.
+- [ ] Owner decision still required before cleanup/commit:
+  `docs/BOT_FACTORY_GOAL_COMMAND_RUNBOOK.md` is deleted in the worktree and
+  still referenced from the audit/TODO/handoff docs. Do not stage the deletion,
+  restore it, or migrate references without an explicit decision.
+- [ ] Remaining limitation: this is Git hygiene only. It does not create a
+  profitable or paper-ready candidate, and it does not authorize proposal,
+  codegen, backtest, paper, dry-run, live trading, exchange order placement,
+  shorting, leverage above `1.0`, or process control.
+
+### Follow-up on 2026-05-07 JST for edge-discovery scope schema
+
+- [x] Added hypothesis-scope metadata to edge discovery artifacts:
+  `hypothesis_scope`, `instrument_universe`, and `market_structure_domains`.
+- [x] Added schema checks so `cross_asset` and `market_neutral` edge specs
+  require at least two instruments in `instrument_universe`.
+- [x] Report output now shows the scope, instrument universe, and market
+  structure domains alongside event counts and horizon results.
+- [x] Focused verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery"
+  ```
+
+  Results: compile passed; edge discovery focused pytest passed 9 tests and
+  reached `[100%]`.
+- [x] Final verification also ran:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Result: full `tests/test_bot_factory.py` passed and reached `[100%]`;
+  `git diff --check` passed with only existing LF-to-CRLF working-copy
+  warnings.
+- [x] Post-verification cleanup removed 33 workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`; follow-up cache count was `0`.
+- [ ] Remaining limitation: this makes edge artifacts capable of distinguishing
+  single-asset, cross-asset, market-neutral, funding/basis, and microstructure
+  research surfaces. It does not create a profitable or paper-ready candidate.
+
+### Follow-up on 2026-05-07 JST for BTC/ETH relative-value edge rejection
+
+- [x] Ran one fixed, non-grid Edge Discovery probe instead of generating
+  another strategy candidate. The thesis was
+  `TH-BTC-ETH-RELATIVE-VALUE-REVERSION-20260507` /
+  `btc_eth_relative_value_reversion`: after a closed 4h ETH upside impulse,
+  BTC materially underperforms ETH and may mean-revert/catch up over short
+  horizons.
+- [x] Edge spec artifact:
+  `registry\strategies\research_decisions\20260507T210000JST_btc_eth_relative_value_reversion_edge\edge_spec.json`.
+  It used `hypothesis_scope=cross_asset`, `instrument_universe=[BTC/USDT:USDT,
+  ETH/USDT:USDT]`, `market_structure_domains=[ohlcv, cross_asset]`, fixed
+  conditions `informative_return_bps(48) >= 50.0` and
+  `relative_return_bps(48) <= -100.0`, horizons `12`, `36`, and `72`, and
+  `all_in_cost_bps=12.0`.
+- [x] Command:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_edge_discovery.py --ohlcv-path user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --informative-ohlcv-path user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --edge-spec-json registry\strategies\research_decisions\20260507T210000JST_btc_eth_relative_value_reversion_edge\edge_spec.json --failure-synthesis-json registry\strategies\synthesis\20260507T111500Z_all_candidates_with_cross_asset_relative_strength_rejection\candidate_failure_synthesis.json --edge-discovery-id 20260507T210000JST_btc_eth_relative_value_reversion_edge --created-at 2026-05-07T21:00:00+09:00 --reviewer-note "Fixed cross-asset relative value reversion check after broad candidate failure synthesis; no threshold grid or strategy code generation."
+  ```
+
+  Result: command exited `1` because the edge failed. Artifacts were written to
+  `registry\strategies\research_decisions\20260507T210000JST_btc_eth_relative_value_reversion_edge\edge_discovery.json`
+  and `edge_discovery_report.md`. The artifact has `status=failed`,
+  `event_count=937`, `data_span_days=857.270833`, `passing_horizon_count=0`,
+  `proposal_generation_allowed=false`, and `strategy_codegen_allowed=false`.
+  Best horizon was `72` candles with `sample_count=937`,
+  `net_edge_bps=-11.699275`, `profitable_windows_ratio=0.25`, and
+  `profitable_calendar_windows_ratio=0.2`.
+- [x] Ingested the failed edge artifact into rejection memory:
+
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\bot_factory_synthesize_candidate_failures.py --ranking-json registry\strategies\candidates\rankings\20260507T085500Z_all_candidates_with_crowding_unwind_rejection_ranking\candidate_ranking.json --edge-discovery-json registry\strategies\research_decisions\20260507T210000JST_btc_eth_relative_value_reversion_edge\edge_discovery.json --synthesis-id 20260507T211000JST_all_candidates_with_btc_eth_relative_value_reversion_edge_rejection --reviewer-note "Ingest failed fixed Edge Discovery for BTC/ETH relative value reversion; blocks repeating this edge mechanism without new evidence."
+  ```
+
+  Result: completed with `candidate_count=32`, `paper_ready_count=0`,
+  `parameter_only_retry_allowed=false`, `requires_new_thesis_id=true`, and
+  `edge_discovery_rejection_count=1`. New synthesis artifact:
+  `registry\strategies\synthesis\20260507T211000JST_all_candidates_with_btc_eth_relative_value_reversion_edge_rejection\candidate_failure_synthesis.json`.
+- [x] Hygiene verification:
+
+  ```powershell
+  git diff --check
+  git check-ignore -v registry\strategies\research_decisions\20260507T210000JST_btc_eth_relative_value_reversion_edge\edge_spec.json registry\strategies\research_decisions\20260507T210000JST_btc_eth_relative_value_reversion_edge\edge_discovery.json registry\strategies\synthesis\20260507T211000JST_all_candidates_with_btc_eth_relative_value_reversion_edge_rejection\candidate_failure_synthesis.json
+  git status --short --untracked-files=all
+  ```
+
+  Result: `git diff --check` passed with only existing LF-to-CRLF working-copy
+  warnings; `git check-ignore -v` confirmed the new Edge Discovery and
+  synthesis artifacts are ignored by `registry/strategies/research_decisions/**`
+  and `registry/strategies/synthesis/**`. Post-command cleanup removed 2
+  workspace-local `__pycache__` directories outside `.venv`; follow-up cache
+  count was `0`.
+- [ ] Remaining limitation: this confirms that the BTC/ETH relative-value
+  reversion probe also lacks post-cost edge on available local data. It is not
+  a profitable, robust, or paper-ready candidate, and it must not be retuned or
+  promoted by threshold changes. Future progress needs a materially different
+  source of edge or new local historical structural data before proposal/codegen.
+
+### Follow-up on 2026-05-07 JST for liquidation quality gate
+
+- [x] Added a local quality gate for user-supplied historical liquidation
+  parquet files without starting any collector, websocket, paper process, trade
+  process, or exchange-facing order endpoint. Bybit all-liquidation remains a
+  public realtime websocket stream, not a historical REST download.
+- [x] Implementation:
+  - `freqtrade_ext\bot_factory\data_quality.py` now exposes
+    `check_liquidation_parquet()` and
+    `default_liquidation_quality_output_path()`.
+  - `scripts\bot_factory_check_liquidation.py` checks historical liquidation
+    parquet files with normalized or Bybit-style columns: timestamp
+    (`date`/`T`/`timestamp`), side (`side`/`S`), size (`size`/`quantity`/`qty`/`v`),
+    and price (`price`/`p`/`bankruptcy_price`).
+  - `freqtrade_ext\bot_factory\structural_data_capabilities.py` and
+    `scripts\bot_factory_report_structural_data_capabilities.py` now accept
+    `--liquidation-quality-report-json`.
+- [x] Preserved the initial safety gate: a passing liquidation quality report
+  removed `liquidation` from `blocked_without_new_data`, but did not permit
+  codegen. The follow-up below adds local-event/Edge Discovery features, so
+  liquidation may now become `local_research_usable` when local data and
+  quality reports pass; it still stays in `must_not_codegen`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\structural_data_capabilities.py scripts\bot_factory_check_liquidation.py scripts\bot_factory_report_structural_data_capabilities.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_check_liquidation.py --help
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "liquidation_quality or structural_data_capability_report"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "structural_data_capability or structural_data_quality or order_book_quality or liquidation_quality"
+  .\.venv\Scripts\python.exe scripts\bot_factory_report_structural_data_capabilities.py --help
+  git diff --check
+  ```
+
+  Results: compile passed; the new liquidation CLI help rendered; focused
+  liquidation/structural capability pytest passed 7 tests and reached
+  `[100%]`; broader structural-data gate pytest passed 9 tests and reached
+  `[100%]`; structural capability CLI help rendered with
+  `--liquidation-quality-report-json`; `git diff --check` passed with only
+  existing LF-to-CRLF working-copy warnings. Post-test cleanup removed 33
+  workspace-local `.pytest_cache` / `__pycache__` directories outside `.venv`;
+  follow-up cache count was `0`.
+- [ ] Remaining limitation: this enables vetting historical liquidation data
+  if such data is supplied locally, but it does not collect liquidation data,
+  does not permit liquidation strategy codegen, and does not create a
+  profitable or paper-ready candidate.
+
+### Follow-up on 2026-05-07 JST for liquidation local-event and Edge Discovery features
+
+- [x] Added closed-context liquidation features for local events and Edge
+  Discovery without starting any collector, websocket, paper process, trade
+  process, backtest, or exchange-facing order endpoint.
+- [x] Implementation:
+  - `freqtrade_ext\bot_factory\local_events.py` now loads user-supplied
+    historical liquidation parquet/CSV through `--liquidation-path`, accepts
+    normalized or Bybit-style columns, and aggregates event-stream rows into
+    the current closed base candle.
+  - Supported liquidation condition features:
+    `liquidation_count`, `liquidation_buy_notional`,
+    `liquidation_sell_notional`, `liquidation_total_notional`,
+    `liquidation_net_notional`, `liquidation_imbalance`, and
+    `liquidation_total_notional_zscore`.
+  - `freqtrade_ext\bot_factory\edge_discovery.py` and
+    `scripts\bot_factory_build_edge_discovery.py` now accept
+    `--liquidation-path`, so fixed theory Edge Discovery specs can use these
+    features before proposal/codegen.
+  - `freqtrade_ext\bot_factory\structural_data_capabilities.py` now marks
+    liquidation as `local_event_supported=true`; if local data and quality
+    reports pass, `liquidation` can enter `local_research_usable`, while
+    remaining in `must_not_codegen`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\data_quality.py freqtrade_ext\bot_factory\structural_data_capabilities.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\edge_discovery.py scripts\bot_factory_build_local_events.py scripts\bot_factory_build_edge_discovery.py scripts\bot_factory_report_structural_data_capabilities.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --help
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_edge_discovery.py --help
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "liquidation_context or liquidation_quality or edge_discovery_supports_liquidation or structural_data_capability_report_accepts_liquidation or local_event_cli_maps_informative_ohlcv_path or edge_discovery_cli_maps_context"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder_supports or local_event_cli_maps or edge_discovery or structural_data_capability or structural_data_quality or liquidation_quality"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; local-event and Edge Discovery CLI help rendered
+  with `--liquidation-path`; focused liquidation context tests passed 7 tests;
+  broader local-event/edge/structural tests passed 24 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with only existing LF-to-CRLF working-copy warnings. Post-test cleanup
+  removed 33 workspace-local `.pytest_cache` / `__pycache__` directories
+  outside `.venv`; follow-up cache count was `0`.
+- [ ] Remaining limitation: this makes liquidation usable for local research
+  and Edge Discovery only when historical liquidation data is supplied locally
+  and quality-checked. It does not collect liquidation history, does not
+  generate liquidation strategy code, and does not create a profitable or
+  paper-ready candidate.
+
+### Follow-up on 2026-05-07 JST for order-book local-event and Edge Discovery features
+
+- [x] Added closed-context order-book snapshot features for local events and
+  Edge Discovery without starting any collector, websocket, paper process,
+  trade process, backtest, or exchange-facing order endpoint.
+- [x] Implementation:
+  - `freqtrade_ext\bot_factory\local_events.py` now loads user-supplied
+    historical order-book snapshot parquet/CSV through `--order-book-path`,
+    validates top-of-book prices/sizes during load, aggregates snapshots into
+    the current closed base candle, and exposes order-book condition features.
+  - Supported order-book condition features:
+    `order_book_bid_size`, `order_book_ask_size`,
+    `order_book_depth_imbalance`, `order_book_depth_imbalance_zscore`,
+    `order_book_mid_price_gap_bps`, `order_book_spread_bps`, and
+    `order_book_spread_bps_zscore`.
+  - `freqtrade_ext\bot_factory\edge_discovery.py`,
+    `scripts\bot_factory_build_local_events.py`, and
+    `scripts\bot_factory_build_edge_discovery.py` now accept
+    `--order-book-path`, so fixed theory Edge Discovery specs can use these
+    features before proposal/codegen.
+  - `freqtrade_ext\bot_factory\structural_data_capabilities.py` now marks
+    order-book snapshots as `local_event_supported=true`; if local data and
+    quality reports pass, `order_book` can enter `local_research_usable`,
+    while remaining in `must_not_codegen`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\structural_data_capabilities.py scripts\bot_factory_build_local_events.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --help
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_edge_discovery.py --help
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "order_book_context or order_book_quality or edge_discovery_supports_order_book or structural_data_capability_report_accepts_order_book or local_event_cli_maps_informative_ohlcv_path or edge_discovery_cli_maps_context"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder_supports or local_event_cli_maps or edge_discovery or structural_data_capability or structural_data_quality or order_book_quality"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; local-event and Edge Discovery CLI help rendered
+  with `--order-book-path`; focused order-book context tests passed 7 tests;
+  broader local-event/edge/structural tests passed 26 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with only existing LF-to-CRLF working-copy warnings. Post-test cleanup
+  removed 33 workspace-local `.pytest_cache` / `__pycache__` directories
+  outside `.venv`; follow-up cache count was `0`.
+- [ ] Remaining limitation: this makes order-book snapshots usable for local
+  research and Edge Discovery only when historical timestamped snapshots are
+  supplied locally and quality-checked. It does not collect order-book history,
+  does not permit order-book strategy codegen, and does not create a profitable
+  or paper-ready candidate.
+
+### Follow-up on 2026-05-07 JST for structural local-event quality enforcement
+
+- [x] Closed the safety-boundary gap between the structural capability report
+  and local research runners: `liquidation_*` and `order_book_*` event/edge
+  features now require a supplied passing quality report JSON, not only a
+  parseable local data file.
+- [x] Implementation:
+  - `freqtrade_ext\bot_factory\local_events.py` now accepts
+    `liquidation_quality_report_paths` and `order_book_quality_report_paths`,
+    records both report summaries, and blocks required liquidation/order-book
+    contexts with `*_quality_report_passed_when_required` when no report is
+    supplied, a report is unparseable, or any supplied report is not `ok=true`.
+  - `freqtrade_ext\bot_factory\edge_discovery.py` now applies the same quality
+    gate before event extraction and horizon scoring.
+  - `scripts\bot_factory_build_local_events.py` now accepts
+    `--liquidation-quality-report-json` and
+    `--order-book-quality-report-json`.
+  - `scripts\bot_factory_build_edge_discovery.py` now accepts
+    `--liquidation-quality-report-json` and treats both liquidation and
+    order-book quality reports as required when those feature families are
+    referenced.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\edge_discovery.py scripts\bot_factory_build_local_events.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --help
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_edge_discovery.py --help
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "order_book_context or liquidation_context or quality_report_passed_when_required or local_event_cli_maps_informative_ohlcv_path or edge_discovery_cli_maps_context"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder_supports or local_event_cli_maps or edge_discovery or structural_data_capability or structural_data_quality or order_book_quality or liquidation_quality"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; local-event and Edge Discovery CLI help rendered
+  with the new quality-report arguments; focused quality-gate tests passed
+  8 tests; broader local-event/edge/structural tests passed 29 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with only existing LF-to-CRLF working-copy warnings. Post-test cleanup
+  removed 33 workspace-local `.pytest_cache` / `__pycache__` directories
+  outside `.venv`; follow-up cache count was `0`.
+- [ ] Remaining limitation: this is a safety gate only. It does not provide
+  historical liquidation/order-book data, does not implement structural
+  strategy codegen for these inputs, and does not create a profitable or
+  paper-ready candidate.
+
+### Follow-up on 2026-05-07 JST for positioning local-event quality enforcement
+
+- [x] Extended the structural local-research quality gate to positioning data:
+  `open_interest*` and long/short-ratio event/edge features now require a
+  supplied passing quality report JSON, not only a parseable local parquet/CSV.
+- [x] Implementation:
+  - `freqtrade_ext\bot_factory\local_events.py` now accepts
+    `open_interest_quality_report_paths` and
+    `long_short_ratio_quality_report_paths`, records both report summaries, and
+    blocks required open-interest/long-short contexts with
+    `*_quality_report_passed_when_required` when no report is supplied, a report
+    is unparseable, or any supplied report is not `ok=true`.
+  - `freqtrade_ext\bot_factory\edge_discovery.py` applies the same quality gate
+    before event extraction and post-cost horizon scoring.
+  - `scripts\bot_factory_build_local_events.py` and
+    `scripts\bot_factory_build_edge_discovery.py` now expose
+    `--open-interest-quality-report-json` and
+    `--long-short-ratio-quality-report-json`.
+  - `tests\test_bot_factory.py` now covers successful local-event use with
+    quality reports, blocking without open-interest/long-short reports, and CLI
+    path mapping for both runners.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\edge_discovery.py scripts\bot_factory_build_local_events.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "open_interest_context or long_short_ratio_context or positioning_context_without_quality_reports or local_event_cli_maps_informative_ohlcv_path or edge_discovery_cli_maps_context"
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_local_events.py --help
+  .\.venv\Scripts\python.exe scripts\bot_factory_build_edge_discovery.py --help
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "local_event_builder_supports or local_event_builder_blocks or edge_discovery or structural_data_capability or structural_data_quality or open_interest_quality or long_short_ratio_quality"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused positioning quality-gate tests passed
+  7 tests; local-event and Edge Discovery CLI help rendered with the new
+  quality-report arguments; broader local-event/edge/structural tests passed
+  35 tests; full `tests\test_bot_factory.py` passed and reached `[100%]`;
+  `git diff --check` passed with only existing LF-to-CRLF working-copy
+  warnings. Post-test cleanup removed workspace-local `.pytest_cache` /
+  `__pycache__` directories outside `.venv`; follow-up cache count was `0`.
+- [ ] Remaining limitation: this is still safety plumbing, not positive market
+  evidence. It does not create a new thesis, run a new Edge Discovery probe,
+  generate a profitable strategy, or make any candidate paper-ready.
+
+### Follow-up on 2026-05-09 JST for research-first edge gates
+
+- [x] Branch decision completed before implementation:
+  `docs\BOT_FACTORY_BRANCH_DECISION.md` compares `develop` with
+  `codex/bot-factory-candidate-factory-completion` and selects a stacked PR
+  target of `codex/bot-factory-candidate-factory-completion`.
+- [x] Added best / normal / stress cost-scenario modeling:
+  `freqtrade_ext\bot_factory\cost_model.py` defines explicit scenario fields,
+  pair/timeframe/order-type/liquidity/volatility override matching, and
+  default scenarios where `normal` remains compatible with legacy
+  `all_in_cost_bps=12.0`.
+- [x] Extended Edge Discovery to report event-level post-cost metrics under
+  Freqtrade-aligned next-candle-open entry semantics:
+  `freqtrade_ext\bot_factory\edge_discovery.py` now emits
+  `event_level_post_cost_edge_report`, `research_gate`,
+  `candidate_generation_allowed`, and `candidate_generation_result`.
+- [x] Added random-entry, shuffled-signal, and shifted-signal negative controls
+  to Edge Discovery horizon scoring. A thesis that does not beat controls is
+  reported as `no candidate generated`.
+- [x] Kept direct strategy code generation blocked from Edge Discovery alone:
+  `strategy_codegen_allowed=false` remains unchanged, and candidate generation
+  requires the new research gate to pass.
+- [x] Added docs:
+  - `docs\BOT_FACTORY_COST_MODEL_AUDIT.md`
+  - `docs\BOT_FACTORY_EDGE_DISCOVERY_REPORT.md`
+  - `docs\BOT_FACTORY_NEXT_RESEARCH_PLAN.md`
+- [x] Verification so far:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_edge_discovery.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe -m pytest tests -q
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  git diff --check
+  ```
+
+  Results: compile passed; initial Edge Discovery focused test found two
+  compatibility issues, which were fixed; focused cost/gate tests passed
+  7 tests; full Edge Discovery focused tests passed 16 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; final compile
+  passed; `git diff --check` passed with the existing LF-to-CRLF warning for
+  this doc. After final candidate-generation gate tightening, the combined
+  focused selector passed 20 tests and full `tests\test_bot_factory.py` passed
+  again. Full `tests -q` was attempted but stopped during collection because
+  the local venv is missing `freqtrade_client` and `optuna`.
+- [ ] Remaining limitation: this implementation adds research-first gates and
+  reports only. It does not evaluate a new real thesis, does not generate a
+  strategy candidate, and does not make any candidate paper-ready. Candidate
+  generation result for this increment is `no candidate generated`.

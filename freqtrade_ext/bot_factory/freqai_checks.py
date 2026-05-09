@@ -188,6 +188,7 @@ def validate_freqai_strategy_file(path: Path) -> FreqAIValidationReport:
 
     visitor = _FreqAIValidationVisitor(path)
     visitor.visit(tree)
+    visitor.finalize()
     ok = not any(finding.severity == "error" for finding in visitor.findings)
     return FreqAIValidationReport(
         ok=ok,
@@ -251,14 +252,20 @@ class _FreqAIValidationVisitor(ast.NodeVisitor):
         self.feature_columns: list[FreqAIColumnReference] = []
         self.target_columns: list[FreqAIColumnReference] = []
         self.allowed_target_shift_lines: list[dict[str, Any]] = []
+        self.freqai_start_lines: list[int] = []
+        self.freqai_method_lines: list[int] = []
         self._function_stack: list[str] = []
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
+        if node.name == "set_freqai_targets" or node.name.startswith("feature_engineering_"):
+            self.freqai_method_lines.append(getattr(node, "lineno", 0))
         self._function_stack.append(node.name)
         self.generic_visit(node)
         self._function_stack.pop()
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> Any:
+        if node.name == "set_freqai_targets" or node.name.startswith("feature_engineering_"):
+            self.freqai_method_lines.append(getattr(node, "lineno", 0))
         self._function_stack.append(node.name)
         self.generic_visit(node)
         self._function_stack.pop()
@@ -279,7 +286,26 @@ class _FreqAIValidationVisitor(ast.NodeVisitor):
     def visit_Call(self, node: ast.Call) -> Any:
         if self._attr_name(node.func) == "shift" and self._has_negative_shift_arg(node):
             self._inspect_negative_shift(node)
+        if self._is_freqai_start_call(node):
+            self.freqai_start_lines.append(getattr(node, "lineno", 0))
         self.generic_visit(node)
+
+    def finalize(self) -> None:
+        if self.freqai_method_lines and not self.freqai_start_lines:
+            self.findings.append(
+                FreqAIValidationFinding(
+                    path=str(self.path),
+                    line=self.freqai_method_lines[0],
+                    rule="freqai_start_required",
+                    severity="error",
+                    message=(
+                        "Strategies defining FreqAI feature or target methods must call "
+                        "self.freqai.start(dataframe, metadata, self) so predictions are generated."
+                    ),
+                    function=None,
+                    column=None,
+                )
+            )
 
     def _inspect_assignment_target(self, target: ast.AST) -> None:
         function = self._current_function()
@@ -424,6 +450,15 @@ class _FreqAIValidationVisitor(ast.NodeVisitor):
 
     def _attr_name(self, node: ast.AST) -> str:
         return node.attr if isinstance(node, ast.Attribute) else ""
+
+    def _is_freqai_start_call(self, node: ast.Call) -> bool:
+        func = node.func
+        return (
+            isinstance(func, ast.Attribute)
+            and func.attr == "start"
+            and isinstance(func.value, ast.Attribute)
+            and func.value.attr == "freqai"
+        )
 
     def _add(
         self,

@@ -31,6 +31,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--userdir", default="user_data")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument(
+        "--prepend",
+        action="store_true",
+        help="Download data before the local file start date instead of only appending.",
+    )
+    parser.add_argument(
         "--skip-data-quality-check",
         action="store_true",
         help="Skip the post-download OHLCV parquet quality check.",
@@ -78,6 +83,8 @@ def main() -> int:
         cmd.extend(["--trading-mode", args.trading_mode])
     if args.datadir:
         cmd.extend(["--datadir", args.datadir])
+    if args.prepend:
+        cmd.append("--prepend")
 
     print("Running:", " ".join(cmd))
     try:

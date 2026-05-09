@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable
@@ -31,6 +33,40 @@ def freqai_identifier(config: dict[str, Any]) -> str | None:
         return None
     identifier = freqai.get("identifier")
     return str(identifier) if identifier else None
+
+
+def candidate_freqai_identifier(
+    strategy: str,
+    candidate_id: str,
+    target_definition: str | None = None,
+    *,
+    max_length: int = 96,
+) -> str:
+    parts = ["bf", strategy, candidate_id]
+    if target_definition:
+        parts.append(target_definition)
+    raw = "_".join(str(part) for part in parts if str(part).strip())
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:10]
+    safe = re.sub(r"[^A-Za-z0-9_-]+", "_", raw).strip("_-").lower()
+    safe = re.sub(r"_+", "_", safe) or "bf_candidate"
+    suffix = f"_{digest}"
+    head_length = max(1, max_length - len(suffix))
+    head = safe[:head_length].rstrip("_-") or "bf_candidate"
+    return f"{head}{suffix}"
+
+
+def sanitize_freqai_identifier(identifier: str, *, max_length: int = 96) -> str:
+    safe = re.sub(r"[^A-Za-z0-9_-]+", "_", identifier.strip()).strip("_-")
+    safe = re.sub(r"_+", "_", safe)
+    if not safe:
+        raise ValueError("FreqAI identifier must contain at least one safe character.")
+    return safe[:max_length].rstrip("_-") or safe[:max_length]
+
+
+def write_freqai_identifier_override_config(identifier: str, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"freqai": {"identifier": sanitize_freqai_identifier(identifier)}}
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def freqai_enabled(config: dict[str, Any]) -> bool:
@@ -130,6 +166,7 @@ def build_freqai_metadata(
     dependency_status: dict[str, Any],
     artifact_paths: dict[str, Path | None],
     notes: Iterable[str] | None = None,
+    freqai_identifier_source: str | None = None,
 ) -> dict[str, Any]:
     return {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -139,6 +176,7 @@ def build_freqai_metadata(
         "run_id": run_id,
         "freqaimodel": freqaimodel,
         "freqai_identifier": freqai_id,
+        "freqai_identifier_source": freqai_identifier_source or "config",
         "timeframe": timeframe,
         "timerange": timerange,
         "pairs": list(pairs),

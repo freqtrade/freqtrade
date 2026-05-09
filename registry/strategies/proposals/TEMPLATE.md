@@ -15,6 +15,15 @@
 
 ## Hypothesis
 
+## Research References
+
+- reference_id:
+- title:
+- source:
+- published_at:
+- relevance:
+- motivated_thesis_ids:
+
 ## Market Condition
 
 ## Entry Logic

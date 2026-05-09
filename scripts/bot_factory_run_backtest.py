@@ -24,6 +24,7 @@ from freqtrade_ext.bot_factory.backtest_results import (
     write_result_json,
     write_trades_csv,
 )
+from freqtrade_ext.bot_factory.data_quality import check_ohlcv_parquet, write_quality_reports
 from freqtrade_ext.bot_factory.mlflow_tracking import log_backtest_to_mlflow
 from freqtrade_ext.bot_factory.safety import scan_paths
 
@@ -41,6 +42,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--skip-static-check", action="store_true")
     parser.add_argument("--data-format-ohlcv", default="parquet")
+    parser.add_argument(
+        "--ohlcv-file",
+        action="append",
+        default=None,
+        help="Explicit OHLCV parquet file to quality-check before backtesting. Can be repeated.",
+    )
     parser.add_argument(
         "--gate-config",
         default=None,
@@ -85,6 +92,10 @@ def main() -> int:
             print(report.to_json())
             print(f"Static check failed. Report: {static_report}")
             return 1
+
+    if not _run_ohlcv_quality_checks(args, run_dir):
+        print(f"OHLCV quality check failed. Report: {run_dir / 'ohlcv_quality.json'}")
+        return 1
 
     config_args = ["-c", args.config]
     if not args.enable_freqai:
@@ -191,6 +202,18 @@ def _find_strategy_source(strategy_path: Path, strategy_name: str) -> Path:
 def _require_file(path: str, label: str) -> None:
     if not Path(path).is_file():
         raise SystemExit(f"{label} file not found: {path}")
+
+
+def _run_ohlcv_quality_checks(args: argparse.Namespace, run_dir: Path) -> bool:
+    if not args.ohlcv_file:
+        return True
+
+    reports = [check_ohlcv_parquet(Path(path), args.timeframe) for path in args.ohlcv_file]
+    output = run_dir / "ohlcv_quality.json"
+    write_quality_reports(reports, output)
+    for quality_report in reports:
+        print(quality_report.to_json())
+    return all(report.ok for report in reports)
 
 
 def _log_mlflow_optional(args: argparse.Namespace, metrics: BacktestMetrics, run_dir: Path) -> None:
