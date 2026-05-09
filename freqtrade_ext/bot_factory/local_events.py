@@ -101,6 +101,18 @@ _ORDER_BOOK_FEATURES = {
     "order_book_spread_bps",
     "order_book_spread_bps_zscore",
 }
+_EMPTY_INSTRUMENT_LABELS = {
+    "-",
+    "--",
+    "n/a",
+    "na",
+    "nan",
+    "none",
+    "null",
+    "placeholder",
+    "undefined",
+    "unknown",
+}
 _CONTEXT_MERGE_SEMANTICS = "closed_context_candle_availability_v1"
 
 
@@ -1333,11 +1345,24 @@ def _grouped_rolling_std(
 def _instrument_labels(frame: pd.DataFrame) -> pd.Series | None:
     for column in ("pair", "symbol", "instrument"):
         if column in frame.columns:
-            labels = frame[column].astype(str).str.strip()
+            labels = frame[column].map(_instrument_label_or_none)
             if labels.nunique(dropna=True) > 1:
                 return labels
-            return None
     return None
+
+
+def _instrument_label_or_none(value: Any) -> str | None:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
+    if not text or text.lower() in _EMPTY_INSTRUMENT_LABELS:
+        return None
+    return text
 
 
 def _events_from_mask(

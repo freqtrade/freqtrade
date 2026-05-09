@@ -99,6 +99,33 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 local-event grouped instrument scan fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_events.py` so local OHLCV
+  feature grouping scans all candidate instrument columns and ignores empty or
+  placeholder labels such as `unknown`. A placeholder-only `pair` column no
+  longer prevents grouped `shift`, rolling mean, and rolling std features from
+  using a populated `symbol` or `instrument` column.
+- [x] Added regression coverage proving `return_bps` and `sma_distance_bps`
+  stay grouped by populated `symbol` when BTC and ETH rows share timestamps and
+  `pair="unknown"`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report or populated_symbol_column or local_events_grouped_features"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 34 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
 Checked on 2026-05-09 JST for PR #8 populated instrument-column selection fix.
 
 - [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so instrument

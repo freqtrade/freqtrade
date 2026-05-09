@@ -78,6 +78,7 @@ from freqtrade_ext.bot_factory.local_falsification import (
 )
 from freqtrade_ext.bot_factory.local_events import (
     LocalEventBuildInputs,
+    _feature_series,
     build_local_events,
     write_local_event_artifacts,
 )
@@ -13936,6 +13937,78 @@ def test_edge_discovery_price_frame_prefers_populated_symbol_column():
 
     assert list(subset["symbol"]) == ["ETH/USDT:USDT", "ETH/USDT:USDT"]
     assert list(subset["close"]) == [100.0, 105.0]
+
+
+def test_local_events_grouped_features_prefer_populated_symbol_column():
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    frame = pd.DataFrame(
+        [
+            {
+                "date": start,
+                "pair": "unknown",
+                "symbol": "BTC/USDT:USDT",
+                "open": 100.0,
+                "high": 101.0,
+                "low": 99.0,
+                "close": 100.0,
+                "volume": 1000.0,
+            },
+            {
+                "date": start,
+                "pair": "unknown",
+                "symbol": "ETH/USDT:USDT",
+                "open": 200.0,
+                "high": 201.0,
+                "low": 199.0,
+                "close": 200.0,
+                "volume": 2000.0,
+            },
+            {
+                "date": start + pd.Timedelta(hours=1),
+                "pair": "unknown",
+                "symbol": "BTC/USDT:USDT",
+                "open": 101.0,
+                "high": 102.0,
+                "low": 100.0,
+                "close": 101.0,
+                "volume": 1100.0,
+            },
+            {
+                "date": start + pd.Timedelta(hours=1),
+                "pair": "unknown",
+                "symbol": "ETH/USDT:USDT",
+                "open": 202.0,
+                "high": 203.0,
+                "low": 201.0,
+                "close": 202.0,
+                "volume": 2200.0,
+            },
+        ]
+    )
+
+    returns = _feature_series(
+        frame,
+        {"feature": "return_bps", "lookback_candles": 1},
+    )
+    sma_distance = _feature_series(
+        frame,
+        {"feature": "sma_distance_bps", "lookback_candles": 2},
+    )
+
+    assert pd.isna(returns.iloc[0])
+    assert pd.isna(returns.iloc[1])
+    assert round(float(returns.iloc[2]), 6) == 100.0
+    assert round(float(returns.iloc[3]), 6) == 100.0
+    assert pd.isna(sma_distance.iloc[0])
+    assert pd.isna(sma_distance.iloc[1])
+    assert round(float(sma_distance.iloc[2]), 6) == round(
+        (101.0 / 100.5 - 1.0) * 10000.0,
+        6,
+    )
+    assert round(float(sma_distance.iloc[3]), 6) == round(
+        (202.0 / 201.0 - 1.0) * 10000.0,
+        6,
+    )
 
 
 def test_edge_discovery_uses_next_candle_open_entry_semantics(tmp_path):
