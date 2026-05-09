@@ -741,16 +741,21 @@ def _horizon_results(
             [float(item["gross_return_bps"]) for item in rows],
             cost_bps["normal"],
         )
+        pair_alignment = _event_pair_alignment_summary(ohlcv, event_frame)
+        pair_price_series = _pair_price_series_summary(ohlcv)
         negative_controls = _negative_control_summary(
             ohlcv,
-            event_frame[["date"]],
+            event_frame[event_return_columns],
             hold_candles=int(horizon),
             funding_rate=funding_rate,
             normal_cost_bps=cost_bps["normal"],
             real_net_edge_bps=net_edge_bps_normal,
         )
         pair_evidence = _pair_evidence_summary(rows)
-        pair_concentration = pair_evidence["pair_concentration"]
+        pair_concentration = _effective_pair_concentration(
+            pair_evidence,
+            pair_price_series,
+        )
         calendar_concentration = (
             None
             if calendar_window_count == 0
@@ -825,6 +830,19 @@ def _horizon_results(
                     ),
                 },
             ),
+            _check(
+                "event_pair_labels_present_for_multi_instrument_ohlcv",
+                not (
+                    pair_alignment["ohlcv_multi_instrument"]
+                    and pair_alignment["missing_event_label_count"] > 0
+                ),
+                pair_alignment,
+            ),
+            _check(
+                "event_pair_labels_match_ohlcv",
+                pair_alignment["unmatched_event_label_count"] == 0,
+                pair_alignment,
+            ),
         ]
         results.append(
             {
@@ -866,6 +884,8 @@ def _horizon_results(
                 "pair_evidence_distribution": pair_evidence[
                     "pair_evidence_distribution"
                 ],
+                "pair_alignment": pair_alignment,
+                "pair_price_series": pair_price_series,
                 "calendar_concentration": calendar_concentration,
                 "negative_controls": negative_controls,
                 "negative_control_random_entry_delta_bps": negative_controls[
@@ -893,6 +913,81 @@ def _horizon_results(
     return results
 
 
+def _event_pair_alignment_summary(
+    ohlcv: pd.DataFrame,
+    events: pd.DataFrame,
+) -> dict[str, Any]:
+    ohlcv_column = _instrument_column(ohlcv)
+    ohlcv_labels = _instrument_label_set(ohlcv, ohlcv_column)
+    event_labels: list[str] = []
+    missing_event_label_count = 0
+    for event in events.to_dict("records"):
+        label, _column = _event_pair_label_and_column(event)
+        if label is None:
+            missing_event_label_count += 1
+        else:
+            event_labels.append(label)
+    unmatched = sorted({label for label in event_labels if label not in ohlcv_labels})
+    return {
+        "ohlcv_instrument_column": ohlcv_column,
+        "ohlcv_instrument_count": len(ohlcv_labels),
+        "ohlcv_multi_instrument": len(ohlcv_labels) > 1,
+        "event_count": int(len(events)),
+        "event_pair_evidence_count": len(event_labels),
+        "event_pair_evidence_unique_count": len(set(event_labels)),
+        "missing_event_label_count": missing_event_label_count,
+        "unmatched_event_label_count": len(unmatched),
+        "unmatched_event_labels": unmatched,
+    }
+
+
+def _pair_price_series_summary(ohlcv: pd.DataFrame) -> dict[str, Any]:
+    column = _instrument_column(ohlcv)
+    if column is None:
+        return {
+            "ohlcv_instrument_column": None,
+            "ohlcv_instrument_count": 0,
+            "shared_timestamp_count": 0,
+            "multi_instrument_price_series_aligned": False,
+        }
+    frame = ohlcv[["date", column]].copy()
+    frame["date"] = pd.to_datetime(frame["date"], utc=True, errors="coerce")
+    frame[column] = frame[column].map(_string_label)
+    frame = frame.dropna(subset=["date", column])
+    if frame.empty:
+        return {
+            "ohlcv_instrument_column": column,
+            "ohlcv_instrument_count": 0,
+            "shared_timestamp_count": 0,
+            "multi_instrument_price_series_aligned": False,
+        }
+    instrument_count = int(frame[column].nunique())
+    shared_timestamp_count = int(
+        (frame.groupby("date")[column].nunique() >= 2).sum()
+    )
+    return {
+        "ohlcv_instrument_column": column,
+        "ohlcv_instrument_count": instrument_count,
+        "shared_timestamp_count": shared_timestamp_count,
+        "multi_instrument_price_series_aligned": (
+            instrument_count > 1 and shared_timestamp_count > 0
+        ),
+    }
+
+
+def _effective_pair_concentration(
+    pair_evidence: dict[str, Any],
+    pair_price_series: dict[str, Any],
+) -> float:
+    concentration = float(pair_evidence["pair_concentration"])
+    if (
+        int(pair_evidence["pair_evidence_unique_count"]) > 1
+        and not pair_price_series["multi_instrument_price_series_aligned"]
+    ):
+        return 1.0
+    return concentration
+
+
 def _negative_control_summary(
     ohlcv: pd.DataFrame,
     events: pd.DataFrame,
@@ -903,28 +998,28 @@ def _negative_control_summary(
     real_net_edge_bps: float | None,
 ) -> dict[str, Any]:
     event_count = int(len(events))
-    random_dates = _control_dates(
+    random_events = _control_events(
         ohlcv,
         events,
         hold_candles=hold_candles,
         event_count=event_count,
         mode="random",
     )
-    shuffled_dates = _control_dates(
+    shuffled_events = _control_events(
         ohlcv,
         events,
         hold_candles=hold_candles,
         event_count=event_count,
         mode="shuffled",
     )
-    shifted_past_dates = _control_dates(
+    shifted_past_events = _control_events(
         ohlcv,
         events,
         hold_candles=hold_candles,
         event_count=event_count,
         mode="shifted_past",
     )
-    shifted_future_dates = _control_dates(
+    shifted_future_events = _control_events(
         ohlcv,
         events,
         hold_candles=hold_candles,
@@ -933,7 +1028,7 @@ def _negative_control_summary(
     )
     random_entry = _control_edge(
         ohlcv,
-        random_dates,
+        random_events,
         hold_candles=hold_candles,
         funding_rate=funding_rate,
         normal_cost_bps=normal_cost_bps,
@@ -941,7 +1036,7 @@ def _negative_control_summary(
     )
     shuffled_signal = _control_edge(
         ohlcv,
-        shuffled_dates,
+        shuffled_events,
         hold_candles=hold_candles,
         funding_rate=funding_rate,
         normal_cost_bps=normal_cost_bps,
@@ -949,7 +1044,7 @@ def _negative_control_summary(
     )
     shifted_past = _control_edge(
         ohlcv,
-        shifted_past_dates,
+        shifted_past_events,
         hold_candles=hold_candles,
         funding_rate=funding_rate,
         normal_cost_bps=normal_cost_bps,
@@ -957,7 +1052,7 @@ def _negative_control_summary(
     )
     shifted_future = _control_edge(
         ohlcv,
-        shifted_future_dates,
+        shifted_future_events,
         hold_candles=hold_candles,
         funding_rate=funding_rate,
         normal_cost_bps=normal_cost_bps,
@@ -985,64 +1080,121 @@ def _negative_control_summary(
     }
 
 
-def _control_dates(
+def _control_events(
     ohlcv: pd.DataFrame,
     events: pd.DataFrame,
     *,
     hold_candles: int,
     event_count: int,
     mode: str,
-) -> list[Any]:
-    max_start = max(0, len(ohlcv) - int(hold_candles) - 1)
-    eligible = list(ohlcv["date"].iloc[:max_start])
-    if not eligible or event_count <= 0:
+) -> list[dict[str, Any]]:
+    if event_count <= 0:
         return []
-    count = min(event_count, len(eligible))
-    rng = random.Random(f"bot-factory:{mode}:{hold_candles}:{event_count}:{len(ohlcv)}")
-    if mode == "random":
-        return sorted(rng.sample(eligible, count))
-    event_dates = list(pd.to_datetime(events["date"], utc=True, errors="coerce").dropna())
-    event_indices = [
-        int(ohlcv["date"].searchsorted(date, side="left"))
-        for date in event_dates
-    ]
-    event_indices = [index for index in event_indices if 0 <= index < len(eligible)]
-    if mode == "shuffled":
-        mask = [0] * len(eligible)
-        for index in event_indices[: len(eligible)]:
-            mask[index] = 1
-        rng.shuffle(mask)
-        return [eligible[index] for index, flag in enumerate(mask) if flag][:count]
-    shift = int(hold_candles)
-    if mode == "shifted_past":
-        shifted = [max(0, index - shift) for index in event_indices]
-    elif mode == "shifted_future":
-        shifted = [min(len(eligible) - 1, index + shift) for index in event_indices]
-    else:
-        shifted = []
+    event_records = events.to_dict("records")
+    grouped: dict[tuple[str | None, str | None], list[dict[str, Any]]] = {}
+    ohlcv_multi_instrument = _is_multi_instrument_ohlcv(ohlcv)
+    for event in event_records:
+        label, column = _event_pair_label_and_column(event)
+        if ohlcv_multi_instrument and label is None:
+            continue
+        grouped.setdefault((label, column), []).append(event)
+    controls: list[dict[str, Any]] = []
+    for (label, column), group in grouped.items():
+        eligible = _eligible_control_dates(
+            ohlcv,
+            label=label,
+            hold_candles=hold_candles,
+        )
+        if not eligible:
+            continue
+        count = min(len(group), len(eligible))
+        rng = random.Random(
+            f"bot-factory:{mode}:{hold_candles}:{event_count}:{len(ohlcv)}:{label or 'none'}"
+        )
+        if mode == "random":
+            selected = sorted(rng.sample(eligible, count))
+        elif mode == "shuffled":
+            mask = [0] * len(eligible)
+            for index in _event_indices_in_eligible(group, eligible)[: len(eligible)]:
+                mask[index] = 1
+            rng.shuffle(mask)
+            selected = [eligible[index] for index, flag in enumerate(mask) if flag][:count]
+        else:
+            shift = int(hold_candles)
+            indices = _event_indices_in_eligible(group, eligible)
+            if mode == "shifted_past":
+                shifted = [max(0, index - shift) for index in indices]
+            elif mode == "shifted_future":
+                shifted = [min(len(eligible) - 1, index + shift) for index in indices]
+            else:
+                shifted = []
+            selected = [eligible[index] for index in _dedupe_ints(shifted)[:count]]
+        controls.extend(_control_event(date, label=label, column=column) for date in selected)
+    return sorted(controls, key=lambda item: str(item["date"]))
+
+
+def _eligible_control_dates(
+    ohlcv: pd.DataFrame, *, label: str | None, hold_candles: int
+) -> list[Any]:
+    frame = _price_frame_for_label(ohlcv, label)
+    if frame.empty:
+        return []
+    max_start = max(0, len(frame) - int(hold_candles) - 1)
+    return list(frame["date"].iloc[:max_start])
+
+
+def _event_indices_in_eligible(
+    events: Sequence[dict[str, Any]], eligible: Sequence[Any]
+) -> list[int]:
+    if not eligible:
+        return []
+    eligible_series = pd.Series(pd.to_datetime(list(eligible), utc=True, errors="coerce"))
+    indices: list[int] = []
+    for event in events:
+        event_time = pd.to_datetime(event.get("date"), utc=True, errors="coerce")
+        if pd.isna(event_time):
+            continue
+        index = int(eligible_series.searchsorted(event_time, side="left"))
+        if 0 <= index < len(eligible):
+            indices.append(index)
+    return indices
+
+
+def _dedupe_ints(values: Sequence[int]) -> list[int]:
     deduped: list[int] = []
-    for index in shifted:
-        if index not in deduped:
-            deduped.append(index)
-    return [eligible[index] for index in deduped[:count]]
+    for value in values:
+        if value not in deduped:
+            deduped.append(value)
+    return deduped
+
+
+def _control_event(date: Any, *, label: str | None, column: str | None) -> dict[str, Any]:
+    event: dict[str, Any] = {"date": date}
+    if label is not None:
+        event[column or "pair"] = label
+    return event
 
 
 def _control_edge(
     ohlcv: pd.DataFrame,
-    dates: Sequence[Any],
+    events: Sequence[dict[str, Any]],
     *,
     hold_candles: int,
     funding_rate: pd.DataFrame | None,
     normal_cost_bps: float,
     real_net_edge_bps: float | None,
 ) -> dict[str, Any]:
+    event_frame = pd.DataFrame(list(events))
+    if event_frame.empty:
+        event_frame = pd.DataFrame({"date": []})
     rows = _event_returns(
         ohlcv,
-        pd.DataFrame({"date": list(dates)}),
+        event_frame,
         hold_candles=hold_candles,
         funding_rate=funding_rate,
         entry_semantics="next_candle_open",
     )
+    pair_evidence = _pair_evidence_summary(rows)
     gross_edge_bps = _mean([item["gross_return_bps"] for item in rows])
     net_edge_bps = _net_edge(gross_edge_bps, normal_cost_bps)
     delta = (
@@ -1055,6 +1207,10 @@ def _control_edge(
         "gross_edge_bps": gross_edge_bps,
         "net_edge_bps_normal": net_edge_bps,
         "delta_bps": delta,
+        "pair_evidence_count": pair_evidence["pair_evidence_count"],
+        "pair_evidence_unique_count": pair_evidence["pair_evidence_unique_count"],
+        "pair_evidence_distribution": pair_evidence["pair_evidence_distribution"],
+        "sample_preview": rows[:5],
     }
 
 
@@ -1209,6 +1365,8 @@ def _event_level_post_cost_report(
             "pair_concentration": 1.0,
             "pair_evidence_count": 0,
             "pair_evidence_unique_count": 0,
+            "pair_alignment": {},
+            "pair_price_series": {},
             "research_gate": gate,
             "candidate_generation_result": "no candidate generated",
         }
@@ -1232,6 +1390,8 @@ def _event_level_post_cost_report(
         "pair_evidence_count": selected.get("pair_evidence_count"),
         "pair_evidence_unique_count": selected.get("pair_evidence_unique_count"),
         "pair_evidence_distribution": selected.get("pair_evidence_distribution"),
+        "pair_alignment": selected.get("pair_alignment"),
+        "pair_price_series": selected.get("pair_price_series"),
         "calendar_concentration": selected.get("calendar_concentration"),
         "holding_period": selected.get("hold_candles"),
         "negative_control_random_entry_delta_bps": selected.get(
@@ -1301,19 +1461,70 @@ def _pair_evidence_summary(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _pair_evidence_label(row: dict[str, Any]) -> str | None:
+    label, _column = _event_pair_label_and_column(row)
+    return label
+
+
+def _event_pair_label_and_column(row: dict[str, Any]) -> tuple[str | None, str | None]:
     for column in ("pair", "symbol", "instrument"):
-        value = row.get(column)
-        if value is None:
-            continue
-        try:
-            if pd.isna(value):
-                continue
-        except (TypeError, ValueError):
-            pass
-        text = str(value).strip()
-        if text:
-            return text
+        label = _string_label(row.get(column))
+        if label is not None:
+            return label, column
+    return None, None
+
+
+def _string_label(value: Any) -> str | None:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
+    return text or None
+
+
+def _instrument_column(frame: pd.DataFrame) -> str | None:
+    for column in ("pair", "symbol", "instrument"):
+        if column in frame.columns:
+            return column
     return None
+
+
+def _instrument_label_set(
+    frame: pd.DataFrame, column: str | None = None
+) -> set[str]:
+    column = column or _instrument_column(frame)
+    if column is None:
+        return set()
+    return {
+        label
+        for label in frame[column].map(_string_label)
+        if label is not None
+    }
+
+
+def _is_multi_instrument_ohlcv(frame: pd.DataFrame) -> bool:
+    return len(_instrument_label_set(frame)) > 1
+
+
+def _price_frame_for_label(
+    ohlcv: pd.DataFrame, label: str | None
+) -> pd.DataFrame:
+    frame = ohlcv.copy()
+    frame["date"] = pd.to_datetime(frame["date"], utc=True, errors="coerce")
+    frame = frame.dropna(subset=["date"]).sort_values("date")
+    if label is None:
+        if _is_multi_instrument_ohlcv(frame):
+            return frame.iloc[0:0].copy()
+        return frame.reset_index(drop=True)
+    column = _instrument_column(frame)
+    if column is None:
+        return frame.iloc[0:0].copy()
+    labels = frame[column].map(_string_label)
+    subset = frame[labels == label]
+    return subset.sort_values("date").reset_index(drop=True)
 
 
 def _cost_scenario_checks(
@@ -1721,6 +1932,8 @@ def _render_report(artifact: dict[str, Any]) -> str:
             f"- pair_evidence_count: {edge_report.get('pair_evidence_count')}",
             f"- pair_evidence_unique_count: {edge_report.get('pair_evidence_unique_count')}",
             f"- pair_evidence_distribution: {edge_report.get('pair_evidence_distribution')}",
+            f"- pair_alignment: {edge_report.get('pair_alignment')}",
+            f"- pair_price_series: {edge_report.get('pair_price_series')}",
             f"- calendar_concentration: {edge_report.get('calendar_concentration')}",
             f"- holding_period: {edge_report.get('holding_period')}",
             f"- negative_control_random_entry_delta_bps: {edge_report.get('negative_control_random_entry_delta_bps')}",

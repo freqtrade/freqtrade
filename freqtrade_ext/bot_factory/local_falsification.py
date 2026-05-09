@@ -719,23 +719,33 @@ def _event_returns(
     funding_rate: pd.DataFrame | None = None,
     entry_semantics: str = "same_candle_close",
 ) -> list[dict[str, Any]]:
-    candle_times = list(ohlcv["date"])
-    closes = list(ohlcv["close"])
-    opens = list(ohlcv["open"]) if "open" in ohlcv.columns else closes
+    ohlcv_frame = ohlcv.copy()
+    ohlcv_frame["date"] = pd.to_datetime(
+        ohlcv_frame["date"], utc=True, errors="coerce"
+    )
+    ohlcv_frame = ohlcv_frame.dropna(subset=["date"]).sort_values("date")
+    multi_instrument = _is_multi_instrument_frame(ohlcv_frame)
     rows: list[dict[str, Any]] = []
     semantics = str(entry_semantics or "same_candle_close").strip().lower()
     event_records = events.to_dict("records")
     for event in event_records:
         event_time = event["date"]
+        event_label, event_label_column = _event_instrument_label(event)
+        price_frame = _price_frame_for_event(ohlcv_frame, event_label)
+        if price_frame.empty or (multi_instrument and event_label is None):
+            continue
+        candle_times = list(price_frame["date"])
+        closes = list(price_frame["close"])
+        opens = list(price_frame["open"]) if "open" in price_frame.columns else closes
         if semantics == "next_candle_open":
-            entry_index = int(ohlcv["date"].searchsorted(event_time, side="right"))
+            entry_index = int(price_frame["date"].searchsorted(event_time, side="right"))
             entry_price_type = "open"
             exit_index = entry_index + int(hold_candles) - 1
         else:
-            entry_index = int(ohlcv["date"].searchsorted(event_time, side="left"))
+            entry_index = int(price_frame["date"].searchsorted(event_time, side="left"))
             entry_price_type = "close"
             exit_index = entry_index + int(hold_candles)
-        if entry_index < 0 or exit_index >= len(ohlcv):
+        if entry_index < 0 or exit_index >= len(price_frame):
             continue
         entry_price = (
             float(opens[entry_index])
@@ -767,12 +777,54 @@ def _event_returns(
             "funding_adjustment_bps": round(funding_adjustment_bps, 6),
             "gross_return_bps": round(gross_return_bps, 6),
         }
-        for column in ("pair", "symbol", "instrument"):
-            value = _string_evidence_or_none(event.get(column))
-            if value is not None:
-                row[column] = value
+        if event_label is not None:
+            row[event_label_column or "pair"] = event_label
+            row["price_series_instrument"] = event_label
+            instrument_column = _instrument_column(price_frame)
+            if instrument_column is not None:
+                row["price_series_instrument_column"] = instrument_column
         rows.append(row)
     return rows
+
+
+def _price_frame_for_event(ohlcv: pd.DataFrame, event_label: str | None) -> pd.DataFrame:
+    if event_label is None:
+        return ohlcv.sort_values("date").reset_index(drop=True)
+    column = _instrument_column(ohlcv)
+    if column is None:
+        return ohlcv.iloc[0:0].copy()
+    labels = ohlcv[column].map(_string_evidence_or_none)
+    subset = ohlcv[labels == event_label]
+    if subset.empty:
+        return subset.copy()
+    return subset.sort_values("date").reset_index(drop=True)
+
+
+def _is_multi_instrument_frame(frame: pd.DataFrame) -> bool:
+    column = _instrument_column(frame)
+    if column is None:
+        return False
+    labels = {
+        label
+        for label in frame[column].map(_string_evidence_or_none)
+        if label is not None
+    }
+    return len(labels) > 1
+
+
+def _instrument_column(frame: pd.DataFrame) -> str | None:
+    for column in ("pair", "symbol", "instrument"):
+        if column in frame.columns:
+            return column
+    return None
+
+
+def _event_instrument_label(event: dict[str, Any]) -> tuple[str | None, str | None]:
+    for column in ("pair", "symbol", "instrument"):
+        value = _string_evidence_or_none(event.get(column))
+        if value is not None:
+            return value, column
+    return None, None
 
 
 def _string_evidence_or_none(value: Any) -> str | None:

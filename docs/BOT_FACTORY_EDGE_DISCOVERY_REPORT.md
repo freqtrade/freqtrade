@@ -24,6 +24,10 @@ semantics:
 - Exit is evaluated from the close of the held candle. With
   `entry_semantics=next_candle_open` and `hold_candles=1`, the event return is
   next-candle open to that same next candle close.
+- When event rows carry `pair`, `symbol`, or `instrument`, return calculation
+  filters OHLCV to the matching instrument before resolving entry and exit
+  indexes. Event labels without a matching OHLCV instrument are skipped by the
+  return study.
 - Funding, mark price, open interest, long/short ratio, liquidation, and
   order-book context continue to use closed-context alignment and local
   timestamped artifacts only.
@@ -53,6 +57,8 @@ with the required fields:
 - `pair_evidence_count`
 - `pair_evidence_unique_count`
 - `pair_evidence_distribution`
+- `pair_alignment`
+- `pair_price_series`
 - `calendar_concentration`
 - `holding_period`
 - `negative_control_random_entry_delta_bps`
@@ -69,7 +75,10 @@ replacement for full strategy walk-forward evaluation.
 that carry `pair`, `symbol`, or `instrument` evidence. Declaring multiple
 symbols in `instrument_universe` does not make the signal multi-pair. If event
 rows carry no pair evidence, the gate treats the evidence as single-pair
-dependent with `pair_concentration=1.0`.
+dependent with `pair_concentration=1.0`. Multi-pair evidence is only treated as
+robust when the pair label and the OHLCV price series match. A label-only
+single price stream, even with alternating pair labels, is not allowed to pass
+the `not_single_pair_dependent` gate.
 
 ## Negative Controls
 
@@ -79,6 +88,11 @@ The gate computes three controls per horizon:
 - Shuffled signal control over the same eligible candle set.
 - Shifted signal control using past and future shifts; the stronger shifted
   result is used as the leakage/alignment challenge.
+
+For multi-pair evidence, all controls are pair-aware: random entries sample
+inside the same pair, shuffled controls preserve the observed pair
+distribution, and shifted controls move events inside the same pair's time
+series. Control rows retain pair evidence in their previews and summaries.
 
 A thesis is rejected when the real signal does not beat each control by the
 configured minimum delta.

@@ -1197,23 +1197,21 @@ def _feature_series(frame: pd.DataFrame, condition: dict[str, Any]) -> pd.Series
         ) / informative_close * 100.0
     if feature == "informative_return_bps":
         informative_close = frame["informative_close"].astype(float)
-        return (informative_close / informative_close.shift(lookback) - 1.0) * 10000.0
+        return _grouped_pct_change_bps(frame, informative_close, lookback)
     if feature == "informative_sma_distance_bps":
         informative_close = frame["informative_close"].astype(float)
-        average = informative_close.rolling(lookback, min_periods=lookback).mean()
+        average = _grouped_rolling_mean(frame, informative_close, lookback)
         return (informative_close / average - 1.0) * 10000.0
     if feature == "informative_volume_zscore":
         informative_volume = frame["informative_volume"].astype(float)
-        average = informative_volume.rolling(lookback, min_periods=lookback).mean()
-        stdev = informative_volume.rolling(lookback, min_periods=lookback).std().replace(
-            0.0, pd.NA
-        )
+        average = _grouped_rolling_mean(frame, informative_volume, lookback)
+        stdev = _grouped_rolling_std(frame, informative_volume, lookback).replace(0.0, pd.NA)
         return (informative_volume - average) / stdev
     if feature == "mark_price_gap_bps":
         return frame["mark_price_gap_bps"].astype(float)
     if feature == "mark_price_gap_delta_bps":
         gap = frame["mark_price_gap_bps"].astype(float)
-        return gap - gap.shift(lookback)
+        return gap - _grouped_shift(frame, gap, lookback)
     if feature == "mark_price_return_bps":
         return frame["mark_price_return_bps"].astype(float)
     if feature == "long_account_ratio":
@@ -1224,8 +1222,8 @@ def _feature_series(frame: pd.DataFrame, condition: dict[str, Any]) -> pd.Series
         return frame["long_short_ratio"].astype(float)
     if feature == "long_short_ratio_zscore":
         ratio = frame["long_short_ratio"].astype(float)
-        average = ratio.rolling(lookback, min_periods=lookback).mean()
-        stdev = ratio.rolling(lookback, min_periods=lookback).std().replace(0.0, pd.NA)
+        average = _grouped_rolling_mean(frame, ratio, lookback)
+        stdev = _grouped_rolling_std(frame, ratio, lookback).replace(0.0, pd.NA)
         return (ratio - average) / stdev
     if feature == "liquidation_buy_notional":
         return frame["liquidation_buy_notional"].astype(float)
@@ -1241,18 +1239,18 @@ def _feature_series(frame: pd.DataFrame, condition: dict[str, Any]) -> pd.Series
         return frame["liquidation_total_notional"].astype(float)
     if feature == "liquidation_total_notional_zscore":
         notional = frame["liquidation_total_notional"].astype(float)
-        average = notional.rolling(lookback, min_periods=lookback).mean()
-        stdev = notional.rolling(lookback, min_periods=lookback).std().replace(0.0, pd.NA)
+        average = _grouped_rolling_mean(frame, notional, lookback)
+        stdev = _grouped_rolling_std(frame, notional, lookback).replace(0.0, pd.NA)
         return (notional - average) / stdev
     if feature == "open_interest":
         return frame["open_interest"].astype(float)
     if feature == "open_interest_delta_pct":
         interest = frame["open_interest"].astype(float)
-        return (interest / interest.shift(lookback) - 1.0) * 100.0
+        return (interest / _grouped_shift(frame, interest, lookback) - 1.0) * 100.0
     if feature == "open_interest_zscore":
         interest = frame["open_interest"].astype(float)
-        average = interest.rolling(lookback, min_periods=lookback).mean()
-        stdev = interest.rolling(lookback, min_periods=lookback).std().replace(0.0, pd.NA)
+        average = _grouped_rolling_mean(frame, interest, lookback)
+        stdev = _grouped_rolling_std(frame, interest, lookback).replace(0.0, pd.NA)
         return (interest - average) / stdev
     if feature == "order_book_ask_size":
         return frame["order_book_ask_size"].astype(float)
@@ -1262,8 +1260,8 @@ def _feature_series(frame: pd.DataFrame, condition: dict[str, Any]) -> pd.Series
         return frame["order_book_depth_imbalance"].astype(float)
     if feature == "order_book_depth_imbalance_zscore":
         imbalance = frame["order_book_depth_imbalance"].astype(float)
-        average = imbalance.rolling(lookback, min_periods=lookback).mean()
-        stdev = imbalance.rolling(lookback, min_periods=lookback).std().replace(0.0, pd.NA)
+        average = _grouped_rolling_mean(frame, imbalance, lookback)
+        stdev = _grouped_rolling_std(frame, imbalance, lookback).replace(0.0, pd.NA)
         return (imbalance - average) / stdev
     if feature == "order_book_mid_price_gap_bps":
         return frame["order_book_mid_price_gap_bps"].astype(float)
@@ -1271,31 +1269,75 @@ def _feature_series(frame: pd.DataFrame, condition: dict[str, Any]) -> pd.Series
         return frame["order_book_spread_bps"].astype(float)
     if feature == "order_book_spread_bps_zscore":
         spread = frame["order_book_spread_bps"].astype(float)
-        average = spread.rolling(lookback, min_periods=lookback).mean()
-        stdev = spread.rolling(lookback, min_periods=lookback).std().replace(0.0, pd.NA)
+        average = _grouped_rolling_mean(frame, spread, lookback)
+        stdev = _grouped_rolling_std(frame, spread, lookback).replace(0.0, pd.NA)
         return (spread - average) / stdev
     if feature == "return_bps":
-        return (close / close.shift(lookback) - 1.0) * 10000.0
+        return _grouped_pct_change_bps(frame, close, lookback)
     if feature == "range_pct":
         return (frame["high"].astype(float) - frame["low"].astype(float)) / close * 100.0
     if feature == "relative_return_bps":
         informative_close = frame["informative_close"].astype(float)
-        primary_return = (close / close.shift(lookback) - 1.0) * 10000.0
-        informative_return = (
-            informative_close / informative_close.shift(lookback) - 1.0
-        ) * 10000.0
+        primary_return = _grouped_pct_change_bps(frame, close, lookback)
+        informative_return = _grouped_pct_change_bps(frame, informative_close, lookback)
         return primary_return - informative_return
     if feature == "sma_distance_bps":
-        average = close.rolling(lookback, min_periods=lookback).mean()
+        average = _grouped_rolling_mean(frame, close, lookback)
         return (close / average - 1.0) * 10000.0
     if feature == "volume_zscore":
         volume = frame["volume"].astype(float)
-        average = volume.rolling(lookback, min_periods=lookback).mean()
-        stdev = volume.rolling(lookback, min_periods=lookback).std().replace(0.0, pd.NA)
+        average = _grouped_rolling_mean(frame, volume, lookback)
+        stdev = _grouped_rolling_std(frame, volume, lookback).replace(0.0, pd.NA)
         return (volume - average) / stdev
     if feature == "weekday":
         return pd.to_datetime(frame["date"], utc=True).dt.dayofweek.astype(float)
     raise ValueError(f"Unsupported feature: {feature}")
+
+
+def _grouped_pct_change_bps(
+    frame: pd.DataFrame, series: pd.Series, lookback: int
+) -> pd.Series:
+    shifted = _grouped_shift(frame, series, lookback)
+    return (series / shifted - 1.0) * 10000.0
+
+
+def _grouped_shift(frame: pd.DataFrame, series: pd.Series, periods: int) -> pd.Series:
+    labels = _instrument_labels(frame)
+    if labels is None:
+        return series.shift(periods)
+    return series.groupby(labels, group_keys=False).shift(periods)
+
+
+def _grouped_rolling_mean(
+    frame: pd.DataFrame, series: pd.Series, window: int
+) -> pd.Series:
+    labels = _instrument_labels(frame)
+    if labels is None:
+        return series.rolling(window, min_periods=window).mean()
+    return series.groupby(labels, group_keys=False).transform(
+        lambda item: item.rolling(window, min_periods=window).mean()
+    )
+
+
+def _grouped_rolling_std(
+    frame: pd.DataFrame, series: pd.Series, window: int
+) -> pd.Series:
+    labels = _instrument_labels(frame)
+    if labels is None:
+        return series.rolling(window, min_periods=window).std()
+    return series.groupby(labels, group_keys=False).transform(
+        lambda item: item.rolling(window, min_periods=window).std()
+    )
+
+
+def _instrument_labels(frame: pd.DataFrame) -> pd.Series | None:
+    for column in ("pair", "symbol", "instrument"):
+        if column in frame.columns:
+            labels = frame[column].astype(str).str.strip()
+            if labels.nunique(dropna=True) > 1:
+                return labels
+            return None
+    return None
 
 
 def _events_from_mask(

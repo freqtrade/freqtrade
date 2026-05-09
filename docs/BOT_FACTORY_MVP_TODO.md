@@ -99,6 +99,42 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 multi-pair price-series alignment hardening.
+
+- [x] Hardened `freqtrade_ext/bot_factory/local_falsification.py` so
+  `_event_returns()` resolves entry and exit indexes inside the OHLCV subset
+  matching the event's `pair`, `symbol`, or `instrument` label. Events with a
+  label that has no matching OHLCV instrument are skipped; multi-instrument
+  OHLCV events without labels cannot create return evidence.
+- [x] Hardened `freqtrade_ext/bot_factory/edge_discovery.py` negative controls
+  so random entries sample within the same pair, shuffled controls preserve
+  pair distribution, shifted controls move inside the same pair time series,
+  and control rows retain pair evidence.
+- [x] Hardened `freqtrade_ext/bot_factory/local_events.py` OHLCV feature
+  calculation so `return_bps`, `sma_distance_bps`, `volume_zscore`, and other
+  rolling or shifted features are computed per instrument when combined
+  multi-pair OHLCV is supplied.
+- [x] Added regression coverage proving an ETH event at a shared timestamp is
+  evaluated against the ETH price series, not the BTC row; label-only
+  single-stream data cannot satisfy `not_single_pair_dependent`; and random,
+  shuffled, and shifted controls remain pair-aware.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 13 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with CRLF working-copy warnings only.
+- [ ] Remaining limitation: this validates local combined-OHLCV price-series
+  alignment for Edge Discovery evidence, but it is still not a strategy
+  candidate and does not start backtesting, paper, dry-run, live trading,
+  exchange order placement, leverage, shorting, or process control.
+
 Checked on 2026-05-09 JST for PR #8 research-first Edge Discovery gate hardening.
 
 - [x] Hardened `freqtrade_ext/bot_factory/cost_model.py` so top-level

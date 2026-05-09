@@ -13869,38 +13869,101 @@ def test_edge_discovery_uses_next_candle_open_entry_semantics(tmp_path):
     assert sample["exit_close"] == 200.5
 
 
+def test_edge_discovery_matches_event_pair_to_ohlcv_price_series(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    spec_path = tmp_path / "edge_spec.json"
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    rows = []
+    prices = {
+        "BTC/USDT:USDT": [(50.0, 50.0), (50.0, 50.0), (10.0, 10.0)],
+        "ETH/USDT:USDT": [(100.0, 100.0), (100.0, 102.0), (100.0, 105.0)],
+    }
+    for index in range(3):
+        for pair, candles in prices.items():
+            open_, close = candles[index]
+            rows.append(
+                {
+                    "date": start + pd.Timedelta(days=index),
+                    "pair": pair,
+                    "open": open_,
+                    "high": max(open_, close) + 0.5,
+                    "low": min(open_, close) - 0.5,
+                    "close": close,
+                    "volume": 1000.0,
+                }
+            )
+    pd.DataFrame(rows).to_csv(ohlcv_path, index=False)
+    spec_path.write_text(
+        json.dumps(
+            {
+                "factory": "research_edge_discovery_spec",
+                "thesis_id": "TH-PAIR-PRICE-MATCH-001",
+                "mechanism_class": "pair_price_alignment_probe",
+                "hypothesis_scope": "cross_asset",
+                "instrument_universe": ["BTC/USDT:USDT", "ETH/USDT:USDT"],
+                "conditions": [
+                    {
+                        "feature": "return_bps",
+                        "operator": ">",
+                        "value": 100.0,
+                        "lookback_candles": 1,
+                    }
+                ],
+                "horizons": [1],
+                "all_in_cost_bps": 1.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_edge_discovery(
+        EdgeDiscoveryInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            edge_spec_path=spec_path,
+            min_sample_count=1,
+            min_profitable_windows_ratio=0.0,
+            created_at="2026-05-07T00:00:00+00:00",
+        )
+    )
+
+    sample = artifact["horizon_results"][0]["sample_preview"][0]
+    assert sample["pair"] == "ETH/USDT:USDT"
+    assert sample["event_time"] == "2026-01-02T00:00:00+00:00"
+    assert sample["entry_time"] == "2026-01-03T00:00:00+00:00"
+    assert sample["entry_price"] == 100.0
+    assert sample["exit_price"] == 105.0
+    assert sample["price_series_instrument"] == "ETH/USDT:USDT"
+
+
 def test_edge_discovery_research_gate_passes_synthetic_positive_case(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     spec_path = tmp_path / "edge_spec.json"
     start = pd.Timestamp("2026-01-01T00:00:00Z")
-    event_indices = {10, 50, 90, 130, 170, 210}
-    event_pairs = {
-        10: "BTC/USDT:USDT",
-        50: "ETH/USDT:USDT",
-        90: "BTC/USDT:USDT",
-        130: "ETH/USDT:USDT",
-        170: "BTC/USDT:USDT",
-        210: "ETH/USDT:USDT",
+    pair_event_indices = {
+        "BTC/USDT:USDT": {10, 90, 170},
+        "ETH/USDT:USDT": {50, 130, 210},
     }
     rows = []
     for index in range(240):
-        close = 100.0
-        open_ = 100.0
-        if index in event_indices:
-            close = 102.0
-        if index - 1 in event_indices:
-            close = 103.0
-        rows.append(
-            {
-                "date": start + pd.Timedelta(days=index),
-                "pair": event_pairs.get(index, "BTC/USDT:USDT"),
-                "open": open_,
-                "high": max(open_, close) + 0.5,
-                "low": min(open_, close) - 0.5,
-                "close": close,
-                "volume": 1000.0,
-            }
-        )
+        for pair, event_indices in pair_event_indices.items():
+            close = 100.0
+            open_ = 100.0
+            if index in event_indices:
+                close = 102.0
+            if index - 1 in event_indices:
+                close = 103.0
+            rows.append(
+                {
+                    "date": start + pd.Timedelta(days=index),
+                    "pair": pair,
+                    "open": open_,
+                    "high": max(open_, close) + 0.5,
+                    "low": min(open_, close) - 0.5,
+                    "close": close,
+                    "volume": 1000.0,
+                }
+            )
     pd.DataFrame(rows).to_csv(ohlcv_path, index=False)
     spec_path.write_text(
         json.dumps(
@@ -13953,29 +14016,45 @@ def test_edge_discovery_research_gate_passes_synthetic_positive_case(tmp_path):
     assert report["passes_research_gate"] is True
     assert report["pair_concentration"] == 0.5
     assert report["pair_evidence_unique_count"] == 2
+    assert report["pair_price_series"]["multi_instrument_price_series_aligned"] is True
     assert report["net_edge_bps_normal"] >= 6.0
     assert report["net_edge_bps_stress"] > 0.0
     assert report["lower_confidence_bound_bps"] > 0.0
     assert report["negative_control_random_entry_delta_bps"] >= 1.0
     assert report["negative_control_shuffled_signal_delta_bps"] >= 1.0
     assert report["negative_control_shifted_signal_delta_bps"] >= 1.0
+    horizon = artifact["horizon_results"][0]
+    expected_distribution = {"BTC/USDT:USDT": 3, "ETH/USDT:USDT": 3}
+    assert horizon["negative_controls"]["random_entry"][
+        "pair_evidence_distribution"
+    ] == expected_distribution
+    assert horizon["negative_controls"]["shuffled_signal"][
+        "pair_evidence_distribution"
+    ] == expected_distribution
+    assert horizon["negative_controls"]["shifted_signal"][
+        "pair_evidence_distribution"
+    ] == expected_distribution
 
 
-def test_edge_discovery_research_gate_requires_actual_multi_pair_evidence(tmp_path):
+def test_edge_discovery_research_gate_rejects_pair_labels_without_price_series(
+    tmp_path,
+):
     ohlcv_path = tmp_path / "ohlcv.csv"
     spec_path = tmp_path / "edge_spec.json"
     start = pd.Timestamp("2026-01-01T00:00:00Z")
-    event_indices = {10, 30, 50, 70, 90}
+    event_indices = {10, 31, 50, 71, 90}
     rows = []
     for index in range(120):
+        pair = "BTC/USDT:USDT" if index % 2 == 0 else "ETH/USDT:USDT"
         close = 100.0
         if index in event_indices:
             close = 102.0
-        if index - 1 in event_indices:
+        if index - 2 in event_indices:
             close = 103.0
         rows.append(
             {
                 "date": start + pd.Timedelta(days=index),
+                "pair": pair,
                 "open": 100.0,
                 "high": close + 0.5,
                 "low": 99.5,
@@ -14034,7 +14113,9 @@ def test_edge_discovery_research_gate_requires_actual_multi_pair_evidence(tmp_pa
     assert artifact["candidate_generation_allowed"] is False
     assert artifact["proposal_generation_allowed"] is False
     assert report["pair_concentration"] == 1.0
-    assert report["pair_evidence_count"] == 0
+    assert report["pair_evidence_count"] == 5
+    assert report["pair_evidence_unique_count"] == 2
+    assert report["pair_price_series"]["shared_timestamp_count"] == 0
     assert "not_single_pair_dependent" in gate_blockers
 
 
