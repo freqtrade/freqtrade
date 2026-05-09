@@ -499,6 +499,55 @@ def test_bybit_open_interest_downloader_writes_sorted_parquet(tmp_path):
     assert list(frame["symbol"]) == ["BTCUSDT", "BTCUSDT"]
 
 
+def test_bybit_open_interest_and_long_short_ratio_downloaders_block_request_errors(tmp_path):
+    def failing_request_json(url: str, params: dict[str, Any], timeout: float) -> dict[str, Any]:
+        raise TimeoutError("public market data request timed out")
+
+    open_interest_output = tmp_path / "oi.parquet"
+    open_interest_artifact = download_bybit_open_interest(
+        BybitOpenInterestDownloadInputs(
+            root_dir=tmp_path,
+            symbol="btcusdt",
+            category="linear",
+            interval_time="1h",
+            start_time=datetime(2025, 1, 1, tzinfo=UTC),
+            end_time=datetime(2025, 1, 2, tzinfo=UTC),
+            output_path=open_interest_output,
+        ),
+        request_json=failing_request_json,
+    )
+    long_short_output = tmp_path / "long_short.parquet"
+    long_short_artifact = download_bybit_long_short_ratio(
+        BybitLongShortRatioDownloadInputs(
+            root_dir=tmp_path,
+            symbol="btcusdt",
+            category="linear",
+            period="1h",
+            start_time=datetime(2025, 1, 1, tzinfo=UTC),
+            end_time=datetime(2025, 1, 2, tzinfo=UTC),
+            output_path=long_short_output,
+        ),
+        request_json=failing_request_json,
+    )
+
+    assert open_interest_artifact["status"] == "blocked"
+    assert open_interest_artifact["output_written"] is False
+    assert open_interest_artifact["page_count"] == 0
+    assert open_interest_artifact["row_count"] == 0
+    assert open_interest_artifact["blockers"] == [
+        "request_failed:TimeoutError:public market data request timed out"
+    ]
+    assert not open_interest_output.exists()
+    assert long_short_artifact["status"] == "blocked"
+    assert long_short_artifact["output_written"] is False
+    assert long_short_artifact["page_count"] == 0
+    assert long_short_artifact["row_count"] == 0
+    assert long_short_artifact["blockers"] == [
+        "request_failed:TimeoutError:public market data request timed out"
+    ]
+    assert not long_short_output.exists()
+
+
 def test_long_short_ratio_quality_check_accepts_ratio_columns(tmp_path):
     data_path = tmp_path / "BTC_USDT_USDT-1h-long_short_ratio.parquet"
     pd.DataFrame(
@@ -671,6 +720,43 @@ def test_bybit_long_short_ratio_downloader_writes_sorted_parquet(tmp_path):
     assert list(frame["long_account_ratio"]) == [0.55, 0.61]
     assert list(frame["short_account_ratio"]) == [0.45, 0.39]
     assert list(frame["symbol"]) == ["BTCUSDT", "BTCUSDT"]
+
+
+def test_bybit_long_short_ratio_downloader_drops_zero_short_ratio_rows(tmp_path):
+    def fake_request_json(url: str, params: dict[str, Any], timeout: float) -> dict[str, Any]:
+        return {
+            "retCode": 0,
+            "retMsg": "OK",
+            "result": {
+                "list": [
+                    {"symbol": "BTCUSDT", "buyRatio": "1.0", "sellRatio": "0.0", "timestamp": "1735689600000"},
+                    {"symbol": "BTCUSDT", "buyRatio": "0.55", "sellRatio": "0.45", "timestamp": "1735693200000"},
+                ],
+                "nextPageCursor": "",
+            },
+        }
+
+    output_path = tmp_path / "long_short.parquet"
+    artifact = download_bybit_long_short_ratio(
+        BybitLongShortRatioDownloadInputs(
+            root_dir=tmp_path,
+            symbol="btcusdt",
+            category="linear",
+            period="1h",
+            start_time=datetime(2025, 1, 1, tzinfo=UTC),
+            end_time=datetime(2025, 1, 2, tzinfo=UTC),
+            output_path=output_path,
+        ),
+        request_json=fake_request_json,
+    )
+
+    frame = pd.read_parquet(output_path)
+
+    assert artifact["status"] == "completed"
+    assert artifact["row_count"] == 1
+    assert list(frame["short_account_ratio"]) == [0.45]
+    assert list(frame["long_short_ratio"]) == [0.55 / 0.45]
+    assert not frame["long_short_ratio"].isna().any()
 
 
 def test_structural_data_capability_report_marks_open_interest_codegen_supported_when_quality_passes(tmp_path):
@@ -9889,6 +9975,76 @@ def test_candidate_iteration_rejects_safety_relaxation(tmp_path):
     assert "revision_safety_scope_preserved" in {
         check["name"] for check in plan["checks"] if check["status"] == "blocked"
     }
+
+
+def test_candidate_iteration_blocks_invalid_timerange_calendar_dates(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_iteration import (
+        CandidateIterationInputs,
+        build_candidate_iteration_plan,
+    )
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({
+        "candidate_id": "cand-fail",
+        "strategy_name": "S",
+        "recommendation": "retry",
+        "checks": [{"name": "walk_forward", "status": "fail", "path": "wf.json"}],
+        "research_references": [
+            {
+                "title": "Post-cost validation note",
+                "url": "local:research",
+                "published_at": "2026",
+                "relevance": "Documents the failed candidate thesis.",
+                "motivated_thesis_ids": ["TH-BAD-DATE"],
+            }
+        ],
+        "next_candidate_input": {
+            "thesis_id": "TH-BAD-DATE",
+            "retry_budget_per_thesis": 3,
+            "thesis_retry_count": 1,
+        },
+    }), encoding="utf-8")
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps({
+        "strategy_name": "S",
+        "thesis_id": "TH-BAD-DATE",
+        "thesis_type": "mean_reversion",
+    }), encoding="utf-8")
+
+    plan = build_candidate_iteration_plan(CandidateIterationInputs(
+        root_dir=tmp_path,
+        candidate_manifest_path=manifest,
+        proposal_metadata_path=proposal,
+        reviewer_findings=["Prior timerange was typed incorrectly."],
+        changed_assumptions=["Retest with the same thesis only after timerange correction."],
+        unchanged_rejection_rules=["Reject if walk-forward evidence remains fragile."],
+        prior_timerange="20250230-20250301",
+        proposed_timerange="20250101-20250201",
+    ))
+
+    timerange_check = next(
+        check for check in plan["checks"] if check["name"] == "timerange_values_valid"
+    )
+    assert plan["action"] == "blocked"
+    assert timerange_check["status"] == "blocked"
+    assert timerange_check["details"]["invalid_timeranges"] == [
+        {
+            "field": "prior_timerange",
+            "value": "20250230-20250301",
+            "reason": "invalid_calendar_date",
+            "message": "day is out of range for month",
+        }
+    ]
+
+
+def test_strategy_code_generator_volatility_breakout_exit_uses_prior_rolling_low():
+    from freqtrade_ext.bot_factory.strategy_code import _exit_logic_for_variant
+
+    exit_logic = _exit_logic_for_variant("volatility_breakout")
+
+    assert 'prior_low = dataframe["rolling_low"].shift(1)' in exit_logic
+    assert 'breakout_failure = dataframe["close"] < prior_low' in exit_logic
+    assert 'breakout_failure = dataframe["close"] < dataframe["rolling_low"]' not in exit_logic
 
 
 def test_signal_diagnostics_explains_zero_entry_components(tmp_path):

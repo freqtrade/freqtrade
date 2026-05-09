@@ -3973,7 +3973,8 @@ def _exit_logic_for_variant(logic_variant: str) -> str:
             & (dataframe["volume"] > 0)
         )'''
     if logic_variant == "volatility_breakout":
-        return '''        breakout_failure = dataframe["close"] < dataframe["rolling_low"]
+        return '''        prior_low = dataframe["rolling_low"].shift(1)
+        breakout_failure = dataframe["close"] < prior_low
         mean_reversion_target = dataframe["rsi"] >= self.sell_rsi_exit.value
         exit_condition = (
             (breakout_failure | mean_reversion_target)

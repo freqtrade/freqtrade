@@ -99,6 +99,42 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #7 final review response and PR #8 stack audit.
+
+- [x] Confirmed PR #7 (`codex/bot-factory-candidate-factory-completion`) includes
+  the PR #8 research-first edge gate stack via merge commit `dc6fec6ed3`.
+- [x] Fixed unresolved PR #7 review findings:
+  - invalid candidate-iteration timerange calendar dates now return a structured
+    `timerange_values_valid` blocker instead of raising `ValueError`;
+  - `volatility_breakout` breakout-failure exits now compare against the prior
+    rolling low, so the exit branch is reachable;
+  - Bybit open-interest and long/short-ratio request failures now return
+    structured blocked artifacts instead of propagating transport exceptions;
+  - long/short-ratio output drops zero short-ratio rows before deriving
+    `long_short_ratio`, avoiding NaN rows in generated parquet/CSV output.
+- [x] Reconfirmed the research-first gate wiring: Edge Discovery sets
+  `proposal_generation_allowed` and `candidate_generation_allowed` from
+  `research_gate.passes_research_gate`, and the proposal generator blocks legacy
+  proposal flags when the Edge Discovery research gate fails.
+- [x] Candidate generation result for this audit: `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_iteration.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\bybit_open_interest.py freqtrade_ext\bot_factory\bybit_long_short_ratio.py freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_iteration or volatility_breakout or bybit_open_interest or edge_discovery or research_gate"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 33 tests; full
+  `tests\test_bot_factory.py` passed 301 tests and reached `[100%]`;
+  `git diff --check` exited `0` with no whitespace errors and the existing
+  LF-to-CRLF working-copy warning for this doc.
+- [ ] Remaining limitation: this was review hardening only. It did not create a
+  new thesis, generate a strategy candidate, run historical backtesting, start
+  paper/dry-run/live trading, call exchange order endpoints, use leverage or
+  shorting, or manage any trading process.
+
 Checked on 2026-05-09 JST for PR #8 event-label matching and shifted-control fixes.
 
 - [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so event

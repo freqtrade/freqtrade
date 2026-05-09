@@ -185,6 +185,7 @@ def _iteration_checks(
         and not inputs.changed_assumptions
         and not inputs.changed_data_requirements
     )
+    timerange_errors = _timerange_validation_errors(inputs.prior_timerange, inputs.proposed_timerange)
     return [
         _check("reviewer_findings_present", bool(inputs.reviewer_findings), "input"),
         _check(
@@ -210,6 +211,13 @@ def _iteration_checks(
             bool(research_brief.get("research_references")),
             "theory",
             "Iteration requires a structured research brief so revisions stay thesis-driven.",
+        ),
+        _check(
+            "timerange_values_valid",
+            not timerange_errors,
+            "overfit",
+            "Timeranges must use valid YYYYMMDD-YYYYMMDD calendar dates.",
+            {"invalid_timeranges": timerange_errors} if timerange_errors else None,
         ),
         _check(
             "timerange_not_narrowed_after_failure",
@@ -507,9 +515,51 @@ def _timerange_days(value: str) -> int | None:
     match = TIMERANGE_RE.match(value.strip())
     if not match:
         return None
-    start = datetime.strptime(match.group("start"), "%Y%m%d")
-    end = datetime.strptime(match.group("end"), "%Y%m%d")
+    try:
+        start = datetime.strptime(match.group("start"), "%Y%m%d")
+        end = datetime.strptime(match.group("end"), "%Y%m%d")
+    except ValueError:
+        return None
     return (end - start).days
+
+
+def _timerange_validation_errors(
+    prior: str | None,
+    proposed: str | None,
+) -> list[dict[str, str]]:
+    errors: list[dict[str, str]] = []
+    for field_name, value in (
+        ("prior_timerange", prior),
+        ("proposed_timerange", proposed),
+    ):
+        if not value:
+            continue
+        match = TIMERANGE_RE.match(value.strip())
+        if not match:
+            continue
+        try:
+            start = datetime.strptime(match.group("start"), "%Y%m%d")
+            end = datetime.strptime(match.group("end"), "%Y%m%d")
+        except ValueError as exc:
+            errors.append(
+                {
+                    "field": field_name,
+                    "value": value,
+                    "reason": "invalid_calendar_date",
+                    "message": str(exc),
+                }
+            )
+            continue
+        if start >= end:
+            errors.append(
+                {
+                    "field": field_name,
+                    "value": value,
+                    "reason": "start_must_be_before_end",
+                    "message": "Timerange start must be before end.",
+                }
+            )
+    return errors
 
 
 def _render_report(plan: dict[str, Any]) -> str:

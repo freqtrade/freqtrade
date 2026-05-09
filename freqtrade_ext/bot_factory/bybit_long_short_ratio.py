@@ -82,12 +82,16 @@ def download_bybit_long_short_ratio(
         request_params = dict(params)
         if cursor:
             request_params["cursor"] = cursor
-        payload = request_json(
-            _join_url(inputs.base_url, BYBIT_LONG_SHORT_RATIO_ENDPOINT),
-            request_params,
-            inputs.timeout_seconds,
-        )
-        ret_code = int(payload.get("retCode", -1))
+        try:
+            payload = request_json(
+                _join_url(inputs.base_url, BYBIT_LONG_SHORT_RATIO_ENDPOINT),
+                request_params,
+                inputs.timeout_seconds,
+            )
+            ret_code = int(payload.get("retCode", -1))
+        except Exception as exc:
+            blockers.append(_request_failure_blocker(exc))
+            break
         if ret_code != 0:
             ret_msg = str(payload.get("retMsg") or "unknown_error")
             blockers.append(f"bybit_ret_code:{ret_code}:{ret_msg}")
@@ -177,7 +181,7 @@ def _rows_to_frame(
     frame = frame.dropna(subset=["date", "long_account_ratio", "short_account_ratio"])
     frame = frame[
         (frame["long_account_ratio"] >= 0.0)
-        & (frame["short_account_ratio"] >= 0.0)
+        & (frame["short_account_ratio"] > 0.0)
         & (frame["long_account_ratio"] <= 1.0)
         & (frame["short_account_ratio"] <= 1.0)
     ]
@@ -223,6 +227,13 @@ def _input_blockers(
     if start_time >= end_time:
         blockers.append("start_time_must_be_before_end_time")
     return blockers
+
+
+def _request_failure_blocker(exc: Exception) -> str:
+    message = str(exc).replace("\n", " ").strip()
+    if message:
+        return f"request_failed:{type(exc).__name__}:{message}"
+    return f"request_failed:{type(exc).__name__}"
 
 
 def _artifact(
