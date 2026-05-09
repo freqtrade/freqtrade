@@ -99,6 +99,33 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 remaining P2 review fixes.
+
+- [x] Fixed `freqtrade_ext/bot_factory/cost_model.py` override selection so
+  matching overrides are ranked by selector specificity. A generic override no
+  longer wins over a later pair/timeframe/order-type-specific override.
+- [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` negative-control
+  eligible start timestamps so `next_candle_open` controls include the last
+  valid event timestamp for the configured holding period.
+- [x] Added regression tests for most-specific cost override selection and the
+  negative-control eligible timestamp off-by-one case.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 15 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with no warnings.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
 Checked on 2026-05-09 JST for PR #8 multi-pair price-series alignment hardening.
 
 - [x] Hardened `freqtrade_ext/bot_factory/local_falsification.py` so

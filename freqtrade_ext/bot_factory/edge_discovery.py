@@ -1139,8 +1139,8 @@ def _eligible_control_dates(
     frame = _price_frame_for_label(ohlcv, label)
     if frame.empty:
         return []
-    max_start = max(0, len(frame) - int(hold_candles) - 1)
-    return list(frame["date"].iloc[:max_start])
+    valid_start_count = max(0, len(frame) - int(hold_candles))
+    return list(frame["date"].iloc[:valid_start_count])
 
 
 def _event_indices_in_eligible(

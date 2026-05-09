@@ -172,10 +172,25 @@ def _select_override(
     raw = model.get("overrides")
     if not isinstance(raw, list):
         return None
+    matches: list[tuple[int, int, Mapping[str, Any]]] = []
+    selector_fields = (
+        "pair",
+        "timeframe",
+        "order_type",
+        "liquidity_tier",
+        "volatility_regime",
+    )
     for item in raw:
         if isinstance(item, Mapping) and _override_matches(item, context):
-            return item
-    return None
+            specificity = sum(
+                1
+                for field in selector_fields
+                if _string_or_none(item.get(field)) is not None
+            )
+            matches.append((specificity, len(matches), item))
+    if not matches:
+        return None
+    return max(matches, key=lambda match: (match[0], match[1]))[2]
 
 
 def _override_matches(item: Mapping[str, Any], context: CostModelContext) -> bool:

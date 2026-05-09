@@ -43,6 +43,7 @@ from freqtrade_ext.bot_factory.cost_model import (
 )
 from freqtrade_ext.bot_factory.edge_discovery import (
     EdgeDiscoveryInputs,
+    _negative_control_summary,
     build_edge_discovery,
     write_edge_discovery_artifacts,
 )
@@ -13784,6 +13785,35 @@ def test_cost_model_preserves_zero_top_level_all_in_cost_bps():
     assert scenarios["normal"]["total_cost_bps"] == 0.0
 
 
+def test_cost_model_selects_most_specific_matching_override():
+    scenarios = cost_scenarios_from_spec(
+        {
+            "pair": "BTC/USDT:USDT",
+            "timeframe": "5m",
+            "order_type": "maker",
+            "cost_model": {
+                "overrides": [
+                    {
+                        "scenarios": [
+                            {"scenario_name": "normal", "total_cost_bps": 20.0}
+                        ]
+                    },
+                    {
+                        "pair": "BTC/USDT:USDT",
+                        "timeframe": "5m",
+                        "order_type": "maker",
+                        "scenarios": [
+                            {"scenario_name": "normal", "total_cost_bps": 4.0}
+                        ],
+                    },
+                ]
+            },
+        }
+    )
+
+    assert scenarios["normal"]["total_cost_bps"] == 4.0
+
+
 def test_edge_discovery_uses_next_candle_open_entry_semantics(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     spec_path = tmp_path / "edge_spec.json"
@@ -14117,6 +14147,39 @@ def test_edge_discovery_research_gate_rejects_pair_labels_without_price_series(
     assert report["pair_evidence_unique_count"] == 2
     assert report["pair_price_series"]["shared_timestamp_count"] == 0
     assert "not_single_pair_dependent" in gate_blockers
+
+
+def test_negative_controls_include_last_valid_next_open_start():
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    ohlcv = pd.DataFrame(
+        [
+            {
+                "date": start + pd.Timedelta(days=index),
+                "open": 100.0 + index,
+                "high": 101.0 + index,
+                "low": 99.0 + index,
+                "close": 100.5 + index,
+                "volume": 1000.0,
+            }
+            for index in range(4)
+        ]
+    )
+    events = pd.DataFrame({"date": ohlcv["date"].iloc[:3].tolist()})
+
+    controls = _negative_control_summary(
+        ohlcv,
+        events,
+        hold_candles=1,
+        funding_rate=None,
+        normal_cost_bps=0.0,
+        real_net_edge_bps=None,
+    )
+
+    assert controls["random_entry"]["sample_count"] == 3
+    assert controls["shuffled_signal"]["sample_count"] == 3
+    assert controls["random_entry"]["sample_preview"][-1]["event_time"] == (
+        "2026-01-03T00:00:00+00:00"
+    )
 
 
 def test_edge_discovery_research_gate_blocks_negative_controls_and_reports_no_candidate(
