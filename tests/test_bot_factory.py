@@ -10037,6 +10037,66 @@ def test_candidate_iteration_blocks_invalid_timerange_calendar_dates(tmp_path):
     ]
 
 
+def test_candidate_iteration_blocks_malformed_timerange_strings(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_iteration import (
+        CandidateIterationInputs,
+        build_candidate_iteration_plan,
+    )
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({
+        "candidate_id": "cand-fail",
+        "strategy_name": "S",
+        "recommendation": "retry",
+        "checks": [{"name": "walk_forward", "status": "fail", "path": "wf.json"}],
+        "research_references": [
+            {
+                "title": "Post-cost validation note",
+                "url": "local:research",
+                "published_at": "2026",
+                "relevance": "Documents the failed candidate thesis.",
+                "motivated_thesis_ids": ["TH-BAD-FORMAT"],
+            }
+        ],
+        "next_candidate_input": {
+            "thesis_id": "TH-BAD-FORMAT",
+            "retry_budget_per_thesis": 3,
+            "thesis_retry_count": 1,
+        },
+    }), encoding="utf-8")
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps({
+        "strategy_name": "S",
+        "thesis_id": "TH-BAD-FORMAT",
+        "thesis_type": "mean_reversion",
+    }), encoding="utf-8")
+
+    plan = build_candidate_iteration_plan(CandidateIterationInputs(
+        root_dir=tmp_path,
+        candidate_manifest_path=manifest,
+        proposal_metadata_path=proposal,
+        reviewer_findings=["Timerange format should be rejected."],
+        changed_assumptions=["Retest only after timerange correction."],
+        unchanged_rejection_rules=["Reject if walk-forward evidence remains fragile."],
+        prior_timerange="2025-01-01-2025-02-01",
+        proposed_timerange="20250101-20250201",
+    ))
+
+    timerange_check = next(
+        check for check in plan["checks"] if check["name"] == "timerange_values_valid"
+    )
+    assert plan["action"] == "blocked"
+    assert timerange_check["status"] == "blocked"
+    assert timerange_check["details"]["invalid_timeranges"] == [
+        {
+            "field": "prior_timerange",
+            "value": "2025-01-01-2025-02-01",
+            "reason": "invalid_format",
+            "message": "Timerange must match YYYYMMDD-YYYYMMDD.",
+        }
+    ]
+
+
 def test_strategy_code_generator_volatility_breakout_exit_uses_prior_rolling_low():
     from freqtrade_ext.bot_factory.strategy_code import _exit_logic_for_variant
 

@@ -536,6 +536,14 @@ def _timerange_validation_errors(
             continue
         match = TIMERANGE_RE.match(value.strip())
         if not match:
+            errors.append(
+                {
+                    "field": field_name,
+                    "value": value,
+                    "reason": "invalid_format",
+                    "message": "Timerange must match YYYYMMDD-YYYYMMDD.",
+                }
+            )
             continue
         try:
             start = datetime.strptime(match.group("start"), "%Y%m%d")
