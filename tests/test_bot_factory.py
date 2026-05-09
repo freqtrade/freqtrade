@@ -43,6 +43,7 @@ from freqtrade_ext.bot_factory.cost_model import (
 )
 from freqtrade_ext.bot_factory.edge_discovery import (
     EdgeDiscoveryInputs,
+    _control_events,
     _event_level_post_cost_report,
     _negative_control_summary,
     _price_frame_for_label,
@@ -14379,6 +14380,42 @@ def test_negative_controls_include_last_valid_next_open_start():
     )
 
 
+def test_shifted_negative_controls_preserve_sample_count_near_boundaries():
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    ohlcv = pd.DataFrame(
+        [
+            {
+                "date": start + pd.Timedelta(days=index),
+                "pair": "BTC/USDT:USDT",
+                "open": 100.0 + index,
+                "high": 101.0 + index,
+                "low": 99.0 + index,
+                "close": 100.5 + index,
+                "volume": 1000.0,
+            }
+            for index in range(8)
+        ]
+    )
+    events = pd.DataFrame(
+        {
+            "date": [start + pd.Timedelta(days=index) for index in (3, 4, 5)],
+            "pair": ["BTC/USDT:USDT"] * 3,
+        }
+    )
+
+    controls = _control_events(
+        ohlcv,
+        events,
+        hold_candles=2,
+        event_count=len(events),
+        mode="shifted_future",
+    )
+
+    assert len(controls) == 3
+    assert len({control["date"] for control in controls}) == 3
+    assert {control["pair"] for control in controls} == {"BTC/USDT:USDT"}
+
+
 def test_edge_discovery_research_gate_blocks_negative_controls_and_reports_no_candidate(
     tmp_path,
 ):
@@ -15160,6 +15197,65 @@ def test_local_falsification_prefers_populated_symbol_column_for_labeled_events(
             root_dir=tmp_path,
             thesis_id="TH-LOCAL-SYMBOL-PRICE-MATCH-001",
             mechanism_class="local_symbol_price_alignment_probe",
+            ohlcv_path=ohlcv_path,
+            event_path=event_path,
+            hold_candles=1,
+            all_in_cost_bps=0.0,
+            min_sample_count=1,
+            min_profitable_windows_ratio=1.0,
+            created_at="2026-05-09T00:00:00+00:00",
+        )
+    )
+
+    assert artifact["status"] == "passed"
+    assert artifact["sample_count"] == 1
+    sample = artifact["sample_preview"][0]
+    assert sample["symbol"] == "ETH/USDT:USDT"
+    assert sample["entry_price"] == 100.0
+    assert sample["exit_price"] == 105.0
+    assert sample["price_series_instrument"] == "ETH/USDT:USDT"
+    assert sample["price_series_instrument_column"] == "symbol"
+
+
+def test_local_falsification_prefers_event_label_matching_price_column(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    event_path = tmp_path / "events.csv"
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    rows = []
+    btc_closes = [500.0, 1000.0, 1.0]
+    eth_closes = [100.0, 100.0, 105.0]
+    for index in range(3):
+        for symbol, closes in (
+            ("BTC/USDT:USDT", btc_closes),
+            ("ETH/USDT:USDT", eth_closes),
+        ):
+            close = closes[index]
+            rows.append(
+                {
+                    "date": start + pd.Timedelta(hours=index),
+                    "pair": "perpetual_futures",
+                    "symbol": symbol,
+                    "open": close,
+                    "high": close + 1.0,
+                    "low": close - 1.0,
+                    "close": close,
+                    "volume": 1000.0,
+                }
+            )
+    pd.DataFrame(rows).to_csv(ohlcv_path, index=False)
+    pd.DataFrame(
+        {
+            "date": [start + pd.Timedelta(hours=1)],
+            "pair": ["perpetual_futures"],
+            "symbol": ["ETH/USDT:USDT"],
+        }
+    ).to_csv(event_path, index=False)
+
+    artifact = build_local_falsification(
+        LocalFalsificationInputs(
+            root_dir=tmp_path,
+            thesis_id="TH-LOCAL-MATCHING-EVENT-LABEL-001",
+            mechanism_class="local_matching_event_label_probe",
             ohlcv_path=ohlcv_path,
             event_path=event_path,
             hold_candles=1,

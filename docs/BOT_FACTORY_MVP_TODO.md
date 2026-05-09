@@ -99,6 +99,37 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 event-label matching and shifted-control fixes.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so event
+  instrument labels are chosen by matching the available OHLCV instrument
+  columns. If an event row has both a coarse `pair` label and a populated
+  `symbol` that matches the price series, local falsification now evaluates the
+  event against the `symbol` price subset instead of the coarse mixed slice.
+- [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` negative controls so
+  shifted controls preserve the requested sample count near time-series
+  boundaries by shifting within the same pair's eligible dates instead of
+  clamping several events onto one boundary timestamp.
+- [x] Added regression coverage for event-label selection with coarse
+  `pair`/specific `symbol` rows and for shifted future controls preserving
+  sample count and pair evidence near the right boundary.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report or populated_symbol_column or local_events_grouped_features"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 36 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
 Checked on 2026-05-09 JST for PR #8 local-event grouped instrument scan fix.
 
 - [x] Fixed `freqtrade_ext/bot_factory/local_events.py` so local OHLCV

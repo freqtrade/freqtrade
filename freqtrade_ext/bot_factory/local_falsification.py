@@ -752,8 +752,11 @@ def _event_returns(
     event_records = events.to_dict("records")
     for event in event_records:
         event_time = event["date"]
-        event_label, event_label_column = _event_instrument_label(event)
-        price_frame = _price_frame_for_event(ohlcv_frame, event_label)
+        event_label, event_label_column = _event_instrument_label(event, ohlcv_frame)
+        price_frame, price_instrument_column = _price_frame_for_event(
+            ohlcv_frame,
+            event_label,
+        )
         if price_frame.empty or (multi_instrument and event_label is None):
             continue
         candle_times = list(price_frame["date"])
@@ -801,29 +804,30 @@ def _event_returns(
         }
         if event_label is not None:
             row[event_label_column or "pair"] = event_label
-            instrument_column = _instrument_column(price_frame)
-            if instrument_column is not None:
+            if price_instrument_column is not None:
                 row["price_series_instrument"] = event_label
-                row["price_series_instrument_column"] = instrument_column
+                row["price_series_instrument_column"] = price_instrument_column
             else:
                 row["price_series_instrument_unverified"] = True
         rows.append(row)
     return rows
 
 
-def _price_frame_for_event(ohlcv: pd.DataFrame, event_label: str | None) -> pd.DataFrame:
+def _price_frame_for_event(
+    ohlcv: pd.DataFrame, event_label: str | None
+) -> tuple[pd.DataFrame, str | None]:
     if event_label is None:
-        return ohlcv.sort_values("date").reset_index(drop=True)
+        return ohlcv.sort_values("date").reset_index(drop=True), None
     column = _instrument_column_for_label(ohlcv, event_label)
     if column is None:
         if _instrument_column(ohlcv) is None:
-            return ohlcv.sort_values("date").reset_index(drop=True)
-        return ohlcv.iloc[0:0].copy()
+            return ohlcv.sort_values("date").reset_index(drop=True), None
+        return ohlcv.iloc[0:0].copy(), None
     labels = ohlcv[column].map(_string_evidence_or_none)
     subset = ohlcv[labels == event_label]
     if subset.empty:
-        return subset.copy()
-    return subset.sort_values("date").reset_index(drop=True)
+        return subset.copy(), column
+    return subset.sort_values("date").reset_index(drop=True), column
 
 
 def _is_multi_instrument_frame(frame: pd.DataFrame) -> bool:
@@ -870,12 +874,54 @@ def _instrument_column_candidates(frame: pd.DataFrame) -> list[str]:
     return [column for _count, _priority, column in sorted(ranked)]
 
 
-def _event_instrument_label(event: dict[str, Any]) -> tuple[str | None, str | None]:
+def _event_instrument_label(
+    event: dict[str, Any], ohlcv: pd.DataFrame | None = None
+) -> tuple[str | None, str | None]:
+    candidates: list[tuple[str, str]] = []
     for column in ("pair", "symbol", "instrument"):
         value = _string_evidence_or_none(event.get(column))
         if value is not None:
-            return value, column
-    return None, None
+            candidates.append((value, column))
+    if not candidates:
+        return None, None
+    if ohlcv is not None:
+        match = _event_label_matching_price_columns(candidates, ohlcv)
+        if match is not None:
+            return match
+        if _instrument_column(ohlcv) is None:
+            return candidates[0]
+    return candidates[0]
+
+
+def _event_label_matching_price_columns(
+    candidates: Sequence[tuple[str, str]], ohlcv: pd.DataFrame
+) -> tuple[str, str] | None:
+    ranked: list[tuple[int, int, int, str, str]] = []
+    column_priority = {"pair": 0, "symbol": 1, "instrument": 2}
+    for event_priority, (label, event_column) in enumerate(candidates):
+        price_column = _instrument_column_for_label(ohlcv, label)
+        if price_column is None:
+            continue
+        label_count = len(
+            {
+                value
+                for value in ohlcv[price_column].map(_string_evidence_or_none)
+                if value is not None
+            }
+        )
+        ranked.append(
+            (
+                label_count,
+                -column_priority.get(price_column, 99),
+                -event_priority,
+                label,
+                event_column,
+            )
+        )
+    if not ranked:
+        return None
+    _label_count, _price_priority, _event_priority, label, event_column = max(ranked)
+    return label, event_column
 
 
 def _string_evidence_or_none(value: Any) -> str | None:

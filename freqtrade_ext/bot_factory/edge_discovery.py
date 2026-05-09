@@ -934,7 +934,7 @@ def _event_pair_alignment_summary(
     event_labels: list[str] = []
     missing_event_label_count = 0
     for event in events.to_dict("records"):
-        label, _column = _event_pair_label_and_column(event)
+        label, _column = _event_pair_label_and_column(event, ohlcv)
         if label is None:
             missing_event_label_count += 1
         else:
@@ -1106,7 +1106,7 @@ def _control_events(
     grouped: dict[tuple[str | None, str | None], list[dict[str, Any]]] = {}
     ohlcv_multi_instrument = _is_multi_instrument_ohlcv(ohlcv)
     for event in event_records:
-        label, column = _event_pair_label_and_column(event)
+        label, column = _event_pair_label_and_column(event, ohlcv)
         if ohlcv_multi_instrument and label is None:
             continue
         grouped.setdefault((label, column), []).append(event)
@@ -1135,12 +1135,24 @@ def _control_events(
             shift = int(hold_candles)
             indices = _event_indices_in_eligible(group, eligible)
             if mode == "shifted_past":
-                shifted = [max(0, index - shift) for index in indices]
+                shifted = _shifted_control_indices(
+                    indices,
+                    eligible_count=len(eligible),
+                    shift=shift,
+                    count=count,
+                    direction="past",
+                )
             elif mode == "shifted_future":
-                shifted = [min(len(eligible) - 1, index + shift) for index in indices]
+                shifted = _shifted_control_indices(
+                    indices,
+                    eligible_count=len(eligible),
+                    shift=shift,
+                    count=count,
+                    direction="future",
+                )
             else:
                 shifted = []
-            selected = [eligible[index] for index in _dedupe_ints(shifted)[:count]]
+            selected = [eligible[index] for index in shifted[:count]]
         controls.extend(_control_event(date, label=label, column=column) for date in selected)
     return sorted(controls, key=lambda item: str(item["date"]))
 
@@ -1178,6 +1190,38 @@ def _dedupe_ints(values: Sequence[int]) -> list[int]:
         if value not in deduped:
             deduped.append(value)
     return deduped
+
+
+def _shifted_control_indices(
+    indices: Sequence[int],
+    *,
+    eligible_count: int,
+    shift: int,
+    count: int,
+    direction: str,
+) -> list[int]:
+    if eligible_count <= 0 or count <= 0:
+        return []
+    effective_shift = int(shift) % int(eligible_count)
+    if effective_shift == 0:
+        effective_shift = 1
+    offset = -effective_shift if direction == "past" else effective_shift
+    selected: list[int] = []
+    seen: set[int] = set()
+    for index in indices:
+        shifted = (int(index) + offset) % int(eligible_count)
+        if shifted not in seen:
+            selected.append(shifted)
+            seen.add(shifted)
+        if len(selected) >= count:
+            return selected
+    for shifted in range(int(eligible_count)):
+        if shifted not in seen:
+            selected.append(shifted)
+            seen.add(shifted)
+        if len(selected) >= count:
+            break
+    return selected
 
 
 def _control_event(date: Any, *, label: str | None, column: str | None) -> dict[str, Any]:
@@ -1487,12 +1531,48 @@ def _pair_evidence_label(row: dict[str, Any]) -> str | None:
     return label
 
 
-def _event_pair_label_and_column(row: dict[str, Any]) -> tuple[str | None, str | None]:
+def _event_pair_label_and_column(
+    row: dict[str, Any], ohlcv: pd.DataFrame | None = None
+) -> tuple[str | None, str | None]:
+    candidates: list[tuple[str, str]] = []
     for column in ("pair", "symbol", "instrument"):
         label = _string_label(row.get(column))
         if label is not None:
-            return label, column
-    return None, None
+            candidates.append((label, column))
+    if not candidates:
+        return None, None
+    if ohlcv is not None:
+        match = _event_label_matching_price_columns(candidates, ohlcv)
+        if match is not None:
+            return match
+        if _instrument_column(ohlcv) is None:
+            return candidates[0]
+    return candidates[0]
+
+
+def _event_label_matching_price_columns(
+    candidates: Sequence[tuple[str, str]], ohlcv: pd.DataFrame
+) -> tuple[str, str] | None:
+    ranked: list[tuple[int, int, int, str, str]] = []
+    column_priority = {"pair": 0, "symbol": 1, "instrument": 2}
+    for event_priority, (label, event_column) in enumerate(candidates):
+        price_column = _instrument_column_for_label(ohlcv, label)
+        if price_column is None:
+            continue
+        label_count = len(_instrument_label_set(ohlcv, price_column))
+        ranked.append(
+            (
+                label_count,
+                -column_priority.get(price_column, 99),
+                -event_priority,
+                label,
+                event_column,
+            )
+        )
+    if not ranked:
+        return None
+    _label_count, _price_priority, _event_priority, label, event_column = max(ranked)
+    return label, event_column
 
 
 def _string_label(value: Any) -> str | None:
