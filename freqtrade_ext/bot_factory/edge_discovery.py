@@ -1323,10 +1323,20 @@ def _event_level_post_cost_report(
     concentration: dict[str, Any],
 ) -> dict[str, Any]:
     selected = None
-    passing_gate = [item for item in horizon_results if item.get("passes_research_gate")]
+    structurally_passing = [
+        item for item in horizon_results if item.get("status") == "passed"
+    ]
+    passing_gate = [
+        item for item in structurally_passing if item.get("passes_research_gate")
+    ]
     if passing_gate:
         selected = max(
             passing_gate,
+            key=lambda item: float(item.get("net_edge_bps_normal") or -1e9),
+        )
+    elif structurally_passing:
+        selected = max(
+            structurally_passing,
             key=lambda item: float(item.get("net_edge_bps_normal") or -1e9),
         )
     elif best_horizon is not None:

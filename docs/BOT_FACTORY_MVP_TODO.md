@@ -99,6 +99,37 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 research-gate horizon selection fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` so
+  `_event_level_post_cost_report()` only selects a `passes_research_gate=true`
+  horizon when that same horizon also has `status="passed"`. Structurally
+  failing horizons can no longer drive the event-level research gate to true
+  while a different horizon satisfies the overall `passing_horizon_count`.
+- [x] When no structurally passing horizon also passes the research gate, the
+  report now prefers the best structurally passing horizon for diagnostics; if
+  none exists, it falls back to the prior best-horizon diagnostic path.
+- [x] Added regression coverage proving a structurally failed horizon with
+  `passes_research_gate=true` is ignored in favor of a structurally passed
+  horizon whose research gate fails, preserving `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 31 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
 Checked on 2026-05-09 JST for PR #8 cost-model scenario override merge fixes.
 
 - [x] Fixed `freqtrade_ext/bot_factory/cost_model.py` so partial scenario

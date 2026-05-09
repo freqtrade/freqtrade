@@ -43,6 +43,7 @@ from freqtrade_ext.bot_factory.cost_model import (
 )
 from freqtrade_ext.bot_factory.edge_discovery import (
     EdgeDiscoveryInputs,
+    _event_level_post_cost_report,
     _negative_control_summary,
     build_edge_discovery,
     write_edge_discovery_artifacts,
@@ -13860,6 +13861,50 @@ def test_cost_model_merges_selected_override_with_base_scenarios():
 
     assert scenarios["normal"]["total_cost_bps"] == 4.0
     assert scenarios["stress"]["total_cost_bps"] == 30.0
+
+
+def test_event_level_report_ignores_gate_pass_on_structurally_failed_horizon():
+    report = _event_level_post_cost_report(
+        {
+            "thesis_id": "TH-STRUCTURAL-HORIZON-GATE-001",
+            "mechanism_class": "structural_gate_selection_probe",
+        },
+        best_horizon={
+            "hold_candles": 1,
+            "net_edge_bps_normal": 50.0,
+        },
+        horizon_results=[
+            {
+                "hold_candles": 1,
+                "status": "failed",
+                "sample_count": 2,
+                "net_edge_bps_normal": 50.0,
+                "passes_research_gate": True,
+                "research_gate": {
+                    "passes_research_gate": True,
+                    "rejection_reason": None,
+                    "candidate_generation_result": "candidate generation allowed",
+                },
+            },
+            {
+                "hold_candles": 2,
+                "status": "passed",
+                "sample_count": 64,
+                "net_edge_bps_normal": 5.0,
+                "passes_research_gate": False,
+                "research_gate": {
+                    "passes_research_gate": False,
+                    "rejection_reason": "random_entry_control_beaten",
+                    "candidate_generation_result": "no candidate generated",
+                },
+            },
+        ],
+        concentration={"max_quarter_event_share": 0.25},
+    )
+
+    assert report["holding_period"] == 2
+    assert report["passes_research_gate"] is False
+    assert report["candidate_generation_result"] == "no candidate generated"
 
 
 def test_edge_discovery_uses_next_candle_open_entry_semantics(tmp_path):
