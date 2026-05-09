@@ -99,6 +99,41 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-10 JST for PR #7 trend-continuation and generated-file static-check review follow-up.
+
+- [x] Fixed the new PR #7 review finding on `trend_continuation` exits.
+  Generated `trend_continuation` strategies now treat RSI exit as a high-RSI
+  target (`rsi >= sell_rsi_exit`) aligned with the other exit targets instead
+  of exiting on ordinary post-entry RSI cooldowns.
+- [x] Fixed the new PR #7 review finding on Candidate Evaluation static
+  safety checks. When generated metadata provides a `.py`
+  `generated_strategy_path`, the historical execution plan now passes that
+  generated file path directly to `scripts\bot_factory_static_check.py` instead
+  of broadening the scan to the parent strategies directory.
+- [x] Added regression coverage for both review findings: generated
+  `trend_continuation` code must use the high-RSI comparison, and candidate
+  evaluation must static-check the generated strategy file path.
+- [x] Candidate generation result for this follow-up: `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator_varies_logic_by_hypothesis_family or candidate_evaluation_static_check_uses_generated_strategy_file_path"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator or candidate_evaluation"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 2 tests; broader
+  strategy-code/candidate-evaluation selector reached `[100%]`; full
+  `tests\test_bot_factory.py` reached `[100%]`; `git diff --check` exited `0`
+  with no whitespace errors and the existing LF-to-CRLF working-copy warning
+  for this doc.
+- [ ] Remaining limitation: this was review hardening only. It did not create a
+  new thesis, generate a strategy candidate, run historical backtesting, start
+  paper/dry-run/live trading, call exchange order endpoints, use leverage or
+  shorting, or manage any trading process.
+
 Checked on 2026-05-10 JST for PR #7 skipped optional ranking checks review follow-up.
 
 - [x] Fixed the new PR #7 review finding on Candidate Ranking paper-ready

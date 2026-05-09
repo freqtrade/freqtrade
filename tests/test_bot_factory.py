@@ -3754,6 +3754,8 @@ def test_strategy_code_generator_varies_logic_by_hypothesis_family(tmp_path):
     assert artifacts.metadata["strategy_logic_variant"] == "trend_continuation"
     assert artifacts.metadata["parameter_defaults"]["buy_ema_slow"] == 64
     assert "trend_continuation" in generated_code
+    assert 'rsi_target = dataframe["rsi"] >= self.sell_rsi_exit.value' in generated_code
+    assert 'rsi_cooldown = dataframe["rsi"] < self.sell_rsi_exit.value' not in generated_code
     assert "rsi_pullback_recovery" not in generated_code
 
 
@@ -9377,6 +9379,53 @@ def test_candidate_evaluation_execution_stops_after_wrapper_failure(tmp_path):
     assert manifest["candidate_execution"]["results"][0]["returncode"] == 1
     assert len(calls) == 1
     assert manifest["recommendation"] == "fail"
+
+
+def test_candidate_evaluation_static_check_uses_generated_strategy_file_path(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_evaluation import CandidateEvaluationInputs, evaluate_candidate
+
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps({
+        "strategy_name": "GeneratedRuleStrategy",
+        "code_generation_eligible": True,
+        "thesis_id": "TH-FILE-PATH",
+        **_candidate_research_metadata("TH-FILE-PATH"),
+    }), encoding="utf-8")
+    generated = tmp_path / "generated.json"
+    generated.write_text(json.dumps({
+        "strategy_name": "GeneratedRuleStrategy",
+        "candidate_evaluation_eligible": True,
+        "generator_mode": "rule_based",
+        "generated_strategy_path": "user_data/strategies/GeneratedRuleStrategy.py",
+    }), encoding="utf-8")
+    config = tmp_path / "config.json"
+    config.write_text("{}", encoding="utf-8")
+    calls: list[list[str]] = []
+
+    def failing_runner(command, cwd):
+        calls.append(list(command))
+        return SimpleNamespace(returncode=1, stdout="static failed", stderr="")
+
+    manifest = evaluate_candidate(CandidateEvaluationInputs(
+        root_dir=tmp_path,
+        proposal_metadata_path=proposal,
+        generated_metadata_path=generated,
+        candidate_id="cand-file-path",
+        config_path=config,
+        execute_historical_chain=True,
+        execution_run_id="exec-file-path",
+        python_executable="python",
+        timerange="20250101-20250103",
+        command_runner=failing_runner,
+    ))
+
+    assert len(calls) == 1
+    assert calls[0][0:3] == [
+        "python",
+        "scripts/bot_factory_static_check.py",
+        "user_data/strategies/GeneratedRuleStrategy.py",
+    ]
+    assert manifest["candidate_execution"]["status"] == "failed"
 
 
 def test_candidate_evaluation_cli_maps_execution_flags(tmp_path):

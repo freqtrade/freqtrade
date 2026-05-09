@@ -3967,9 +3967,9 @@ def _exit_logic_for_variant(logic_variant: str) -> str:
         )'''
     if logic_variant == "trend_continuation":
         return '''        trend_exhaustion = dataframe["ema_fast"] < dataframe["ema_slow"]
-        rsi_cooldown = dataframe["rsi"] < self.sell_rsi_exit.value
+        rsi_target = dataframe["rsi"] >= self.sell_rsi_exit.value
         exit_condition = (
-            (trend_exhaustion | rsi_cooldown)
+            (trend_exhaustion | rsi_target)
             & (dataframe["volume"] > 0)
         )'''
     if logic_variant == "volatility_breakout":

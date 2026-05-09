@@ -630,7 +630,7 @@ def _candidate_strategy_path(
     if not raw:
         return None
     path = _resolve(Path(str(raw)), root)
-    return _rel(path.parent if path.suffix == ".py" else path, root)
+    return _rel(path, root)
 
 
 def _path_artifacts(plan: dict[str, Any], root: Path) -> dict[str, Path]:
