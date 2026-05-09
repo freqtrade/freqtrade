@@ -1,13 +1,21 @@
 from __future__ import annotations
 
 import json
+import random
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from math import sqrt
 from pathlib import Path
 from typing import Any, Sequence
 
 import pandas as pd
 
+from freqtrade_ext.bot_factory.cost_model import (
+    CostModelContext,
+    cost_context_from_spec,
+    cost_scenarios_from_spec,
+)
 from freqtrade_ext.bot_factory.local_events import (
     _OPS,
     _attach_context_features,
@@ -65,6 +73,18 @@ _PARAMETER_SEARCH_KEYS = {
     "threshold_grid",
     "values",
 }
+_EMPTY_INSTRUMENT_LABELS = {
+    "-",
+    "--",
+    "n/a",
+    "na",
+    "nan",
+    "none",
+    "null",
+    "placeholder",
+    "undefined",
+    "unknown",
+}
 
 
 @dataclass(frozen=True)
@@ -94,6 +114,7 @@ class EdgeDiscoveryInputs:
     min_data_span_days: float = 0.0
     min_passing_horizon_count: int = 1
     max_horizon_count: int = 5
+    min_negative_control_delta_bps: float = 1.0
     reviewer_notes: Sequence[str] = field(default_factory=list)
     created_by_agent: str = "codex"
     created_at: str | None = None
@@ -132,7 +153,9 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
         generated_at,
         str(spec.get("edge_discovery_id") or spec.get("thesis_id") or "edge_discovery"),
     )
-    all_in_cost_bps = _edge_cost_bps(spec)
+    cost_context = cost_context_from_spec(spec)
+    cost_scenarios = cost_scenarios_from_spec(spec, context=cost_context)
+    all_in_cost_bps = _normal_cost_bps(cost_scenarios)
     horizons = _edge_horizons(spec)
     anti_search = _anti_parameter_search_summary(spec)
     hypothesis_scope = _hypothesis_scope(spec)
@@ -212,6 +235,7 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
             {"min_passing_horizon_count": int(inputs.min_passing_horizon_count)},
         ),
     ]
+    checks.extend(_cost_scenario_checks(cost_scenarios, cost_context))
 
     condition_checks, conditions = _condition_checks(spec)
     checks.extend(condition_checks)
@@ -386,7 +410,7 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
         ohlcv,
         events,
         horizons=horizons,
-        all_in_cost_bps=all_in_cost_bps,
+        cost_scenarios=cost_scenarios,
         funding_rate=funding_rate if funding_rate_path is not None else None,
         min_sample_count=int(inputs.min_sample_count),
         min_profitable_windows_ratio=float(inputs.min_profitable_windows_ratio),
@@ -394,6 +418,7 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
         min_profitable_calendar_windows_ratio=float(
             inputs.min_profitable_calendar_windows_ratio
         ),
+        min_negative_control_delta_bps=float(inputs.min_negative_control_delta_bps),
     )
     passing_horizons = [
         item for item in horizon_results if item.get("status") == "passed"
@@ -440,7 +465,19 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
     )
     best_horizon = _best_horizon(horizon_results)
     concentration = _event_concentration_diagnostics(events)
-    blocked_next_actions = _blocked_next_actions(status)
+    event_level_report = _event_level_post_cost_report(
+        spec,
+        best_horizon=best_horizon,
+        horizon_results=horizon_results,
+        concentration=concentration,
+    )
+    research_gate = event_level_report["research_gate"]
+    candidate_generation_allowed = (
+        status == "passed" and research_gate["passes_research_gate"] is True
+    )
+    blocked_next_actions = _blocked_next_actions(
+        status, candidate_generation_allowed=candidate_generation_allowed
+    )
     return {
         "generated_at": generated_at,
         "factory": "research_edge_discovery",
@@ -469,6 +506,8 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
         "hypothesis_scope": hypothesis_scope,
         "instrument_universe": instrument_universe,
         "market_structure_domains": market_structure_domains,
+        "cost_model_context": _cost_model_context_summary(cost_context),
+        "cost_scenarios": cost_scenarios,
         "open_interest_quality_reports": open_interest_quality_reports,
         "long_short_ratio_quality_reports": long_short_ratio_quality_reports,
         "liquidation_quality_reports": liquidation_quality_reports,
@@ -567,13 +606,23 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
             for item in passing_horizons
         ],
         "best_horizon_by_net_edge": best_horizon,
+        "event_level_post_cost_edge_report": event_level_report,
+        "research_gate": research_gate,
+        "candidate_generation_allowed": candidate_generation_allowed,
+        "candidate_generation_result": (
+            "candidate generation allowed"
+            if candidate_generation_allowed
+            else "no candidate generated"
+        ),
         "promotion_gate": {
-            "proposal_generation_allowed": status == "passed",
+            "proposal_generation_allowed": candidate_generation_allowed,
             "strategy_codegen_allowed": False,
+            "candidate_generation_allowed": candidate_generation_allowed,
             "must_pass_research_selection_after_edge_discovery": True,
+            "must_pass_research_gate_before_candidate_generation": True,
             "blocked_next_actions": blocked_next_actions,
         },
-        "proposal_generation_allowed": status == "passed",
+        "proposal_generation_allowed": candidate_generation_allowed,
         "strategy_codegen_allowed": False,
         "blocked_next_actions": blocked_next_actions,
         "checks": checks,
@@ -628,13 +677,15 @@ def _horizon_results(
     events: Sequence[dict[str, Any]],
     *,
     horizons: Sequence[int],
-    all_in_cost_bps: float | None,
+    cost_scenarios: dict[str, dict[str, Any]],
     funding_rate: pd.DataFrame | None,
     min_sample_count: int,
     min_profitable_windows_ratio: float,
     min_calendar_window_count: int,
     min_profitable_calendar_windows_ratio: float,
+    min_negative_control_delta_bps: float,
 ) -> list[dict[str, Any]]:
+    all_in_cost_bps = _normal_cost_bps(cost_scenarios)
     if ohlcv is None or not events or all_in_cost_bps is None:
         return []
     event_frame = pd.DataFrame(events)
@@ -643,24 +694,38 @@ def _horizon_results(
     event_frame = event_frame.copy()
     event_frame["date"] = pd.to_datetime(event_frame["date"], utc=True, errors="coerce")
     event_frame = event_frame.dropna(subset=["date"]).sort_values("date")
+    event_return_columns = [
+        "date",
+        *[
+            column
+            for column in ("pair", "symbol", "instrument")
+            if column in event_frame.columns
+        ],
+    ]
     results: list[dict[str, Any]] = []
     for horizon in horizons:
         rows = _event_returns(
             ohlcv,
-            event_frame[["date"]],
+            event_frame[event_return_columns],
             hold_candles=int(horizon),
             funding_rate=funding_rate,
+            entry_semantics="next_candle_open",
         )
         expected_price_edge_bps = _mean([item["price_return_bps"] for item in rows])
         expected_funding_adjustment_bps = _mean(
             [item["funding_adjustment_bps"] for item in rows]
         )
         expected_edge_bps = _mean([item["gross_return_bps"] for item in rows])
+        gross_edge_bps = expected_edge_bps
+        cost_bps = _scenario_costs(cost_scenarios)
         net_edge_bps = (
             None
             if expected_edge_bps is None
             else round(expected_edge_bps - float(all_in_cost_bps), 6)
         )
+        net_edge_bps_best = _net_edge(expected_edge_bps, cost_bps["best"])
+        net_edge_bps_normal = _net_edge(expected_edge_bps, cost_bps["normal"])
+        net_edge_bps_stress = _net_edge(expected_edge_bps, cost_bps["stress"])
         windows = _window_summaries(rows, all_in_cost_bps=float(all_in_cost_bps))
         calendar_windows = _calendar_window_summaries(
             rows,
@@ -683,6 +748,50 @@ def _horizon_results(
             0.0
             if calendar_window_count == 0
             else round(profitable_calendar_window_count / calendar_window_count, 4)
+        )
+        lower_confidence_bound_bps = _lower_confidence_bound_bps(
+            [float(item["gross_return_bps"]) for item in rows],
+            cost_bps["normal"],
+        )
+        pair_alignment = _event_pair_alignment_summary(ohlcv, event_frame)
+        pair_price_series = _pair_price_series_summary(ohlcv)
+        negative_controls = _negative_control_summary(
+            ohlcv,
+            event_frame[event_return_columns],
+            hold_candles=int(horizon),
+            funding_rate=funding_rate,
+            normal_cost_bps=cost_bps["normal"],
+            real_net_edge_bps=net_edge_bps_normal,
+        )
+        pair_evidence = _pair_evidence_summary(rows)
+        pair_concentration = _effective_pair_concentration(
+            pair_evidence,
+            pair_price_series,
+        )
+        calendar_concentration = (
+            None
+            if calendar_window_count == 0
+            else max(
+                (
+                    item["sample_count"] / len(rows)
+                    for item in calendar_windows
+                    if len(rows) > 0
+                ),
+                default=None,
+            )
+        )
+        walk_forward_pass_rate = profitable_calendar_windows_ratio
+        research_gate = _research_gate_summary(
+            net_edge_bps_normal=net_edge_bps_normal,
+            net_edge_bps_stress=net_edge_bps_stress,
+            profitable_windows_ratio=profitable_windows_ratio,
+            walk_forward_pass_rate=walk_forward_pass_rate,
+            lower_confidence_bound_bps=lower_confidence_bound_bps,
+            pair_concentration=pair_concentration,
+            calendar_concentration=calendar_concentration,
+            negative_controls=negative_controls,
+            min_negative_control_delta_bps=min_negative_control_delta_bps,
+            entry_semantics="next_candle_open",
         )
         horizon_checks = [
             _check(
@@ -733,6 +842,19 @@ def _horizon_results(
                     ),
                 },
             ),
+            _check(
+                "event_pair_labels_present_for_multi_instrument_ohlcv",
+                not (
+                    pair_alignment["ohlcv_multi_instrument"]
+                    and pair_alignment["missing_event_label_count"] > 0
+                ),
+                pair_alignment,
+            ),
+            _check(
+                "event_pair_labels_match_ohlcv",
+                pair_alignment["unmatched_event_label_count"] == 0,
+                pair_alignment,
+            ),
         ]
         results.append(
             {
@@ -746,9 +868,16 @@ def _horizon_results(
                 "expected_price_edge_bps": expected_price_edge_bps,
                 "expected_funding_adjustment_bps": expected_funding_adjustment_bps,
                 "expected_edge_bps": expected_edge_bps,
+                "gross_edge_bps": gross_edge_bps,
                 "median_edge_bps": _median([item["gross_return_bps"] for item in rows]),
+                "cost_bps_best": cost_bps["best"],
+                "cost_bps_normal": cost_bps["normal"],
+                "cost_bps_stress": cost_bps["stress"],
                 "all_in_cost_bps": float(all_in_cost_bps),
                 "net_edge_bps": net_edge_bps,
+                "net_edge_bps_best": net_edge_bps_best,
+                "net_edge_bps_normal": net_edge_bps_normal,
+                "net_edge_bps_stress": net_edge_bps_stress,
                 "win_rate": _win_rate([item["gross_return_bps"] for item in rows]),
                 "window_count": window_count,
                 "profitable_window_count": profitable_window_count,
@@ -757,6 +886,33 @@ def _horizon_results(
                 "calendar_window_count": calendar_window_count,
                 "profitable_calendar_window_count": profitable_calendar_window_count,
                 "profitable_calendar_windows_ratio": profitable_calendar_windows_ratio,
+                "walk_forward_pass_rate": walk_forward_pass_rate,
+                "lower_confidence_bound_bps": lower_confidence_bound_bps,
+                "pair_concentration": pair_concentration,
+                "pair_evidence_count": pair_evidence["pair_evidence_count"],
+                "pair_evidence_unique_count": pair_evidence[
+                    "pair_evidence_unique_count"
+                ],
+                "pair_evidence_distribution": pair_evidence[
+                    "pair_evidence_distribution"
+                ],
+                "pair_alignment": pair_alignment,
+                "pair_price_series": pair_price_series,
+                "calendar_concentration": calendar_concentration,
+                "negative_controls": negative_controls,
+                "negative_control_random_entry_delta_bps": negative_controls[
+                    "random_entry"
+                ]["delta_bps"],
+                "negative_control_shuffled_signal_delta_bps": negative_controls[
+                    "shuffled_signal"
+                ]["delta_bps"],
+                "negative_control_shifted_signal_delta_bps": negative_controls[
+                    "shifted_signal"
+                ]["delta_bps"],
+                "entry_semantics": "next_candle_open",
+                "passes_research_gate": research_gate["passes_research_gate"],
+                "rejection_reason": research_gate["rejection_reason"],
+                "research_gate": research_gate,
                 "window_summaries": windows,
                 "calendar_window_summaries": calendar_windows,
                 "checks": horizon_checks,
@@ -767,6 +923,780 @@ def _horizon_results(
             }
         )
     return results
+
+
+def _event_pair_alignment_summary(
+    ohlcv: pd.DataFrame,
+    events: pd.DataFrame,
+) -> dict[str, Any]:
+    ohlcv_column = _instrument_column(ohlcv)
+    ohlcv_labels = _instrument_label_set(ohlcv, ohlcv_column)
+    event_labels: list[str] = []
+    missing_event_label_count = 0
+    for event in events.to_dict("records"):
+        label, _column = _event_pair_label_and_column(event, ohlcv)
+        if label is None:
+            missing_event_label_count += 1
+        else:
+            event_labels.append(label)
+    unmatched = sorted({label for label in event_labels if label not in ohlcv_labels})
+    return {
+        "ohlcv_instrument_column": ohlcv_column,
+        "ohlcv_instrument_count": len(ohlcv_labels),
+        "ohlcv_multi_instrument": len(ohlcv_labels) > 1,
+        "event_count": int(len(events)),
+        "event_pair_evidence_count": len(event_labels),
+        "event_pair_evidence_unique_count": len(set(event_labels)),
+        "missing_event_label_count": missing_event_label_count,
+        "unmatched_event_label_count": len(unmatched),
+        "unmatched_event_labels": unmatched,
+    }
+
+
+def _pair_price_series_summary(ohlcv: pd.DataFrame) -> dict[str, Any]:
+    column = _instrument_column(ohlcv)
+    if column is None:
+        return {
+            "ohlcv_instrument_column": None,
+            "ohlcv_instrument_count": 0,
+            "shared_timestamp_count": 0,
+            "multi_instrument_price_series_aligned": False,
+        }
+    frame = ohlcv[["date", column]].copy()
+    frame["date"] = pd.to_datetime(frame["date"], utc=True, errors="coerce")
+    frame[column] = frame[column].map(_string_label)
+    frame = frame.dropna(subset=["date", column])
+    if frame.empty:
+        return {
+            "ohlcv_instrument_column": column,
+            "ohlcv_instrument_count": 0,
+            "shared_timestamp_count": 0,
+            "multi_instrument_price_series_aligned": False,
+        }
+    instrument_count = int(frame[column].nunique())
+    shared_timestamp_count = int(
+        (frame.groupby("date")[column].nunique() >= 2).sum()
+    )
+    return {
+        "ohlcv_instrument_column": column,
+        "ohlcv_instrument_count": instrument_count,
+        "shared_timestamp_count": shared_timestamp_count,
+        "multi_instrument_price_series_aligned": (
+            instrument_count > 1 and shared_timestamp_count > 0
+        ),
+    }
+
+
+def _effective_pair_concentration(
+    pair_evidence: dict[str, Any],
+    pair_price_series: dict[str, Any],
+) -> float:
+    concentration = float(pair_evidence["pair_concentration"])
+    if (
+        int(pair_evidence["pair_evidence_unique_count"]) > 1
+        and not pair_price_series["multi_instrument_price_series_aligned"]
+    ):
+        return 1.0
+    return concentration
+
+
+def _negative_control_summary(
+    ohlcv: pd.DataFrame,
+    events: pd.DataFrame,
+    *,
+    hold_candles: int,
+    funding_rate: pd.DataFrame | None,
+    normal_cost_bps: float,
+    real_net_edge_bps: float | None,
+) -> dict[str, Any]:
+    event_count = int(len(events))
+    random_events = _control_events(
+        ohlcv,
+        events,
+        hold_candles=hold_candles,
+        event_count=event_count,
+        mode="random",
+    )
+    shuffled_events = _control_events(
+        ohlcv,
+        events,
+        hold_candles=hold_candles,
+        event_count=event_count,
+        mode="shuffled",
+    )
+    shifted_past_events = _control_events(
+        ohlcv,
+        events,
+        hold_candles=hold_candles,
+        event_count=event_count,
+        mode="shifted_past",
+    )
+    shifted_future_events = _control_events(
+        ohlcv,
+        events,
+        hold_candles=hold_candles,
+        event_count=event_count,
+        mode="shifted_future",
+    )
+    random_entry = _control_edge(
+        ohlcv,
+        random_events,
+        hold_candles=hold_candles,
+        funding_rate=funding_rate,
+        normal_cost_bps=normal_cost_bps,
+        real_net_edge_bps=real_net_edge_bps,
+    )
+    shuffled_signal = _control_edge(
+        ohlcv,
+        shuffled_events,
+        hold_candles=hold_candles,
+        funding_rate=funding_rate,
+        normal_cost_bps=normal_cost_bps,
+        real_net_edge_bps=real_net_edge_bps,
+    )
+    shifted_past = _control_edge(
+        ohlcv,
+        shifted_past_events,
+        hold_candles=hold_candles,
+        funding_rate=funding_rate,
+        normal_cost_bps=normal_cost_bps,
+        real_net_edge_bps=real_net_edge_bps,
+    )
+    shifted_future = _control_edge(
+        ohlcv,
+        shifted_future_events,
+        hold_candles=hold_candles,
+        funding_rate=funding_rate,
+        normal_cost_bps=normal_cost_bps,
+        real_net_edge_bps=real_net_edge_bps,
+    )
+    shifted_candidates = [
+        item
+        for item in (shifted_past, shifted_future)
+        if item.get("net_edge_bps_normal") is not None
+    ]
+    shifted_signal = (
+        max(shifted_candidates, key=lambda item: float(item["net_edge_bps_normal"]))
+        if shifted_candidates
+        else shifted_future
+    )
+    shifted_signal = {
+        **shifted_signal,
+        "past": shifted_past,
+        "future": shifted_future,
+    }
+    return {
+        "random_entry": random_entry,
+        "shuffled_signal": shuffled_signal,
+        "shifted_signal": shifted_signal,
+    }
+
+
+def _control_events(
+    ohlcv: pd.DataFrame,
+    events: pd.DataFrame,
+    *,
+    hold_candles: int,
+    event_count: int,
+    mode: str,
+) -> list[dict[str, Any]]:
+    if event_count <= 0:
+        return []
+    event_records = events.to_dict("records")
+    grouped: dict[tuple[str | None, str | None], list[dict[str, Any]]] = {}
+    ohlcv_multi_instrument = _is_multi_instrument_ohlcv(ohlcv)
+    for event in event_records:
+        label, column = _event_pair_label_and_column(event, ohlcv)
+        if ohlcv_multi_instrument and label is None:
+            continue
+        grouped.setdefault((label, column), []).append(event)
+    controls: list[dict[str, Any]] = []
+    for (label, column), group in grouped.items():
+        eligible = _eligible_control_dates(
+            ohlcv,
+            label=label,
+            hold_candles=hold_candles,
+        )
+        if not eligible:
+            continue
+        count = min(len(group), len(eligible))
+        rng = random.Random(
+            f"bot-factory:{mode}:{hold_candles}:{event_count}:{len(ohlcv)}:{label or 'none'}"
+        )
+        if mode == "random":
+            selected = sorted(rng.sample(eligible, count))
+        elif mode == "shuffled":
+            mask = [0] * len(eligible)
+            for index in _event_indices_in_eligible(group, eligible)[: len(eligible)]:
+                mask[index] = 1
+            rng.shuffle(mask)
+            selected = [eligible[index] for index, flag in enumerate(mask) if flag][:count]
+        else:
+            shift = int(hold_candles)
+            indices = _event_indices_in_eligible(group, eligible)
+            if mode == "shifted_past":
+                shifted = _shifted_control_indices(
+                    indices,
+                    eligible_count=len(eligible),
+                    shift=shift,
+                    count=count,
+                    direction="past",
+                )
+            elif mode == "shifted_future":
+                shifted = _shifted_control_indices(
+                    indices,
+                    eligible_count=len(eligible),
+                    shift=shift,
+                    count=count,
+                    direction="future",
+                )
+            else:
+                shifted = []
+            selected = [eligible[index] for index in shifted[:count]]
+        controls.extend(_control_event(date, label=label, column=column) for date in selected)
+    return sorted(controls, key=lambda item: str(item["date"]))
+
+
+def _eligible_control_dates(
+    ohlcv: pd.DataFrame, *, label: str | None, hold_candles: int
+) -> list[Any]:
+    frame = _price_frame_for_label(ohlcv, label)
+    if frame.empty:
+        return []
+    valid_start_count = max(0, len(frame) - int(hold_candles))
+    return list(frame["date"].iloc[:valid_start_count])
+
+
+def _event_indices_in_eligible(
+    events: Sequence[dict[str, Any]], eligible: Sequence[Any]
+) -> list[int]:
+    if not eligible:
+        return []
+    eligible_series = pd.Series(pd.to_datetime(list(eligible), utc=True, errors="coerce"))
+    indices: list[int] = []
+    for event in events:
+        event_time = pd.to_datetime(event.get("date"), utc=True, errors="coerce")
+        if pd.isna(event_time):
+            continue
+        index = int(eligible_series.searchsorted(event_time, side="left"))
+        if 0 <= index < len(eligible):
+            indices.append(index)
+    return indices
+
+
+def _dedupe_ints(values: Sequence[int]) -> list[int]:
+    deduped: list[int] = []
+    for value in values:
+        if value not in deduped:
+            deduped.append(value)
+    return deduped
+
+
+def _shifted_control_indices(
+    indices: Sequence[int],
+    *,
+    eligible_count: int,
+    shift: int,
+    count: int,
+    direction: str,
+) -> list[int]:
+    if eligible_count <= 0 or count <= 0:
+        return []
+    effective_shift = int(shift) % int(eligible_count)
+    if effective_shift == 0:
+        effective_shift = 1
+    offset = -effective_shift if direction == "past" else effective_shift
+    selected: list[int] = []
+    seen: set[int] = set()
+    for index in indices:
+        shifted = (int(index) + offset) % int(eligible_count)
+        if shifted not in seen:
+            selected.append(shifted)
+            seen.add(shifted)
+        if len(selected) >= count:
+            return selected
+    for shifted in range(int(eligible_count)):
+        if shifted not in seen:
+            selected.append(shifted)
+            seen.add(shifted)
+        if len(selected) >= count:
+            break
+    return selected
+
+
+def _control_event(date: Any, *, label: str | None, column: str | None) -> dict[str, Any]:
+    event: dict[str, Any] = {"date": date}
+    if label is not None:
+        event[column or "pair"] = label
+    return event
+
+
+def _control_edge(
+    ohlcv: pd.DataFrame,
+    events: Sequence[dict[str, Any]],
+    *,
+    hold_candles: int,
+    funding_rate: pd.DataFrame | None,
+    normal_cost_bps: float,
+    real_net_edge_bps: float | None,
+) -> dict[str, Any]:
+    event_frame = pd.DataFrame(list(events))
+    if event_frame.empty:
+        event_frame = pd.DataFrame({"date": []})
+    rows = _event_returns(
+        ohlcv,
+        event_frame,
+        hold_candles=hold_candles,
+        funding_rate=funding_rate,
+        entry_semantics="next_candle_open",
+    )
+    pair_evidence = _pair_evidence_summary(rows)
+    gross_edge_bps = _mean([item["gross_return_bps"] for item in rows])
+    net_edge_bps = _net_edge(gross_edge_bps, normal_cost_bps)
+    delta = (
+        None
+        if real_net_edge_bps is None or net_edge_bps is None
+        else round(float(real_net_edge_bps) - float(net_edge_bps), 6)
+    )
+    return {
+        "sample_count": len(rows),
+        "gross_edge_bps": gross_edge_bps,
+        "net_edge_bps_normal": net_edge_bps,
+        "delta_bps": delta,
+        "pair_evidence_count": pair_evidence["pair_evidence_count"],
+        "pair_evidence_unique_count": pair_evidence["pair_evidence_unique_count"],
+        "pair_evidence_distribution": pair_evidence["pair_evidence_distribution"],
+        "sample_preview": rows[:5],
+    }
+
+
+def _research_gate_summary(
+    *,
+    net_edge_bps_normal: float | None,
+    net_edge_bps_stress: float | None,
+    profitable_windows_ratio: float,
+    walk_forward_pass_rate: float,
+    lower_confidence_bound_bps: float | None,
+    pair_concentration: float,
+    calendar_concentration: float | None,
+    negative_controls: dict[str, Any],
+    min_negative_control_delta_bps: float,
+    entry_semantics: str,
+) -> dict[str, Any]:
+    shifted = negative_controls.get("shifted_signal", {})
+    checks = [
+        _check(
+            "net_edge_bps_normal_at_least_6",
+            net_edge_bps_normal is not None and net_edge_bps_normal >= 6.0,
+            {"net_edge_bps_normal": net_edge_bps_normal, "minimum": 6.0},
+        ),
+        _check(
+            "net_edge_bps_stress_positive",
+            net_edge_bps_stress is not None and net_edge_bps_stress > 0.0,
+            {"net_edge_bps_stress": net_edge_bps_stress},
+        ),
+        _check(
+            "profitable_windows_ratio_at_least_0_7",
+            profitable_windows_ratio >= 0.7,
+            {"profitable_windows_ratio": profitable_windows_ratio, "minimum": 0.7},
+        ),
+        _check(
+            "walk_forward_pass_rate_at_least_0_6",
+            walk_forward_pass_rate >= 0.6,
+            {"walk_forward_pass_rate": walk_forward_pass_rate, "minimum": 0.6},
+        ),
+        _check(
+            "lower_confidence_bound_bps_positive",
+            lower_confidence_bound_bps is not None and lower_confidence_bound_bps > 0.0,
+            {"lower_confidence_bound_bps": lower_confidence_bound_bps},
+        ),
+        _check(
+            "not_single_pair_dependent",
+            pair_concentration < 1.0,
+            {"pair_concentration": pair_concentration},
+        ),
+        _check(
+            "not_single_calendar_window_dependent",
+            calendar_concentration is not None and calendar_concentration < 1.0,
+            {"calendar_concentration": calendar_concentration},
+        ),
+        _negative_control_check(
+            "random_entry_control_beaten",
+            negative_controls.get("random_entry", {}),
+            min_negative_control_delta_bps,
+        ),
+        _negative_control_check(
+            "shuffled_signal_control_beaten",
+            negative_controls.get("shuffled_signal", {}),
+            min_negative_control_delta_bps,
+        ),
+        _negative_control_check(
+            "shifted_signal_control_beaten",
+            shifted,
+            min_negative_control_delta_bps,
+        ),
+        _check(
+            "freqtrade_semantics_next_candle_open",
+            entry_semantics == "next_candle_open",
+            {"entry_semantics": entry_semantics},
+        ),
+    ]
+    blockers = [check for check in checks if check["status"] != "pass"]
+    reasons = [check["name"] for check in blockers]
+    return {
+        "passes_research_gate": not blockers,
+        "checks": checks,
+        "blockers": blockers,
+        "rejection_reasons": reasons,
+        "rejection_reason": "; ".join(reasons) if reasons else None,
+        "candidate_generation_result": (
+            "candidate generation allowed" if not blockers else "no candidate generated"
+        ),
+    }
+
+
+def _negative_control_check(
+    name: str, control: dict[str, Any], min_negative_control_delta_bps: float
+) -> dict[str, Any]:
+    delta = _float_or_none(control.get("delta_bps"))
+    return _check(
+        name,
+        delta is not None and delta >= float(min_negative_control_delta_bps),
+        {
+            "delta_bps": delta,
+            "min_negative_control_delta_bps": float(min_negative_control_delta_bps),
+            "control_net_edge_bps_normal": control.get("net_edge_bps_normal"),
+            "control_sample_count": control.get("sample_count"),
+        },
+    )
+
+
+def _event_level_post_cost_report(
+    spec: dict[str, Any],
+    *,
+    best_horizon: dict[str, Any] | None,
+    horizon_results: Sequence[dict[str, Any]],
+    concentration: dict[str, Any],
+) -> dict[str, Any]:
+    selected = None
+    structurally_passing = [
+        item for item in horizon_results if item.get("status") == "passed"
+    ]
+    passing_gate = [
+        item for item in structurally_passing if item.get("passes_research_gate")
+    ]
+    if passing_gate:
+        selected = max(
+            passing_gate,
+            key=lambda item: float(item.get("net_edge_bps_normal") or -1e9),
+        )
+    elif structurally_passing:
+        selected = max(
+            structurally_passing,
+            key=lambda item: float(item.get("net_edge_bps_normal") or -1e9),
+        )
+    elif best_horizon is not None:
+        selected = next(
+            (
+                item
+                for item in horizon_results
+                if item.get("hold_candles") == best_horizon.get("hold_candles")
+            ),
+            None,
+        )
+    if selected is None:
+        gate = _research_gate_summary(
+            net_edge_bps_normal=None,
+            net_edge_bps_stress=None,
+            profitable_windows_ratio=0.0,
+            walk_forward_pass_rate=0.0,
+            lower_confidence_bound_bps=None,
+            pair_concentration=1.0,
+            calendar_concentration=concentration.get("max_quarter_event_share"),
+            negative_controls={
+                "random_entry": {},
+                "shuffled_signal": {},
+                "shifted_signal": {},
+            },
+            min_negative_control_delta_bps=1.0,
+            entry_semantics="next_candle_open",
+        )
+        return {
+            "thesis_id": str(spec.get("thesis_id") or "").strip(),
+            "mechanism_class": str(spec.get("mechanism_class") or "").strip(),
+            "event_count": 0,
+            "entry_signal_count": 0,
+            "passes_research_gate": False,
+            "rejection_reason": gate["rejection_reason"],
+            "pair_concentration": 1.0,
+            "pair_evidence_count": 0,
+            "pair_evidence_unique_count": 0,
+            "pair_alignment": {},
+            "pair_price_series": {},
+            "research_gate": gate,
+            "candidate_generation_result": "no candidate generated",
+        }
+    gate = selected["research_gate"]
+    return {
+        "thesis_id": str(spec.get("thesis_id") or "").strip(),
+        "mechanism_class": str(spec.get("mechanism_class") or "").strip(),
+        "event_count": selected.get("sample_count", 0),
+        "entry_signal_count": selected.get("sample_count", 0),
+        "gross_edge_bps": selected.get("gross_edge_bps"),
+        "cost_bps_best": selected.get("cost_bps_best"),
+        "cost_bps_normal": selected.get("cost_bps_normal"),
+        "cost_bps_stress": selected.get("cost_bps_stress"),
+        "net_edge_bps_best": selected.get("net_edge_bps_best"),
+        "net_edge_bps_normal": selected.get("net_edge_bps_normal"),
+        "net_edge_bps_stress": selected.get("net_edge_bps_stress"),
+        "profitable_windows_ratio": selected.get("profitable_windows_ratio"),
+        "walk_forward_pass_rate": selected.get("walk_forward_pass_rate"),
+        "lower_confidence_bound_bps": selected.get("lower_confidence_bound_bps"),
+        "pair_concentration": selected.get("pair_concentration"),
+        "pair_evidence_count": selected.get("pair_evidence_count"),
+        "pair_evidence_unique_count": selected.get("pair_evidence_unique_count"),
+        "pair_evidence_distribution": selected.get("pair_evidence_distribution"),
+        "pair_alignment": selected.get("pair_alignment"),
+        "pair_price_series": selected.get("pair_price_series"),
+        "calendar_concentration": selected.get("calendar_concentration"),
+        "holding_period": selected.get("hold_candles"),
+        "negative_control_random_entry_delta_bps": selected.get(
+            "negative_control_random_entry_delta_bps"
+        ),
+        "negative_control_shuffled_signal_delta_bps": selected.get(
+            "negative_control_shuffled_signal_delta_bps"
+        ),
+        "negative_control_shifted_signal_delta_bps": selected.get(
+            "negative_control_shifted_signal_delta_bps"
+        ),
+        "passes_research_gate": gate["passes_research_gate"],
+        "rejection_reason": gate["rejection_reason"],
+        "research_gate": gate,
+        "candidate_generation_result": gate["candidate_generation_result"],
+    }
+
+
+def _scenario_costs(cost_scenarios: dict[str, dict[str, Any]]) -> dict[str, float]:
+    return {
+        name: float(cost_scenarios.get(name, {}).get("total_cost_bps") or 0.0)
+        for name in ("best", "normal", "stress")
+    }
+
+
+def _normal_cost_bps(cost_scenarios: dict[str, dict[str, Any]]) -> float | None:
+    value = cost_scenarios.get("normal", {}).get("total_cost_bps")
+    return _float_or_none(value)
+
+
+def _net_edge(gross_edge_bps: float | None, cost_bps: float) -> float | None:
+    return None if gross_edge_bps is None else round(float(gross_edge_bps) - cost_bps, 6)
+
+
+def _lower_confidence_bound_bps(values: Sequence[float], cost_bps: float) -> float | None:
+    numbers = [float(value) for value in values]
+    if not numbers:
+        return None
+    mean = sum(numbers) / len(numbers)
+    if len(numbers) < 2:
+        return round(mean - cost_bps, 6)
+    variance = sum((value - mean) ** 2 for value in numbers) / (len(numbers) - 1)
+    standard_error = sqrt(variance) / sqrt(len(numbers))
+    return round(mean - cost_bps - 1.96 * standard_error, 6)
+
+
+def _pair_evidence_summary(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    labels = [
+        label
+        for label in (_pair_evidence_label(row) for row in rows)
+        if label is not None
+    ]
+    if not labels:
+        return {
+            "pair_concentration": 1.0,
+            "pair_evidence_count": 0,
+            "pair_evidence_unique_count": 0,
+            "pair_evidence_distribution": {},
+        }
+    counts = Counter(labels)
+    return {
+        "pair_concentration": round(max(counts.values()) / len(labels), 4),
+        "pair_evidence_count": len(labels),
+        "pair_evidence_unique_count": len(counts),
+        "pair_evidence_distribution": dict(sorted(counts.items())),
+    }
+
+
+def _pair_evidence_label(row: dict[str, Any]) -> str | None:
+    label, _column = _event_pair_label_and_column(row)
+    return label
+
+
+def _event_pair_label_and_column(
+    row: dict[str, Any], ohlcv: pd.DataFrame | None = None
+) -> tuple[str | None, str | None]:
+    candidates: list[tuple[str, str]] = []
+    for column in ("pair", "symbol", "instrument"):
+        label = _string_label(row.get(column))
+        if label is not None:
+            candidates.append((label, column))
+    if not candidates:
+        return None, None
+    if ohlcv is not None:
+        match = _event_label_matching_price_columns(candidates, ohlcv)
+        if match is not None:
+            return match
+        if _instrument_column(ohlcv) is None:
+            return candidates[0]
+    return candidates[0]
+
+
+def _event_label_matching_price_columns(
+    candidates: Sequence[tuple[str, str]], ohlcv: pd.DataFrame
+) -> tuple[str, str] | None:
+    ranked: list[tuple[int, int, int, str, str]] = []
+    column_priority = {"pair": 0, "symbol": 1, "instrument": 2}
+    for event_priority, (label, event_column) in enumerate(candidates):
+        price_column = _instrument_column_for_label(ohlcv, label)
+        if price_column is None:
+            continue
+        label_count = len(_instrument_label_set(ohlcv, price_column))
+        ranked.append(
+            (
+                label_count,
+                -column_priority.get(price_column, 99),
+                -event_priority,
+                label,
+                event_column,
+            )
+        )
+    if not ranked:
+        return None
+    _label_count, _price_priority, _event_priority, label, event_column = max(ranked)
+    return label, event_column
+
+
+def _string_label(value: Any) -> str | None:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
+    if text.lower() in _EMPTY_INSTRUMENT_LABELS:
+        return None
+    return text or None
+
+
+def _instrument_column(frame: pd.DataFrame) -> str | None:
+    candidates = _instrument_column_candidates(frame)
+    return candidates[0] if candidates else None
+
+
+def _instrument_column_for_label(frame: pd.DataFrame, label: str) -> str | None:
+    for column in _instrument_column_candidates(frame):
+        labels = _instrument_label_set(frame, column)
+        if label in labels:
+            return column
+    return None
+
+
+def _instrument_column_candidates(frame: pd.DataFrame) -> list[str]:
+    ranked: list[tuple[int, int, str]] = []
+    for priority, column in enumerate(("pair", "symbol", "instrument")):
+        if column not in frame.columns:
+            continue
+        labels = _instrument_label_set(frame, column)
+        if labels:
+            ranked.append((-len(labels), priority, column))
+    return [column for _count, _priority, column in sorted(ranked)]
+
+
+def _instrument_label_set(
+    frame: pd.DataFrame, column: str | None = None
+) -> set[str]:
+    column = column or _instrument_column(frame)
+    if column is None:
+        return set()
+    return {
+        label
+        for label in frame[column].map(_string_label)
+        if label is not None
+    }
+
+
+def _is_multi_instrument_ohlcv(frame: pd.DataFrame) -> bool:
+    return len(_instrument_label_set(frame)) > 1
+
+
+def _price_frame_for_label(
+    ohlcv: pd.DataFrame, label: str | None
+) -> pd.DataFrame:
+    frame = ohlcv.copy()
+    frame["date"] = pd.to_datetime(frame["date"], utc=True, errors="coerce")
+    frame = frame.dropna(subset=["date"]).sort_values("date")
+    if label is None:
+        if _is_multi_instrument_ohlcv(frame):
+            return frame.iloc[0:0].copy()
+        return frame.reset_index(drop=True)
+    column = _instrument_column_for_label(frame, label)
+    if column is None:
+        return frame.iloc[0:0].copy()
+    labels = frame[column].map(_string_label)
+    subset = frame[labels == label]
+    return subset.sort_values("date").reset_index(drop=True)
+
+
+def _cost_scenario_checks(
+    cost_scenarios: dict[str, dict[str, Any]], context: CostModelContext
+) -> list[dict[str, Any]]:
+    names = set(cost_scenarios)
+    normal = _normal_cost_bps(cost_scenarios)
+    stress = _float_or_none(cost_scenarios.get("stress", {}).get("total_cost_bps"))
+    maker_context = str(context.order_type or "").strip().lower() == "maker"
+    scenario_values = list(cost_scenarios.values())
+    return [
+        _check(
+            "cost_scenarios_best_normal_stress_present",
+            {"best", "normal", "stress"} <= names,
+            {"scenario_names": sorted(names)},
+        ),
+        _check(
+            "cost_scenario_normal_cost_non_negative",
+            normal is not None and normal >= 0.0,
+            {"normal_total_cost_bps": normal},
+        ),
+        _check(
+            "cost_scenario_stress_not_less_than_normal",
+            normal is not None and stress is not None and stress >= normal,
+            {"normal_total_cost_bps": normal, "stress_total_cost_bps": stress},
+        ),
+        _check(
+            "maker_cost_model_includes_fill_risk",
+            not maker_context
+            or all(
+                _float_or_none(item.get("no_fill_rate")) is not None
+                and _float_or_none(item.get("partial_fill_rate")) is not None
+                and _float_or_none(item.get("adverse_selection_bps")) is not None
+                for item in scenario_values
+            ),
+            {
+                "order_type": context.order_type,
+                "scenario_names": sorted(names),
+            },
+        ),
+    ]
+
+
+def _cost_model_context_summary(context: CostModelContext) -> dict[str, Any]:
+    return {
+        "pair": context.pair,
+        "timeframe": context.timeframe,
+        "order_type": context.order_type,
+        "liquidity_tier": context.liquidity_tier,
+        "volatility_regime": context.volatility_regime,
+    }
 
 
 def _quality_report_summaries(paths: Sequence[Path], *, root: Path) -> list[dict[str, Any]]:
@@ -799,13 +1729,9 @@ def _quality_report_summaries(paths: Sequence[Path], *, root: Path) -> list[dict
 
 
 def _edge_cost_bps(spec: dict[str, Any]) -> float | None:
-    value = _float_or_none(spec.get("all_in_cost_bps"))
-    if value is not None:
-        return value
-    cost_model = spec.get("cost_model")
-    if isinstance(cost_model, dict):
-        return _float_or_none(cost_model.get("all_in_cost_bps"))
-    return None
+    return _normal_cost_bps(
+        cost_scenarios_from_spec(spec, context=cost_context_from_spec(spec))
+    )
 
 
 def _edge_horizons(spec: dict[str, Any]) -> list[int]:
@@ -923,6 +1849,10 @@ def _safe_edge_spec_summary(spec: dict[str, Any]) -> dict[str, Any]:
     summary["edge_discovery_id"] = spec.get("edge_discovery_id")
     summary["horizons"] = _edge_horizons(spec)
     summary["all_in_cost_bps"] = _edge_cost_bps(spec)
+    summary["cost_scenarios"] = cost_scenarios_from_spec(
+        spec,
+        context=cost_context_from_spec(spec),
+    )
     summary["hypothesis"] = spec.get("hypothesis")
     summary["data_classes"] = spec.get("data_classes", spec.get("required_data_classes", []))
     return summary
@@ -959,6 +1889,13 @@ def _best_horizon(horizon_results: Sequence[dict[str, Any]]) -> dict[str, Any] |
         "hold_candles": best["hold_candles"],
         "status": best["status"],
         "net_edge_bps": best["net_edge_bps"],
+        "net_edge_bps_best": best.get("net_edge_bps_best"),
+        "net_edge_bps_normal": best.get("net_edge_bps_normal"),
+        "net_edge_bps_stress": best.get("net_edge_bps_stress"),
+        "lower_confidence_bound_bps": best.get("lower_confidence_bound_bps"),
+        "walk_forward_pass_rate": best.get("walk_forward_pass_rate"),
+        "passes_research_gate": best.get("passes_research_gate") is True,
+        "rejection_reason": best.get("rejection_reason"),
         "sample_count": best["sample_count"],
         "profitable_windows_ratio": best["profitable_windows_ratio"],
         "profitable_calendar_windows_ratio": best["profitable_calendar_windows_ratio"],
@@ -1035,8 +1972,12 @@ def _bucket_concentration(labels: pd.Series) -> dict[str, Any]:
     }
 
 
-def _blocked_next_actions(status: str) -> list[str]:
+def _blocked_next_actions(
+    status: str, *, candidate_generation_allowed: bool = False
+) -> list[str]:
     actions = ["strategy_codegen_directly_from_edge_discovery"]
+    if not candidate_generation_allowed:
+        actions.append("proposal_generation_without_passing_research_gate")
     if status != "passed":
         actions.extend(
             [
@@ -1049,6 +1990,8 @@ def _blocked_next_actions(status: str) -> list[str]:
 
 
 def _render_report(artifact: dict[str, Any]) -> str:
+    research_gate = artifact.get("research_gate", {})
+    edge_report = artifact.get("event_level_post_cost_edge_report", {})
     lines = [
         "# Edge Discovery Evidence",
         "",
@@ -1065,17 +2008,75 @@ def _render_report(artifact: dict[str, Any]) -> str:
         f"- passing_horizon_count: {artifact.get('passing_horizon_count')}",
         f"- proposal_generation_allowed: {artifact.get('proposal_generation_allowed')}",
         f"- strategy_codegen_allowed: {artifact.get('strategy_codegen_allowed')}",
+        f"- candidate_generation_allowed: {artifact.get('candidate_generation_allowed')}",
+        f"- candidate_generation_result: {artifact.get('candidate_generation_result')}",
+        f"- passes_research_gate: {research_gate.get('passes_research_gate')}",
+        f"- rejection_reason: {research_gate.get('rejection_reason')}",
         "",
-        "## Horizon Results",
+        "## Cost Scenarios",
         "",
     ]
+    for name, scenario in (artifact.get("cost_scenarios") or {}).items():
+        if not isinstance(scenario, dict):
+            continue
+        lines.append(
+            f"- {name}: total_cost_bps={scenario.get('total_cost_bps')}, "
+            f"fee_entry={scenario.get('fee_bps_entry')}, "
+            f"fee_exit={scenario.get('fee_bps_exit')}, "
+            f"spread={scenario.get('spread_bps')}, "
+            f"slippage_entry={scenario.get('slippage_bps_entry')}, "
+            f"slippage_exit={scenario.get('slippage_bps_exit')}, "
+            f"adverse_selection={scenario.get('adverse_selection_bps')}, "
+            f"no_fill_rate={scenario.get('no_fill_rate')}, "
+            f"partial_fill_rate={scenario.get('partial_fill_rate')}"
+        )
+    lines.extend(
+        [
+            "",
+            "## Event-Level Post-Cost Report",
+            "",
+            f"- thesis_id: {edge_report.get('thesis_id')}",
+            f"- mechanism_class: {edge_report.get('mechanism_class')}",
+            f"- event_count: {edge_report.get('event_count')}",
+            f"- entry_signal_count: {edge_report.get('entry_signal_count')}",
+            f"- gross_edge_bps: {edge_report.get('gross_edge_bps')}",
+            f"- cost_bps_best: {edge_report.get('cost_bps_best')}",
+            f"- cost_bps_normal: {edge_report.get('cost_bps_normal')}",
+            f"- cost_bps_stress: {edge_report.get('cost_bps_stress')}",
+            f"- net_edge_bps_best: {edge_report.get('net_edge_bps_best')}",
+            f"- net_edge_bps_normal: {edge_report.get('net_edge_bps_normal')}",
+            f"- net_edge_bps_stress: {edge_report.get('net_edge_bps_stress')}",
+            f"- profitable_windows_ratio: {edge_report.get('profitable_windows_ratio')}",
+            f"- walk_forward_pass_rate: {edge_report.get('walk_forward_pass_rate')}",
+            f"- lower_confidence_bound_bps: {edge_report.get('lower_confidence_bound_bps')}",
+            f"- pair_concentration: {edge_report.get('pair_concentration')}",
+            f"- pair_evidence_count: {edge_report.get('pair_evidence_count')}",
+            f"- pair_evidence_unique_count: {edge_report.get('pair_evidence_unique_count')}",
+            f"- pair_evidence_distribution: {edge_report.get('pair_evidence_distribution')}",
+            f"- pair_alignment: {edge_report.get('pair_alignment')}",
+            f"- pair_price_series: {edge_report.get('pair_price_series')}",
+            f"- calendar_concentration: {edge_report.get('calendar_concentration')}",
+            f"- holding_period: {edge_report.get('holding_period')}",
+            f"- negative_control_random_entry_delta_bps: {edge_report.get('negative_control_random_entry_delta_bps')}",
+            f"- negative_control_shuffled_signal_delta_bps: {edge_report.get('negative_control_shuffled_signal_delta_bps')}",
+            f"- negative_control_shifted_signal_delta_bps: {edge_report.get('negative_control_shifted_signal_delta_bps')}",
+            f"- passes_research_gate: {edge_report.get('passes_research_gate')}",
+            f"- rejection_reason: {edge_report.get('rejection_reason')}",
+            "",
+            "## Horizon Results",
+            "",
+        ]
+    )
     for item in artifact.get("horizon_results", []):
         lines.append(
             "- hold_candles="
             f"{item.get('hold_candles')}: status={item.get('status')}, "
             f"sample_count={item.get('sample_count')}, "
             f"net_edge_bps={item.get('net_edge_bps')}, "
-            f"profitable_windows_ratio={item.get('profitable_windows_ratio')}"
+            f"net_edge_bps_stress={item.get('net_edge_bps_stress')}, "
+            f"profitable_windows_ratio={item.get('profitable_windows_ratio')}, "
+            f"pair_concentration={item.get('pair_concentration')}, "
+            f"passes_research_gate={item.get('passes_research_gate')}"
         )
     concentration = artifact.get("concentration_diagnostics", {})
     lines.extend(["", "## Concentration Diagnostics", ""])
@@ -1100,6 +2101,15 @@ def _render_report(artifact: dict[str, Any]) -> str:
     if blockers:
         lines.extend(["", "## Blockers", ""])
         lines.extend(f"- {item.get('name')}" for item in blockers)
+    lines.extend(
+        [
+            "",
+            "## Limitations",
+            "",
+            "- maker_fill_risk is reported through cost fields but is not yet a separate fill-probability gate.",
+            "- overlapping_events, cooldown_candles, and effective_sample_count require follow-up diagnostics before promotion.",
+        ]
+    )
     lines.extend(["", "## Safety Scope", ""])
     safety = artifact.get("safety_scope", {})
     lines.extend(

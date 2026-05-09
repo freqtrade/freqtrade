@@ -99,6 +99,295 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 event-label matching and shifted-control fixes.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so event
+  instrument labels are chosen by matching the available OHLCV instrument
+  columns. If an event row has both a coarse `pair` label and a populated
+  `symbol` that matches the price series, local falsification now evaluates the
+  event against the `symbol` price subset instead of the coarse mixed slice.
+- [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` negative controls so
+  shifted controls preserve the requested sample count near time-series
+  boundaries by shifting within the same pair's eligible dates instead of
+  clamping several events onto one boundary timestamp.
+- [x] Added regression coverage for event-label selection with coarse
+  `pair`/specific `symbol` rows and for shifted future controls preserving
+  sample count and pair evidence near the right boundary.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report or populated_symbol_column or local_events_grouped_features"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 36 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 local-event grouped instrument scan fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_events.py` so local OHLCV
+  feature grouping scans all candidate instrument columns and ignores empty or
+  placeholder labels such as `unknown`. A placeholder-only `pair` column no
+  longer prevents grouped `shift`, rolling mean, and rolling std features from
+  using a populated `symbol` or `instrument` column.
+- [x] Added regression coverage proving `return_bps` and `sma_distance_bps`
+  stay grouped by populated `symbol` when BTC and ETH rows share timestamps and
+  `pair="unknown"`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report or populated_symbol_column or local_events_grouped_features"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 34 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 populated instrument-column selection fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so instrument
+  column resolution ignores empty or placeholder-only labels and, when an event
+  label is present, filters OHLCV on a populated `pair`, `symbol`, or
+  `instrument` column that actually contains that label. Mixed schemas where
+  `pair` is placeholder-only and real IDs live in `symbol` no longer collapse
+  local falsification samples to zero.
+- [x] Applied the same populated-column selection to
+  `freqtrade_ext/bot_factory/edge_discovery.py` price-series and pair-alignment
+  helpers so Edge Discovery diagnostics use the evidence-bearing instrument
+  column instead of the first merely present column.
+- [x] Added regression coverage for Edge Discovery price-frame filtering and
+  local falsification event-return calculation with `pair="unknown"` and valid
+  `symbol` labels.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report or populated_symbol_column"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 33 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 research-gate horizon selection fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` so
+  `_event_level_post_cost_report()` only selects a `passes_research_gate=true`
+  horizon when that same horizon also has `status="passed"`. Structurally
+  failing horizons can no longer drive the event-level research gate to true
+  while a different horizon satisfies the overall `passing_horizon_count`.
+- [x] When no structurally passing horizon also passes the research gate, the
+  report now prefers the best structurally passing horizon for diagnostics; if
+  none exists, it falls back to the prior best-horizon diagnostic path.
+- [x] Added regression coverage proving a structurally failed horizon with
+  `passes_research_gate=true` is ignored in favor of a structurally passed
+  horizon whose research gate fails, preserving `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification or event_level_report"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 31 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 cost-model scenario override merge fixes.
+
+- [x] Fixed `freqtrade_ext/bot_factory/cost_model.py` so partial scenario
+  overrides that only change non-price fields, such as `no_fill_rate`, inherit
+  the fallback `total_cost_bps_override` instead of silently reverting to the
+  component-sum default. Explicit `total_cost_bps=0` remains preserved.
+- [x] Fixed selected contextual `cost_model.overrides` so they merge onto base
+  `cost_model.scenarios` instead of replacing the whole scenario source. Base
+  scenarios such as a shared stress profile now survive when an override only
+  adjusts the normal scenario.
+- [x] Added regression coverage for inherited total-cost preservation on
+  non-price scenario overrides and base-scenario retention when a selected
+  override supplies only one scenario.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 30 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 final local-falsification pair fallback fix.
+
+- [x] Fixed `freqtrade_ext/bot_factory/local_falsification.py` so
+  `_load_ohlcv()` keeps `pair`, `symbol`, or `instrument` columns when the
+  OHLCV input provides them. Labeled events are still evaluated against the
+  matching price-series subset before entry/exit indexes are resolved.
+- [x] Added a graceful single-series fallback for local falsification only:
+  when events carry a label but OHLCV has no instrument column, `_event_returns()`
+  now uses the unfiltered single price series instead of skipping every event.
+  Sample rows mark this as `price_series_instrument_unverified=true`; multi-pair
+  Edge Discovery gates still require aligned instrument price-series evidence.
+- [x] Added regression coverage proving labeled single-series local
+  falsification does not collapse to zero samples, and that labeled ETH events
+  with combined BTC/ETH OHLCV are priced from the ETH series rather than BTC.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair or local_falsification"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 28 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  exited `0` with no whitespace errors and the existing LF-to-CRLF working-copy
+  warning for `docs\BOT_FACTORY_MVP_TODO.md`.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 remaining P2 review fixes.
+
+- [x] Fixed `freqtrade_ext/bot_factory/cost_model.py` override selection so
+  matching overrides are ranked by selector specificity. A generic override no
+  longer wins over a later pair/timeframe/order-type-specific override.
+- [x] Fixed `freqtrade_ext/bot_factory/edge_discovery.py` negative-control
+  eligible start timestamps so `next_candle_open` controls include the last
+  valid event timestamp for the configured holding period.
+- [x] Added regression tests for most-specific cost override selection and the
+  negative-control eligible timestamp off-by-one case.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 15 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with no warnings.
+- [ ] Remaining limitation: this is PR hardening only. It does not generate a
+  strategy candidate, run historical backtesting, start paper/dry-run/live
+  trading, call exchange order endpoints, use leverage or shorting, or manage
+  any trading process.
+
+Checked on 2026-05-09 JST for PR #8 multi-pair price-series alignment hardening.
+
+- [x] Hardened `freqtrade_ext/bot_factory/local_falsification.py` so
+  `_event_returns()` resolves entry and exit indexes inside the OHLCV subset
+  matching the event's `pair`, `symbol`, or `instrument` label. Events with a
+  label that has no matching OHLCV instrument are skipped; multi-instrument
+  OHLCV events without labels cannot create return evidence.
+- [x] Hardened `freqtrade_ext/bot_factory/edge_discovery.py` negative controls
+  so random entries sample within the same pair, shuffled controls preserve
+  pair distribution, shifted controls move inside the same pair time series,
+  and control rows retain pair evidence.
+- [x] Hardened `freqtrade_ext/bot_factory/local_events.py` OHLCV feature
+  calculation so `return_bps`, `sma_distance_bps`, `volume_zscore`, and other
+  rolling or shifted features are computed per instrument when combined
+  multi-pair OHLCV is supplied.
+- [x] Added regression coverage proving an ETH event at a shared timestamp is
+  evaluated against the ETH price series, not the BTC row; label-only
+  single-stream data cannot satisfy `not_single_pair_dependent`; and random,
+  shuffled, and shifted controls remain pair-aware.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_events.py freqtrade_ext\bot_factory\local_falsification.py freqtrade_ext\bot_factory\strategy_proposals.py freqtrade_ext\bot_factory\strategy_code.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls or pair"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 13 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with CRLF working-copy warnings only.
+- [ ] Remaining limitation: this validates local combined-OHLCV price-series
+  alignment for Edge Discovery evidence, but it is still not a strategy
+  candidate and does not start backtesting, paper, dry-run, live trading,
+  exchange order placement, leverage, shorting, or process control.
+
+Checked on 2026-05-09 JST for PR #8 research-first Edge Discovery gate hardening.
+
+- [x] Hardened `freqtrade_ext/bot_factory/cost_model.py` so top-level
+  `all_in_cost_bps=0` is preserved and only `None` falls back to 12.0.
+- [x] Hardened `freqtrade_ext/bot_factory/edge_discovery.py`,
+  `freqtrade_ext/bot_factory/local_events.py`, and
+  `freqtrade_ext/bot_factory/local_falsification.py` so
+  `pair_concentration` is computed from actual event-return pair evidence
+  (`pair`, `symbol`, or `instrument`) rather than declared
+  `instrument_universe`; event rows without pair evidence are treated as
+  single-pair dependent.
+- [x] Clarified `next_candle_open` event-study semantics: with
+  `hold_candles=1`, entry is the next candle open and exit is that same
+  candle close. Event-return samples now record `exit_price_type` and
+  `exit_price`.
+- [x] Tied `proposal_generation_allowed` to
+  `candidate_generation_allowed` and updated proposal/codegen handoffs so a
+  status-passed Edge Discovery artifact with a failed research gate cannot
+  advance through the legacy proposal flag.
+- [x] Added regression coverage in `tests/test_bot_factory.py` for zero-cost
+  top-level specs, one-candle next-open exit semantics, actual multi-pair
+  evidence, declared-multi-symbol false positives, negative-control no-candidate
+  behavior, and legacy proposal-flag blocking.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 10 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with CRLF working-copy warnings only.
+- [ ] Remaining limitation: this hardens the research gate and preserves the
+  PR's `no candidate generated` posture. It does not create or promote a
+  trading candidate, start backtesting/paper/live trading, model maker fill
+  probability as a standalone gate, or estimate effective independent sample
+  count for overlapping events and cooldown windows.
+
 Checked on 2026-05-04 UTC for Strategy Code Generator mode extension.
 
 - [x] Extended `freqtrade_ext/bot_factory/strategy_code.py` to add proposal-driven generator mode support (`rule_based`, `freqai`, `hybrid_ml`) while preserving long-only safety scope and static-check gating. Generated metadata now records generator mode, feature list, target definition, label horizon, prediction threshold, rule filters, and risk policy.
@@ -13275,3 +13564,56 @@ candidate.
 - [ ] Remaining limitation: this is still safety plumbing, not positive market
   evidence. It does not create a new thesis, run a new Edge Discovery probe,
   generate a profitable strategy, or make any candidate paper-ready.
+
+### Follow-up on 2026-05-09 JST for research-first edge gates
+
+- [x] Branch decision completed before implementation:
+  `docs\BOT_FACTORY_BRANCH_DECISION.md` compares `develop` with
+  `codex/bot-factory-candidate-factory-completion` and selects a stacked PR
+  target of `codex/bot-factory-candidate-factory-completion`.
+- [x] Added best / normal / stress cost-scenario modeling:
+  `freqtrade_ext\bot_factory\cost_model.py` defines explicit scenario fields,
+  pair/timeframe/order-type/liquidity/volatility override matching, and
+  default scenarios where `normal` remains compatible with legacy
+  `all_in_cost_bps=12.0`.
+- [x] Extended Edge Discovery to report event-level post-cost metrics under
+  Freqtrade-aligned next-candle-open entry semantics:
+  `freqtrade_ext\bot_factory\edge_discovery.py` now emits
+  `event_level_post_cost_edge_report`, `research_gate`,
+  `candidate_generation_allowed`, and `candidate_generation_result`.
+- [x] Added random-entry, shuffled-signal, and shifted-signal negative controls
+  to Edge Discovery horizon scoring. A thesis that does not beat controls is
+  reported as `no candidate generated`.
+- [x] Kept direct strategy code generation blocked from Edge Discovery alone:
+  `strategy_codegen_allowed=false` remains unchanged, and candidate generation
+  requires the new research gate to pass.
+- [x] Added docs:
+  - `docs\BOT_FACTORY_COST_MODEL_AUDIT.md`
+  - `docs\BOT_FACTORY_EDGE_DISCOVERY_REPORT.md`
+  - `docs\BOT_FACTORY_NEXT_RESEARCH_PLAN.md`
+- [x] Verification so far:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_edge_discovery.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "edge_discovery"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  .\.venv\Scripts\python.exe -m pytest tests -q
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  git diff --check
+  ```
+
+  Results: compile passed; initial Edge Discovery focused test found two
+  compatibility issues, which were fixed; focused cost/gate tests passed
+  7 tests; full Edge Discovery focused tests passed 16 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; final compile
+  passed; `git diff --check` passed with the existing LF-to-CRLF warning for
+  this doc. After final candidate-generation gate tightening, the combined
+  focused selector passed 20 tests and full `tests\test_bot_factory.py` passed
+  again. Full `tests -q` was attempted but stopped during collection because
+  the local venv is missing `freqtrade_client` and `optuna`.
+- [ ] Remaining limitation: this implementation adds research-first gates and
+  reports only. It does not evaluate a new real thesis, does not generate a
+  strategy candidate, and does not make any candidate paper-ready. Candidate
+  generation result for this increment is `no candidate generated`.

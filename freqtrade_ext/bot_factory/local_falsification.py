@@ -19,6 +19,18 @@ _MARK_PRICE_FEATURES = (
     "mark_price_gap_delta_bps",
     "mark_price_return_bps",
 )
+_EMPTY_INSTRUMENT_LABELS = {
+    "-",
+    "--",
+    "n/a",
+    "na",
+    "nan",
+    "none",
+    "null",
+    "placeholder",
+    "undefined",
+    "unknown",
+}
 
 
 @dataclass(frozen=True)
@@ -436,16 +448,26 @@ def _load_ohlcv(path: Path) -> tuple[pd.DataFrame | None, str | None]:
             frame = pd.read_csv(path)
     except Exception as exc:
         return None, f"read_error: {exc}"
-    missing = [column for column in ("date", "close") if column not in frame.columns]
+    required = ("date", "close")
+    missing = [column for column in required if column not in frame.columns]
     if missing:
         return None, f"missing_columns: {', '.join(missing)}"
     frame = frame.copy()
     frame["date"] = pd.to_datetime(frame["date"], utc=True, errors="coerce")
     frame["close"] = pd.to_numeric(frame["close"], errors="coerce")
+    if "open" in frame.columns:
+        frame["open"] = pd.to_numeric(frame["open"], errors="coerce")
     frame = frame.dropna(subset=["date", "close"]).sort_values("date")
     if frame.empty:
         return None, "empty_after_date_close_cleaning"
-    return frame[["date", "close"]].reset_index(drop=True), None
+    if "open" in frame.columns:
+        frame["open"] = frame["open"].fillna(frame["close"])
+    optional = [
+        column
+        for column in ("open", "pair", "symbol", "instrument")
+        if column in frame.columns
+    ]
+    return frame[[*required, *optional]].reset_index(drop=True), None
 
 
 def _ohlcv_coverage(frame: pd.DataFrame | None) -> dict[str, Any]:
@@ -488,7 +510,15 @@ def _load_events(path: Path, time_column: str) -> tuple[pd.DataFrame | None, str
     frame = frame.dropna(subset=[time_column]).sort_values(time_column)
     if frame.empty:
         return None, "empty_event_file"
-    return frame[[time_column]].rename(columns={time_column: "date"}).reset_index(drop=True), None
+    optional = [
+        column for column in ("pair", "symbol", "instrument") if column in frame.columns
+    ]
+    return (
+        frame[[time_column, *optional]]
+        .rename(columns={time_column: "date"})
+        .reset_index(drop=True),
+        None,
+    )
 
 
 def _load_funding_rate(path: Path) -> tuple[pd.DataFrame | None, str | None]:
@@ -709,39 +739,203 @@ def _event_returns(
     *,
     hold_candles: int,
     funding_rate: pd.DataFrame | None = None,
+    entry_semantics: str = "same_candle_close",
 ) -> list[dict[str, Any]]:
-    candle_times = list(ohlcv["date"])
-    closes = list(ohlcv["close"])
+    ohlcv_frame = ohlcv.copy()
+    ohlcv_frame["date"] = pd.to_datetime(
+        ohlcv_frame["date"], utc=True, errors="coerce"
+    )
+    ohlcv_frame = ohlcv_frame.dropna(subset=["date"]).sort_values("date")
+    multi_instrument = _is_multi_instrument_frame(ohlcv_frame)
     rows: list[dict[str, Any]] = []
-    for event_time in events["date"]:
-        entry_index = int(ohlcv["date"].searchsorted(event_time, side="left"))
-        exit_index = entry_index + hold_candles
-        if entry_index < 0 or exit_index >= len(ohlcv):
+    semantics = str(entry_semantics or "same_candle_close").strip().lower()
+    event_records = events.to_dict("records")
+    for event in event_records:
+        event_time = event["date"]
+        event_label, event_label_column = _event_instrument_label(event, ohlcv_frame)
+        price_frame, price_instrument_column = _price_frame_for_event(
+            ohlcv_frame,
+            event_label,
+        )
+        if price_frame.empty or (multi_instrument and event_label is None):
             continue
-        entry_close = float(closes[entry_index])
+        candle_times = list(price_frame["date"])
+        closes = list(price_frame["close"])
+        opens = list(price_frame["open"]) if "open" in price_frame.columns else closes
+        if semantics == "next_candle_open":
+            entry_index = int(price_frame["date"].searchsorted(event_time, side="right"))
+            entry_price_type = "open"
+            exit_index = entry_index + int(hold_candles) - 1
+        else:
+            entry_index = int(price_frame["date"].searchsorted(event_time, side="left"))
+            entry_price_type = "close"
+            exit_index = entry_index + int(hold_candles)
+        if entry_index < 0 or exit_index >= len(price_frame):
+            continue
+        entry_price = (
+            float(opens[entry_index])
+            if entry_price_type == "open"
+            else float(closes[entry_index])
+        )
         exit_close = float(closes[exit_index])
-        if entry_close <= 0.0:
+        if entry_price <= 0.0:
             continue
-        price_return_bps = 10000.0 * (exit_close / entry_close - 1.0)
+        price_return_bps = 10000.0 * (exit_close / entry_price - 1.0)
         funding_adjustment_bps = _funding_adjustment_bps(
             funding_rate,
             entry_time=candle_times[entry_index],
             exit_time=candle_times[exit_index],
         )
         gross_return_bps = price_return_bps + funding_adjustment_bps
-        rows.append(
+        row = {
+            "event_time": _timestamp_to_str(event_time),
+            "entry_time": _timestamp_to_str(candle_times[entry_index]),
+            "exit_time": _timestamp_to_str(candle_times[exit_index]),
+            "entry_semantics": semantics,
+            "entry_price_type": entry_price_type,
+            "entry_price": round(entry_price, 8),
+            "entry_close": round(float(closes[entry_index]), 8),
+            "exit_price_type": "close",
+            "exit_price": round(exit_close, 8),
+            "exit_close": round(exit_close, 8),
+            "price_return_bps": round(price_return_bps, 6),
+            "funding_adjustment_bps": round(funding_adjustment_bps, 6),
+            "gross_return_bps": round(gross_return_bps, 6),
+        }
+        if event_label is not None:
+            row[event_label_column or "pair"] = event_label
+            if price_instrument_column is not None:
+                row["price_series_instrument"] = event_label
+                row["price_series_instrument_column"] = price_instrument_column
+            else:
+                row["price_series_instrument_unverified"] = True
+        rows.append(row)
+    return rows
+
+
+def _price_frame_for_event(
+    ohlcv: pd.DataFrame, event_label: str | None
+) -> tuple[pd.DataFrame, str | None]:
+    if event_label is None:
+        return ohlcv.sort_values("date").reset_index(drop=True), None
+    column = _instrument_column_for_label(ohlcv, event_label)
+    if column is None:
+        if _instrument_column(ohlcv) is None:
+            return ohlcv.sort_values("date").reset_index(drop=True), None
+        return ohlcv.iloc[0:0].copy(), None
+    labels = ohlcv[column].map(_string_evidence_or_none)
+    subset = ohlcv[labels == event_label]
+    if subset.empty:
+        return subset.copy(), column
+    return subset.sort_values("date").reset_index(drop=True), column
+
+
+def _is_multi_instrument_frame(frame: pd.DataFrame) -> bool:
+    column = _instrument_column(frame)
+    if column is None:
+        return False
+    labels = {
+        label
+        for label in frame[column].map(_string_evidence_or_none)
+        if label is not None
+    }
+    return len(labels) > 1
+
+
+def _instrument_column(frame: pd.DataFrame) -> str | None:
+    candidates = _instrument_column_candidates(frame)
+    return candidates[0] if candidates else None
+
+
+def _instrument_column_for_label(frame: pd.DataFrame, label: str) -> str | None:
+    for column in _instrument_column_candidates(frame):
+        labels = {
+            value
+            for value in frame[column].map(_string_evidence_or_none)
+            if value is not None
+        }
+        if label in labels:
+            return column
+    return None
+
+
+def _instrument_column_candidates(frame: pd.DataFrame) -> list[str]:
+    ranked: list[tuple[int, int, str]] = []
+    for priority, column in enumerate(("pair", "symbol", "instrument")):
+        if column not in frame.columns:
+            continue
+        labels = {
+            value
+            for value in frame[column].map(_string_evidence_or_none)
+            if value is not None
+        }
+        if labels:
+            ranked.append((-len(labels), priority, column))
+    return [column for _count, _priority, column in sorted(ranked)]
+
+
+def _event_instrument_label(
+    event: dict[str, Any], ohlcv: pd.DataFrame | None = None
+) -> tuple[str | None, str | None]:
+    candidates: list[tuple[str, str]] = []
+    for column in ("pair", "symbol", "instrument"):
+        value = _string_evidence_or_none(event.get(column))
+        if value is not None:
+            candidates.append((value, column))
+    if not candidates:
+        return None, None
+    if ohlcv is not None:
+        match = _event_label_matching_price_columns(candidates, ohlcv)
+        if match is not None:
+            return match
+        if _instrument_column(ohlcv) is None:
+            return candidates[0]
+    return candidates[0]
+
+
+def _event_label_matching_price_columns(
+    candidates: Sequence[tuple[str, str]], ohlcv: pd.DataFrame
+) -> tuple[str, str] | None:
+    ranked: list[tuple[int, int, int, str, str]] = []
+    column_priority = {"pair": 0, "symbol": 1, "instrument": 2}
+    for event_priority, (label, event_column) in enumerate(candidates):
+        price_column = _instrument_column_for_label(ohlcv, label)
+        if price_column is None:
+            continue
+        label_count = len(
             {
-                "event_time": _timestamp_to_str(event_time),
-                "entry_time": _timestamp_to_str(candle_times[entry_index]),
-                "exit_time": _timestamp_to_str(candle_times[exit_index]),
-                "entry_close": round(entry_close, 8),
-                "exit_close": round(exit_close, 8),
-                "price_return_bps": round(price_return_bps, 6),
-                "funding_adjustment_bps": round(funding_adjustment_bps, 6),
-                "gross_return_bps": round(gross_return_bps, 6),
+                value
+                for value in ohlcv[price_column].map(_string_evidence_or_none)
+                if value is not None
             }
         )
-    return rows
+        ranked.append(
+            (
+                label_count,
+                -column_priority.get(price_column, 99),
+                -event_priority,
+                label,
+                event_column,
+            )
+        )
+    if not ranked:
+        return None
+    _label_count, _price_priority, _event_priority, label, event_column = max(ranked)
+    return label, event_column
+
+
+def _string_evidence_or_none(value: Any) -> str | None:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
+    if text.lower() in _EMPTY_INSTRUMENT_LABELS:
+        return None
+    return text or None
 
 
 def _funding_adjustment_bps(
