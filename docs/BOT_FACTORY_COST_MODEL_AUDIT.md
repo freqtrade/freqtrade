@@ -37,7 +37,9 @@ horizon scoring.
 
 - `best`: lower fee/spread/slippage assumptions for optimistic historical
   screening.
-- `normal`: initialized to the legacy `all_in_cost_bps=12.0` unless overridden.
+- `normal`: initialized to the legacy `all_in_cost_bps=12.0` only when the
+  top-level value is absent or unparseable. An explicit
+  `all_in_cost_bps=0` is preserved for tests and does not fall back to 12.0.
 - `stress`: fee/slippage/adverse-selection stack multiplied by at least 1.5x
   under the default model.
 
@@ -94,6 +96,8 @@ that are not installed in the local venv: `freqtrade_client` and `optuna`.
 
 - Cost scenarios are research estimates and still require paper/live execution
   calibration before any promotion decision.
-- Fill-risk fields are reported and gated for maker assumptions, but no live
-  order fill simulation or exchange-facing process is started.
+- Fill-risk fields are reported and gated for maker assumptions, but maker
+  fill risk is not yet a dedicated fill-probability model or standalone
+  promotion gate. No live order fill simulation or exchange-facing process is
+  started.
 - Passing this cost model is not evidence of live profitability.

@@ -1633,6 +1633,18 @@ def _edge_discovery_handoff(
         best_horizon = payload.get("best_horizon_by_net_edge") if payload else None
         best_horizon = best_horizon if isinstance(best_horizon, dict) else {}
         horizon_results = payload.get("horizon_results", []) if payload else []
+        candidate_generation_allowed = bool(payload) and (
+            payload.get("candidate_generation_allowed") is True
+            or promotion_gate.get("candidate_generation_allowed") is True
+        )
+        proposal_generation_allowed = (
+            bool(payload)
+            and candidate_generation_allowed
+            and (
+                payload.get("proposal_generation_allowed") is True
+                or promotion_gate.get("proposal_generation_allowed") is True
+            )
+        )
         candidate = {
             "path": _safe_relative_path(path, inputs.root_dir),
             "within_workspace": within_workspace,
@@ -1643,11 +1655,8 @@ def _edge_discovery_handoff(
             and payload.get("factory") == "research_edge_discovery",
             "status": payload.get("status") if payload else None,
             "status_passed": bool(payload) and payload.get("status") == "passed",
-            "proposal_generation_allowed": bool(payload)
-            and (
-                payload.get("proposal_generation_allowed") is True
-                or promotion_gate.get("proposal_generation_allowed") is True
-            ),
+            "candidate_generation_allowed": candidate_generation_allowed,
+            "proposal_generation_allowed": proposal_generation_allowed,
             "direct_strategy_codegen_blocked": bool(payload)
             and payload.get("strategy_codegen_allowed") is False
             and promotion_gate.get("strategy_codegen_allowed") is False,
@@ -1681,6 +1690,7 @@ def _edge_discovery_handoff(
             and candidate["parseable"]
             and candidate["factory_valid"]
             and candidate["status_passed"]
+            and candidate["candidate_generation_allowed"]
             and candidate["proposal_generation_allowed"]
             and candidate["direct_strategy_codegen_blocked"]
             and candidate["thesis_id_match"]
@@ -1711,6 +1721,8 @@ def _edge_discovery_handoff(
         and all(item["anti_parameter_search_valid"] for item in artifacts),
         "direct_strategy_codegen_blocked": bool(artifacts)
         and all(item["direct_strategy_codegen_blocked"] for item in artifacts),
+        "candidate_generation_allowed": bool(passing),
+        "proposal_generation_allowed": bool(passing),
         "artifact_paths": [item["path"] for item in artifacts],
         "blocked_next_actions": _edge_discovery_blocked_next_actions(artifacts),
         "blocker_names": _edge_discovery_blocker_names(artifacts),

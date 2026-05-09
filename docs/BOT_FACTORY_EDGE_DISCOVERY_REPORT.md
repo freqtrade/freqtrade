@@ -21,8 +21,9 @@ semantics:
 
 - Signals are selected from closed candles.
 - Entry is evaluated from the next candle open.
-- Exit is evaluated from a future candle close based on the configured holding
-  period.
+- Exit is evaluated from the close of the held candle. With
+  `entry_semantics=next_candle_open` and `hold_candles=1`, the event return is
+  next-candle open to that same next candle close.
 - Funding, mark price, open interest, long/short ratio, liquidation, and
   order-book context continue to use closed-context alignment and local
   timestamped artifacts only.
@@ -49,6 +50,9 @@ with the required fields:
 - `walk_forward_pass_rate`
 - `lower_confidence_bound_bps`
 - `pair_concentration`
+- `pair_evidence_count`
+- `pair_evidence_unique_count`
+- `pair_evidence_distribution`
 - `calendar_concentration`
 - `holding_period`
 - `negative_control_random_entry_delta_bps`
@@ -60,6 +64,12 @@ with the required fields:
 `walk_forward_pass_rate` is reported from calendar-window profitability inside
 the local event study. It remains a pre-codegen research robustness proxy, not a
 replacement for full strategy walk-forward evaluation.
+
+`pair_concentration` is computed only from actual event-return evidence rows
+that carry `pair`, `symbol`, or `instrument` evidence. Declaring multiple
+symbols in `instrument_universe` does not make the signal multi-pair. If event
+rows carry no pair evidence, the gate treats the evidence as single-pair
+dependent with `pair_concentration=1.0`.
 
 ## Negative Controls
 
@@ -88,7 +98,20 @@ Candidate generation requires all checks to pass:
 - next-candle-open Freqtrade semantics verified
 
 If any check fails, the artifact reports `candidate_generation_result` as
-`no candidate generated`.
+`no candidate generated`. `proposal_generation_allowed` is tied to
+`candidate_generation_allowed`; a status-passed artifact with a failed
+research gate cannot advance proposal or candidate generation through the
+legacy proposal flag.
+
+## Current Limitations
+
+- `maker_fill_risk`, `no_fill_rate`, and `partial_fill_rate` are exposed in
+  cost/report fields, but maker fill risk is not yet a dedicated
+  fill-probability gate. This remains a follow-up TODO before promotion.
+- Overlapping events, cooldown interaction, and effective sample count are
+  reported only indirectly through event counts and cooldown settings. A
+  follow-up diagnostic should estimate effective independent sample count and
+  flag overlapping holding windows.
 
 ## Current Outcome
 

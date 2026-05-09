@@ -99,6 +99,47 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-09 JST for PR #8 research-first Edge Discovery gate hardening.
+
+- [x] Hardened `freqtrade_ext/bot_factory/cost_model.py` so top-level
+  `all_in_cost_bps=0` is preserved and only `None` falls back to 12.0.
+- [x] Hardened `freqtrade_ext/bot_factory/edge_discovery.py`,
+  `freqtrade_ext/bot_factory/local_events.py`, and
+  `freqtrade_ext/bot_factory/local_falsification.py` so
+  `pair_concentration` is computed from actual event-return pair evidence
+  (`pair`, `symbol`, or `instrument`) rather than declared
+  `instrument_universe`; event rows without pair evidence are treated as
+  single-pair dependent.
+- [x] Clarified `next_candle_open` event-study semantics: with
+  `hold_candles=1`, entry is the next candle open and exit is that same
+  candle close. Event-return samples now record `exit_price_type` and
+  `exit_price`.
+- [x] Tied `proposal_generation_allowed` to
+  `candidate_generation_allowed` and updated proposal/codegen handoffs so a
+  status-passed Edge Discovery artifact with a failed research gate cannot
+  advance through the legacy proposal flag.
+- [x] Added regression coverage in `tests/test_bot_factory.py` for zero-cost
+  top-level specs, one-candle next-open exit semantics, actual multi-pair
+  evidence, declared-multi-symbol false positives, negative-control no-candidate
+  behavior, and legacy proposal-flag blocking.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_model.py freqtrade_ext\bot_factory\edge_discovery.py freqtrade_ext\bot_factory\local_falsification.py scripts\bot_factory_build_edge_discovery.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_model or next_candle_open or research_gate or negative_controls"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: compile passed; focused selector passed 10 tests; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`; `git diff --check`
+  passed with CRLF working-copy warnings only.
+- [ ] Remaining limitation: this hardens the research gate and preserves the
+  PR's `no candidate generated` posture. It does not create or promote a
+  trading candidate, start backtesting/paper/live trading, model maker fill
+  probability as a standalone gate, or estimate effective independent sample
+  count for overlapping events and cooldown windows.
+
 Checked on 2026-05-04 UTC for Strategy Code Generator mode extension.
 
 - [x] Extended `freqtrade_ext/bot_factory/strategy_code.py` to add proposal-driven generator mode support (`rule_based`, `freqai`, `hybrid_ml`) while preserving long-only safety scope and static-check gating. Generated metadata now records generator mode, feature list, target definition, label horizon, prediction threshold, rule filters, and risk policy.

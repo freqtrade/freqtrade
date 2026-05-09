@@ -1272,6 +1272,8 @@ def _proposal_edge_discovery_handoff(
             "passed": False,
             "artifact_count": 0,
             "passing_edge_artifact_count": 0,
+            "candidate_generation_allowed": False,
+            "proposal_generation_allowed": False,
             "artifact_paths": [],
             "blocker_names": ["edge_discovery_handoff_missing"],
         }
@@ -1286,6 +1288,8 @@ def _proposal_edge_discovery_handoff(
         and handoff.get("safety_scope_valid") is True
         and handoff.get("anti_parameter_search_valid") is True
         and handoff.get("direct_strategy_codegen_blocked") is True
+        and handoff.get("candidate_generation_allowed") is True
+        and handoff.get("proposal_generation_allowed") is True
     )
     return {
         "required": handoff.get("required") is not False,
@@ -1306,6 +1310,12 @@ def _proposal_edge_discovery_handoff(
         ),
         "direct_strategy_codegen_blocked": (
             handoff.get("direct_strategy_codegen_blocked") is True
+        ),
+        "candidate_generation_allowed": (
+            handoff.get("candidate_generation_allowed") is True
+        ),
+        "proposal_generation_allowed": (
+            handoff.get("proposal_generation_allowed") is True
         ),
         "artifact_paths": _string_list(handoff.get("artifact_paths", [])),
         "blocked_next_actions": _string_list(

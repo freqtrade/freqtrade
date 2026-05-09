@@ -124,8 +124,9 @@ def cost_scenarios_from_spec(
     context: CostModelContext | None = None,
 ) -> dict[str, dict[str, Any]]:
     context = context or cost_context_from_spec(spec)
+    normal_cost_bps = _float_or_none(spec.get("all_in_cost_bps"))
     defaults = default_cost_scenarios(
-        normal_cost_bps=_float_or_none(spec.get("all_in_cost_bps")) or 12.0
+        normal_cost_bps=12.0 if normal_cost_bps is None else normal_cost_bps
     )
     model = spec.get("cost_model")
     if isinstance(model, Mapping):

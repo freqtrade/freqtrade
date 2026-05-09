@@ -2708,6 +2708,41 @@ def test_strategy_proposal_generator_blocks_unapproved_research_decision(tmp_pat
     assert "research_decision_1_approved_for_proposal_generation" in blocker_names
 
 
+def test_strategy_proposal_generator_blocks_legacy_proposal_flag_when_research_gate_fails(
+    tmp_path,
+):
+    thesis_id = "TH-EDGE-RESEARCH-GATE-BLOCKED-001"
+    edge_path = _write_strategy_proposal_edge_discovery(
+        tmp_path,
+        thesis_id=thesis_id,
+        mechanism_class="mean_reversion",
+        candidate_generation_allowed=False,
+    )
+    payload = json.loads(edge_path.read_text(encoding="utf-8"))
+    payload["proposal_generation_allowed"] = True
+    payload["promotion_gate"]["proposal_generation_allowed"] = True
+    edge_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    artifacts = build_strategy_proposal(
+        _strategy_proposal_inputs(
+            tmp_path,
+            thesis_id=thesis_id,
+            include_edge_discovery=False,
+            evidence_paths=[StrategyProposalEvidenceInput("edge_discovery", edge_path)],
+        )
+    )
+
+    handoff = artifacts.metadata["edge_discovery_handoff"]
+    edge_candidate = handoff["artifacts"][0]
+    assert artifacts.metadata["status"] == "blocked"
+    assert edge_candidate["status_passed"] is True
+    assert edge_candidate["candidate_generation_allowed"] is False
+    assert edge_candidate["proposal_generation_allowed"] is False
+    assert "edge_discovery_handoff_passed" in {
+        check["name"] for check in artifacts.metadata["blockers"]
+    }
+
+
 def test_strategy_proposal_generator_blocks_research_decision_with_local_rejection_novelty(
     tmp_path,
 ):
@@ -6786,7 +6821,13 @@ def _write_strategy_proposal_edge_discovery(
     mechanism_class: str,
     status: str = "passed",
     net_edge_bps: float = 5.0,
+    candidate_generation_allowed: bool | None = None,
 ) -> Path:
+    candidate_allowed = (
+        status == "passed"
+        if candidate_generation_allowed is None
+        else candidate_generation_allowed
+    )
     edge_path = (
         tmp_path
         / "registry"
@@ -6803,7 +6844,13 @@ def _write_strategy_proposal_edge_discovery(
                 "edge_discovery_id": f"ED-{thesis_id}",
                 "thesis_id": thesis_id,
                 "mechanism_class": mechanism_class,
-                "proposal_generation_allowed": status == "passed",
+                "candidate_generation_allowed": candidate_allowed,
+                "candidate_generation_result": (
+                    "candidate generation allowed"
+                    if candidate_allowed
+                    else "no candidate generated"
+                ),
+                "proposal_generation_allowed": candidate_allowed,
                 "strategy_codegen_allowed": False,
                 "passing_horizon_count": 1 if status == "passed" else 0,
                 "best_horizon_by_net_edge": {
@@ -6821,9 +6868,19 @@ def _write_strategy_proposal_edge_discovery(
                     }
                 ],
                 "anti_parameter_search": {"valid": True},
+                "research_gate": {
+                    "passes_research_gate": candidate_allowed,
+                    "rejection_reason": None
+                    if candidate_allowed
+                    else "research_gate_failed",
+                    "blockers": []
+                    if candidate_allowed
+                    else [{"name": "research_gate_failed"}],
+                },
                 "promotion_gate": {
-                    "proposal_generation_allowed": status == "passed",
+                    "proposal_generation_allowed": candidate_allowed,
                     "strategy_codegen_allowed": False,
+                    "candidate_generation_allowed": candidate_allowed,
                 },
                 "blocked_next_actions": [
                     "strategy_codegen_directly_from_edge_discovery"
@@ -13622,7 +13679,9 @@ def test_edge_discovery_builds_multi_horizon_cost_edge_artifact(tmp_path):
 
     assert artifact["factory"] == "research_edge_discovery"
     assert artifact["status"] == "passed"
-    assert artifact["proposal_generation_allowed"] is True
+    assert artifact["proposal_generation_allowed"] is False
+    assert artifact["candidate_generation_allowed"] is False
+    assert artifact["candidate_generation_result"] == "no candidate generated"
     assert artifact["strategy_codegen_allowed"] is False
     assert artifact["hypothesis_scope"] == "cross_asset"
     assert artifact["instrument_universe"] == ["BTC/USDT:USDT", "ETH/USDT:USDT"]
@@ -13636,9 +13695,12 @@ def test_edge_discovery_builds_multi_horizon_cost_edge_artifact(tmp_path):
     assert concentration["max_day_event_share"] == 1.0
     assert artifact["safety_scope"]["backtest_started"] is False
     assert artifact["safety_scope"]["strategy_code_generated"] is False
-    assert artifact["blocked_next_actions"] == [
-        "strategy_codegen_directly_from_edge_discovery"
+    assert "proposal_generation_without_passing_research_gate" in artifact[
+        "blocked_next_actions"
     ]
+    assert "not_single_pair_dependent" in {
+        check["name"] for check in artifact["research_gate"]["blockers"]
+    }
 
     json_path, report_path = write_edge_discovery_artifacts(
         artifact,
@@ -13714,6 +13776,12 @@ def test_cost_model_supports_default_scenarios_and_context_override():
     assert scenarios["normal"]["no_fill_rate"] == 0.2
     assert scenarios["normal"]["partial_fill_rate"] == 0.3
     assert scenarios["normal"]["adverse_selection_bps"] == 2.0
+
+
+def test_cost_model_preserves_zero_top_level_all_in_cost_bps():
+    scenarios = cost_scenarios_from_spec({"all_in_cost_bps": 0})
+
+    assert scenarios["normal"]["total_cost_bps"] == 0.0
 
 
 def test_edge_discovery_uses_next_candle_open_entry_semantics(tmp_path):
@@ -13795,6 +13863,10 @@ def test_edge_discovery_uses_next_candle_open_entry_semantics(tmp_path):
     assert sample["entry_semantics"] == "next_candle_open"
     assert sample["entry_price_type"] == "open"
     assert sample["entry_price"] == 200.0
+    assert sample["exit_time"] == "2026-01-01T00:10:00+00:00"
+    assert sample["exit_price_type"] == "close"
+    assert sample["exit_price"] == 200.5
+    assert sample["exit_close"] == 200.5
 
 
 def test_edge_discovery_research_gate_passes_synthetic_positive_case(tmp_path):
@@ -13802,17 +13874,26 @@ def test_edge_discovery_research_gate_passes_synthetic_positive_case(tmp_path):
     spec_path = tmp_path / "edge_spec.json"
     start = pd.Timestamp("2026-01-01T00:00:00Z")
     event_indices = {10, 50, 90, 130, 170, 210}
+    event_pairs = {
+        10: "BTC/USDT:USDT",
+        50: "ETH/USDT:USDT",
+        90: "BTC/USDT:USDT",
+        130: "ETH/USDT:USDT",
+        170: "BTC/USDT:USDT",
+        210: "ETH/USDT:USDT",
+    }
     rows = []
     for index in range(240):
         close = 100.0
         open_ = 100.0
         if index in event_indices:
             close = 102.0
-        if index - 2 in event_indices:
+        if index - 1 in event_indices:
             close = 103.0
         rows.append(
             {
                 "date": start + pd.Timedelta(days=index),
+                "pair": event_pairs.get(index, "BTC/USDT:USDT"),
                 "open": open_,
                 "high": max(open_, close) + 0.5,
                 "low": min(open_, close) - 0.5,
@@ -13870,12 +13951,91 @@ def test_edge_discovery_research_gate_passes_synthetic_positive_case(tmp_path):
     assert artifact["status"] == "passed"
     assert artifact["candidate_generation_allowed"] is True
     assert report["passes_research_gate"] is True
+    assert report["pair_concentration"] == 0.5
+    assert report["pair_evidence_unique_count"] == 2
     assert report["net_edge_bps_normal"] >= 6.0
     assert report["net_edge_bps_stress"] > 0.0
     assert report["lower_confidence_bound_bps"] > 0.0
     assert report["negative_control_random_entry_delta_bps"] >= 1.0
     assert report["negative_control_shuffled_signal_delta_bps"] >= 1.0
     assert report["negative_control_shifted_signal_delta_bps"] >= 1.0
+
+
+def test_edge_discovery_research_gate_requires_actual_multi_pair_evidence(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    spec_path = tmp_path / "edge_spec.json"
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    event_indices = {10, 30, 50, 70, 90}
+    rows = []
+    for index in range(120):
+        close = 100.0
+        if index in event_indices:
+            close = 102.0
+        if index - 1 in event_indices:
+            close = 103.0
+        rows.append(
+            {
+                "date": start + pd.Timedelta(days=index),
+                "open": 100.0,
+                "high": close + 0.5,
+                "low": 99.5,
+                "close": close,
+                "volume": 1000.0,
+            }
+        )
+    pd.DataFrame(rows).to_csv(ohlcv_path, index=False)
+    spec_path.write_text(
+        json.dumps(
+            {
+                "factory": "research_edge_discovery_spec",
+                "thesis_id": "TH-DECLARED-MULTI-PAIR-ONLY-001",
+                "mechanism_class": "declared_pair_list_is_not_evidence",
+                "hypothesis_scope": "cross_asset",
+                "instrument_universe": ["BTC/USDT:USDT", "ETH/USDT:USDT"],
+                "conditions": [
+                    {
+                        "feature": "return_bps",
+                        "operator": ">",
+                        "value": 100.0,
+                        "lookback_candles": 1,
+                    }
+                ],
+                "horizons": [1],
+                "cost_model": {
+                    "scenarios": [
+                        {"scenario_name": "best", "total_cost_bps": 1.0},
+                        {"scenario_name": "normal", "total_cost_bps": 2.0},
+                        {"scenario_name": "stress", "total_cost_bps": 3.0},
+                    ]
+                },
+                "cooldown_candles": 5,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_edge_discovery(
+        EdgeDiscoveryInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            edge_spec_path=spec_path,
+            min_sample_count=5,
+            min_profitable_windows_ratio=0.7,
+            min_negative_control_delta_bps=0.0,
+            created_at="2026-05-07T00:00:00+00:00",
+        )
+    )
+
+    gate_blockers = {
+        check["name"] for check in artifact["research_gate"]["blockers"]
+    }
+    report = artifact["event_level_post_cost_edge_report"]
+    assert artifact["status"] == "passed"
+    assert artifact["candidate_generation_allowed"] is False
+    assert artifact["proposal_generation_allowed"] is False
+    assert report["pair_concentration"] == 1.0
+    assert report["pair_evidence_count"] == 0
+    assert "not_single_pair_dependent" in gate_blockers
 
 
 def test_edge_discovery_research_gate_blocks_negative_controls_and_reports_no_candidate(
@@ -13888,9 +14048,9 @@ def test_edge_discovery_research_gate_blocks_negative_controls_and_reports_no_ca
         [
             {
                 "date": start + pd.Timedelta(days=index),
-                "open": 100.0 + index,
+                "open": 99.0 + index,
                 "high": 101.0 + index,
-                "low": 99.0 + index,
+                "low": 98.0 + index,
                 "close": 100.0 + index,
                 "volume": 1000.0,
             }
@@ -13944,6 +14104,8 @@ def test_edge_discovery_research_gate_blocks_negative_controls_and_reports_no_ca
     }
     assert artifact["status"] == "passed"
     assert artifact["candidate_generation_allowed"] is False
+    assert artifact["proposal_generation_allowed"] is False
+    assert artifact["promotion_gate"]["proposal_generation_allowed"] is False
     assert artifact["candidate_generation_result"] == "no candidate generated"
     assert report["passes_research_gate"] is False
     assert "random_entry_control_beaten" in gate_blockers
@@ -13971,9 +14133,9 @@ def test_edge_discovery_supports_liquidation_context_features(tmp_path):
         [
             {
                 "date": start + pd.Timedelta(hours=index),
-                "open": close,
+                "open": close - 1.0,
                 "high": close * 1.001,
-                "low": close * 0.999,
+                "low": (close - 1.0) * 0.999,
                 "close": close,
                 "volume": 1000.0,
             }
@@ -14050,9 +14212,9 @@ def test_edge_discovery_supports_order_book_context_features(tmp_path):
         [
             {
                 "date": start + pd.Timedelta(hours=index),
-                "open": close,
+                "open": close - 1.0,
                 "high": close * 1.001,
-                "low": close * 0.999,
+                "low": (close - 1.0) * 0.999,
                 "close": close,
                 "volume": 1000.0,
             }

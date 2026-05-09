@@ -1315,6 +1315,11 @@ def _events_from_mask(
             "date": _timestamp_to_str(row["date"]),
             "row_index": int(index),
         }
+        for column in ("pair", "symbol", "instrument"):
+            if column in frame.columns:
+                value = row.get(column)
+                if not pd.isna(value) and str(value).strip():
+                    event[column] = str(value).strip()
         for column in feature_columns:
             value = row.get(column)
             event[column] = None if pd.isna(value) else round(float(value), 6)
@@ -1341,7 +1346,10 @@ def _load_ohlcv(path: Path) -> tuple[pd.DataFrame | None, str | None]:
     frame = frame.dropna(subset=list(required)).sort_values("date")
     if frame.empty:
         return None, "empty_after_ohlcv_cleaning"
-    return frame[list(required)].reset_index(drop=True), None
+    optional = [
+        column for column in ("pair", "symbol", "instrument") if column in frame.columns
+    ]
+    return frame[[*required, *optional]].reset_index(drop=True), None
 
 
 def _load_funding_rate(path: Path) -> tuple[pd.DataFrame | None, str | None]:

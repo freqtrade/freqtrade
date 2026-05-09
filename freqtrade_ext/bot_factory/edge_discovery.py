@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import random
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from math import sqrt
@@ -406,7 +407,6 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
             inputs.min_profitable_calendar_windows_ratio
         ),
         min_negative_control_delta_bps=float(inputs.min_negative_control_delta_bps),
-        instrument_universe=instrument_universe,
     )
     passing_horizons = [
         item for item in horizon_results if item.get("status") == "passed"
@@ -458,13 +458,14 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
         best_horizon=best_horizon,
         horizon_results=horizon_results,
         concentration=concentration,
-        instrument_universe=instrument_universe,
     )
     research_gate = event_level_report["research_gate"]
     candidate_generation_allowed = (
-        status == "passed" and research_gate["passes_research_gate"]
+        status == "passed" and research_gate["passes_research_gate"] is True
     )
-    blocked_next_actions = _blocked_next_actions(status)
+    blocked_next_actions = _blocked_next_actions(
+        status, candidate_generation_allowed=candidate_generation_allowed
+    )
     return {
         "generated_at": generated_at,
         "factory": "research_edge_discovery",
@@ -602,14 +603,14 @@ def build_edge_discovery(inputs: EdgeDiscoveryInputs) -> dict[str, Any]:
             else "no candidate generated"
         ),
         "promotion_gate": {
-            "proposal_generation_allowed": status == "passed",
+            "proposal_generation_allowed": candidate_generation_allowed,
             "strategy_codegen_allowed": False,
             "candidate_generation_allowed": candidate_generation_allowed,
             "must_pass_research_selection_after_edge_discovery": True,
             "must_pass_research_gate_before_candidate_generation": True,
             "blocked_next_actions": blocked_next_actions,
         },
-        "proposal_generation_allowed": status == "passed",
+        "proposal_generation_allowed": candidate_generation_allowed,
         "strategy_codegen_allowed": False,
         "blocked_next_actions": blocked_next_actions,
         "checks": checks,
@@ -671,7 +672,6 @@ def _horizon_results(
     min_calendar_window_count: int,
     min_profitable_calendar_windows_ratio: float,
     min_negative_control_delta_bps: float,
-    instrument_universe: Sequence[str],
 ) -> list[dict[str, Any]]:
     all_in_cost_bps = _normal_cost_bps(cost_scenarios)
     if ohlcv is None or not events or all_in_cost_bps is None:
@@ -682,11 +682,19 @@ def _horizon_results(
     event_frame = event_frame.copy()
     event_frame["date"] = pd.to_datetime(event_frame["date"], utc=True, errors="coerce")
     event_frame = event_frame.dropna(subset=["date"]).sort_values("date")
+    event_return_columns = [
+        "date",
+        *[
+            column
+            for column in ("pair", "symbol", "instrument")
+            if column in event_frame.columns
+        ],
+    ]
     results: list[dict[str, Any]] = []
     for horizon in horizons:
         rows = _event_returns(
             ohlcv,
-            event_frame[["date"]],
+            event_frame[event_return_columns],
             hold_candles=int(horizon),
             funding_rate=funding_rate,
             entry_semantics="next_candle_open",
@@ -741,7 +749,8 @@ def _horizon_results(
             normal_cost_bps=cost_bps["normal"],
             real_net_edge_bps=net_edge_bps_normal,
         )
-        pair_concentration = _pair_concentration(instrument_universe)
+        pair_evidence = _pair_evidence_summary(rows)
+        pair_concentration = pair_evidence["pair_concentration"]
         calendar_concentration = (
             None
             if calendar_window_count == 0
@@ -850,6 +859,13 @@ def _horizon_results(
                 "walk_forward_pass_rate": walk_forward_pass_rate,
                 "lower_confidence_bound_bps": lower_confidence_bound_bps,
                 "pair_concentration": pair_concentration,
+                "pair_evidence_count": pair_evidence["pair_evidence_count"],
+                "pair_evidence_unique_count": pair_evidence[
+                    "pair_evidence_unique_count"
+                ],
+                "pair_evidence_distribution": pair_evidence[
+                    "pair_evidence_distribution"
+                ],
                 "calendar_concentration": calendar_concentration,
                 "negative_controls": negative_controls,
                 "negative_control_random_entry_delta_bps": negative_controls[
@@ -1149,7 +1165,6 @@ def _event_level_post_cost_report(
     best_horizon: dict[str, Any] | None,
     horizon_results: Sequence[dict[str, Any]],
     concentration: dict[str, Any],
-    instrument_universe: Sequence[str],
 ) -> dict[str, Any]:
     selected = None
     passing_gate = [item for item in horizon_results if item.get("passes_research_gate")]
@@ -1174,7 +1189,7 @@ def _event_level_post_cost_report(
             profitable_windows_ratio=0.0,
             walk_forward_pass_rate=0.0,
             lower_confidence_bound_bps=None,
-            pair_concentration=_pair_concentration(instrument_universe),
+            pair_concentration=1.0,
             calendar_concentration=concentration.get("max_quarter_event_share"),
             negative_controls={
                 "random_entry": {},
@@ -1191,6 +1206,9 @@ def _event_level_post_cost_report(
             "entry_signal_count": 0,
             "passes_research_gate": False,
             "rejection_reason": gate["rejection_reason"],
+            "pair_concentration": 1.0,
+            "pair_evidence_count": 0,
+            "pair_evidence_unique_count": 0,
             "research_gate": gate,
             "candidate_generation_result": "no candidate generated",
         }
@@ -1211,6 +1229,9 @@ def _event_level_post_cost_report(
         "walk_forward_pass_rate": selected.get("walk_forward_pass_rate"),
         "lower_confidence_bound_bps": selected.get("lower_confidence_bound_bps"),
         "pair_concentration": selected.get("pair_concentration"),
+        "pair_evidence_count": selected.get("pair_evidence_count"),
+        "pair_evidence_unique_count": selected.get("pair_evidence_unique_count"),
+        "pair_evidence_distribution": selected.get("pair_evidence_distribution"),
         "calendar_concentration": selected.get("calendar_concentration"),
         "holding_period": selected.get("hold_candles"),
         "negative_control_random_entry_delta_bps": selected.get(
@@ -1257,11 +1278,42 @@ def _lower_confidence_bound_bps(values: Sequence[float], cost_bps: float) -> flo
     return round(mean - cost_bps - 1.96 * standard_error, 6)
 
 
-def _pair_concentration(instrument_universe: Sequence[str]) -> float:
-    instruments = [item for item in instrument_universe if str(item).strip()]
-    if len(instruments) <= 1:
-        return 1.0
-    return round(1.0 / len(set(instruments)), 4)
+def _pair_evidence_summary(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    labels = [
+        label
+        for label in (_pair_evidence_label(row) for row in rows)
+        if label is not None
+    ]
+    if not labels:
+        return {
+            "pair_concentration": 1.0,
+            "pair_evidence_count": 0,
+            "pair_evidence_unique_count": 0,
+            "pair_evidence_distribution": {},
+        }
+    counts = Counter(labels)
+    return {
+        "pair_concentration": round(max(counts.values()) / len(labels), 4),
+        "pair_evidence_count": len(labels),
+        "pair_evidence_unique_count": len(counts),
+        "pair_evidence_distribution": dict(sorted(counts.items())),
+    }
+
+
+def _pair_evidence_label(row: dict[str, Any]) -> str | None:
+    for column in ("pair", "symbol", "instrument"):
+        value = row.get(column)
+        if value is None:
+            continue
+        try:
+            if pd.isna(value):
+                continue
+        except (TypeError, ValueError):
+            pass
+        text = str(value).strip()
+        if text:
+            return text
+    return None
 
 
 def _cost_scenario_checks(
@@ -1588,8 +1640,12 @@ def _bucket_concentration(labels: pd.Series) -> dict[str, Any]:
     }
 
 
-def _blocked_next_actions(status: str) -> list[str]:
+def _blocked_next_actions(
+    status: str, *, candidate_generation_allowed: bool = False
+) -> list[str]:
     actions = ["strategy_codegen_directly_from_edge_discovery"]
+    if not candidate_generation_allowed:
+        actions.append("proposal_generation_without_passing_research_gate")
     if status != "passed":
         actions.extend(
             [
@@ -1662,6 +1718,9 @@ def _render_report(artifact: dict[str, Any]) -> str:
             f"- walk_forward_pass_rate: {edge_report.get('walk_forward_pass_rate')}",
             f"- lower_confidence_bound_bps: {edge_report.get('lower_confidence_bound_bps')}",
             f"- pair_concentration: {edge_report.get('pair_concentration')}",
+            f"- pair_evidence_count: {edge_report.get('pair_evidence_count')}",
+            f"- pair_evidence_unique_count: {edge_report.get('pair_evidence_unique_count')}",
+            f"- pair_evidence_distribution: {edge_report.get('pair_evidence_distribution')}",
             f"- calendar_concentration: {edge_report.get('calendar_concentration')}",
             f"- holding_period: {edge_report.get('holding_period')}",
             f"- negative_control_random_entry_delta_bps: {edge_report.get('negative_control_random_entry_delta_bps')}",
@@ -1682,6 +1741,7 @@ def _render_report(artifact: dict[str, Any]) -> str:
             f"net_edge_bps={item.get('net_edge_bps')}, "
             f"net_edge_bps_stress={item.get('net_edge_bps_stress')}, "
             f"profitable_windows_ratio={item.get('profitable_windows_ratio')}, "
+            f"pair_concentration={item.get('pair_concentration')}, "
             f"passes_research_gate={item.get('passes_research_gate')}"
         )
     concentration = artifact.get("concentration_diagnostics", {})
@@ -1707,6 +1767,15 @@ def _render_report(artifact: dict[str, Any]) -> str:
     if blockers:
         lines.extend(["", "## Blockers", ""])
         lines.extend(f"- {item.get('name')}" for item in blockers)
+    lines.extend(
+        [
+            "",
+            "## Limitations",
+            "",
+            "- maker_fill_risk is reported through cost fields but is not yet a separate fill-probability gate.",
+            "- overlapping_events, cooldown_candles, and effective_sample_count require follow-up diagnostics before promotion.",
+        ]
+    )
     lines.extend(["", "## Safety Scope", ""])
     safety = artifact.get("safety_scope", {})
     lines.extend(

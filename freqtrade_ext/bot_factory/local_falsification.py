@@ -488,7 +488,15 @@ def _load_events(path: Path, time_column: str) -> tuple[pd.DataFrame | None, str
     frame = frame.dropna(subset=[time_column]).sort_values(time_column)
     if frame.empty:
         return None, "empty_event_file"
-    return frame[[time_column]].rename(columns={time_column: "date"}).reset_index(drop=True), None
+    optional = [
+        column for column in ("pair", "symbol", "instrument") if column in frame.columns
+    ]
+    return (
+        frame[[time_column, *optional]]
+        .rename(columns={time_column: "date"})
+        .reset_index(drop=True),
+        None,
+    )
 
 
 def _load_funding_rate(path: Path) -> tuple[pd.DataFrame | None, str | None]:
@@ -716,14 +724,17 @@ def _event_returns(
     opens = list(ohlcv["open"]) if "open" in ohlcv.columns else closes
     rows: list[dict[str, Any]] = []
     semantics = str(entry_semantics or "same_candle_close").strip().lower()
-    for event_time in events["date"]:
+    event_records = events.to_dict("records")
+    for event in event_records:
+        event_time = event["date"]
         if semantics == "next_candle_open":
             entry_index = int(ohlcv["date"].searchsorted(event_time, side="right"))
             entry_price_type = "open"
+            exit_index = entry_index + int(hold_candles) - 1
         else:
             entry_index = int(ohlcv["date"].searchsorted(event_time, side="left"))
             entry_price_type = "close"
-        exit_index = entry_index + hold_candles
+            exit_index = entry_index + int(hold_candles)
         if entry_index < 0 or exit_index >= len(ohlcv):
             continue
         entry_price = (
@@ -741,22 +752,39 @@ def _event_returns(
             exit_time=candle_times[exit_index],
         )
         gross_return_bps = price_return_bps + funding_adjustment_bps
-        rows.append(
-            {
-                "event_time": _timestamp_to_str(event_time),
-                "entry_time": _timestamp_to_str(candle_times[entry_index]),
-                "exit_time": _timestamp_to_str(candle_times[exit_index]),
-                "entry_semantics": semantics,
-                "entry_price_type": entry_price_type,
-                "entry_price": round(entry_price, 8),
-                "entry_close": round(float(closes[entry_index]), 8),
-                "exit_close": round(exit_close, 8),
-                "price_return_bps": round(price_return_bps, 6),
-                "funding_adjustment_bps": round(funding_adjustment_bps, 6),
-                "gross_return_bps": round(gross_return_bps, 6),
-            }
-        )
+        row = {
+            "event_time": _timestamp_to_str(event_time),
+            "entry_time": _timestamp_to_str(candle_times[entry_index]),
+            "exit_time": _timestamp_to_str(candle_times[exit_index]),
+            "entry_semantics": semantics,
+            "entry_price_type": entry_price_type,
+            "entry_price": round(entry_price, 8),
+            "entry_close": round(float(closes[entry_index]), 8),
+            "exit_price_type": "close",
+            "exit_price": round(exit_close, 8),
+            "exit_close": round(exit_close, 8),
+            "price_return_bps": round(price_return_bps, 6),
+            "funding_adjustment_bps": round(funding_adjustment_bps, 6),
+            "gross_return_bps": round(gross_return_bps, 6),
+        }
+        for column in ("pair", "symbol", "instrument"):
+            value = _string_evidence_or_none(event.get(column))
+            if value is not None:
+                row[column] = value
+        rows.append(row)
     return rows
+
+
+def _string_evidence_or_none(value: Any) -> str | None:
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
+    return text or None
 
 
 def _funding_adjustment_bps(
