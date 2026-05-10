@@ -535,9 +535,7 @@ CONF_SCHEMA = {
                 "type": "object",
                 "properties": {
                     "method": {
-                        "description": "Method used for generating the pairlist. Built-in methods: "
-                        + ", ".join(AVAILABLE_PAIRLISTS)
-                        + ". Custom handlers in user_data/pairlist/ are also accepted.",
+                        "description": "Method used for generating the pairlist.",
                         "type": "string",
                     },
                 },
