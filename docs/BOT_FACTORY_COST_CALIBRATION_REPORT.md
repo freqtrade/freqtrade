@@ -73,6 +73,12 @@ Blocking cases include:
   `volatility_regime` selectors are only filtered by context selectors that
   the caller explicitly provided. Unset caller context does not silently drop
   valid fills overrides.
+- depth-only order-book artifacts with `bid_size` and `ask_size` are accepted
+  for maker fill-risk estimation when spread evidence comes from a separate
+  spread artifact or the OHLCV proxy.
+- fills artifacts that load successfully but match zero scenarios after
+  scenario/context filtering return a structured `fills_scenarios_missing`
+  blocker instead of silently falling back to proxy costs.
 
 ## Safety
 
@@ -104,7 +110,7 @@ git diff --check
 Results:
 
 - compile passed;
-- focused selector passed 12 tests and reached `[100%]`;
+- focused selector passed 14 tests and reached `[100%]`;
 - full `tests/test_bot_factory.py` reached `[100%]`;
 - `git diff --check` exited `0` with no whitespace errors and the existing
   LF-to-CRLF working-copy warning for `docs/BOT_FACTORY_MVP_TODO.md`.

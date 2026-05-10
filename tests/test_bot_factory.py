@@ -14165,6 +14165,16 @@ def _write_cost_calibration_order_book(path: Path) -> None:
     frame.to_csv(path, index=False)
 
 
+def _write_cost_calibration_spread(path: Path) -> None:
+    frame = pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=24, freq="5min"),
+            "spread_bps": np.linspace(1.0, 3.5, 24),
+        }
+    )
+    frame.to_csv(path, index=False)
+
+
 def test_cost_calibration_builds_scenarios_and_artifacts_from_local_data(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     order_book_path = tmp_path / "order_book.csv"
@@ -14246,6 +14256,43 @@ def test_cost_calibration_builds_scenarios_and_artifacts_from_local_data(tmp_pat
     assert "candidate_generation_result: no candidate generated" in report_text
     assert "normal" in table_text
     assert "stress" in table_text
+
+
+def test_cost_calibration_accepts_depth_only_order_book_with_spread_artifact(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "depth_only_order_book.csv"
+    spread_path = tmp_path / "spread.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_spread(spread_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=24, freq="5min"),
+            "bid_size": np.linspace(10.0, 14.0, 24),
+            "ask_size": np.linspace(8.0, 13.0, 24),
+        }
+    ).to_csv(order_book_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            spread_path=spread_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+            cost_calibration_id="depth-only-order-book",
+        )
+    )
+
+    assert artifact["status"] == "completed"
+    assert artifact["sources"]["order_book"]["status"] == "loaded"
+    assert artifact["sources"]["spread"]["status"] == "loaded"
+    assert artifact["cost_scenarios"]["normal"]["no_fill_rate"] is not None
+    assert artifact["cost_scenarios"]["normal"]["provenance"]["spread_source"] == "spread_artifact"
+    assert "order_book_usable_columns_missing" not in {
+        blocker["name"] for blocker in artifact["blockers"]
+    }
 
 
 def test_cost_calibration_blocks_missing_normal_cost_with_structured_blocker(tmp_path):
@@ -14377,6 +14424,46 @@ def test_cost_calibration_keeps_fills_when_context_selectors_are_unset(tmp_path)
     assert scenarios["normal"]["adverse_selection_bps"] == 1.5
     assert scenarios["normal"]["exit_taker_rate"] == 0.66
     assert scenarios["stress"]["total_cost_bps"] == 30.0
+
+
+def test_cost_calibration_blocks_fills_artifact_with_zero_matching_scenarios(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    pd.DataFrame(
+        [
+            {
+                "scenario_name": "normal",
+                "pair": "ETH/USDT:USDT",
+                "timeframe": "5m",
+                "order_type": "maker",
+                "no_fill_rate": 0.10,
+                "partial_fill_rate": 0.20,
+                "adverse_selection_bps": 1.0,
+                "exit_taker_rate": 0.5,
+                "total_cost_bps": 18.0,
+            }
+        ]
+    ).to_csv(fills_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+            cost_calibration_id="zero-matching-fills",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["fills"]["status"] == "blocked"
+    assert artifact["sources"]["fills"]["blocker_name"] == "fills_scenarios_missing"
+    assert "fills_scenarios_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
 
 
 def test_cost_calibration_returns_structured_blocker_for_fills_parse_error(tmp_path):

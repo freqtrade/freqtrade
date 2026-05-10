@@ -97,7 +97,11 @@ def build_cost_calibration(inputs: CostCalibrationInputs) -> dict[str, Any]:
             "order_book",
             order_book_path,
             required=False,
-            any_column_groups=(("spread_bps",), ("best_bid", "best_ask")),
+            any_column_groups=(
+                ("spread_bps",),
+                ("best_bid", "best_ask"),
+                ("bid_size", "ask_size"),
+            ),
         ),
         "spread": _load_frame(
             "spread",
@@ -519,8 +523,8 @@ def _load_frame(
             status="blocked",
             frame=frame,
             blocker=_blocker(
-                f"{name}_spread_columns_missing",
-                f"{name} artifact must include spread_bps or best_bid/best_ask.",
+                f"{name}_usable_columns_missing",
+                f"{name} artifact is missing usable spread or depth columns.",
                 details={"required_any": [list(group) for group in any_column_groups]},
             ),
             summary={"row_count": int(len(frame)), "columns": list(map(str, frame.columns))},
@@ -571,6 +575,25 @@ def _load_fills(
                     "fills artifact could not be parsed.",
                     details={"path": str(path), "error": str(exc)},
                 ),
+            ),
+            {},
+        )
+    if row_count > 0 and not scenarios:
+        return (
+            _SourceLoad(
+                name="fills",
+                path=path,
+                status="blocked",
+                blocker=_blocker(
+                    "fills_scenarios_missing",
+                    "fills artifact loaded but no rows matched the calibration scenarios and context.",
+                    details={
+                        "path": str(path),
+                        "row_count": row_count,
+                        "context": _context_summary(context),
+                    },
+                ),
+                summary={"row_count": row_count, "scenario_count": 0},
             ),
             {},
         )
