@@ -139,6 +139,9 @@ docker-compose-*.yml
 data/backtests/**
 !data/backtests/
 !data/backtests/.gitkeep
+data/cost_calibration/**
+!data/cost_calibration/
+!data/cost_calibration/.gitkeep
 data/freqai/**
 !data/freqai/
 !data/freqai/.gitkeep

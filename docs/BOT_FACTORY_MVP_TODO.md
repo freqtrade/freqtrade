@@ -99,6 +99,64 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-10 JST for the first local cost calibration run.
+
+- [x] Fast-forwarded the current work branch to `origin/develop` merge commit
+  `6632cfd48`.
+- [x] Reviewed:
+  - `docs/BOT_FACTORY_COST_CALIBRATION_PLAN.md`
+  - `docs/BOT_FACTORY_EXECUTION_QUALITY_AUDIT.md`
+  - `docs/BOT_FACTORY_COST_CALIBRATION_REPORT.md`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_calibrate_cost_model.py --help`
+- [x] Validated available local OHLCV inputs:
+  - BTC/USDT:USDT 5m: `ok=true`, 246895 rows, no duplicate timestamps, no
+    missing 5m intervals.
+  - ETH/USDT:USDT 5m: `ok=true`, 246941 rows, no duplicate timestamps, no
+    missing 5m intervals.
+- [x] Ran the local-only cost calibration runner for BTC/USDT:USDT and
+  ETH/USDT:USDT 5m taker/maker, normal/stress volatility labels. Generated
+  artifacts were written under `data\cost_calibration` and are not intended for
+  Git.
+- [x] Added `.gitignore` coverage for `data/cost_calibration/**` so generated
+  calibration JSON/Markdown/CSV artifacts stay out of Git.
+- [x] Completed taker contexts:
+  - BTC/USDT:USDT 5m taker: normal cost `9.469967` bps, stress cost
+    `16.900396` bps.
+  - ETH/USDT:USDT 5m taker: normal cost `10.856899` bps, stress cost
+    `20.874029` bps.
+- [x] Blocked maker contexts because no local order-book/depth or fills
+  artifact was present; generated artifacts recorded missing maker
+  `no_fill_rate`, `partial_fill_rate`, `adverse_selection_bps`, and
+  `exit_taker_rate` blockers instead of assuming zero risk.
+- [x] Blocked BTC/ETH 1h and large-alt contexts because no local artifacts were
+  present for those pair/timeframe inputs.
+- [x] Added first-run docs:
+  - `docs/BOT_FACTORY_COST_CALIBRATION_FIRST_RUN.md`
+  - `docs/BOT_FACTORY_CALIBRATED_COST_TABLE.md`
+- [x] Candidate generation result for this first run:
+  `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_calibration.py scripts\bot_factory_calibrate_cost_model.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_calibration or execution_quality or cost_model"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  git check-ignore -v data\cost_calibration\first_run_btc_usdt_5m_taker_normal\cost_calibration.json data\cost_calibration\first_run_eth_usdt_5m_taker_normal\cost_calibration.json
+  ```
+
+  Results: compile passed; focused selector passed 26 tests and reached
+  `[100%]`; full `tests\test_bot_factory.py` reached `[100%]`;
+  `git diff --check` exited `0` with existing LF-to-CRLF working-copy warnings
+  for `.gitignore` and this doc; `git check-ignore -v` confirmed generated
+  cost calibration JSON artifacts are ignored by `data/cost_calibration/**`.
+- [ ] Remaining limitation: the next Edge Discovery may use only the completed
+  BTC/ETH 5m taker calibrated cost contexts. Maker, 1h, large-alt,
+  order-book/spread/fills-driven, paper/dry-run/live, and exchange-facing
+  contexts remain blocked. This run did not create a new thesis, retry an
+  existing failed thesis, generate a strategy candidate, run historical
+  backtesting, or start any trading process.
+
 Checked on 2026-05-10 JST for local-only cost calibration runner.
 
 - [x] Added `freqtrade_ext/bot_factory/cost_calibration.py`, a local-only cost
