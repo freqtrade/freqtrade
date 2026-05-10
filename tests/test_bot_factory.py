@@ -14358,6 +14358,40 @@ def test_cost_calibration_blocks_unusable_spread_artifact(tmp_path):
     assert artifact["candidate_generation_result"] == "no candidate generated"
 
 
+def test_cost_calibration_blocks_negative_spread_artifact_rows(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "order_book.csv"
+    spread_path = tmp_path / "negative_spread.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_order_book(order_book_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "spread_bps": [-1.0, -2.0, -3.0],
+        }
+    ).to_csv(spread_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            spread_path=spread_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="negative-spread",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["spread"]["status"] == "blocked"
+    assert artifact["sources"]["spread"]["blocker_name"] == "spread_negative_rows_present"
+    assert "spread_negative_rows_present" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
 def test_cost_calibration_blocks_order_book_nonfinite_spread_values(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     order_book_path = tmp_path / "order_book.csv"
@@ -14428,6 +14462,44 @@ def test_cost_calibration_blocks_maker_order_book_without_numeric_depth(tmp_path
         == "order_book_depth_numeric_rows_missing"
     )
     assert "order_book_depth_numeric_rows_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_negative_maker_order_book_depth(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "order_book.csv"
+    spread_path = tmp_path / "spread.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_spread(spread_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "bid_size": [-10.0, -11.0, -12.0],
+            "ask_size": [15.0, 16.0, 17.0],
+        }
+    ).to_csv(order_book_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            spread_path=spread_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+            cost_calibration_id="negative-maker-depth",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["order_book"]["status"] == "blocked"
+    assert (
+        artifact["sources"]["order_book"]["blocker_name"]
+        == "order_book_depth_negative_rows_present"
+    )
+    assert "order_book_depth_negative_rows_present" in blockers
     assert artifact["candidate_generation_result"] == "no candidate generated"
 
 

@@ -133,6 +133,8 @@ def build_cost_calibration(inputs: CostCalibrationInputs) -> dict[str, Any]:
             sources["order_book"],
             blocker_name="order_book_spread_numeric_rows_missing",
             message="order_book artifact has spread columns but no finite numeric spread rows.",
+            negative_blocker_name="order_book_spread_negative_rows_present",
+            negative_message="order_book artifact has negative spread rows.",
         )
     if order_book_spread_numeric_blocker is not None:
         sources["order_book"] = _blocked_source(
@@ -806,6 +808,8 @@ def _spread_metrics(frame: pd.DataFrame | None) -> dict[str, float] | None:
     normalized = _normalize_columns(frame)
     if "spread_bps" in normalized.columns:
         spread_bps = _finite_numeric_series(normalized["spread_bps"])
+        if bool(spread_bps.lt(0).any()):
+            return None
     elif {"best_bid", "best_ask"}.issubset(set(normalized.columns)):
         bid = _numeric_series(normalized["best_bid"])
         ask = _numeric_series(normalized["best_ask"])
@@ -830,6 +834,8 @@ def _spread_numeric_blocker(
     *,
     blocker_name: str = "spread_numeric_rows_missing",
     message: str = "spread artifact has usable columns but no numeric spread rows.",
+    negative_blocker_name: str = "spread_negative_rows_present",
+    negative_message: str = "spread artifact has negative spread rows.",
 ) -> dict[str, Any] | None:
     if source.status != "loaded" or source.frame is None:
         return None
@@ -838,12 +844,35 @@ def _spread_numeric_blocker(
         (("spread_bps",), ("best_bid", "best_ask")),
     ):
         return None
+    negative_blocker = _spread_negative_blocker(
+        source, blocker_name=negative_blocker_name, message=negative_message
+    )
+    if negative_blocker is not None:
+        return negative_blocker
     if _spread_metrics(source.frame) is not None:
         return None
     return _blocker(
         blocker_name,
         message,
         details={"path": str(source.path)},
+    )
+
+
+def _spread_negative_blocker(
+    source: _SourceLoad, *, blocker_name: str, message: str
+) -> dict[str, Any] | None:
+    if source.frame is None:
+        return None
+    normalized = _normalize_columns(source.frame)
+    if "spread_bps" not in normalized.columns:
+        return None
+    spread_bps = _numeric_series(normalized["spread_bps"])
+    if not bool(spread_bps.lt(0).fillna(False).any()):
+        return None
+    return _blocker(
+        blocker_name,
+        message,
+        details={"path": str(source.path), "column": "spread_bps"},
     )
 
 
@@ -857,6 +886,19 @@ def _order_book_depth_numeric_blocker(
     normalized = _normalize_columns(source.frame)
     if not {"bid_size", "ask_size"}.issubset(set(normalized.columns)):
         return None
+    bid_size = _numeric_series(normalized["bid_size"])
+    ask_size = _numeric_series(normalized["ask_size"])
+    if bool(
+        bid_size.lt(0).fillna(False).any() or ask_size.lt(0).fillna(False).any()
+    ):
+        return _blocker(
+            "order_book_depth_negative_rows_present",
+            "order_book artifact has negative bid_size or ask_size rows.",
+            details={
+                "path": str(source.path),
+                "required_columns": ["bid_size", "ask_size"],
+            },
+        )
     if _maker_fill_estimates(source.frame) is not None:
         return None
     return _blocker(
@@ -890,6 +932,10 @@ def _maker_fill_estimates(frame: pd.DataFrame | None) -> dict[str, dict[str, flo
         return None
     bid_size = _numeric_series(normalized["bid_size"])
     ask_size = _numeric_series(normalized["ask_size"])
+    if bool(
+        bid_size.lt(0).fillna(False).any() or ask_size.lt(0).fillna(False).any()
+    ):
+        return None
     total = bid_size + ask_size
     total = total.mask(total.eq(0))
     imbalance = _finite_numeric_series((ask_size - bid_size).abs() / total)
