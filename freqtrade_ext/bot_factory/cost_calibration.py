@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -126,6 +127,24 @@ def build_cost_calibration(inputs: CostCalibrationInputs) -> dict[str, Any]:
     spread_numeric_blocker = _spread_numeric_blocker(sources["spread"])
     if spread_numeric_blocker is not None:
         sources["spread"] = _blocked_source(sources["spread"], spread_numeric_blocker)
+    order_book_spread_numeric_blocker = None
+    if sources["spread"].status != "loaded":
+        order_book_spread_numeric_blocker = _spread_numeric_blocker(
+            sources["order_book"],
+            blocker_name="order_book_spread_numeric_rows_missing",
+            message="order_book artifact has spread columns but no finite numeric spread rows.",
+        )
+    if order_book_spread_numeric_blocker is not None:
+        sources["order_book"] = _blocked_source(
+            sources["order_book"], order_book_spread_numeric_blocker
+        )
+    order_book_depth_numeric_blocker = _order_book_depth_numeric_blocker(
+        sources["order_book"], context=context
+    )
+    if order_book_depth_numeric_blocker is not None:
+        sources["order_book"] = _blocked_source(
+            sources["order_book"], order_book_depth_numeric_blocker
+        )
     fills_source, fills_by_scenario = _load_fills(fills_path, context=context)
     source_blockers = [
         source.blocker
@@ -784,12 +803,12 @@ def _spread_metrics(frame: pd.DataFrame | None) -> dict[str, float] | None:
         return None
     normalized = _normalize_columns(frame)
     if "spread_bps" in normalized.columns:
-        spread_bps = pd.to_numeric(normalized["spread_bps"], errors="coerce").dropna()
+        spread_bps = _finite_numeric_series(normalized["spread_bps"])
     elif {"best_bid", "best_ask"}.issubset(set(normalized.columns)):
-        bid = pd.to_numeric(normalized["best_bid"], errors="coerce")
-        ask = pd.to_numeric(normalized["best_ask"], errors="coerce")
+        bid = _numeric_series(normalized["best_bid"])
+        ask = _numeric_series(normalized["best_ask"])
         mid = (bid + ask) / 2.0
-        spread_bps = (((ask - bid).abs() / mid) * 10000.0).dropna()
+        spread_bps = _finite_numeric_series(((ask - bid).abs() / mid) * 10000.0)
     else:
         return None
     if spread_bps.empty:
@@ -804,15 +823,44 @@ def _spread_metrics(frame: pd.DataFrame | None) -> dict[str, float] | None:
     }
 
 
-def _spread_numeric_blocker(source: _SourceLoad) -> dict[str, Any] | None:
+def _spread_numeric_blocker(
+    source: _SourceLoad,
+    *,
+    blocker_name: str = "spread_numeric_rows_missing",
+    message: str = "spread artifact has usable columns but no numeric spread rows.",
+) -> dict[str, Any] | None:
     if source.status != "loaded" or source.frame is None:
+        return None
+    if not _has_any_column_group(
+        source.frame,
+        (("spread_bps",), ("best_bid", "best_ask")),
+    ):
         return None
     if _spread_metrics(source.frame) is not None:
         return None
     return _blocker(
-        "spread_numeric_rows_missing",
-        "spread artifact has usable columns but no numeric spread rows.",
+        blocker_name,
+        message,
         details={"path": str(source.path)},
+    )
+
+
+def _order_book_depth_numeric_blocker(
+    source: _SourceLoad, *, context: CostModelContext
+) -> dict[str, Any] | None:
+    if _normalize(context.order_type) != "maker":
+        return None
+    if source.status != "loaded" or source.frame is None:
+        return None
+    normalized = _normalize_columns(source.frame)
+    if not {"bid_size", "ask_size"}.issubset(set(normalized.columns)):
+        return None
+    if _maker_fill_estimates(source.frame) is not None:
+        return None
+    return _blocker(
+        "order_book_depth_numeric_rows_missing",
+        "order_book artifact has depth columns but no finite numeric depth rows.",
+        details={"path": str(source.path), "required_columns": ["bid_size", "ask_size"]},
     )
 
 
@@ -838,10 +886,13 @@ def _maker_fill_estimates(frame: pd.DataFrame | None) -> dict[str, dict[str, flo
     normalized = _normalize_columns(frame)
     if not {"bid_size", "ask_size"}.issubset(set(normalized.columns)):
         return None
-    bid_size = pd.to_numeric(normalized["bid_size"], errors="coerce")
-    ask_size = pd.to_numeric(normalized["ask_size"], errors="coerce")
-    total = (bid_size + ask_size).replace(0, pd.NA)
-    imbalance = ((ask_size - bid_size).abs() / total).dropna()
+    bid_size = _numeric_series(normalized["bid_size"])
+    ask_size = _numeric_series(normalized["ask_size"])
+    total = bid_size + ask_size
+    total = total.mask(total.eq(0))
+    imbalance = _finite_numeric_series((ask_size - bid_size).abs() / total)
+    if imbalance.empty:
+        return None
     pressure = _quantile_or_default(imbalance, 0.75, 0.25)
     normal_no_fill = min(0.5, max(0.08, 0.08 + pressure * 0.25))
     return {
@@ -960,10 +1011,29 @@ def _normalize_columns(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def _quantile_or_default(series: pd.Series, quantile: float, default: float) -> float:
-    numeric = pd.to_numeric(series, errors="coerce").dropna()
+    numeric = _finite_numeric_series(series)
     if numeric.empty:
         return float(default)
     return round(max(0.0, float(numeric.quantile(quantile))), 6)
+
+
+def _numeric_series(series: Any) -> pd.Series:
+    numeric = pd.to_numeric(series, errors="coerce")
+    return numeric.mask(numeric.isin([float("inf"), float("-inf")]))
+
+
+def _finite_numeric_series(series: Any) -> pd.Series:
+    return _numeric_series(series).dropna()
+
+
+def _has_any_column_group(
+    frame: pd.DataFrame, column_groups: tuple[tuple[str, ...], ...]
+) -> bool:
+    normalized_columns = set(_normalize_columns(frame).columns)
+    return any(
+        all(_normalize(column) in normalized_columns for column in group)
+        for group in column_groups
+    )
 
 
 def _scenario_name(value: Any) -> str | None:
@@ -1041,6 +1111,7 @@ def _float_or_none(value: Any) -> float | None:
     try:
         if value is None or pd.isna(value):
             return None
-        return float(value)
+        parsed = float(value)
+        return parsed if math.isfinite(parsed) else None
     except (TypeError, ValueError):
         return None
