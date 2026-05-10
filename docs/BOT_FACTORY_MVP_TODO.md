@@ -99,6 +99,115 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-10 JST for local-only cost calibration runner.
+
+- [x] Added `freqtrade_ext/bot_factory/cost_calibration.py`, a local-only cost
+  calibration module that estimates `best`, `normal`, and `stress` execution
+  costs from OHLCV, optional order-book/spread artifacts, and optional fills
+  artifacts.
+- [x] Added `scripts/bot_factory_calibrate_cost_model.py`, a CLI that writes
+  `cost_calibration.json`, `cost_calibration_report.md`, and `cost_table.csv`
+  without generating strategy candidates, exploring theses, running
+  backtests, or starting any paper/dry-run/live process.
+- [x] Added `docs/BOT_FACTORY_COST_CALIBRATION_REPORT.md`.
+- [x] Added focused tests for:
+  - explicit `best` / `normal` / `stress` scenarios;
+  - missing `normal` cost blockers;
+  - `stress` cost below `normal` blockers;
+  - maker no-fill, partial-fill, adverse-selection, and exit-taker field
+    blockers;
+  - fills artifact parse errors as structured blockers;
+  - unusable OHLCV numeric rows as structured blockers;
+  - fills rows with selector fields are not filtered out when the caller leaves
+    the corresponding cost context selectors unset;
+  - depth-only order-book artifacts are accepted when a separate spread
+    artifact supplies spread evidence;
+  - fills artifacts with zero matching scenarios return a structured blocker;
+  - malformed OHLCV files missing required columns do not crash numeric
+    calibration and remain structured blockers;
+  - JSON fills artifacts count raw candidate rows before filtering so
+    zero-match JSON inputs are blocked;
+  - top-level JSON fills arrays are parsed as valid scenario rows instead of
+    being misclassified as zero-match blocker inputs;
+  - context-specific fills rows win over generic duplicate fallback rows for
+    the same scenario name;
+  - default cost calibration IDs preserve subsecond timestamp precision to
+    avoid same-second artifact overwrite collisions;
+  - user-supplied cost calibration IDs are sanitized before artifact output
+    paths are built;
+  - provided spread artifacts with usable columns but no numeric spread values
+    return a structured blocker instead of silently falling back to proxies;
+  - maker order-book depth artifacts with no finite numeric depth rows return a
+    structured blocker instead of synthetic fill-risk estimates;
+  - spread estimation filters non-finite values so zero-midpoint order-book
+    quotes cannot produce infinite costs;
+  - OHLCV numeric validation rejects non-finite high/low/close rows as
+    structured blockers instead of producing completed proxy calibrations;
+  - negative `spread_bps` rows return structured blockers instead of being
+    clamped into zero-spread scenarios;
+  - negative maker order-book `bid_size` / `ask_size` rows return structured
+    blockers instead of feeding synthetic fill-risk estimates;
+  - `candidate_generation_result: no candidate generated` and false
+    candidate/proposal/codegen gates.
+- [x] Candidate generation result for this increment:
+  `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext/bot_factory/cost_calibration.py scripts/bot_factory_calibrate_cost_model.py tests/test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests/test_bot_factory.py -q -k "cost_calibration or execution_quality or cost_model"
+  .\.venv\Scripts\python.exe -m pytest tests/test_bot_factory.py -q
+  ```
+
+  Results: compile passed; focused selector passed 26 tests and reached
+  `[100%]`; full `tests\test_bot_factory.py` reached `[100%]`;
+  `git diff --check` exited `0` with no whitespace errors and the existing
+  LF-to-CRLF working-copy warning for this doc.
+- [ ] Remaining limitation: this implements local cost calibration artifacts
+  only. It did not create a new thesis, retry an existing failed thesis,
+  generate a strategy candidate, run historical backtesting, start
+  paper/dry-run/live trading, call exchange order endpoints, use leverage or
+  shorting, use API keys or secrets, or manage any trading process.
+
+Checked on 2026-05-10 JST for post-merge verification and cost calibration planning.
+
+- [x] Fast-forwarded local `develop` to `origin/develop`.
+- [x] Confirmed PR #7 is merged into `develop` at merge commit `4bb8879ec`.
+- [x] Confirmed the PR #7 history includes PR #8 research-first edge gates via
+  merge commit `dc6fec6ed`.
+- [x] Confirmed PR #7 review threads are resolved and updated the PR body with
+  a post-merge verification section that records
+  `Candidate generation result: no candidate generated`.
+- [x] Added post-merge documentation:
+  - `docs/BOT_FACTORY_POST_MERGE_VERIFICATION.md`
+  - `docs/BOT_FACTORY_COST_CALIBRATION_PLAN.md`
+  - `docs/BOT_FACTORY_EXECUTION_QUALITY_AUDIT.md`
+- [x] Candidate generation result for this post-merge verification:
+  `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  git status --short --untracked-files=all
+  git fetch origin develop
+  git switch develop
+  git pull --ff-only origin develop
+  git log --oneline --decorate -n 30
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext/bot_factory/cost_model.py freqtrade_ext/bot_factory/edge_discovery.py freqtrade_ext/bot_factory/local_events.py freqtrade_ext/bot_factory/local_falsification.py freqtrade_ext/bot_factory/strategy_proposals.py freqtrade_ext/bot_factory/strategy_code.py freqtrade_ext/bot_factory/candidate_iteration.py freqtrade_ext/bot_factory/candidate_ranking.py tests/test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests/test_bot_factory.py -q
+  git diff --check
+  ```
+
+  Results: initial worktree status was clean; local `develop`
+  fast-forwarded to `4bb8879ec`; PR #7 and PR #8 merge evidence was present in
+  `git log`; compile passed; full `tests\test_bot_factory.py` reached
+  `[100%]`; `git diff --check` exited `0` with no whitespace errors and the
+  existing LF-to-CRLF working-copy warning for this doc.
+- [ ] Remaining limitation: this was a post-merge verification and planning
+  pass only. It did not create a new thesis, generate a strategy candidate, run
+  historical backtesting, start paper/dry-run/live trading, call exchange order
+  endpoints, use leverage or shorting, use API keys or secrets, or manage any
+  trading process.
+
 Checked on 2026-05-10 JST for PR #7 trend-continuation and generated-file static-check review follow-up.
 
 - [x] Fixed the new PR #7 review finding on `trend_continuation` exits.

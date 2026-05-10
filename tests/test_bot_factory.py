@@ -41,6 +41,11 @@ from freqtrade_ext.bot_factory.cost_model import (
     cost_scenarios_from_spec,
     default_cost_scenarios,
 )
+from freqtrade_ext.bot_factory.cost_calibration import (
+    CostCalibrationInputs,
+    build_cost_calibration,
+    write_cost_calibration_artifacts,
+)
 from freqtrade_ext.bot_factory.edge_discovery import (
     EdgeDiscoveryInputs,
     _control_events,
@@ -14131,6 +14136,821 @@ def test_cost_model_merges_selected_override_with_base_scenarios():
 
     assert scenarios["normal"]["total_cost_bps"] == 4.0
     assert scenarios["stress"]["total_cost_bps"] == 30.0
+
+
+def _write_cost_calibration_ohlcv(path: Path) -> None:
+    frame = pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=24, freq="5min"),
+            "open": np.linspace(100.0, 103.0, 24),
+            "high": np.linspace(100.4, 103.8, 24),
+            "low": np.linspace(99.8, 102.6, 24),
+            "close": np.linspace(100.1, 103.4, 24),
+            "volume": np.linspace(1000.0, 1600.0, 24),
+        }
+    )
+    frame.to_csv(path, index=False)
+
+
+def _write_cost_calibration_order_book(path: Path) -> None:
+    frame = pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=24, freq="5min"),
+            "best_bid": np.linspace(99.95, 103.2, 24),
+            "best_ask": np.linspace(100.05, 103.35, 24),
+            "bid_size": np.linspace(10.0, 14.0, 24),
+            "ask_size": np.linspace(9.0, 12.0, 24),
+        }
+    )
+    frame.to_csv(path, index=False)
+
+
+def _write_cost_calibration_spread(path: Path) -> None:
+    frame = pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=24, freq="5min"),
+            "spread_bps": np.linspace(1.0, 3.5, 24),
+        }
+    )
+    frame.to_csv(path, index=False)
+
+
+def test_cost_calibration_builds_scenarios_and_artifacts_from_local_data(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "order_book.csv"
+    fills_path = tmp_path / "fills.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_order_book(order_book_path)
+    pd.DataFrame(
+        [
+            {
+                "scenario_name": "best",
+                "no_fill_rate": 0.04,
+                "partial_fill_rate": 0.08,
+                "adverse_selection_bps": 0.25,
+                "exit_taker_rate": 0.2,
+            },
+            {
+                "scenario_name": "normal",
+                "no_fill_rate": 0.10,
+                "partial_fill_rate": 0.18,
+                "adverse_selection_bps": 0.75,
+                "exit_taker_rate": 0.5,
+            },
+            {
+                "scenario_name": "stress",
+                "no_fill_rate": 0.22,
+                "partial_fill_rate": 0.35,
+                "adverse_selection_bps": 1.75,
+                "exit_taker_rate": 0.85,
+            },
+        ]
+    ).to_csv(fills_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+            liquidity_tier="liquid",
+            volatility_regime="normal",
+            cost_calibration_id="unit_cost_calibration",
+            output_root=tmp_path / "artifacts",
+            created_at="2026-05-10T00:00:00+00:00",
+        )
+    )
+
+    assert artifact["status"] == "completed"
+    assert artifact["candidate_generation_allowed"] is False
+    assert artifact["proposal_generation_allowed"] is False
+    assert artifact["strategy_codegen_allowed"] is False
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+    assert set(artifact["cost_scenarios"]) == {"best", "normal", "stress"}
+    normal = artifact["cost_scenarios"]["normal"]
+    stress = artifact["cost_scenarios"]["stress"]
+    assert normal["total_cost_bps"] is not None
+    assert stress["total_cost_bps"] >= normal["total_cost_bps"]
+    for scenario in artifact["cost_scenarios"].values():
+        assert scenario["no_fill_rate"] is not None
+        assert scenario["partial_fill_rate"] is not None
+        assert scenario["adverse_selection_bps"] is not None
+        assert scenario["exit_taker_rate"] is not None
+        assert scenario["pair"] == "BTC/USDT:USDT"
+        assert scenario["timeframe"] == "5m"
+        assert scenario["order_type"] == "maker"
+
+    json_path, report_path, table_path = write_cost_calibration_artifacts(
+        artifact,
+        root_dir=tmp_path,
+        output_root=tmp_path / "artifacts",
+    )
+    assert json_path.is_file()
+    assert report_path.is_file()
+    assert table_path.is_file()
+    report_text = report_path.read_text(encoding="utf-8")
+    table_text = table_path.read_text(encoding="utf-8")
+    assert "candidate_generation_result: no candidate generated" in report_text
+    assert "normal" in table_text
+    assert "stress" in table_text
+
+
+def test_cost_calibration_sanitizes_id_before_writing_artifacts(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_type="taker",
+            cost_calibration_id="../other-dir",
+        )
+    )
+
+    assert artifact["cost_calibration_id"] == "other-dir"
+    json_path, report_path, table_path = write_cost_calibration_artifacts(
+        artifact,
+        root_dir=tmp_path,
+        output_root=tmp_path / "artifacts",
+    )
+
+    output_root = (tmp_path / "artifacts").resolve()
+    json_path.resolve().relative_to(output_root)
+    assert json_path.parent == output_root / "other-dir"
+    assert report_path.parent == json_path.parent
+    assert table_path.parent == json_path.parent
+    assert not (tmp_path / "other-dir" / "cost_calibration.json").exists()
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_accepts_depth_only_order_book_with_spread_artifact(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "depth_only_order_book.csv"
+    spread_path = tmp_path / "spread.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_spread(spread_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=24, freq="5min"),
+            "bid_size": np.linspace(10.0, 14.0, 24),
+            "ask_size": np.linspace(8.0, 13.0, 24),
+        }
+    ).to_csv(order_book_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            spread_path=spread_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+            cost_calibration_id="depth-only-order-book",
+        )
+    )
+
+    assert artifact["status"] == "completed"
+    assert artifact["sources"]["order_book"]["status"] == "loaded"
+    assert artifact["sources"]["spread"]["status"] == "loaded"
+    assert artifact["cost_scenarios"]["normal"]["no_fill_rate"] is not None
+    assert artifact["cost_scenarios"]["normal"]["provenance"]["spread_source"] == "spread_artifact"
+    assert "order_book_usable_columns_missing" not in {
+        blocker["name"] for blocker in artifact["blockers"]
+    }
+
+
+def test_cost_calibration_blocks_unusable_spread_artifact(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "order_book.csv"
+    spread_path = tmp_path / "spread.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_order_book(order_book_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "spread_bps": ["bad", None, "nan"],
+        }
+    ).to_csv(spread_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            spread_path=spread_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="bad-spread",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["spread"]["status"] == "blocked"
+    assert artifact["sources"]["spread"]["blocker_name"] == "spread_numeric_rows_missing"
+    assert "spread_numeric_rows_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_negative_spread_artifact_rows(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "order_book.csv"
+    spread_path = tmp_path / "negative_spread.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_order_book(order_book_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "spread_bps": [-1.0, -2.0, -3.0],
+        }
+    ).to_csv(spread_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            spread_path=spread_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="negative-spread",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["spread"]["status"] == "blocked"
+    assert artifact["sources"]["spread"]["blocker_name"] == "spread_negative_rows_present"
+    assert "spread_negative_rows_present" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_order_book_nonfinite_spread_values(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "order_book.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "best_bid": [-1.0, -2.0, -3.0],
+            "best_ask": [1.0, 2.0, 3.0],
+        }
+    ).to_csv(order_book_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="nonfinite-order-book-spread",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["order_book"]["status"] == "blocked"
+    assert (
+        artifact["sources"]["order_book"]["blocker_name"]
+        == "order_book_spread_numeric_rows_missing"
+    )
+    assert "order_book_spread_numeric_rows_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_maker_order_book_without_numeric_depth(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "order_book.csv"
+    spread_path = tmp_path / "spread.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_spread(spread_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "bid_size": ["bad", None, "nan"],
+            "ask_size": ["bad", None, "nan"],
+        }
+    ).to_csv(order_book_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            spread_path=spread_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+            cost_calibration_id="bad-maker-depth",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["order_book"]["status"] == "blocked"
+    assert (
+        artifact["sources"]["order_book"]["blocker_name"]
+        == "order_book_depth_numeric_rows_missing"
+    )
+    assert "order_book_depth_numeric_rows_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_negative_maker_order_book_depth(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "order_book.csv"
+    spread_path = tmp_path / "spread.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_spread(spread_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "bid_size": [-10.0, -11.0, -12.0],
+            "ask_size": [15.0, 16.0, 17.0],
+        }
+    ).to_csv(order_book_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            spread_path=spread_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+            cost_calibration_id="negative-maker-depth",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["order_book"]["status"] == "blocked"
+    assert (
+        artifact["sources"]["order_book"]["blocker_name"]
+        == "order_book_depth_negative_rows_present"
+    )
+    assert "order_book_depth_negative_rows_present" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_missing_normal_cost_with_structured_blocker(tmp_path):
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=None,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="missing-normal",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert "ohlcv_path_missing" in blockers
+    assert "normal_cost_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_stress_cost_below_normal(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.json"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    fills_path.write_text(
+        json.dumps(
+            {
+                "scenarios": [
+                    {
+                        "scenario_name": "normal",
+                        "total_cost_bps": 20.0,
+                    },
+                    {
+                        "scenario_name": "stress",
+                        "total_cost_bps": 10.0,
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="stress-lt-normal",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert "stress_cost_below_normal" in blockers
+
+
+def test_cost_calibration_blocks_maker_missing_fill_risk_fields(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+            cost_calibration_id="maker-missing-risk",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert "maker_no_fill_rate_missing" in blockers
+    assert "maker_partial_fill_rate_missing" in blockers
+    assert "maker_adverse_selection_bps_missing" in blockers
+    assert "maker_exit_taker_rate_missing" in blockers
+    assert "strategy_generation_from_cost_calibration" in artifact["blocked_next_actions"]
+
+
+def test_cost_calibration_keeps_fills_when_context_selectors_are_unset(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    pd.DataFrame(
+        [
+            {
+                "scenario_name": "normal",
+                "pair": "BTC/USDT:USDT",
+                "timeframe": "5m",
+                "order_type": "maker",
+                "no_fill_rate": 0.11,
+                "partial_fill_rate": 0.22,
+                "adverse_selection_bps": 1.5,
+                "exit_taker_rate": 0.66,
+                "total_cost_bps": 18.0,
+            },
+            {
+                "scenario_name": "stress",
+                "pair": "BTC/USDT:USDT",
+                "timeframe": "5m",
+                "order_type": "maker",
+                "no_fill_rate": 0.25,
+                "partial_fill_rate": 0.4,
+                "adverse_selection_bps": 3.0,
+                "exit_taker_rate": 0.9,
+                "total_cost_bps": 30.0,
+            },
+        ]
+    ).to_csv(fills_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            cost_calibration_id="unset-context-fills",
+        )
+    )
+
+    scenarios = artifact["cost_scenarios"]
+    assert scenarios["normal"]["total_cost_bps"] == 18.0
+    assert scenarios["normal"]["no_fill_rate"] == 0.11
+    assert scenarios["normal"]["partial_fill_rate"] == 0.22
+    assert scenarios["normal"]["adverse_selection_bps"] == 1.5
+    assert scenarios["normal"]["exit_taker_rate"] == 0.66
+    assert scenarios["stress"]["total_cost_bps"] == 30.0
+
+
+def test_cost_calibration_prefers_specific_fills_over_later_generic_duplicate(
+    tmp_path,
+):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    pd.DataFrame(
+        [
+            {
+                "scenario_name": "normal",
+                "pair": "BTC/USDT:USDT",
+                "timeframe": "5m",
+                "order_type": "taker",
+                "total_cost_bps": 18.0,
+            },
+            {
+                "scenario_name": "normal",
+                "total_cost_bps": 99.0,
+            },
+            {
+                "scenario_name": "stress",
+                "total_cost_bps": 32.0,
+            },
+        ]
+    ).to_csv(fills_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="specific-over-generic-fills",
+        )
+    )
+
+    assert artifact["status"] == "completed"
+    assert artifact["sources"]["fills"]["status"] == "loaded"
+    assert artifact["sources"]["fills"]["row_count"] == 3
+    assert artifact["cost_scenarios"]["normal"]["total_cost_bps"] == 18.0
+    assert artifact["cost_scenarios"]["stress"]["total_cost_bps"] == 32.0
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_fills_artifact_with_zero_matching_scenarios(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    pd.DataFrame(
+        [
+            {
+                "scenario_name": "normal",
+                "pair": "ETH/USDT:USDT",
+                "timeframe": "5m",
+                "order_type": "maker",
+                "no_fill_rate": 0.10,
+                "partial_fill_rate": 0.20,
+                "adverse_selection_bps": 1.0,
+                "exit_taker_rate": 0.5,
+                "total_cost_bps": 18.0,
+            }
+        ]
+    ).to_csv(fills_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="maker",
+            cost_calibration_id="zero-matching-fills",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["fills"]["status"] == "blocked"
+    assert artifact["sources"]["fills"]["blocker_name"] == "fills_scenarios_missing"
+    assert "fills_scenarios_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_json_fills_with_zero_matching_scenarios(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.json"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    fills_path.write_text(
+        json.dumps(
+            {
+                "scenarios": [
+                    {
+                        "scenario_name": "normal",
+                        "pair": "ETH/USDT:USDT",
+                        "timeframe": "5m",
+                        "total_cost_bps": 18.0,
+                    },
+                    {
+                        "scenario_name": "not_a_scenario",
+                        "pair": "BTC/USDT:USDT",
+                        "timeframe": "5m",
+                        "total_cost_bps": 20.0,
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="zero-matching-json-fills",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["fills"]["row_count"] == 2
+    assert artifact["sources"]["fills"]["blocker_name"] == "fills_scenarios_missing"
+    assert "fills_scenarios_missing" in blockers
+
+
+def test_cost_calibration_loads_top_level_json_fills_array(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.json"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    fills_path.write_text(
+        json.dumps(
+            [
+                {
+                    "scenario_name": "normal",
+                    "pair": "BTC/USDT:USDT",
+                    "timeframe": "5m",
+                    "total_cost_bps": 18.0,
+                },
+                {
+                    "scenario_name": "stress",
+                    "pair": "BTC/USDT:USDT",
+                    "timeframe": "5m",
+                    "total_cost_bps": 32.0,
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="top-level-json-fills",
+        )
+    )
+
+    assert artifact["status"] == "completed"
+    assert artifact["sources"]["fills"]["status"] == "loaded"
+    assert artifact["sources"]["fills"]["row_count"] == 2
+    assert artifact["cost_scenarios"]["normal"]["total_cost_bps"] == 18.0
+    assert artifact["cost_scenarios"]["stress"]["total_cost_bps"] == 32.0
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_default_id_preserves_subsecond_resolution(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+
+    first = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_type="taker",
+            created_at="2026-05-10T09:57:04.111111+00:00",
+        )
+    )
+    second = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_type="taker",
+            created_at="2026-05-10T09:57:04.222222+00:00",
+        )
+    )
+
+    assert first["cost_calibration_id"] != second["cost_calibration_id"]
+    assert "111111" in first["cost_calibration_id"]
+    assert "222222" in second["cost_calibration_id"]
+    assert first["candidate_generation_result"] == "no candidate generated"
+    assert second["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_returns_structured_blocker_for_fills_parse_error(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.json"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    fills_path.write_text("{not-json", encoding="utf-8")
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="bad-fills",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert "fills_artifact_parse_error" in blockers
+    assert artifact["candidate_generation_allowed"] is False
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_returns_structured_blocker_for_missing_ohlcv_columns(tmp_path):
+    ohlcv_path = tmp_path / "missing_close_ohlcv.csv"
+    pd.DataFrame(
+        {
+            "date": ["2025-01-01"],
+            "open": [100.0],
+            "high": [101.0],
+            "low": [99.0],
+        }
+    ).to_csv(ohlcv_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="missing-ohlcv-column",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["ohlcv"]["status"] == "blocked"
+    assert artifact["sources"]["ohlcv"]["blocker_name"] == "ohlcv_required_columns_missing"
+    assert "ohlcv_required_columns_missing" in blockers
+    assert "normal_cost_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_returns_structured_blocker_for_unusable_ohlcv_rows(tmp_path):
+    ohlcv_path = tmp_path / "bad_ohlcv.csv"
+    pd.DataFrame(
+        {
+            "date": ["2025-01-01"],
+            "open": ["bad"],
+            "high": ["bad"],
+            "low": ["bad"],
+            "close": ["bad"],
+        }
+    ).to_csv(ohlcv_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="bad-ohlcv",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert "ohlcv_numeric_rows_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_blocks_nonfinite_ohlcv_rows(tmp_path):
+    ohlcv_path = tmp_path / "nonfinite_ohlcv.csv"
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "open": [100.0, 101.0, 102.0],
+            "high": [float("inf"), float("inf"), float("inf")],
+            "low": [float("-inf"), float("-inf"), float("-inf")],
+            "close": [float("inf"), float("-inf"), float("inf")],
+        }
+    ).to_csv(ohlcv_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="nonfinite-ohlcv",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["ohlcv"]["status"] == "blocked"
+    assert artifact["sources"]["ohlcv"]["blocker_name"] == "ohlcv_numeric_rows_missing"
+    assert "ohlcv_numeric_rows_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
 
 
 def test_event_level_report_ignores_gate_pass_on_structurally_failed_horizon():
