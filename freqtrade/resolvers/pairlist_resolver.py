@@ -7,7 +7,7 @@ This module load custom pairlists
 import logging
 from pathlib import Path
 
-from freqtrade.constants import Config
+from freqtrade.constants import USERPATH_PAIRLISTS, Config
 from freqtrade.plugins.pairlist.IPairList import IPairList
 from freqtrade.resolvers import IResolver
 
@@ -22,7 +22,7 @@ class PairListResolver(IResolver):
 
     object_type = IPairList
     object_type_str = "Pairlist"
-    user_subdir = None
+    user_subdir = USERPATH_PAIRLISTS
     initial_search_path = Path(__file__).parent.parent.joinpath("plugins/pairlist").resolve()
 
     @staticmethod

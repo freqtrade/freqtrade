@@ -73,6 +73,7 @@ AVAILABLE_PAIRLISTS = [
     "ShuffleFilter",
     "SpreadFilter",
     "VolatilityFilter",
+    "OscillationFilter",
 ]
 AVAILABLE_DATAHANDLERS = ["json", "jsongz", "feather", "parquet"]
 BACKTEST_BREAKDOWNS = ["day", "week", "month", "year", "weekday"]
@@ -118,6 +119,7 @@ USERPATH_HYPEROPTS = "hyperopts"
 USERPATH_STRATEGIES = "strategies"
 USERPATH_NOTEBOOKS = "notebooks"
 USERPATH_FREQAIMODELS = "freqaimodels"
+USERPATH_PAIRLISTS = "pairlist"
 
 TELEGRAM_SETTING_OPTIONS = ["on", "off", "silent"]
 WEBHOOK_FORMAT_OPTIONS = ["form", "json", "raw"]
