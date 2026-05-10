@@ -14330,6 +14330,55 @@ def test_cost_calibration_blocks_maker_missing_fill_risk_fields(tmp_path):
     assert "strategy_generation_from_cost_calibration" in artifact["blocked_next_actions"]
 
 
+def test_cost_calibration_keeps_fills_when_context_selectors_are_unset(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    pd.DataFrame(
+        [
+            {
+                "scenario_name": "normal",
+                "pair": "BTC/USDT:USDT",
+                "timeframe": "5m",
+                "order_type": "maker",
+                "no_fill_rate": 0.11,
+                "partial_fill_rate": 0.22,
+                "adverse_selection_bps": 1.5,
+                "exit_taker_rate": 0.66,
+                "total_cost_bps": 18.0,
+            },
+            {
+                "scenario_name": "stress",
+                "pair": "BTC/USDT:USDT",
+                "timeframe": "5m",
+                "order_type": "maker",
+                "no_fill_rate": 0.25,
+                "partial_fill_rate": 0.4,
+                "adverse_selection_bps": 3.0,
+                "exit_taker_rate": 0.9,
+                "total_cost_bps": 30.0,
+            },
+        ]
+    ).to_csv(fills_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            cost_calibration_id="unset-context-fills",
+        )
+    )
+
+    scenarios = artifact["cost_scenarios"]
+    assert scenarios["normal"]["total_cost_bps"] == 18.0
+    assert scenarios["normal"]["no_fill_rate"] == 0.11
+    assert scenarios["normal"]["partial_fill_rate"] == 0.22
+    assert scenarios["normal"]["adverse_selection_bps"] == 1.5
+    assert scenarios["normal"]["exit_taker_rate"] == 0.66
+    assert scenarios["stress"]["total_cost_bps"] == 30.0
+
+
 def test_cost_calibration_returns_structured_blocker_for_fills_parse_error(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     fills_path = tmp_path / "fills.json"

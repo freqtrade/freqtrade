@@ -642,8 +642,10 @@ def _context_matches(item: Mapping[str, Any], context: CostModelContext) -> bool
         "liquidity_tier",
         "volatility_regime",
     ):
+        actual = _string_or_none(getattr(context, field_name))
+        if actual is None:
+            continue
         expected = _string_or_none(item.get(field_name))
-        actual = getattr(context, field_name)
         if expected is not None and _normalize(expected) != _normalize(actual):
             return False
     return True

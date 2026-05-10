@@ -69,6 +69,10 @@ Blocking cases include:
 - local artifact parse errors;
 - required OHLCV columns, rows, or usable numeric high/low/close values
   missing.
+- fills rows with `pair`, `timeframe`, `order_type`, `liquidity_tier`, or
+  `volatility_regime` selectors are only filtered by context selectors that
+  the caller explicitly provided. Unset caller context does not silently drop
+  valid fills overrides.
 
 ## Safety
 
@@ -100,7 +104,7 @@ git diff --check
 Results:
 
 - compile passed;
-- focused selector passed 11 tests and reached `[100%]`;
+- focused selector passed 12 tests and reached `[100%]`;
 - full `tests/test_bot_factory.py` reached `[100%]`;
 - `git diff --check` exited `0` with no whitespace errors and the existing
   LF-to-CRLF working-copy warning for `docs/BOT_FACTORY_MVP_TODO.md`.
