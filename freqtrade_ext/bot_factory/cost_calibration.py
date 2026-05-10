@@ -156,7 +156,9 @@ def build_cost_calibration(inputs: CostCalibrationInputs) -> dict[str, Any]:
     spread_frame = _loaded_frame(sources["spread"])
     ohlcv_numeric_blocker = _ohlcv_numeric_blocker(ohlcv_frame)
     if ohlcv_numeric_blocker is not None:
+        sources["ohlcv"] = _blocked_source(sources["ohlcv"], ohlcv_numeric_blocker)
         source_blockers.append(ohlcv_numeric_blocker)
+        ohlcv_frame = None
     scenarios = _estimate_scenarios(
         inputs=inputs,
         context=context,
@@ -785,9 +787,9 @@ def _ohlcv_numeric_blocker(frame: pd.DataFrame | None) -> dict[str, Any] | None:
     if frame is None or frame.empty:
         return None
     normalized = _normalize_columns(frame)
-    close = pd.to_numeric(normalized["close"], errors="coerce")
-    high = pd.to_numeric(normalized["high"], errors="coerce")
-    low = pd.to_numeric(normalized["low"], errors="coerce")
+    close = _numeric_series(normalized["close"])
+    high = _numeric_series(normalized["high"])
+    low = _numeric_series(normalized["low"])
     valid = close.gt(0) & high.notna() & low.notna()
     if bool(valid.any()):
         return None

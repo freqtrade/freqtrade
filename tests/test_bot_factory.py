@@ -14850,6 +14850,37 @@ def test_cost_calibration_returns_structured_blocker_for_unusable_ohlcv_rows(tmp
     assert artifact["candidate_generation_result"] == "no candidate generated"
 
 
+def test_cost_calibration_blocks_nonfinite_ohlcv_rows(tmp_path):
+    ohlcv_path = tmp_path / "nonfinite_ohlcv.csv"
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "open": [100.0, 101.0, 102.0],
+            "high": [float("inf"), float("inf"), float("inf")],
+            "low": [float("-inf"), float("-inf"), float("-inf")],
+            "close": [float("inf"), float("-inf"), float("inf")],
+        }
+    ).to_csv(ohlcv_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="nonfinite-ohlcv",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["ohlcv"]["status"] == "blocked"
+    assert artifact["sources"]["ohlcv"]["blocker_name"] == "ohlcv_numeric_rows_missing"
+    assert "ohlcv_numeric_rows_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
 def test_event_level_report_ignores_gate_pass_on_structurally_failed_horizon():
     report = _event_level_post_cost_report(
         {

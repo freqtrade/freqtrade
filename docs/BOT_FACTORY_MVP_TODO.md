@@ -141,6 +141,8 @@ Checked on 2026-05-10 JST for local-only cost calibration runner.
     structured blocker instead of synthetic fill-risk estimates;
   - spread estimation filters non-finite values so zero-midpoint order-book
     quotes cannot produce infinite costs;
+  - OHLCV numeric validation rejects non-finite high/low/close rows as
+    structured blockers instead of producing completed proxy calibrations;
   - `candidate_generation_result: no candidate generated` and false
     candidate/proposal/codegen gates.
 - [x] Candidate generation result for this increment:
@@ -153,7 +155,7 @@ Checked on 2026-05-10 JST for local-only cost calibration runner.
   .\.venv\Scripts\python.exe -m pytest tests/test_bot_factory.py -q
   ```
 
-  Results: compile passed; focused selector passed 23 tests and reached
+  Results: compile passed; focused selector passed 24 tests and reached
   `[100%]`; full `tests\test_bot_factory.py` reached `[100%]`;
   `git diff --check` exited `0` with no whitespace errors and the existing
   LF-to-CRLF working-copy warning for this doc.
