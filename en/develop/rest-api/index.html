@@ -2733,42 +2733,42 @@ All endpoints in the below table need to be prefixed with the base URL of the AP
 <tr>
 <td><code>/pair_candles</code></td>
 <td>GET</td>
-<td>Returns dataframe for a pair / timeframe combination while the bot is running. <strong>Alpha</strong></td>
+<td>Returns dataframe for a pair / timeframe combination while the bot is running.</td>
 </tr>
 <tr>
 <td><code>/pair_candles</code></td>
 <td>POST</td>
-<td>Returns dataframe for a pair / timeframe combination while the bot is running, filtered by a provided list of columns to return. <strong>Alpha</strong><br/><em>Params:</em><br/>- <code>&lt;column_list&gt;</code> (<code>list[str]</code>)</td>
+<td>Returns dataframe for a pair / timeframe combination while the bot is running, filtered by a provided list of columns to return.<br/><em>Params:</em><br/>- <code>&lt;column_list&gt;</code> (<code>list[str]</code>)</td>
 </tr>
 <tr>
 <td><code>/pair_history</code></td>
 <td>GET</td>
-<td>Returns an analyzed dataframe for a given timerange, analyzed by a given strategy. <strong>Alpha</strong></td>
+<td>Returns an analyzed dataframe for a given timerange, analyzed by a given strategy.</td>
 </tr>
 <tr>
 <td><code>/pair_history</code></td>
 <td>POST</td>
-<td>Returns an analyzed dataframe for a given timerange, analyzed by a given strategy, filtered by a provided list of columns to return. <strong>Alpha</strong><br/><em>Params:</em><br/>- <code>&lt;column_list&gt;</code> (<code>list[str]</code>)</td>
+<td>Returns an analyzed dataframe for a given timerange, analyzed by a given strategy, filtered by a provided list of columns to return.<br/><em>Params:</em><br/>- <code>&lt;column_list&gt;</code> (<code>list[str]</code>)</td>
 </tr>
 <tr>
 <td><code>/plot_config</code></td>
 <td>GET</td>
-<td>Get plot config from the strategy (or nothing if not configured). <strong>Alpha</strong></td>
+<td>Get plot config from the strategy (or nothing if not configured).</td>
 </tr>
 <tr>
 <td><code>/strategies</code></td>
 <td>GET</td>
-<td>List strategies in strategy directory. <strong>Alpha</strong></td>
+<td>List strategies in strategy directory.</td>
 </tr>
 <tr>
 <td><code>/strategy/&lt;strategy&gt;</code></td>
 <td>GET</td>
-<td>Get specific Strategy content by strategy class name. <strong>Alpha</strong><br/><em>Params:</em><br/>- <code>&lt;strategy&gt;</code> (<code>str</code>)</td>
+<td>Get specific Strategy content by strategy class name.<br/><em>Params:</em><br/>- <code>&lt;strategy&gt;</code> (<code>str</code>)</td>
 </tr>
 <tr>
 <td><code>/available_pairs</code></td>
 <td>GET</td>
-<td>List available backtest data. <strong>Alpha</strong></td>
+<td>List available backtest data.</td>
 </tr>
 <tr>
 <td><code>/version</code></td>
@@ -2789,7 +2789,7 @@ All endpoints in the below table need to be prefixed with the base URL of the AP
 </table>
 <div class="admonition warning">
 <p class="admonition-title">Alpha status</p>
-<p>Endpoints labeled with <em>Alpha status</em> above may change at any time without notice.</p>
+<p>Endpoints labeled with <em>Alpha status</em> or <em>Beta status</em> above may change at any time without notice.</p>
 </div>
 <h3 id="message-websocket">Message WebSocket<a class="headerlink" href="#message-websocket" title="Permanent link">&para;</a></h3>
 <p>The API Server includes a websocket endpoint for subscribing to RPC messages from the freqtrade Bot.
