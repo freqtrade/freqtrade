@@ -73,7 +73,6 @@ AVAILABLE_PAIRLISTS = [
     "ShuffleFilter",
     "SpreadFilter",
     "VolatilityFilter",
-    "OscillationFilter",
 ]
 AVAILABLE_DATAHANDLERS = ["json", "jsongz", "feather", "parquet"]
 BACKTEST_BREAKDOWNS = ["day", "week", "month", "year", "weekday"]
