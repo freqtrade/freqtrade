@@ -116,15 +116,18 @@ def build_cost_calibration(inputs: CostCalibrationInputs) -> dict[str, Any]:
         for source in [*sources.values(), fills_source]
         if source.blocker is not None
     ]
-    ohlcv_numeric_blocker = _ohlcv_numeric_blocker(sources["ohlcv"].frame)
+    ohlcv_frame = _loaded_frame(sources["ohlcv"])
+    order_book_frame = _loaded_frame(sources["order_book"])
+    spread_frame = _loaded_frame(sources["spread"])
+    ohlcv_numeric_blocker = _ohlcv_numeric_blocker(ohlcv_frame)
     if ohlcv_numeric_blocker is not None:
         source_blockers.append(ohlcv_numeric_blocker)
     scenarios = _estimate_scenarios(
         inputs=inputs,
         context=context,
-        ohlcv=sources["ohlcv"].frame,
-        order_book=sources["order_book"].frame,
-        spread=sources["spread"].frame,
+        ohlcv=ohlcv_frame,
+        order_book=order_book_frame,
+        spread=spread_frame,
         fills_by_scenario=fills_by_scenario,
     )
     scenario_blockers = validate_cost_scenarios(scenarios, context=context)
@@ -558,8 +561,8 @@ def _load_fills(
     try:
         if path.suffix.lower() == ".json":
             raw = json.loads(path.read_text(encoding="utf-8"))
+            row_count = _json_fill_candidate_count(raw)
             scenarios = _fill_scenarios_from_json(raw, context=context)
-            row_count = len(scenarios)
         else:
             frame = _read_frame(path)
             scenarios = _fill_scenarios_from_frame(frame, context=context)
@@ -637,7 +640,7 @@ def _fill_scenarios_from_json(
     for item in candidates:
         if not _context_matches(item, context):
             continue
-        name = _scenario_name(item.get("scenario_name")) or "normal"
+        name = _scenario_name_from_fill_row(item)
         if name in _SCENARIO_NAMES:
             scenarios[name] = {str(key): value for key, value in item.items()}
     return scenarios
@@ -651,10 +654,30 @@ def _fill_scenarios_from_frame(
     for item in normalized.to_dict(orient="records"):
         if not _context_matches(item, context):
             continue
-        name = _scenario_name(item.get("scenario_name")) or "normal"
+        name = _scenario_name_from_fill_row(item)
         if name in _SCENARIO_NAMES:
             scenarios[name] = dict(item)
     return scenarios
+
+
+def _json_fill_candidate_count(raw: Any) -> int:
+    if isinstance(raw, Mapping):
+        raw_scenarios = raw.get("scenarios")
+        if isinstance(raw_scenarios, Mapping):
+            return len(raw_scenarios)
+        if isinstance(raw_scenarios, list):
+            return len(raw_scenarios)
+        return 1
+    if isinstance(raw, list):
+        return len(raw)
+    return 0
+
+
+def _scenario_name_from_fill_row(item: Mapping[str, Any]) -> str | None:
+    raw_name = _string_or_none(item.get("scenario_name"))
+    if raw_name is None:
+        return "normal"
+    return _scenario_name(raw_name)
 
 
 def _context_matches(item: Mapping[str, Any], context: CostModelContext) -> bool:
@@ -853,6 +876,10 @@ def _source_summary(source: _SourceLoad, root_dir: Path) -> dict[str, Any]:
         "blocker_name": blocker.get("name"),
         "blocker_message": blocker.get("message"),
     }
+
+
+def _loaded_frame(source: _SourceLoad) -> pd.DataFrame | None:
+    return source.frame if source.status == "loaded" else None
 
 
 def _blocker(

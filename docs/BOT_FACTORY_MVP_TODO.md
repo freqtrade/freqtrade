@@ -123,6 +123,10 @@ Checked on 2026-05-10 JST for local-only cost calibration runner.
   - depth-only order-book artifacts are accepted when a separate spread
     artifact supplies spread evidence;
   - fills artifacts with zero matching scenarios return a structured blocker;
+  - malformed OHLCV files missing required columns do not crash numeric
+    calibration and remain structured blockers;
+  - JSON fills artifacts count raw candidate rows before filtering so
+    zero-match JSON inputs are blocked;
   - `candidate_generation_result: no candidate generated` and false
     candidate/proposal/codegen gates.
 - [x] Candidate generation result for this increment:
@@ -135,7 +139,7 @@ Checked on 2026-05-10 JST for local-only cost calibration runner.
   .\.venv\Scripts\python.exe -m pytest tests/test_bot_factory.py -q
   ```
 
-  Results: compile passed; focused selector passed 14 tests and reached
+  Results: compile passed; focused selector passed 16 tests and reached
   `[100%]`; full `tests\test_bot_factory.py` reached `[100%]`;
   `git diff --check` exited `0` with no whitespace errors and the existing
   LF-to-CRLF working-copy warning for this doc.

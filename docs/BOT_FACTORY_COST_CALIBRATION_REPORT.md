@@ -79,6 +79,10 @@ Blocking cases include:
 - fills artifacts that load successfully but match zero scenarios after
   scenario/context filtering return a structured `fills_scenarios_missing`
   blocker instead of silently falling back to proxy costs.
+- malformed OHLCV artifacts that are missing required columns return structured
+  blockers and are not passed into numeric calibration or scenario estimation.
+- JSON fills artifacts count raw candidate rows before scenario/context
+  filtering, so zero-match JSON inputs also return `fills_scenarios_missing`.
 
 ## Safety
 
@@ -110,7 +114,7 @@ git diff --check
 Results:
 
 - compile passed;
-- focused selector passed 14 tests and reached `[100%]`;
+- focused selector passed 16 tests and reached `[100%]`;
 - full `tests/test_bot_factory.py` reached `[100%]`;
 - `git diff --check` exited `0` with no whitespace errors and the existing
   LF-to-CRLF working-copy warning for `docs/BOT_FACTORY_MVP_TODO.md`.

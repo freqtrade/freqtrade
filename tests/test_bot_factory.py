@@ -14466,6 +14466,51 @@ def test_cost_calibration_blocks_fills_artifact_with_zero_matching_scenarios(tmp
     assert artifact["candidate_generation_result"] == "no candidate generated"
 
 
+def test_cost_calibration_blocks_json_fills_with_zero_matching_scenarios(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.json"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    fills_path.write_text(
+        json.dumps(
+            {
+                "scenarios": [
+                    {
+                        "scenario_name": "normal",
+                        "pair": "ETH/USDT:USDT",
+                        "timeframe": "5m",
+                        "total_cost_bps": 18.0,
+                    },
+                    {
+                        "scenario_name": "not_a_scenario",
+                        "pair": "BTC/USDT:USDT",
+                        "timeframe": "5m",
+                        "total_cost_bps": 20.0,
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="zero-matching-json-fills",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["fills"]["row_count"] == 2
+    assert artifact["sources"]["fills"]["blocker_name"] == "fills_scenarios_missing"
+    assert "fills_scenarios_missing" in blockers
+
+
 def test_cost_calibration_returns_structured_blocker_for_fills_parse_error(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     fills_path = tmp_path / "fills.json"
@@ -14488,6 +14533,37 @@ def test_cost_calibration_returns_structured_blocker_for_fills_parse_error(tmp_p
     assert artifact["status"] == "blocked"
     assert "fills_artifact_parse_error" in blockers
     assert artifact["candidate_generation_allowed"] is False
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_returns_structured_blocker_for_missing_ohlcv_columns(tmp_path):
+    ohlcv_path = tmp_path / "missing_close_ohlcv.csv"
+    pd.DataFrame(
+        {
+            "date": ["2025-01-01"],
+            "open": [100.0],
+            "high": [101.0],
+            "low": [99.0],
+        }
+    ).to_csv(ohlcv_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="missing-ohlcv-column",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["ohlcv"]["status"] == "blocked"
+    assert artifact["sources"]["ohlcv"]["blocker_name"] == "ohlcv_required_columns_missing"
+    assert "ohlcv_required_columns_missing" in blockers
+    assert "normal_cost_missing" in blockers
     assert artifact["candidate_generation_result"] == "no candidate generated"
 
 
