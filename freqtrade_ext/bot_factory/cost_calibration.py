@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,6 +46,7 @@ _CONTEXT_SELECTOR_FIELDS = (
     "liquidity_tier",
     "volatility_regime",
 )
+_SAFE_CALIBRATION_ID_PATTERN = re.compile(r"[^A-Za-z0-9_.-]+")
 
 
 @dataclass(frozen=True)
@@ -83,7 +85,9 @@ def build_cost_calibration(inputs: CostCalibrationInputs) -> dict[str, Any]:
     generated_at = inputs.created_at or datetime.now(UTC).isoformat(
         timespec="microseconds"
     )
-    calibration_id = inputs.cost_calibration_id or _default_calibration_id(generated_at)
+    calibration_id = _safe_calibration_id(
+        inputs.cost_calibration_id or _default_calibration_id(generated_at)
+    )
     context = CostModelContext(
         pair=_string_or_none(inputs.pair),
         timeframe=_string_or_none(inputs.timeframe),
@@ -119,6 +123,9 @@ def build_cost_calibration(inputs: CostCalibrationInputs) -> dict[str, Any]:
             any_column_groups=(("spread_bps",), ("best_bid", "best_ask")),
         ),
     }
+    spread_numeric_blocker = _spread_numeric_blocker(sources["spread"])
+    if spread_numeric_blocker is not None:
+        sources["spread"] = _blocked_source(sources["spread"], spread_numeric_blocker)
     fills_source, fills_by_scenario = _load_fills(fills_path, context=context)
     source_blockers = [
         source.blocker
@@ -253,7 +260,7 @@ def write_cost_calibration_artifacts(
     root_dir: Path,
     output_root: Path,
 ) -> tuple[Path, Path, Path]:
-    out_dir = _resolve_output_root(output_root, root_dir) / str(
+    out_dir = _resolve_output_root(output_root, root_dir) / _safe_calibration_id(
         artifact.get("cost_calibration_id") or "cost_calibration"
     )
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -350,8 +357,11 @@ def _estimate_scenarios(
     if ohlcv is None or ohlcv.empty:
         return {}
     ohlcv_metrics = _ohlcv_metrics(ohlcv)
-    spread_metrics = _spread_metrics(spread) or _spread_metrics(order_book)
-    spread_source = "spread_artifact" if _spread_metrics(spread) else "order_book"
+    spread_metrics = _spread_metrics(spread)
+    spread_source = "spread_artifact"
+    if spread_metrics is None:
+        spread_metrics = _spread_metrics(order_book)
+        spread_source = "order_book"
     if spread_metrics is None:
         spread_metrics = _ohlcv_spread_proxy(ohlcv_metrics)
         spread_source = "ohlcv_range_proxy"
@@ -559,6 +569,17 @@ def _load_frame(
         status="loaded",
         frame=_normalize_columns(frame),
         summary={"row_count": int(len(frame)), "columns": list(map(str, frame.columns))},
+    )
+
+
+def _blocked_source(source: _SourceLoad, blocker: dict[str, Any]) -> _SourceLoad:
+    return _SourceLoad(
+        name=source.name,
+        path=source.path,
+        status="blocked",
+        frame=source.frame,
+        blocker=blocker,
+        summary=dict(source.summary),
     )
 
 
@@ -783,6 +804,18 @@ def _spread_metrics(frame: pd.DataFrame | None) -> dict[str, float] | None:
     }
 
 
+def _spread_numeric_blocker(source: _SourceLoad) -> dict[str, Any] | None:
+    if source.status != "loaded" or source.frame is None:
+        return None
+    if _spread_metrics(source.frame) is not None:
+        return None
+    return _blocker(
+        "spread_numeric_rows_missing",
+        "spread artifact has usable columns but no numeric spread rows.",
+        details={"path": str(source.path)},
+    )
+
+
 def _ohlcv_spread_proxy(ohlcv_metrics: Mapping[str, float]) -> dict[str, float]:
     normal = max(1.0, float(ohlcv_metrics["range_median_bps"]) * 0.08)
     return {
@@ -957,6 +990,12 @@ def _default_calibration_id(generated_at: str) -> str:
         .replace("T", "T")
     )
     return f"cost_calibration_{safe[:21]}"
+
+
+def _safe_calibration_id(value: Any) -> str:
+    safe = _SAFE_CALIBRATION_ID_PATTERN.sub("_", str(value or "").strip())
+    safe = safe.strip("._")
+    return safe or "cost_calibration"
 
 
 def _resolve_output_root(output_root: Path, root_dir: Path) -> Path:

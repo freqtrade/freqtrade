@@ -14258,6 +14258,35 @@ def test_cost_calibration_builds_scenarios_and_artifacts_from_local_data(tmp_pat
     assert "stress" in table_text
 
 
+def test_cost_calibration_sanitizes_id_before_writing_artifacts(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_type="taker",
+            cost_calibration_id="../other-dir",
+        )
+    )
+
+    assert artifact["cost_calibration_id"] == "other-dir"
+    json_path, report_path, table_path = write_cost_calibration_artifacts(
+        artifact,
+        root_dir=tmp_path,
+        output_root=tmp_path / "artifacts",
+    )
+
+    output_root = (tmp_path / "artifacts").resolve()
+    json_path.resolve().relative_to(output_root)
+    assert json_path.parent == output_root / "other-dir"
+    assert report_path.parent == json_path.parent
+    assert table_path.parent == json_path.parent
+    assert not (tmp_path / "other-dir" / "cost_calibration.json").exists()
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
 def test_cost_calibration_accepts_depth_only_order_book_with_spread_artifact(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     order_book_path = tmp_path / "depth_only_order_book.csv"
@@ -14293,6 +14322,40 @@ def test_cost_calibration_accepts_depth_only_order_book_with_spread_artifact(tmp
     assert "order_book_usable_columns_missing" not in {
         blocker["name"] for blocker in artifact["blockers"]
     }
+
+
+def test_cost_calibration_blocks_unusable_spread_artifact(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    order_book_path = tmp_path / "order_book.csv"
+    spread_path = tmp_path / "spread.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    _write_cost_calibration_order_book(order_book_path)
+    pd.DataFrame(
+        {
+            "date": pd.date_range("2025-01-01", periods=3, freq="5min"),
+            "spread_bps": ["bad", None, "nan"],
+        }
+    ).to_csv(spread_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_book_path=order_book_path,
+            spread_path=spread_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="bad-spread",
+        )
+    )
+
+    blockers = {blocker["name"] for blocker in artifact["blockers"]}
+    assert artifact["status"] == "blocked"
+    assert artifact["sources"]["spread"]["status"] == "blocked"
+    assert artifact["sources"]["spread"]["blocker_name"] == "spread_numeric_rows_missing"
+    assert "spread_numeric_rows_missing" in blockers
+    assert artifact["candidate_generation_result"] == "no candidate generated"
 
 
 def test_cost_calibration_blocks_missing_normal_cost_with_structured_blocker(tmp_path):
