@@ -127,6 +127,8 @@ Checked on 2026-05-10 JST for local-only cost calibration runner.
     calibration and remain structured blockers;
   - JSON fills artifacts count raw candidate rows before filtering so
     zero-match JSON inputs are blocked;
+  - top-level JSON fills arrays are parsed as valid scenario rows instead of
+    being misclassified as zero-match blocker inputs;
   - `candidate_generation_result: no candidate generated` and false
     candidate/proposal/codegen gates.
 - [x] Candidate generation result for this increment:
@@ -139,7 +141,7 @@ Checked on 2026-05-10 JST for local-only cost calibration runner.
   .\.venv\Scripts\python.exe -m pytest tests/test_bot_factory.py -q
   ```
 
-  Results: compile passed; focused selector passed 16 tests and reached
+  Results: compile passed; focused selector passed 17 tests and reached
   `[100%]`; full `tests\test_bot_factory.py` reached `[100%]`;
   `git diff --check` exited `0` with no whitespace errors and the existing
   LF-to-CRLF working-copy warning for this doc.

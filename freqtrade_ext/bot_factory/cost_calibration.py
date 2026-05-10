@@ -623,19 +623,22 @@ def _read_frame(path: Path) -> pd.DataFrame:
 def _fill_scenarios_from_json(
     raw: Any, *, context: CostModelContext
 ) -> dict[str, dict[str, Any]]:
-    if not isinstance(raw, Mapping):
-        return {}
-    raw_scenarios = raw.get("scenarios")
-    if isinstance(raw_scenarios, Mapping):
-        candidates = [
-            {"scenario_name": name, **value}
-            for name, value in raw_scenarios.items()
-            if isinstance(value, Mapping)
-        ]
-    elif isinstance(raw_scenarios, list):
-        candidates = [item for item in raw_scenarios if isinstance(item, Mapping)]
+    if isinstance(raw, Mapping):
+        raw_scenarios = raw.get("scenarios")
+        if isinstance(raw_scenarios, Mapping):
+            candidates = [
+                {"scenario_name": name, **value}
+                for name, value in raw_scenarios.items()
+                if isinstance(value, Mapping)
+            ]
+        elif isinstance(raw_scenarios, list):
+            candidates = [item for item in raw_scenarios if isinstance(item, Mapping)]
+        else:
+            candidates = [raw]
+    elif isinstance(raw, list):
+        candidates = [item for item in raw if isinstance(item, Mapping)]
     else:
-        candidates = [raw]
+        candidates = []
     scenarios: dict[str, dict[str, Any]] = {}
     for item in candidates:
         if not _context_matches(item, context):

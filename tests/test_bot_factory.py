@@ -14511,6 +14511,50 @@ def test_cost_calibration_blocks_json_fills_with_zero_matching_scenarios(tmp_pat
     assert "fills_scenarios_missing" in blockers
 
 
+def test_cost_calibration_loads_top_level_json_fills_array(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.json"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    fills_path.write_text(
+        json.dumps(
+            [
+                {
+                    "scenario_name": "normal",
+                    "pair": "BTC/USDT:USDT",
+                    "timeframe": "5m",
+                    "total_cost_bps": 18.0,
+                },
+                {
+                    "scenario_name": "stress",
+                    "pair": "BTC/USDT:USDT",
+                    "timeframe": "5m",
+                    "total_cost_bps": 32.0,
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="top-level-json-fills",
+        )
+    )
+
+    assert artifact["status"] == "completed"
+    assert artifact["sources"]["fills"]["status"] == "loaded"
+    assert artifact["sources"]["fills"]["row_count"] == 2
+    assert artifact["cost_scenarios"]["normal"]["total_cost_bps"] == 18.0
+    assert artifact["cost_scenarios"]["stress"]["total_cost_bps"] == 32.0
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
 def test_cost_calibration_returns_structured_blocker_for_fills_parse_error(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     fills_path = tmp_path / "fills.json"
