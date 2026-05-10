@@ -38,6 +38,13 @@ _COST_TABLE_COLUMNS = (
     "liquidity_tier",
     "volatility_regime",
 )
+_CONTEXT_SELECTOR_FIELDS = (
+    "pair",
+    "timeframe",
+    "order_type",
+    "liquidity_tier",
+    "volatility_regime",
+)
 
 
 @dataclass(frozen=True)
@@ -73,7 +80,9 @@ class _SourceLoad:
 
 
 def build_cost_calibration(inputs: CostCalibrationInputs) -> dict[str, Any]:
-    generated_at = inputs.created_at or datetime.now(UTC).isoformat()
+    generated_at = inputs.created_at or datetime.now(UTC).isoformat(
+        timespec="microseconds"
+    )
     calibration_id = inputs.cost_calibration_id or _default_calibration_id(generated_at)
     context = CostModelContext(
         pair=_string_or_none(inputs.pair),
@@ -639,13 +648,23 @@ def _fill_scenarios_from_json(
         candidates = [item for item in raw if isinstance(item, Mapping)]
     else:
         candidates = []
+    return _fill_scenarios_from_candidates(candidates, context=context)
+
+
+def _fill_scenarios_from_candidates(
+    candidates: list[Mapping[str, Any]], *, context: CostModelContext
+) -> dict[str, dict[str, Any]]:
     scenarios: dict[str, dict[str, Any]] = {}
+    specificity_by_name: dict[str, int] = {}
     for item in candidates:
         if not _context_matches(item, context):
             continue
         name = _scenario_name_from_fill_row(item)
         if name in _SCENARIO_NAMES:
-            scenarios[name] = {str(key): value for key, value in item.items()}
+            specificity = _context_specificity(item, context)
+            if specificity >= specificity_by_name.get(name, -1):
+                scenarios[name] = {str(key): value for key, value in item.items()}
+                specificity_by_name[name] = specificity
     return scenarios
 
 
@@ -653,14 +672,10 @@ def _fill_scenarios_from_frame(
     frame: pd.DataFrame, *, context: CostModelContext
 ) -> dict[str, dict[str, Any]]:
     normalized = _normalize_columns(frame)
-    scenarios: dict[str, dict[str, Any]] = {}
-    for item in normalized.to_dict(orient="records"):
-        if not _context_matches(item, context):
-            continue
-        name = _scenario_name_from_fill_row(item)
-        if name in _SCENARIO_NAMES:
-            scenarios[name] = dict(item)
-    return scenarios
+    return _fill_scenarios_from_candidates(
+        normalized.to_dict(orient="records"),
+        context=context,
+    )
 
 
 def _json_fill_candidate_count(raw: Any) -> int:
@@ -684,13 +699,7 @@ def _scenario_name_from_fill_row(item: Mapping[str, Any]) -> str | None:
 
 
 def _context_matches(item: Mapping[str, Any], context: CostModelContext) -> bool:
-    for field_name in (
-        "pair",
-        "timeframe",
-        "order_type",
-        "liquidity_tier",
-        "volatility_regime",
-    ):
+    for field_name in _CONTEXT_SELECTOR_FIELDS:
         actual = _string_or_none(getattr(context, field_name))
         if actual is None:
             continue
@@ -698,6 +707,18 @@ def _context_matches(item: Mapping[str, Any], context: CostModelContext) -> bool
         if expected is not None and _normalize(expected) != _normalize(actual):
             return False
     return True
+
+
+def _context_specificity(item: Mapping[str, Any], context: CostModelContext) -> int:
+    specificity = 0
+    for field_name in _CONTEXT_SELECTOR_FIELDS:
+        actual = _string_or_none(getattr(context, field_name))
+        if actual is None:
+            continue
+        expected = _string_or_none(item.get(field_name))
+        if expected is not None and _normalize(expected) == _normalize(actual):
+            specificity += 1
+    return specificity
 
 
 def _ohlcv_metrics(frame: pd.DataFrame) -> dict[str, float]:
@@ -935,7 +956,7 @@ def _default_calibration_id(generated_at: str) -> str:
         .replace(".", "")
         .replace("T", "T")
     )
-    return f"cost_calibration_{safe[:15]}"
+    return f"cost_calibration_{safe[:21]}"
 
 
 def _resolve_output_root(output_root: Path, root_dir: Path) -> Path:
@@ -962,7 +983,14 @@ def _display(value: Any) -> str:
 
 
 def _string_or_none(value: Any) -> str | None:
-    text = str(value or "").strip()
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
     return text or None
 
 

@@ -14426,6 +14426,52 @@ def test_cost_calibration_keeps_fills_when_context_selectors_are_unset(tmp_path)
     assert scenarios["stress"]["total_cost_bps"] == 30.0
 
 
+def test_cost_calibration_prefers_specific_fills_over_later_generic_duplicate(
+    tmp_path,
+):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    fills_path = tmp_path / "fills.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+    pd.DataFrame(
+        [
+            {
+                "scenario_name": "normal",
+                "pair": "BTC/USDT:USDT",
+                "timeframe": "5m",
+                "order_type": "taker",
+                "total_cost_bps": 18.0,
+            },
+            {
+                "scenario_name": "normal",
+                "total_cost_bps": 99.0,
+            },
+            {
+                "scenario_name": "stress",
+                "total_cost_bps": 32.0,
+            },
+        ]
+    ).to_csv(fills_path, index=False)
+
+    artifact = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            fills_path=fills_path,
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            order_type="taker",
+            cost_calibration_id="specific-over-generic-fills",
+        )
+    )
+
+    assert artifact["status"] == "completed"
+    assert artifact["sources"]["fills"]["status"] == "loaded"
+    assert artifact["sources"]["fills"]["row_count"] == 3
+    assert artifact["cost_scenarios"]["normal"]["total_cost_bps"] == 18.0
+    assert artifact["cost_scenarios"]["stress"]["total_cost_bps"] == 32.0
+    assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
 def test_cost_calibration_blocks_fills_artifact_with_zero_matching_scenarios(tmp_path):
     ohlcv_path = tmp_path / "ohlcv.csv"
     fills_path = tmp_path / "fills.csv"
@@ -14553,6 +14599,34 @@ def test_cost_calibration_loads_top_level_json_fills_array(tmp_path):
     assert artifact["cost_scenarios"]["normal"]["total_cost_bps"] == 18.0
     assert artifact["cost_scenarios"]["stress"]["total_cost_bps"] == 32.0
     assert artifact["candidate_generation_result"] == "no candidate generated"
+
+
+def test_cost_calibration_default_id_preserves_subsecond_resolution(tmp_path):
+    ohlcv_path = tmp_path / "ohlcv.csv"
+    _write_cost_calibration_ohlcv(ohlcv_path)
+
+    first = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_type="taker",
+            created_at="2026-05-10T09:57:04.111111+00:00",
+        )
+    )
+    second = build_cost_calibration(
+        CostCalibrationInputs(
+            root_dir=tmp_path,
+            ohlcv_path=ohlcv_path,
+            order_type="taker",
+            created_at="2026-05-10T09:57:04.222222+00:00",
+        )
+    )
+
+    assert first["cost_calibration_id"] != second["cost_calibration_id"]
+    assert "111111" in first["cost_calibration_id"]
+    assert "222222" in second["cost_calibration_id"]
+    assert first["candidate_generation_result"] == "no candidate generated"
+    assert second["candidate_generation_result"] == "no candidate generated"
 
 
 def test_cost_calibration_returns_structured_blocker_for_fills_parse_error(tmp_path):
