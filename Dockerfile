@@ -1,4 +1,4 @@
-FROM python:3.14.3-slim-trixie AS base
+FROM python:3.15.0b1-slim-trixie AS base
 
 # Setup env
 ENV LANG=C.UTF-8
