@@ -8,6 +8,7 @@ import pytest
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import RunMode
+from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.freqai.utils import download_all_data_for_training, get_required_data_timerange
 from freqtrade.optimize.backtesting import Backtesting
@@ -301,6 +302,45 @@ def test_start_backtesting(mocker, freqai_conf, model, num_files, strat, caplog)
     assert len(model_folders) == num_files
     Trade.use_db = True
     Backtesting.cleanup()
+    shutil.rmtree(Path(freqai.dk.full_path))
+
+
+def test_start_backtesting_appends_null_predictions_when_training_fails(mocker, freqai_conf):
+    freqai_conf.update({"freqaimodel": "LightGBMRegressor"})
+    freqai_conf.update({"timerange": "20180120-20180130"})
+    freqai_conf.update({"strategy": "freqai_test_strat"})
+    freqai_conf.get("freqai", {}).get("feature_parameters", {}).update(
+        {"indicator_periods_candles": [2]}
+    )
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    strategy.freqai_info = freqai_conf.get("freqai", {})
+    freqai = strategy.freqai
+    freqai.live = False
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    timerange = TimeRange.parse_timerange("20180110-20180130")
+    freqai.dd.load_all_pair_histories(timerange, freqai.dk)
+    sub_timerange = TimeRange.parse_timerange("20180110-20180130")
+    _, base_df = freqai.dd.get_base_and_corr_dataframes(sub_timerange, "LTC/BTC", freqai.dk)
+    df = base_df[freqai_conf["timeframe"]]
+
+    mocker.patch.object(
+        freqai,
+        "train",
+        side_effect=OperationalException("all training data dropped due to NaNs"),
+    )
+    predict_mock = mocker.patch.object(freqai, "predict")
+
+    metadata = {"pair": "LTC/BTC"}
+    freqai.dk.set_paths("LTC/BTC", None)
+    dk = freqai.start_backtesting(df, metadata, freqai.dk, strategy)
+
+    predict_mock.assert_not_called()
+    assert "do_predict" in dk.return_dataframe
+    assert dk.return_dataframe["do_predict"].eq(0).all()
+
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
