@@ -75,6 +75,7 @@ def pair_history_filtered(payload: PairHistoryRequest, config=Depends(get_config
             exchange,
             payload.columns,
             payload.live_mode,
+            [dict(p) for p in (payload.strategy_params or [])],
         )
     except Exception as e:
         logger.exception("Error in pair_history_filtered")

@@ -8,6 +8,7 @@ from collections import defaultdict
 from collections.abc import Iterator
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 from freqtrade.constants import Config
 from freqtrade.exceptions import DependencyException, OperationalException
@@ -23,11 +24,13 @@ logger = logging.getLogger(__name__)
 SpaceParams = dict[str, BaseParameter]
 AllSpaceParams = dict[str, SpaceParams]
 
+SpaceApiInput = dict[str, dict[str, Any]]
+
 
 class HyperStrategyMixin:
     """
     A helper base class which allows HyperOptAuto class to reuse implementations of buy/sell
-     strategy logic.
+    strategy logic.
     """
 
     def __init__(self, config: Config, *args, **kwargs):
@@ -40,7 +43,8 @@ class HyperStrategyMixin:
 
         params = self.load_params_from_file()
         params = params.get("params", {})
-        self._ft_params_from_file = params
+        self._ft_params_from_file: dict = params
+        self.__ft_params_from_api: SpaceApiInput = {}
         # Init/loading of parameters is done as part of ft_bot_start().
 
     def _ft_copy_parameters(self) -> None:
@@ -102,6 +106,7 @@ class HyperStrategyMixin:
         """
         Load Hyperoptable parameters
         Prevalence:
+        * Parameters from API (Only applicable to webserver mode)
         * Parameters from parameter file
         * Parameters defined in parameters objects (buy_params, sell_params, ...)
         * Parameter defaults
@@ -113,7 +118,53 @@ class HyperStrategyMixin:
                 self._ft_params_from_file.get(space, {}),
                 deepcopy(getattr(self, f"{space}_params", {})),
             )
+            params_values = deep_merge_dicts(
+                self.__ft_params_from_api.get(space, {}), params_values
+            )
             self._ft_set_param(self._ft_hyper_params[space], params_values, space, hyperopt)
+
+    def ft_set_api_params(self, params: list[dict[str, Any]] | None) -> None:
+        """
+        Store API-provided parameter overrides for the next ft_load_hyper_params() call.
+        """
+        self.__ft_params_from_api = {}
+        if not params:
+            return
+
+        if not self._ft_hyper_params:
+            self._ft_hyper_params = detect_all_parameters(self)
+
+        strategy_parameters = {name: param for name, param in self.enumerate_parameters()}
+        grouped_values: dict[str, dict[str, Any]] = defaultdict(dict)
+
+        for param_data in params:
+            name = param_data.get("name", None)
+            param_type = param_data.get("param_type", None)
+            value = param_data.get("value", None)
+
+            base_warning = "Skipping strategy parameter override"
+
+            if not name or not param_type:
+                logger.warning(f"{base_warning} with missing name or param_type.")
+                continue
+
+            strategy_param = strategy_parameters.get(name)
+            if strategy_param is None:
+                logger.warning(f"{base_warning} unknown strategy parameter override '{name}'.")
+                continue
+            if strategy_param.param_type != param_type:
+                logger.warning(f"{base_warning} '{name}' due to mismatched type '{param_type}'.")
+                continue
+            if not strategy_param.load:
+                logger.warning(f"{base_warning} '{name}' because it is disabled.")
+                continue
+            if not strategy_param.space or strategy_param.space not in self._ft_hyper_params:
+                logger.warning(f"{base_warning} '{name}' without a valid space.")
+                continue
+
+            grouped_values[strategy_param.space][name] = value
+
+        self.__ft_params_from_api = dict(grouped_values)
 
     def load_params_from_file(self) -> dict:
         filename_str = getattr(self, "__file__", "")
