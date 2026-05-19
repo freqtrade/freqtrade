@@ -99,6 +99,48 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-11 JST for the first calibrated Edge Discovery run.
+
+- [x] Read `docs/BOT_FACTORY_CALIBRATED_COST_TABLE.md` and used only the
+  permitted BTC/USDT:USDT 5m taker and ETH/USDT:USDT 5m taker calibrated
+  contexts.
+- [x] Read the latest failure synthesis, causal failure map, and comprehensive
+  rejection memory before choosing theses.
+- [x] Ran local-only Edge Discovery for
+  `TH-EXTREME-INTRABAR-RANGE-EFFICIENCY-REVERSAL-20260510` on BTC 5m taker
+  using normal cost `9.469967` bps and stress cost `16.900396` bps.
+  Result: failed research gate with `net_edge_bps_normal=24.395012`,
+  `net_edge_bps_stress=16.964583`, `profitable_windows_ratio=1.0`,
+  `walk_forward_pass_rate=0.5556`, `lower_confidence_bound_bps=2.217808`,
+  negative controls beaten, calendar concentration `0.225`, and rejection
+  reason `walk_forward_pass_rate_at_least_0_6; not_single_pair_dependent`.
+- [x] Stopped broad ETH/combined checks after timeout and process inspection;
+  they wrote no pass artifact and are recorded as computational blockers.
+- [x] Ran one bounded diagnostic for
+  `TH-TAIL-RANGE-MUTED-RETURN-EXHAUSTION-20260510` on BTC 5m taker.
+  Result: failed research gate with `net_edge_bps_normal=89.902893`,
+  `net_edge_bps_stress=82.472464`, `profitable_windows_ratio=0.75`,
+  `walk_forward_pass_rate=0.5`, `lower_confidence_bound_bps=19.117273`,
+  negative controls beaten, calendar concentration `0.35714285714285715`, and
+  rejection reason `walk_forward_pass_rate_at_least_0_6; not_single_pair_dependent`.
+- [x] Stopped further Edge Discovery after loop-risk review because continuing
+  to narrow the same range-efficiency idea would resemble parameter-only retry.
+- [x] Added docs:
+  - `docs/BOT_FACTORY_CALIBRATED_EDGE_DISCOVERY_FIRST_RUN.md`
+  - `docs/BOT_FACTORY_NEXT_RESEARCH_DECISION.md`
+- [x] Added `docs/BOT_FACTORY_GPT_PRO_CALIBRATED_EDGE_DISCOVERY_HANDOFF.md`
+  to report the threshold-retry / manual grid-search loop risk and recommend
+  that GPT Pro stop further range-efficiency variants until the Edge Discovery
+  runner has preflight workload and anti-retry guards.
+- [x] Candidate generation result:
+  `no candidate generated`.
+- [ ] Remaining limitation: this first calibrated Edge Discovery did not find a
+  thesis that passed BTC/ETH robustness. The only completed artifacts are BTC
+  5m taker checks; they show positive post-cost BTC edge but fail
+  walk-forward and pair-dependence gates. No candidate, codegen, backtest,
+  paper, dry-run, live, exchange order endpoint, API key, or secret action was
+  performed.
+
 Checked on 2026-05-10 JST for the first local cost calibration run.
 
 - [x] Fast-forwarded the current work branch to `origin/develop` merge commit
