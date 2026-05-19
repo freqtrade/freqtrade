@@ -41,6 +41,7 @@ from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
 from freqtrade.rpc.api_server.api_schemas import StrategyName
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
+from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.util.datetime_helpers import format_date
 from tests.conftest import (
     CURRENT_TEST_STRATEGY,
@@ -2591,6 +2592,37 @@ def test_api_pair_history(botclient, tmp_path, mocker):
             f"in {trim_timerange} left."
         )
         lfm.reset_mock()
+
+    observed_param_values = []
+    original_set_param = HyperStrategyMixin._ft_set_param
+
+    def ft_set_param_spy(self, params, param_values, space, hyperopt=False):
+        # Custom spy for simplicity
+        observed_param_values.append((space, dict(param_values)))
+        return original_set_param(self, params, param_values, space, hyperopt)
+
+    mocker.patch.object(HyperStrategyMixin, "_ft_set_param", new=ft_set_param_spy)
+
+    rc = client_post(
+        client,
+        f"{BASE_URI}/pair_history",
+        data={
+            "pair": "UNITTEST/BTC",
+            "timeframe": timeframe,
+            "timerange": "20180111-20180112",
+            "strategy": CURRENT_TEST_STRATEGY,
+            "strategy_params": [
+                {"name": "buy_rsi", "param_type": "IntParameter", "value": 21},
+                {"name": "buy_plusdi", "param_type": "IntParameter", "value": 99},
+                {"name": "sell_minusdi", "param_type": "DecimalParameter", "value": 0.7},
+            ],
+        },
+    )
+    assert_response(rc, 200)
+    assert any(
+        space == "buy" and param_values.get("buy_rsi") == 21
+        for space, param_values in observed_param_values
+    )
 
     # No strategy
     rc = client_post(
