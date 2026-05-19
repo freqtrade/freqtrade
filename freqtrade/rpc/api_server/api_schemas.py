@@ -603,6 +603,45 @@ AllParameters = Annotated[
 ]
 
 
+class __StrategyParameterInput(BaseModel):
+    name: str
+
+
+class IntParameterInput(__StrategyParameterInput):
+    param_type: Literal["IntParameter"]
+    value: int
+
+
+class RealParameterInput(__StrategyParameterInput):
+    param_type: Literal["RealParameter"]
+    value: float
+
+
+class DecimalParameterInput(__StrategyParameterInput):
+    param_type: Literal["DecimalParameter"]
+    value: float
+
+
+class BooleanParameterInput(__StrategyParameterInput):
+    param_type: Literal["BooleanParameter"]
+    value: bool | None
+
+
+class CategoricalParameterInput(__StrategyParameterInput):
+    param_type: Literal["CategoricalParameter"]
+    value: Any
+
+
+StrategyParameterInput = Annotated[
+    BooleanParameterInput
+    | CategoricalParameterInput
+    | DecimalParameterInput
+    | IntParameterInput
+    | RealParameterInput,
+    Field(discriminator="param_type"),
+]
+
+
 class StrategyResponse(BaseModel):
     strategy: str
     timeframe: str | None
@@ -628,6 +667,7 @@ class PairHistoryRequest(PairCandlesRequest, ExchangeModePayloadMixin):
     strategy: StrategyName | None = None
     freqaimodel: str | None = None
     live_mode: bool = False
+    strategy_params: list[StrategyParameterInput] | None = None
 
 
 class PairHistory(BaseModel):
@@ -670,6 +710,7 @@ class BacktestRequest(BaseModel):
     backtest_cache: str | None = None
     freqaimodel: str | None = None
     freqai: BacktestFreqAIInputs | None = None
+    strategy_params: list[StrategyParameterInput] | None = None
 
 
 class BacktestResponse(BaseModel):
