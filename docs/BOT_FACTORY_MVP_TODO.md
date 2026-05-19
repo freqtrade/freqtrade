@@ -2418,6 +2418,13 @@ Checked on 2026-04-26 JST.
   across multiple generated candidates.
 - [ ] Add Iteration / Improvement Loop that uses reviewer findings while
   preserving safety guards and overfitting controls.
+- [ ] Add Regime-Aware Strategy Portfolio layer that treats market regime,
+  strategy suitability, and `no_trade` as first-class selection outputs instead
+  of trying to force one strategy across all periods.
+- [ ] Add Shadow Strategy Observation design for later Phase 3+ work so
+  multiple paper/dry-run candidates can be observed in parallel only after an
+  explicitly approved paper path exists; until then, implement this as
+  backtest/walk-forward/local-artifact comparison only.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
@@ -2475,6 +2482,96 @@ Safety boundaries for all generated candidates:
   Phase 3 readiness chain.
 - Keep JSON, CSV, Markdown, and local logs as the source of truth. MLflow may be
   optional, but it must not replace local artifacts.
+
+### Regime-Aware Strategy Portfolio TODO
+
+Goal: stop optimizing for a single all-weather strategy. The target Bot Factory
+system should maintain a portfolio of strategies with explicit regime
+suitability, select or disable them based on current market state evidence, and
+allow `no_trade` to be the correct output when conditions are outside the
+candidate's proven edge.
+
+- [ ] Define a local `market_regime` artifact schema that classifies historical
+  windows using only available local data. Initial coarse labels should include
+  at least `trend_up`, `trend_down_or_avoid_long`, `range`, `high_volatility`,
+  `low_volatility`, `liquidity_stress`, `post_spike_reversion`, and
+  `unknown/no_trade`.
+- [ ] Add deterministic regime feature extraction over historical candles and
+  safe structural data where present: realized volatility, trend strength,
+  range efficiency, volume/liquidity proxy, funding/mark context, open-interest
+  context, calendar/session bucket, spread/order-book quality when timestamped
+  local data exists, and data-quality flags.
+- [ ] Extend Edge Discovery outputs so passing and failed effects record the
+  regime slices where they worked, failed, concentrated, or became too
+  cost-sensitive. A positive global edge is not enough; the artifact should
+  state where the effect is eligible and where it must be blocked.
+- [ ] Extend proposal metadata with `intended_regimes`,
+  `excluded_regimes`, `regime_features_required`, `no_trade_conditions`, and
+  `regime_shift_stop_conditions`.
+- [ ] Extend generated candidate metadata with a strategy suitability contract:
+  expected regime, allowed pairs/timeframes, required data features, minimum
+  confidence/evidence thresholds, cooldown after regime change, and explicit
+  conditions that force `no_trade`.
+- [ ] Add a historical `strategy_selector` evaluator that consumes multiple
+  candidate records plus regime artifacts and simulates selection decisions
+  without starting any bot process. It should output selected strategy,
+  `no_trade`, reason codes, candidate scores, and rejected alternatives per
+  window.
+- [ ] Require selector evaluation to compare against simple baselines: best
+  single candidate, always-on candidate, equal candidate rotation, and
+  `no_trade` during uncertain regimes. The selector must improve risk-adjusted
+  outcomes after costs, not only raw return.
+- [ ] Add anti-overfitting controls for selector logic: small predeclared
+  regime taxonomy, fixed selection thresholds, walk-forward validation,
+  holdout windows, minimum regime sample counts, and rejection when improvement
+  comes from one narrow calendar period or one pair.
+- [ ] Add strategy retirement and quarantine rules: pause a candidate when its
+  recent paper/local metrics drift beyond tolerance, when its intended regime
+  disappears, when drawdown exceeds its contract, or when data-quality checks
+  fail.
+- [ ] Keep switching conservative. Add hysteresis/cooldown requirements so the
+  system does not churn strategies on small indicator changes or short-lived
+  noise.
+
+### Shadow Strategy Observation / Multi-Dry-Run TODO
+
+Goal: support the idea of continuously observing multiple strategies and using
+their recent behavior as evidence for selection, while keeping the current
+repository safe. This is future Phase 3+ work only; no paper/dry-run bot may be
+started until the phase documentation explicitly permits the exact command and
+the user explicitly requests it.
+
+- [ ] Design a `shadow_strategy_observation` artifact schema for multiple
+  candidates. It should store strategy ID, candidate ID, regime label, run
+  context, paper/dry-run or local-simulation source, trade count, return,
+  drawdown, hit rate, cost/slippage estimate, stale-data flags, and stop
+  reasons without secrets.
+- [ ] Before any real paper/dry-run process exists, implement a local
+  observation mode that replays historical/backtest/walk-forward artifacts for
+  multiple candidates and produces the same schema. This lets selector and
+  regime logic be tested without process control.
+- [ ] When a future approved paper path exists, add a multi-strategy paper
+  observation planner that can prepare independent run plans, monitoring
+  schemas, stop/cleanup plans, and drift reports per strategy without sharing
+  API keys or credentials.
+- [ ] Require every observed strategy to keep its own paper readiness chain,
+  runtime validation, metrics path, and drift report. Do not allow one passing
+  strategy to bless another strategy or a whole family.
+- [ ] Add leaderboard logic that separates long-term evidence from short-term
+  recent performance. Recent dry-run strength may influence selection only when
+  the candidate also has passing historical/walk-forward evidence for the
+  current regime.
+- [ ] Add false-positive controls for "currently doing well": minimum trade
+  counts, maximum drawdown, cost-adjusted return, stability across regimes,
+  comparison to no-trade, and cooldown after promotion/demotion.
+- [ ] Add a global risk governor input contract for future use: maximum
+  concurrent active strategies, maximum simulated exposure, per-strategy pause
+  state, daily/weekly loss stop, data-staleness stop, and manual approval
+  state.
+- [ ] Record that shadow observation is advisory until a later human-approved
+  execution gateway exists. It may recommend `select`, `watch`, `quarantine`,
+  `retire`, or `no_trade`, but it must not start, stop, or switch a running
+  bot by itself in the current scope.
 
 ### Edge Discovery / Research Lab Pivot
 
