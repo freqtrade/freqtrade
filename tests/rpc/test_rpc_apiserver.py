@@ -3307,6 +3307,14 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
     try:
         ftbot, client = botclient
         mocker.patch(f"{EXMS}.get_fee", fee)
+        observed_param_values = []
+        original_set_param = HyperStrategyMixin._ft_set_param
+
+        def ft_set_param_spy(self, params, param_values, space, hyperopt=False):
+            observed_param_values.append((space, dict(param_values)))
+            return original_set_param(self, params, param_values, space, hyperopt)
+
+        mocker.patch.object(HyperStrategyMixin, "_ft_set_param", new=ft_set_param_spy)
 
         rc = client_get(client, f"{BASE_URI}/backtest")
         # Backtest prevented in default mode
@@ -3346,6 +3354,11 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
             "stake_amount": 100,
             "dry_run_wallet": 1000,
             "enable_protections": False,
+            "strategy_params": [
+                {"name": "buy_rsi", "param_type": "IntParameter", "value": 22},
+                {"name": "buy_plusdi", "param_type": "IntParameter", "value": 99},
+                {"name": "sell_minusdi", "param_type": "DecimalParameter", "value": 0.7},
+            ],
         }
         rc = client_post(client, f"{BASE_URI}/backtest", data=data)
         assert_response(rc)
@@ -3365,6 +3378,10 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
         assert result["status_msg"] == "Backtest ended"
         assert result["progress"] == 1
         assert result["backtest_result"]
+        assert any(
+            space == "buy" and param_values.get("buy_rsi") == 22
+            for space, param_values in observed_param_values
+        )
 
         rc = client_get(client, f"{BASE_URI}/backtest/abort")
         assert_response(rc)
