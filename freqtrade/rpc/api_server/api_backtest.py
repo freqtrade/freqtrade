@@ -44,7 +44,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def __run_backtest_bg(btconfig: Config, job_id: str):
+def __run_backtest_bg(
+    btconfig: Config, job_id: str, strategy_params: list[dict[str, Any]] | None = None
+):
     from freqtrade.data.metrics import combined_dataframes_with_rel_mean
     from freqtrade.optimize.optimize_reports import generate_backtest_stats, store_backtest_results
     from freqtrade.resolvers import StrategyResolver
@@ -56,6 +58,7 @@ def __run_backtest_bg(btconfig: Config, job_id: str):
         # Reload strategy
         lastconfig = ApiBG.bt["last_config"]
         strat = StrategyResolver.load_strategy(btconfig)
+        strat.ft_set_api_params(strategy_params)
         validate_config_consistency(btconfig)
         time_settings_changed = (
             lastconfig.get("timeframe") != strat.timeframe
@@ -164,9 +167,10 @@ async def api_start_backtest(
     btconfig = deepcopy(config)
     btconfig["runmode"] = RunMode.BACKTEST
     remove_exchange_credentials(btconfig["exchange"], True)
-    settings = dict(bt_settings)
+    settings = bt_settings.model_dump(mode="python")
     if settings.get("freqai", None) is not None:
         settings["freqai"] = dict(settings["freqai"])
+    strategy_params: list[dict[str, Any]] | None = settings.pop("strategy_params", None)
     # Pydantic models will contain all keys, but non-provided ones are None
 
     btconfig = deep_merge_dicts(settings, btconfig, allow_null_overrides=False)
@@ -192,7 +196,9 @@ async def api_start_backtest(
     }
     ApiBG.bt["job_id"] = job_id
 
-    background_tasks.add_task(__run_backtest_bg, btconfig=btconfig, job_id=job_id)
+    background_tasks.add_task(
+        __run_backtest_bg, btconfig=btconfig, job_id=job_id, strategy_params=strategy_params
+    )
     ApiBG.analysis_running = True
 
     return {
