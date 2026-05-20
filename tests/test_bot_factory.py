@@ -9725,6 +9725,289 @@ def test_candidate_ranking_preserves_research_handoff_context(tmp_path):
     }
 
 
+def _regime_contract(
+    *,
+    intended_regimes: list[str] | None = None,
+    excluded_regimes: list[str] | None = None,
+    no_trade_conditions: list[str] | None = None,
+    risk_policy_version: str = "risk_v1",
+    maximum_drawdown_by_regime: dict[str, float] | None = None,
+):
+    from freqtrade_ext.bot_factory.regime_promotion import RegimeStrategyContract
+
+    return RegimeStrategyContract(
+        strategy_version="strategy_v1",
+        signal_version="signal_v1",
+        risk_policy_version=risk_policy_version,
+        regime_classifier_version="regime_classifier_v1",
+        cost_model_id="cost_model_v1",
+        intended_regimes=intended_regimes or ["trend_up"],
+        excluded_regimes=excluded_regimes if excluded_regimes is not None else ["unknown"],
+        activation_conditions=["closed candle regime label matches intended scope"],
+        no_trade_conditions=(
+            no_trade_conditions
+            if no_trade_conditions is not None
+            else ["missing required feature", "excluded regime active"]
+        ),
+        regime_shift_stop_conditions=["regime label leaves intended scope"],
+        required_features=["close", "volume"],
+        minimum_evidence={"min_window_count": 2, "min_trade_count": 10},
+        maximum_drawdown_by_regime=maximum_drawdown_by_regime or {"trend_up": 8.0},
+        cost_sensitivity_limits={"normal_cost_bps": 10.0, "stress_cost_bps": 20.0},
+        cooldown_after_regime_change=3,
+        allowed_pairs=["BTC/USDT:USDT", "ETH/USDT:USDT"],
+        allowed_timeframes=["5m"],
+    )
+
+
+def _regime_observation(
+    observation_id: str,
+    *,
+    source_type: str = "walk_forward",
+    regime: str = "trend_up",
+    baseline_id: str = "candidate",
+    pair: str = "BTC/USDT:USDT",
+    timeframe: str = "5m",
+    window_start: str = "2026-01-01T00:00:00+00:00",
+    window_end: str = "2026-02-01T00:00:00+00:00",
+    trade_count: int = 12,
+    net_return_normal_cost: float = 2.0,
+    net_return_stress_cost: float = 1.0,
+    gross_return: float = 3.0,
+    max_drawdown: float = 2.0,
+    downside_deviation: float = 0.2,
+    lower_confidence_bound: float = 0.3,
+):
+    return {
+        "observation_id": observation_id,
+        "created_at": "2026-05-20T00:00:00+00:00",
+        "source_type": source_type,
+        "strategy_id": "strategy",
+        "strategy_version": "strategy_v1",
+        "candidate_id": "candidate",
+        "signal_version": "signal_v1",
+        "risk_policy_version": "risk_v1",
+        "pair": pair,
+        "timeframe": timeframe,
+        "window_start": window_start,
+        "window_end": window_end,
+        "market_regime": regime,
+        "regime_classifier_version": "regime_classifier_v1",
+        "baseline_id": baseline_id,
+        "cost_model_id": "cost_model_v1",
+        "normal_cost_bps": 10.0,
+        "stress_cost_bps": 20.0,
+        "trade_count": trade_count,
+        "exposure_ratio": 0.2,
+        "gross_return": gross_return,
+        "net_return_normal_cost": net_return_normal_cost,
+        "net_return_stress_cost": net_return_stress_cost,
+        "max_drawdown": max_drawdown,
+        "downside_deviation": downside_deviation,
+        "win_rate": 0.55,
+        "profit_factor": 1.4,
+        "no_trade_reason": "",
+        "no_trade_opportunity_cost": max(net_return_normal_cost, 0.0),
+        "data_quality_flags": [],
+        "reason_codes": ["pass"],
+        "lower_confidence_bound": lower_confidence_bound,
+    }
+
+
+def _check_by_name(checks: list[dict[str, Any]], name: str) -> dict[str, Any]:
+    return next(check for check in checks if check["name"] == name)
+
+
+def test_regime_observation_rejects_future_dry_run_in_current_scope():
+    from freqtrade_ext.bot_factory.regime_promotion import validate_observation_record
+
+    observation = _regime_observation(
+        "future-dry-run",
+        source_type="future_dry_run",
+        regime="trend_up",
+    )
+
+    result = validate_observation_record(observation)
+
+    assert result["ok"] is False
+    assert _check_by_name(result["checks"], "source_type_current_scope_allowed")[
+        "passed"
+    ] is False
+    assert result["safety_scope"]["dry_run_trading_started"] is False
+    assert result["safety_scope"]["process_control"] is False
+
+
+def test_regime_scorecard_scopes_range_strategy_without_global_eligibility():
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RegimePromotionThresholds,
+        build_regime_fitness_scorecard,
+    )
+
+    contract = _regime_contract(
+        intended_regimes=["range"],
+        excluded_regimes=["trend_up", "high_volatility"],
+    )
+    observations = [
+        _regime_observation(
+            "range-btc",
+            regime="range",
+            pair="BTC/USDT:USDT",
+            window_start="2026-01-01T00:00:00+00:00",
+            window_end="2026-02-01T00:00:00+00:00",
+            net_return_normal_cost=4.0,
+            net_return_stress_cost=2.5,
+            lower_confidence_bound=0.8,
+        ),
+        _regime_observation(
+            "range-eth",
+            regime="range",
+            pair="ETH/USDT:USDT",
+            window_start="2026-02-01T00:00:00+00:00",
+            window_end="2026-03-05T00:00:00+00:00",
+            net_return_normal_cost=3.0,
+            net_return_stress_cost=1.5,
+            lower_confidence_bound=0.5,
+        ),
+    ]
+    baselines = [
+        _regime_observation(
+            "range-btc-no-trade",
+            regime="range",
+            baseline_id="no_trade",
+            pair="BTC/USDT:USDT",
+            window_start="2026-01-01T00:00:00+00:00",
+            window_end="2026-02-01T00:00:00+00:00",
+            trade_count=0,
+            net_return_normal_cost=0.0,
+            net_return_stress_cost=0.0,
+        ),
+        _regime_observation(
+            "range-eth-no-trade",
+            regime="range",
+            baseline_id="no_trade",
+            pair="ETH/USDT:USDT",
+            window_start="2026-02-01T00:00:00+00:00",
+            window_end="2026-03-05T00:00:00+00:00",
+            trade_count=0,
+            net_return_normal_cost=0.0,
+            net_return_stress_cost=0.0,
+        ),
+    ]
+
+    scorecard = build_regime_fitness_scorecard(
+        observations,
+        contract=contract,
+        baseline_observations=baselines,
+        thresholds=RegimePromotionThresholds(max_calendar_concentration=0.5),
+    )
+
+    assert scorecard["decision"] == "REGIME_SCOPED_SELECTOR_ELIGIBLE"
+    assert scorecard["eligible_regimes"] == ["range"]
+    assert scorecard["raw_aggregate_pnl_promotion_allowed"] is False
+    assert scorecard["phase3_readiness_required_after_scorecard"] is True
+    assert scorecard["safety_scope"]["promotion_authorized_by_this_command"] is False
+
+
+def test_regime_scorecard_blocks_global_when_high_volatility_crashes():
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RegimePromotionThresholds,
+        build_regime_fitness_scorecard,
+    )
+
+    contract = _regime_contract(
+        intended_regimes=["range", "high_volatility"],
+        excluded_regimes=[],
+        maximum_drawdown_by_regime={"range": 8.0, "high_volatility": 5.0},
+    )
+    observations = [
+        _regime_observation(
+            "range-btc",
+            regime="range",
+            pair="BTC/USDT:USDT",
+            window_start="2026-01-01T00:00:00+00:00",
+            window_end="2026-02-01T00:00:00+00:00",
+            net_return_normal_cost=20.0,
+            net_return_stress_cost=18.0,
+            lower_confidence_bound=2.0,
+            max_drawdown=3.0,
+        ),
+        _regime_observation(
+            "range-eth",
+            regime="range",
+            pair="ETH/USDT:USDT",
+            window_start="2026-02-01T00:00:00+00:00",
+            window_end="2026-03-05T00:00:00+00:00",
+            net_return_normal_cost=16.0,
+            net_return_stress_cost=12.0,
+            lower_confidence_bound=1.5,
+            max_drawdown=3.0,
+        ),
+        _regime_observation(
+            "high-vol-btc",
+            regime="high_volatility",
+            pair="BTC/USDT:USDT",
+            window_start="2026-01-01T00:00:00+00:00",
+            window_end="2026-02-01T00:00:00+00:00",
+            net_return_normal_cost=-5.0,
+            net_return_stress_cost=-8.0,
+            lower_confidence_bound=-4.0,
+            max_drawdown=18.0,
+        ),
+        _regime_observation(
+            "high-vol-eth",
+            regime="high_volatility",
+            pair="ETH/USDT:USDT",
+            window_start="2026-02-01T00:00:00+00:00",
+            window_end="2026-03-05T00:00:00+00:00",
+            net_return_normal_cost=-4.0,
+            net_return_stress_cost=-7.0,
+            lower_confidence_bound=-3.5,
+            max_drawdown=16.0,
+        ),
+    ]
+
+    scorecard = build_regime_fitness_scorecard(
+        observations,
+        contract=contract,
+        baseline_observations=[],
+        thresholds=RegimePromotionThresholds(max_calendar_concentration=0.5),
+    )
+
+    assert sum(item["net_pnl_normal_cost"] for item in scorecard["scorecard_by_regime"]) > 0
+    assert scorecard["decision"] == "SHADOW_ONLY"
+    assert "high_volatility" in scorecard["blocked_regimes"]
+    assert scorecard["decision"] != "GLOBAL_SELECTOR_ELIGIBLE"
+
+
+def test_regime_evidence_unit_segments_version_changes():
+    from freqtrade_ext.bot_factory.regime_promotion import evidence_unit
+
+    first = _regime_contract(risk_policy_version="risk_v1")
+    second = _regime_contract(risk_policy_version="risk_v2")
+
+    assert evidence_unit(first) != evidence_unit(second)
+    assert evidence_unit(first)["risk_policy_version"] == "risk_v1"
+    assert evidence_unit(second)["risk_policy_version"] == "risk_v2"
+
+
+def test_regime_contract_requires_no_trade_conditions_for_exclusions():
+    from freqtrade_ext.bot_factory.regime_promotion import validate_strategy_contract
+
+    contract = _regime_contract(
+        intended_regimes=["trend_up"],
+        excluded_regimes=["high_volatility"],
+        no_trade_conditions=[],
+    )
+
+    result = validate_strategy_contract(contract)
+
+    assert result["ok"] is False
+    assert _check_by_name(
+        result["checks"],
+        "no_trade_conditions_present_for_excluded_regimes",
+    )["passed"] is False
+
+
 def test_candidate_iteration_plan_preserves_lineage_and_blocks_execution(tmp_path):
     from freqtrade_ext.bot_factory.candidate_iteration import (
         CandidateIterationInputs,

@@ -99,6 +99,48 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-20 JST for the Regime-Aware Promotion Gate local schema
+foundation.
+
+- [x] Read the proposed
+  `C:\Users\yoro4\Downloads\BOT_FACTORY_REGIME_AWARE_PROMOTION_TODO.md` and
+  reconciled it with existing Phase 2/Phase 3 safety boundaries.
+- [x] Added `docs/BOT_FACTORY_REGIME_AWARE_PROMOTION_TODO.md`. The document
+  uses local selector eligibility terminology instead of paper/live promotion
+  language and records that scorecards are necessary but not sufficient for the
+  Phase 3 paper readiness chain.
+- [x] Added `freqtrade_ext/bot_factory/regime_promotion.py` with local-only
+  schema/validation foundations for:
+  - `regime_observation_ledger_v1`;
+  - `regime_fitness_scorecard_v1`;
+  - `regime_strategy_contract_v1`;
+  - future paper/dry-run observation source rejection in the current scope;
+  - evidence-unit segmentation across strategy, signal, risk policy, regime
+    classifier, and cost model versions;
+  - regime-stratified scorecard aggregation that blocks raw aggregate PnL from
+    direct eligibility.
+- [x] Added focused coverage in `tests/test_bot_factory.py` for future
+  dry-run source rejection, range-only scoped eligibility, aggregate-positive
+  but high-volatility-unsafe rejection from global eligibility, evidence
+  version segmentation, and missing `no_trade` conditions for excluded regimes.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\regime_promotion.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "regime_"`
+- [x] Results: compile passed. The first sandboxed focused pytest hit the
+  known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`). Re-running
+  the same focused command with normal filesystem permissions passed 12 tests
+  and reached `[100%]`; pytest still emitted a non-blocking cache warning and
+  an ignored atexit cleanup ACL warning for the same temp/cache path.
+- [x] Safety result: no strategy candidate was generated; no backtest,
+  paper trading, dry-run trading, live trading, exchange order endpoint, API
+  key, secret, leverage, shorting, or process-control action was performed.
+- [ ] Remaining limitation: this is a local schema/scorecard foundation only.
+  It does not yet implement deterministic candle-based regime labeling, replay
+  existing backtest/walk-forward artifacts into ledger JSONL, integrate
+  scorecards into paper readiness, or add any future paper/dry-run observation
+  path.
+
 Checked on 2026-05-11 JST for the first calibrated Edge Discovery run.
 
 - [x] Read `docs/BOT_FACTORY_CALIBRATED_COST_TABLE.md` and used only the
@@ -2467,6 +2509,9 @@ Checked on 2026-04-26 JST.
   multiple paper/dry-run candidates can be observed in parallel only after an
   explicitly approved paper path exists; until then, implement this as
   backtest/walk-forward/local-artifact comparison only.
+- [x] Add Regime-Aware Promotion Gate local schema/scorecard foundation that
+  prevents raw aggregate PnL from becoming direct selector eligibility or
+  Phase 3 paper-readiness input.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
@@ -2533,11 +2578,20 @@ suitability, select or disable them based on current market state evidence, and
 allow `no_trade` to be the correct output when conditions are outside the
 candidate's proven edge.
 
+- [x] Add a first local-only Regime-Aware Promotion Gate foundation:
+  `docs/BOT_FACTORY_REGIME_AWARE_PROMOTION_TODO.md` and
+  `freqtrade_ext/bot_factory/regime_promotion.py`. This foundation defines
+  observation ledger, regime fitness scorecard, and strategy contract schemas;
+  rejects future paper/dry-run source types in the current scope; uses local
+  selector eligibility outcomes rather than paper/live promotion language; and
+  records that scorecard success only permits a future Phase 3 readiness input,
+  not a bypass.
 - [ ] Define a local `market_regime` artifact schema that classifies historical
   windows using only available local data. Initial coarse labels should include
-  at least `trend_up`, `trend_down_or_avoid_long`, `range`, `high_volatility`,
+  at least `trend_up`, `trend_down`, `range`, `high_volatility`,
   `low_volatility`, `liquidity_stress`, `post_spike_reversion`, and
-  `unknown/no_trade`.
+  `unknown`. Keep action decisions such as `avoid_long` in selector or
+  `no_trade` policy outputs rather than regime labels.
 - [ ] Add deterministic regime feature extraction over historical candles and
   safe structural data where present: realized volatility, trend strength,
   range efficiency, volume/liquidity proxy, funding/mark context, open-interest
@@ -2973,6 +3027,12 @@ Implemented Strategy Code Generator files:
 - Focused Strategy Code Generator coverage in `tests/test_bot_factory.py`
 - Generated strategy smoke artifacts under
   `registry/strategies/generated/LongOnlyRsiPullbackCandidate/20260504T171500Z_strategy_code_smoke/`
+
+Implemented Regime-Aware Promotion Gate foundation files:
+
+- `docs/BOT_FACTORY_REGIME_AWARE_PROMOTION_TODO.md`
+- `freqtrade_ext/bot_factory/regime_promotion.py`
+- Focused Regime-Aware Promotion Gate coverage in `tests/test_bot_factory.py`
 
 Likely future files for remaining work:
 
