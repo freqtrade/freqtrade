@@ -99,6 +99,80 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-21 JST for multi-regime selector simulation.
+
+- [x] Added local-only logic specs in
+  `freqtrade_ext/bot_factory/regime_promotion.py`:
+  `downtrend_defensive_rebound_v1` for long-only defensive rebound behavior in
+  `trend_down`, and `range_mean_reversion_v1` for box/range mean reversion in
+  `range`. The downtrend logic explicitly treats shorting as out of scope and
+  requires no-trade behavior if shorting would be required.
+- [x] Updated assumed-runtime selector ranking so multiple candidates that
+  match the same current regime are ordered by stress-cost-adjusted score
+  first, then confidence lower bound, normal-cost score, drawdown, and
+  deterministic candidate id.
+- [x] Added focused tests in `tests/test_bot_factory.py` proving:
+  - among uptrend, downtrend, and range candidates, the selector chooses the
+    candidate whose eligible regime matches the assumed runtime regime;
+  - when multiple range candidates are eligible, the selector chooses the more
+    stress-cost-robust candidate even if another candidate has higher normal
+    cost PnL.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\regime_promotion.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strong_uptrend or regime_ or downtrend or range_mean or selector"`
+- [x] Results: compile passed. The first sandboxed focused pytest hit the
+  known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`). Re-running
+  the same focused command with normal filesystem permissions passed 17 tests
+  and reached `[100%]`; pytest still emitted a non-blocking cache warning and
+  an ignored atexit cleanup ACL warning for the same temp/cache path.
+- [x] Safety result: no strategy candidate file was generated; no backtest,
+  paper trading, dry-run trading, live trading, exchange order endpoint, API
+  key, secret, leverage, shorting, or process-control action was performed.
+- [ ] Remaining limitation: the multi-regime selector still uses synthetic
+  local scorecard evidence and an assumed production runtime snapshot. It does
+  not start a bot, poll runtime status, execute orders, or prove profitability
+  on real current market data.
+
+Checked on 2026-05-20 JST for strong-uptrend selector adoption simulation.
+
+- [x] Added a local-only strong-uptrend strategy logic spec in
+  `freqtrade_ext/bot_factory/regime_promotion.py`:
+  `strong_uptrend_momentum_v1`. The spec targets `trend_up`, excludes
+  `trend_down`, `range`, `high_volatility`, `liquidity_stress`, and `unknown`,
+  and defines entry/exit/no-trade conditions using closed-candle regime,
+  moving-average slope, range-efficiency, volume/liquidity, feature
+  availability, and cost-model requirements.
+- [x] Added `RuntimeRegimeSnapshot`,
+  `selection_candidate_from_scorecard()`, and
+  `evaluate_runtime_strategy_selection()` to simulate whether a locally
+  eligible candidate would be selected under an assumed production runtime
+  regime. This selector writes local decision artifacts only and records
+  `process_control=false`, `dry_run_trading_started=false`, and
+  `promotion_authorized_by_this_command=false`.
+- [x] Added focused tests in `tests/test_bot_factory.py` proving:
+  - a scorecard-backed strong-uptrend candidate is selected when the assumed
+    runtime regime is `trend_up`, pair/timeframe are allowed, all required
+    features are present, and data quality passes;
+  - the same candidate returns `no_trade` when the assumed runtime regime
+    changes to `range`.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\regime_promotion.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strong_uptrend or regime_"`
+- [x] Results: compile passed. The first sandboxed focused pytest hit the
+  known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`). Re-running
+  the same focused command with normal filesystem permissions passed 14 tests
+  and reached `[100%]`; pytest still emitted a non-blocking cache warning and
+  an ignored atexit cleanup ACL warning for the same temp/cache path.
+- [x] Safety result: no strategy candidate file was generated; no backtest,
+  paper trading, dry-run trading, live trading, exchange order endpoint, API
+  key, secret, leverage, shorting, or process-control action was performed.
+- [ ] Remaining limitation: this is still an assumed-production selector
+  simulation over synthetic local scorecard evidence. It does not start a bot,
+  poll runtime status, execute orders, or prove profitability on real current
+  market data.
+
 Checked on 2026-05-20 JST for the Regime-Aware Promotion Gate local schema
 foundation.
 
@@ -2586,6 +2660,11 @@ candidate's proven edge.
   selector eligibility outcomes rather than paper/live promotion language; and
   records that scorecard success only permits a future Phase 3 readiness input,
   not a bypass.
+- [x] Add local assumed-production selector simulation for a strong-uptrend
+  strategy logic spec. The selector proves `strong_uptrend_momentum_v1` would
+  be selected only when the runtime regime is `trend_up`, scorecard evidence is
+  eligible, required features are available, and pair/timeframe/version checks
+  match; it returns `no_trade` when the regime changes to `range`.
 - [ ] Define a local `market_regime` artifact schema that classifies historical
   windows using only available local data. Initial coarse labels should include
   at least `trend_up`, `trend_down`, `range`, `high_volatility`,

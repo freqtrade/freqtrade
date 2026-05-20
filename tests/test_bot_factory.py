@@ -9818,6 +9818,59 @@ def _check_by_name(checks: list[dict[str, Any]], name: str) -> dict[str, Any]:
     return next(check for check in checks if check["name"] == name)
 
 
+def _selector_candidate_for_logic(
+    logic,
+    *,
+    candidate_id: str,
+    regime: str,
+    normal_returns: tuple[float, float] = (6.0, 5.0),
+    stress_returns: tuple[float, float] = (4.0, 3.0),
+    lower_confidence_bounds: tuple[float, float] = (0.8, 0.6),
+):
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RegimePromotionThresholds,
+        build_regime_fitness_scorecard,
+        contract_from_logic_spec,
+        selection_candidate_from_scorecard,
+    )
+
+    contract = contract_from_logic_spec(logic)
+    observations = [
+        _regime_observation(
+            f"{candidate_id}-btc",
+            regime=regime,
+            pair="BTC/USDT:USDT",
+            window_start="2026-01-01T00:00:00+00:00",
+            window_end="2026-02-01T00:00:00+00:00",
+            net_return_normal_cost=normal_returns[0],
+            net_return_stress_cost=stress_returns[0],
+            lower_confidence_bound=lower_confidence_bounds[0],
+        ),
+        _regime_observation(
+            f"{candidate_id}-eth",
+            regime=regime,
+            pair="ETH/USDT:USDT",
+            window_start="2026-02-01T00:00:00+00:00",
+            window_end="2026-03-05T00:00:00+00:00",
+            net_return_normal_cost=normal_returns[1],
+            net_return_stress_cost=stress_returns[1],
+            lower_confidence_bound=lower_confidence_bounds[1],
+        ),
+    ]
+    scorecard = build_regime_fitness_scorecard(
+        observations,
+        contract=contract,
+        baseline_observations=[],
+        thresholds=RegimePromotionThresholds(max_calendar_concentration=0.5),
+    )
+    assert scorecard["decision"] == "REGIME_SCOPED_SELECTOR_ELIGIBLE"
+    return selection_candidate_from_scorecard(
+        logic=logic,
+        scorecard=scorecard,
+        candidate_id=candidate_id,
+    )
+
+
 def test_regime_observation_rejects_future_dry_run_in_current_scope():
     from freqtrade_ext.bot_factory.regime_promotion import validate_observation_record
 
@@ -9906,6 +9959,346 @@ def test_regime_scorecard_scopes_range_strategy_without_global_eligibility():
     assert scorecard["raw_aggregate_pnl_promotion_allowed"] is False
     assert scorecard["phase3_readiness_required_after_scorecard"] is True
     assert scorecard["safety_scope"]["promotion_authorized_by_this_command"] is False
+
+
+def test_strong_uptrend_logic_selected_in_assumed_production_when_regime_matches():
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RegimePromotionThresholds,
+        RuntimeRegimeSnapshot,
+        build_regime_fitness_scorecard,
+        contract_from_logic_spec,
+        evaluate_runtime_strategy_selection,
+        selection_candidate_from_scorecard,
+        strong_uptrend_momentum_logic_spec,
+    )
+
+    logic = strong_uptrend_momentum_logic_spec()
+    contract = contract_from_logic_spec(logic)
+    observations = [
+        _regime_observation(
+            "trend-up-btc",
+            regime="trend_up",
+            pair="BTC/USDT:USDT",
+            window_start="2026-01-01T00:00:00+00:00",
+            window_end="2026-02-01T00:00:00+00:00",
+            net_return_normal_cost=9.0,
+            net_return_stress_cost=6.0,
+            lower_confidence_bound=1.5,
+        ),
+        _regime_observation(
+            "trend-up-eth",
+            regime="trend_up",
+            pair="ETH/USDT:USDT",
+            window_start="2026-02-01T00:00:00+00:00",
+            window_end="2026-03-05T00:00:00+00:00",
+            net_return_normal_cost=7.5,
+            net_return_stress_cost=4.0,
+            lower_confidence_bound=1.0,
+        ),
+    ]
+    no_trade_baseline = [
+        _regime_observation(
+            "trend-up-btc-no-trade",
+            regime="trend_up",
+            baseline_id="no_trade",
+            pair="BTC/USDT:USDT",
+            window_start="2026-01-01T00:00:00+00:00",
+            window_end="2026-02-01T00:00:00+00:00",
+            trade_count=0,
+            net_return_normal_cost=0.0,
+            net_return_stress_cost=0.0,
+        ),
+        _regime_observation(
+            "trend-up-eth-no-trade",
+            regime="trend_up",
+            baseline_id="no_trade",
+            pair="ETH/USDT:USDT",
+            window_start="2026-02-01T00:00:00+00:00",
+            window_end="2026-03-05T00:00:00+00:00",
+            trade_count=0,
+            net_return_normal_cost=0.0,
+            net_return_stress_cost=0.0,
+        ),
+    ]
+    scorecard = build_regime_fitness_scorecard(
+        observations,
+        contract=contract,
+        baseline_observations=no_trade_baseline,
+        thresholds=RegimePromotionThresholds(max_calendar_concentration=0.5),
+    )
+    candidate = selection_candidate_from_scorecard(
+        logic=logic,
+        scorecard=scorecard,
+        candidate_id="strong-uptrend-candidate",
+    )
+    runtime = RuntimeRegimeSnapshot(
+        current_regime="trend_up",
+        pair="BTC/USDT:USDT",
+        timeframe="5m",
+        regime_classifier_version="regime_classifier_v1",
+        data_quality_pass=True,
+        available_features=[
+            "close",
+            "volume",
+            "moving_average_slope",
+            "range_efficiency",
+            "regime_label",
+            "cost_model",
+        ],
+        production_assumption=True,
+    )
+
+    selection = evaluate_runtime_strategy_selection(
+        runtime=runtime,
+        candidates=[candidate],
+        selector_id="assumed_production_selector_test",
+    )
+
+    assert logic.logic_id == "strong_uptrend_momentum_v1"
+    assert scorecard["decision"] == "REGIME_SCOPED_SELECTOR_ELIGIBLE"
+    assert selection["action"] == "select"
+    assert selection["selected_candidate_id"] == "strong-uptrend-candidate"
+    assert selection["selected_logic_id"] == "strong_uptrend_momentum_v1"
+    assert selection["would_select_in_production_assumption"] is True
+    assert selection["safety_scope"]["process_control"] is False
+    assert selection["safety_scope"]["dry_run_trading_started"] is False
+
+
+def test_strong_uptrend_logic_not_selected_when_runtime_regime_changes_to_range():
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RegimePromotionThresholds,
+        RuntimeRegimeSnapshot,
+        build_regime_fitness_scorecard,
+        contract_from_logic_spec,
+        evaluate_runtime_strategy_selection,
+        selection_candidate_from_scorecard,
+        strong_uptrend_momentum_logic_spec,
+    )
+
+    logic = strong_uptrend_momentum_logic_spec()
+    contract = contract_from_logic_spec(logic)
+    scorecard = build_regime_fitness_scorecard(
+        [
+            _regime_observation(
+                "trend-up-btc",
+                regime="trend_up",
+                pair="BTC/USDT:USDT",
+                window_start="2026-01-01T00:00:00+00:00",
+                window_end="2026-02-01T00:00:00+00:00",
+                net_return_normal_cost=9.0,
+                net_return_stress_cost=6.0,
+                lower_confidence_bound=1.5,
+            ),
+            _regime_observation(
+                "trend-up-eth",
+                regime="trend_up",
+                pair="ETH/USDT:USDT",
+                window_start="2026-02-01T00:00:00+00:00",
+                window_end="2026-03-05T00:00:00+00:00",
+                net_return_normal_cost=7.5,
+                net_return_stress_cost=4.0,
+                lower_confidence_bound=1.0,
+            ),
+        ],
+        contract=contract,
+        baseline_observations=[],
+        thresholds=RegimePromotionThresholds(max_calendar_concentration=0.5),
+    )
+    candidate = selection_candidate_from_scorecard(
+        logic=logic,
+        scorecard=scorecard,
+        candidate_id="strong-uptrend-candidate",
+    )
+    runtime = RuntimeRegimeSnapshot(
+        current_regime="range",
+        pair="BTC/USDT:USDT",
+        timeframe="5m",
+        regime_classifier_version="regime_classifier_v1",
+        data_quality_pass=True,
+        available_features=[
+            "close",
+            "volume",
+            "moving_average_slope",
+            "range_efficiency",
+            "regime_label",
+            "cost_model",
+        ],
+        production_assumption=True,
+    )
+
+    selection = evaluate_runtime_strategy_selection(runtime=runtime, candidates=[candidate])
+
+    assert selection["action"] == "no_trade"
+    assert selection["selected_candidate_id"] is None
+    assert selection["would_select_in_production_assumption"] is False
+    evaluated = selection["evaluated_candidates"][0]
+    assert "runtime_regime_eligible" in evaluated["reason_codes"]
+
+
+def test_selector_chooses_regime_matching_logic_from_multiple_candidates():
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RuntimeRegimeSnapshot,
+        downtrend_defensive_rebound_logic_spec,
+        evaluate_runtime_strategy_selection,
+        range_mean_reversion_logic_spec,
+        strong_uptrend_momentum_logic_spec,
+    )
+
+    uptrend_logic = strong_uptrend_momentum_logic_spec()
+    downtrend_logic = downtrend_defensive_rebound_logic_spec()
+    range_logic = range_mean_reversion_logic_spec()
+    candidates = [
+        _selector_candidate_for_logic(
+            uptrend_logic,
+            candidate_id="uptrend-candidate",
+            regime="trend_up",
+            normal_returns=(9.0, 7.0),
+            stress_returns=(6.0, 4.0),
+            lower_confidence_bounds=(1.5, 1.0),
+        ),
+        _selector_candidate_for_logic(
+            downtrend_logic,
+            candidate_id="downtrend-candidate",
+            regime="trend_down",
+            normal_returns=(5.5, 4.5),
+            stress_returns=(3.5, 2.5),
+            lower_confidence_bounds=(0.8, 0.6),
+        ),
+        _selector_candidate_for_logic(
+            range_logic,
+            candidate_id="range-candidate",
+            regime="range",
+            normal_returns=(4.5, 4.0),
+            stress_returns=(3.0, 2.5),
+            lower_confidence_bounds=(0.7, 0.5),
+        ),
+    ]
+    all_features = sorted({
+        feature
+        for logic in (uptrend_logic, downtrend_logic, range_logic)
+        for feature in logic.required_features
+    })
+
+    downtrend_selection = evaluate_runtime_strategy_selection(
+        runtime=RuntimeRegimeSnapshot(
+            current_regime="trend_down",
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            regime_classifier_version="regime_classifier_v1",
+            data_quality_pass=True,
+            available_features=all_features,
+            production_assumption=True,
+        ),
+        candidates=candidates,
+        selector_id="multi_regime_selector_test_downtrend",
+    )
+    range_selection = evaluate_runtime_strategy_selection(
+        runtime=RuntimeRegimeSnapshot(
+            current_regime="range",
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            regime_classifier_version="regime_classifier_v1",
+            data_quality_pass=True,
+            available_features=all_features,
+            production_assumption=True,
+        ),
+        candidates=candidates,
+        selector_id="multi_regime_selector_test_range",
+    )
+    uptrend_selection = evaluate_runtime_strategy_selection(
+        runtime=RuntimeRegimeSnapshot(
+            current_regime="trend_up",
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            regime_classifier_version="regime_classifier_v1",
+            data_quality_pass=True,
+            available_features=all_features,
+            production_assumption=True,
+        ),
+        candidates=candidates,
+        selector_id="multi_regime_selector_test_uptrend",
+    )
+
+    assert downtrend_logic.logic_id == "downtrend_defensive_rebound_v1"
+    assert range_logic.logic_id == "range_mean_reversion_v1"
+    assert downtrend_selection["action"] == "select"
+    assert downtrend_selection["selected_candidate_id"] == "downtrend-candidate"
+    assert downtrend_selection["selected_logic_id"] == "downtrend_defensive_rebound_v1"
+    assert range_selection["action"] == "select"
+    assert range_selection["selected_candidate_id"] == "range-candidate"
+    assert range_selection["selected_logic_id"] == "range_mean_reversion_v1"
+    assert uptrend_selection["action"] == "select"
+    assert uptrend_selection["selected_candidate_id"] == "uptrend-candidate"
+    assert uptrend_selection["selected_logic_id"] == "strong_uptrend_momentum_v1"
+    rejected_uptrend = next(
+        item
+        for item in downtrend_selection["evaluated_candidates"]
+        if item["candidate_id"] == "uptrend-candidate"
+    )
+    assert "runtime_regime_eligible" in rejected_uptrend["reason_codes"]
+
+
+def test_selector_ranks_same_regime_candidates_by_stress_adjusted_score():
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RuntimeRegimeSnapshot,
+        evaluate_runtime_strategy_selection,
+        range_mean_reversion_logic_spec,
+    )
+
+    higher_normal_logic = range_mean_reversion_logic_spec(
+        strategy_id="long_only_range_mean_reversion_higher_normal",
+        strategy_version="range_mean_reversion_higher_normal_v1",
+    )
+    robust_logic = range_mean_reversion_logic_spec(
+        strategy_id="long_only_range_mean_reversion_robust",
+        strategy_version="range_mean_reversion_robust_v1",
+    )
+    higher_normal_candidate = _selector_candidate_for_logic(
+        higher_normal_logic,
+        candidate_id="range-higher-normal-candidate",
+        regime="range",
+        normal_returns=(10.0, 9.0),
+        stress_returns=(1.5, 1.0),
+        lower_confidence_bounds=(0.3, 0.2),
+    )
+    robust_candidate = _selector_candidate_for_logic(
+        robust_logic,
+        candidate_id="range-robust-candidate",
+        regime="range",
+        normal_returns=(8.0, 7.0),
+        stress_returns=(5.0, 4.5),
+        lower_confidence_bounds=(0.9, 0.8),
+    )
+
+    selection = evaluate_runtime_strategy_selection(
+        runtime=RuntimeRegimeSnapshot(
+            current_regime="range",
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            regime_classifier_version="regime_classifier_v1",
+            data_quality_pass=True,
+            available_features=sorted(robust_logic.required_features),
+            production_assumption=True,
+        ),
+        candidates=[higher_normal_candidate, robust_candidate],
+        selector_id="same_regime_selector_rank_test",
+    )
+
+    summaries = {
+        item["candidate_id"]: item["scorecard_summary"]
+        for item in selection["evaluated_candidates"]
+    }
+    assert selection["action"] == "select"
+    assert selection["selected_candidate_id"] == "range-robust-candidate"
+    assert "selected_highest_stress_adjusted_candidate" in selection["reason_codes"]
+    assert (
+        summaries["range-higher-normal-candidate"]["net_pnl_normal_cost"]
+        > summaries["range-robust-candidate"]["net_pnl_normal_cost"]
+    )
+    assert (
+        summaries["range-robust-candidate"]["net_pnl_stress_cost"]
+        > summaries["range-higher-normal-candidate"]["net_pnl_stress_cost"]
+    )
 
 
 def test_regime_scorecard_blocks_global_when_high_volatility_crashes():

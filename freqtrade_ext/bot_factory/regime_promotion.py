@@ -118,6 +118,39 @@ class RegimeStrategyContract:
         return ",".join(sorted(str(item) for item in self.intended_regimes))
 
 
+@dataclass(frozen=True)
+class RegimeStrategyLogicSpec:
+    logic_id: str
+    strategy_id: str
+    strategy_version: str
+    signal_version: str
+    intended_regimes: Sequence[str]
+    excluded_regimes: Sequence[str]
+    entry_conditions: Sequence[str]
+    exit_conditions: Sequence[str]
+    no_trade_conditions: Sequence[str]
+    required_features: Sequence[str]
+    risk_policy_version: str
+    regime_classifier_version: str
+    cost_model_id: str
+    allowed_pairs: Sequence[str]
+    allowed_timeframes: Sequence[str]
+    reviewer_notes: Sequence[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class RuntimeRegimeSnapshot:
+    current_regime: str
+    pair: str
+    timeframe: str
+    regime_classifier_version: str
+    data_quality_pass: bool
+    available_features: Sequence[str]
+    production_assumption: bool = False
+    process_control_allowed: bool = False
+    paper_or_dry_run_process_running: bool = False
+
+
 def observation_ledger_schema() -> dict[str, Any]:
     return {
         "factory": "regime_observation_ledger_schema",
@@ -167,6 +200,211 @@ def regime_strategy_contract_schema() -> dict[str, Any]:
         ],
         "market_regimes": sorted(MARKET_REGIMES),
     }
+
+
+def strong_uptrend_momentum_logic_spec(
+    *,
+    strategy_id: str = "long_only_strong_uptrend_momentum",
+    strategy_version: str = "strong_uptrend_momentum_v1",
+    signal_version: str = "strong_uptrend_signal_v1",
+    risk_policy_version: str = "long_only_risk_v1",
+    regime_classifier_version: str = "regime_classifier_v1",
+    cost_model_id: str = "cost_model_v1",
+    allowed_pairs: Sequence[str] = ("BTC/USDT:USDT", "ETH/USDT:USDT"),
+    allowed_timeframes: Sequence[str] = ("5m",),
+) -> RegimeStrategyLogicSpec:
+    return RegimeStrategyLogicSpec(
+        logic_id="strong_uptrend_momentum_v1",
+        strategy_id=strategy_id,
+        strategy_version=strategy_version,
+        signal_version=signal_version,
+        intended_regimes=("trend_up",),
+        excluded_regimes=("trend_down", "range", "high_volatility", "liquidity_stress", "unknown"),
+        entry_conditions=(
+            "closed-candle regime classifier emits trend_up",
+            "short moving average slope remains positive",
+            "close remains above medium moving average",
+            "range efficiency confirms directional follow-through",
+            "volume/liquidity proxy is not degraded",
+        ),
+        exit_conditions=(
+            "closed-candle regime leaves trend_up",
+            "close loses medium moving average",
+            "range efficiency collapses into mixed/range behavior",
+            "data quality or required feature check fails",
+        ),
+        no_trade_conditions=(
+            "market_regime is not trend_up",
+            "high_volatility, liquidity_stress, or unknown regime is active",
+            "required regime, trend, volume, or cost features are missing",
+            "scorecard eligibility is not regime-scoped or global",
+        ),
+        required_features=(
+            "close",
+            "volume",
+            "moving_average_slope",
+            "range_efficiency",
+            "regime_label",
+            "cost_model",
+        ),
+        risk_policy_version=risk_policy_version,
+        regime_classifier_version=regime_classifier_version,
+        cost_model_id=cost_model_id,
+        allowed_pairs=tuple(allowed_pairs),
+        allowed_timeframes=tuple(allowed_timeframes),
+        reviewer_notes=(
+            "Local selector-eligibility logic only; no paper, dry-run, live, or order process.",
+        ),
+    )
+
+
+def downtrend_defensive_rebound_logic_spec(
+    *,
+    strategy_id: str = "long_only_downtrend_defensive_rebound",
+    strategy_version: str = "downtrend_defensive_rebound_v1",
+    signal_version: str = "downtrend_rebound_signal_v1",
+    risk_policy_version: str = "long_only_risk_v1",
+    regime_classifier_version: str = "regime_classifier_v1",
+    cost_model_id: str = "cost_model_v1",
+    allowed_pairs: Sequence[str] = ("BTC/USDT:USDT", "ETH/USDT:USDT"),
+    allowed_timeframes: Sequence[str] = ("5m",),
+) -> RegimeStrategyLogicSpec:
+    return RegimeStrategyLogicSpec(
+        logic_id="downtrend_defensive_rebound_v1",
+        strategy_id=strategy_id,
+        strategy_version=strategy_version,
+        signal_version=signal_version,
+        intended_regimes=("trend_down",),
+        excluded_regimes=("trend_up", "range", "high_volatility", "liquidity_stress", "unknown"),
+        entry_conditions=(
+            "closed-candle regime classifier emits trend_down",
+            "downside exhaustion proxy confirms selling pressure is stretched",
+            "close reclaims short moving average after an oversold flush",
+            "range efficiency confirms a controlled rebound rather than free fall",
+            "volume/liquidity proxy is not degraded",
+        ),
+        exit_conditions=(
+            "closed-candle regime leaves trend_down",
+            "rebound reclaim fails and close loses the short moving average",
+            "high_volatility, liquidity_stress, or unknown regime becomes active",
+            "data quality or required feature check fails",
+        ),
+        no_trade_conditions=(
+            "market_regime is not trend_down",
+            "shorting is required for the thesis",
+            "high_volatility, liquidity_stress, or unknown regime is active",
+            "required regime, exhaustion, reclaim, volume, or cost features are missing",
+            "scorecard eligibility is not regime-scoped or global",
+        ),
+        required_features=(
+            "close",
+            "volume",
+            "moving_average_slope",
+            "range_efficiency",
+            "downside_exhaustion",
+            "reclaim_confirmation",
+            "regime_label",
+            "cost_model",
+        ),
+        risk_policy_version=risk_policy_version,
+        regime_classifier_version=regime_classifier_version,
+        cost_model_id=cost_model_id,
+        allowed_pairs=tuple(allowed_pairs),
+        allowed_timeframes=tuple(allowed_timeframes),
+        reviewer_notes=(
+            "Local selector-eligibility logic only; no paper, dry-run, live, or order process.",
+            "Long-only defensive rebound logic; shorting is explicitly out of scope.",
+        ),
+    )
+
+
+def range_mean_reversion_logic_spec(
+    *,
+    strategy_id: str = "long_only_range_mean_reversion",
+    strategy_version: str = "range_mean_reversion_v1",
+    signal_version: str = "range_reversion_signal_v1",
+    risk_policy_version: str = "long_only_risk_v1",
+    regime_classifier_version: str = "regime_classifier_v1",
+    cost_model_id: str = "cost_model_v1",
+    allowed_pairs: Sequence[str] = ("BTC/USDT:USDT", "ETH/USDT:USDT"),
+    allowed_timeframes: Sequence[str] = ("5m",),
+) -> RegimeStrategyLogicSpec:
+    return RegimeStrategyLogicSpec(
+        logic_id="range_mean_reversion_v1",
+        strategy_id=strategy_id,
+        strategy_version=strategy_version,
+        signal_version=signal_version,
+        intended_regimes=("range",),
+        excluded_regimes=("trend_up", "trend_down", "high_volatility", "liquidity_stress", "unknown"),
+        entry_conditions=(
+            "closed-candle regime classifier emits range",
+            "price tests the lower range band without a confirmed downside breakout",
+            "mean-reversion oscillator confirms stretched position inside the box",
+            "range width is sufficient to clear normal and stress cost assumptions",
+            "volume/liquidity proxy is not degraded",
+        ),
+        exit_conditions=(
+            "price reverts to the range midpoint or upper range band",
+            "closed-candle regime leaves range",
+            "directional range efficiency indicates breakout risk",
+            "data quality or required feature check fails",
+        ),
+        no_trade_conditions=(
+            "market_regime is not range",
+            "trend_up, trend_down, high_volatility, liquidity_stress, or unknown regime is active",
+            "range band, oscillator, volume, or cost features are missing",
+            "range width is too narrow after cost assumptions",
+            "scorecard eligibility is not regime-scoped or global",
+        ),
+        required_features=(
+            "close",
+            "volume",
+            "range_band_position",
+            "range_width",
+            "mean_reversion_oscillator",
+            "regime_label",
+            "cost_model",
+        ),
+        risk_policy_version=risk_policy_version,
+        regime_classifier_version=regime_classifier_version,
+        cost_model_id=cost_model_id,
+        allowed_pairs=tuple(allowed_pairs),
+        allowed_timeframes=tuple(allowed_timeframes),
+        reviewer_notes=(
+            "Local selector-eligibility logic only; no paper, dry-run, live, or order process.",
+        ),
+    )
+
+
+def contract_from_logic_spec(
+    logic: RegimeStrategyLogicSpec,
+    *,
+    minimum_evidence: dict[str, Any] | None = None,
+    maximum_drawdown_by_regime: dict[str, float] | None = None,
+    cost_sensitivity_limits: dict[str, Any] | None = None,
+    cooldown_after_regime_change: int = 3,
+) -> RegimeStrategyContract:
+    return RegimeStrategyContract(
+        strategy_version=logic.strategy_version,
+        signal_version=logic.signal_version,
+        risk_policy_version=logic.risk_policy_version,
+        regime_classifier_version=logic.regime_classifier_version,
+        cost_model_id=logic.cost_model_id,
+        intended_regimes=tuple(logic.intended_regimes),
+        excluded_regimes=tuple(logic.excluded_regimes),
+        activation_conditions=tuple(logic.entry_conditions),
+        no_trade_conditions=tuple(logic.no_trade_conditions),
+        regime_shift_stop_conditions=tuple(logic.exit_conditions),
+        required_features=tuple(logic.required_features),
+        minimum_evidence=minimum_evidence or {"min_window_count": 2, "min_trade_count": 10},
+        maximum_drawdown_by_regime=maximum_drawdown_by_regime
+        or {str(regime): 8.0 for regime in logic.intended_regimes},
+        cost_sensitivity_limits=cost_sensitivity_limits
+        or {"normal_cost_bps_max": 10.0, "stress_cost_bps_max": 20.0},
+        cooldown_after_regime_change=cooldown_after_regime_change,
+        allowed_pairs=tuple(logic.allowed_pairs),
+        allowed_timeframes=tuple(logic.allowed_timeframes),
+    )
 
 
 def validate_observation_record(
@@ -467,6 +705,80 @@ def write_regime_scorecard_artifacts(
     return scorecard_path, report_path
 
 
+def evaluate_runtime_strategy_selection(
+    *,
+    runtime: RuntimeRegimeSnapshot,
+    candidates: Sequence[dict[str, Any]],
+    selector_id: str = "regime_selector_v1",
+    reviewer_notes: Sequence[str] = (),
+) -> dict[str, Any]:
+    evaluated = [
+        _runtime_candidate_decision(runtime=runtime, candidate=candidate)
+        for candidate in candidates
+    ]
+    selectable = [item for item in evaluated if item["selectable"]]
+    selected = sorted(
+        selectable,
+        key=lambda item: (
+            item["scorecard_summary"].get("net_pnl_stress_cost", 0.0),
+            item["scorecard_summary"].get("lower_confidence_bound", 0.0),
+            item["scorecard_summary"].get("net_pnl_normal_cost", 0.0),
+            -(item["scorecard_summary"].get("max_drawdown", 0.0) or 0.0),
+            str(item["candidate_id"]),
+        ),
+        reverse=True,
+    )[0] if selectable else None
+    action = "select" if selected else "no_trade"
+    reason_codes = (
+        ["selected_regime_scoped_candidate", "selected_highest_stress_adjusted_candidate"]
+        if selected
+        else ["no_candidate_matched_runtime_regime"]
+    )
+    if runtime.production_assumption:
+        reason_codes.append("production_running_assumption_only_no_process_control")
+    return {
+        "factory": "runtime_regime_strategy_selector",
+        "schema_version": "runtime_regime_selector_v1",
+        "selector_id": selector_id,
+        "created_at": _utc_now(),
+        "runtime": asdict(runtime),
+        "action": action,
+        "selected_candidate_id": selected["candidate_id"] if selected else None,
+        "selected_strategy_id": selected["strategy_id"] if selected else None,
+        "selected_logic_id": selected["logic_id"] if selected else None,
+        "would_select_in_production_assumption": bool(selected),
+        "reason_codes": reason_codes,
+        "evaluated_candidates": evaluated,
+        "reviewer_notes": list(reviewer_notes),
+        "safety_scope": _safety_scope(),
+    }
+
+
+def selection_candidate_from_scorecard(
+    *,
+    logic: RegimeStrategyLogicSpec,
+    scorecard: dict[str, Any],
+    candidate_id: str,
+) -> dict[str, Any]:
+    return {
+        "candidate_id": candidate_id,
+        "strategy_id": logic.strategy_id,
+        "logic_id": logic.logic_id,
+        "strategy_version": logic.strategy_version,
+        "signal_version": logic.signal_version,
+        "risk_policy_version": logic.risk_policy_version,
+        "regime_classifier_version": logic.regime_classifier_version,
+        "cost_model_id": logic.cost_model_id,
+        "allowed_pairs": list(logic.allowed_pairs),
+        "allowed_timeframes": list(logic.allowed_timeframes),
+        "required_features": list(logic.required_features),
+        "eligible_regimes": list(scorecard.get("eligible_regimes", [])),
+        "blocked_regimes": list(scorecard.get("blocked_regimes", [])),
+        "scorecard_decision": scorecard.get("decision"),
+        "scorecard": scorecard,
+    }
+
+
 def _regime_row(
     regime: str,
     candidate_observations: Sequence[dict[str, Any]],
@@ -586,6 +898,105 @@ def _regime_row(
         "pair_concentration": pair_concentration,
         "calendar_concentration": calendar_concentration,
         "data_quality_pass": data_quality_pass,
+    }
+
+
+def _runtime_candidate_decision(
+    *, runtime: RuntimeRegimeSnapshot, candidate: dict[str, Any]
+) -> dict[str, Any]:
+    scorecard = candidate.get("scorecard", {})
+    scorecard_rows = [
+        row
+        for row in scorecard.get("scorecard_by_regime", [])
+        if row.get("market_regime") == runtime.current_regime
+    ]
+    row = scorecard_rows[0] if scorecard_rows else {}
+    required_features = set(str(item) for item in candidate.get("required_features", []))
+    available_features = set(str(item) for item in runtime.available_features)
+    missing_features = sorted(required_features - available_features)
+    checks = [
+        _check(
+            "runtime_process_control_disabled",
+            runtime.process_control_allowed is False
+            and runtime.paper_or_dry_run_process_running is False,
+            {
+                "process_control_allowed": runtime.process_control_allowed,
+                "paper_or_dry_run_process_running": runtime.paper_or_dry_run_process_running,
+            },
+        ),
+        _check(
+            "runtime_data_quality_passed",
+            runtime.data_quality_pass,
+            {"data_quality_pass": runtime.data_quality_pass},
+        ),
+        _check(
+            "runtime_regime_predeclared",
+            runtime.current_regime in MARKET_REGIMES,
+            {"current_regime": runtime.current_regime},
+        ),
+        _check(
+            "runtime_regime_eligible",
+            runtime.current_regime in set(candidate.get("eligible_regimes", [])),
+            {
+                "current_regime": runtime.current_regime,
+                "eligible_regimes": candidate.get("eligible_regimes", []),
+            },
+        ),
+        _check(
+            "runtime_regime_not_blocked",
+            runtime.current_regime not in set(candidate.get("blocked_regimes", [])),
+            {
+                "current_regime": runtime.current_regime,
+                "blocked_regimes": candidate.get("blocked_regimes", []),
+            },
+        ),
+        _check(
+            "runtime_pair_allowed",
+            runtime.pair in set(candidate.get("allowed_pairs", [])),
+            {"pair": runtime.pair, "allowed_pairs": candidate.get("allowed_pairs", [])},
+        ),
+        _check(
+            "runtime_timeframe_allowed",
+            runtime.timeframe in set(candidate.get("allowed_timeframes", [])),
+            {
+                "timeframe": runtime.timeframe,
+                "allowed_timeframes": candidate.get("allowed_timeframes", []),
+            },
+        ),
+        _check(
+            "runtime_regime_classifier_version_matches",
+            runtime.regime_classifier_version == candidate.get("regime_classifier_version"),
+            {
+                "runtime_regime_classifier_version": runtime.regime_classifier_version,
+                "candidate_regime_classifier_version": candidate.get("regime_classifier_version"),
+            },
+        ),
+        _check("runtime_required_features_available", not missing_features, {"missing_features": missing_features}),
+        _check(
+            "scorecard_decision_selector_eligible",
+            candidate.get("scorecard_decision")
+            in {"GLOBAL_SELECTOR_ELIGIBLE", "REGIME_SCOPED_SELECTOR_ELIGIBLE"},
+            {"scorecard_decision": candidate.get("scorecard_decision")},
+        ),
+    ]
+    selectable = all(check["passed"] for check in checks)
+    return {
+        "candidate_id": candidate.get("candidate_id"),
+        "strategy_id": candidate.get("strategy_id"),
+        "logic_id": candidate.get("logic_id"),
+        "selectable": selectable,
+        "checks": checks,
+        "reason_codes": ["runtime_selection_passed"] if selectable else [
+            check["name"] for check in checks if not check["passed"]
+        ],
+        "scorecard_summary": {
+            "decision": candidate.get("scorecard_decision"),
+            "current_regime": runtime.current_regime,
+            "net_pnl_normal_cost": row.get("net_pnl_normal_cost", 0.0),
+            "net_pnl_stress_cost": row.get("net_pnl_stress_cost", 0.0),
+            "lower_confidence_bound": row.get("lower_confidence_bound", 0.0),
+            "max_drawdown": row.get("max_drawdown", 0.0),
+        },
     }
 
 

@@ -4,7 +4,7 @@ Status: proposed follow-up for the Regime-Aware Strategy Portfolio and Shadow
 Strategy Observation direction.
 
 Created: 2026-05-19 JST.
-Updated: 2026-05-20 JST after local implementation review.
+Updated: 2026-05-21 JST after multi-regime local selector simulation.
 
 ## Goal
 
@@ -341,6 +341,11 @@ Implemented foundation:
 - [x] Validate that excluded regimes require explicit `no_trade_conditions`.
 - [x] Validate that regime-shift stop conditions, allowed pairs, and allowed
   timeframes are explicit.
+- [x] Add local-only logic specs for strong uptrend, long-only downtrend
+  defensive rebound, and range mean reversion candidates.
+- [x] Add assumed-runtime selector simulation proving that multiple candidates
+  choose the candidate matching the current regime, and that same-regime
+  candidates are ranked by stress-cost robustness before normal-cost PnL.
 
 Remaining TODO:
 
