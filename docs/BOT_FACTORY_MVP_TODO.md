@@ -99,6 +99,53 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-21 JST for web-researched bull-regime strategy candidate.
+
+- [x] Researched trend-following references before implementation:
+  - arXiv `2009.12155`, "A Decade of Evidence of Trend Following Investing in
+    Cryptocurrencies", which frames cryptocurrencies as suitable candidates
+    for trend-following tests.
+  - Turtle/Donchian trend-following rules describing channel breakout entries
+    and rule-based exits.
+  - arXiv `2602.11708`, which describes crypto trend following with volatility
+    and regime-aware components.
+  - SSRN `5775962`, which reports regime-dependent Bollinger breakout /
+    pullback behavior in BTC/USDT.
+- [x] Added `user_data/strategies/DonchianTrendBullStrategy.py`, a
+  long-only 5m Donchian breakout + EMA trend filter strategy for historical
+  bull-regime testing. The strategy uses no short entries, no leverage hook,
+  no exchange order API calls, and no future-data `shift(-1)`.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile user_data\strategies\DonchianTrendBullStrategy.py`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies\DonchianTrendBullStrategy.py`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy DonchianTrendBullStrategy --strategy-path user_data\strategies --timeframe 5m --timerange 20240202-20240305 --pairs BTC/USDT:USDT ETH/USDT:USDT --ohlcv-file user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --ohlcv-file user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --run-id historical_uptrend_20240202_20240305_v3`
+- [x] Results: compile passed; static check passed with no findings; OHLCV
+  quality checks passed for BTC and ETH 5m parquet. The first backtest attempt
+  failed because sandboxed networking blocked Bybit public market metadata
+  loading. Re-running the same historical backtest with normal network
+  permission completed successfully.
+- [x] Backtest result for `2024-02-02` to `2024-03-05` on BTC/USDT:USDT and
+  ETH/USDT:USDT: total return `7.5523%`, absolute profit `75.523 USDT` on a
+  `1000 USDT` starting balance, `7` trades, profit factor `14.8352`, max
+  drawdown `0.3458%`, Sharpe `2.5307`, Sortino `117.6785`. The gate still
+  recommends `fail` because `7` trades is below the default `200` minimum.
+- [x] Same-window simple hold comparison using `100 USDT` per pair:
+  BTC hold `58.9099%`, ETH hold `57.7204%`, combined same-stake hold profit
+  about `116.6303 USDT` or `11.6630%` of the `1000 USDT` wallet. The strategy
+  reduced drawdown but did not beat this strong-window hold baseline.
+- [x] Artifacts:
+  - `data/backtests/DonchianTrendBullStrategy/historical_uptrend_20240202_20240305_v3/metrics.json`
+  - `data/backtests/DonchianTrendBullStrategy/historical_uptrend_20240202_20240305_v3/report.md`
+  - `data/backtests/DonchianTrendBullStrategy/historical_uptrend_20240202_20240305_v3/trades.csv`
+- [x] Safety result: historical backtesting only. No `freqtrade trade`, paper
+  trading, dry-run trading, live trading, exchange order placement, API key or
+  secret usage, leverage change, shorting, or process-control action was
+  performed.
+- [ ] Remaining limitation: this is one deliberately selected bull window, not
+  walk-forward evidence. It should be treated as a research candidate that
+  needs broader regime-sliced testing and a hold/no-trade baseline report
+  before it can feed selector eligibility.
+
 Checked on 2026-05-21 JST for historical uptrend selector replay.
 
 - [x] Used local Bybit futures OHLCV parquet only:
