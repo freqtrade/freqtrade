@@ -99,6 +99,44 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-21 JST for historical uptrend selector replay.
+
+- [x] Used local Bybit futures OHLCV parquet only:
+  `user_data/data/bybit/futures/BTC_USDT_USDT-5m-futures.parquet` and
+  `user_data/data/bybit/futures/ETH_USDT_USDT-5m-futures.parquet`.
+  Both 5m quality checks passed with no duplicate timestamps, no missing
+  intervals, and no findings.
+- [x] Tested the historical uptrend window
+  `2024-02-02T00:00:00Z` to `2024-03-04T23:55:00Z`. In this window:
+  BTC close-to-close return was `58.8072%` with `6.4605%` max drawdown; ETH
+  close-to-close return was `57.7765%` with `6.8303%` max drawdown.
+- [x] Replayed the runtime selector with three candidates:
+  `strong_uptrend_momentum_v1`,
+  `downtrend_defensive_rebound_v1`, and `range_mean_reversion_v1`.
+  The strong-uptrend scorecard returned
+  `REGIME_SCOPED_SELECTOR_ELIGIBLE`, and the assumed runtime selector selected
+  `strong-uptrend-historical-ohlcv-candidate` /
+  `strong_uptrend_momentum_v1`. The downtrend and range companion candidates
+  were not selected during the `trend_up` runtime snapshot.
+- [x] Artifacts:
+  - `data/regime_selector_replays/historical_uptrend_20240202_20240304/selector_replay.json`
+  - `data/regime_selector_replays/historical_uptrend_20240202_20240304/selector_replay_report.md`
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --timeframe 5m`
+  - local `.venv` Python replay using `build_regime_fitness_scorecard()`,
+    `selection_candidate_from_scorecard()`, and
+    `evaluate_runtime_strategy_selection()`.
+- [x] Safety result: no strategy candidate file was generated; no Freqtrade
+  backtest, paper trading, dry-run trading, live trading, exchange order
+  endpoint, API key, secret, leverage, shorting, or process-control action was
+  performed.
+- [ ] Remaining limitation: this replay is a close-to-close historical OHLCV
+  proxy for selector adoption, not a generated Freqtrade strategy backtest.
+  Calendar concentration was relaxed to `1.0` because the purpose was to test
+  one explicitly selected past uptrend window, not to approve global promotion
+  or paper/live readiness.
+
 Checked on 2026-05-21 JST for multi-regime selector simulation.
 
 - [x] Added local-only logic specs in
