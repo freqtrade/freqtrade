@@ -46,6 +46,7 @@ def build_checked_freqai_backtest_command(
     freqaimodel: str | None = None,
     freqaimodel_path: str | None = None,
     freqai_identifier: str | None = None,
+    candidate_id: str | None = None,
     data_format_ohlcv: str = "parquet",
     userdir: str | None = None,
     datadir: str | None = None,
@@ -94,6 +95,8 @@ def build_checked_freqai_backtest_command(
         mlflow_tracking_uri=mlflow_tracking_uri,
         mlflow_experiment=mlflow_experiment,
     )
+    if candidate_id:
+        cmd.extend(["--candidate-id", candidate_id])
     return cmd
 
 
@@ -195,6 +198,7 @@ def build_training_manifest(
     artifact_paths: dict[str, Path | None],
     notes: Iterable[str] | None = None,
     status: str | None = None,
+    candidate_identity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     completed_stages = [stage for stage in stages if stage.status == "completed"]
     failed_stages = [stage for stage in stages if stage.status != "completed"]
@@ -227,6 +231,7 @@ def build_training_manifest(
             for name, path in artifact_paths.items()
             if path is not None
         },
+        "candidate_identity": candidate_identity,
         "notes": list(notes or []),
         "safety_scope": {
             "command": "freqtrade backtesting only through checked wrappers",

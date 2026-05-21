@@ -99,6 +99,56 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-21 JST for canonical candidate identity foundation.
+
+- [x] Added `freqtrade_ext/bot_factory/candidate_identity.py` with the
+  canonical `strategy_candidate_identity_v1` shape, required identity fields,
+  artifact identity comparison, and explicit migration-map support for future
+  approved version remaps.
+- [x] Embedded `candidate_identity` into generated strategy metadata, checked
+  historical backtest/FreqAI backtest outputs, FreqAI training manifests,
+  observation ledger rows, regime fitness scorecards, and selector candidates.
+  Candidate evaluation now compares generated metadata identity against
+  backtest, walk-forward, and training artifacts when those artifacts carry an
+  identity.
+- [x] Bound the real `DonchianTrendBullStrategy` source file to the selector
+  logic spec `strong_uptrend_momentum_v1` through the same canonical identity:
+  `strong-uptrend-historical-ohlcv-candidate`.
+- [x] Added focused tests proving that:
+  - changing `signal_version`, `risk_policy_version`,
+    `regime_classifier_version`, or `cost_model_id` segments evidence;
+  - an observation row with mismatched identity fails validation;
+  - a scorecard built for one strategy cannot be consumed by a selector
+    candidate for a different strategy;
+  - `DonchianTrendBullStrategy` and `strong_uptrend_momentum_v1` resolve to the
+    same identity object.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_identity.py freqtrade_ext\bot_factory\regime_promotion.py freqtrade_ext\bot_factory\backtest_results.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\freqai_backtest.py freqtrade_ext\bot_factory\freqai_training.py scripts\bot_factory_run_backtest.py scripts\bot_factory_run_freqai_backtest.py scripts\bot_factory_run_freqai_training.py tests\test_bot_factory.py user_data\strategies\DonchianTrendBullStrategy.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "identity or regime"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator_writes_safe_markdown_and_metadata or candidate_evaluation or candidate_manifest or candidate_ranking"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "training_backtest_command or training_manifest or freqai_training"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_backtest.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies`
+- [x] Results: compile passed. The first sandboxed focused pytest attempts hit
+  the known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`). Re-running
+  the same focused commands with normal filesystem permissions passed 22
+  identity/regime tests, 17 candidate evaluation/ranking tests, and 3
+  training-related tests. The wrapper `--help` checks exited `0`.
+- [x] Static strategy check result: `ok=true`, `files_checked=8`. Existing
+  warnings remain in `user_data\strategies\5mV1.py` and
+  `user_data\strategies\FreqAICustomStrategy.py`; no new Donchian identity
+  finding was introduced.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, exchange order endpoint, API key, secret, leverage, shorting,
+  or process-control action was performed.
+- [ ] Remaining limitation: existing historical backtest artifacts created
+  before this identity increment were not regenerated in-place, and
+  walk-forward output embedding plus the deterministic
+  backtest-to-observation-to-scorecard converter remain P0 follow-ups.
+
 Checked on 2026-05-21 JST for web-researched bull-regime strategy candidate.
 
 - [x] Researched trend-following references before implementation:

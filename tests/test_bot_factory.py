@@ -9763,6 +9763,18 @@ def _regime_contract(
 def _regime_observation(
     observation_id: str,
     *,
+    candidate_id: str = "candidate",
+    strategy_id: str = "strategy",
+    strategy_class_name: str = "FixtureStrategy",
+    strategy_source_path: str = "tests/fixtures/FixtureStrategy.py",
+    strategy_version: str = "strategy_v1",
+    signal_version: str = "signal_v1",
+    risk_policy_version: str = "risk_v1",
+    regime_classifier_version: str = "regime_classifier_v1",
+    cost_model_id: str = "cost_model_v1",
+    allowed_pairs: list[str] | None = None,
+    allowed_timeframes: list[str] | None = None,
+    candidate_identity: dict[str, Any] | None = None,
     source_type: str = "walk_forward",
     regime: str = "trend_up",
     baseline_id: str = "candidate",
@@ -9778,23 +9790,41 @@ def _regime_observation(
     downside_deviation: float = 0.2,
     lower_confidence_bound: float = 0.3,
 ):
+    from freqtrade_ext.bot_factory.candidate_identity import build_strategy_candidate_identity
+
+    identity = candidate_identity or build_strategy_candidate_identity(
+        candidate_id=candidate_id,
+        strategy_id=strategy_id,
+        strategy_class_name=strategy_class_name,
+        strategy_source_path=strategy_source_path,
+        strategy_version=strategy_version,
+        signal_version=signal_version,
+        risk_policy_version=risk_policy_version,
+        regime_classifier_version=regime_classifier_version,
+        cost_model_id=cost_model_id,
+        allowed_pairs=allowed_pairs or ["BTC/USDT:USDT", "ETH/USDT:USDT"],
+        allowed_timeframes=allowed_timeframes or ["5m"],
+        created_at="2026-05-20T00:00:00+00:00",
+        source_artifacts={"test_fixture": "tests/test_bot_factory.py"},
+    )
     return {
         "observation_id": observation_id,
         "created_at": "2026-05-20T00:00:00+00:00",
         "source_type": source_type,
-        "strategy_id": "strategy",
-        "strategy_version": "strategy_v1",
-        "candidate_id": "candidate",
-        "signal_version": "signal_v1",
-        "risk_policy_version": "risk_v1",
+        "strategy_id": strategy_id,
+        "strategy_version": strategy_version,
+        "candidate_id": candidate_id,
+        "candidate_identity": identity,
+        "signal_version": signal_version,
+        "risk_policy_version": risk_policy_version,
         "pair": pair,
         "timeframe": timeframe,
         "window_start": window_start,
         "window_end": window_end,
         "market_regime": regime,
-        "regime_classifier_version": "regime_classifier_v1",
+        "regime_classifier_version": regime_classifier_version,
         "baseline_id": baseline_id,
-        "cost_model_id": "cost_model_v1",
+        "cost_model_id": cost_model_id,
         "normal_cost_bps": 10.0,
         "stress_cost_bps": 20.0,
         "trade_count": trade_count,
@@ -9830,14 +9860,28 @@ def _selector_candidate_for_logic(
     from freqtrade_ext.bot_factory.regime_promotion import (
         RegimePromotionThresholds,
         build_regime_fitness_scorecard,
+        candidate_identity_from_logic_spec,
         contract_from_logic_spec,
         selection_candidate_from_scorecard,
     )
 
     contract = contract_from_logic_spec(logic)
+    identity = candidate_identity_from_logic_spec(logic, candidate_id=candidate_id)
     observations = [
         _regime_observation(
             f"{candidate_id}-btc",
+            candidate_id=candidate_id,
+            strategy_id=logic.strategy_id,
+            strategy_class_name=logic.strategy_class_name,
+            strategy_source_path=logic.strategy_source_path,
+            strategy_version=logic.strategy_version,
+            signal_version=logic.signal_version,
+            risk_policy_version=logic.risk_policy_version,
+            regime_classifier_version=logic.regime_classifier_version,
+            cost_model_id=logic.cost_model_id,
+            allowed_pairs=list(logic.allowed_pairs),
+            allowed_timeframes=list(logic.allowed_timeframes),
+            candidate_identity=identity,
             regime=regime,
             pair="BTC/USDT:USDT",
             window_start="2026-01-01T00:00:00+00:00",
@@ -9848,6 +9892,18 @@ def _selector_candidate_for_logic(
         ),
         _regime_observation(
             f"{candidate_id}-eth",
+            candidate_id=candidate_id,
+            strategy_id=logic.strategy_id,
+            strategy_class_name=logic.strategy_class_name,
+            strategy_source_path=logic.strategy_source_path,
+            strategy_version=logic.strategy_version,
+            signal_version=logic.signal_version,
+            risk_policy_version=logic.risk_policy_version,
+            regime_classifier_version=logic.regime_classifier_version,
+            cost_model_id=logic.cost_model_id,
+            allowed_pairs=list(logic.allowed_pairs),
+            allowed_timeframes=list(logic.allowed_timeframes),
+            candidate_identity=identity,
             regime=regime,
             pair="ETH/USDT:USDT",
             window_start="2026-02-01T00:00:00+00:00",
@@ -9966,6 +10022,7 @@ def test_strong_uptrend_logic_selected_in_assumed_production_when_regime_matches
         RegimePromotionThresholds,
         RuntimeRegimeSnapshot,
         build_regime_fitness_scorecard,
+        candidate_identity_from_logic_spec,
         contract_from_logic_spec,
         evaluate_runtime_strategy_selection,
         selection_candidate_from_scorecard,
@@ -9974,9 +10031,23 @@ def test_strong_uptrend_logic_selected_in_assumed_production_when_regime_matches
 
     logic = strong_uptrend_momentum_logic_spec()
     contract = contract_from_logic_spec(logic)
+    candidate_id = "strong-uptrend-candidate"
+    identity = candidate_identity_from_logic_spec(logic, candidate_id=candidate_id)
     observations = [
         _regime_observation(
             "trend-up-btc",
+            candidate_id=candidate_id,
+            strategy_id=logic.strategy_id,
+            strategy_class_name=logic.strategy_class_name,
+            strategy_source_path=logic.strategy_source_path,
+            strategy_version=logic.strategy_version,
+            signal_version=logic.signal_version,
+            risk_policy_version=logic.risk_policy_version,
+            regime_classifier_version=logic.regime_classifier_version,
+            cost_model_id=logic.cost_model_id,
+            allowed_pairs=list(logic.allowed_pairs),
+            allowed_timeframes=list(logic.allowed_timeframes),
+            candidate_identity=identity,
             regime="trend_up",
             pair="BTC/USDT:USDT",
             window_start="2026-01-01T00:00:00+00:00",
@@ -9987,6 +10058,18 @@ def test_strong_uptrend_logic_selected_in_assumed_production_when_regime_matches
         ),
         _regime_observation(
             "trend-up-eth",
+            candidate_id=candidate_id,
+            strategy_id=logic.strategy_id,
+            strategy_class_name=logic.strategy_class_name,
+            strategy_source_path=logic.strategy_source_path,
+            strategy_version=logic.strategy_version,
+            signal_version=logic.signal_version,
+            risk_policy_version=logic.risk_policy_version,
+            regime_classifier_version=logic.regime_classifier_version,
+            cost_model_id=logic.cost_model_id,
+            allowed_pairs=list(logic.allowed_pairs),
+            allowed_timeframes=list(logic.allowed_timeframes),
+            candidate_identity=identity,
             regime="trend_up",
             pair="ETH/USDT:USDT",
             window_start="2026-02-01T00:00:00+00:00",
@@ -9999,6 +10082,18 @@ def test_strong_uptrend_logic_selected_in_assumed_production_when_regime_matches
     no_trade_baseline = [
         _regime_observation(
             "trend-up-btc-no-trade",
+            candidate_id=candidate_id,
+            strategy_id=logic.strategy_id,
+            strategy_class_name=logic.strategy_class_name,
+            strategy_source_path=logic.strategy_source_path,
+            strategy_version=logic.strategy_version,
+            signal_version=logic.signal_version,
+            risk_policy_version=logic.risk_policy_version,
+            regime_classifier_version=logic.regime_classifier_version,
+            cost_model_id=logic.cost_model_id,
+            allowed_pairs=list(logic.allowed_pairs),
+            allowed_timeframes=list(logic.allowed_timeframes),
+            candidate_identity=identity,
             regime="trend_up",
             baseline_id="no_trade",
             pair="BTC/USDT:USDT",
@@ -10010,6 +10105,18 @@ def test_strong_uptrend_logic_selected_in_assumed_production_when_regime_matches
         ),
         _regime_observation(
             "trend-up-eth-no-trade",
+            candidate_id=candidate_id,
+            strategy_id=logic.strategy_id,
+            strategy_class_name=logic.strategy_class_name,
+            strategy_source_path=logic.strategy_source_path,
+            strategy_version=logic.strategy_version,
+            signal_version=logic.signal_version,
+            risk_policy_version=logic.risk_policy_version,
+            regime_classifier_version=logic.regime_classifier_version,
+            cost_model_id=logic.cost_model_id,
+            allowed_pairs=list(logic.allowed_pairs),
+            allowed_timeframes=list(logic.allowed_timeframes),
+            candidate_identity=identity,
             regime="trend_up",
             baseline_id="no_trade",
             pair="ETH/USDT:USDT",
@@ -10029,7 +10136,7 @@ def test_strong_uptrend_logic_selected_in_assumed_production_when_regime_matches
     candidate = selection_candidate_from_scorecard(
         logic=logic,
         scorecard=scorecard,
-        candidate_id="strong-uptrend-candidate",
+        candidate_id=candidate_id,
     )
     runtime = RuntimeRegimeSnapshot(
         current_regime="trend_up",
@@ -10069,6 +10176,7 @@ def test_strong_uptrend_logic_not_selected_when_runtime_regime_changes_to_range(
         RegimePromotionThresholds,
         RuntimeRegimeSnapshot,
         build_regime_fitness_scorecard,
+        candidate_identity_from_logic_spec,
         contract_from_logic_spec,
         evaluate_runtime_strategy_selection,
         selection_candidate_from_scorecard,
@@ -10077,10 +10185,24 @@ def test_strong_uptrend_logic_not_selected_when_runtime_regime_changes_to_range(
 
     logic = strong_uptrend_momentum_logic_spec()
     contract = contract_from_logic_spec(logic)
+    candidate_id = "strong-uptrend-candidate"
+    identity = candidate_identity_from_logic_spec(logic, candidate_id=candidate_id)
     scorecard = build_regime_fitness_scorecard(
         [
             _regime_observation(
                 "trend-up-btc",
+                candidate_id=candidate_id,
+                strategy_id=logic.strategy_id,
+                strategy_class_name=logic.strategy_class_name,
+                strategy_source_path=logic.strategy_source_path,
+                strategy_version=logic.strategy_version,
+                signal_version=logic.signal_version,
+                risk_policy_version=logic.risk_policy_version,
+                regime_classifier_version=logic.regime_classifier_version,
+                cost_model_id=logic.cost_model_id,
+                allowed_pairs=list(logic.allowed_pairs),
+                allowed_timeframes=list(logic.allowed_timeframes),
+                candidate_identity=identity,
                 regime="trend_up",
                 pair="BTC/USDT:USDT",
                 window_start="2026-01-01T00:00:00+00:00",
@@ -10091,6 +10213,18 @@ def test_strong_uptrend_logic_not_selected_when_runtime_regime_changes_to_range(
             ),
             _regime_observation(
                 "trend-up-eth",
+                candidate_id=candidate_id,
+                strategy_id=logic.strategy_id,
+                strategy_class_name=logic.strategy_class_name,
+                strategy_source_path=logic.strategy_source_path,
+                strategy_version=logic.strategy_version,
+                signal_version=logic.signal_version,
+                risk_policy_version=logic.risk_policy_version,
+                regime_classifier_version=logic.regime_classifier_version,
+                cost_model_id=logic.cost_model_id,
+                allowed_pairs=list(logic.allowed_pairs),
+                allowed_timeframes=list(logic.allowed_timeframes),
+                candidate_identity=identity,
                 regime="trend_up",
                 pair="ETH/USDT:USDT",
                 window_start="2026-02-01T00:00:00+00:00",
@@ -10107,7 +10241,7 @@ def test_strong_uptrend_logic_not_selected_when_runtime_regime_changes_to_range(
     candidate = selection_candidate_from_scorecard(
         logic=logic,
         scorecard=scorecard,
-        candidate_id="strong-uptrend-candidate",
+        candidate_id=candidate_id,
     )
     runtime = RuntimeRegimeSnapshot(
         current_regime="range",
@@ -10381,6 +10515,178 @@ def test_regime_evidence_unit_segments_version_changes():
     assert evidence_unit(first) != evidence_unit(second)
     assert evidence_unit(first)["risk_policy_version"] == "risk_v1"
     assert evidence_unit(second)["risk_policy_version"] == "risk_v2"
+
+
+def test_candidate_identity_segments_signal_risk_regime_and_cost_versions():
+    from freqtrade_ext.bot_factory.candidate_identity import (
+        build_strategy_candidate_identity,
+        compare_candidate_identities,
+    )
+
+    base = build_strategy_candidate_identity(
+        candidate_id="cand-a",
+        strategy_id="strategy-a",
+        strategy_class_name="StrategyA",
+        strategy_source_path="user_data/strategies/StrategyA.py",
+        strategy_version="strategy_v1",
+        signal_version="signal_v1",
+        risk_policy_version="risk_v1",
+        regime_classifier_version="regime_v1",
+        cost_model_id="cost_v1",
+        allowed_pairs=["BTC/USDT:USDT"],
+        allowed_timeframes=["5m"],
+        created_at="2026-05-21T00:00:00+00:00",
+        source_artifacts={"strategy_source": "user_data/strategies/StrategyA.py"},
+    )
+
+    for field, changed in {
+        "signal_version": "signal_v2",
+        "risk_policy_version": "risk_v2",
+        "regime_classifier_version": "regime_v2",
+        "cost_model_id": "cost_v2",
+    }.items():
+        observed = dict(base)
+        observed[field] = changed
+        result = compare_candidate_identities(base, observed, observed_label="observed")
+        assert result["ok"] is False
+        assert {item["field"] for item in result["mismatches"]} == {field}
+
+
+def test_regime_observation_rejects_mismatched_candidate_identity():
+    from freqtrade_ext.bot_factory.candidate_identity import build_strategy_candidate_identity
+    from freqtrade_ext.bot_factory.regime_promotion import validate_observation_record
+
+    wrong_identity = build_strategy_candidate_identity(
+        candidate_id="candidate",
+        strategy_id="strategy-b",
+        strategy_class_name="StrategyB",
+        strategy_source_path="user_data/strategies/StrategyB.py",
+        strategy_version="strategy_v1",
+        signal_version="signal_v1",
+        risk_policy_version="risk_v1",
+        regime_classifier_version="regime_classifier_v1",
+        cost_model_id="cost_model_v1",
+        allowed_pairs=["BTC/USDT:USDT"],
+        allowed_timeframes=["5m"],
+        created_at="2026-05-21T00:00:00+00:00",
+        source_artifacts={"strategy_source": "user_data/strategies/StrategyB.py"},
+    )
+    observation = _regime_observation(
+        "mismatch",
+        strategy_id="strategy-a",
+        candidate_identity=wrong_identity,
+    )
+
+    result = validate_observation_record(observation)
+
+    assert result["ok"] is False
+    assert _check_by_name(
+        result["checks"], "candidate_identity_strategy_id_matches_row"
+    )["passed"] is False
+
+
+def test_selector_rejects_scorecard_identity_for_different_strategy():
+    import pytest
+
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RegimePromotionThresholds,
+        build_regime_fitness_scorecard,
+        candidate_identity_from_logic_spec,
+        contract_from_logic_spec,
+        range_mean_reversion_logic_spec,
+        selection_candidate_from_scorecard,
+        strong_uptrend_momentum_logic_spec,
+    )
+
+    uptrend_logic = strong_uptrend_momentum_logic_spec()
+    range_logic = range_mean_reversion_logic_spec()
+    candidate_id = "strategy-a-candidate"
+    identity = candidate_identity_from_logic_spec(uptrend_logic, candidate_id=candidate_id)
+    scorecard = build_regime_fitness_scorecard(
+        [
+            _regime_observation(
+                "strategy-a-btc",
+                candidate_id=candidate_id,
+                strategy_id=uptrend_logic.strategy_id,
+                strategy_class_name=uptrend_logic.strategy_class_name,
+                strategy_source_path=uptrend_logic.strategy_source_path,
+                strategy_version=uptrend_logic.strategy_version,
+                signal_version=uptrend_logic.signal_version,
+                risk_policy_version=uptrend_logic.risk_policy_version,
+                regime_classifier_version=uptrend_logic.regime_classifier_version,
+                cost_model_id=uptrend_logic.cost_model_id,
+                allowed_pairs=list(uptrend_logic.allowed_pairs),
+                allowed_timeframes=list(uptrend_logic.allowed_timeframes),
+                candidate_identity=identity,
+                regime="trend_up",
+                pair="BTC/USDT:USDT",
+                window_start="2026-01-01T00:00:00+00:00",
+                window_end="2026-02-01T00:00:00+00:00",
+                net_return_normal_cost=7.0,
+                net_return_stress_cost=4.0,
+                lower_confidence_bound=0.8,
+            ),
+            _regime_observation(
+                "strategy-a-eth",
+                candidate_id=candidate_id,
+                strategy_id=uptrend_logic.strategy_id,
+                strategy_class_name=uptrend_logic.strategy_class_name,
+                strategy_source_path=uptrend_logic.strategy_source_path,
+                strategy_version=uptrend_logic.strategy_version,
+                signal_version=uptrend_logic.signal_version,
+                risk_policy_version=uptrend_logic.risk_policy_version,
+                regime_classifier_version=uptrend_logic.regime_classifier_version,
+                cost_model_id=uptrend_logic.cost_model_id,
+                allowed_pairs=list(uptrend_logic.allowed_pairs),
+                allowed_timeframes=list(uptrend_logic.allowed_timeframes),
+                candidate_identity=identity,
+                regime="trend_up",
+                pair="ETH/USDT:USDT",
+                window_start="2026-02-01T00:00:00+00:00",
+                window_end="2026-03-05T00:00:00+00:00",
+                net_return_normal_cost=6.0,
+                net_return_stress_cost=3.5,
+                lower_confidence_bound=0.7,
+            ),
+        ],
+        contract=contract_from_logic_spec(uptrend_logic),
+        thresholds=RegimePromotionThresholds(max_calendar_concentration=0.5),
+    )
+
+    assert scorecard["decision"] == "REGIME_SCOPED_SELECTOR_ELIGIBLE"
+    with pytest.raises(ValueError, match="candidate identity"):
+        selection_candidate_from_scorecard(
+            logic=range_logic,
+            scorecard=scorecard,
+            candidate_id=candidate_id,
+        )
+
+
+def test_donchian_strategy_identity_matches_strong_uptrend_logic():
+    from freqtrade_ext.bot_factory.candidate_identity import (
+        compare_candidate_identities,
+        load_candidate_identity_from_strategy_source,
+    )
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        candidate_identity_from_logic_spec,
+        strong_uptrend_momentum_logic_spec,
+    )
+
+    logic = strong_uptrend_momentum_logic_spec()
+    strategy_identity = load_candidate_identity_from_strategy_source(
+        Path("user_data/strategies/DonchianTrendBullStrategy.py"),
+        strategy_class_name="DonchianTrendBullStrategy",
+    )
+    logic_identity = candidate_identity_from_logic_spec(
+        logic,
+        candidate_id="strong-uptrend-historical-ohlcv-candidate",
+    )
+
+    result = compare_candidate_identities(logic_identity, strategy_identity)
+
+    assert result["ok"] is True
+    assert strategy_identity["strategy_class_name"] == "DonchianTrendBullStrategy"
+    assert logic.logic_id == "strong_uptrend_momentum_v1"
 
 
 def test_regime_contract_requires_no_trade_conditions_for_exclusions():

@@ -5,6 +5,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Sequence
 
+from freqtrade_ext.bot_factory.candidate_identity import (
+    compare_candidate_identities,
+    extract_candidate_identity,
+    build_strategy_candidate_identity,
+    validate_candidate_identity,
+)
+
 
 CURRENT_OBSERVATION_SOURCE_TYPES = {
     "backtest",
@@ -44,6 +51,7 @@ REQUIRED_OBSERVATION_FIELDS = (
     "strategy_id",
     "strategy_version",
     "candidate_id",
+    "candidate_identity",
     "signal_version",
     "risk_policy_version",
     "pair",
@@ -122,6 +130,8 @@ class RegimeStrategyContract:
 class RegimeStrategyLogicSpec:
     logic_id: str
     strategy_id: str
+    strategy_class_name: str
+    strategy_source_path: str
     strategy_version: str
     signal_version: str
     intended_regimes: Sequence[str]
@@ -135,6 +145,8 @@ class RegimeStrategyLogicSpec:
     cost_model_id: str
     allowed_pairs: Sequence[str]
     allowed_timeframes: Sequence[str]
+    identity_created_at: str = "2026-05-21T00:00:00+09:00"
+    source_artifacts: dict[str, str] = field(default_factory=dict)
     reviewer_notes: Sequence[str] = field(default_factory=list)
 
 
@@ -156,6 +168,7 @@ def observation_ledger_schema() -> dict[str, Any]:
         "factory": "regime_observation_ledger_schema",
         "schema_version": "regime_observation_ledger_v1",
         "required_fields": list(REQUIRED_OBSERVATION_FIELDS),
+        "candidate_identity_schema_version": "strategy_candidate_identity_v1",
         "current_source_types": sorted(CURRENT_OBSERVATION_SOURCE_TYPES),
         "future_source_types_blocked_by_default": sorted(FUTURE_OBSERVATION_SOURCE_TYPES),
         "market_regimes": sorted(MARKET_REGIMES),
@@ -212,10 +225,14 @@ def strong_uptrend_momentum_logic_spec(
     cost_model_id: str = "cost_model_v1",
     allowed_pairs: Sequence[str] = ("BTC/USDT:USDT", "ETH/USDT:USDT"),
     allowed_timeframes: Sequence[str] = ("5m",),
+    strategy_class_name: str = "DonchianTrendBullStrategy",
+    strategy_source_path: str = "user_data/strategies/DonchianTrendBullStrategy.py",
 ) -> RegimeStrategyLogicSpec:
     return RegimeStrategyLogicSpec(
         logic_id="strong_uptrend_momentum_v1",
         strategy_id=strategy_id,
+        strategy_class_name=strategy_class_name,
+        strategy_source_path=strategy_source_path,
         strategy_version=strategy_version,
         signal_version=signal_version,
         intended_regimes=("trend_up",),
@@ -252,6 +269,21 @@ def strong_uptrend_momentum_logic_spec(
         cost_model_id=cost_model_id,
         allowed_pairs=tuple(allowed_pairs),
         allowed_timeframes=tuple(allowed_timeframes),
+        source_artifacts={
+            "strategy_source": strategy_source_path,
+            "historical_backtest_metrics": (
+                "data/backtests/DonchianTrendBullStrategy/"
+                "historical_uptrend_20240202_20240305_v3/metrics.json"
+            ),
+            "historical_backtest_trades": (
+                "data/backtests/DonchianTrendBullStrategy/"
+                "historical_uptrend_20240202_20240305_v3/trades.csv"
+            ),
+            "selector_replay": (
+                "data/regime_selector_replays/"
+                "historical_uptrend_20240202_20240304/selector_replay.json"
+            ),
+        },
         reviewer_notes=(
             "Local selector-eligibility logic only; no paper, dry-run, live, or order process.",
         ),
@@ -272,6 +304,8 @@ def downtrend_defensive_rebound_logic_spec(
     return RegimeStrategyLogicSpec(
         logic_id="downtrend_defensive_rebound_v1",
         strategy_id=strategy_id,
+        strategy_class_name="RegimeLogicSpecOnly",
+        strategy_source_path="freqtrade_ext/bot_factory/regime_promotion.py",
         strategy_version=strategy_version,
         signal_version=signal_version,
         intended_regimes=("trend_down",),
@@ -332,6 +366,8 @@ def range_mean_reversion_logic_spec(
     return RegimeStrategyLogicSpec(
         logic_id="range_mean_reversion_v1",
         strategy_id=strategy_id,
+        strategy_class_name="RegimeLogicSpecOnly",
+        strategy_source_path="freqtrade_ext/bot_factory/regime_promotion.py",
         strategy_version=strategy_version,
         signal_version=signal_version,
         intended_regimes=("range",),
@@ -457,12 +493,24 @@ def validate_observation_record(
             },
         )
     )
+    identity_validation = validate_candidate_identity(observation)
+    checks.append(
+        _check(
+            "candidate_identity_valid",
+            identity_validation["ok"],
+            {"identity_checks": identity_validation["checks"]},
+        )
+    )
+    if identity_validation["ok"]:
+        identity = identity_validation["candidate_identity"]
+        checks.extend(_observation_identity_checks(observation, identity))
     ok = all(item["passed"] for item in checks)
     return {
         "factory": "regime_observation_validation",
         "schema_version": "regime_observation_ledger_v1",
         "ok": ok,
         "checks": checks,
+        "candidate_identity": identity_validation.get("candidate_identity"),
         "safety_scope": _safety_scope(),
     }
 
@@ -533,6 +581,32 @@ def evidence_unit(contract: RegimeStrategyContract) -> dict[str, str]:
     }
 
 
+def candidate_identity_from_logic_spec(
+    logic: RegimeStrategyLogicSpec,
+    *,
+    candidate_id: str,
+    created_at: str | None = None,
+    source_artifacts: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    artifacts = dict(logic.source_artifacts)
+    artifacts.update(source_artifacts or {})
+    return build_strategy_candidate_identity(
+        candidate_id=candidate_id,
+        strategy_id=logic.strategy_id,
+        strategy_class_name=logic.strategy_class_name,
+        strategy_source_path=logic.strategy_source_path,
+        strategy_version=logic.strategy_version,
+        signal_version=logic.signal_version,
+        risk_policy_version=logic.risk_policy_version,
+        regime_classifier_version=logic.regime_classifier_version,
+        cost_model_id=logic.cost_model_id,
+        allowed_pairs=logic.allowed_pairs,
+        allowed_timeframes=logic.allowed_timeframes,
+        created_at=created_at or logic.identity_created_at,
+        source_artifacts=artifacts,
+    )
+
+
 def build_observation_ledger(
     observations: Sequence[dict[str, Any]],
     *,
@@ -551,6 +625,7 @@ def build_observation_ledger(
         "created_at": _utc_now(),
         "observation_count": len(observations),
         "observations": list(observations),
+        "candidate_identities": _unique_candidate_identities(observations),
         "validations": validations,
         "ok": all(item["ok"] for item in validations),
         "reviewer_notes": list(reviewer_notes),
@@ -566,12 +641,20 @@ def build_regime_fitness_scorecard(
     thresholds: RegimePromotionThresholds | None = None,
     scorecard_id: str | None = None,
     reviewer_notes: Sequence[str] = (),
+    candidate_identity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     thresholds = thresholds or RegimePromotionThresholds()
     contract_validation = validate_strategy_contract(contract)
     observation_validations = [
         validate_observation_record(item) for item in candidate_observations
     ] + [validate_observation_record(item) for item in baseline_observations]
+    identity_lineage_validation = _scorecard_identity_lineage_validation(
+        candidate_observations,
+        baseline_observations,
+        contract=contract,
+        expected_identity=candidate_identity,
+    )
+    scorecard_identity = identity_lineage_validation.get("candidate_identity")
 
     regime_rows = [
         _regime_row(regime, candidate_observations, baseline_observations, contract, thresholds)
@@ -592,7 +675,11 @@ def build_regime_fitness_scorecard(
         and row["decision"] in {"REJECT", "NO_TRADE_POLICY", "INSUFFICIENT_EVIDENCE"}
     ]
 
-    if not contract_validation["ok"] or any(not item["ok"] for item in observation_validations):
+    if (
+        not contract_validation["ok"]
+        or any(not item["ok"] for item in observation_validations)
+        or not identity_lineage_validation["ok"]
+    ):
         decision = "REJECT"
         reason_codes = ["schema_or_contract_validation_failed"]
     elif (
@@ -637,6 +724,8 @@ def build_regime_fitness_scorecard(
         ],
         "reason_codes": reason_codes,
         "evidence_unit": evidence_unit(contract),
+        "candidate_identity": scorecard_identity,
+        "identity_lineage_validation": identity_lineage_validation,
         "thresholds": asdict(thresholds),
         "contract_validation": contract_validation,
         "observation_validations": observation_validations,
@@ -760,10 +849,24 @@ def selection_candidate_from_scorecard(
     scorecard: dict[str, Any],
     candidate_id: str,
 ) -> dict[str, Any]:
+    scorecard_identity = extract_candidate_identity(scorecard)
+    expected_identity = candidate_identity_from_logic_spec(logic, candidate_id=candidate_id)
+    identity_comparison = compare_candidate_identities(
+        expected_identity,
+        scorecard_identity,
+        observed_label="scorecard",
+    )
+    if not identity_comparison["ok"]:
+        raise ValueError(
+            "Scorecard candidate identity does not match selector logic: "
+            f"{identity_comparison['mismatches']}"
+        )
     return {
         "candidate_id": candidate_id,
         "strategy_id": logic.strategy_id,
         "logic_id": logic.logic_id,
+        "candidate_identity": scorecard_identity,
+        "identity_comparison": identity_comparison,
         "strategy_version": logic.strategy_version,
         "signal_version": logic.signal_version,
         "risk_policy_version": logic.risk_policy_version,
@@ -777,6 +880,193 @@ def selection_candidate_from_scorecard(
         "scorecard_decision": scorecard.get("decision"),
         "scorecard": scorecard,
     }
+
+
+def _observation_identity_checks(
+    observation: dict[str, Any], identity: dict[str, Any]
+) -> list[dict[str, Any]]:
+    field_map = {
+        "candidate_id": "candidate_id",
+        "strategy_id": "strategy_id",
+        "strategy_version": "strategy_version",
+        "signal_version": "signal_version",
+        "risk_policy_version": "risk_policy_version",
+        "regime_classifier_version": "regime_classifier_version",
+        "cost_model_id": "cost_model_id",
+    }
+    checks = [
+        _check(
+            f"candidate_identity_{field}_matches_row",
+            str(observation.get(row_field) or "") == str(identity.get(field) or ""),
+            {
+                "row_value": observation.get(row_field),
+                "identity_value": identity.get(field),
+            },
+        )
+        for row_field, field in field_map.items()
+    ]
+    checks.append(
+        _check(
+            "candidate_identity_pair_allows_row",
+            str(observation.get("pair") or "") in set(identity.get("allowed_pairs", [])),
+            {
+                "pair": observation.get("pair"),
+                "identity_allowed_pairs": identity.get("allowed_pairs", []),
+            },
+        )
+    )
+    checks.append(
+        _check(
+            "candidate_identity_timeframe_allows_row",
+            str(observation.get("timeframe") or "") in set(identity.get("allowed_timeframes", [])),
+            {
+                "timeframe": observation.get("timeframe"),
+                "identity_allowed_timeframes": identity.get("allowed_timeframes", []),
+            },
+        )
+    )
+    return checks
+
+
+def _scorecard_identity_lineage_validation(
+    candidate_observations: Sequence[dict[str, Any]],
+    baseline_observations: Sequence[dict[str, Any]],
+    *,
+    contract: RegimeStrategyContract,
+    expected_identity: dict[str, Any] | None,
+) -> dict[str, Any]:
+    observed_identities = [
+        identity
+        for identity in (extract_candidate_identity(item) for item in candidate_observations)
+        if identity is not None
+    ]
+    baseline_identities = [
+        identity
+        for identity in (extract_candidate_identity(item) for item in baseline_observations)
+        if identity is not None
+    ]
+    reference_identity = (
+        extract_candidate_identity(expected_identity)
+        or (observed_identities[0] if observed_identities else None)
+    )
+    checks = [
+        _check(
+            "scorecard_candidate_identity_present",
+            reference_identity is not None,
+            {"candidate_observation_count": len(candidate_observations)},
+        )
+    ]
+    comparisons: list[dict[str, Any]] = []
+    if reference_identity is not None:
+        for index, identity in enumerate(observed_identities):
+            comparison = compare_candidate_identities(
+                reference_identity,
+                identity,
+                observed_label=f"candidate_observation_{index}",
+            )
+            comparisons.append(comparison)
+        for index, identity in enumerate(baseline_identities):
+            comparison = compare_candidate_identities(
+                reference_identity,
+                identity,
+                observed_label=f"baseline_observation_{index}",
+            )
+            comparisons.append(comparison)
+        checks.extend(_contract_identity_checks(contract, reference_identity))
+    checks.append(
+        _check(
+            "scorecard_observation_identities_match",
+            all(item["ok"] for item in comparisons),
+            {"comparisons": comparisons},
+        )
+    )
+    ok = all(item["passed"] for item in checks)
+    return {
+        "factory": "regime_scorecard_identity_lineage_validation",
+        "schema_version": "strategy_candidate_identity_v1",
+        "ok": ok,
+        "candidate_identity": reference_identity,
+        "checks": checks,
+        "comparisons": comparisons,
+    }
+
+
+def _contract_identity_checks(
+    contract: RegimeStrategyContract, identity: dict[str, Any]
+) -> list[dict[str, Any]]:
+    return [
+        _check(
+            "identity_strategy_version_matches_contract",
+            identity.get("strategy_version") == contract.strategy_version,
+            {
+                "identity_strategy_version": identity.get("strategy_version"),
+                "contract_strategy_version": contract.strategy_version,
+            },
+        ),
+        _check(
+            "identity_signal_version_matches_contract",
+            identity.get("signal_version") == contract.signal_version,
+            {
+                "identity_signal_version": identity.get("signal_version"),
+                "contract_signal_version": contract.signal_version,
+            },
+        ),
+        _check(
+            "identity_risk_policy_version_matches_contract",
+            identity.get("risk_policy_version") == contract.risk_policy_version,
+            {
+                "identity_risk_policy_version": identity.get("risk_policy_version"),
+                "contract_risk_policy_version": contract.risk_policy_version,
+            },
+        ),
+        _check(
+            "identity_regime_classifier_version_matches_contract",
+            identity.get("regime_classifier_version") == contract.regime_classifier_version,
+            {
+                "identity_regime_classifier_version": identity.get("regime_classifier_version"),
+                "contract_regime_classifier_version": contract.regime_classifier_version,
+            },
+        ),
+        _check(
+            "identity_cost_model_id_matches_contract",
+            identity.get("cost_model_id") == contract.cost_model_id,
+            {
+                "identity_cost_model_id": identity.get("cost_model_id"),
+                "contract_cost_model_id": contract.cost_model_id,
+            },
+        ),
+        _check(
+            "identity_pairs_cover_contract_pairs",
+            set(contract.allowed_pairs).issubset(set(identity.get("allowed_pairs", []))),
+            {
+                "identity_allowed_pairs": identity.get("allowed_pairs", []),
+                "contract_allowed_pairs": list(contract.allowed_pairs),
+            },
+        ),
+        _check(
+            "identity_timeframes_cover_contract_timeframes",
+            set(contract.allowed_timeframes).issubset(set(identity.get("allowed_timeframes", []))),
+            {
+                "identity_allowed_timeframes": identity.get("allowed_timeframes", []),
+                "contract_allowed_timeframes": list(contract.allowed_timeframes),
+            },
+        ),
+    ]
+
+
+def _unique_candidate_identities(observations: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[str] = set()
+    unique: list[dict[str, Any]] = []
+    for observation in observations:
+        identity = extract_candidate_identity(observation)
+        if identity is None:
+            continue
+        key = repr(sorted(identity.items()))
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(identity)
+    return unique
 
 
 def _regime_row(
@@ -905,6 +1195,7 @@ def _runtime_candidate_decision(
     *, runtime: RuntimeRegimeSnapshot, candidate: dict[str, Any]
 ) -> dict[str, Any]:
     scorecard = candidate.get("scorecard", {})
+    identity_validation = validate_candidate_identity(candidate)
     scorecard_rows = [
         row
         for row in scorecard.get("scorecard_by_regime", [])
@@ -915,6 +1206,11 @@ def _runtime_candidate_decision(
     available_features = set(str(item) for item in runtime.available_features)
     missing_features = sorted(required_features - available_features)
     checks = [
+        _check(
+            "candidate_identity_valid",
+            identity_validation["ok"],
+            {"identity_checks": identity_validation["checks"]},
+        ),
         _check(
             "runtime_process_control_disabled",
             runtime.process_control_allowed is False
@@ -961,6 +1257,29 @@ def _runtime_candidate_decision(
             {
                 "timeframe": runtime.timeframe,
                 "allowed_timeframes": candidate.get("allowed_timeframes", []),
+            },
+        ),
+        _check(
+            "runtime_pair_allowed_by_identity",
+            identity_validation["ok"]
+            and runtime.pair in set(identity_validation["candidate_identity"].get("allowed_pairs", [])),
+            {
+                "pair": runtime.pair,
+                "identity_allowed_pairs": (
+                    identity_validation.get("candidate_identity") or {}
+                ).get("allowed_pairs", []),
+            },
+        ),
+        _check(
+            "runtime_timeframe_allowed_by_identity",
+            identity_validation["ok"]
+            and runtime.timeframe
+            in set(identity_validation["candidate_identity"].get("allowed_timeframes", [])),
+            {
+                "timeframe": runtime.timeframe,
+                "identity_allowed_timeframes": (
+                    identity_validation.get("candidate_identity") or {}
+                ).get("allowed_timeframes", []),
             },
         ),
         _check(

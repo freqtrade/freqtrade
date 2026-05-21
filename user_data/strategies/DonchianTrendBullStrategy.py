@@ -6,8 +6,41 @@ from pandas import DataFrame
 from freqtrade.strategy import IStrategy
 
 
+BOT_FACTORY_CANDIDATE_IDENTITY = {
+    "candidate_id": "strong-uptrend-historical-ohlcv-candidate",
+    "strategy_id": "long_only_strong_uptrend_momentum",
+    "strategy_class_name": "DonchianTrendBullStrategy",
+    "strategy_source_path": "user_data/strategies/DonchianTrendBullStrategy.py",
+    "strategy_version": "strong_uptrend_momentum_v1",
+    "signal_version": "strong_uptrend_signal_v1",
+    "risk_policy_version": "long_only_risk_v1",
+    "regime_classifier_version": "regime_classifier_v1",
+    "cost_model_id": "cost_model_v1",
+    "allowed_pairs": ["BTC/USDT:USDT", "ETH/USDT:USDT"],
+    "allowed_timeframes": ["5m"],
+    "created_at": "2026-05-21T00:00:00+09:00",
+    "source_artifacts": {
+        "strategy_source": "user_data/strategies/DonchianTrendBullStrategy.py",
+        "historical_backtest_metrics": (
+            "data/backtests/DonchianTrendBullStrategy/"
+            "historical_uptrend_20240202_20240305_v3/metrics.json"
+        ),
+        "historical_backtest_trades": (
+            "data/backtests/DonchianTrendBullStrategy/"
+            "historical_uptrend_20240202_20240305_v3/trades.csv"
+        ),
+        "selector_replay": (
+            "data/regime_selector_replays/"
+            "historical_uptrend_20240202_20240304/selector_replay.json"
+        ),
+    },
+}
+
+
 class DonchianTrendBullStrategy(IStrategy):
     """Long-only Donchian breakout strategy for historical bull-regime tests."""
+
+    bot_factory_candidate_identity = BOT_FACTORY_CANDIDATE_IDENTITY
 
     INTERFACE_VERSION = 3
 

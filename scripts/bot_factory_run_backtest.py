@@ -24,6 +24,11 @@ from freqtrade_ext.bot_factory.backtest_results import (
     write_result_json,
     write_trades_csv,
 )
+from freqtrade_ext.bot_factory.candidate_identity import (
+    build_strategy_candidate_identity,
+    load_candidate_identity_from_strategy_source,
+    validate_candidate_identity,
+)
 from freqtrade_ext.bot_factory.data_quality import check_ohlcv_parquet, write_quality_reports
 from freqtrade_ext.bot_factory.mlflow_tracking import log_backtest_to_mlflow
 from freqtrade_ext.bot_factory.safety import scan_paths
@@ -39,6 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pairs", nargs="*", default=None)
     parser.add_argument("--output-root", default="data/backtests")
     parser.add_argument("--run-id", default=None)
+    parser.add_argument("--candidate-id", default=None)
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--skip-static-check", action="store_true")
     parser.add_argument("--data-format-ohlcv", default="parquet")
@@ -83,6 +89,15 @@ def main() -> int:
     run_id = args.run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     run_dir = Path(args.output_root) / args.strategy / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    candidate_identity = _resolve_candidate_identity(args, strategy_file, run_id)
+    identity_validation = validate_candidate_identity(candidate_identity)
+    (run_dir / "candidate_identity.json").write_text(
+        json.dumps(candidate_identity, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    if not identity_validation["ok"]:
+        print(json.dumps(identity_validation, indent=2, ensure_ascii=False))
+        print(f"Candidate identity validation failed. Report: {run_dir / 'candidate_identity.json'}")
+        return 1
 
     if not args.skip_static_check:
         report = scan_paths([strategy_file])
@@ -151,8 +166,10 @@ def main() -> int:
         result_path = run_dir / result_filename
 
     result = load_backtest_result(result_path)
+    result["candidate_identity"] = candidate_identity
     write_result_json(result, run_dir / result_filename)
     metrics = summarize(result, args.strategy)
+    metrics.candidate_identity = candidate_identity
     write_metrics(metrics, run_dir / "metrics.json")
     write_trades_csv(result, run_dir / "trades.csv", args.strategy)
     thresholds = load_gate_thresholds(Path(args.gate_config) if args.gate_config else None)
@@ -172,7 +189,8 @@ def _find_result_json(run_dir: Path, expected_name: str) -> Path:
     candidates = [
         p
         for p in run_dir.glob("*.json")
-        if not p.name.endswith(".meta.json") and p.name not in {"metrics.json", "static_check.json"}
+        if not p.name.endswith(".meta.json")
+        and p.name not in {"metrics.json", "static_check.json", "candidate_identity.json"}
     ]
     if not candidates:
         raise SystemExit(f"No backtest result JSON found in {run_dir}")
@@ -202,6 +220,54 @@ def _find_strategy_source(strategy_path: Path, strategy_name: str) -> Path:
 def _require_file(path: str, label: str) -> None:
     if not Path(path).is_file():
         raise SystemExit(f"{label} file not found: {path}")
+
+
+def _resolve_candidate_identity(
+    args: argparse.Namespace, strategy_file: Path, run_id: str
+) -> dict[str, object]:
+    strategy_identity = load_candidate_identity_from_strategy_source(
+        strategy_file,
+        strategy_class_name=args.strategy,
+        root_dir=ROOT_DIR,
+    )
+    if strategy_identity:
+        if args.candidate_id and args.candidate_id != strategy_identity.get("candidate_id"):
+            raise SystemExit(
+                "Provided --candidate-id does not match strategy candidate identity: "
+                f"{args.candidate_id} != {strategy_identity.get('candidate_id')}"
+            )
+        return strategy_identity
+
+    config = _load_json_if_possible(Path(args.config))
+    pair_whitelist = (
+        config.get("exchange", {}).get("pair_whitelist", []) if isinstance(config, dict) else []
+    )
+    allowed_pairs = list(args.pairs or pair_whitelist or [])
+    allowed_timeframes = [args.timeframe or str(config.get("timeframe") or "")] if isinstance(config, dict) else []
+    return build_strategy_candidate_identity(
+        candidate_id=args.candidate_id or run_id,
+        strategy_id=args.strategy,
+        strategy_class_name=args.strategy,
+        strategy_source_path=strategy_file,
+        strategy_version=f"{args.strategy}_v1",
+        signal_version="unspecified_signal_v1",
+        risk_policy_version="unspecified_risk_policy_v1",
+        regime_classifier_version="unspecified_regime_classifier_v1",
+        cost_model_id="unspecified_cost_model_v1",
+        allowed_pairs=allowed_pairs,
+        allowed_timeframes=[item for item in allowed_timeframes if item],
+        created_at=datetime.now(UTC).replace(microsecond=0).isoformat(),
+        source_artifacts={"strategy_source": strategy_file},
+        root_dir=ROOT_DIR,
+    )
+
+
+def _load_json_if_possible(path: Path) -> dict[str, object]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def _run_ohlcv_quality_checks(args: argparse.Namespace, run_dir: Path) -> bool:

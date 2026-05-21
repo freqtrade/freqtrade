@@ -30,6 +30,7 @@ class BacktestMetrics:
     backtest_start: str | None
     backtest_end: str | None
     generated_at: str
+    candidate_identity: dict[str, Any] | None = None
 
 
 @dataclass
@@ -190,10 +191,26 @@ def write_report(
         "",
         f"- Recommendation: {gate['recommendation']}",
         f"- Promotion recommendation: {promotion_recommendation(gate)}",
-        "",
-        "## Gate Checks",
-        "",
     ]
+    if metrics.candidate_identity:
+        identity = metrics.candidate_identity
+        lines.extend(
+            [
+                "## Candidate Identity",
+                "",
+                f"- Candidate ID: {identity.get('candidate_id')}",
+                f"- Strategy ID: {identity.get('strategy_id')}",
+                f"- Strategy class: {identity.get('strategy_class_name')}",
+                f"- Strategy source: {identity.get('strategy_source_path')}",
+                f"- Strategy version: {identity.get('strategy_version')}",
+                f"- Signal version: {identity.get('signal_version')}",
+                f"- Risk policy version: {identity.get('risk_policy_version')}",
+                f"- Regime classifier version: {identity.get('regime_classifier_version')}",
+                f"- Cost model: {identity.get('cost_model_id')}",
+                "",
+            ]
+        )
+    lines.extend(["", "## Gate Checks", ""])
     for check in gate["checks"]:
         status = "PASS" if check["pass"] else "FAIL"
         lines.append(f"- {status}: {check['name']} ({check['actual']} vs {check['rule']})")

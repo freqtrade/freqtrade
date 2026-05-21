@@ -50,7 +50,7 @@ candidate.
 
 ## P0: Evidence Identity And Artifact Lineage
 
-- [ ] Define a canonical `StrategyCandidateIdentity` artifact.
+- [x] Define a canonical `StrategyCandidateIdentity` artifact.
   Required fields:
   - `candidate_id`
   - `strategy_id`
@@ -66,25 +66,45 @@ candidate.
   - `created_at`
   - `source_artifacts`
 - [ ] Require the same identity object to be embedded in:
-  - generated strategy metadata;
-  - historical backtest outputs;
-  - walk-forward outputs;
-  - training manifests when applicable;
-  - observation ledger rows;
-  - regime fitness scorecards;
-  - selector candidates.
-- [ ] Add validation that rejects evidence when any identity field differs
+  - [x] generated strategy metadata;
+  - [x] historical backtest outputs written by the checked backtest wrappers;
+  - [ ] walk-forward outputs;
+  - [x] training manifests when applicable;
+  - [x] observation ledger rows;
+  - [x] regime fitness scorecards;
+  - [x] selector candidates.
+- [x] Add validation that rejects evidence when any identity field differs
   across artifacts unless a migration/version mapping is explicit.
-- [ ] Add tests proving that a backtest for strategy A cannot be consumed by a
+- [x] Add tests proving that a backtest for strategy A cannot be consumed by a
   selector candidate for strategy B.
-- [ ] Add tests proving that changing `signal_version`, `risk_policy_version`,
+- [x] Add tests proving that changing `signal_version`, `risk_policy_version`,
   `regime_classifier_version`, or `cost_model_id` segments evidence.
 
 Acceptance criteria:
 
 - [ ] A reviewer can trace a selected runtime candidate back to exact strategy
   source, metrics, trades, scorecard, and selector decision artifacts.
-- [ ] Mismatched strategy/logic evidence fails closed.
+- [x] Mismatched strategy/logic evidence fails closed.
+
+Implemented on 2026-05-21 JST:
+
+- Added `freqtrade_ext/bot_factory/candidate_identity.py` with
+  `strategy_candidate_identity_v1`, required-field validation, artifact
+  identity comparison, and explicit migration-map support for future approved
+  version remaps.
+- Embedded `candidate_identity` in generated strategy metadata, checked
+  backtest/FreqAI backtest wrapper outputs, FreqAI training manifests,
+  observation ledger rows, regime fitness scorecards, and selector candidates.
+- Added candidate-identity lineage checks to observation validation, regime
+  scorecard construction, runtime selector candidate evaluation, and candidate
+  evaluation manifests.
+- Bound `DonchianTrendBullStrategy` to
+  `strong_uptrend_momentum_v1` through the same canonical identity object:
+  `strong-uptrend-historical-ohlcv-candidate`.
+
+Remaining limitation: existing historical artifacts produced before this
+increment are not regenerated in-place; new checked wrapper outputs carry the
+identity object. Walk-forward output embedding remains the next P0 lineage gap.
 
 ## P0: Backtest To Observation To Scorecard Pipeline
 
@@ -323,12 +343,13 @@ Acceptance criteria:
 
 ## Current Known Examples
 
-- `DonchianTrendBullStrategy` is a real Freqtrade strategy candidate, but it is
-  not yet automatically tied to a `RegimeStrategyLogicSpec` and selector
-  candidate identity.
+- `DonchianTrendBullStrategy` is now tied to `strong_uptrend_momentum_v1` by
+  the canonical `StrategyCandidateIdentity`
+  `strong-uptrend-historical-ohlcv-candidate`. The remaining gap is the
+  deterministic converter from real backtest artifacts into observations,
+  scorecards, and selector candidates.
 - `strong_uptrend_momentum_v1`, `downtrend_defensive_rebound_v1`, and
   `range_mean_reversion_v1` are selector logic specs, but they are not yet
   automatically generated from or bound to real strategy backtest artifacts.
 - The historical uptrend replay proved selector behavior for a selected window,
   but it used close-to-close proxy evidence and relaxed calendar concentration.
-
