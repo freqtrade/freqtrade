@@ -2671,6 +2671,9 @@ Checked on 2026-04-26 JST.
 - [x] Add Regime-Aware Promotion Gate local schema/scorecard foundation that
   prevents raw aggregate PnL from becoming direct selector eligibility or
   Phase 3 paper-readiness input.
+- [x] Add Architecture Risk TODO for connecting real strategy backtests,
+  selector logic specs, regime scorecards, and Phase 3 readiness gates without
+  evidence identity drift: `docs/BOT_FACTORY_ARCHITECTURE_RISK_TODO.md`.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
