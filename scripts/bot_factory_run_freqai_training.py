@@ -266,6 +266,7 @@ def main() -> int:
             freqaimodel=args.freqaimodel,
             freqaimodel_path=args.freqaimodel_path,
             freqai_identifier=args.freqai_identifier,
+            candidate_id=str(candidate_identity["candidate_id"]),
             data_format_ohlcv=args.data_format_ohlcv,
             userdir=args.userdir,
             datadir=args.datadir,

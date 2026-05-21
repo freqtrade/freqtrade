@@ -116,6 +116,7 @@ def build_checked_walk_forward_command(
     freqaimodel: str | None = None,
     freqaimodel_path: str | None = None,
     freqai_identifier: str | None = None,
+    candidate_id: str | None = None,
     data_format_ohlcv: str = "parquet",
     userdir: str | None = None,
     datadir: str | None = None,
@@ -179,6 +180,8 @@ def build_checked_walk_forward_command(
         mlflow_tracking_uri=mlflow_tracking_uri,
         mlflow_experiment=mlflow_experiment,
     )
+    if candidate_id:
+        cmd.extend(["--candidate-id", candidate_id])
     return cmd
 
 

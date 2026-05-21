@@ -1249,6 +1249,124 @@ def test_walk_forward_aggregates_window_metrics():
     assert metrics["summary"]["max_drawdown_pct_any_window"] == 6.0
 
 
+def test_walk_forward_aggregates_candidate_identity_lineage():
+    from freqtrade_ext.bot_factory.candidate_identity import build_strategy_candidate_identity
+
+    identity = build_strategy_candidate_identity(
+        candidate_id="cand-wf",
+        strategy_id="strategy-wf",
+        strategy_class_name="WalkForwardStrategy",
+        strategy_source_path="user_data/strategies/WalkForwardStrategy.py",
+        strategy_version="strategy_wf_v1",
+        signal_version="signal_wf_v1",
+        risk_policy_version="risk_wf_v1",
+        regime_classifier_version="regime_wf_v1",
+        cost_model_id="cost_wf_v1",
+        allowed_pairs=["BTC/USDT:USDT"],
+        allowed_timeframes=["5m"],
+        created_at="2026-05-21T00:00:00+00:00",
+        source_artifacts={"strategy_source": "user_data/strategies/WalkForwardStrategy.py"},
+    )
+    window_results = [
+        {
+            "status": "completed",
+            "gate_recommendation": "pass",
+            "run_id": "wf_01",
+            "window": {"index": 1, "timerange": "20250101-20250103"},
+            "metrics": {
+                "total_return": 0.02,
+                "total_return_pct": 2.0,
+                "max_drawdown_pct": 4.0,
+                "candidate_identity": identity,
+            },
+        },
+        {
+            "status": "completed",
+            "gate_recommendation": "pass",
+            "run_id": "wf_02",
+            "window": {"index": 2, "timerange": "20250103-20250105"},
+            "metrics": {
+                "total_return": 0.015,
+                "total_return_pct": 1.5,
+                "max_drawdown_pct": 6.0,
+                "candidate_identity": identity,
+            },
+        },
+    ]
+
+    metrics = aggregate_walk_forward_results(
+        window_results,
+        WalkForwardRules(
+            min_pass_rate=1.0,
+            min_profitable_windows_ratio=1.0,
+            max_drawdown_pct_any_window=10.0,
+            max_single_window_profit_dependency=0.6,
+        ),
+        candidate_identity=identity,
+    )
+
+    identity_check = next(
+        check for check in metrics["checks"] if check["name"] == "candidate_identity_lineage"
+    )
+    assert metrics["recommendation"] == "pass"
+    assert metrics["candidate_identity"] == identity
+    assert metrics["identity_lineage_validation"]["ok"] is True
+    assert identity_check["pass"] is True
+
+
+def test_walk_forward_identity_mismatch_fails_recommendation():
+    from freqtrade_ext.bot_factory.candidate_identity import build_strategy_candidate_identity
+
+    identity = build_strategy_candidate_identity(
+        candidate_id="cand-wf",
+        strategy_id="strategy-wf",
+        strategy_class_name="WalkForwardStrategy",
+        strategy_source_path="user_data/strategies/WalkForwardStrategy.py",
+        strategy_version="strategy_wf_v1",
+        signal_version="signal_wf_v1",
+        risk_policy_version="risk_wf_v1",
+        regime_classifier_version="regime_wf_v1",
+        cost_model_id="cost_wf_v1",
+        allowed_pairs=["BTC/USDT:USDT"],
+        allowed_timeframes=["5m"],
+        created_at="2026-05-21T00:00:00+00:00",
+        source_artifacts={"strategy_source": "user_data/strategies/WalkForwardStrategy.py"},
+    )
+    wrong_identity = dict(identity)
+    wrong_identity["cost_model_id"] = "cost_wf_v2"
+
+    metrics = aggregate_walk_forward_results(
+        [
+            {
+                "status": "completed",
+                "gate_recommendation": "pass",
+                "run_id": "wf_01",
+                "window": {"index": 1, "timerange": "20250101-20250103"},
+                "metrics": {
+                    "total_return": 0.02,
+                    "total_return_pct": 2.0,
+                    "max_drawdown_pct": 4.0,
+                    "candidate_identity": wrong_identity,
+                },
+            }
+        ],
+        WalkForwardRules(
+            min_pass_rate=1.0,
+            min_profitable_windows_ratio=1.0,
+            max_drawdown_pct_any_window=10.0,
+            max_single_window_profit_dependency=1.0,
+        ),
+        candidate_identity=identity,
+    )
+
+    identity_check = next(
+        check for check in metrics["checks"] if check["name"] == "candidate_identity_lineage"
+    )
+    assert metrics["recommendation"] == "fail"
+    assert metrics["identity_lineage_validation"]["ok"] is False
+    assert identity_check["pass"] is False
+
+
 def test_training_child_run_id_sanitizes_timerange():
     assert training_child_run_id("train", "20250105-20250107") == (
         "train_20250105_20250107"
@@ -1295,6 +1413,7 @@ def test_training_walk_forward_command_accepts_windows_and_rules(tmp_path):
         timeframe="5m",
         pairs=["BTC/USDT:USDT"],
         freqai_identifier="bf_longonly_wf",
+        candidate_id="cand-wf",
         min_pass_rate=0.5,
     )
 
@@ -1306,6 +1425,7 @@ def test_training_walk_forward_command_accepts_windows_and_rules(tmp_path):
     assert "20250105-20250107" in cmd
     assert cmd[cmd.index("--min-pass-rate") + 1] == "0.5"
     assert cmd[cmd.index("--freqai-identifier") + 1] == "bf_longonly_wf"
+    assert cmd[cmd.index("--candidate-id") + 1] == "cand-wf"
 
 
 def test_training_manifest_keeps_local_artifacts_as_source_of_truth(tmp_path):

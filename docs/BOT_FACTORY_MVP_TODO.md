@@ -99,6 +99,41 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-21 JST for walk-forward candidate identity lineage.
+
+- [x] Embedded canonical `candidate_identity` into checked walk-forward
+  metrics, added a sibling `candidate_identity.json` artifact, and included the
+  identity in the Markdown walk-forward report.
+- [x] Updated `scripts/bot_factory_run_walk_forward.py` to resolve strategy
+  identity, pass the same `--candidate-id` into each child backtest wrapper, and
+  fail a window when completed child metrics carry a mismatched identity.
+- [x] Updated FreqAI training and candidate-evaluation execution command
+  construction so historical, walk-forward, and training child wrappers receive
+  the same candidate id.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\walk_forward.py freqtrade_ext\bot_factory\freqai_training.py freqtrade_ext\bot_factory\candidate_evaluation.py scripts\bot_factory_run_walk_forward.py scripts\bot_factory_run_freqai_training.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "walk_forward or identity"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_evaluation and execution"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies`
+- [x] Results: compile passed. The first sandboxed focused pytest command hit
+  the known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`); re-running
+  with normal filesystem permissions passed 11 walk-forward/identity tests.
+  The candidate-evaluation execution slice passed 3 tests. Both wrapper
+  `--help` checks exited `0`.
+- [x] Static strategy check result: `ok=true`, `files_checked=8`, artifact
+  `registry\strategies\checks\20260521T141758Z_static_check.json`. Existing
+  review warnings remain in `user_data\strategies\5mV1.py` and
+  `user_data\strategies\FreqAICustomStrategy.py`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, exchange order endpoint, API key, secret, leverage, shorting,
+  or process-control action was performed.
+- [ ] Remaining limitation: existing walk-forward artifacts created before this
+  increment were not regenerated in-place. The deterministic
+  backtest-to-observation-to-scorecard converter remains a P0 follow-up.
+
 Checked on 2026-05-21 JST for canonical candidate identity foundation.
 
 - [x] Added `freqtrade_ext/bot_factory/candidate_identity.py` with the

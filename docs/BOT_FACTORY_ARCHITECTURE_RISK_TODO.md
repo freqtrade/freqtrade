@@ -65,10 +65,10 @@ candidate.
   - `allowed_timeframes`
   - `created_at`
   - `source_artifacts`
-- [ ] Require the same identity object to be embedded in:
+- [x] Require the same identity object to be embedded in:
   - [x] generated strategy metadata;
   - [x] historical backtest outputs written by the checked backtest wrappers;
-  - [ ] walk-forward outputs;
+  - [x] walk-forward outputs;
   - [x] training manifests when applicable;
   - [x] observation ledger rows;
   - [x] regime fitness scorecards;
@@ -95,6 +95,11 @@ Implemented on 2026-05-21 JST:
 - Embedded `candidate_identity` in generated strategy metadata, checked
   backtest/FreqAI backtest wrapper outputs, FreqAI training manifests,
   observation ledger rows, regime fitness scorecards, and selector candidates.
+- Embedded `candidate_identity` in checked walk-forward outputs, persisted
+  `candidate_identity.json` beside `walk_forward_metrics.json`, passed the same
+  `--candidate-id` into each child window wrapper, and added lineage validation
+  that fails a walk-forward result when completed child metrics carry a
+  different identity.
 - Added candidate-identity lineage checks to observation validation, regime
   scorecard construction, runtime selector candidate evaluation, and candidate
   evaluation manifests.
@@ -102,9 +107,11 @@ Implemented on 2026-05-21 JST:
   `strong_uptrend_momentum_v1` through the same canonical identity object:
   `strong-uptrend-historical-ohlcv-candidate`.
 
-Remaining limitation: existing historical artifacts produced before this
-increment are not regenerated in-place; new checked wrapper outputs carry the
-identity object. Walk-forward output embedding remains the next P0 lineage gap.
+Remaining limitation: existing historical and walk-forward artifacts produced
+before this increment are not regenerated in-place; new checked wrapper outputs
+carry the identity object. The deterministic converter from backtest artifacts
+into observations, scorecards, and selector candidates remains the next P0
+lineage gap.
 
 ## P0: Backtest To Observation To Scorecard Pipeline
 
