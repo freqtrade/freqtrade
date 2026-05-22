@@ -10047,6 +10047,23 @@ def _selector_candidate_for_logic(
     )
 
 
+def _passing_feature_quality_report(required_features):
+    from freqtrade_ext.bot_factory.feature_quality import build_feature_quality_report
+
+    data: dict[str, Any] = {
+        "date": pd.date_range("2026-01-01", periods=4, freq="5min", tz="UTC"),
+    }
+    for feature in required_features:
+        data[str(feature)] = [1.0, 1.0, 1.0, 1.0]
+    return build_feature_quality_report(
+        pd.DataFrame(data),
+        required_features=required_features,
+        now=datetime(2026, 1, 1, 0, 20, tzinfo=UTC),
+        classifier_confidence=0.9,
+        cost_model_updated_at="2026-01-01T00:15:00+00:00",
+    )
+
+
 def test_regime_observation_rejects_future_dry_run_in_current_scope():
     from freqtrade_ext.bot_factory.regime_promotion import validate_observation_record
 
@@ -10272,6 +10289,16 @@ def test_strong_uptrend_logic_selected_in_assumed_production_when_regime_matches
             "regime_label",
             "cost_model",
         ],
+        feature_quality_report=_passing_feature_quality_report(
+            [
+                "close",
+                "volume",
+                "moving_average_slope",
+                "range_efficiency",
+                "regime_label",
+                "cost_model",
+            ]
+        ),
         production_assumption=True,
     )
 
@@ -10441,6 +10468,7 @@ def test_selector_chooses_regime_matching_logic_from_multiple_candidates():
             regime_classifier_version="regime_classifier_v1",
             data_quality_pass=True,
             available_features=all_features,
+            feature_quality_report=_passing_feature_quality_report(all_features),
             production_assumption=True,
         ),
         candidates=candidates,
@@ -10454,6 +10482,7 @@ def test_selector_chooses_regime_matching_logic_from_multiple_candidates():
             regime_classifier_version="regime_classifier_v1",
             data_quality_pass=True,
             available_features=all_features,
+            feature_quality_report=_passing_feature_quality_report(all_features),
             production_assumption=True,
         ),
         candidates=candidates,
@@ -10467,6 +10496,7 @@ def test_selector_chooses_regime_matching_logic_from_multiple_candidates():
             regime_classifier_version="regime_classifier_v1",
             data_quality_pass=True,
             available_features=all_features,
+            feature_quality_report=_passing_feature_quality_report(all_features),
             production_assumption=True,
         ),
         candidates=candidates,
@@ -10532,6 +10562,9 @@ def test_selector_ranks_same_regime_candidates_by_stress_adjusted_score():
             regime_classifier_version="regime_classifier_v1",
             data_quality_pass=True,
             available_features=sorted(robust_logic.required_features),
+            feature_quality_report=_passing_feature_quality_report(
+                sorted(robust_logic.required_features)
+            ),
             production_assumption=True,
         ),
         candidates=[higher_normal_candidate, robust_candidate],
@@ -10670,6 +10703,421 @@ def test_candidate_identity_segments_signal_risk_regime_and_cost_versions():
         result = compare_candidate_identities(base, observed, observed_label="observed")
         assert result["ok"] is False
         assert {item["field"] for item in result["mismatches"]} == {field}
+
+
+def test_deterministic_regime_classifier_labels_fixed_ohlcv_and_churn_is_bounded():
+    from freqtrade_ext.bot_factory.market_regime import (
+        RegimeClassifierConfig,
+        classify_ohlcv_regimes,
+        regime_churn_report,
+    )
+
+    dates = pd.date_range("2026-01-01", periods=40, freq="5min", tz="UTC")
+    close = pd.Series(np.linspace(100.0, 120.0, 40))
+    frame = pd.DataFrame(
+        {
+            "date": dates,
+            "open": close.shift(1).fillna(close.iloc[0]),
+            "high": close + 0.5,
+            "low": close - 0.5,
+            "close": close,
+            "volume": np.full(40, 100.0),
+        }
+    )
+    config = RegimeClassifierConfig(lookback=6, min_rows=12)
+
+    first = classify_ohlcv_regimes(frame, pair="BTC/USDT:USDT", timeframe="5m", config=config)
+    perturbed = frame.copy()
+    perturbed["close"] = perturbed["close"] * 1.0001
+    second = classify_ohlcv_regimes(
+        perturbed, pair="BTC/USDT:USDT", timeframe="5m", config=config
+    )
+    churn = regime_churn_report(first, second, max_churn_ratio=0.1)
+
+    assert first["regime_classifier_version"] == "deterministic_regime_classifier_v1"
+    assert first["label_counts"]["trend_up"] > 0
+    assert churn["ok"] is True
+
+
+def test_backtest_evidence_pipeline_writes_observation_scorecard_and_selector_artifacts(tmp_path):
+    from freqtrade_ext.bot_factory.backtest_results import BacktestMetrics, write_metrics
+    from freqtrade_ext.bot_factory.evidence_pipeline import (
+        BacktestEvidencePipelineInputs,
+        build_backtest_evidence_pipeline,
+        write_backtest_evidence_pipeline_artifacts,
+    )
+
+    metrics_path = tmp_path / "data" / "backtests" / "S" / "run" / "metrics.json"
+    trades_path = metrics_path.parent / "trades.csv"
+    ohlcv_path = tmp_path / "user_data" / "data" / "BTC_USDT-5m.parquet"
+    identity = _regime_observation("identity-source")["candidate_identity"]
+    metrics = BacktestMetrics(
+        strategy_name="S",
+        total_return=0.35,
+        total_return_pct=35.0,
+        cagr=None,
+        sharpe=None,
+        sortino=1.2,
+        calmar=None,
+        max_drawdown_pct=4.0,
+        profit_factor=1.6,
+        win_rate=0.6,
+        average_win=None,
+        average_loss=None,
+        trade_count=2,
+        expectancy=0.15,
+        fee_paid=0.0,
+        backtest_start="2026-01-01",
+        backtest_end="2026-01-02",
+        generated_at="2026-05-22T00:00:00+00:00",
+        candidate_identity=identity,
+    )
+    write_metrics(metrics, metrics_path)
+    trades_path.write_text(
+        "open_date,profit_ratio,is_short,leverage\n"
+        "2026-01-01T01:00:00+00:00,0.20,False,1.0\n"
+        "2026-01-01T02:00:00+00:00,0.12,False,1.0\n",
+        encoding="utf-8",
+    )
+    dates = pd.date_range("2026-01-01", periods=40, freq="5min", tz="UTC")
+    close = pd.Series(np.linspace(100.0, 122.0, 40))
+    ohlcv_path.parent.mkdir(parents=True)
+    pd.DataFrame(
+        {
+            "date": dates,
+            "open": close.shift(1).fillna(close.iloc[0]),
+            "high": close + 0.5,
+            "low": close - 0.5,
+            "close": close,
+            "volume": np.full(40, 100.0),
+        }
+    ).to_parquet(ohlcv_path)
+
+    pipeline = build_backtest_evidence_pipeline(
+        BacktestEvidencePipelineInputs(
+            root_dir=tmp_path,
+            metrics_path=metrics_path,
+            trades_path=trades_path,
+            ohlcv_path=ohlcv_path,
+            strategy="S",
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            output_root=tmp_path / "data" / "regime_evidence",
+            run_id="run",
+            intended_regimes=["trend_up"],
+            excluded_regimes=["unknown"],
+            reviewer_notes=["pipeline test"],
+        )
+    )
+    paths = write_backtest_evidence_pipeline_artifacts(
+        pipeline,
+        root_dir=tmp_path,
+        output_root=tmp_path / "data" / "regime_evidence",
+    )
+
+    assert pipeline["observation_ledger"]["ok"] is True
+    assert pipeline["observation_ledger"]["observation_count"] >= 2
+    assert pipeline["regime_fitness_scorecard"]["decision"] == "REGIME_SCOPED_SELECTOR_ELIGIBLE"
+    assert pipeline["regime_fitness_scorecard"]["promotion_authorized_by_this_command"] is False
+    assert pipeline["regime_fitness_scorecard"]["phase3_readiness_required_after_scorecard"] is True
+    assert "baseline_comparison" in pipeline["regime_fitness_scorecard"]
+    assert pipeline["selector_candidate"]["candidate_identity"]["candidate_id"] == identity["candidate_id"]
+    assert {"metrics", "trades", "ohlcv"}.issubset(
+        pipeline["selector_candidate"]["candidate_identity"]["source_artifacts"]
+    )
+    for path in paths.values():
+        assert path.exists()
+
+
+def test_manual_scorecard_cannot_become_selector_candidate():
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        selection_candidate_from_scorecard,
+        strong_uptrend_momentum_logic_spec,
+    )
+
+    logic = strong_uptrend_momentum_logic_spec()
+    manual_scorecard = {
+        "factory": "manual_scorecard",
+        "manual_review_only": True,
+        "candidate_identity": _regime_observation("manual")["candidate_identity"],
+    }
+
+    try:
+        selection_candidate_from_scorecard(
+            logic=logic,
+            scorecard=manual_scorecard,
+            candidate_id="candidate",
+        )
+    except ValueError as exc:
+        assert "deterministic" in str(exc)
+    else:
+        raise AssertionError("manual scorecard should be rejected")
+
+
+def test_rejected_scorecard_cannot_become_selector_candidate():
+    import pytest
+
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        candidate_identity_from_logic_spec,
+        selection_candidate_from_scorecard,
+        strong_uptrend_momentum_logic_spec,
+    )
+
+    logic = strong_uptrend_momentum_logic_spec()
+    scorecard = {
+        "factory": "regime_fitness_scorecard",
+        "manual_review_only": False,
+        "decision": "REJECT",
+        "candidate_identity": candidate_identity_from_logic_spec(
+            logic,
+            candidate_id="candidate",
+        ),
+    }
+
+    with pytest.raises(ValueError, match="selector-eligible"):
+        selection_candidate_from_scorecard(
+            logic=logic,
+            scorecard=scorecard,
+            candidate_id="candidate",
+        )
+
+
+def test_style_aware_gate_allows_low_trade_trend_candidate_without_scalp_threshold():
+    from freqtrade_ext.bot_factory.backtest_results import BacktestMetrics, evaluate_style_aware_gate
+
+    metrics = BacktestMetrics(
+        strategy_name="TrendS",
+        total_return=0.05,
+        total_return_pct=5.0,
+        cagr=None,
+        sharpe=None,
+        sortino=0.9,
+        calmar=None,
+        max_drawdown_pct=6.0,
+        profit_factor=1.3,
+        win_rate=0.55,
+        average_win=None,
+        average_loss=None,
+        trade_count=24,
+        expectancy=0.01,
+        fee_paid=0.0,
+        backtest_start="2026-01-01",
+        backtest_end="2026-02-01",
+        generated_at="2026-05-22T00:00:00+00:00",
+    )
+
+    gate = evaluate_style_aware_gate(
+        metrics,
+        candidate_style="intraday_trend_following",
+        hold_baseline_return_pct=3.0,
+    )
+
+    assert gate["recommendation"] == "pass"
+    assert next(check for check in gate["checks"] if check["name"] == "style_min_trades")[
+        "rule"
+    ] == ">= 20 for intraday_trend_following"
+
+
+def test_runtime_selector_fails_closed_on_low_confidence_feature_quality_and_cooldown():
+    from freqtrade_ext.bot_factory.feature_quality import build_feature_quality_report
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RuntimeRegimeSnapshot,
+        RuntimeSelectorState,
+        evaluate_runtime_strategy_selection,
+        strong_uptrend_momentum_logic_spec,
+    )
+
+    logic = strong_uptrend_momentum_logic_spec()
+    candidate = _selector_candidate_for_logic(
+        logic,
+        candidate_id="uptrend-candidate",
+        regime="trend_up",
+    )
+    quality = build_feature_quality_report(
+        pd.DataFrame(
+            {
+                "date": pd.date_range("2026-01-01", periods=4, freq="5min", tz="UTC"),
+                "close": [1.0, None, None, 1.1],
+                "volume": [100.0, 0.0, 0.0, 100.0],
+                "moving_average_slope": [0.1, 0.1, 0.1, 0.1],
+                "range_efficiency": [0.8, 0.8, 0.8, 0.8],
+                "regime_label": [1.0, 1.0, 1.0, 1.0],
+                "cost_model": [1.0, 1.0, 1.0, 1.0],
+            }
+        ),
+        required_features=candidate["required_features"],
+        now=datetime(2026, 1, 1, 0, 30, tzinfo=UTC),
+        classifier_confidence=0.4,
+    )
+
+    selection = evaluate_runtime_strategy_selection(
+        runtime=RuntimeRegimeSnapshot(
+            current_regime="trend_up",
+            pair="BTC/USDT:USDT",
+            timeframe="5m",
+            regime_classifier_version="regime_classifier_v1",
+            data_quality_pass=True,
+            available_features=candidate["required_features"],
+            regime_confidence=0.4,
+            feature_quality_report=quality,
+        ),
+        candidates=[candidate],
+        selector_state=RuntimeSelectorState(
+            last_selected_candidate_id="range-candidate",
+            last_selected_regime="range",
+            observations_since_switch=0,
+        ),
+        min_confidence_by_regime={"trend_up": 0.6},
+        cooldown_observations=2,
+    )
+
+    assert selection["action"] == "no_trade"
+    assert "runtime_regime_confidence_below_threshold" in selection["reason_codes"]
+    assert "runtime_regime_change_cooldown_active" in selection["reason_codes"]
+
+
+def test_shadow_leaderboard_rejects_future_paper_sources():
+    from freqtrade_ext.bot_factory.regime_promotion import build_shadow_observation_leaderboards
+
+    current = _regime_observation("current", source_type="local_shadow_replay")
+    future = _regime_observation("future", source_type="future_paper")
+
+    leaderboard = build_shadow_observation_leaderboards([current, future])
+
+    assert leaderboard["accepted_count"] == 1
+    assert leaderboard["rejected_count"] == 1
+    assert leaderboard["historical_readiness_override_allowed"] is False
+    assert leaderboard["parallel_observations_direct_promotion_allowed"] is False
+
+
+def test_candidate_review_joins_artifacts_and_reason_codes(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_review import (
+        build_candidate_review,
+        write_candidate_review_artifacts,
+    )
+
+    identity = _regime_observation("review")["candidate_identity"]
+    strategy_path = tmp_path / "Strategy.py"
+    strategy_path.write_text("class Strategy:\n    pass\n", encoding="utf-8")
+    metrics_path = tmp_path / "metrics.json"
+    metrics_path.write_text(
+        json.dumps({"strategy_name": "Strategy", "total_return_pct": 2.0, "candidate_identity": identity}),
+        encoding="utf-8",
+    )
+    scorecard_path = tmp_path / "scorecard.json"
+    scorecard_path.write_text(
+        json.dumps(
+            {
+                "scorecard_id": "score",
+                "decision": "REGIME_SCOPED_SELECTOR_ELIGIBLE",
+                "eligible_regimes": ["trend_up"],
+                "candidate_identity": identity,
+                "baseline_comparison": {"by_regime": []},
+            }
+        ),
+        encoding="utf-8",
+    )
+    readiness_path = tmp_path / "paper_readiness.json"
+    readiness_path.write_text(
+        json.dumps({"readiness": "blocked", "blockers": [{"name": "reviewer_note_present"}]}),
+        encoding="utf-8",
+    )
+
+    review = build_candidate_review(
+        root_dir=tmp_path,
+        candidate_id="candidate",
+        strategy="Strategy",
+        strategy_source_path=strategy_path,
+        historical_metrics_path=metrics_path,
+        regime_scorecard_path=scorecard_path,
+        paper_readiness_path=readiness_path,
+        reviewer_notes=["review test"],
+    )
+    json_path, report_path = write_candidate_review_artifacts(
+        review,
+        root_dir=tmp_path,
+        output_root=tmp_path / "reviews",
+    )
+
+    assert "paper_readiness_blocked" in review["reason_codes"]
+    assert review["strategy_source"]["sha256"]
+    assert "-> regime_fitness_scorecard.json" in review["architecture_diagram"]
+    assert json_path.exists()
+    assert report_path.exists()
+
+
+def test_gate_glossary_defines_no_paper_live_approval_by_name():
+    from freqtrade_ext.bot_factory.gate_semantics import (
+        gate_glossary,
+        gate_semantics_payload,
+    )
+
+    glossary = gate_glossary()
+    payload = gate_semantics_payload("REGIME_SCOPED_SELECTOR_ELIGIBLE", "paper_readiness.pass")
+
+    assert "paper trading" in glossary["REGIME_SCOPED_SELECTOR_ELIGIBLE"]["does_not_permit"]
+    assert "starting freqtrade trade" in glossary["paper_readiness.pass"]["does_not_permit"]
+    assert payload["promotion_authorized_by_this_command"] is False
+    assert payload["paper_live_approval_by_name_allowed"] is False
+
+
+def test_paper_readiness_requires_regime_scorecard_when_selector_eligibility_claimed(
+    tmp_path,
+):
+    from freqtrade_ext.bot_factory.paper import (
+        PaperReadinessInputs,
+        _regime_scorecard_evidence_checks,
+    )
+
+    inputs = PaperReadinessInputs(
+        root_dir=tmp_path,
+        strategy="S",
+        run_id="paper",
+        config_path=tmp_path / "config.json",
+        strategy_path=tmp_path / "S.py",
+        historical_dir=tmp_path / "historical",
+        walk_forward_dir=tmp_path / "walk_forward",
+        training_dir=tmp_path / "training",
+        requires_regime_scorecard=True,
+    )
+
+    missing_checks = _regime_scorecard_evidence_checks(inputs)
+
+    assert missing_checks[0].name == "regime_scorecard_required"
+    assert missing_checks[0].status == "blocked"
+
+    scorecard_path = tmp_path / "regime_fitness_scorecard.json"
+    scorecard_path.write_text(
+        json.dumps(
+            {
+                "decision": "REGIME_SCOPED_SELECTOR_ELIGIBLE",
+                "promotion_authorized_by_this_command": False,
+                "raw_aggregate_pnl_promotion_allowed": False,
+                "phase3_readiness_required_after_scorecard": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    present_checks = _regime_scorecard_evidence_checks(
+        PaperReadinessInputs(
+            root_dir=tmp_path,
+            strategy="S",
+            run_id="paper",
+            config_path=tmp_path / "config.json",
+            strategy_path=tmp_path / "S.py",
+            historical_dir=tmp_path / "historical",
+            walk_forward_dir=tmp_path / "walk_forward",
+            training_dir=tmp_path / "training",
+            regime_scorecard_path=scorecard_path,
+            requires_regime_scorecard=True,
+        )
+    )
+
+    assert {check.name: check.status for check in present_checks} == {
+        "regime_scorecard_required": "pass",
+        "regime_scorecard_selector_eligible": "pass",
+        "regime_scorecard_does_not_authorize_promotion": "pass",
+    }
 
 
 def test_regime_observation_rejects_mismatched_candidate_identity():

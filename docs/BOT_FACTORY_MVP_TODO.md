@@ -99,6 +99,46 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-22 JST for Bot Factory architecture risk TODO closure.
+
+- [x] Closed the remaining items in `docs/BOT_FACTORY_ARCHITECTURE_RISK_TODO.md`:
+  deterministic regime classification, checked backtest-to-observation-to-
+  scorecard conversion, gate semantics, style-aware gates, runtime selector
+  stability, feature-quality checks, ranking improvements, shadow observation
+  boundaries, and candidate review UX.
+- [x] Added local-only helpers/CLIs:
+  `freqtrade_ext/bot_factory/market_regime.py`,
+  `evidence_pipeline.py`, `feature_quality.py`, `gate_semantics.py`,
+  `candidate_review.py`, `scripts/bot_factory_build_regime_artifacts.py`, and
+  `scripts/bot_factory_generate_candidate_review.py`.
+- [x] Updated Phase 3 paper readiness so `--regime-scorecard` and
+  `--requires-regime-scorecard` fail closed when a strategy claims
+  regime-scoped selector eligibility without a safe scorecard.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\gate_semantics.py freqtrade_ext\bot_factory\feature_quality.py freqtrade_ext\bot_factory\market_regime.py freqtrade_ext\bot_factory\evidence_pipeline.py freqtrade_ext\bot_factory\candidate_review.py freqtrade_ext\bot_factory\backtest_results.py freqtrade_ext\bot_factory\regime_promotion.py freqtrade_ext\bot_factory\paper.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\walk_forward.py scripts\bot_factory_build_regime_artifacts.py scripts\bot_factory_generate_candidate_review.py scripts\bot_factory_check_paper_readiness.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "regime or selector or paper_readiness or style_aware or feature_quality or candidate_review or gate_glossary or evidence_pipeline"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_build_regime_artifacts.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_generate_candidate_review.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_check_paper_readiness.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies`
+- [x] Results: compile passed; focused pytest passed 36 tests; full
+  `tests/test_bot_factory.py -q` reached `[100%]`; all three CLI help checks
+  exited `0`. The first sandboxed focused pytest attempt hit the known Windows
+  temp/cache ACL issue under `AppData\Local\Temp\pytest-of-yoro4`; reruns with
+  normal filesystem permissions passed.
+- [x] Static strategy check result: `ok=true`, `files_checked=8`. Existing
+  warnings remain in `user_data\strategies\5mV1.py` and
+  `user_data\strategies\FreqAICustomStrategy.py`; this architecture increment
+  did not add strategy-source findings.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, or process-control action was performed.
+- [x] Remaining limitation: the new converter and review helpers do not
+  retroactively rewrite old artifacts. Older historical candidates must be
+  converted or regenerated through the checked local wrappers before selector
+  or paper-readiness review.
+
 Checked on 2026-05-21 JST for walk-forward candidate identity lineage.
 
 - [x] Embedded canonical `candidate_identity` into checked walk-forward

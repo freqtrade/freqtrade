@@ -307,6 +307,12 @@ def write_walk_forward_report(metrics: dict[str, Any], path: Path) -> None:
     lines.extend(
         [
             "",
+            "## Gate Semantics",
+            "",
+            "- Permits: candidate may proceed to local regime scorecard and selector-artifact review.",
+            "- Does not permit: paper trading, dry-run trading, live trading, process control, or exchange order placement.",
+            "- Next required gate: regime scorecard review, then paper_readiness.pass.",
+            "",
             "## Notes",
             "",
             "- This report is generated from historical backtests only.",

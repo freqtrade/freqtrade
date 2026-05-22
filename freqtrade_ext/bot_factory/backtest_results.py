@@ -41,6 +41,38 @@ class GateThresholds:
     min_sortino: float | None = 1.2
 
 
+@dataclass(frozen=True)
+class StyleGateThresholds:
+    candidate_style: str
+    min_trades: int
+    min_profit_factor: float
+    max_drawdown_pct: float
+    min_sortino: float | None
+    require_hold_baseline: bool = False
+    require_no_trade_opportunity_cost: bool = False
+
+
+STYLE_GATE_PROFILES: dict[str, StyleGateThresholds] = {
+    "scalp": StyleGateThresholds("scalp", 200, 1.25, 12.0, 1.2),
+    "high_frequency": StyleGateThresholds("high_frequency", 200, 1.25, 12.0, 1.2),
+    "intraday_trend_following": StyleGateThresholds(
+        "intraday_trend_following", 20, 1.15, 18.0, 0.8, require_hold_baseline=True
+    ),
+    "swing_trend_following": StyleGateThresholds(
+        "swing_trend_following", 8, 1.10, 22.0, 0.6, require_hold_baseline=True
+    ),
+    "range_mean_reversion": StyleGateThresholds("range_mean_reversion", 30, 1.20, 15.0, 1.0),
+    "defensive_no_trade_policy": StyleGateThresholds(
+        "defensive_no_trade_policy",
+        0,
+        1.0,
+        5.0,
+        None,
+        require_no_trade_opportunity_cost=True,
+    ),
+}
+
+
 def load_backtest_result(path: Path) -> dict[str, Any]:
     if path.suffix == ".zip":
         return _load_backtest_zip(path)
@@ -236,6 +268,12 @@ def write_report(
     lines.extend(
         [
             "",
+            "## Gate Semantics",
+            "",
+            "- Permits: candidate may proceed to historical walk-forward review.",
+            "- Does not permit: paper trading, dry-run trading, live trading, or exchange order placement.",
+            "- Next required gate: walk_forward_gate.pass.",
+            "",
             "## Notes",
             "",
             "- This report is generated from a backtest only.",
@@ -284,6 +322,86 @@ def evaluate_initial_gate(
         )
     recommendation = "pass" if all(check["pass"] for check in checks) else "fail"
     return {"recommendation": recommendation, "checks": checks, "thresholds": asdict(thresholds)}
+
+
+def evaluate_style_aware_gate(
+    metrics: BacktestMetrics,
+    *,
+    candidate_style: str,
+    hold_baseline_return_pct: float | None = None,
+    no_trade_opportunity_cost_pct: float | None = None,
+    risk_reduction_rationale: str | None = None,
+) -> dict[str, Any]:
+    profile = STYLE_GATE_PROFILES.get(candidate_style, STYLE_GATE_PROFILES["scalp"])
+    checks = [
+        {
+            "name": "style_min_trades",
+            "actual": metrics.trade_count,
+            "rule": f">= {profile.min_trades} for {profile.candidate_style}",
+            "pass": metrics.trade_count >= profile.min_trades,
+        },
+        {
+            "name": "style_min_profit_factor",
+            "actual": _fmt(metrics.profit_factor),
+            "rule": f">= {profile.min_profit_factor}",
+            "pass": metrics.profit_factor is not None
+            and metrics.profit_factor >= profile.min_profit_factor,
+        },
+        {
+            "name": "style_max_drawdown_pct",
+            "actual": _fmt(metrics.max_drawdown_pct),
+            "rule": f"<= {profile.max_drawdown_pct}",
+            "pass": metrics.max_drawdown_pct is not None
+            and metrics.max_drawdown_pct <= profile.max_drawdown_pct,
+        },
+    ]
+    if profile.min_sortino is not None:
+        checks.append(
+            {
+                "name": "style_min_sortino",
+                "actual": _fmt(metrics.sortino),
+                "rule": f">= {profile.min_sortino}",
+                "pass": metrics.sortino is not None and metrics.sortino >= profile.min_sortino,
+            }
+        )
+    if profile.require_hold_baseline:
+        hold_delta = (
+            None
+            if hold_baseline_return_pct is None
+            else metrics.total_return_pct - hold_baseline_return_pct
+        )
+        checks.append(
+            {
+                "name": "hold_baseline_not_underperformed_without_risk_rationale",
+                "actual": _fmt(hold_delta),
+                "rule": ">= 0 or explicit risk-reduction rationale",
+                "pass": hold_delta is not None
+                and (hold_delta >= 0 or bool(str(risk_reduction_rationale or "").strip())),
+            }
+        )
+    if profile.require_no_trade_opportunity_cost:
+        checks.append(
+            {
+                "name": "no_trade_opportunity_cost_justified",
+                "actual": _fmt(no_trade_opportunity_cost_pct),
+                "rule": "<= 0 or explicit defensive rationale",
+                "pass": no_trade_opportunity_cost_pct is not None
+                and (
+                    no_trade_opportunity_cost_pct <= 0
+                    or bool(str(risk_reduction_rationale or "").strip())
+                ),
+            }
+        )
+    recommendation = "pass" if all(check["pass"] for check in checks) else "fail"
+    return {
+        "recommendation": recommendation,
+        "candidate_style": candidate_style,
+        "profile": asdict(profile),
+        "checks": checks,
+        "permits": "local style-aware review only",
+        "does_not_permit": "paper trading, dry-run trading, live trading, or exchange order placement",
+        "next_required_gate": "walk_forward_gate.pass",
+    }
 
 
 def promotion_recommendation(gate: dict[str, Any]) -> str:

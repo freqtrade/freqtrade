@@ -11,6 +11,8 @@ from freqtrade_ext.bot_factory.candidate_identity import (
     build_strategy_candidate_identity,
     validate_candidate_identity,
 )
+from freqtrade_ext.bot_factory.feature_quality import feature_quality_passes_thresholds
+from freqtrade_ext.bot_factory.gate_semantics import gate_semantics_payload
 
 
 CURRENT_OBSERVATION_SOURCE_TYPES = {
@@ -158,9 +160,19 @@ class RuntimeRegimeSnapshot:
     regime_classifier_version: str
     data_quality_pass: bool
     available_features: Sequence[str]
+    regime_confidence: float = 1.0
+    feature_quality_report: dict[str, Any] | None = None
     production_assumption: bool = False
     process_control_allowed: bool = False
     paper_or_dry_run_process_running: bool = False
+
+
+@dataclass(frozen=True)
+class RuntimeSelectorState:
+    last_selected_candidate_id: str | None = None
+    last_selected_regime: str | None = None
+    observations_since_switch: int = 0
+    last_switch_reason: str | None = None
 
 
 def observation_ledger_schema() -> dict[str, Any]:
@@ -185,6 +197,8 @@ def regime_fitness_scorecard_schema() -> dict[str, Any]:
         "evidence_version_fields": list(EVIDENCE_VERSION_FIELDS),
         "requires_scorecard_before_phase3_readiness": True,
         "raw_aggregate_pnl_promotion_allowed": False,
+        "phase3_readiness_required_after_scorecard": True,
+        "promotion_authorized_by_this_command": False,
     }
 
 
@@ -633,6 +647,59 @@ def build_observation_ledger(
     }
 
 
+def build_shadow_observation_leaderboards(
+    observations: Sequence[dict[str, Any]],
+    *,
+    leaderboard_id: str = "shadow_observation_leaderboard",
+) -> dict[str, Any]:
+    accepted = []
+    rejected = []
+    for observation in observations:
+        validation = validate_observation_record(observation)
+        if validation["ok"]:
+            accepted.append(observation)
+        else:
+            rejected.append({"observation": observation, "validation": validation})
+    buckets = {
+        "long_term_historical_evidence": [
+            item for item in accepted if item.get("source_type") in {"backtest", "walk_forward"}
+        ],
+        "current_regime_evidence": [
+            item for item in accepted if item.get("market_regime") not in {"unknown", "mixed"}
+        ],
+        "recent_observation_evidence": [
+            item for item in accepted if item.get("source_type") == "local_shadow_replay"
+        ],
+        "data_quality_confidence": sorted(
+            [
+                {
+                    "observation_id": item.get("observation_id"),
+                    "data_quality_pass": not bool(item.get("data_quality_flags")),
+                    "market_regime": item.get("market_regime"),
+                    "source_type": item.get("source_type"),
+                }
+                for item in accepted
+            ],
+            key=lambda item: str(item.get("observation_id")),
+        ),
+    }
+    return {
+        "factory": "shadow_observation_leaderboard",
+        "schema_version": "shadow_observation_leaderboard_v1",
+        "leaderboard_id": leaderboard_id,
+        "created_at": _utc_now(),
+        "accepted_source_types": sorted(CURRENT_OBSERVATION_SOURCE_TYPES),
+        "future_source_types_rejected": sorted(FUTURE_OBSERVATION_SOURCE_TYPES),
+        "accepted_count": len(accepted),
+        "rejected_count": len(rejected),
+        "leaderboards": buckets,
+        "rejected_observations": rejected,
+        "historical_readiness_override_allowed": False,
+        "parallel_observations_direct_promotion_allowed": False,
+        "safety_scope": _safety_scope(),
+    }
+
+
 def build_regime_fitness_scorecard(
     candidate_observations: Sequence[dict[str, Any]],
     *,
@@ -733,6 +800,9 @@ def build_regime_fitness_scorecard(
         "raw_aggregate_pnl_promotion_allowed": False,
         "phase3_readiness_bypassed": False,
         "phase3_readiness_required_after_scorecard": True,
+        "promotion_authorized_by_this_command": False,
+        "manual_review_only": False,
+        "gate_semantics": gate_semantics_payload(decision),
         "reviewer_notes": list(reviewer_notes),
         "safety_scope": _safety_scope(),
     }
@@ -747,6 +817,13 @@ def render_regime_scorecard_report(scorecard: dict[str, Any]) -> str:
         f"- Blocked regimes: {', '.join(scorecard.get('blocked_regimes', [])) or 'none'}",
         f"- Raw aggregate PnL promotion allowed: `{scorecard.get('raw_aggregate_pnl_promotion_allowed')}`",
         f"- Phase 3 readiness required after scorecard: `{scorecard.get('phase3_readiness_required_after_scorecard')}`",
+        f"- Promotion authorized by this command: `{scorecard.get('promotion_authorized_by_this_command')}`",
+        "",
+        "## Gate Semantics",
+        "",
+        "- Permits: local selector simulation only inside declared evidence scope.",
+        "- Does not permit: paper trading, dry-run trading, live trading, process control, or exchange order placement.",
+        "- Next required gate: `paper_readiness.pass`.",
         "",
         "## Scorecard by Regime",
         "",
@@ -800,31 +877,75 @@ def evaluate_runtime_strategy_selection(
     candidates: Sequence[dict[str, Any]],
     selector_id: str = "regime_selector_v1",
     reviewer_notes: Sequence[str] = (),
+    selector_state: RuntimeSelectorState | None = None,
+    min_confidence_by_regime: dict[str, float] | None = None,
+    cooldown_observations: int = 0,
+    hysteresis_margin: float = 0.0,
 ) -> dict[str, Any]:
+    selector_state = selector_state or RuntimeSelectorState()
+    min_confidence_by_regime = min_confidence_by_regime or {}
+    min_confidence = float(min_confidence_by_regime.get(runtime.current_regime, 0.0))
+    preflight_blocks: list[str] = []
+    if runtime.current_regime == "unknown":
+        preflight_blocks.append("runtime_regime_unknown")
+    if runtime.regime_confidence < min_confidence:
+        preflight_blocks.append("runtime_regime_confidence_below_threshold")
+    if (
+        selector_state.last_selected_regime
+        and selector_state.last_selected_regime != runtime.current_regime
+        and selector_state.observations_since_switch < cooldown_observations
+    ):
+        preflight_blocks.append("runtime_regime_change_cooldown_active")
     evaluated = [
         _runtime_candidate_decision(runtime=runtime, candidate=candidate)
         for candidate in candidates
     ]
-    selectable = [item for item in evaluated if item["selectable"]]
-    selected = sorted(
+    selectable = [] if preflight_blocks else [item for item in evaluated if item["selectable"]]
+    ranked_selectable = sorted(
         selectable,
         key=lambda item: (
-            item["scorecard_summary"].get("net_pnl_stress_cost", 0.0),
-            item["scorecard_summary"].get("lower_confidence_bound", 0.0),
-            item["scorecard_summary"].get("net_pnl_normal_cost", 0.0),
+            item.get("selector_score", 0.0),
             -(item["scorecard_summary"].get("max_drawdown", 0.0) or 0.0),
             str(item["candidate_id"]),
         ),
         reverse=True,
-    )[0] if selectable else None
+    )
+    selected = ranked_selectable[0] if ranked_selectable else None
+    previous = next(
+        (
+            item
+            for item in ranked_selectable
+            if item.get("candidate_id") == selector_state.last_selected_candidate_id
+        ),
+        None,
+    )
+    if (
+        selected
+        and previous
+        and selected["candidate_id"] != previous["candidate_id"]
+        and selected.get("selector_score", 0.0) - previous.get("selector_score", 0.0)
+        < hysteresis_margin
+    ):
+        selected = previous
+        preflight_blocks.append("selector_hysteresis_kept_previous_candidate")
     action = "select" if selected else "no_trade"
     reason_codes = (
         ["selected_regime_scoped_candidate", "selected_highest_stress_adjusted_candidate"]
         if selected
-        else ["no_candidate_matched_runtime_regime"]
+        else (preflight_blocks or ["no_candidate_matched_runtime_regime"])
     )
     if runtime.production_assumption:
         reason_codes.append("production_running_assumption_only_no_process_control")
+    next_state = RuntimeSelectorState(
+        last_selected_candidate_id=selected["candidate_id"] if selected else None,
+        last_selected_regime=runtime.current_regime if selected else selector_state.last_selected_regime,
+        observations_since_switch=(
+            selector_state.observations_since_switch + 1
+            if selected and selected["candidate_id"] == selector_state.last_selected_candidate_id
+            else 0
+        ),
+        last_switch_reason=";".join(reason_codes),
+    )
     return {
         "factory": "runtime_regime_strategy_selector",
         "schema_version": "runtime_regime_selector_v1",
@@ -838,6 +959,8 @@ def evaluate_runtime_strategy_selection(
         "would_select_in_production_assumption": bool(selected),
         "reason_codes": reason_codes,
         "evaluated_candidates": evaluated,
+        "selector_state": asdict(selector_state),
+        "next_selector_state": asdict(next_state),
         "reviewer_notes": list(reviewer_notes),
         "safety_scope": _safety_scope(),
     }
@@ -849,6 +972,17 @@ def selection_candidate_from_scorecard(
     scorecard: dict[str, Any],
     candidate_id: str,
 ) -> dict[str, Any]:
+    if scorecard.get("manual_review_only") is True or scorecard.get("factory") != "regime_fitness_scorecard":
+        raise ValueError(
+            "Only deterministic regime_fitness_scorecard artifacts may become selector candidates."
+        )
+    if scorecard.get("decision") not in {
+        "GLOBAL_SELECTOR_ELIGIBLE",
+        "REGIME_SCOPED_SELECTOR_ELIGIBLE",
+    }:
+        raise ValueError(
+            "Only selector-eligible regime scorecards may become selector candidates."
+        )
     scorecard_identity = extract_candidate_identity(scorecard)
     expected_identity = candidate_identity_from_logic_spec(logic, candidate_id=candidate_id)
     identity_comparison = compare_candidate_identities(
@@ -875,6 +1009,7 @@ def selection_candidate_from_scorecard(
         "allowed_pairs": list(logic.allowed_pairs),
         "allowed_timeframes": list(logic.allowed_timeframes),
         "required_features": list(logic.required_features),
+        "feature_quality_thresholds": {"min_classifier_confidence": 0.6},
         "eligible_regimes": list(scorecard.get("eligible_regimes", [])),
         "blocked_regimes": list(scorecard.get("blocked_regimes", [])),
         "scorecard_decision": scorecard.get("decision"),
@@ -1180,6 +1315,8 @@ def _regime_row(
         "net_pnl_stress_cost": net_stress,
         "baseline_delta_normal_cost": baseline_delta_normal,
         "baseline_delta_stress_cost": baseline_delta_stress,
+        "hold_baseline_delta": baseline_delta_normal,
+        "no_trade_baseline_delta": net_normal,
         "incumbent_delta": None,
         "no_trade_opportunity_cost": no_trade_opportunity_cost,
         "confidence_interval": None,
@@ -1205,6 +1342,10 @@ def _runtime_candidate_decision(
     required_features = set(str(item) for item in candidate.get("required_features", []))
     available_features = set(str(item) for item in runtime.available_features)
     missing_features = sorted(required_features - available_features)
+    feature_quality = feature_quality_passes_thresholds(
+        runtime.feature_quality_report,
+        candidate.get("feature_quality_thresholds"),
+    ) if candidate.get("feature_quality_thresholds") else {"ok": True, "reason_codes": [], "checks": []}
     checks = [
         _check(
             "candidate_identity_valid",
@@ -1292,6 +1433,11 @@ def _runtime_candidate_decision(
         ),
         _check("runtime_required_features_available", not missing_features, {"missing_features": missing_features}),
         _check(
+            "runtime_feature_quality_passed",
+            feature_quality["ok"],
+            {"reason_codes": feature_quality.get("reason_codes", [])},
+        ),
+        _check(
             "scorecard_decision_selector_eligible",
             candidate.get("scorecard_decision")
             in {"GLOBAL_SELECTOR_ELIGIBLE", "REGIME_SCOPED_SELECTOR_ELIGIBLE"},
@@ -1299,6 +1445,13 @@ def _runtime_candidate_decision(
         ),
     ]
     selectable = all(check["passed"] for check in checks)
+    selector_score = (
+        float(row.get("net_pnl_stress_cost", 0.0) or 0.0) * 1.0
+        + float(row.get("lower_confidence_bound", 0.0) or 0.0) * 0.5
+        + float(row.get("net_pnl_normal_cost", 0.0) or 0.0) * 0.25
+        - float(row.get("max_drawdown", 0.0) or 0.0) * 0.1
+        + float(row.get("hold_baseline_delta", row.get("baseline_delta_normal_cost", 0.0)) or 0.0) * 0.25
+    )
     return {
         "candidate_id": candidate.get("candidate_id"),
         "strategy_id": candidate.get("strategy_id"),
@@ -1308,6 +1461,7 @@ def _runtime_candidate_decision(
         "reason_codes": ["runtime_selection_passed"] if selectable else [
             check["name"] for check in checks if not check["passed"]
         ],
+        "selector_score": round(selector_score, 6),
         "scorecard_summary": {
             "decision": candidate.get("scorecard_decision"),
             "current_regime": runtime.current_regime,
@@ -1315,6 +1469,7 @@ def _runtime_candidate_decision(
             "net_pnl_stress_cost": row.get("net_pnl_stress_cost", 0.0),
             "lower_confidence_bound": row.get("lower_confidence_bound", 0.0),
             "max_drawdown": row.get("max_drawdown", 0.0),
+            "hold_baseline_delta": row.get("hold_baseline_delta", row.get("baseline_delta_normal_cost", 0.0)),
         },
     }
 
