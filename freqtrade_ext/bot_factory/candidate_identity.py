@@ -299,12 +299,17 @@ def _identity_from_strategy_literal(
 
 def _literal_assignment(nodes: Sequence[ast.stmt], names: set[str]) -> dict[str, Any] | None:
     for node in nodes:
-        if not isinstance(node, ast.Assign):
-            continue
-        if not any(isinstance(target, ast.Name) and target.id in names for target in node.targets):
+        value_node: ast.expr | None = None
+        if isinstance(node, ast.Assign):
+            if any(isinstance(target, ast.Name) and target.id in names for target in node.targets):
+                value_node = node.value
+        elif isinstance(node, ast.AnnAssign):
+            if isinstance(node.target, ast.Name) and node.target.id in names:
+                value_node = node.value
+        if value_node is None:
             continue
         try:
-            value = ast.literal_eval(node.value)
+            value = ast.literal_eval(value_node)
         except (ValueError, TypeError):
             return None
         return value if isinstance(value, dict) else None

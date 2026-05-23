@@ -99,6 +99,27 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-24 JST for PR #10 review follow-up on annotated strategy
+candidate identity parsing.
+
+- [x] Addressed Codex review comment `3293007384` on
+  `freqtrade_ext/bot_factory/candidate_identity.py`: strategy source identity
+  extraction now supports typed `ast.AnnAssign` identity declarations such as
+  `BOT_FACTORY_CANDIDATE_IDENTITY: dict[str, object] = {...}` and class-level
+  `bot_factory_candidate_identity: dict[str, object] = {...}`.
+- [x] Added regression coverage in `tests/test_bot_factory.py` for module-level
+  and class-level annotated strategy identity assignments.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_identity.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "annotated_assignments or donchian_strategy_identity"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+- [x] Results: compile passed; focused pytest passed 2 tests after an initial
+  sandbox-only temp/cache permission failure (`WinError 5`); full
+  `tests/test_bot_factory.py -q` reached `[100%]`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, or process-control action was performed.
+
 Checked on 2026-05-23 JST for PR #10 review follow-up on candidate evaluation
 candidate identity forwarding.
 

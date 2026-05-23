@@ -11424,6 +11424,59 @@ def test_donchian_strategy_identity_matches_strong_uptrend_logic():
     assert logic.logic_id == "strong_uptrend_momentum_v1"
 
 
+def test_strategy_identity_loader_accepts_annotated_assignments(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_identity import (
+        build_strategy_candidate_identity,
+        load_candidate_identity_from_strategy_source,
+    )
+
+    cases = {
+        "ModuleAnnotatedStrategy": (
+            lambda payload: (
+                f"BOT_FACTORY_CANDIDATE_IDENTITY: dict[str, object] = {payload}\n"
+                "class ModuleAnnotatedStrategy:\n"
+                "    pass\n"
+            )
+        ),
+        "ClassAnnotatedStrategy": (
+            lambda payload: (
+                "class ClassAnnotatedStrategy:\n"
+                f"    bot_factory_candidate_identity: dict[str, object] = {payload}\n"
+            )
+        ),
+    }
+    for class_name, render_source in cases.items():
+        strategy_file = tmp_path / f"{class_name}.py"
+        identity = build_strategy_candidate_identity(
+            candidate_id=f"{class_name.lower()}-candidate",
+            strategy_id=class_name,
+            strategy_class_name=class_name,
+            strategy_source_path=strategy_file,
+            strategy_version=f"{class_name}_v1",
+            signal_version="signal_v1",
+            risk_policy_version="risk_v1",
+            regime_classifier_version="regime_v1",
+            cost_model_id="cost_v1",
+            allowed_pairs=["BTC/USDT:USDT"],
+            allowed_timeframes=["5m"],
+            created_at="2026-05-24T00:00:00+00:00",
+            source_artifacts={"strategy_source": strategy_file},
+            root_dir=tmp_path,
+        )
+        strategy_file.write_text(
+            render_source(json.dumps(identity, sort_keys=True)),
+            encoding="utf-8",
+        )
+
+        loaded = load_candidate_identity_from_strategy_source(
+            strategy_file,
+            strategy_class_name=class_name,
+            root_dir=tmp_path,
+        )
+
+        assert loaded == identity
+
+
 def test_regime_contract_requires_no_trade_conditions_for_exclusions():
     from freqtrade_ext.bot_factory.regime_promotion import validate_strategy_contract
 
