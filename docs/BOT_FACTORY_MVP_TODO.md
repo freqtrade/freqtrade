@@ -99,6 +99,518 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-24 JST for PR #10 review follow-up on annotated strategy
+candidate identity parsing.
+
+- [x] Addressed Codex review comment `3293007384` on
+  `freqtrade_ext/bot_factory/candidate_identity.py`: strategy source identity
+  extraction now supports typed `ast.AnnAssign` identity declarations such as
+  `BOT_FACTORY_CANDIDATE_IDENTITY: dict[str, object] = {...}` and class-level
+  `bot_factory_candidate_identity: dict[str, object] = {...}`.
+- [x] Added regression coverage in `tests/test_bot_factory.py` for module-level
+  and class-level annotated strategy identity assignments.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_identity.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "annotated_assignments or donchian_strategy_identity"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+- [x] Results: compile passed; focused pytest passed 2 tests after an initial
+  sandbox-only temp/cache permission failure (`WinError 5`); full
+  `tests/test_bot_factory.py -q` reached `[100%]`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, or process-control action was performed.
+
+Checked on 2026-05-23 JST for PR #10 review follow-up on candidate evaluation
+candidate identity forwarding.
+
+- [x] Addressed the second Codex review comment on
+  `freqtrade_ext/bot_factory/candidate_evaluation.py`: execution-backed
+  candidate evaluation now writes the generated canonical
+  `candidate_identity.json` under the execution artifact directory and
+  forwards it to historical backtest, walk-forward, and FreqAI training checked
+  wrappers with `--candidate-identity-json`.
+- [x] Updated checked wrappers and command builders:
+  - `scripts/bot_factory_run_walk_forward.py` now accepts
+    `--candidate-identity-json` and uses it before source/fallback identity
+    reconstruction;
+  - `scripts/bot_factory_run_freqai_training.py` now accepts
+    `--candidate-identity-json` and forwards the same canonical identity to its
+    child checked FreqAI backtest / walk-forward stages;
+  - `freqtrade_ext/bot_factory/freqai_training.py` now supports
+    `candidate_identity_json` in checked child command construction.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\freqai_training.py scripts\bot_factory_run_walk_forward.py scripts\bot_factory_run_backtest.py scripts\bot_factory_run_freqai_backtest.py scripts\bot_factory_run_freqai_training.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_identity or candidate_evaluation_executes_checked_wrapper_chain or training_backtest_command or training_walk_forward_command"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_backtest.py --help`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+  - `git diff --check`
+- [x] Results: compile passed; focused pytest passed 8 tests after an initial
+  sandbox-only temp/cache permission failure (`WinError 5`); all four CLI help
+  checks exited `0`; full `tests/test_bot_factory.py -q` reached `[100%]`;
+  `git diff --check` passed.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, or process-control action was performed.
+
+Checked on 2026-05-23 JST for PR #10 review follow-up on walk-forward
+candidate identity forwarding.
+
+- [x] Addressed Codex review comments on
+  `scripts/bot_factory_run_walk_forward.py`:
+  - parent walk-forward now writes `candidate_identity.json` and forwards it to
+    child window wrappers with `--candidate-identity-json`, not only
+    `--candidate-id`;
+  - fallback walk-forward identities for FreqAI child runners now use
+    `freqai_input_timeframes(...)`, matching
+    `scripts/bot_factory_run_freqai_backtest.py` and preserving
+    `freqai.feature_parameters.include_timeframes`.
+- [x] Updated checked child wrappers:
+  `scripts/bot_factory_run_backtest.py` and
+  `scripts/bot_factory_run_freqai_backtest.py` now accept
+  `--candidate-identity-json` and embed the supplied canonical identity instead
+  of rebuilding `created_at` / timeframe defaults.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile scripts\bot_factory_run_walk_forward.py scripts\bot_factory_run_backtest.py scripts\bot_factory_run_freqai_backtest.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "walk_forward or training_backtest_command or candidate_identity"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_backtest.py --help`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+- [x] Results: compile passed; focused pytest passed 13 tests; all three CLI
+  help checks exited `0`; full `tests/test_bot_factory.py -q` reached `[100%]`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, or process-control action was performed.
+
+Checked on 2026-05-22 JST for Bot Factory architecture risk TODO closure.
+
+- [x] Closed the remaining items in `docs/BOT_FACTORY_ARCHITECTURE_RISK_TODO.md`:
+  deterministic regime classification, checked backtest-to-observation-to-
+  scorecard conversion, gate semantics, style-aware gates, runtime selector
+  stability, feature-quality checks, ranking improvements, shadow observation
+  boundaries, and candidate review UX.
+- [x] Added local-only helpers/CLIs:
+  `freqtrade_ext/bot_factory/market_regime.py`,
+  `evidence_pipeline.py`, `feature_quality.py`, `gate_semantics.py`,
+  `candidate_review.py`, `scripts/bot_factory_build_regime_artifacts.py`, and
+  `scripts/bot_factory_generate_candidate_review.py`.
+- [x] Updated Phase 3 paper readiness so `--regime-scorecard` and
+  `--requires-regime-scorecard` fail closed when a strategy claims
+  regime-scoped selector eligibility without a safe scorecard.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\gate_semantics.py freqtrade_ext\bot_factory\feature_quality.py freqtrade_ext\bot_factory\market_regime.py freqtrade_ext\bot_factory\evidence_pipeline.py freqtrade_ext\bot_factory\candidate_review.py freqtrade_ext\bot_factory\backtest_results.py freqtrade_ext\bot_factory\regime_promotion.py freqtrade_ext\bot_factory\paper.py freqtrade_ext\bot_factory\candidate_ranking.py freqtrade_ext\bot_factory\walk_forward.py scripts\bot_factory_build_regime_artifacts.py scripts\bot_factory_generate_candidate_review.py scripts\bot_factory_check_paper_readiness.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "regime or selector or paper_readiness or style_aware or feature_quality or candidate_review or gate_glossary or evidence_pipeline"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_build_regime_artifacts.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_generate_candidate_review.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_check_paper_readiness.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies`
+- [x] Results: compile passed; focused pytest passed 36 tests; full
+  `tests/test_bot_factory.py -q` reached `[100%]`; all three CLI help checks
+  exited `0`. The first sandboxed focused pytest attempt hit the known Windows
+  temp/cache ACL issue under `AppData\Local\Temp\pytest-of-yoro4`; reruns with
+  normal filesystem permissions passed.
+- [x] Static strategy check result: `ok=true`, `files_checked=8`. Existing
+  warnings remain in `user_data\strategies\5mV1.py` and
+  `user_data\strategies\FreqAICustomStrategy.py`; this architecture increment
+  did not add strategy-source findings.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, or process-control action was performed.
+- [x] Remaining limitation: the new converter and review helpers do not
+  retroactively rewrite old artifacts. Older historical candidates must be
+  converted or regenerated through the checked local wrappers before selector
+  or paper-readiness review.
+
+Checked on 2026-05-21 JST for walk-forward candidate identity lineage.
+
+- [x] Embedded canonical `candidate_identity` into checked walk-forward
+  metrics, added a sibling `candidate_identity.json` artifact, and included the
+  identity in the Markdown walk-forward report.
+- [x] Updated `scripts/bot_factory_run_walk_forward.py` to resolve strategy
+  identity, pass the same `--candidate-id` into each child backtest wrapper, and
+  fail a window when completed child metrics carry a mismatched identity.
+- [x] Updated FreqAI training and candidate-evaluation execution command
+  construction so historical, walk-forward, and training child wrappers receive
+  the same candidate id.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\walk_forward.py freqtrade_ext\bot_factory\freqai_training.py freqtrade_ext\bot_factory\candidate_evaluation.py scripts\bot_factory_run_walk_forward.py scripts\bot_factory_run_freqai_training.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "walk_forward or identity"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_evaluation and execution"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies`
+- [x] Results: compile passed. The first sandboxed focused pytest command hit
+  the known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`); re-running
+  with normal filesystem permissions passed 11 walk-forward/identity tests.
+  The candidate-evaluation execution slice passed 3 tests. Both wrapper
+  `--help` checks exited `0`.
+- [x] Static strategy check result: `ok=true`, `files_checked=8`, artifact
+  `registry\strategies\checks\20260521T141758Z_static_check.json`. Existing
+  review warnings remain in `user_data\strategies\5mV1.py` and
+  `user_data\strategies\FreqAICustomStrategy.py`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, exchange order endpoint, API key, secret, leverage, shorting,
+  or process-control action was performed.
+- [ ] Remaining limitation: existing walk-forward artifacts created before this
+  increment were not regenerated in-place. The deterministic
+  backtest-to-observation-to-scorecard converter remains a P0 follow-up.
+
+Checked on 2026-05-21 JST for canonical candidate identity foundation.
+
+- [x] Added `freqtrade_ext/bot_factory/candidate_identity.py` with the
+  canonical `strategy_candidate_identity_v1` shape, required identity fields,
+  artifact identity comparison, and explicit migration-map support for future
+  approved version remaps.
+- [x] Embedded `candidate_identity` into generated strategy metadata, checked
+  historical backtest/FreqAI backtest outputs, FreqAI training manifests,
+  observation ledger rows, regime fitness scorecards, and selector candidates.
+  Candidate evaluation now compares generated metadata identity against
+  backtest, walk-forward, and training artifacts when those artifacts carry an
+  identity.
+- [x] Bound the real `DonchianTrendBullStrategy` source file to the selector
+  logic spec `strong_uptrend_momentum_v1` through the same canonical identity:
+  `strong-uptrend-historical-ohlcv-candidate`.
+- [x] Added focused tests proving that:
+  - changing `signal_version`, `risk_policy_version`,
+    `regime_classifier_version`, or `cost_model_id` segments evidence;
+  - an observation row with mismatched identity fails validation;
+  - a scorecard built for one strategy cannot be consumed by a selector
+    candidate for a different strategy;
+  - `DonchianTrendBullStrategy` and `strong_uptrend_momentum_v1` resolve to the
+    same identity object.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_identity.py freqtrade_ext\bot_factory\regime_promotion.py freqtrade_ext\bot_factory\backtest_results.py freqtrade_ext\bot_factory\strategy_code.py freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\freqai_backtest.py freqtrade_ext\bot_factory\freqai_training.py scripts\bot_factory_run_backtest.py scripts\bot_factory_run_freqai_backtest.py scripts\bot_factory_run_freqai_training.py tests\test_bot_factory.py user_data\strategies\DonchianTrendBullStrategy.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "identity or regime"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strategy_code_generator_writes_safe_markdown_and_metadata or candidate_evaluation or candidate_manifest or candidate_ranking"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "training_backtest_command or training_manifest or freqai_training"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_backtest.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies`
+- [x] Results: compile passed. The first sandboxed focused pytest attempts hit
+  the known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`). Re-running
+  the same focused commands with normal filesystem permissions passed 22
+  identity/regime tests, 17 candidate evaluation/ranking tests, and 3
+  training-related tests. The wrapper `--help` checks exited `0`.
+- [x] Static strategy check result: `ok=true`, `files_checked=8`. Existing
+  warnings remain in `user_data\strategies\5mV1.py` and
+  `user_data\strategies\FreqAICustomStrategy.py`; no new Donchian identity
+  finding was introduced.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, exchange order endpoint, API key, secret, leverage, shorting,
+  or process-control action was performed.
+- [ ] Remaining limitation: existing historical backtest artifacts created
+  before this identity increment were not regenerated in-place, and
+  walk-forward output embedding plus the deterministic
+  backtest-to-observation-to-scorecard converter remain P0 follow-ups.
+
+Checked on 2026-05-21 JST for web-researched bull-regime strategy candidate.
+
+- [x] Researched trend-following references before implementation:
+  - arXiv `2009.12155`, "A Decade of Evidence of Trend Following Investing in
+    Cryptocurrencies", which frames cryptocurrencies as suitable candidates
+    for trend-following tests.
+  - Turtle/Donchian trend-following rules describing channel breakout entries
+    and rule-based exits.
+  - arXiv `2602.11708`, which describes crypto trend following with volatility
+    and regime-aware components.
+  - SSRN `5775962`, which reports regime-dependent Bollinger breakout /
+    pullback behavior in BTC/USDT.
+- [x] Added `user_data/strategies/DonchianTrendBullStrategy.py`, a
+  long-only 5m Donchian breakout + EMA trend filter strategy for historical
+  bull-regime testing. The strategy uses no short entries, no leverage hook,
+  no exchange order API calls, and no future-data `shift(-1)`.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile user_data\strategies\DonchianTrendBullStrategy.py`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_static_check.py user_data\strategies\DonchianTrendBullStrategy.py`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --config user_data\config.json --strategy DonchianTrendBullStrategy --strategy-path user_data\strategies --timeframe 5m --timerange 20240202-20240305 --pairs BTC/USDT:USDT ETH/USDT:USDT --ohlcv-file user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --ohlcv-file user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --run-id historical_uptrend_20240202_20240305_v3`
+- [x] Results: compile passed; static check passed with no findings; OHLCV
+  quality checks passed for BTC and ETH 5m parquet. The first backtest attempt
+  failed because sandboxed networking blocked Bybit public market metadata
+  loading. Re-running the same historical backtest with normal network
+  permission completed successfully.
+- [x] Backtest result for `2024-02-02` to `2024-03-05` on BTC/USDT:USDT and
+  ETH/USDT:USDT: total return `7.5523%`, absolute profit `75.523 USDT` on a
+  `1000 USDT` starting balance, `7` trades, profit factor `14.8352`, max
+  drawdown `0.3458%`, Sharpe `2.5307`, Sortino `117.6785`. The gate still
+  recommends `fail` because `7` trades is below the default `200` minimum.
+- [x] Same-window simple hold comparison using `100 USDT` per pair:
+  BTC hold `58.9099%`, ETH hold `57.7204%`, combined same-stake hold profit
+  about `116.6303 USDT` or `11.6630%` of the `1000 USDT` wallet. The strategy
+  reduced drawdown but did not beat this strong-window hold baseline.
+- [x] Artifacts:
+  - `data/backtests/DonchianTrendBullStrategy/historical_uptrend_20240202_20240305_v3/metrics.json`
+  - `data/backtests/DonchianTrendBullStrategy/historical_uptrend_20240202_20240305_v3/report.md`
+  - `data/backtests/DonchianTrendBullStrategy/historical_uptrend_20240202_20240305_v3/trades.csv`
+- [x] Safety result: historical backtesting only. No `freqtrade trade`, paper
+  trading, dry-run trading, live trading, exchange order placement, API key or
+  secret usage, leverage change, shorting, or process-control action was
+  performed.
+- [ ] Remaining limitation: this is one deliberately selected bull window, not
+  walk-forward evidence. It should be treated as a research candidate that
+  needs broader regime-sliced testing and a hold/no-trade baseline report
+  before it can feed selector eligibility.
+
+Checked on 2026-05-21 JST for historical uptrend selector replay.
+
+- [x] Used local Bybit futures OHLCV parquet only:
+  `user_data/data/bybit/futures/BTC_USDT_USDT-5m-futures.parquet` and
+  `user_data/data/bybit/futures/ETH_USDT_USDT-5m-futures.parquet`.
+  Both 5m quality checks passed with no duplicate timestamps, no missing
+  intervals, and no findings.
+- [x] Tested the historical uptrend window
+  `2024-02-02T00:00:00Z` to `2024-03-04T23:55:00Z`. In this window:
+  BTC close-to-close return was `58.8072%` with `6.4605%` max drawdown; ETH
+  close-to-close return was `57.7765%` with `6.8303%` max drawdown.
+- [x] Replayed the runtime selector with three candidates:
+  `strong_uptrend_momentum_v1`,
+  `downtrend_defensive_rebound_v1`, and `range_mean_reversion_v1`.
+  The strong-uptrend scorecard returned
+  `REGIME_SCOPED_SELECTOR_ELIGIBLE`, and the assumed runtime selector selected
+  `strong-uptrend-historical-ohlcv-candidate` /
+  `strong_uptrend_momentum_v1`. The downtrend and range companion candidates
+  were not selected during the `trend_up` runtime snapshot.
+- [x] Artifacts:
+  - `data/regime_selector_replays/historical_uptrend_20240202_20240304/selector_replay.json`
+  - `data/regime_selector_replays/historical_uptrend_20240202_20240304/selector_replay_report.md`
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\BTC_USDT_USDT-5m-futures.parquet --timeframe 5m`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_check_ohlcv.py user_data\data\bybit\futures\ETH_USDT_USDT-5m-futures.parquet --timeframe 5m`
+  - local `.venv` Python replay using `build_regime_fitness_scorecard()`,
+    `selection_candidate_from_scorecard()`, and
+    `evaluate_runtime_strategy_selection()`.
+- [x] Safety result: no strategy candidate file was generated; no Freqtrade
+  backtest, paper trading, dry-run trading, live trading, exchange order
+  endpoint, API key, secret, leverage, shorting, or process-control action was
+  performed.
+- [ ] Remaining limitation: this replay is a close-to-close historical OHLCV
+  proxy for selector adoption, not a generated Freqtrade strategy backtest.
+  Calendar concentration was relaxed to `1.0` because the purpose was to test
+  one explicitly selected past uptrend window, not to approve global promotion
+  or paper/live readiness.
+
+Checked on 2026-05-21 JST for multi-regime selector simulation.
+
+- [x] Added local-only logic specs in
+  `freqtrade_ext/bot_factory/regime_promotion.py`:
+  `downtrend_defensive_rebound_v1` for long-only defensive rebound behavior in
+  `trend_down`, and `range_mean_reversion_v1` for box/range mean reversion in
+  `range`. The downtrend logic explicitly treats shorting as out of scope and
+  requires no-trade behavior if shorting would be required.
+- [x] Updated assumed-runtime selector ranking so multiple candidates that
+  match the same current regime are ordered by stress-cost-adjusted score
+  first, then confidence lower bound, normal-cost score, drawdown, and
+  deterministic candidate id.
+- [x] Added focused tests in `tests/test_bot_factory.py` proving:
+  - among uptrend, downtrend, and range candidates, the selector chooses the
+    candidate whose eligible regime matches the assumed runtime regime;
+  - when multiple range candidates are eligible, the selector chooses the more
+    stress-cost-robust candidate even if another candidate has higher normal
+    cost PnL.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\regime_promotion.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strong_uptrend or regime_ or downtrend or range_mean or selector"`
+- [x] Results: compile passed. The first sandboxed focused pytest hit the
+  known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`). Re-running
+  the same focused command with normal filesystem permissions passed 17 tests
+  and reached `[100%]`; pytest still emitted a non-blocking cache warning and
+  an ignored atexit cleanup ACL warning for the same temp/cache path.
+- [x] Safety result: no strategy candidate file was generated; no backtest,
+  paper trading, dry-run trading, live trading, exchange order endpoint, API
+  key, secret, leverage, shorting, or process-control action was performed.
+- [ ] Remaining limitation: the multi-regime selector still uses synthetic
+  local scorecard evidence and an assumed production runtime snapshot. It does
+  not start a bot, poll runtime status, execute orders, or prove profitability
+  on real current market data.
+
+Checked on 2026-05-20 JST for strong-uptrend selector adoption simulation.
+
+- [x] Added a local-only strong-uptrend strategy logic spec in
+  `freqtrade_ext/bot_factory/regime_promotion.py`:
+  `strong_uptrend_momentum_v1`. The spec targets `trend_up`, excludes
+  `trend_down`, `range`, `high_volatility`, `liquidity_stress`, and `unknown`,
+  and defines entry/exit/no-trade conditions using closed-candle regime,
+  moving-average slope, range-efficiency, volume/liquidity, feature
+  availability, and cost-model requirements.
+- [x] Added `RuntimeRegimeSnapshot`,
+  `selection_candidate_from_scorecard()`, and
+  `evaluate_runtime_strategy_selection()` to simulate whether a locally
+  eligible candidate would be selected under an assumed production runtime
+  regime. This selector writes local decision artifacts only and records
+  `process_control=false`, `dry_run_trading_started=false`, and
+  `promotion_authorized_by_this_command=false`.
+- [x] Added focused tests in `tests/test_bot_factory.py` proving:
+  - a scorecard-backed strong-uptrend candidate is selected when the assumed
+    runtime regime is `trend_up`, pair/timeframe are allowed, all required
+    features are present, and data quality passes;
+  - the same candidate returns `no_trade` when the assumed runtime regime
+    changes to `range`.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\regime_promotion.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "strong_uptrend or regime_"`
+- [x] Results: compile passed. The first sandboxed focused pytest hit the
+  known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`). Re-running
+  the same focused command with normal filesystem permissions passed 14 tests
+  and reached `[100%]`; pytest still emitted a non-blocking cache warning and
+  an ignored atexit cleanup ACL warning for the same temp/cache path.
+- [x] Safety result: no strategy candidate file was generated; no backtest,
+  paper trading, dry-run trading, live trading, exchange order endpoint, API
+  key, secret, leverage, shorting, or process-control action was performed.
+- [ ] Remaining limitation: this is still an assumed-production selector
+  simulation over synthetic local scorecard evidence. It does not start a bot,
+  poll runtime status, execute orders, or prove profitability on real current
+  market data.
+
+Checked on 2026-05-20 JST for the Regime-Aware Promotion Gate local schema
+foundation.
+
+- [x] Read the proposed
+  `C:\Users\yoro4\Downloads\BOT_FACTORY_REGIME_AWARE_PROMOTION_TODO.md` and
+  reconciled it with existing Phase 2/Phase 3 safety boundaries.
+- [x] Added `docs/BOT_FACTORY_REGIME_AWARE_PROMOTION_TODO.md`. The document
+  uses local selector eligibility terminology instead of paper/live promotion
+  language and records that scorecards are necessary but not sufficient for the
+  Phase 3 paper readiness chain.
+- [x] Added `freqtrade_ext/bot_factory/regime_promotion.py` with local-only
+  schema/validation foundations for:
+  - `regime_observation_ledger_v1`;
+  - `regime_fitness_scorecard_v1`;
+  - `regime_strategy_contract_v1`;
+  - future paper/dry-run observation source rejection in the current scope;
+  - evidence-unit segmentation across strategy, signal, risk policy, regime
+    classifier, and cost model versions;
+  - regime-stratified scorecard aggregation that blocks raw aggregate PnL from
+    direct eligibility.
+- [x] Added focused coverage in `tests/test_bot_factory.py` for future
+  dry-run source rejection, range-only scoped eligibility, aggregate-positive
+  but high-volatility-unsafe rejection from global eligibility, evidence
+  version segmentation, and missing `no_trade` conditions for excluded regimes.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\regime_promotion.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "regime_"`
+- [x] Results: compile passed. The first sandboxed focused pytest hit the
+  known Windows temp/cache ACL issue before test execution
+  (`PermissionError` under `AppData\Local\Temp\pytest-of-yoro4`). Re-running
+  the same focused command with normal filesystem permissions passed 12 tests
+  and reached `[100%]`; pytest still emitted a non-blocking cache warning and
+  an ignored atexit cleanup ACL warning for the same temp/cache path.
+- [x] Safety result: no strategy candidate was generated; no backtest,
+  paper trading, dry-run trading, live trading, exchange order endpoint, API
+  key, secret, leverage, shorting, or process-control action was performed.
+- [ ] Remaining limitation: this is a local schema/scorecard foundation only.
+  It does not yet implement deterministic candle-based regime labeling, replay
+  existing backtest/walk-forward artifacts into ledger JSONL, integrate
+  scorecards into paper readiness, or add any future paper/dry-run observation
+  path.
+
+Checked on 2026-05-11 JST for the first calibrated Edge Discovery run.
+
+- [x] Read `docs/BOT_FACTORY_CALIBRATED_COST_TABLE.md` and used only the
+  permitted BTC/USDT:USDT 5m taker and ETH/USDT:USDT 5m taker calibrated
+  contexts.
+- [x] Read the latest failure synthesis, causal failure map, and comprehensive
+  rejection memory before choosing theses.
+- [x] Ran local-only Edge Discovery for
+  `TH-EXTREME-INTRABAR-RANGE-EFFICIENCY-REVERSAL-20260510` on BTC 5m taker
+  using normal cost `9.469967` bps and stress cost `16.900396` bps.
+  Result: failed research gate with `net_edge_bps_normal=24.395012`,
+  `net_edge_bps_stress=16.964583`, `profitable_windows_ratio=1.0`,
+  `walk_forward_pass_rate=0.5556`, `lower_confidence_bound_bps=2.217808`,
+  negative controls beaten, calendar concentration `0.225`, and rejection
+  reason `walk_forward_pass_rate_at_least_0_6; not_single_pair_dependent`.
+- [x] Stopped broad ETH/combined checks after timeout and process inspection;
+  they wrote no pass artifact and are recorded as computational blockers.
+- [x] Ran one bounded diagnostic for
+  `TH-TAIL-RANGE-MUTED-RETURN-EXHAUSTION-20260510` on BTC 5m taker.
+  Result: failed research gate with `net_edge_bps_normal=89.902893`,
+  `net_edge_bps_stress=82.472464`, `profitable_windows_ratio=0.75`,
+  `walk_forward_pass_rate=0.5`, `lower_confidence_bound_bps=19.117273`,
+  negative controls beaten, calendar concentration `0.35714285714285715`, and
+  rejection reason `walk_forward_pass_rate_at_least_0_6; not_single_pair_dependent`.
+- [x] Stopped further Edge Discovery after loop-risk review because continuing
+  to narrow the same range-efficiency idea would resemble parameter-only retry.
+- [x] Added docs:
+  - `docs/BOT_FACTORY_CALIBRATED_EDGE_DISCOVERY_FIRST_RUN.md`
+  - `docs/BOT_FACTORY_NEXT_RESEARCH_DECISION.md`
+- [x] Added `docs/BOT_FACTORY_GPT_PRO_CALIBRATED_EDGE_DISCOVERY_HANDOFF.md`
+  to report the threshold-retry / manual grid-search loop risk and recommend
+  that GPT Pro stop further range-efficiency variants until the Edge Discovery
+  runner has preflight workload and anti-retry guards.
+- [x] Candidate generation result:
+  `no candidate generated`.
+- [ ] Remaining limitation: this first calibrated Edge Discovery did not find a
+  thesis that passed BTC/ETH robustness. The only completed artifacts are BTC
+  5m taker checks; they show positive post-cost BTC edge but fail
+  walk-forward and pair-dependence gates. No candidate, codegen, backtest,
+  paper, dry-run, live, exchange order endpoint, API key, or secret action was
+  performed.
+
+Checked on 2026-05-10 JST for the first local cost calibration run.
+
+- [x] Fast-forwarded the current work branch to `origin/develop` merge commit
+  `6632cfd48`.
+- [x] Reviewed:
+  - `docs/BOT_FACTORY_COST_CALIBRATION_PLAN.md`
+  - `docs/BOT_FACTORY_EXECUTION_QUALITY_AUDIT.md`
+  - `docs/BOT_FACTORY_COST_CALIBRATION_REPORT.md`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_calibrate_cost_model.py --help`
+- [x] Validated available local OHLCV inputs:
+  - BTC/USDT:USDT 5m: `ok=true`, 246895 rows, no duplicate timestamps, no
+    missing 5m intervals.
+  - ETH/USDT:USDT 5m: `ok=true`, 246941 rows, no duplicate timestamps, no
+    missing 5m intervals.
+- [x] Ran the local-only cost calibration runner for BTC/USDT:USDT and
+  ETH/USDT:USDT 5m taker/maker, normal/stress volatility labels. Generated
+  artifacts were written under `data\cost_calibration` and are not intended for
+  Git.
+- [x] Added `.gitignore` coverage for `data/cost_calibration/**` so generated
+  calibration JSON/Markdown/CSV artifacts stay out of Git.
+- [x] Completed taker contexts:
+  - BTC/USDT:USDT 5m taker: normal cost `9.469967` bps, stress cost
+    `16.900396` bps.
+  - ETH/USDT:USDT 5m taker: normal cost `10.856899` bps, stress cost
+    `20.874029` bps.
+- [x] Blocked maker contexts because no local order-book/depth or fills
+  artifact was present; generated artifacts recorded missing maker
+  `no_fill_rate`, `partial_fill_rate`, `adverse_selection_bps`, and
+  `exit_taker_rate` blockers instead of assuming zero risk.
+- [x] Blocked BTC/ETH 1h and large-alt contexts because no local artifacts were
+  present for those pair/timeframe inputs.
+- [x] Added first-run docs:
+  - `docs/BOT_FACTORY_COST_CALIBRATION_FIRST_RUN.md`
+  - `docs/BOT_FACTORY_CALIBRATED_COST_TABLE.md`
+- [x] Candidate generation result for this first run:
+  `no candidate generated`.
+- [x] Verification:
+
+  ```powershell
+  .\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\cost_calibration.py scripts\bot_factory_calibrate_cost_model.py tests\test_bot_factory.py
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "cost_calibration or execution_quality or cost_model"
+  .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q
+  git diff --check
+  git check-ignore -v data\cost_calibration\first_run_btc_usdt_5m_taker_normal\cost_calibration.json data\cost_calibration\first_run_eth_usdt_5m_taker_normal\cost_calibration.json
+  ```
+
+  Results: compile passed; focused selector passed 26 tests and reached
+  `[100%]`; full `tests\test_bot_factory.py` reached `[100%]`;
+  `git diff --check` exited `0` with existing LF-to-CRLF working-copy warnings
+  for `.gitignore` and this doc; `git check-ignore -v` confirmed generated
+  cost calibration JSON artifacts are ignored by `data/cost_calibration/**`.
+- [ ] Remaining limitation: the next Edge Discovery may use only the completed
+  BTC/ETH 5m taker calibrated cost contexts. Maker, 1h, large-alt,
+  order-book/spread/fills-driven, paper/dry-run/live, and exchange-facing
+  contexts remain blocked. This run did not create a new thesis, retry an
+  existing failed thesis, generate a strategy candidate, run historical
+  backtesting, or start any trading process.
+
 Checked on 2026-05-10 JST for local-only cost calibration runner.
 
 - [x] Added `freqtrade_ext/bot_factory/cost_calibration.py`, a local-only cost
@@ -2360,6 +2872,19 @@ Checked on 2026-04-26 JST.
   across multiple generated candidates.
 - [ ] Add Iteration / Improvement Loop that uses reviewer findings while
   preserving safety guards and overfitting controls.
+- [ ] Add Regime-Aware Strategy Portfolio layer that treats market regime,
+  strategy suitability, and `no_trade` as first-class selection outputs instead
+  of trying to force one strategy across all periods.
+- [ ] Add Shadow Strategy Observation design for later Phase 3+ work so
+  multiple paper/dry-run candidates can be observed in parallel only after an
+  explicitly approved paper path exists; until then, implement this as
+  backtest/walk-forward/local-artifact comparison only.
+- [x] Add Regime-Aware Promotion Gate local schema/scorecard foundation that
+  prevents raw aggregate PnL from becoming direct selector eligibility or
+  Phase 3 paper-readiness input.
+- [x] Add Architecture Risk TODO for connecting real strategy backtests,
+  selector logic specs, regime scorecards, and Phase 3 readiness gates without
+  evidence identity drift: `docs/BOT_FACTORY_ARCHITECTURE_RISK_TODO.md`.
 - [ ] Paper trading deployment.
 - [ ] Risk Governor service.
 - [ ] Execution Gateway service.
@@ -2417,6 +2942,110 @@ Safety boundaries for all generated candidates:
   Phase 3 readiness chain.
 - Keep JSON, CSV, Markdown, and local logs as the source of truth. MLflow may be
   optional, but it must not replace local artifacts.
+
+### Regime-Aware Strategy Portfolio TODO
+
+Goal: stop optimizing for a single all-weather strategy. The target Bot Factory
+system should maintain a portfolio of strategies with explicit regime
+suitability, select or disable them based on current market state evidence, and
+allow `no_trade` to be the correct output when conditions are outside the
+candidate's proven edge.
+
+- [x] Add a first local-only Regime-Aware Promotion Gate foundation:
+  `docs/BOT_FACTORY_REGIME_AWARE_PROMOTION_TODO.md` and
+  `freqtrade_ext/bot_factory/regime_promotion.py`. This foundation defines
+  observation ledger, regime fitness scorecard, and strategy contract schemas;
+  rejects future paper/dry-run source types in the current scope; uses local
+  selector eligibility outcomes rather than paper/live promotion language; and
+  records that scorecard success only permits a future Phase 3 readiness input,
+  not a bypass.
+- [x] Add local assumed-production selector simulation for a strong-uptrend
+  strategy logic spec. The selector proves `strong_uptrend_momentum_v1` would
+  be selected only when the runtime regime is `trend_up`, scorecard evidence is
+  eligible, required features are available, and pair/timeframe/version checks
+  match; it returns `no_trade` when the regime changes to `range`.
+- [ ] Define a local `market_regime` artifact schema that classifies historical
+  windows using only available local data. Initial coarse labels should include
+  at least `trend_up`, `trend_down`, `range`, `high_volatility`,
+  `low_volatility`, `liquidity_stress`, `post_spike_reversion`, and
+  `unknown`. Keep action decisions such as `avoid_long` in selector or
+  `no_trade` policy outputs rather than regime labels.
+- [ ] Add deterministic regime feature extraction over historical candles and
+  safe structural data where present: realized volatility, trend strength,
+  range efficiency, volume/liquidity proxy, funding/mark context, open-interest
+  context, calendar/session bucket, spread/order-book quality when timestamped
+  local data exists, and data-quality flags.
+- [ ] Extend Edge Discovery outputs so passing and failed effects record the
+  regime slices where they worked, failed, concentrated, or became too
+  cost-sensitive. A positive global edge is not enough; the artifact should
+  state where the effect is eligible and where it must be blocked.
+- [ ] Extend proposal metadata with `intended_regimes`,
+  `excluded_regimes`, `regime_features_required`, `no_trade_conditions`, and
+  `regime_shift_stop_conditions`.
+- [ ] Extend generated candidate metadata with a strategy suitability contract:
+  expected regime, allowed pairs/timeframes, required data features, minimum
+  confidence/evidence thresholds, cooldown after regime change, and explicit
+  conditions that force `no_trade`.
+- [ ] Add a historical `strategy_selector` evaluator that consumes multiple
+  candidate records plus regime artifacts and simulates selection decisions
+  without starting any bot process. It should output selected strategy,
+  `no_trade`, reason codes, candidate scores, and rejected alternatives per
+  window.
+- [ ] Require selector evaluation to compare against simple baselines: best
+  single candidate, always-on candidate, equal candidate rotation, and
+  `no_trade` during uncertain regimes. The selector must improve risk-adjusted
+  outcomes after costs, not only raw return.
+- [ ] Add anti-overfitting controls for selector logic: small predeclared
+  regime taxonomy, fixed selection thresholds, walk-forward validation,
+  holdout windows, minimum regime sample counts, and rejection when improvement
+  comes from one narrow calendar period or one pair.
+- [ ] Add strategy retirement and quarantine rules: pause a candidate when its
+  recent paper/local metrics drift beyond tolerance, when its intended regime
+  disappears, when drawdown exceeds its contract, or when data-quality checks
+  fail.
+- [ ] Keep switching conservative. Add hysteresis/cooldown requirements so the
+  system does not churn strategies on small indicator changes or short-lived
+  noise.
+
+### Shadow Strategy Observation / Multi-Dry-Run TODO
+
+Goal: support the idea of continuously observing multiple strategies and using
+their recent behavior as evidence for selection, while keeping the current
+repository safe. This is future Phase 3+ work only; no paper/dry-run bot may be
+started until the phase documentation explicitly permits the exact command and
+the user explicitly requests it.
+
+- [ ] Design a `shadow_strategy_observation` artifact schema for multiple
+  candidates. It should store strategy ID, candidate ID, regime label, run
+  context, paper/dry-run or local-simulation source, trade count, return,
+  drawdown, hit rate, cost/slippage estimate, stale-data flags, and stop
+  reasons without secrets.
+- [ ] Before any real paper/dry-run process exists, implement a local
+  observation mode that replays historical/backtest/walk-forward artifacts for
+  multiple candidates and produces the same schema. This lets selector and
+  regime logic be tested without process control.
+- [ ] When a future approved paper path exists, add a multi-strategy paper
+  observation planner that can prepare independent run plans, monitoring
+  schemas, stop/cleanup plans, and drift reports per strategy without sharing
+  API keys or credentials.
+- [ ] Require every observed strategy to keep its own paper readiness chain,
+  runtime validation, metrics path, and drift report. Do not allow one passing
+  strategy to bless another strategy or a whole family.
+- [ ] Add leaderboard logic that separates long-term evidence from short-term
+  recent performance. Recent dry-run strength may influence selection only when
+  the candidate also has passing historical/walk-forward evidence for the
+  current regime.
+- [ ] Add false-positive controls for "currently doing well": minimum trade
+  counts, maximum drawdown, cost-adjusted return, stability across regimes,
+  comparison to no-trade, and cooldown after promotion/demotion.
+- [ ] Add a global risk governor input contract for future use: maximum
+  concurrent active strategies, maximum simulated exposure, per-strategy pause
+  state, daily/weekly loss stop, data-staleness stop, and manual approval
+  state.
+- [ ] Record that shadow observation is advisory until a later human-approved
+  execution gateway exists. It may recommend `select`, `watch`, `quarantine`,
+  `retire`, or `no_trade`, but it must not start, stop, or switch a running
+  bot by itself in the current scope.
 
 ### Edge Discovery / Research Lab Pivot
 
@@ -2776,6 +3405,12 @@ Implemented Strategy Code Generator files:
 - Focused Strategy Code Generator coverage in `tests/test_bot_factory.py`
 - Generated strategy smoke artifacts under
   `registry/strategies/generated/LongOnlyRsiPullbackCandidate/20260504T171500Z_strategy_code_smoke/`
+
+Implemented Regime-Aware Promotion Gate foundation files:
+
+- `docs/BOT_FACTORY_REGIME_AWARE_PROMOTION_TODO.md`
+- `freqtrade_ext/bot_factory/regime_promotion.py`
+- Focused Regime-Aware Promotion Gate coverage in `tests/test_bot_factory.py`
 
 Likely future files for remaining work:
 

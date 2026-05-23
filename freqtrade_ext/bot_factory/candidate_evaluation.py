@@ -9,6 +9,10 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from freqtrade_ext.bot_factory.backtest_results import BacktestMetrics, evaluate_initial_gate
+from freqtrade_ext.bot_factory.candidate_identity import (
+    extract_candidate_identity,
+    validate_artifact_candidate_identity,
+)
 from freqtrade_ext.bot_factory.freqai_backtest import (
     candidate_freqai_identifier,
     sanitize_freqai_identifier,
@@ -103,13 +107,16 @@ def evaluate_candidate(inputs: CandidateEvaluationInputs) -> dict[str, Any]:
         _step("mark_price_quality_check", mark_price_quality_path, root, key="ok", required=mark_price_quality_path is not None, command_preview=["python", "scripts/bot_factory_check_mark_price.py", "<mark_price_parquet>", "--timeframe", "4h"]),
         _step("historical_backtest", backtest_metrics_path, root, key="recommendation", pass_values={"pass"}, command_preview=["python", "scripts/bot_factory_run_backtest.py", "--strategy", str(generated.get("strategy_name") or proposal.get("strategy_name") or "")]),
         _strategy_identity_step("historical_strategy_identity", backtest_metrics_path, root, expected_strategy=strategy_name, keys=["strategy_name", "strategy"]),
+        _candidate_identity_step("historical_candidate_identity", generated, backtest_metrics_path, root),
         _file_step("historical_trades_export", backtest_trades_path, root, command_preview=["python", "scripts/bot_factory_run_backtest.py", "--export", "trades"]),
         _file_step("historical_markdown_report", backtest_report_path, root, command_preview=["python", "scripts/bot_factory_generate_report.py", "<backtest-result-json>"]),
         _step("walk_forward", walk_forward_metrics_path, root, key="recommendation", pass_values={"pass"}, command_preview=["python", "scripts/bot_factory_run_walk_forward.py", "--strategy", str(generated.get("strategy_name") or proposal.get("strategy_name") or "")]),
         _strategy_identity_step("walk_forward_strategy_identity", walk_forward_metrics_path, root, expected_strategy=strategy_name, keys=["strategy"]),
+        _candidate_identity_step("walk_forward_candidate_identity", generated, walk_forward_metrics_path, root, required=False),
         _file_step("walk_forward_markdown_report", walk_forward_report_path, root, command_preview=["python", "scripts/bot_factory_run_walk_forward.py", "--write-report"]),
         _step("training_factory", training_manifest_path, root, key="recommendation", pass_values={"pass"}, required=ml_mode_required, command_preview=["python", "scripts/bot_factory_run_freqai_training.py", "--strategy", str(generated.get("strategy_name") or proposal.get("strategy_name") or "")]),
         _strategy_identity_step("training_strategy_identity", training_manifest_path, root, expected_strategy=strategy_name, keys=["strategy"], required=ml_mode_required),
+        _candidate_identity_step("training_candidate_identity", generated, training_manifest_path, root, required=ml_mode_required),
         _file_step("training_markdown_report", training_report_path, root, required=ml_mode_required, command_preview=["python", "scripts/bot_factory_run_freqai_training.py", "--write-report"]),
     ]
 
@@ -352,6 +359,11 @@ def _execution_plan(
         ml_mode=ml_mode,
         root=root,
     )
+    candidate_identity_path = _write_execution_candidate_identity(
+        generated,
+        artifacts.get("candidate_identity"),
+        execute=inputs.execute_historical_chain and not blockers,
+    )
     steps: list[dict[str, Any]] = []
     if not blockers:
         steps = _execution_steps(
@@ -362,6 +374,7 @@ def _execution_plan(
             run_id=run_id,
             ml_mode=ml_mode,
             freqai_identifier=freqai_identifier_value,
+            candidate_identity_path=candidate_identity_path,
             artifacts=artifacts,
             log_dir=log_dir,
             root=root,
@@ -407,6 +420,7 @@ def _execution_steps(
     run_id: str,
     ml_mode: bool,
     freqai_identifier: str | None,
+    candidate_identity_path: Path | None,
     artifacts: dict[str, Path],
     log_dir: Path,
     root: Path,
@@ -475,6 +489,8 @@ def _execution_steps(
         _rel(_resolve(inputs.freqai_output_root if ml_mode else inputs.backtest_output_root, root), root),
         "--run-id",
         f"{run_id}_historical",
+        "--candidate-id",
+        inputs.candidate_id,
         "--python",
         python,
         "--reviewer-note",
@@ -482,6 +498,8 @@ def _execution_steps(
     ]
     if ml_mode and freqai_identifier:
         historical_command.extend(["--freqai-identifier", freqai_identifier])
+    if candidate_identity_path:
+        historical_command.extend(["--candidate-identity-json", _rel(candidate_identity_path, root)])
     if inputs.timerange:
         historical_command.extend(["--timerange", inputs.timerange])
     if timeframe:
@@ -507,6 +525,8 @@ def _execution_steps(
             _rel(_resolve(inputs.walk_forward_output_root, root), root),
             "--run-id",
             f"{run_id}_walk_forward",
+            "--candidate-id",
+            inputs.candidate_id,
             "--python",
             python,
             "--runner-script",
@@ -516,6 +536,8 @@ def _execution_steps(
         ]
         if ml_mode and freqai_identifier:
             wf_command.extend(["--freqai-identifier", freqai_identifier])
+        if candidate_identity_path:
+            wf_command.extend(["--candidate-identity-json", _rel(candidate_identity_path, root)])
         for window in inputs.walk_forward_windows:
             wf_command.extend(["--window", window])
         if timeframe:
@@ -543,6 +565,8 @@ def _execution_steps(
             _rel(_resolve(inputs.training_output_root, root), root),
             "--run-id",
             f"{run_id}_training",
+            "--candidate-id",
+            inputs.candidate_id,
             "--python",
             python,
             "--reviewer-note",
@@ -550,6 +574,8 @@ def _execution_steps(
         ]
         if freqai_identifier:
             training_command.extend(["--freqai-identifier", freqai_identifier])
+        if candidate_identity_path:
+            training_command.extend(["--candidate-identity-json", _rel(candidate_identity_path, root)])
         if timeframe:
             training_command.extend(["--timeframe", timeframe])
         if inputs.pairs:
@@ -606,6 +632,7 @@ def _expected_execution_artifacts(
     walk_dir = _resolve(inputs.walk_forward_output_root, root) / strategy_name / f"{run_id}_walk_forward"
     training_dir = _resolve(inputs.training_output_root, root) / strategy_name / f"{run_id}_training"
     artifacts = {
+        "candidate_identity": execution_dir / "candidate_identity.json",
         "static_check": execution_dir / "static_check.json",
         "ohlcv_quality": execution_dir / "ohlcv_quality.json",
         "backtest_metrics": historical_dir / "metrics.json",
@@ -619,6 +646,25 @@ def _expected_execution_artifacts(
     if ml_mode:
         artifacts["freqai_validation"] = execution_dir / "freqai_validation.json"
     return artifacts
+
+
+def _write_execution_candidate_identity(
+    generated: dict[str, Any],
+    path: Path | None,
+    *,
+    execute: bool,
+) -> Path | None:
+    if not execute or path is None:
+        return None
+    candidate_identity = extract_candidate_identity(generated)
+    if candidate_identity is None:
+        return None
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(candidate_identity, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return path
 
 
 def _candidate_strategy_path(
@@ -1107,6 +1153,63 @@ def _strategy_identity_step(
         root,
         expected_strategy=expected_strategy,
         keys=keys,
+        required=required,
+    )
+    return {"name": name, "check": check, "input_path": check.get("path"), "output_path": check.get("path"), "output_status": check.get("status"), "command_preview": []}
+
+
+def _candidate_identity_check(
+    name: str,
+    expected_artifact: dict[str, Any],
+    path: Path | None,
+    root: Path,
+    *,
+    required: bool = True,
+) -> dict[str, Any]:
+    expected_identity = extract_candidate_identity(expected_artifact)
+    if expected_identity is None:
+        return {
+            "name": name,
+            "status": "skipped",
+            "path": None,
+            "reason": "expected_candidate_identity_missing",
+        }
+    if path is None:
+        return {"name": name, "status": "missing" if required else "skipped", "path": None}
+    resolved = _resolve(path, root)
+    if not resolved.is_file():
+        return {
+            "name": name,
+            "status": "missing" if required else "skipped",
+            "path": _rel(resolved, root),
+        }
+    payload = _load_json(resolved)
+    validation = validate_artifact_candidate_identity(
+        expected_identity,
+        payload,
+        artifact_label=name,
+    )
+    return {
+        "name": name,
+        "status": "pass" if validation["ok"] else "fail",
+        "path": _rel(resolved, root),
+        "validation": validation,
+    }
+
+
+def _candidate_identity_step(
+    name: str,
+    expected_artifact: dict[str, Any],
+    path: Path | None,
+    root: Path,
+    *,
+    required: bool = True,
+) -> dict[str, Any]:
+    check = _candidate_identity_check(
+        name,
+        expected_artifact,
+        path,
+        root,
         required=required,
     )
     return {"name": name, "check": check, "input_path": check.get("path"), "output_path": check.get("path"), "output_status": check.get("status"), "command_preview": []}

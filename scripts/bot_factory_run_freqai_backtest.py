@@ -24,6 +24,12 @@ from freqtrade_ext.bot_factory.backtest_results import (
     write_result_json,
     write_trades_csv,
 )
+from freqtrade_ext.bot_factory.candidate_identity import (
+    build_strategy_candidate_identity,
+    extract_candidate_identity,
+    load_candidate_identity_from_strategy_source,
+    validate_candidate_identity,
+)
 from freqtrade_ext.bot_factory.data_quality import check_ohlcv_parquet, write_quality_reports
 from freqtrade_ext.bot_factory.freqai_backtest import (
     build_freqai_metadata,
@@ -71,6 +77,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pairs", nargs="*", default=None)
     parser.add_argument("--output-root", default="data/freqai")
     parser.add_argument("--run-id", default=None)
+    parser.add_argument("--candidate-id", default=None)
+    parser.add_argument(
+        "--candidate-identity-json",
+        default=None,
+        help="Optional full StrategyCandidateIdentity JSON to embed in this checked FreqAI backtest.",
+    )
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--data-format-ohlcv", default="parquet")
     parser.add_argument("--userdir", default=None)
@@ -129,7 +141,28 @@ def main() -> int:
         "freqai_env": run_dir / "freqai_env.json",
         "ohlcv_quality": run_dir / "ohlcv_quality.json",
         "freqai_metadata": run_dir / "freqai_metadata.json",
+        "candidate_identity": run_dir / "candidate_identity.json",
     }
+    candidate_identity = _resolve_candidate_identity(args, config, strategy_file, run_id)
+    identity_validation = validate_candidate_identity(candidate_identity)
+    artifacts["candidate_identity"].write_text(
+        json.dumps(candidate_identity, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    if not identity_validation["ok"]:
+        print(json.dumps(identity_validation, indent=2, ensure_ascii=False))
+        _write_metadata(
+            args,
+            config,
+            {},
+            artifacts,
+            selected_pairs(config, args.pairs),
+            run_id,
+            "blocked_candidate_identity",
+            ["Candidate identity validation failed before FreqAI dependency checks."],
+            candidate_identity,
+        )
+        print(f"Candidate identity validation failed. Report: {artifacts['candidate_identity']}")
+        return 1
     if args.freqai_identifier:
         artifacts["freqai_identifier_override_config"] = (
             run_dir / "freqai_identifier_override.json"
@@ -164,6 +197,7 @@ def main() -> int:
             run_id,
             "blocked_dependency_check",
             metadata_notes,
+            candidate_identity,
         )
         print(f"FreqAI dependency check failed. Report: {artifacts['freqai_env']}")
         return 1
@@ -178,6 +212,7 @@ def main() -> int:
             run_id,
             "blocked_freqai_disabled",
             metadata_notes,
+            candidate_identity,
         )
         print(f"FreqAI is not enabled in config: {config_path}")
         return 1
@@ -195,6 +230,7 @@ def main() -> int:
             run_id,
             "blocked_static_check",
             metadata_notes,
+            candidate_identity,
         )
         print(f"Static check failed. Report: {artifacts['static_check']}")
         return 1
@@ -212,6 +248,7 @@ def main() -> int:
             run_id,
             "blocked_freqai_validation",
             metadata_notes,
+            candidate_identity,
         )
         print(f"FreqAI validation failed. Report: {artifacts['freqai_validation']}")
         return 1
@@ -227,6 +264,7 @@ def main() -> int:
             run_id,
             "blocked_ohlcv_quality_check",
             metadata_notes,
+            candidate_identity,
         )
         print(f"OHLCV quality check failed. Report: {artifacts['ohlcv_quality']}")
         return 1
@@ -253,6 +291,7 @@ def main() -> int:
             run_id,
             "failed_backtest",
             metadata_notes,
+            candidate_identity,
         )
         print(f"FreqAI backtest failed. Logs: {run_dir}")
         return int(completed.returncode)
@@ -263,8 +302,10 @@ def main() -> int:
         result_path = run_dir / result_filename
 
     result = load_backtest_result(result_path)
+    result["candidate_identity"] = candidate_identity
     write_result_json(result, run_dir / result_filename)
     metrics = summarize(result, args.strategy)
+    metrics.candidate_identity = candidate_identity
     write_metrics(metrics, run_dir / "metrics.json")
     write_trades_csv(result, run_dir / "trades.csv", args.strategy)
     thresholds = load_gate_thresholds(Path(args.gate_config) if args.gate_config else None)
@@ -283,6 +324,7 @@ def main() -> int:
         run_id,
         "completed",
         metadata_notes,
+        candidate_identity,
     )
     print(f"FreqAI backtest artifacts written: {run_dir}")
     return 0
@@ -387,6 +429,7 @@ def _write_metadata(
     run_id: str,
     status: str,
     notes: list[str],
+    candidate_identity: dict[str, object],
 ) -> None:
     config_paths = _runtime_config_paths(args, artifacts)
     metadata = build_freqai_metadata(
@@ -404,6 +447,7 @@ def _write_metadata(
         artifact_paths=artifacts,
         notes=notes,
         freqai_identifier_source="override" if args.freqai_identifier else "config",
+        candidate_identity=candidate_identity,
     )
     write_freqai_metadata(metadata, artifacts["freqai_metadata"])
 
@@ -424,6 +468,7 @@ def _find_result_json(run_dir: Path, expected_name: str) -> Path:
             "freqai_validation.json",
             "freqai_env.json",
             "ohlcv_quality.json",
+            "candidate_identity.json",
         }
     ]
     if not candidates:
@@ -449,6 +494,73 @@ def _find_strategy_source(strategy_path: Path, strategy_name: str) -> Path:
             if isinstance(node, ast.ClassDef) and node.name == strategy_name:
                 return file_path
     return strategy_path
+
+
+def _resolve_candidate_identity(
+    args: argparse.Namespace, config: dict, strategy_file: Path, run_id: str
+) -> dict[str, object]:
+    provided_identity = _candidate_identity_from_json(args)
+    if provided_identity is not None:
+        return provided_identity
+
+    strategy_identity = load_candidate_identity_from_strategy_source(
+        strategy_file,
+        strategy_class_name=args.strategy,
+        root_dir=ROOT_DIR,
+    )
+    if strategy_identity:
+        if args.candidate_id and args.candidate_id != strategy_identity.get("candidate_id"):
+            raise SystemExit(
+                "Provided --candidate-id does not match strategy candidate identity: "
+                f"{args.candidate_id} != {strategy_identity.get('candidate_id')}"
+            )
+        return strategy_identity
+
+    allowed_pairs = selected_pairs(config, args.pairs)
+    allowed_timeframes = freqai_input_timeframes(config, args.timeframe)
+    return build_strategy_candidate_identity(
+        candidate_id=args.candidate_id or run_id,
+        strategy_id=args.strategy,
+        strategy_class_name=args.strategy,
+        strategy_source_path=strategy_file,
+        strategy_version=f"{args.strategy}_v1",
+        signal_version="unspecified_freqai_signal_v1",
+        risk_policy_version="unspecified_risk_policy_v1",
+        regime_classifier_version="unspecified_regime_classifier_v1",
+        cost_model_id="unspecified_cost_model_v1",
+        allowed_pairs=allowed_pairs,
+        allowed_timeframes=allowed_timeframes,
+        created_at=datetime.now(UTC).replace(microsecond=0).isoformat(),
+        source_artifacts={"strategy_source": strategy_file},
+        root_dir=ROOT_DIR,
+    )
+
+
+def _candidate_identity_from_json(args: argparse.Namespace) -> dict[str, object] | None:
+    path_value = getattr(args, "candidate_identity_json", None)
+    if not path_value:
+        return None
+    path = Path(path_value)
+    if not path.is_file():
+        raise SystemExit(f"candidate identity JSON file not found: {path}")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"candidate identity JSON could not be read: {path}: {exc}") from exc
+    identity = extract_candidate_identity(payload)
+    if identity is None:
+        raise SystemExit(f"candidate identity JSON does not contain a valid identity: {path}")
+    if args.candidate_id and args.candidate_id != identity.get("candidate_id"):
+        raise SystemExit(
+            "Provided --candidate-id does not match candidate identity JSON: "
+            f"{args.candidate_id} != {identity.get('candidate_id')}"
+        )
+    if identity.get("strategy_class_name") != args.strategy:
+        raise SystemExit(
+            "Candidate identity JSON strategy_class_name does not match --strategy: "
+            f"{identity.get('strategy_class_name')} != {args.strategy}"
+        )
+    return identity
 
 
 def _require_file(path: Path, label: str) -> None:

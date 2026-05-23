@@ -36,6 +36,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--historical-dir", required=True)
     parser.add_argument("--walk-forward-dir", required=True)
     parser.add_argument("--training-dir", required=True)
+    parser.add_argument("--regime-scorecard", default=None)
+    parser.add_argument("--requires-regime-scorecard", action="store_true")
     parser.add_argument("--output-root", default="data/paper_readiness")
     parser.add_argument("--run-id", default=None)
     parser.add_argument(
@@ -70,6 +72,8 @@ def main() -> int:
         historical_dir=Path(args.historical_dir),
         walk_forward_dir=Path(args.walk_forward_dir),
         training_dir=Path(args.training_dir),
+        regime_scorecard_path=Path(args.regime_scorecard) if args.regime_scorecard else None,
+        requires_regime_scorecard=args.requires_regime_scorecard,
         output_root=Path(args.output_root),
         reviewer_notes=list(args.reviewer_note or []),
         command=[sys.executable, *sys.argv],

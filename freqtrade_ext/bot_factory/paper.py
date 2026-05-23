@@ -40,6 +40,8 @@ class PaperReadinessInputs:
     historical_dir: Path
     walk_forward_dir: Path
     training_dir: Path
+    regime_scorecard_path: Path | None = None
+    requires_regime_scorecard: bool = False
     output_root: Path = Path("data/paper_readiness")
     reviewer_notes: Sequence[str] = field(default_factory=list)
     command: Sequence[str] = field(default_factory=list)
@@ -108,6 +110,8 @@ def build_candidate_artifacts(inputs: PaperReadinessInputs) -> dict[str, Any]:
         "training_manifest": inputs.training_dir / "training_manifest.json",
         "training_report": inputs.training_dir / "training_report.md",
     }
+    if inputs.regime_scorecard_path is not None:
+        files["regime_scorecard"] = inputs.regime_scorecard_path
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "strategy": inputs.strategy,
@@ -477,6 +481,9 @@ def evaluate_paper_readiness(
         "historical_dir": _safe_relative_path(inputs.historical_dir, inputs.root_dir),
         "walk_forward_dir": _safe_relative_path(inputs.walk_forward_dir, inputs.root_dir),
         "training_dir": _safe_relative_path(inputs.training_dir, inputs.root_dir),
+        "regime_scorecard_path": _safe_relative_path(inputs.regime_scorecard_path, inputs.root_dir)
+        if inputs.regime_scorecard_path is not None
+        else None,
         "checks": [check.to_dict() for check in checks],
         "blockers": [check.to_dict() for check in checks if check.status == "blocked"],
         "failures": [check.to_dict() for check in checks if check.status == "fail"],
@@ -552,6 +559,7 @@ def write_paper_readiness_report(readiness: dict[str, Any], path: Path) -> None:
         f"- Historical artifacts: `{readiness['historical_dir']}`",
         f"- Walk-forward artifacts: `{readiness['walk_forward_dir']}`",
         f"- Training artifacts: `{readiness['training_dir']}`",
+        f"- Regime scorecard: `{readiness.get('regime_scorecard_path') or 'not supplied'}`",
         "",
         "## Checks",
         "",
@@ -587,6 +595,7 @@ def _phase2_evidence_checks(inputs: PaperReadinessInputs) -> list[ReadinessCheck
     historical_trades_path = inputs.historical_dir / "trades.csv"
     walk_forward_metrics_path = inputs.walk_forward_dir / "walk_forward_metrics.json"
     training_manifest_path = inputs.training_dir / "training_manifest.json"
+    checks.extend(_regime_scorecard_evidence_checks(inputs))
 
     if historical_metrics_path.is_file():
         metrics_payload = load_json_file(historical_metrics_path)
@@ -687,6 +696,71 @@ def _phase2_evidence_checks(inputs: PaperReadinessInputs) -> list[ReadinessCheck
         )
 
     return checks
+
+
+def _regime_scorecard_evidence_checks(inputs: PaperReadinessInputs) -> list[ReadinessCheck]:
+    if not inputs.requires_regime_scorecard and inputs.regime_scorecard_path is None:
+        return [
+            _check(
+                "regime_scorecard_not_required",
+                True,
+                "blocker",
+                "No regime-scoped selector eligibility was claimed for this readiness request.",
+                {},
+            )
+        ]
+    path = inputs.regime_scorecard_path
+    if path is None:
+        return [
+            ReadinessCheck(
+                name="regime_scorecard_required",
+                status="blocked",
+                severity="blocker",
+                message="Regime scorecard is required when regime-scoped selector eligibility is claimed.",
+                details={"path": None},
+            )
+        ]
+    resolved = path if path.is_absolute() else inputs.root_dir / path
+    if not resolved.is_file():
+        return [
+            ReadinessCheck(
+                name="regime_scorecard_required",
+                status="blocked",
+                severity="blocker",
+                message="Regime scorecard artifact is missing.",
+                details={"path": _safe_relative_path(resolved, inputs.root_dir)},
+            )
+        ]
+    payload = load_json_file(resolved)
+    return [
+        _check(
+            "regime_scorecard_required",
+            True,
+            "blocker",
+            "Regime scorecard artifact is present.",
+            {"path": _safe_relative_path(resolved, inputs.root_dir)},
+        ),
+        _check(
+            "regime_scorecard_selector_eligible",
+            payload.get("decision") in {"REGIME_SCOPED_SELECTOR_ELIGIBLE", "GLOBAL_SELECTOR_ELIGIBLE"},
+            "failure",
+            "Regime scorecard must be selector-eligible before paper readiness can pass.",
+            {"decision": payload.get("decision")},
+        ),
+        _check(
+            "regime_scorecard_does_not_authorize_promotion",
+            payload.get("promotion_authorized_by_this_command") is False
+            and payload.get("raw_aggregate_pnl_promotion_allowed") is False
+            and payload.get("phase3_readiness_required_after_scorecard") is True,
+            "blocker",
+            "Regime scorecard must preserve no-promotion safety semantics.",
+            {
+                "promotion_authorized_by_this_command": payload.get("promotion_authorized_by_this_command"),
+                "raw_aggregate_pnl_promotion_allowed": payload.get("raw_aggregate_pnl_promotion_allowed"),
+                "phase3_readiness_required_after_scorecard": payload.get("phase3_readiness_required_after_scorecard"),
+            },
+        ),
+    ]
 
 
 def _walk_forward_child_evidence_checks(

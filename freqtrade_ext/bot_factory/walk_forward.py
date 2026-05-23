@@ -6,6 +6,12 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Sequence
 
+from freqtrade_ext.bot_factory.candidate_identity import (
+    extract_candidate_identity,
+    validate_artifact_candidate_identity,
+    validate_candidate_identity,
+)
+
 
 @dataclass(frozen=True)
 class WalkForwardWindow:
@@ -121,6 +127,7 @@ def window_run_id(prefix: str, window: WalkForwardWindow) -> str:
 def aggregate_walk_forward_results(
     window_results: Sequence[dict[str, Any]],
     rules: WalkForwardRules | None = None,
+    candidate_identity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     rules = rules or WalkForwardRules()
     total_windows = len(window_results)
@@ -189,6 +196,20 @@ def aggregate_walk_forward_results(
             and profit_dependency <= rules.max_single_window_profit_dependency,
         },
     ]
+    identity_lineage_validation = _walk_forward_identity_lineage_validation(
+        window_results,
+        candidate_identity=candidate_identity,
+    )
+    resolved_candidate_identity = identity_lineage_validation["candidate_identity"]
+    if identity_lineage_validation["enforced"]:
+        checks.append(
+            {
+                "name": "candidate_identity_lineage",
+                "actual": identity_lineage_validation["ok"],
+                "rule": "all completed window metrics must match the walk-forward candidate identity",
+                "pass": identity_lineage_validation["ok"],
+            }
+        )
     recommendation = "pass" if all(check["pass"] for check in checks) else "fail"
 
     return {
@@ -210,6 +231,8 @@ def aggregate_walk_forward_results(
         },
         "checks": checks,
         "windows": list(window_results),
+        "candidate_identity": resolved_candidate_identity,
+        "identity_lineage_validation": identity_lineage_validation,
         "safety_scope": {
             "command": "freqtrade backtesting only",
             "paper_trading": False,
@@ -242,9 +265,25 @@ def write_walk_forward_report(metrics: dict[str, Any], path: Path) -> None:
         "- Max single-window profit dependency: "
         f"{_fmt(summary['max_single_window_profit_dependency'])}",
         "",
-        "## Gate Checks",
-        "",
     ]
+    identity = metrics.get("candidate_identity")
+    if identity:
+        lines.extend(
+            [
+                "## Candidate Identity",
+                "",
+                f"- candidate_id: {identity.get('candidate_id')}",
+                f"- strategy_id: {identity.get('strategy_id')}",
+                f"- strategy_class_name: {identity.get('strategy_class_name')}",
+                f"- strategy_version: {identity.get('strategy_version')}",
+                f"- signal_version: {identity.get('signal_version')}",
+                f"- risk_policy_version: {identity.get('risk_policy_version')}",
+                f"- regime_classifier_version: {identity.get('regime_classifier_version')}",
+                f"- cost_model_id: {identity.get('cost_model_id')}",
+                "",
+            ]
+        )
+    lines.extend(["## Gate Checks", ""])
     for check in metrics["checks"]:
         status = "PASS" if check["pass"] else "FAIL"
         lines.append(f"- {status}: {check['name']} ({_fmt(check['actual'])} vs {check['rule']})")
@@ -267,6 +306,12 @@ def write_walk_forward_report(metrics: dict[str, Any], path: Path) -> None:
 
     lines.extend(
         [
+            "",
+            "## Gate Semantics",
+            "",
+            "- Permits: candidate may proceed to local regime scorecard and selector-artifact review.",
+            "- Does not permit: paper trading, dry-run trading, live trading, process control, or exchange order placement.",
+            "- Next required gate: regime scorecard review, then paper_readiness.pass.",
             "",
             "## Notes",
             "",
@@ -308,6 +353,123 @@ def _single_window_profit_dependency(positive_returns: Sequence[float]) -> float
     if total_positive <= 0:
         return None
     return max(positive_returns) / total_positive
+
+
+def _walk_forward_identity_lineage_validation(
+    window_results: Sequence[dict[str, Any]],
+    *,
+    candidate_identity: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    completed = [
+        result
+        for result in window_results
+        if result.get("status") == "completed" and isinstance(result.get("metrics"), dict)
+    ]
+    identity_supplied = candidate_identity is not None
+    reference = extract_candidate_identity(candidate_identity)
+    reference_source = "argument" if reference is not None else None
+    if identity_supplied and reference is None:
+        identity_validation = validate_candidate_identity(candidate_identity)
+        return {
+            "factory": "walk_forward_candidate_identity_lineage_validation",
+            "ok": False,
+            "enforced": True,
+            "candidate_identity": identity_validation["candidate_identity"],
+            "reference_source": "argument",
+            "checks": [
+                {
+                    "name": "candidate_identity_valid",
+                    "passed": False,
+                    "details": {"reference_source": "argument"},
+                }
+            ],
+            "identity_validation": identity_validation,
+            "windows": [],
+        }
+
+    if reference is None:
+        for result in completed:
+            reference = extract_candidate_identity(result.get("metrics"))
+            reference_source = "window_metrics"
+            if reference is not None:
+                break
+            reference = extract_candidate_identity(result)
+            reference_source = "window_result"
+            if reference is not None:
+                break
+
+    if reference is None:
+        return {
+            "factory": "walk_forward_candidate_identity_lineage_validation",
+            "ok": True,
+            "enforced": False,
+            "candidate_identity": None,
+            "reference_source": None,
+            "checks": [
+                {
+                    "name": "candidate_identity_lineage_not_enforced",
+                    "passed": True,
+                    "details": {
+                        "reason": "no candidate identity supplied or found in completed window metrics"
+                    },
+                }
+            ],
+            "windows": [],
+        }
+
+    identity_validation = validate_candidate_identity(reference)
+    window_validations = []
+    for sequence_index, result in enumerate(completed, start=1):
+        window = result.get("window") or {}
+        window_index = window.get("index", sequence_index) if isinstance(window, dict) else sequence_index
+        validation = validate_artifact_candidate_identity(
+            reference,
+            result.get("metrics"),
+            artifact_label=f"walk_forward_window_{_window_index_token(window_index)}_metrics",
+        )
+        window_validations.append(
+            {
+                "window_index": window_index,
+                "run_id": result.get("run_id"),
+                "ok": validation["ok"],
+                "validation": validation,
+            }
+        )
+
+    ok = identity_validation["ok"] and all(item["ok"] for item in window_validations)
+    return {
+        "factory": "walk_forward_candidate_identity_lineage_validation",
+        "ok": ok,
+        "enforced": True,
+        "candidate_identity": identity_validation["candidate_identity"],
+        "reference_source": reference_source,
+        "checks": [
+            {
+                "name": "candidate_identity_valid",
+                "passed": identity_validation["ok"],
+                "details": {"reference_source": reference_source},
+            },
+            {
+                "name": "completed_window_metrics_match_candidate_identity",
+                "passed": all(item["ok"] for item in window_validations),
+                "details": {
+                    "completed_window_count": len(completed),
+                    "failed_window_indexes": [
+                        item["window_index"] for item in window_validations if not item["ok"]
+                    ],
+                },
+            },
+        ],
+        "identity_validation": identity_validation,
+        "windows": window_validations,
+    }
+
+
+def _window_index_token(value: Any) -> str:
+    try:
+        return f"{int(value):02d}"
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def _fmt(value: Any) -> str:

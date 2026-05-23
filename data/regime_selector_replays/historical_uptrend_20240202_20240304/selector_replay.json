@@ -1,0 +1,1369 @@
+{
+  "factory": "historical_uptrend_regime_selector_replay",
+  "schema_version": "historical_uptrend_regime_selector_replay_v1",
+  "run_id": "historical_uptrend_20240202_20240304",
+  "created_at": "2026-05-20T15:36:47.811540+00:00",
+  "window": {
+    "start": "2024-02-02T00:00:00Z",
+    "end": "2024-03-04T23:55:00Z",
+    "selection_reason": "Strong BTC/ETH historical uptrend in local OHLCV with max drawdown inside the current 8% strong-uptrend contract limit."
+  },
+  "quality_reports": [
+    {
+      "path": "user_data\\data\\bybit\\futures\\BTC_USDT_USDT-5m-futures.parquet",
+      "ok": true,
+      "rows": 246895,
+      "columns": [
+        "date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "start": "2024-01-01T00:00:00+00:00",
+      "end": "2026-05-07T06:30:00+00:00",
+      "expected_timeframe": "5m",
+      "expected_interval_seconds": 300,
+      "duplicate_timestamps": 0,
+      "missing_intervals": 0,
+      "findings": [],
+      "generated_at": "2026-05-20T15:36:47.689293+00:00"
+    },
+    {
+      "path": "user_data\\data\\bybit\\futures\\ETH_USDT_USDT-5m-futures.parquet",
+      "ok": true,
+      "rows": 246941,
+      "columns": [
+        "date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "start": "2024-01-01T00:00:00+00:00",
+      "end": "2026-05-07T10:20:00+00:00",
+      "expected_timeframe": "5m",
+      "expected_interval_seconds": 300,
+      "duplicate_timestamps": 0,
+      "missing_intervals": 0,
+      "findings": [],
+      "generated_at": "2026-05-20T15:36:47.756182+00:00"
+    }
+  ],
+  "pair_summaries": [
+    {
+      "pair": "BTC/USDT:USDT",
+      "path": "user_data\\data\\bybit\\futures\\BTC_USDT_USDT-5m-futures.parquet",
+      "rows": 9216,
+      "start_close": 43045.9,
+      "end_close": 68360.0,
+      "gross_return_pct": 58.807226704517724,
+      "net_return_normal_cost_pct": 58.70722670451772,
+      "net_return_stress_cost_pct": 58.60722670451772,
+      "max_drawdown_pct": 6.4604885091144375,
+      "daily_win_rate": 0.6774193548387096,
+      "profit_factor_from_candle_returns": 1.110243477012565,
+      "range_efficiency": 0.05257408245462712,
+      "proxy_trade_count": 10,
+      "lower_confidence_bound_pct": 52.14673819540329
+    },
+    {
+      "pair": "ETH/USDT:USDT",
+      "path": "user_data\\data\\bybit\\futures\\ETH_USDT_USDT-5m-futures.parquet",
+      "rows": 9216,
+      "start_close": 2300.92,
+      "end_close": 3630.31,
+      "gross_return_pct": 57.77645463553709,
+      "net_return_normal_cost_pct": 57.67645463553709,
+      "net_return_stress_cost_pct": 57.57645463553709,
+      "max_drawdown_pct": 6.830327847713146,
+      "daily_win_rate": 0.6774193548387096,
+      "profit_factor_from_candle_returns": 1.0977011193324662,
+      "range_efficiency": 0.04531919180280315,
+      "proxy_trade_count": 10,
+      "lower_confidence_bound_pct": 50.74612678782394
+    }
+  ],
+  "observations": [
+    {
+      "observation_id": "BTC_USDT_USDT-strong-uptrend-real-ohlcv",
+      "created_at": "2026-05-20T15:36:47.784736+00:00",
+      "source_type": "local_shadow_replay",
+      "strategy_id": "long_only_strong_uptrend_momentum",
+      "strategy_version": "strong_uptrend_momentum_v1",
+      "candidate_id": "strong-uptrend-historical-ohlcv-candidate",
+      "signal_version": "strong_uptrend_signal_v1",
+      "risk_policy_version": "long_only_risk_v1",
+      "pair": "BTC/USDT:USDT",
+      "timeframe": "5m",
+      "window_start": "2024-02-02T00:00:00Z",
+      "window_end": "2024-03-04T23:55:00Z",
+      "market_regime": "trend_up",
+      "regime_classifier_version": "regime_classifier_v1",
+      "baseline_id": "candidate_proxy_close_to_close",
+      "cost_model_id": "cost_model_v1",
+      "normal_cost_bps": 10.0,
+      "stress_cost_bps": 20.0,
+      "trade_count": 10,
+      "exposure_ratio": 1.0,
+      "gross_return": 58.807226704517724,
+      "net_return_normal_cost": 58.70722670451772,
+      "net_return_stress_cost": 58.60722670451772,
+      "max_drawdown": 6.4604885091144375,
+      "downside_deviation": 0.114005269739907,
+      "win_rate": 0.6774193548387096,
+      "profit_factor": 1.110243477012565,
+      "no_trade_reason": "",
+      "no_trade_opportunity_cost": 58.70722670451772,
+      "data_quality_flags": [],
+      "reason_codes": [
+        "historical_uptrend_proxy",
+        "pass"
+      ],
+      "lower_confidence_bound": 52.14673819540329
+    },
+    {
+      "observation_id": "ETH_USDT_USDT-strong-uptrend-real-ohlcv",
+      "created_at": "2026-05-20T15:36:47.811032+00:00",
+      "source_type": "local_shadow_replay",
+      "strategy_id": "long_only_strong_uptrend_momentum",
+      "strategy_version": "strong_uptrend_momentum_v1",
+      "candidate_id": "strong-uptrend-historical-ohlcv-candidate",
+      "signal_version": "strong_uptrend_signal_v1",
+      "risk_policy_version": "long_only_risk_v1",
+      "pair": "ETH/USDT:USDT",
+      "timeframe": "5m",
+      "window_start": "2024-02-02T00:00:00Z",
+      "window_end": "2024-03-04T23:55:00Z",
+      "market_regime": "trend_up",
+      "regime_classifier_version": "regime_classifier_v1",
+      "baseline_id": "candidate_proxy_close_to_close",
+      "cost_model_id": "cost_model_v1",
+      "normal_cost_bps": 10.0,
+      "stress_cost_bps": 20.0,
+      "trade_count": 10,
+      "exposure_ratio": 1.0,
+      "gross_return": 57.77645463553709,
+      "net_return_normal_cost": 57.67645463553709,
+      "net_return_stress_cost": 57.57645463553709,
+      "max_drawdown": 6.830327847713146,
+      "downside_deviation": 0.12541506578643996,
+      "win_rate": 0.6774193548387096,
+      "profit_factor": 1.0977011193324662,
+      "no_trade_reason": "",
+      "no_trade_opportunity_cost": 57.67645463553709,
+      "data_quality_flags": [],
+      "reason_codes": [
+        "historical_uptrend_proxy",
+        "pass"
+      ],
+      "lower_confidence_bound": 50.74612678782394
+    }
+  ],
+  "baselines": [
+    {
+      "observation_id": "BTC_USDT_USDT-no-trade-baseline",
+      "created_at": "2026-05-20T15:36:47.784736+00:00",
+      "source_type": "local_shadow_replay",
+      "strategy_id": "long_only_strong_uptrend_momentum",
+      "strategy_version": "strong_uptrend_momentum_v1",
+      "candidate_id": "no-trade-baseline",
+      "signal_version": "strong_uptrend_signal_v1",
+      "risk_policy_version": "long_only_risk_v1",
+      "pair": "BTC/USDT:USDT",
+      "timeframe": "5m",
+      "window_start": "2024-02-02T00:00:00Z",
+      "window_end": "2024-03-04T23:55:00Z",
+      "market_regime": "trend_up",
+      "regime_classifier_version": "regime_classifier_v1",
+      "baseline_id": "no_trade",
+      "cost_model_id": "cost_model_v1",
+      "normal_cost_bps": 10.0,
+      "stress_cost_bps": 20.0,
+      "trade_count": 0,
+      "exposure_ratio": 0.0,
+      "gross_return": 0.0,
+      "net_return_normal_cost": 0.0,
+      "net_return_stress_cost": 0.0,
+      "max_drawdown": 0.0,
+      "downside_deviation": 0.0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "no_trade_reason": "baseline_for_opportunity_cost",
+      "no_trade_opportunity_cost": 58.70722670451772,
+      "data_quality_flags": [],
+      "reason_codes": [
+        "no_trade_baseline"
+      ],
+      "lower_confidence_bound": 0.0
+    },
+    {
+      "observation_id": "ETH_USDT_USDT-no-trade-baseline",
+      "created_at": "2026-05-20T15:36:47.811032+00:00",
+      "source_type": "local_shadow_replay",
+      "strategy_id": "long_only_strong_uptrend_momentum",
+      "strategy_version": "strong_uptrend_momentum_v1",
+      "candidate_id": "no-trade-baseline",
+      "signal_version": "strong_uptrend_signal_v1",
+      "risk_policy_version": "long_only_risk_v1",
+      "pair": "ETH/USDT:USDT",
+      "timeframe": "5m",
+      "window_start": "2024-02-02T00:00:00Z",
+      "window_end": "2024-03-04T23:55:00Z",
+      "market_regime": "trend_up",
+      "regime_classifier_version": "regime_classifier_v1",
+      "baseline_id": "no_trade",
+      "cost_model_id": "cost_model_v1",
+      "normal_cost_bps": 10.0,
+      "stress_cost_bps": 20.0,
+      "trade_count": 0,
+      "exposure_ratio": 0.0,
+      "gross_return": 0.0,
+      "net_return_normal_cost": 0.0,
+      "net_return_stress_cost": 0.0,
+      "max_drawdown": 0.0,
+      "downside_deviation": 0.0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "no_trade_reason": "baseline_for_opportunity_cost",
+      "no_trade_opportunity_cost": 57.67645463553709,
+      "data_quality_flags": [],
+      "reason_codes": [
+        "no_trade_baseline"
+      ],
+      "lower_confidence_bound": 0.0
+    }
+  ],
+  "thresholds": {
+    "min_sample_days": 30.0,
+    "min_window_count": 2,
+    "min_trade_count": 10,
+    "min_walk_forward_pass_rate": 0.6,
+    "min_lower_confidence_bound": 0.0,
+    "max_pair_concentration": 0.8,
+    "max_calendar_concentration": 1.0,
+    "max_drawdown": 10.0,
+    "min_global_regime_count": 2
+  },
+  "strong_uptrend_scorecard": {
+    "factory": "regime_fitness_scorecard",
+    "schema_version": "regime_fitness_scorecard_v1",
+    "scorecard_id": "historical_uptrend_20240202_20240304_strong_uptrend_scorecard",
+    "created_at": "2026-05-20T15:36:47+00:00",
+    "decision": "REGIME_SCOPED_SELECTOR_ELIGIBLE",
+    "eligible_regimes": [
+      "trend_up"
+    ],
+    "blocked_regimes": [
+      "high_volatility",
+      "liquidity_stress",
+      "range",
+      "trend_down",
+      "unknown"
+    ],
+    "reason_codes": [
+      "one_or_more_intended_regimes_passed",
+      "excluded_regimes_require_no_trade_or_blocking"
+    ],
+    "evidence_unit": {
+      "strategy_version": "strong_uptrend_momentum_v1",
+      "signal_version": "strong_uptrend_signal_v1",
+      "activation_regime_scope": "trend_up",
+      "risk_policy_version": "long_only_risk_v1",
+      "regime_classifier_version": "regime_classifier_v1",
+      "cost_model_id": "cost_model_v1"
+    },
+    "thresholds": {
+      "min_sample_days": 30.0,
+      "min_window_count": 2,
+      "min_trade_count": 10,
+      "min_walk_forward_pass_rate": 0.6,
+      "min_lower_confidence_bound": 0.0,
+      "max_pair_concentration": 0.8,
+      "max_calendar_concentration": 1.0,
+      "max_drawdown": 10.0,
+      "min_global_regime_count": 2
+    },
+    "contract_validation": {
+      "factory": "regime_strategy_contract_validation",
+      "schema_version": "regime_strategy_contract_v1",
+      "ok": true,
+      "checks": [
+        {
+          "name": "intended_regimes_present",
+          "passed": true,
+          "details": {
+            "intended_regimes": [
+              "trend_up"
+            ]
+          }
+        },
+        {
+          "name": "intended_regimes_predeclared",
+          "passed": true,
+          "details": {
+            "invalid_regimes": []
+          }
+        },
+        {
+          "name": "excluded_regimes_predeclared",
+          "passed": true,
+          "details": {
+            "invalid_regimes": []
+          }
+        },
+        {
+          "name": "regime_action_separated_from_label",
+          "passed": true,
+          "details": {
+            "reason": "`trend_down` is a regime; `avoid_long` belongs in no_trade_conditions."
+          }
+        },
+        {
+          "name": "no_trade_conditions_present_for_excluded_regimes",
+          "passed": true,
+          "details": {
+            "excluded_regimes": [
+              "trend_down",
+              "range",
+              "high_volatility",
+              "liquidity_stress",
+              "unknown"
+            ]
+          }
+        },
+        {
+          "name": "regime_shift_stop_conditions_present",
+          "passed": true,
+          "details": {
+            "regime_shift_stop_conditions": [
+              "closed-candle regime leaves trend_up",
+              "close loses medium moving average",
+              "range efficiency collapses into mixed/range behavior",
+              "data quality or required feature check fails"
+            ]
+          }
+        },
+        {
+          "name": "allowed_pairs_present",
+          "passed": true,
+          "details": {
+            "allowed_pairs": [
+              "BTC/USDT:USDT",
+              "ETH/USDT:USDT"
+            ]
+          }
+        },
+        {
+          "name": "allowed_timeframes_present",
+          "passed": true,
+          "details": {
+            "allowed_timeframes": [
+              "5m"
+            ]
+          }
+        }
+      ],
+      "contract": {
+        "strategy_version": "strong_uptrend_momentum_v1",
+        "signal_version": "strong_uptrend_signal_v1",
+        "risk_policy_version": "long_only_risk_v1",
+        "regime_classifier_version": "regime_classifier_v1",
+        "cost_model_id": "cost_model_v1",
+        "intended_regimes": [
+          "trend_up"
+        ],
+        "excluded_regimes": [
+          "trend_down",
+          "range",
+          "high_volatility",
+          "liquidity_stress",
+          "unknown"
+        ],
+        "activation_conditions": [
+          "closed-candle regime classifier emits trend_up",
+          "short moving average slope remains positive",
+          "close remains above medium moving average",
+          "range efficiency confirms directional follow-through",
+          "volume/liquidity proxy is not degraded"
+        ],
+        "no_trade_conditions": [
+          "market_regime is not trend_up",
+          "high_volatility, liquidity_stress, or unknown regime is active",
+          "required regime, trend, volume, or cost features are missing",
+          "scorecard eligibility is not regime-scoped or global"
+        ],
+        "regime_shift_stop_conditions": [
+          "closed-candle regime leaves trend_up",
+          "close loses medium moving average",
+          "range efficiency collapses into mixed/range behavior",
+          "data quality or required feature check fails"
+        ],
+        "required_features": [
+          "close",
+          "volume",
+          "moving_average_slope",
+          "range_efficiency",
+          "regime_label",
+          "cost_model"
+        ],
+        "minimum_evidence": {
+          "min_window_count": 2,
+          "min_trade_count": 10
+        },
+        "maximum_drawdown_by_regime": {
+          "trend_up": 8.0
+        },
+        "cost_sensitivity_limits": {
+          "normal_cost_bps_max": 10.0,
+          "stress_cost_bps_max": 20.0
+        },
+        "cooldown_after_regime_change": 3,
+        "allowed_pairs": [
+          "BTC/USDT:USDT",
+          "ETH/USDT:USDT"
+        ],
+        "allowed_timeframes": [
+          "5m"
+        ]
+      },
+      "evidence_unit": {
+        "strategy_version": "strong_uptrend_momentum_v1",
+        "signal_version": "strong_uptrend_signal_v1",
+        "activation_regime_scope": "trend_up",
+        "risk_policy_version": "long_only_risk_v1",
+        "regime_classifier_version": "regime_classifier_v1",
+        "cost_model_id": "cost_model_v1"
+      },
+      "safety_scope": {
+        "local_artifacts_only": true,
+        "paper_trading_started": false,
+        "dry_run_trading_started": false,
+        "live_trading_started": false,
+        "exchange_order_placement": false,
+        "uses_api_keys_or_secrets": false,
+        "leverage_above_1": false,
+        "shorting": false,
+        "process_control": false,
+        "promotion_authorized_by_this_command": false,
+        "phase3_readiness_bypassed": false
+      }
+    },
+    "observation_validations": [
+      {
+        "factory": "regime_observation_validation",
+        "schema_version": "regime_observation_ledger_v1",
+        "ok": true,
+        "checks": [
+          {
+            "name": "required_fields_present",
+            "passed": true,
+            "details": {
+              "missing_fields": []
+            }
+          },
+          {
+            "name": "source_type_current_scope_allowed",
+            "passed": true,
+            "details": {
+              "source_type": "local_shadow_replay",
+              "current_scope_allowed": [
+                "backtest",
+                "local_shadow_replay",
+                "walk_forward"
+              ],
+              "future_sources_blocked": [
+                "future_dry_run",
+                "future_dry_run_observation",
+                "future_paper",
+                "future_paper_observation"
+              ]
+            }
+          },
+          {
+            "name": "market_regime_predeclared",
+            "passed": true,
+            "details": {
+              "market_regime": "trend_up",
+              "allowed_regimes": [
+                "high_volatility",
+                "liquidity_stress",
+                "low_volatility",
+                "mixed",
+                "post_spike_reversion",
+                "range",
+                "trend_down",
+                "trend_up",
+                "unknown"
+              ]
+            }
+          },
+          {
+            "name": "required_numeric_fields_valid",
+            "passed": true,
+            "details": {
+              "invalid_numeric_fields": []
+            }
+          },
+          {
+            "name": "list_fields_valid",
+            "passed": true,
+            "details": {
+              "data_quality_flags_type": "list",
+              "reason_codes_type": "list"
+            }
+          }
+        ],
+        "safety_scope": {
+          "local_artifacts_only": true,
+          "paper_trading_started": false,
+          "dry_run_trading_started": false,
+          "live_trading_started": false,
+          "exchange_order_placement": false,
+          "uses_api_keys_or_secrets": false,
+          "leverage_above_1": false,
+          "shorting": false,
+          "process_control": false,
+          "promotion_authorized_by_this_command": false,
+          "phase3_readiness_bypassed": false
+        }
+      },
+      {
+        "factory": "regime_observation_validation",
+        "schema_version": "regime_observation_ledger_v1",
+        "ok": true,
+        "checks": [
+          {
+            "name": "required_fields_present",
+            "passed": true,
+            "details": {
+              "missing_fields": []
+            }
+          },
+          {
+            "name": "source_type_current_scope_allowed",
+            "passed": true,
+            "details": {
+              "source_type": "local_shadow_replay",
+              "current_scope_allowed": [
+                "backtest",
+                "local_shadow_replay",
+                "walk_forward"
+              ],
+              "future_sources_blocked": [
+                "future_dry_run",
+                "future_dry_run_observation",
+                "future_paper",
+                "future_paper_observation"
+              ]
+            }
+          },
+          {
+            "name": "market_regime_predeclared",
+            "passed": true,
+            "details": {
+              "market_regime": "trend_up",
+              "allowed_regimes": [
+                "high_volatility",
+                "liquidity_stress",
+                "low_volatility",
+                "mixed",
+                "post_spike_reversion",
+                "range",
+                "trend_down",
+                "trend_up",
+                "unknown"
+              ]
+            }
+          },
+          {
+            "name": "required_numeric_fields_valid",
+            "passed": true,
+            "details": {
+              "invalid_numeric_fields": []
+            }
+          },
+          {
+            "name": "list_fields_valid",
+            "passed": true,
+            "details": {
+              "data_quality_flags_type": "list",
+              "reason_codes_type": "list"
+            }
+          }
+        ],
+        "safety_scope": {
+          "local_artifacts_only": true,
+          "paper_trading_started": false,
+          "dry_run_trading_started": false,
+          "live_trading_started": false,
+          "exchange_order_placement": false,
+          "uses_api_keys_or_secrets": false,
+          "leverage_above_1": false,
+          "shorting": false,
+          "process_control": false,
+          "promotion_authorized_by_this_command": false,
+          "phase3_readiness_bypassed": false
+        }
+      },
+      {
+        "factory": "regime_observation_validation",
+        "schema_version": "regime_observation_ledger_v1",
+        "ok": true,
+        "checks": [
+          {
+            "name": "required_fields_present",
+            "passed": true,
+            "details": {
+              "missing_fields": []
+            }
+          },
+          {
+            "name": "source_type_current_scope_allowed",
+            "passed": true,
+            "details": {
+              "source_type": "local_shadow_replay",
+              "current_scope_allowed": [
+                "backtest",
+                "local_shadow_replay",
+                "walk_forward"
+              ],
+              "future_sources_blocked": [
+                "future_dry_run",
+                "future_dry_run_observation",
+                "future_paper",
+                "future_paper_observation"
+              ]
+            }
+          },
+          {
+            "name": "market_regime_predeclared",
+            "passed": true,
+            "details": {
+              "market_regime": "trend_up",
+              "allowed_regimes": [
+                "high_volatility",
+                "liquidity_stress",
+                "low_volatility",
+                "mixed",
+                "post_spike_reversion",
+                "range",
+                "trend_down",
+                "trend_up",
+                "unknown"
+              ]
+            }
+          },
+          {
+            "name": "required_numeric_fields_valid",
+            "passed": true,
+            "details": {
+              "invalid_numeric_fields": []
+            }
+          },
+          {
+            "name": "list_fields_valid",
+            "passed": true,
+            "details": {
+              "data_quality_flags_type": "list",
+              "reason_codes_type": "list"
+            }
+          }
+        ],
+        "safety_scope": {
+          "local_artifacts_only": true,
+          "paper_trading_started": false,
+          "dry_run_trading_started": false,
+          "live_trading_started": false,
+          "exchange_order_placement": false,
+          "uses_api_keys_or_secrets": false,
+          "leverage_above_1": false,
+          "shorting": false,
+          "process_control": false,
+          "promotion_authorized_by_this_command": false,
+          "phase3_readiness_bypassed": false
+        }
+      },
+      {
+        "factory": "regime_observation_validation",
+        "schema_version": "regime_observation_ledger_v1",
+        "ok": true,
+        "checks": [
+          {
+            "name": "required_fields_present",
+            "passed": true,
+            "details": {
+              "missing_fields": []
+            }
+          },
+          {
+            "name": "source_type_current_scope_allowed",
+            "passed": true,
+            "details": {
+              "source_type": "local_shadow_replay",
+              "current_scope_allowed": [
+                "backtest",
+                "local_shadow_replay",
+                "walk_forward"
+              ],
+              "future_sources_blocked": [
+                "future_dry_run",
+                "future_dry_run_observation",
+                "future_paper",
+                "future_paper_observation"
+              ]
+            }
+          },
+          {
+            "name": "market_regime_predeclared",
+            "passed": true,
+            "details": {
+              "market_regime": "trend_up",
+              "allowed_regimes": [
+                "high_volatility",
+                "liquidity_stress",
+                "low_volatility",
+                "mixed",
+                "post_spike_reversion",
+                "range",
+                "trend_down",
+                "trend_up",
+                "unknown"
+              ]
+            }
+          },
+          {
+            "name": "required_numeric_fields_valid",
+            "passed": true,
+            "details": {
+              "invalid_numeric_fields": []
+            }
+          },
+          {
+            "name": "list_fields_valid",
+            "passed": true,
+            "details": {
+              "data_quality_flags_type": "list",
+              "reason_codes_type": "list"
+            }
+          }
+        ],
+        "safety_scope": {
+          "local_artifacts_only": true,
+          "paper_trading_started": false,
+          "dry_run_trading_started": false,
+          "live_trading_started": false,
+          "exchange_order_placement": false,
+          "uses_api_keys_or_secrets": false,
+          "leverage_above_1": false,
+          "shorting": false,
+          "process_control": false,
+          "promotion_authorized_by_this_command": false,
+          "phase3_readiness_bypassed": false
+        }
+      }
+    ],
+    "scorecard_by_regime": [
+      {
+        "market_regime": "high_volatility",
+        "decision": "NO_TRADE_POLICY",
+        "reason_codes": [
+          "excluded_regime_requires_no_trade",
+          "no_candidate_observations_in_excluded_regime"
+        ],
+        "sample_days": 0.0,
+        "window_count": 0,
+        "trade_count": 0,
+        "exposure_ratio": null,
+        "expectancy": null,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_drawdown": 0.0,
+        "downside_deviation": 0.0,
+        "gross_return": 0,
+        "net_pnl_normal_cost": 0,
+        "net_pnl_stress_cost": 0,
+        "baseline_delta_normal_cost": 0,
+        "baseline_delta_stress_cost": 0,
+        "incumbent_delta": null,
+        "no_trade_opportunity_cost": 0,
+        "confidence_interval": null,
+        "lower_confidence_bound": 0.0,
+        "walk_forward_pass_rate": 0.0,
+        "pair_concentration": 0.0,
+        "calendar_concentration": 0.0,
+        "data_quality_pass": true
+      },
+      {
+        "market_regime": "liquidity_stress",
+        "decision": "NO_TRADE_POLICY",
+        "reason_codes": [
+          "excluded_regime_requires_no_trade",
+          "no_candidate_observations_in_excluded_regime"
+        ],
+        "sample_days": 0.0,
+        "window_count": 0,
+        "trade_count": 0,
+        "exposure_ratio": null,
+        "expectancy": null,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_drawdown": 0.0,
+        "downside_deviation": 0.0,
+        "gross_return": 0,
+        "net_pnl_normal_cost": 0,
+        "net_pnl_stress_cost": 0,
+        "baseline_delta_normal_cost": 0,
+        "baseline_delta_stress_cost": 0,
+        "incumbent_delta": null,
+        "no_trade_opportunity_cost": 0,
+        "confidence_interval": null,
+        "lower_confidence_bound": 0.0,
+        "walk_forward_pass_rate": 0.0,
+        "pair_concentration": 0.0,
+        "calendar_concentration": 0.0,
+        "data_quality_pass": true
+      },
+      {
+        "market_regime": "range",
+        "decision": "NO_TRADE_POLICY",
+        "reason_codes": [
+          "excluded_regime_requires_no_trade",
+          "no_candidate_observations_in_excluded_regime"
+        ],
+        "sample_days": 0.0,
+        "window_count": 0,
+        "trade_count": 0,
+        "exposure_ratio": null,
+        "expectancy": null,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_drawdown": 0.0,
+        "downside_deviation": 0.0,
+        "gross_return": 0,
+        "net_pnl_normal_cost": 0,
+        "net_pnl_stress_cost": 0,
+        "baseline_delta_normal_cost": 0,
+        "baseline_delta_stress_cost": 0,
+        "incumbent_delta": null,
+        "no_trade_opportunity_cost": 0,
+        "confidence_interval": null,
+        "lower_confidence_bound": 0.0,
+        "walk_forward_pass_rate": 0.0,
+        "pair_concentration": 0.0,
+        "calendar_concentration": 0.0,
+        "data_quality_pass": true
+      },
+      {
+        "market_regime": "trend_down",
+        "decision": "NO_TRADE_POLICY",
+        "reason_codes": [
+          "excluded_regime_requires_no_trade",
+          "no_candidate_observations_in_excluded_regime"
+        ],
+        "sample_days": 0.0,
+        "window_count": 0,
+        "trade_count": 0,
+        "exposure_ratio": null,
+        "expectancy": null,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_drawdown": 0.0,
+        "downside_deviation": 0.0,
+        "gross_return": 0,
+        "net_pnl_normal_cost": 0,
+        "net_pnl_stress_cost": 0,
+        "baseline_delta_normal_cost": 0,
+        "baseline_delta_stress_cost": 0,
+        "incumbent_delta": null,
+        "no_trade_opportunity_cost": 0,
+        "confidence_interval": null,
+        "lower_confidence_bound": 0.0,
+        "walk_forward_pass_rate": 0.0,
+        "pair_concentration": 0.0,
+        "calendar_concentration": 0.0,
+        "data_quality_pass": true
+      },
+      {
+        "market_regime": "trend_up",
+        "decision": "REGIME_SCOPED_SELECTOR_ELIGIBLE",
+        "reason_codes": [
+          "regime_scorecard_passed"
+        ],
+        "sample_days": 63.993056,
+        "window_count": 2,
+        "trade_count": 20,
+        "exposure_ratio": 1.0,
+        "expectancy": 58.1918406700274,
+        "profit_factor": 1.1039722981725157,
+        "win_rate": 0.6774193548387096,
+        "max_drawdown": 6.830327847713146,
+        "downside_deviation": 0.12541506578643996,
+        "gross_return": 116.58368134005482,
+        "net_pnl_normal_cost": 116.3836813400548,
+        "net_pnl_stress_cost": 116.18368134005482,
+        "baseline_delta_normal_cost": 116.3836813400548,
+        "baseline_delta_stress_cost": 116.18368134005482,
+        "incumbent_delta": null,
+        "no_trade_opportunity_cost": 116.3836813400548,
+        "confidence_interval": null,
+        "lower_confidence_bound": 50.74612678782394,
+        "walk_forward_pass_rate": 1.0,
+        "pair_concentration": 0.5,
+        "calendar_concentration": 1.0,
+        "data_quality_pass": true
+      },
+      {
+        "market_regime": "unknown",
+        "decision": "NO_TRADE_POLICY",
+        "reason_codes": [
+          "excluded_regime_requires_no_trade",
+          "no_candidate_observations_in_excluded_regime"
+        ],
+        "sample_days": 0.0,
+        "window_count": 0,
+        "trade_count": 0,
+        "exposure_ratio": null,
+        "expectancy": null,
+        "profit_factor": null,
+        "win_rate": null,
+        "max_drawdown": 0.0,
+        "downside_deviation": 0.0,
+        "gross_return": 0,
+        "net_pnl_normal_cost": 0,
+        "net_pnl_stress_cost": 0,
+        "baseline_delta_normal_cost": 0,
+        "baseline_delta_stress_cost": 0,
+        "incumbent_delta": null,
+        "no_trade_opportunity_cost": 0,
+        "confidence_interval": null,
+        "lower_confidence_bound": 0.0,
+        "walk_forward_pass_rate": 0.0,
+        "pair_concentration": 0.0,
+        "calendar_concentration": 0.0,
+        "data_quality_pass": true
+      }
+    ],
+    "raw_aggregate_pnl_promotion_allowed": false,
+    "phase3_readiness_bypassed": false,
+    "phase3_readiness_required_after_scorecard": true,
+    "reviewer_notes": [
+      "Historical OHLCV close-to-close proxy for selector adoption only; not a Freqtrade strategy backtest."
+    ],
+    "safety_scope": {
+      "local_artifacts_only": true,
+      "paper_trading_started": false,
+      "dry_run_trading_started": false,
+      "live_trading_started": false,
+      "exchange_order_placement": false,
+      "uses_api_keys_or_secrets": false,
+      "leverage_above_1": false,
+      "shorting": false,
+      "process_control": false,
+      "promotion_authorized_by_this_command": false,
+      "phase3_readiness_bypassed": false
+    }
+  },
+  "selection": {
+    "factory": "runtime_regime_strategy_selector",
+    "schema_version": "runtime_regime_selector_v1",
+    "selector_id": "historical_uptrend_20240202_20240304_selector",
+    "created_at": "2026-05-20T15:36:47+00:00",
+    "runtime": {
+      "current_regime": "trend_up",
+      "pair": "BTC/USDT:USDT",
+      "timeframe": "5m",
+      "regime_classifier_version": "regime_classifier_v1",
+      "data_quality_pass": true,
+      "available_features": [
+        "close",
+        "cost_model",
+        "downside_exhaustion",
+        "mean_reversion_oscillator",
+        "moving_average_slope",
+        "range_band_position",
+        "range_efficiency",
+        "range_width",
+        "reclaim_confirmation",
+        "regime_label",
+        "volume"
+      ],
+      "production_assumption": true,
+      "process_control_allowed": false,
+      "paper_or_dry_run_process_running": false
+    },
+    "action": "select",
+    "selected_candidate_id": "strong-uptrend-historical-ohlcv-candidate",
+    "selected_strategy_id": "long_only_strong_uptrend_momentum",
+    "selected_logic_id": "strong_uptrend_momentum_v1",
+    "would_select_in_production_assumption": true,
+    "reason_codes": [
+      "selected_regime_scoped_candidate",
+      "selected_highest_stress_adjusted_candidate",
+      "production_running_assumption_only_no_process_control"
+    ],
+    "evaluated_candidates": [
+      {
+        "candidate_id": "strong-uptrend-historical-ohlcv-candidate",
+        "strategy_id": "long_only_strong_uptrend_momentum",
+        "logic_id": "strong_uptrend_momentum_v1",
+        "selectable": true,
+        "checks": [
+          {
+            "name": "runtime_process_control_disabled",
+            "passed": true,
+            "details": {
+              "process_control_allowed": false,
+              "paper_or_dry_run_process_running": false
+            }
+          },
+          {
+            "name": "runtime_data_quality_passed",
+            "passed": true,
+            "details": {
+              "data_quality_pass": true
+            }
+          },
+          {
+            "name": "runtime_regime_predeclared",
+            "passed": true,
+            "details": {
+              "current_regime": "trend_up"
+            }
+          },
+          {
+            "name": "runtime_regime_eligible",
+            "passed": true,
+            "details": {
+              "current_regime": "trend_up",
+              "eligible_regimes": [
+                "trend_up"
+              ]
+            }
+          },
+          {
+            "name": "runtime_regime_not_blocked",
+            "passed": true,
+            "details": {
+              "current_regime": "trend_up",
+              "blocked_regimes": [
+                "high_volatility",
+                "liquidity_stress",
+                "range",
+                "trend_down",
+                "unknown"
+              ]
+            }
+          },
+          {
+            "name": "runtime_pair_allowed",
+            "passed": true,
+            "details": {
+              "pair": "BTC/USDT:USDT",
+              "allowed_pairs": [
+                "BTC/USDT:USDT",
+                "ETH/USDT:USDT"
+              ]
+            }
+          },
+          {
+            "name": "runtime_timeframe_allowed",
+            "passed": true,
+            "details": {
+              "timeframe": "5m",
+              "allowed_timeframes": [
+                "5m"
+              ]
+            }
+          },
+          {
+            "name": "runtime_regime_classifier_version_matches",
+            "passed": true,
+            "details": {
+              "runtime_regime_classifier_version": "regime_classifier_v1",
+              "candidate_regime_classifier_version": "regime_classifier_v1"
+            }
+          },
+          {
+            "name": "runtime_required_features_available",
+            "passed": true,
+            "details": {
+              "missing_features": []
+            }
+          },
+          {
+            "name": "scorecard_decision_selector_eligible",
+            "passed": true,
+            "details": {
+              "scorecard_decision": "REGIME_SCOPED_SELECTOR_ELIGIBLE"
+            }
+          }
+        ],
+        "reason_codes": [
+          "runtime_selection_passed"
+        ],
+        "scorecard_summary": {
+          "decision": "REGIME_SCOPED_SELECTOR_ELIGIBLE",
+          "current_regime": "trend_up",
+          "net_pnl_normal_cost": 116.3836813400548,
+          "net_pnl_stress_cost": 116.18368134005482,
+          "lower_confidence_bound": 50.74612678782394,
+          "max_drawdown": 6.830327847713146
+        }
+      },
+      {
+        "candidate_id": "downtrend_defensive_rebound_v1-historical-companion",
+        "strategy_id": "long_only_downtrend_defensive_rebound",
+        "logic_id": "downtrend_defensive_rebound_v1",
+        "selectable": false,
+        "checks": [
+          {
+            "name": "runtime_process_control_disabled",
+            "passed": true,
+            "details": {
+              "process_control_allowed": false,
+              "paper_or_dry_run_process_running": false
+            }
+          },
+          {
+            "name": "runtime_data_quality_passed",
+            "passed": true,
+            "details": {
+              "data_quality_pass": true
+            }
+          },
+          {
+            "name": "runtime_regime_predeclared",
+            "passed": true,
+            "details": {
+              "current_regime": "trend_up"
+            }
+          },
+          {
+            "name": "runtime_regime_eligible",
+            "passed": false,
+            "details": {
+              "current_regime": "trend_up",
+              "eligible_regimes": []
+            }
+          },
+          {
+            "name": "runtime_regime_not_blocked",
+            "passed": false,
+            "details": {
+              "current_regime": "trend_up",
+              "blocked_regimes": [
+                "high_volatility",
+                "liquidity_stress",
+                "range",
+                "trend_down",
+                "trend_up",
+                "unknown"
+              ]
+            }
+          },
+          {
+            "name": "runtime_pair_allowed",
+            "passed": true,
+            "details": {
+              "pair": "BTC/USDT:USDT",
+              "allowed_pairs": [
+                "BTC/USDT:USDT",
+                "ETH/USDT:USDT"
+              ]
+            }
+          },
+          {
+            "name": "runtime_timeframe_allowed",
+            "passed": true,
+            "details": {
+              "timeframe": "5m",
+              "allowed_timeframes": [
+                "5m"
+              ]
+            }
+          },
+          {
+            "name": "runtime_regime_classifier_version_matches",
+            "passed": true,
+            "details": {
+              "runtime_regime_classifier_version": "regime_classifier_v1",
+              "candidate_regime_classifier_version": "regime_classifier_v1"
+            }
+          },
+          {
+            "name": "runtime_required_features_available",
+            "passed": true,
+            "details": {
+              "missing_features": []
+            }
+          },
+          {
+            "name": "scorecard_decision_selector_eligible",
+            "passed": false,
+            "details": {
+              "scorecard_decision": "INSUFFICIENT_EVIDENCE"
+            }
+          }
+        ],
+        "reason_codes": [
+          "runtime_regime_eligible",
+          "runtime_regime_not_blocked",
+          "scorecard_decision_selector_eligible"
+        ],
+        "scorecard_summary": {
+          "decision": "INSUFFICIENT_EVIDENCE",
+          "current_regime": "trend_up",
+          "net_pnl_normal_cost": 116.3836813400548,
+          "net_pnl_stress_cost": 116.18368134005482,
+          "lower_confidence_bound": 50.74612678782394,
+          "max_drawdown": 6.830327847713146
+        }
+      },
+      {
+        "candidate_id": "range_mean_reversion_v1-historical-companion",
+        "strategy_id": "long_only_range_mean_reversion",
+        "logic_id": "range_mean_reversion_v1",
+        "selectable": false,
+        "checks": [
+          {
+            "name": "runtime_process_control_disabled",
+            "passed": true,
+            "details": {
+              "process_control_allowed": false,
+              "paper_or_dry_run_process_running": false
+            }
+          },
+          {
+            "name": "runtime_data_quality_passed",
+            "passed": true,
+            "details": {
+              "data_quality_pass": true
+            }
+          },
+          {
+            "name": "runtime_regime_predeclared",
+            "passed": true,
+            "details": {
+              "current_regime": "trend_up"
+            }
+          },
+          {
+            "name": "runtime_regime_eligible",
+            "passed": false,
+            "details": {
+              "current_regime": "trend_up",
+              "eligible_regimes": []
+            }
+          },
+          {
+            "name": "runtime_regime_not_blocked",
+            "passed": false,
+            "details": {
+              "current_regime": "trend_up",
+              "blocked_regimes": [
+                "high_volatility",
+                "liquidity_stress",
+                "range",
+                "trend_down",
+                "trend_up",
+                "unknown"
+              ]
+            }
+          },
+          {
+            "name": "runtime_pair_allowed",
+            "passed": true,
+            "details": {
+              "pair": "BTC/USDT:USDT",
+              "allowed_pairs": [
+                "BTC/USDT:USDT",
+                "ETH/USDT:USDT"
+              ]
+            }
+          },
+          {
+            "name": "runtime_timeframe_allowed",
+            "passed": true,
+            "details": {
+              "timeframe": "5m",
+              "allowed_timeframes": [
+                "5m"
+              ]
+            }
+          },
+          {
+            "name": "runtime_regime_classifier_version_matches",
+            "passed": true,
+            "details": {
+              "runtime_regime_classifier_version": "regime_classifier_v1",
+              "candidate_regime_classifier_version": "regime_classifier_v1"
+            }
+          },
+          {
+            "name": "runtime_required_features_available",
+            "passed": true,
+            "details": {
+              "missing_features": []
+            }
+          },
+          {
+            "name": "scorecard_decision_selector_eligible",
+            "passed": false,
+            "details": {
+              "scorecard_decision": "INSUFFICIENT_EVIDENCE"
+            }
+          }
+        ],
+        "reason_codes": [
+          "runtime_regime_eligible",
+          "runtime_regime_not_blocked",
+          "scorecard_decision_selector_eligible"
+        ],
+        "scorecard_summary": {
+          "decision": "INSUFFICIENT_EVIDENCE",
+          "current_regime": "trend_up",
+          "net_pnl_normal_cost": 116.3836813400548,
+          "net_pnl_stress_cost": 116.18368134005482,
+          "lower_confidence_bound": 50.74612678782394,
+          "max_drawdown": 6.830327847713146
+        }
+      }
+    ],
+    "reviewer_notes": [
+      "Assumed production runtime snapshot only; no bot process, order endpoint, paper, dry-run, or live command was started."
+    ],
+    "safety_scope": {
+      "local_artifacts_only": true,
+      "paper_trading_started": false,
+      "dry_run_trading_started": false,
+      "live_trading_started": false,
+      "exchange_order_placement": false,
+      "uses_api_keys_or_secrets": false,
+      "leverage_above_1": false,
+      "shorting": false,
+      "process_control": false,
+      "promotion_authorized_by_this_command": false,
+      "phase3_readiness_bypassed": false
+    }
+  },
+  "limitations": [
+    "This is a close-to-close historical OHLCV proxy, not a generated Freqtrade strategy backtest.",
+    "The replay relaxes calendar concentration to 1.0 because it intentionally tests one past uptrend window.",
+    "The result tests selector adoption behavior, not profitability approval or paper/live readiness."
+  ],
+  "safety_scope": {
+    "historical_only": true,
+    "backtest_started": false,
+    "paper_trading_started": false,
+    "dry_run_trading_started": false,
+    "live_trading": false,
+    "exchange_order_placement": false,
+    "api_keys_or_secrets_used": false,
+    "shorting": false,
+    "leverage": 1.0,
+    "process_control": false
+  }
+}

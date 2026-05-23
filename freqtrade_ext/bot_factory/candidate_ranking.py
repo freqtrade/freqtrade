@@ -19,6 +19,30 @@ OPTIONAL_SKIPPED_PAPER_READY_CHECKS = {
     "training_strategy_identity",
     "training_markdown_report",
 }
+SELECTOR_SCORING_WEIGHTS_BY_REGIME = {
+    "trend_up": {
+        "stress_cost_return": 1.0,
+        "hold_baseline_delta": 0.75,
+        "capital_efficiency": 0.5,
+        "max_drawdown": -0.5,
+        "pair_concentration": -20.0,
+        "calendar_concentration": -20.0,
+    },
+    "range": {
+        "stress_cost_return": 1.0,
+        "downside_deviation": -0.5,
+        "no_trade_opportunity_cost": -0.25,
+        "pair_concentration": -20.0,
+        "calendar_concentration": -20.0,
+    },
+    "trend_down": {
+        "stress_cost_return": 1.0,
+        "max_drawdown": -0.75,
+        "exposure_ratio": -0.25,
+        "pair_concentration": -20.0,
+        "calendar_concentration": -20.0,
+    },
+}
 
 
 @dataclass(frozen=True)
@@ -57,6 +81,7 @@ def rank_candidates(inputs: CandidateRankingInputs) -> dict[str, Any]:
         "ranking_id": inputs.ranking_id or _ranking_id(generated_at),
         "candidate_count": len(ranked),
         "hypothesis_diversity": hypothesis_diversity,
+        "selector_scoring_weights_by_regime": SELECTOR_SCORING_WEIGHTS_BY_REGIME,
         "ranked_candidates": ranked,
         "best_candidate_id": ranked[0]["candidate_id"] if ranked else None,
         "paper_ready_candidate_ids": [
@@ -109,7 +134,6 @@ def _candidate_row(manifest: dict[str, Any], manifest_path: Path, root: Path) ->
     missing_or_failed = [
         name for name in required_chain if _paper_ready_check_blocks(name, checks.get(name))
     ]
-    paper_ready_eligible = recommendation == "pass" and not missing_or_failed
     reasons = _ranking_reasons(manifest, checks, missing_or_failed)
     research_brief = _research_brief_summary(manifest)
     metrics = {
@@ -127,7 +151,21 @@ def _candidate_row(manifest: dict[str, Any], manifest_path: Path, root: Path) ->
         ),
         "training_stage_count": _number(training.get("stage_count")),
         "training_failed_stages": _number(training.get("failed_stages")),
+        "exposure_ratio": _number(walk_forward.get("exposure_ratio")),
+        "capital_efficiency": _capital_efficiency(historical),
+        "average_holding_time": _number(historical.get("average_holding_time")),
+        "downside_deviation": _number(historical.get("downside_deviation")),
+        "hold_baseline_delta": _number(walk_forward.get("hold_baseline_delta")),
+        "no_trade_opportunity_cost": _number(walk_forward.get("no_trade_opportunity_cost")),
+        "incumbent_delta": _number(walk_forward.get("incumbent_delta")),
+        "pair_concentration": _number(walk_forward.get("pair_concentration")),
+        "calendar_concentration": _number(walk_forward.get("calendar_concentration")),
     }
+    concentration_blockers = _concentration_blockers(metrics)
+    missing_or_failed.extend(concentration_blockers)
+    paper_ready_eligible = recommendation == "pass" and not missing_or_failed
+    if concentration_blockers:
+        reasons.extend(concentration_blockers)
     return {
         "candidate_id": manifest.get("candidate_id"),
         "strategy_name": manifest.get("strategy_name"),
@@ -135,7 +173,7 @@ def _candidate_row(manifest: dict[str, Any], manifest_path: Path, root: Path) ->
         "recommendation": recommendation,
         "status": recommendation,
         "paper_ready_eligible": paper_ready_eligible,
-        "paper_ready_blockers": missing_or_failed,
+        "paper_ready_blockers": list(dict.fromkeys(missing_or_failed)),
         "score": _score(recommendation, metrics, paper_ready_eligible),
         "metrics": metrics,
         "failure_taxonomy_codes": manifest.get("failure_taxonomy_codes", []),
@@ -188,12 +226,36 @@ def _score(
     base += (metrics.get("walk_forward_pass_rate") or 0.0) * 20.0
     base += (metrics.get("walk_forward_profitable_windows_ratio") or 0.0) * 15.0
     base += min(metrics.get("historical_trade_count") or 0.0, 500.0) / 50.0
+    base += (metrics.get("capital_efficiency") or 0.0) * 5.0
+    base += (metrics.get("hold_baseline_delta") or 0.0) * 3.0
+    base += (metrics.get("incumbent_delta") or 0.0) * 2.0
     base -= metrics.get("historical_max_drawdown_pct") or 0.0
+    base -= (metrics.get("downside_deviation") or 0.0) * 2.0
+    base -= (metrics.get("no_trade_opportunity_cost") or 0.0) * 0.5
+    base -= max((metrics.get("pair_concentration") or 0.0) - 0.8, 0.0) * 100.0
+    base -= max((metrics.get("calendar_concentration") or 0.0) - 0.5, 0.0) * 100.0
     concentration = metrics.get("walk_forward_max_single_window_profit_dependency")
     if concentration is not None:
         base -= max(concentration - 0.4, 0.0) * 50.0
     base -= (metrics.get("training_failed_stages") or 0.0) * 25.0
     return round(base, 6)
+
+
+def _concentration_blockers(metrics: dict[str, float | None]) -> list[str]:
+    blockers: list[str] = []
+    if metrics.get("pair_concentration") is not None and metrics["pair_concentration"] > 0.8:
+        blockers.append("pair_concentration_too_high")
+    if metrics.get("calendar_concentration") is not None and metrics["calendar_concentration"] > 0.5:
+        blockers.append("calendar_concentration_too_high")
+    return blockers
+
+
+def _capital_efficiency(historical: dict[str, Any]) -> float | None:
+    total_return = _number(historical.get("total_return_pct"))
+    exposure = _number(historical.get("exposure_ratio"))
+    if total_return is None or exposure in (None, 0.0):
+        return None
+    return total_return / exposure
 
 
 def _hypothesis_diversity(candidates: Sequence[dict[str, Any]]) -> dict[str, Any]:
@@ -388,6 +450,13 @@ def _render_report(ranking: dict[str, Any]) -> str:
             f"- {item.get('rank')}. {item.get('candidate_id')} "
             f"{item.get('recommendation')} score={item.get('score')} "
             f"paper_ready={item.get('paper_ready_eligible')}"
+        )
+    lines.extend(["", "## Selected vs Rejected", ""])
+    for item in ranking.get("ranked_candidates", []):
+        status = "selected" if item.get("rank") == 1 else "rejected"
+        lines.append(
+            f"- {status}: {item.get('candidate_id')} score={item.get('score')} "
+            f"reasons={', '.join(item.get('reasons', [])) or 'none'}"
         )
     lines.extend(["", "## Reviewer Notes", ""])
     notes = ranking.get("reviewer_notes") or []

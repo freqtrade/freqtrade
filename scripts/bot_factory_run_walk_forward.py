@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import subprocess
 import sys
@@ -18,7 +19,15 @@ from freqtrade_ext.bot_factory.backtest_results import (
     evaluate_initial_gate,
     load_gate_thresholds,
 )
-from freqtrade_ext.bot_factory.freqai_backtest import sanitize_freqai_identifier
+from freqtrade_ext.bot_factory.candidate_identity import (
+    build_strategy_candidate_identity,
+    extract_candidate_identity,
+    load_candidate_identity_from_strategy_source,
+    validate_artifact_candidate_identity,
+    validate_candidate_identity,
+)
+from freqtrade_ext.bot_factory.freqai_backtest import sanitize_freqai_identifier, selected_pairs
+from freqtrade_ext.bot_factory.freqai_backtest import freqai_input_timeframes
 from freqtrade_ext.bot_factory.walk_forward import (
     WalkForwardRules,
     WalkForwardWindow,
@@ -52,6 +61,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pairs", nargs="*", default=None)
     parser.add_argument("--output-root", default="data/walk_forward")
     parser.add_argument("--run-id", default=None)
+    parser.add_argument("--candidate-id", default=None)
+    parser.add_argument(
+        "--candidate-identity-json",
+        default=None,
+        help="Optional full StrategyCandidateIdentity JSON to embed in this checked walk-forward run.",
+    )
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--runner-script", default="scripts/bot_factory_run_freqai_backtest.py")
     parser.add_argument("--data-format-ohlcv", default="parquet")
@@ -119,6 +134,19 @@ def main() -> int:
     logs_dir = run_dir / "window_logs"
     run_dir.mkdir(parents=True, exist_ok=True)
     logs_dir.mkdir(parents=True, exist_ok=True)
+    config = _load_json_if_possible(Path(args.config))
+    strategy_file = _find_strategy_source(Path(args.strategy_path), args.strategy)
+    candidate_identity = _resolve_candidate_identity(args, config, strategy_file, run_id)
+    args.candidate_identity = candidate_identity
+    identity_validation = validate_candidate_identity(candidate_identity)
+    (run_dir / "candidate_identity.json").write_text(
+        json.dumps(candidate_identity, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    args.candidate_identity_path = run_dir / "candidate_identity.json"
+    if not identity_validation["ok"]:
+        print(json.dumps(identity_validation, indent=2, ensure_ascii=False))
+        print(f"Candidate identity validation failed. Report: {run_dir / 'candidate_identity.json'}")
+        return 1
 
     rules = WalkForwardRules(
         min_pass_rate=args.min_pass_rate,
@@ -138,7 +166,11 @@ def main() -> int:
         window_results.append(result)
 
     (run_dir / "command.txt").write_text("\n".join(command_lines), encoding="utf-8")
-    metrics = aggregate_walk_forward_results(window_results, rules)
+    metrics = aggregate_walk_forward_results(
+        window_results,
+        rules,
+        candidate_identity=candidate_identity,
+    )
     metrics["strategy"] = args.strategy
     metrics["run_id"] = run_id
     metrics["config_path"] = args.config
@@ -147,6 +179,7 @@ def main() -> int:
         "walk_forward_metrics": str(run_dir / "walk_forward_metrics.json"),
         "walk_forward_report": str(run_dir / "walk_forward_report.md"),
         "command": str(run_dir / "command.txt"),
+        "candidate_identity": str(run_dir / "candidate_identity.json"),
     }
 
     write_walk_forward_metrics(metrics, run_dir / "walk_forward_metrics.json")
@@ -211,6 +244,10 @@ def _build_window_command(
         "--reviewer-note",
         "Walk-forward historical FreqAI verification only; no paper or live promotion.",
     ]
+    if getattr(args, "candidate_identity", None):
+        cmd.extend(["--candidate-id", str(args.candidate_identity["candidate_id"])])
+    if getattr(args, "candidate_identity_path", None):
+        cmd.extend(["--candidate-identity-json", str(args.candidate_identity_path)])
     for note in args.reviewer_note or []:
         cmd.extend(["--reviewer-note", note])
     if args.freqaimodel:
@@ -270,11 +307,29 @@ def _run_window(
     metrics_path = child_dir / "metrics.json"
     if completed.returncode == 0 and metrics_path.is_file():
         metrics_payload = json.loads(metrics_path.read_text(encoding="utf-8"))
+        identity_validation = validate_artifact_candidate_identity(
+            args.candidate_identity,
+            metrics_payload,
+            artifact_label=f"walk_forward_window_{window.index:02d}_metrics",
+        )
+        if not identity_validation["ok"]:
+            result.update(
+                {
+                    "status": "failed_identity_mismatch",
+                    "metrics": metrics_payload,
+                    "candidate_identity": args.candidate_identity,
+                    "identity_validation": identity_validation,
+                    "error": "window_candidate_identity_mismatch",
+                }
+            )
+            return result
         gate = evaluate_initial_gate(BacktestMetrics(**metrics_payload), thresholds)
         result.update(
             {
                 "status": "completed",
                 "metrics": metrics_payload,
+                "candidate_identity": args.candidate_identity,
+                "identity_validation": identity_validation,
                 "gate_recommendation": gate["recommendation"],
                 "gate_checks": gate["checks"],
                 "artifacts": {
@@ -304,6 +359,123 @@ def _window_error(completed: subprocess.CompletedProcess[str], metrics_path: Pat
 def _require_file(path: Path, label: str) -> None:
     if not path.is_file():
         raise SystemExit(f"{label} file not found: {path}")
+
+
+def _find_strategy_source(strategy_path: Path, strategy_name: str) -> Path:
+    exact = strategy_path / f"{strategy_name}.py"
+    if exact.exists():
+        return exact
+    if strategy_path.is_file():
+        return strategy_path
+    if not strategy_path.is_dir():
+        return strategy_path
+
+    for file_path in sorted(strategy_path.rglob("*.py")):
+        try:
+            tree = ast.parse(file_path.read_text(encoding="utf-8"), filename=str(file_path))
+        except (OSError, SyntaxError):
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef) and node.name == strategy_name:
+                return file_path
+    return strategy_path
+
+
+def _resolve_candidate_identity(
+    args: argparse.Namespace,
+    config: dict[str, Any],
+    strategy_file: Path,
+    run_id: str,
+) -> dict[str, object]:
+    provided_identity = _candidate_identity_from_json(args)
+    if provided_identity is not None:
+        return provided_identity
+
+    strategy_identity = load_candidate_identity_from_strategy_source(
+        strategy_file,
+        strategy_class_name=args.strategy,
+        root_dir=ROOT_DIR,
+    )
+    if strategy_identity:
+        if args.candidate_id and args.candidate_id != strategy_identity.get("candidate_id"):
+            raise SystemExit(
+                "Provided --candidate-id does not match strategy candidate identity: "
+                f"{args.candidate_id} != {strategy_identity.get('candidate_id')}"
+            )
+        return strategy_identity
+
+    return build_strategy_candidate_identity(
+        candidate_id=args.candidate_id or run_id,
+        strategy_id=args.strategy,
+        strategy_class_name=args.strategy,
+        strategy_source_path=strategy_file,
+        strategy_version=f"{args.strategy}_v1",
+        signal_version=_default_signal_version(args),
+        risk_policy_version="unspecified_risk_policy_v1",
+        regime_classifier_version="unspecified_regime_classifier_v1",
+        cost_model_id="unspecified_cost_model_v1",
+        allowed_pairs=selected_pairs(config, args.pairs),
+        allowed_timeframes=_identity_timeframes(args, config),
+        created_at=datetime.now(UTC).replace(microsecond=0).isoformat(),
+        source_artifacts={"strategy_source": strategy_file},
+        root_dir=ROOT_DIR,
+    )
+
+
+def _candidate_identity_from_json(args: argparse.Namespace) -> dict[str, object] | None:
+    path_value = getattr(args, "candidate_identity_json", None)
+    if not path_value:
+        return None
+    path = Path(path_value)
+    if not path.is_file():
+        raise SystemExit(f"Candidate identity JSON not found: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    identity = extract_candidate_identity(payload)
+    if identity is None:
+        raise SystemExit(f"Candidate identity JSON is invalid: {path}")
+    if args.candidate_id and args.candidate_id != identity.get("candidate_id"):
+        raise SystemExit(
+            "Provided --candidate-id does not match candidate identity JSON: "
+            f"{args.candidate_id} != {identity.get('candidate_id')}"
+        )
+    if identity.get("strategy_class_name") and identity.get("strategy_class_name") != args.strategy:
+        raise SystemExit(
+            "Candidate identity strategy_class_name does not match --strategy: "
+            f"{identity.get('strategy_class_name')} != {args.strategy}"
+        )
+    return identity
+
+
+def _default_signal_version(args: argparse.Namespace) -> str:
+    if args.freqaimodel or args.freqaimodel_path or args.freqai_identifier:
+        return "unspecified_freqai_signal_v1"
+    if "freqai" in str(args.runner_script).lower():
+        return "unspecified_freqai_signal_v1"
+    return "unspecified_signal_v1"
+
+
+def _identity_timeframes(args: argparse.Namespace, config: dict[str, Any]) -> list[str]:
+    if _uses_freqai_child(args):
+        return freqai_input_timeframes(config, args.timeframe)
+    timeframe = args.timeframe or str(config.get("timeframe") or "")
+    return [timeframe] if timeframe else []
+
+
+def _uses_freqai_child(args: argparse.Namespace) -> bool:
+    return (
+        bool(args.freqaimodel)
+        or bool(args.freqaimodel_path)
+        or bool(args.freqai_identifier)
+        or "freqai" in str(args.runner_script).lower()
+    )
+
+
+def _load_json_if_possible(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Sequence
 
+from freqtrade_ext.bot_factory.candidate_identity import build_strategy_candidate_identity
 from freqtrade_ext.bot_factory.freqai_backtest import candidate_freqai_identifier
 from freqtrade_ext.bot_factory.safety import scan_paths
 from freqtrade_ext.bot_factory.strategy_proposals import REQUIRED_PROPOSAL_SECTIONS
@@ -690,6 +691,27 @@ def _build_metadata(
     research_handoff_summaries = _proposal_research_handoff_summaries(
         proposal_metadata
     )
+    strategy_logic_variant = _metadata_logic_variant_from_proposal(proposal_metadata)
+    candidate_identity = build_strategy_candidate_identity(
+        candidate_id=candidate_id,
+        strategy_id=str(proposal_metadata.get("strategy_id") or strategy_logic_variant or strategy_name),
+        strategy_class_name=strategy_name,
+        strategy_source_path=strategy_path,
+        strategy_version=str(proposal_metadata.get("strategy_version") or f"{strategy_name}_v1"),
+        signal_version=str(proposal_metadata.get("signal_version") or f"{strategy_logic_variant or 'generated'}_signal_v1"),
+        risk_policy_version=str(proposal_metadata.get("risk_policy_version") or "generated_long_only_risk_v1"),
+        regime_classifier_version=str(proposal_metadata.get("regime_classifier_version") or "regime_classifier_v1"),
+        cost_model_id=str(proposal_metadata.get("cost_model_id") or "cost_model_v1"),
+        allowed_pairs=list(proposal_metadata.get("target_symbols", [])),
+        allowed_timeframes=[proposal_metadata.get("timeframe")] if proposal_metadata.get("timeframe") else [],
+        created_at=created_at,
+        source_artifacts={
+            "source_proposal_metadata": proposal_metadata_path,
+            "source_proposal": proposal_path,
+            "generated_strategy": strategy_path,
+        },
+        root_dir=root_dir,
+    )
     return {
         "generated_at": created_at,
         "phase": "strategy_generation",
@@ -703,6 +725,7 @@ def _build_metadata(
         "strategy_name": strategy_name,
         "strategy_class_name": strategy_name,
         "candidate_id": candidate_id,
+        "candidate_identity": candidate_identity,
         "created_at": created_at,
         "created_by_agent": inputs.created_by_agent,
         "target_exchange": proposal_metadata.get("target_exchange"),
@@ -731,7 +754,7 @@ def _build_metadata(
         "static_check_report_path": _safe_relative_path(static_check_path, root_dir),
         "research_brief_path": _safe_relative_path(metadata_path.parent / "research_brief.json", root_dir),
         "generator_mode": generator_mode,
-        "strategy_logic_variant": _metadata_logic_variant_from_proposal(proposal_metadata),
+        "strategy_logic_variant": strategy_logic_variant,
         "feature_list": list(proposal_metadata.get("feature_list", [])),
         "target_definition": target_definition,
         "label_horizon": proposal_metadata.get("label_horizon"),

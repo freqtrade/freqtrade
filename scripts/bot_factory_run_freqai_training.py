@@ -18,6 +18,12 @@ from freqtrade_ext.bot_factory.backtest_results import (
     evaluate_initial_gate,
     load_gate_thresholds,
 )
+from freqtrade_ext.bot_factory.candidate_identity import (
+    build_strategy_candidate_identity,
+    extract_candidate_identity,
+    load_candidate_identity_from_strategy_source,
+    validate_candidate_identity,
+)
 from freqtrade_ext.bot_factory.freqai_backtest import (
     freqai_enabled,
     freqai_identifier,
@@ -64,6 +70,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pairs", nargs="*", default=None)
     parser.add_argument("--output-root", default="data/freqai_training")
     parser.add_argument("--run-id", default=None)
+    parser.add_argument("--candidate-id", default=None)
+    parser.add_argument(
+        "--candidate-identity-json",
+        default=None,
+        help="Optional full StrategyCandidateIdentity JSON to embed in this checked FreqAI training run.",
+    )
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument(
         "--freqai-runner-script",
@@ -146,8 +158,15 @@ def main() -> int:
         "training_report": run_dir / "training_report.md",
         "command": run_dir / "command.txt",
         "freqai_env": run_dir / "freqai_env.json",
+        "candidate_identity": run_dir / "candidate_identity.json",
         "logs": logs_dir,
     }
+    candidate_identity = _resolve_candidate_identity(args, config, run_id)
+    args.candidate_identity = candidate_identity
+    identity_validation = validate_candidate_identity(candidate_identity)
+    artifact_paths["candidate_identity"].write_text(
+        json.dumps(candidate_identity, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     notes = [
         "FreqAI training factory verification only; no paper or live promotion.",
         "Local artifacts remain the source of truth.",
@@ -161,6 +180,15 @@ def main() -> int:
 
     dependency_report = check_freqai_dependencies()
     artifact_paths["freqai_env"].write_text(dependency_report.to_json(), encoding="utf-8")
+    if not identity_validation["ok"]:
+        manifest = _build_manifest(args, config, {}, [], artifact_paths, notes)
+        manifest["status"] = "blocked_candidate_identity"
+        manifest["recommendation"] = "fail"
+        write_training_manifest(manifest, artifact_paths["training_manifest"])
+        write_training_report(manifest, artifact_paths["training_report"])
+        print(json.dumps(identity_validation, indent=2, ensure_ascii=False))
+        print(f"Candidate identity validation failed. Report: {artifact_paths['candidate_identity']}")
+        return 1
 
     if missing_required_dependencies(dependency_report):
         manifest = _build_manifest(args, config, dependency_report.to_dict(), [], artifact_paths, notes)
@@ -201,6 +229,8 @@ def main() -> int:
         freqaimodel=args.freqaimodel,
         freqaimodel_path=args.freqaimodel_path,
         freqai_identifier=args.freqai_identifier,
+        candidate_id=str(candidate_identity["candidate_id"]),
+        candidate_identity_json=artifact_paths["candidate_identity"],
         data_format_ohlcv=args.data_format_ohlcv,
         userdir=args.userdir,
         datadir=args.datadir,
@@ -243,6 +273,8 @@ def main() -> int:
             freqaimodel=args.freqaimodel,
             freqaimodel_path=args.freqaimodel_path,
             freqai_identifier=args.freqai_identifier,
+            candidate_id=str(candidate_identity["candidate_id"]),
+            candidate_identity_json=artifact_paths["candidate_identity"],
             data_format_ohlcv=args.data_format_ohlcv,
             userdir=args.userdir,
             datadir=args.datadir,
@@ -395,6 +427,76 @@ def _stage_error(completed: subprocess.CompletedProcess[str], metrics_path: Path
     return stdout.splitlines()[-1] if stdout else f"Stage command failed: {completed.returncode}"
 
 
+def _resolve_candidate_identity(
+    args: argparse.Namespace,
+    config: dict[str, Any],
+    run_id: str,
+) -> dict[str, object]:
+    provided_identity = _candidate_identity_from_json(args)
+    if provided_identity is not None:
+        return provided_identity
+    strategy_source = _strategy_source_candidate(args)
+    strategy_identity = load_candidate_identity_from_strategy_source(
+        strategy_source,
+        strategy_class_name=args.strategy,
+        root_dir=ROOT_DIR,
+    )
+    if strategy_identity:
+        if args.candidate_id and args.candidate_id != strategy_identity.get("candidate_id"):
+            raise SystemExit(
+                "Provided --candidate-id does not match strategy candidate identity: "
+                f"{args.candidate_id} != {strategy_identity.get('candidate_id')}"
+            )
+        return strategy_identity
+    return build_strategy_candidate_identity(
+        candidate_id=args.candidate_id or run_id,
+        strategy_id=args.strategy,
+        strategy_class_name=args.strategy,
+        strategy_source_path=strategy_source,
+        strategy_version=f"{args.strategy}_v1",
+        signal_version="unspecified_freqai_signal_v1",
+        risk_policy_version="unspecified_risk_policy_v1",
+        regime_classifier_version="unspecified_regime_classifier_v1",
+        cost_model_id="unspecified_cost_model_v1",
+        allowed_pairs=selected_pairs(config, args.pairs),
+        allowed_timeframes=[args.timeframe or str(config.get("timeframe") or "")],
+        created_at=datetime.now(UTC).replace(microsecond=0).isoformat(),
+        source_artifacts={"strategy_source": strategy_source},
+        root_dir=ROOT_DIR,
+    )
+
+
+def _candidate_identity_from_json(args: argparse.Namespace) -> dict[str, object] | None:
+    path_value = getattr(args, "candidate_identity_json", None)
+    if not path_value:
+        return None
+    path = Path(path_value)
+    if not path.is_file():
+        raise SystemExit(f"Candidate identity JSON not found: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    identity = extract_candidate_identity(payload)
+    if identity is None:
+        raise SystemExit(f"Candidate identity JSON is invalid: {path}")
+    if args.candidate_id and args.candidate_id != identity.get("candidate_id"):
+        raise SystemExit(
+            "Provided --candidate-id does not match candidate identity JSON: "
+            f"{args.candidate_id} != {identity.get('candidate_id')}"
+        )
+    if identity.get("strategy_class_name") and identity.get("strategy_class_name") != args.strategy:
+        raise SystemExit(
+            "Candidate identity strategy_class_name does not match --strategy: "
+            f"{identity.get('strategy_class_name')} != {args.strategy}"
+        )
+    return identity
+
+
+def _strategy_source_candidate(args: argparse.Namespace) -> Path:
+    strategy_path = Path(args.strategy_path)
+    if strategy_path.is_file():
+        return strategy_path
+    return strategy_path / f"{args.strategy}.py"
+
+
 def _build_manifest(
     args: argparse.Namespace,
     config: dict[str, Any],
@@ -417,6 +519,7 @@ def _build_manifest(
         stages=stages,
         artifact_paths=artifact_paths,
         notes=notes,
+        candidate_identity=getattr(args, "candidate_identity", None),
     )
 
 

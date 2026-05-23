@@ -167,6 +167,7 @@ def build_freqai_metadata(
     artifact_paths: dict[str, Path | None],
     notes: Iterable[str] | None = None,
     freqai_identifier_source: str | None = None,
+    candidate_identity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -187,6 +188,7 @@ def build_freqai_metadata(
             for name, path in artifact_paths.items()
             if path is not None
         },
+        "candidate_identity": candidate_identity,
         "notes": list(notes or []),
         "safety_scope": {
             "command": "freqtrade backtesting only",
