@@ -359,6 +359,11 @@ def _execution_plan(
         ml_mode=ml_mode,
         root=root,
     )
+    candidate_identity_path = _write_execution_candidate_identity(
+        generated,
+        artifacts.get("candidate_identity"),
+        execute=inputs.execute_historical_chain and not blockers,
+    )
     steps: list[dict[str, Any]] = []
     if not blockers:
         steps = _execution_steps(
@@ -369,6 +374,7 @@ def _execution_plan(
             run_id=run_id,
             ml_mode=ml_mode,
             freqai_identifier=freqai_identifier_value,
+            candidate_identity_path=candidate_identity_path,
             artifacts=artifacts,
             log_dir=log_dir,
             root=root,
@@ -414,6 +420,7 @@ def _execution_steps(
     run_id: str,
     ml_mode: bool,
     freqai_identifier: str | None,
+    candidate_identity_path: Path | None,
     artifacts: dict[str, Path],
     log_dir: Path,
     root: Path,
@@ -491,6 +498,8 @@ def _execution_steps(
     ]
     if ml_mode and freqai_identifier:
         historical_command.extend(["--freqai-identifier", freqai_identifier])
+    if candidate_identity_path:
+        historical_command.extend(["--candidate-identity-json", _rel(candidate_identity_path, root)])
     if inputs.timerange:
         historical_command.extend(["--timerange", inputs.timerange])
     if timeframe:
@@ -527,6 +536,8 @@ def _execution_steps(
         ]
         if ml_mode and freqai_identifier:
             wf_command.extend(["--freqai-identifier", freqai_identifier])
+        if candidate_identity_path:
+            wf_command.extend(["--candidate-identity-json", _rel(candidate_identity_path, root)])
         for window in inputs.walk_forward_windows:
             wf_command.extend(["--window", window])
         if timeframe:
@@ -563,6 +574,8 @@ def _execution_steps(
         ]
         if freqai_identifier:
             training_command.extend(["--freqai-identifier", freqai_identifier])
+        if candidate_identity_path:
+            training_command.extend(["--candidate-identity-json", _rel(candidate_identity_path, root)])
         if timeframe:
             training_command.extend(["--timeframe", timeframe])
         if inputs.pairs:
@@ -619,6 +632,7 @@ def _expected_execution_artifacts(
     walk_dir = _resolve(inputs.walk_forward_output_root, root) / strategy_name / f"{run_id}_walk_forward"
     training_dir = _resolve(inputs.training_output_root, root) / strategy_name / f"{run_id}_training"
     artifacts = {
+        "candidate_identity": execution_dir / "candidate_identity.json",
         "static_check": execution_dir / "static_check.json",
         "ohlcv_quality": execution_dir / "ohlcv_quality.json",
         "backtest_metrics": historical_dir / "metrics.json",
@@ -632,6 +646,25 @@ def _expected_execution_artifacts(
     if ml_mode:
         artifacts["freqai_validation"] = execution_dir / "freqai_validation.json"
     return artifacts
+
+
+def _write_execution_candidate_identity(
+    generated: dict[str, Any],
+    path: Path | None,
+    *,
+    execute: bool,
+) -> Path | None:
+    if not execute or path is None:
+        return None
+    candidate_identity = extract_candidate_identity(generated)
+    if candidate_identity is None:
+        return None
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(candidate_identity, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return path
 
 
 def _candidate_strategy_path(

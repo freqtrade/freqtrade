@@ -20,6 +20,7 @@ from freqtrade_ext.bot_factory.backtest_results import (
 )
 from freqtrade_ext.bot_factory.candidate_identity import (
     build_strategy_candidate_identity,
+    extract_candidate_identity,
     load_candidate_identity_from_strategy_source,
     validate_candidate_identity,
 )
@@ -70,6 +71,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-root", default="data/freqai_training")
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--candidate-id", default=None)
+    parser.add_argument(
+        "--candidate-identity-json",
+        default=None,
+        help="Optional full StrategyCandidateIdentity JSON to embed in this checked FreqAI training run.",
+    )
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument(
         "--freqai-runner-script",
@@ -224,6 +230,7 @@ def main() -> int:
         freqaimodel_path=args.freqaimodel_path,
         freqai_identifier=args.freqai_identifier,
         candidate_id=str(candidate_identity["candidate_id"]),
+        candidate_identity_json=artifact_paths["candidate_identity"],
         data_format_ohlcv=args.data_format_ohlcv,
         userdir=args.userdir,
         datadir=args.datadir,
@@ -267,6 +274,7 @@ def main() -> int:
             freqaimodel_path=args.freqaimodel_path,
             freqai_identifier=args.freqai_identifier,
             candidate_id=str(candidate_identity["candidate_id"]),
+            candidate_identity_json=artifact_paths["candidate_identity"],
             data_format_ohlcv=args.data_format_ohlcv,
             userdir=args.userdir,
             datadir=args.datadir,
@@ -424,6 +432,9 @@ def _resolve_candidate_identity(
     config: dict[str, Any],
     run_id: str,
 ) -> dict[str, object]:
+    provided_identity = _candidate_identity_from_json(args)
+    if provided_identity is not None:
+        return provided_identity
     strategy_source = _strategy_source_candidate(args)
     strategy_identity = load_candidate_identity_from_strategy_source(
         strategy_source,
@@ -453,6 +464,30 @@ def _resolve_candidate_identity(
         source_artifacts={"strategy_source": strategy_source},
         root_dir=ROOT_DIR,
     )
+
+
+def _candidate_identity_from_json(args: argparse.Namespace) -> dict[str, object] | None:
+    path_value = getattr(args, "candidate_identity_json", None)
+    if not path_value:
+        return None
+    path = Path(path_value)
+    if not path.is_file():
+        raise SystemExit(f"Candidate identity JSON not found: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    identity = extract_candidate_identity(payload)
+    if identity is None:
+        raise SystemExit(f"Candidate identity JSON is invalid: {path}")
+    if args.candidate_id and args.candidate_id != identity.get("candidate_id"):
+        raise SystemExit(
+            "Provided --candidate-id does not match candidate identity JSON: "
+            f"{args.candidate_id} != {identity.get('candidate_id')}"
+        )
+    if identity.get("strategy_class_name") and identity.get("strategy_class_name") != args.strategy:
+        raise SystemExit(
+            "Candidate identity strategy_class_name does not match --strategy: "
+            f"{identity.get('strategy_class_name')} != {args.strategy}"
+        )
+    return identity
 
 
 def _strategy_source_candidate(args: argparse.Namespace) -> Path:

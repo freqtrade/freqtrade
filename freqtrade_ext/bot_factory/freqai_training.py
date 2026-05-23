@@ -47,6 +47,7 @@ def build_checked_freqai_backtest_command(
     freqaimodel_path: str | None = None,
     freqai_identifier: str | None = None,
     candidate_id: str | None = None,
+    candidate_identity_json: str | Path | None = None,
     data_format_ohlcv: str = "parquet",
     userdir: str | None = None,
     datadir: str | None = None,
@@ -97,6 +98,8 @@ def build_checked_freqai_backtest_command(
     )
     if candidate_id:
         cmd.extend(["--candidate-id", candidate_id])
+    if candidate_identity_json:
+        cmd.extend(["--candidate-identity-json", str(candidate_identity_json)])
     return cmd
 
 
@@ -117,6 +120,7 @@ def build_checked_walk_forward_command(
     freqaimodel_path: str | None = None,
     freqai_identifier: str | None = None,
     candidate_id: str | None = None,
+    candidate_identity_json: str | Path | None = None,
     data_format_ohlcv: str = "parquet",
     userdir: str | None = None,
     datadir: str | None = None,
@@ -182,6 +186,8 @@ def build_checked_walk_forward_command(
     )
     if candidate_id:
         cmd.extend(["--candidate-id", candidate_id])
+    if candidate_identity_json:
+        cmd.extend(["--candidate-identity-json", str(candidate_identity_json)])
     return cmd
 
 

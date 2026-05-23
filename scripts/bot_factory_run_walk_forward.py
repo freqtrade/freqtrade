@@ -21,6 +21,7 @@ from freqtrade_ext.bot_factory.backtest_results import (
 )
 from freqtrade_ext.bot_factory.candidate_identity import (
     build_strategy_candidate_identity,
+    extract_candidate_identity,
     load_candidate_identity_from_strategy_source,
     validate_artifact_candidate_identity,
     validate_candidate_identity,
@@ -61,6 +62,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-root", default="data/walk_forward")
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--candidate-id", default=None)
+    parser.add_argument(
+        "--candidate-identity-json",
+        default=None,
+        help="Optional full StrategyCandidateIdentity JSON to embed in this checked walk-forward run.",
+    )
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--runner-script", default="scripts/bot_factory_run_freqai_backtest.py")
     parser.add_argument("--data-format-ohlcv", default="parquet")
@@ -381,6 +387,10 @@ def _resolve_candidate_identity(
     strategy_file: Path,
     run_id: str,
 ) -> dict[str, object]:
+    provided_identity = _candidate_identity_from_json(args)
+    if provided_identity is not None:
+        return provided_identity
+
     strategy_identity = load_candidate_identity_from_strategy_source(
         strategy_file,
         strategy_class_name=args.strategy,
@@ -410,6 +420,30 @@ def _resolve_candidate_identity(
         source_artifacts={"strategy_source": strategy_file},
         root_dir=ROOT_DIR,
     )
+
+
+def _candidate_identity_from_json(args: argparse.Namespace) -> dict[str, object] | None:
+    path_value = getattr(args, "candidate_identity_json", None)
+    if not path_value:
+        return None
+    path = Path(path_value)
+    if not path.is_file():
+        raise SystemExit(f"Candidate identity JSON not found: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    identity = extract_candidate_identity(payload)
+    if identity is None:
+        raise SystemExit(f"Candidate identity JSON is invalid: {path}")
+    if args.candidate_id and args.candidate_id != identity.get("candidate_id"):
+        raise SystemExit(
+            "Provided --candidate-id does not match candidate identity JSON: "
+            f"{args.candidate_id} != {identity.get('candidate_id')}"
+        )
+    if identity.get("strategy_class_name") and identity.get("strategy_class_name") != args.strategy:
+        raise SystemExit(
+            "Candidate identity strategy_class_name does not match --strategy: "
+            f"{identity.get('strategy_class_name')} != {args.strategy}"
+        )
+    return identity
 
 
 def _default_signal_version(args: argparse.Namespace) -> str:

@@ -99,6 +99,41 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-23 JST for PR #10 review follow-up on candidate evaluation
+candidate identity forwarding.
+
+- [x] Addressed the second Codex review comment on
+  `freqtrade_ext/bot_factory/candidate_evaluation.py`: execution-backed
+  candidate evaluation now writes the generated canonical
+  `candidate_identity.json` under the execution artifact directory and
+  forwards it to historical backtest, walk-forward, and FreqAI training checked
+  wrappers with `--candidate-identity-json`.
+- [x] Updated checked wrappers and command builders:
+  - `scripts/bot_factory_run_walk_forward.py` now accepts
+    `--candidate-identity-json` and uses it before source/fallback identity
+    reconstruction;
+  - `scripts/bot_factory_run_freqai_training.py` now accepts
+    `--candidate-identity-json` and forwards the same canonical identity to its
+    child checked FreqAI backtest / walk-forward stages;
+  - `freqtrade_ext/bot_factory/freqai_training.py` now supports
+    `candidate_identity_json` in checked child command construction.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\candidate_evaluation.py freqtrade_ext\bot_factory\freqai_training.py scripts\bot_factory_run_walk_forward.py scripts\bot_factory_run_backtest.py scripts\bot_factory_run_freqai_backtest.py scripts\bot_factory_run_freqai_training.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "candidate_identity or candidate_evaluation_executes_checked_wrapper_chain or training_backtest_command or training_walk_forward_command"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_training.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_backtest.py --help`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+  - `git diff --check`
+- [x] Results: compile passed; focused pytest passed 8 tests after an initial
+  sandbox-only temp/cache permission failure (`WinError 5`); all four CLI help
+  checks exited `0`; full `tests/test_bot_factory.py -q` reached `[100%]`;
+  `git diff --check` passed.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, or process-control action was performed.
+
 Checked on 2026-05-23 JST for PR #10 review follow-up on walk-forward
 candidate identity forwarding.
 

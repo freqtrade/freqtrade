@@ -1374,6 +1374,7 @@ def test_training_child_run_id_sanitizes_timerange():
 
 
 def test_training_backtest_command_uses_checked_wrapper_only(tmp_path):
+    identity_path = tmp_path / "candidate_identity.json"
     cmd = build_checked_freqai_backtest_command(
         python_executable=".venv/Scripts/python.exe",
         runner_script="scripts/bot_factory_run_freqai_backtest.py",
@@ -1386,6 +1387,7 @@ def test_training_backtest_command_uses_checked_wrapper_only(tmp_path):
         timeframe="5m",
         pairs=["BTC/USDT:USDT"],
         freqai_identifier="bf_longonly_train",
+        candidate_identity_json=identity_path,
         reviewer_notes=["training factory test"],
     )
 
@@ -1398,9 +1400,11 @@ def test_training_backtest_command_uses_checked_wrapper_only(tmp_path):
     assert cmd[cmd.index("--timerange") + 1] == "20250105-20250107"
     assert cmd[cmd.index("--pairs") + 1] == "BTC/USDT:USDT"
     assert cmd[cmd.index("--freqai-identifier") + 1] == "bf_longonly_train"
+    assert cmd[cmd.index("--candidate-identity-json") + 1] == str(identity_path)
 
 
 def test_training_walk_forward_command_accepts_windows_and_rules(tmp_path):
+    identity_path = tmp_path / "candidate_identity.json"
     cmd = build_checked_walk_forward_command(
         python_executable=".venv/Scripts/python.exe",
         runner_script="scripts/bot_factory_run_walk_forward.py",
@@ -1414,6 +1418,7 @@ def test_training_walk_forward_command_accepts_windows_and_rules(tmp_path):
         pairs=["BTC/USDT:USDT"],
         freqai_identifier="bf_longonly_wf",
         candidate_id="cand-wf",
+        candidate_identity_json=identity_path,
         min_pass_rate=0.5,
     )
 
@@ -1426,6 +1431,7 @@ def test_training_walk_forward_command_accepts_windows_and_rules(tmp_path):
     assert cmd[cmd.index("--min-pass-rate") + 1] == "0.5"
     assert cmd[cmd.index("--freqai-identifier") + 1] == "bf_longonly_wf"
     assert cmd[cmd.index("--candidate-id") + 1] == "cand-wf"
+    assert cmd[cmd.index("--candidate-identity-json") + 1] == str(identity_path)
 
 
 def test_walk_forward_child_command_forwards_full_candidate_identity(tmp_path):
@@ -1503,7 +1509,7 @@ def test_walk_forward_fallback_identity_uses_freqai_child_timeframes(tmp_path):
     assert identity["allowed_timeframes"] == ["15m", "5m"]
 
 
-def test_child_backtest_wrappers_accept_full_candidate_identity_json(tmp_path):
+def test_checked_wrappers_accept_full_candidate_identity_json(tmp_path):
     import runpy
 
     from freqtrade_ext.bot_factory.candidate_identity import build_strategy_candidate_identity
@@ -1537,6 +1543,8 @@ def test_child_backtest_wrappers_accept_full_candidate_identity_json(tmp_path):
     freqai_backtest = runpy.run_path(
         str(Path("scripts/bot_factory_run_freqai_backtest.py"))
     )
+    walk_forward = runpy.run_path(str(Path("scripts/bot_factory_run_walk_forward.py")))
+    training = runpy.run_path(str(Path("scripts/bot_factory_run_freqai_training.py")))
 
     backtest_identity = backtest["_resolve_candidate_identity"](
         args,
@@ -1549,9 +1557,22 @@ def test_child_backtest_wrappers_accept_full_candidate_identity_json(tmp_path):
         strategy_file,
         "child_run",
     )
+    walk_forward_identity = walk_forward["_resolve_candidate_identity"](
+        args,
+        {"timeframe": "5m"},
+        strategy_file,
+        "child_run",
+    )
+    training_identity = training["_resolve_candidate_identity"](
+        args,
+        {"timeframe": "5m"},
+        "child_run",
+    )
 
     assert backtest_identity == identity
     assert freqai_identity == identity
+    assert walk_forward_identity == identity
+    assert training_identity == identity
 
 
 def test_training_manifest_keeps_local_artifacts_as_source_of_truth(tmp_path):
@@ -9436,6 +9457,7 @@ def test_candidate_evaluation_freqai_requires_feature_label_validation(tmp_path)
 
 def test_candidate_evaluation_executes_checked_wrapper_chain_with_fake_runner(tmp_path):
     from freqtrade_ext.bot_factory.candidate_evaluation import CandidateEvaluationInputs, evaluate_candidate
+    from freqtrade_ext.bot_factory.candidate_identity import build_strategy_candidate_identity
 
     proposal = tmp_path / "proposal.json"
     proposal.write_text(json.dumps({
@@ -9445,6 +9467,26 @@ def test_candidate_evaluation_executes_checked_wrapper_chain_with_fake_runner(tm
         "thesis_id": "TH-FREQAI",
         **_candidate_research_metadata("TH-FREQAI"),
     }), encoding="utf-8")
+    config = tmp_path / "config.json"
+    config.write_text("{}", encoding="utf-8")
+    strategy_dir = tmp_path / "strategies"
+    strategy_dir.mkdir()
+    identity = build_strategy_candidate_identity(
+        candidate_id="cand-exec",
+        strategy_id="FreqaiS",
+        strategy_class_name="FreqaiS",
+        strategy_source_path=strategy_dir / "FreqaiS.py",
+        strategy_version="FreqaiS_v1",
+        signal_version="signal_v1",
+        risk_policy_version="risk_v1",
+        regime_classifier_version="regime_v1",
+        cost_model_id="cost_v1",
+        allowed_pairs=["BTC/USDT:USDT"],
+        allowed_timeframes=["5m"],
+        created_at="2026-05-23T00:00:00+00:00",
+        source_artifacts={"generated_metadata": "generated.json"},
+        root_dir=tmp_path,
+    )
     generated = tmp_path / "generated.json"
     generated.write_text(json.dumps({
         "strategy_name": "FreqaiS",
@@ -9452,11 +9494,8 @@ def test_candidate_evaluation_executes_checked_wrapper_chain_with_fake_runner(tm
         "candidate_evaluation_eligible": True,
         "generator_mode": "freqai",
         "target_definition": "future_return",
+        "candidate_identity": identity,
     }), encoding="utf-8")
-    config = tmp_path / "config.json"
-    config.write_text("{}", encoding="utf-8")
-    strategy_dir = tmp_path / "strategies"
-    strategy_dir.mkdir()
     ohlcv = tmp_path / "BTC_USDT-5m.parquet"
     ohlcv.write_text("fake parquet for command construction only", encoding="utf-8")
     commands: list[list[str]] = []
@@ -9479,18 +9518,18 @@ def test_candidate_evaluation_executes_checked_wrapper_chain_with_fake_runner(tm
         elif "bot_factory_run_walk_forward.py" in command_text:
             out = Path(cwd) / command[command.index("--output-root") + 1] / "FreqaiS" / command[command.index("--run-id") + 1]
             out.mkdir(parents=True, exist_ok=True)
-            (out / "walk_forward_metrics.json").write_text(json.dumps({"strategy": "FreqaiS", "recommendation": "pass"}), encoding="utf-8")
+            (out / "walk_forward_metrics.json").write_text(json.dumps({"strategy": "FreqaiS", "recommendation": "pass", "candidate_identity": identity}), encoding="utf-8")
             (out / "walk_forward_report.md").write_text("# Walk-forward\n", encoding="utf-8")
         elif "bot_factory_run_freqai_backtest.py" in command_text:
             out = Path(cwd) / command[command.index("--output-root") + 1] / "FreqaiS" / command[command.index("--run-id") + 1]
             out.mkdir(parents=True, exist_ok=True)
-            (out / "metrics.json").write_text(json.dumps({"strategy_name": "FreqaiS", "recommendation": "pass"}), encoding="utf-8")
+            (out / "metrics.json").write_text(json.dumps({"strategy_name": "FreqaiS", "recommendation": "pass", "candidate_identity": identity}), encoding="utf-8")
             (out / "trades.csv").write_text("is_short,leverage\nFalse,1.0\n", encoding="utf-8")
             (out / "report.md").write_text("# Backtest\n", encoding="utf-8")
         elif "bot_factory_run_freqai_training.py" in command_text:
             out = Path(cwd) / command[command.index("--output-root") + 1] / "FreqaiS" / command[command.index("--run-id") + 1]
             out.mkdir(parents=True, exist_ok=True)
-            (out / "training_manifest.json").write_text(json.dumps({"strategy": "FreqaiS", "recommendation": "pass"}), encoding="utf-8")
+            (out / "training_manifest.json").write_text(json.dumps({"strategy": "FreqaiS", "recommendation": "pass", "candidate_identity": identity}), encoding="utf-8")
             (out / "training_report.md").write_text("# Training\n", encoding="utf-8")
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
@@ -9541,6 +9580,8 @@ def test_candidate_evaluation_executes_checked_wrapper_chain_with_fake_runner(tm
     assert manifest["candidate_execution"]["freqai"]["identifier"] == expected_identifier
     for command in commands[3:]:
         assert command[command.index("--freqai-identifier") + 1] == expected_identifier
+        identity_arg = command[command.index("--candidate-identity-json") + 1]
+        assert json.loads((tmp_path / identity_arg).read_text(encoding="utf-8")) == identity
     assert all(check["status"] in {"pass", "skipped"} for check in manifest["checks"])
 
 
