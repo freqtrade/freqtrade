@@ -56,3 +56,9 @@ These instructions apply to automated coding agents working in this repository.
   increment with exact commands, results, artifacts, and remaining limitations.
 - Add or update a phase runbook only after the corresponding path has been
   implemented and verified.
+
+## GitHub Review Follow-up
+
+- When addressing GitHub review feedback, always reply to the corresponding
+  review comment after the fix is implemented, verified, and pushed. The reply
+  must briefly state what changed and include the relevant verification result.
