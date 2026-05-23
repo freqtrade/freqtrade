@@ -1,0 +1,90 @@
+import numpy as np
+import pandas as pd
+from pandas import DataFrame
+from freqtrade.strategy import IStrategy
+import talib.abstract as ta
+import freqtrade.vendor.qtpylib.indicators as qtpylib
+
+class BtcLogicSmcProfile(IStrategy):
+    # === HYPERPARAMETERS & RISK MANAGEMENT ===
+    # Strict 1:3 Risk to Reward Ratio
+    minimal_roi = {
+        "0": 0.03,      # 3% profit par direct exit
+        "30": 0.015,    # 30 mins me agar 1.5% profit mile toh partial close
+    }
+    
+    stoploss = -0.01    # Max 1% loss per trade (Strict Capital Protection)
+    timeframe = '5m'    # Lower noise, high efficiency timeframe for BTC
+
+    # Strategy Indicators Setup
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # 1. Market Structure: Calculate Swing Highs & Lows (20-bar window)
+        dataframe['swing_high'] = dataframe['high'].rolling(window=20).max().shift(1)
+        dataframe['swing_low'] = dataframe['low'].rolling(window=20).min().shift(1)
+
+        # 2. Volume Profile (Simplified POC using Volume Weighted Moving Average Cluster)
+        # Institutional Buying/Selling zones are tracked via dense volume intersections
+        dataframe['vwap'] = qtpylib.vwap(dataframe)
+        dataframe['ema_fast'] = ta.EMA(dataframe, timeperiod=9)
+        dataframe['ema_slow'] = ta.EMA(dataframe, timeperiod=21)
+
+        # 3. Momentum Confirmation (To avoid catching falling knives)
+        dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
+        
+        return dataframe
+
+    # === ENTRY LOGIC ===
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[
+            (
+                # LOGIC 1: Liquidity Sweep (Price broke the previous 20-bar low but closed above it)
+                (dataframe['low'] < dataframe['swing_low']) & 
+                (dataframe['close'] > dataframe['swing_low']) &
+                
+                # LOGIC 2: Market Structure Shift (Fast EMA crosses over Slow EMA, showing immediate trend reversal)
+                (qtpylib.crossed_above(dataframe['ema_fast'], dataframe['ema_slow'])) &
+                
+                # LOGIC 3: Volume Support (Price is close to VWAP/POC zone, confirming institutional backing)
+                (dataframe['close'] >= dataframe['vwap'] * 0.998) &
+                
+                # Filter: Not oversold anymore, momentum is building up
+                (dataframe['rsi'] > 45)
+            ),
+            'enter_long'] = 1
+
+        dataframe.loc[
+            (
+                # LOGIC 1: Liquidity Sweep (Price swept the previous 20-bar high but failed to hold)
+                (dataframe['high'] > dataframe['swing_high']) & 
+                (dataframe['close'] < dataframe['swing_high']) &
+                
+                # LOGIC 2: Market Structure Shift (Bearish confirmation)
+                (qtpylib.crossed_below(dataframe['ema_fast'], dataframe['ema_slow'])) &
+                
+                # LOGIC 3: Volume Confirmation
+                (dataframe['close'] <= dataframe['vwap'] * 1.002) &
+                
+                (dataframe['rsi'] < 55)
+            ),
+            'enter_short'] = 1
+
+        return dataframe
+
+    # === EXIT LOGIC ===
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # Emergency Exit Logic if structure breaks in opposite direction before StopLoss
+        dataframe.loc[
+            (
+                (dataframe['rsi'] > 75) | # Overbought
+                (qtpylib.crossed_below(dataframe['ema_fast'], dataframe['ema_slow']))
+            ),
+            'exit_long'] = 1
+
+        dataframe.loc[
+            (
+                (dataframe['rsi'] < 25) | # Oversold
+                (qtpylib.crossed_above(dataframe['ema_fast'], dataframe['ema_slow']))
+            ),
+            'exit_short'] = 1
+
+        return dataframe
