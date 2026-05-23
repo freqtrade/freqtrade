@@ -26,6 +26,7 @@ from freqtrade_ext.bot_factory.candidate_identity import (
     validate_candidate_identity,
 )
 from freqtrade_ext.bot_factory.freqai_backtest import sanitize_freqai_identifier, selected_pairs
+from freqtrade_ext.bot_factory.freqai_backtest import freqai_input_timeframes
 from freqtrade_ext.bot_factory.walk_forward import (
     WalkForwardRules,
     WalkForwardWindow,
@@ -135,6 +136,7 @@ def main() -> int:
     (run_dir / "candidate_identity.json").write_text(
         json.dumps(candidate_identity, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+    args.candidate_identity_path = run_dir / "candidate_identity.json"
     if not identity_validation["ok"]:
         print(json.dumps(identity_validation, indent=2, ensure_ascii=False))
         print(f"Candidate identity validation failed. Report: {run_dir / 'candidate_identity.json'}")
@@ -238,6 +240,8 @@ def _build_window_command(
     ]
     if getattr(args, "candidate_identity", None):
         cmd.extend(["--candidate-id", str(args.candidate_identity["candidate_id"])])
+    if getattr(args, "candidate_identity_path", None):
+        cmd.extend(["--candidate-identity-json", str(args.candidate_identity_path)])
     for note in args.reviewer_note or []:
         cmd.extend(["--reviewer-note", note])
     if args.freqaimodel:
@@ -401,7 +405,7 @@ def _resolve_candidate_identity(
         regime_classifier_version="unspecified_regime_classifier_v1",
         cost_model_id="unspecified_cost_model_v1",
         allowed_pairs=selected_pairs(config, args.pairs),
-        allowed_timeframes=[args.timeframe or str(config.get("timeframe") or "")],
+        allowed_timeframes=_identity_timeframes(args, config),
         created_at=datetime.now(UTC).replace(microsecond=0).isoformat(),
         source_artifacts={"strategy_source": strategy_file},
         root_dir=ROOT_DIR,
@@ -414,6 +418,22 @@ def _default_signal_version(args: argparse.Namespace) -> str:
     if "freqai" in str(args.runner_script).lower():
         return "unspecified_freqai_signal_v1"
     return "unspecified_signal_v1"
+
+
+def _identity_timeframes(args: argparse.Namespace, config: dict[str, Any]) -> list[str]:
+    if _uses_freqai_child(args):
+        return freqai_input_timeframes(config, args.timeframe)
+    timeframe = args.timeframe or str(config.get("timeframe") or "")
+    return [timeframe] if timeframe else []
+
+
+def _uses_freqai_child(args: argparse.Namespace) -> bool:
+    return (
+        bool(args.freqaimodel)
+        or bool(args.freqaimodel_path)
+        or bool(args.freqai_identifier)
+        or "freqai" in str(args.runner_script).lower()
+    )
 
 
 def _load_json_if_possible(path: Path) -> dict[str, Any]:

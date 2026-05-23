@@ -99,6 +99,36 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-23 JST for PR #10 review follow-up on walk-forward
+candidate identity forwarding.
+
+- [x] Addressed Codex review comments on
+  `scripts/bot_factory_run_walk_forward.py`:
+  - parent walk-forward now writes `candidate_identity.json` and forwards it to
+    child window wrappers with `--candidate-identity-json`, not only
+    `--candidate-id`;
+  - fallback walk-forward identities for FreqAI child runners now use
+    `freqai_input_timeframes(...)`, matching
+    `scripts/bot_factory_run_freqai_backtest.py` and preserving
+    `freqai.feature_parameters.include_timeframes`.
+- [x] Updated checked child wrappers:
+  `scripts/bot_factory_run_backtest.py` and
+  `scripts/bot_factory_run_freqai_backtest.py` now accept
+  `--candidate-identity-json` and embed the supplied canonical identity instead
+  of rebuilding `created_at` / timeframe defaults.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile scripts\bot_factory_run_walk_forward.py scripts\bot_factory_run_backtest.py scripts\bot_factory_run_freqai_backtest.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "walk_forward or training_backtest_command or candidate_identity"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_walk_forward.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_backtest.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_run_freqai_backtest.py --help`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+- [x] Results: compile passed; focused pytest passed 13 tests; all three CLI
+  help checks exited `0`; full `tests/test_bot_factory.py -q` reached `[100%]`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, or process-control action was performed.
+
 Checked on 2026-05-22 JST for Bot Factory architecture risk TODO closure.
 
 - [x] Closed the remaining items in `docs/BOT_FACTORY_ARCHITECTURE_RISK_TODO.md`:

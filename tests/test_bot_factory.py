@@ -1428,6 +1428,132 @@ def test_training_walk_forward_command_accepts_windows_and_rules(tmp_path):
     assert cmd[cmd.index("--candidate-id") + 1] == "cand-wf"
 
 
+def test_walk_forward_child_command_forwards_full_candidate_identity(tmp_path):
+    import runpy
+
+    module = runpy.run_path(str(Path("scripts/bot_factory_run_walk_forward.py")))
+    window = parse_window_specs(["20250105-20250107"])[0]
+    identity_path = tmp_path / "candidate_identity.json"
+    args = SimpleNamespace(
+        python=".venv/Scripts/python.exe",
+        runner_script="scripts/bot_factory_run_freqai_backtest.py",
+        config="user_data/config.json",
+        strategy="FreqaiS",
+        strategy_path="user_data/strategies",
+        data_format_ohlcv="parquet",
+        reviewer_note=[],
+        freqaimodel=None,
+        freqaimodel_path=None,
+        freqai_identifier=None,
+        timeframe="5m",
+        pairs=["BTC/USDT:USDT"],
+        userdir=None,
+        datadir=None,
+        trading_mode=None,
+        ohlcv_file=None,
+        gate_config=None,
+        mlflow=False,
+        mlflow_tracking_uri=None,
+        mlflow_experiment="bot_factory_freqai_walk_forward",
+        candidate_identity={"candidate_id": "cand-wf"},
+        candidate_identity_path=identity_path,
+    )
+
+    cmd = module["_build_window_command"](
+        args,
+        window,
+        "wf_20250105_20250107",
+        tmp_path / "windows",
+    )
+
+    assert cmd[cmd.index("--candidate-id") + 1] == "cand-wf"
+    assert cmd[cmd.index("--candidate-identity-json") + 1] == str(identity_path)
+
+
+def test_walk_forward_fallback_identity_uses_freqai_child_timeframes(tmp_path):
+    import runpy
+
+    module = runpy.run_path(str(Path("scripts/bot_factory_run_walk_forward.py")))
+    strategy_file = tmp_path / "FreqaiS.py"
+    strategy_file.write_text("class FreqaiS:\n    pass\n", encoding="utf-8")
+    config = {
+        "timeframe": "5m",
+        "exchange": {"pair_whitelist": ["BTC/USDT:USDT"]},
+        "freqai": {"feature_parameters": {"include_timeframes": ["15m", "5m"]}},
+    }
+    args = SimpleNamespace(
+        strategy="FreqaiS",
+        candidate_id="cand-wf",
+        timeframe="5m",
+        pairs=None,
+        runner_script="scripts/bot_factory_run_freqai_backtest.py",
+        freqaimodel=None,
+        freqaimodel_path=None,
+        freqai_identifier=None,
+    )
+
+    identity = module["_resolve_candidate_identity"](
+        args,
+        config,
+        strategy_file,
+        "wf_run",
+    )
+
+    assert identity["candidate_id"] == "cand-wf"
+    assert identity["allowed_timeframes"] == ["15m", "5m"]
+
+
+def test_child_backtest_wrappers_accept_full_candidate_identity_json(tmp_path):
+    import runpy
+
+    from freqtrade_ext.bot_factory.candidate_identity import build_strategy_candidate_identity
+
+    strategy_file = tmp_path / "FreqaiS.py"
+    strategy_file.write_text("class FreqaiS:\n    pass\n", encoding="utf-8")
+    identity = build_strategy_candidate_identity(
+        candidate_id="cand-wf",
+        strategy_id="FreqaiS",
+        strategy_class_name="FreqaiS",
+        strategy_source_path=strategy_file,
+        strategy_version="FreqaiS_v1",
+        signal_version="signal_v1",
+        risk_policy_version="risk_v1",
+        regime_classifier_version="regime_v1",
+        cost_model_id="cost_v1",
+        allowed_pairs=["BTC/USDT:USDT"],
+        allowed_timeframes=["15m", "5m"],
+        created_at="2026-05-23T00:00:00+00:00",
+        source_artifacts={"strategy_source": strategy_file},
+        root_dir=tmp_path,
+    )
+    identity_path = tmp_path / "candidate_identity.json"
+    identity_path.write_text(json.dumps(identity), encoding="utf-8")
+    args = SimpleNamespace(
+        candidate_identity_json=str(identity_path),
+        candidate_id="cand-wf",
+        strategy="FreqaiS",
+    )
+    backtest = runpy.run_path(str(Path("scripts/bot_factory_run_backtest.py")))
+    freqai_backtest = runpy.run_path(
+        str(Path("scripts/bot_factory_run_freqai_backtest.py"))
+    )
+
+    backtest_identity = backtest["_resolve_candidate_identity"](
+        args,
+        strategy_file,
+        "child_run",
+    )
+    freqai_identity = freqai_backtest["_resolve_candidate_identity"](
+        args,
+        {"timeframe": "5m"},
+        strategy_file,
+        "child_run",
+    )
+
+    assert backtest_identity == identity
+    assert freqai_identity == identity
+
+
 def test_training_manifest_keeps_local_artifacts_as_source_of_truth(tmp_path):
     run_dir = tmp_path / "data" / "freqai_training" / "LongOnlyFreqAIStrategy" / "run1"
     stage = TrainingStageResult(

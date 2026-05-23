@@ -26,6 +26,7 @@ from freqtrade_ext.bot_factory.backtest_results import (
 )
 from freqtrade_ext.bot_factory.candidate_identity import (
     build_strategy_candidate_identity,
+    extract_candidate_identity,
     load_candidate_identity_from_strategy_source,
     validate_candidate_identity,
 )
@@ -77,6 +78,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-root", default="data/freqai")
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--candidate-id", default=None)
+    parser.add_argument(
+        "--candidate-identity-json",
+        default=None,
+        help="Optional full StrategyCandidateIdentity JSON to embed in this checked FreqAI backtest.",
+    )
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--data-format-ohlcv", default="parquet")
     parser.add_argument("--userdir", default=None)
@@ -493,6 +499,10 @@ def _find_strategy_source(strategy_path: Path, strategy_name: str) -> Path:
 def _resolve_candidate_identity(
     args: argparse.Namespace, config: dict, strategy_file: Path, run_id: str
 ) -> dict[str, object]:
+    provided_identity = _candidate_identity_from_json(args)
+    if provided_identity is not None:
+        return provided_identity
+
     strategy_identity = load_candidate_identity_from_strategy_source(
         strategy_file,
         strategy_class_name=args.strategy,
@@ -524,6 +534,33 @@ def _resolve_candidate_identity(
         source_artifacts={"strategy_source": strategy_file},
         root_dir=ROOT_DIR,
     )
+
+
+def _candidate_identity_from_json(args: argparse.Namespace) -> dict[str, object] | None:
+    path_value = getattr(args, "candidate_identity_json", None)
+    if not path_value:
+        return None
+    path = Path(path_value)
+    if not path.is_file():
+        raise SystemExit(f"candidate identity JSON file not found: {path}")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"candidate identity JSON could not be read: {path}: {exc}") from exc
+    identity = extract_candidate_identity(payload)
+    if identity is None:
+        raise SystemExit(f"candidate identity JSON does not contain a valid identity: {path}")
+    if args.candidate_id and args.candidate_id != identity.get("candidate_id"):
+        raise SystemExit(
+            "Provided --candidate-id does not match candidate identity JSON: "
+            f"{args.candidate_id} != {identity.get('candidate_id')}"
+        )
+    if identity.get("strategy_class_name") != args.strategy:
+        raise SystemExit(
+            "Candidate identity JSON strategy_class_name does not match --strategy: "
+            f"{identity.get('strategy_class_name')} != {args.strategy}"
+        )
+    return identity
 
 
 def _require_file(path: Path, label: str) -> None:
