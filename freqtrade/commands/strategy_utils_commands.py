@@ -46,9 +46,9 @@ def start_strategy_update(args: dict[str, Any]) -> None:
 def start_conversion(strategy_obj, config):
     from freqtrade.strategy.strategyupdater import StrategyUpdater
 
-    print(f"Conversion of {Path(strategy_obj['location']).name} started.")
+    logger.info(f"Conversion of {Path(strategy_obj['location']).name} started.")
     instance_strategy_updater = StrategyUpdater()
     start = time.perf_counter()
     instance_strategy_updater.start(config, strategy_obj)
     elapsed = time.perf_counter() - start
-    print(f"Conversion of {Path(strategy_obj['location']).name} took {elapsed:.1f} seconds.")
+    logger.info(f"Conversion of {Path(strategy_obj['location']).name} took {elapsed:.1f} seconds.")
