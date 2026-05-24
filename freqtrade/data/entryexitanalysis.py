@@ -32,7 +32,7 @@ def _process_candles_and_indicators(
                     pair, trades, signal_candles[strategy_name][pair], date_col
                 )
     except Exception as e:
-        print(f"Cannot process entry/exit reasons for {strategy_name}: ", e)
+        logger.error(f"Cannot process entry/exit reasons for {strategy_name}: {e}")
 
     return analysed_trades_dict
 
@@ -241,7 +241,7 @@ def print_results(
 
         if rejected_signals is not None:
             if rejected_signals.empty:
-                print("There were no rejected signals.")
+                logger.info("There were no rejected signals.")
             else:
                 _do_rejected_signals_output(rejected_signals, to_csv=to_csv, csv_path=csv_path)
 
@@ -267,7 +267,7 @@ def print_results(
                 csv_path=csv_path,
             )
     else:
-        print("\\No trades to show")
+        logger.info("\\No trades to show")
 
 
 def _merge_dfs(
@@ -311,10 +311,10 @@ def _print_table(
     if to_csv:
         safe_name = Path(csv_path, name.lower().replace(" ", "_").replace(":", "") + ".csv")
         data.to_csv(safe_name)
-        print(f"Saved {name} to {safe_name}")
+        logger.info(f"Saved {name} to {safe_name}")
     else:
         if name is not None:
-            print(name)
+            logger.debug(name)
 
         print_df_rich_table(data, data.keys(), show_index=show_index)
 
