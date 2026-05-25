@@ -9,7 +9,12 @@ import pytest
 
 from freqtrade.data.converter.trade_converter import trades_dict_to_list
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
-from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
+from freqtrade.exceptions import (
+    DependencyException,
+    InvalidOrderException,
+    OperationalException,
+    TemporaryError,
+)
 from freqtrade.exchange.exchange_utils_timeframe import timeframe_to_seconds
 from freqtrade.persistence import Trade
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts, dt_utc
@@ -1203,3 +1208,42 @@ def test__get_spot_delist_schedule_binance(default_conf_usdt, mocker):
         "sapi_get_spot_delist_schedule",
         retries=1,
     )
+
+
+@pytest.mark.parametrize("margin_mode", [MarginMode.CROSS, MarginMode.ISOLATED])
+def test_set_margin_mode_binance_handles_4067_no_op(mocker, default_conf, margin_mode):
+    """
+    Binance returns error -4067 from setMarginType for pairs with no open position
+    even when the margin mode is already correctly set. The override should
+    swallow it as a no-op (equivalent to ccxt's handling of -4046).
+    """
+    api_mock = MagicMock()
+    api_mock.set_margin_mode = MagicMock(
+        side_effect=ccxt.OperationRejected(
+            'binance {"code":-4067,'
+            '"msg":"Position side cannot be changed if there exists open orders."}'
+        )
+    )
+    type(api_mock).has = PropertyMock(return_value={"setMarginMode": True})
+    default_conf["dry_run"] = False
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock, exchange="binance")
+    # Must not raise; the quirk is swallowed as a no-op.
+    exchange.set_margin_mode("ADA/USDT:USDT", margin_mode)
+
+
+def test_set_margin_mode_binance_propagates_other_operation_rejected(mocker, default_conf):
+    """
+    Non-4067 OperationRejected responses should still surface as TemporaryError;
+    the override must not mask other genuine setMarginType failures.
+    """
+    api_mock = MagicMock()
+    api_mock.set_margin_mode = MagicMock(
+        side_effect=ccxt.OperationRejected('binance {"code":-1234,"msg":"Some other error"}')
+    )
+    type(api_mock).has = PropertyMock(return_value={"setMarginMode": True})
+    default_conf["dry_run"] = False
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock=api_mock, exchange="binance")
+    with pytest.raises(TemporaryError, match="Could not set margin mode"):
+        exchange.set_margin_mode("ADA/USDT:USDT", MarginMode.CROSS)

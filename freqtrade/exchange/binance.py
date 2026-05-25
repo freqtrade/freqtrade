@@ -557,6 +557,43 @@ class Binance(Exchange):
 
         return cache.get(pair, None)
 
+    def set_margin_mode(
+        self,
+        pair: str,
+        margin_mode: MarginMode,
+        accept_fail: bool = False,
+        params: dict | None = None,
+    ) -> None:
+        """
+        Override base implementation to gracefully handle Binance error -4067.
+
+        Binance returns ``-4067`` ("Position side cannot be changed if there exists
+        open orders.") from ``setMarginType`` for pairs with no open position even
+        when the requested margin mode is already in effect, despite the message
+        referencing open orders that do not exist. Functionally equivalent to
+        ``-4046`` ("No need to change margin type."), which ccxt already swallows
+        transparently. Without this override the resulting TemporaryError aborts
+        ``create_trade``, blocking entries on affected pairs.
+
+        :param pair: base/quote currency pair
+        :param margin_mode: requested margin mode
+        :param accept_fail: forwarded to base implementation
+        :param params: forwarded to base implementation
+        """
+        try:
+            super().set_margin_mode(pair, margin_mode, accept_fail, params)
+        except TemporaryError as e:
+            if "-4067" in str(e):
+                logger.debug(
+                    "Binance error -4067 on %s with margin_mode=%s "
+                    "treated as no-op (margin mode already correct). %s",
+                    pair,
+                    margin_mode.value,
+                    e,
+                )
+                return
+            raise
+
 
 class Binanceusdm(Binance):
     """Binance USDM Exchange
