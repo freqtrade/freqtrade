@@ -11063,6 +11063,180 @@ def test_market_state_snapshot_stale_local_candles_force_unknown_no_trade():
     assert current["stale_data"] is True
 
 
+def _state_snapshot_for_regime(regime: str = "trend_up"):
+    return {
+        "factory": "bot_factory",
+        "schema_version": "market_state_snapshot_v1",
+        "run_id": "state_snapshot",
+        "state_encoder_version": "deterministic_market_state_encoder_v1",
+        "horizon_profile_id": (
+            "deterministic_market_state_encoder_v1:"
+            f"micro={regime}:intraday={regime}:swing=missing"
+        ),
+        "cost_model_id": "cost_model_v1",
+        "horizons": [
+            {
+                "schema_version": "market_state_window_v1",
+                "horizon": "5m",
+                "horizon_group": "micro",
+                "label": regime,
+                "state_id": (
+                    "deterministic_market_state_encoder_v1:"
+                    f"5m:{regime}:high:ohlcv_state_features_v1"
+                ),
+                "confidence": 0.9,
+                "uncertainty": 0.1,
+                "reason_codes": [f"label_{regime}"],
+            }
+        ],
+    }
+
+
+def _strict_regime_scorecard_for_state_tests():
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RegimePromotionThresholds,
+        build_regime_fitness_scorecard,
+    )
+
+    observations = [
+        _regime_observation(
+            "state-btc",
+            source_type="walk_forward",
+            regime="trend_up",
+            pair="BTC/USDT:USDT",
+            window_start="2026-01-01T00:00:00+00:00",
+            window_end="2026-02-01T00:00:00+00:00",
+            net_return_normal_cost=3.0,
+            net_return_stress_cost=2.0,
+            lower_confidence_bound=0.5,
+        ),
+        _regime_observation(
+            "state-eth",
+            source_type="walk_forward",
+            regime="trend_up",
+            pair="ETH/USDT:USDT",
+            window_start="2026-02-01T00:00:00+00:00",
+            window_end="2026-03-01T00:00:00+00:00",
+            net_return_normal_cost=2.0,
+            net_return_stress_cost=1.2,
+            lower_confidence_bound=0.4,
+        ),
+    ]
+    scorecard = build_regime_fitness_scorecard(
+        observations,
+        contract=_regime_contract(),
+        baseline_observations=[],
+        thresholds=RegimePromotionThresholds(
+            min_sample_days=0.0,
+            min_window_count=1,
+            min_trade_count=0,
+            min_global_regime_count=1,
+            max_calendar_concentration=0.6,
+        ),
+        candidate_identity=observations[0]["candidate_identity"],
+    )
+    assert scorecard["decision"] == "REGIME_SCOPED_SELECTOR_ELIGIBLE"
+    scorecard["baseline_comparison"] = {
+        "by_regime": [
+            {
+                "market_regime": "trend_up",
+                "candidate_return": 5.0,
+                "hold_return": 2.0,
+                "no_trade_return": 0.0,
+                "hold_delta": 3.0,
+                "no_trade_delta": 5.0,
+            }
+        ]
+    }
+    return scorecard
+
+
+def test_state_conditioned_scorecard_preserves_state_scope_and_baselines():
+    from freqtrade_ext.bot_factory.state_conditioning import (
+        build_state_conditioned_scorecard,
+        validate_state_conditioned_scorecard_for_selector,
+    )
+
+    scorecard = build_state_conditioned_scorecard(
+        regime_scorecard=_strict_regime_scorecard_for_state_tests(),
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="state_scorecard_test",
+        require_walk_forward_evidence=True,
+    )
+    validation = validate_state_conditioned_scorecard_for_selector(scorecard)
+
+    assert scorecard["schema_version"] == "state_conditioned_scorecard_v1"
+    assert scorecard["evidence_eligibility"] == "selector_eligible_candidate"
+    assert scorecard["selector_candidate_creation_allowed"] is True
+    assert scorecard["walk_forward_gate_passed"] is True
+    assert scorecard["rows"][0]["decision"] == "STATE_SELECTOR_ELIGIBLE"
+    assert scorecard["rows"][0]["state_id"].endswith("5m:trend_up:high:ohlcv_state_features_v1")
+    assert {row["baseline_id"] for row in scorecard["baseline_comparisons"]} == {
+        "hold",
+        "no_trade",
+    }
+    assert validation["ok"] is True
+    assert validation["safety_scope"]["paper_trading_started"] is False
+
+
+def test_state_conditioned_scorecard_missing_walk_forward_is_diagnostic_only():
+    from freqtrade_ext.bot_factory.state_conditioning import (
+        build_state_conditioned_scorecard,
+        validate_state_conditioned_scorecard_for_selector,
+    )
+
+    regime_scorecard = _strict_regime_scorecard_for_state_tests()
+    for row in regime_scorecard["scorecard_by_regime"]:
+        row["walk_forward_pass_rate"] = 0.0
+
+    scorecard = build_state_conditioned_scorecard(
+        regime_scorecard=regime_scorecard,
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="state_scorecard_diagnostic",
+        require_walk_forward_evidence=True,
+    )
+    validation = validate_state_conditioned_scorecard_for_selector(scorecard)
+
+    assert scorecard["diagnostic_only"] is True
+    assert scorecard["evidence_eligibility"] == "diagnostic_only"
+    assert scorecard["selector_candidate_creation_allowed"] is False
+    assert scorecard["paper_readiness_input_allowed"] is False
+    assert "missing_walk_forward_evidence" in scorecard["blockers"]
+    assert validation["ok"] is False
+    assert "state_conditioned_scorecard_selector_creation_allowed" in validation["reason_codes"]
+
+
+def test_diagnostic_scorecard_cannot_become_selector_candidate():
+    import pytest
+
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        candidate_identity_from_logic_spec,
+        selection_candidate_from_scorecard,
+        strong_uptrend_momentum_logic_spec,
+    )
+
+    logic = strong_uptrend_momentum_logic_spec()
+    scorecard = {
+        "factory": "regime_fitness_scorecard",
+        "schema_version": "regime_fitness_scorecard_v1",
+        "manual_review_only": False,
+        "decision": "REGIME_SCOPED_SELECTOR_ELIGIBLE",
+        "diagnostic_only": True,
+        "evidence_eligibility": "diagnostic_only",
+        "candidate_identity": candidate_identity_from_logic_spec(
+            logic,
+            candidate_id="candidate",
+        ),
+    }
+
+    with pytest.raises(ValueError, match="Diagnostic-only"):
+        selection_candidate_from_scorecard(
+            logic=logic,
+            scorecard=scorecard,
+            candidate_id="candidate",
+        )
+
+
 def test_backtest_evidence_pipeline_writes_observation_scorecard_and_selector_artifacts(tmp_path):
     from freqtrade_ext.bot_factory.backtest_results import BacktestMetrics, write_metrics
     from freqtrade_ext.bot_factory.evidence_pipeline import (

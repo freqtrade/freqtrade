@@ -442,15 +442,15 @@ STATE_DIAGNOSTIC_ONLY
 ### TODO
 
 - [ ] Extend observation ledger rows with `state_id`, `horizon_profile_id`, and `state_encoder_version`.
-- [ ] Build state-conditioned scorecards from checked backtest and walk-forward artifacts.
-- [ ] Require actual checked strategy evidence for selector eligibility.
-- [ ] Keep proxy replays and relaxed-threshold demos as `STATE_DIAGNOSTIC_ONLY`.
+- [x] Build state-conditioned scorecards from checked backtest and walk-forward artifacts.
+- [x] Require actual checked strategy evidence for selector eligibility.
+- [x] Keep proxy replays and relaxed-threshold demos as `STATE_DIAGNOSTIC_ONLY`.
 - [ ] Require baseline deltas against:
   - `no_trade`
   - hold baseline
   - incumbent strategy when present
   - style-specific baseline
-- [ ] Split baseline deltas by `baseline_id`; never sum hold and no-trade baselines into one aggregate.
+- [x] Split baseline deltas by `baseline_id`; never sum hold and no-trade baselines into one aggregate.
 - [ ] Add hard vetoes:
   - insufficient windows
   - insufficient trades
@@ -467,6 +467,29 @@ STATE_DIAGNOSTIC_ONLY
   - strategy with positive global PnL but unsafe high-volatility state returns `STATE_SHADOW_ONLY` or `STATE_UNSAFE`;
   - strategy that underperforms hold in a bull trend is not selector-eligible without risk-reduction rationale;
   - almost-always-`no_trade` policy records opportunity cost.
+
+Implemented on 2026-05-28 JST:
+
+- Added `freqtrade_ext/bot_factory/state_conditioning.py` with
+  `state_conditioned_scorecard_v1` construction from an existing deterministic
+  `regime_fitness_scorecard_v1` plus `market_state_snapshot_v1`.
+- Added `scripts/bot_factory_build_state_scorecard.py` to write
+  `data/state_scorecards/<candidate_id>/<run_id>/state_conditioned_scorecard.json`
+  and `state_conditioned_scorecard_report.md` from local JSON artifacts only.
+- The builder preserves canonical candidate identity, maps regime scorecard rows
+  onto `state_id` / `horizon_profile_id`, splits no-trade and hold baseline
+  deltas into separate `baseline_id` rows, and records explicit
+  `selector_candidate_creation_allowed` / `paper_readiness_input_allowed`
+  flags.
+- Strict selector eligibility now requires a deterministic source regime
+  scorecard, checked candidate identity, no proxy evidence, no relaxed
+  thresholds, selector-eligible state rows, and walk-forward evidence when the
+  caller requires it. Missing walk-forward evidence produces
+  `diagnostic_only=true`.
+- Remaining limitations: observation ledger rows are not yet natively extended
+  with state fields; incumbent/style baselines are not yet implemented; range
+  strategy, high-volatility unsafe global-PnL, underperform-hold bull trend, and
+  almost-always-no-trade opportunity-cost tests remain open.
 
 ## P0: Diagnostic vs Selector-Eligible Boundary
 
@@ -490,7 +513,7 @@ paper_readiness_input_allowed
 
 ### TODO
 
-- [ ] Add `evidence_eligibility = diagnostic_only | selector_eligible_candidate`.
+- [x] Add `evidence_eligibility = diagnostic_only | selector_eligible_candidate`.
 - [ ] Require `selector_candidate_creation_allowed=false` for:
   - proxy close-to-close replays;
   - manually assembled scorecards;
@@ -499,9 +522,29 @@ paper_readiness_input_allowed
   - scorecards without checked strategy identity;
   - scorecards without walk-forward evidence.
 - [ ] Require `paper_readiness_input_allowed=false` unless the full strict scorecard schema passes.
-- [ ] Update `selection_candidate_from_scorecard()` to reject diagnostic-only artifacts.
+- [x] Update `selection_candidate_from_scorecard()` to reject diagnostic-only artifacts.
 - [ ] Update paper readiness scorecard validation to reject minimal JSONs that only contain top-level flags.
-- [ ] Add tests that diagnostic replays cannot become selector candidates.
+- [x] Add tests that diagnostic replays cannot become selector candidates.
+
+Implemented on 2026-05-28 JST:
+
+- Added state-conditioned scorecard eligibility flags:
+  `evidence_eligibility`, `diagnostic_only`, `proxy_evidence`,
+  `relaxed_thresholds_used`, `actual_strategy_backtest_required`,
+  `historical_gate_passed`, `walk_forward_gate_passed`,
+  `selector_candidate_creation_allowed`, and `paper_readiness_input_allowed`.
+- Added selector validation for state-conditioned scorecards and hardened
+  `selection_candidate_from_scorecard()` so diagnostic-only, proxy,
+  relaxed-threshold, or selector-disallowed scorecards cannot become selector
+  candidates.
+- Added focused tests proving strict state-conditioned evidence can validate for
+  selector input, missing walk-forward evidence remains diagnostic-only, and a
+  diagnostic scorecard cannot become a selector candidate.
+- Remaining limitations: paper readiness still validates old regime scorecards
+  only; it does not yet require the full state-conditioned scorecard schema or
+  reject minimal state-scorecard JSONs. The diagnostic boundary still needs
+  explicit tests for manually assembled, single-window, and missing-identity
+  state scorecards.
 
 ## P1: State Discovery / Clustering Research
 

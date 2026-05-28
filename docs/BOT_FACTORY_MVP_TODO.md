@@ -99,6 +99,45 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-28 JST for market-state / strategy-matching P0
+state-conditioned scorecard and diagnostic-boundary foundation.
+
+- [x] Added `freqtrade_ext/bot_factory/state_conditioning.py` with
+  `state_conditioned_scorecard_v1` construction from deterministic
+  `regime_fitness_scorecard_v1` plus `market_state_snapshot_v1`, preserving
+  candidate identity, `state_id`, `horizon_profile_id`, separated
+  `baseline_id` rows, diagnostic-vs-selector flags, and local-only safety
+  scope.
+- [x] Added `scripts/bot_factory_build_state_scorecard.py` to write local
+  `data/state_scorecards/<candidate_id>/<run_id>/state_conditioned_scorecard.json`
+  and `state_conditioned_scorecard_report.md` artifacts.
+- [x] Hardened
+  `freqtrade_ext/bot_factory/regime_promotion.py::selection_candidate_from_scorecard`
+  so diagnostic-only, proxy, relaxed-threshold, or selector-disallowed
+  scorecards cannot become selector candidates.
+- [x] Added focused tests for strict state-conditioned selector validation,
+  missing walk-forward evidence remaining diagnostic-only, and diagnostic
+  scorecard selector rejection.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\state_conditioning.py freqtrade_ext\bot_factory\regime_promotion.py freqtrade_ext\bot_factory\market_regime.py scripts\bot_factory_build_market_state.py scripts\bot_factory_build_state_scorecard.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_build_state_scorecard.py --help`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "state_conditioned or diagnostic_scorecard or manual_scorecard or rejected_scorecard"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "market_state or state_conditioned or diagnostic_scorecard or deterministic_regime_classifier or backtest_evidence_pipeline or manual_scorecard or rejected_scorecard"`
+- [x] Results: compile passed; CLI help exited `0`; focused
+  state-conditioned/diagnostic selector slice passed `5 passed` after one
+  initial implementation correction; combined market-state/state-conditioned
+  regression slice passed `10 passed`. Pytest still emitted the known Windows
+  temp/cache ACL warning under `.pytest_cache` and `AppData\Local\Temp`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, strategy
+  matching execution, or process-control action was performed.
+- [ ] Remaining limitation: observation ledger rows are not yet natively
+  extended with state fields; incumbent/style baselines, full hard-veto
+  coverage, suitability matrix, offline selector matching, no-trade scorecard,
+  selector replay, ML diagnostics, and Phase 3 readiness integration remain
+  future work.
+
 Checked on 2026-05-28 JST for market-state / strategy-matching Increment 0
 schemas plus first P0 local snapshot/current-state reporter foundation.
 

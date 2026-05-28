@@ -972,6 +972,17 @@ def selection_candidate_from_scorecard(
     scorecard: dict[str, Any],
     candidate_id: str,
 ) -> dict[str, Any]:
+    if (
+        scorecard.get("diagnostic_only") is True
+        or scorecard.get("evidence_eligibility") == "diagnostic_only"
+        or scorecard.get("proxy_evidence") is True
+        or scorecard.get("relaxed_thresholds_used") is True
+        or scorecard.get("selector_candidate_creation_allowed") is False
+    ):
+        raise ValueError(
+            "Diagnostic-only, proxy, relaxed-threshold, or selector-disallowed "
+            "scorecards cannot become selector candidates."
+        )
     if scorecard.get("manual_review_only") is True or scorecard.get("factory") != "regime_fitness_scorecard":
         raise ValueError(
             "Only deterministic regime_fitness_scorecard artifacts may become selector candidates."
