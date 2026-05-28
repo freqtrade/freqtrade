@@ -295,6 +295,7 @@ def _strategy_matrix_row(
         "row_type": "strategy",
         "strategy_identity_unit": _strategy_identity_unit(identity),
         "strategy_id": identity.get("strategy_id") or row.get("strategy_id"),
+        "strategy_class_name": identity.get("strategy_class_name"),
         "candidate_id": identity.get("candidate_id") or row.get("candidate_id"),
         "source_state_scorecard_run_id": scorecard.get("run_id"),
         "source_state_scorecard_schema_version": scorecard.get("schema_version"),
@@ -475,6 +476,7 @@ def _strategy_identity_unit(identity: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "candidate_id": identity.get("candidate_id"),
         "strategy_id": identity.get("strategy_id"),
+        "strategy_class_name": identity.get("strategy_class_name"),
         "strategy_version": identity.get("strategy_version"),
         "signal_version": identity.get("signal_version"),
         "risk_policy_version": identity.get("risk_policy_version"),

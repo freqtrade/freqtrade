@@ -11063,14 +11063,99 @@ def test_market_state_snapshot_stale_local_candles_force_unknown_no_trade():
     assert current["stale_data"] is True
 
 
+def test_market_state_snapshot_drops_incomplete_resampled_higher_timeframe():
+    from freqtrade_ext.bot_factory.market_regime import (
+        MarketStateConfig,
+        RegimeClassifierConfig,
+        build_market_state_snapshot,
+    )
+
+    dates = pd.date_range("2026-01-01T00:00:00Z", periods=12, freq="5min")
+    frame = _market_state_ohlcv_frame(dates, np.linspace(100.0, 112.0, len(dates)))
+    config = MarketStateConfig(
+        horizons=("5m", "1h"),
+        min_horizon_rows=1,
+        max_staleness_seconds=900,
+        confidence_threshold=0.1,
+        regime_classifier_config=RegimeClassifierConfig(
+            lookback=1,
+            min_rows=1,
+            trend_return_threshold=0.001,
+            trend_efficiency_threshold=0.1,
+        ),
+    )
+
+    incomplete = build_market_state_snapshot(
+        frame,
+        pair="BTC/USDT:USDT",
+        base_timeframe="5m",
+        run_id="market_state_incomplete_1h",
+        config=config,
+        now=datetime(2026, 1, 1, 0, 55, tzinfo=UTC),
+    )
+    closed = build_market_state_snapshot(
+        frame,
+        pair="BTC/USDT:USDT",
+        base_timeframe="5m",
+        run_id="market_state_closed_1h",
+        config=config,
+        now=datetime(2026, 1, 1, 1, 0, tzinfo=UTC),
+    )
+
+    assert {row["horizon"] for row in incomplete["horizons"]} == {"5m"}
+    closed_1h = next(row for row in closed["horizons"] if row["horizon"] == "1h")
+    assert closed_1h["decision_window_end"] == "2026-01-01T01:00:00+00:00"
+    assert closed_1h["feature_cutoff_timestamp"] == "2026-01-01T01:00:00+00:00"
+    assert closed_1h["future_data_used"] is False
+
+
+def test_market_state_snapshot_staleness_uses_candle_close_time_for_long_base_timeframe():
+    from freqtrade_ext.bot_factory.market_regime import (
+        MarketStateConfig,
+        RegimeClassifierConfig,
+        build_market_state_snapshot,
+    )
+
+    dates = pd.date_range(end="2026-01-01T00:00:00Z", periods=24, freq="1h")
+    frame = _market_state_ohlcv_frame(dates, np.linspace(100.0, 124.0, len(dates)))
+    config = MarketStateConfig(
+        horizons=("1h",),
+        min_horizon_rows=8,
+        max_staleness_seconds=900,
+        confidence_threshold=0.45,
+        regime_classifier_config=RegimeClassifierConfig(
+            lookback=4,
+            min_rows=8,
+            trend_return_threshold=0.005,
+            trend_efficiency_threshold=0.2,
+        ),
+    )
+
+    snapshot = build_market_state_snapshot(
+        frame,
+        pair="BTC/USDT:USDT",
+        base_timeframe="1h",
+        run_id="market_state_1h_fresh_close",
+        config=config,
+        now=datetime(2026, 1, 1, 1, 0, tzinfo=UTC),
+    )
+
+    assert snapshot["latest_local_candle_at"] == "2026-01-01T00:00:00+00:00"
+    assert snapshot["latest_local_candle_close_at"] == "2026-01-01T01:00:00+00:00"
+    assert snapshot["data_asof"] == "2026-01-01T01:00:00+00:00"
+    assert snapshot["data_quality_summary"]["stale_data"] is False
+    assert "stale_local_data" not in snapshot["reason_codes"]
+
+
 def _state_snapshot_for_regime(regime: str = "trend_up", *, confidence: float = 0.9):
     return {
         "factory": "bot_factory",
         "schema_version": "market_state_snapshot_v1",
         "run_id": "state_snapshot",
         "generated_at": "2026-01-01T08:00:00+00:00",
-        "data_asof": "2026-01-01T07:55:00+00:00",
+        "data_asof": "2026-01-01T08:00:00+00:00",
         "latest_local_candle_at": "2026-01-01T07:55:00+00:00",
+        "latest_local_candle_close_at": "2026-01-01T08:00:00+00:00",
         "pair": "BTC/USDT:USDT",
         "pair_group": "btc_major",
         "base_timeframe": "5m",
@@ -11121,6 +11206,7 @@ def _strict_regime_scorecard_for_state_tests(
     regime: str = "trend_up",
     candidate_id: str = "candidate",
     strategy_id: str = "strategy",
+    strategy_class_name: str = "FixtureStrategy",
     normal_returns: tuple[float, float] = (3.0, 2.0),
     stress_returns: tuple[float, float] = (2.0, 1.2),
     lower_confidence_bounds: tuple[float, float] = (0.5, 0.4),
@@ -11135,6 +11221,7 @@ def _strict_regime_scorecard_for_state_tests(
             "state-btc",
             candidate_id=candidate_id,
             strategy_id=strategy_id,
+            strategy_class_name=strategy_class_name,
             source_type="walk_forward",
             regime=regime,
             pair="BTC/USDT:USDT",
@@ -11148,6 +11235,7 @@ def _strict_regime_scorecard_for_state_tests(
             "state-eth",
             candidate_id=candidate_id,
             strategy_id=strategy_id,
+            strategy_class_name=strategy_class_name,
             source_type="walk_forward",
             regime=regime,
             pair="ETH/USDT:USDT",
@@ -11246,6 +11334,34 @@ def test_state_conditioned_scorecard_missing_walk_forward_is_diagnostic_only():
     assert "state_conditioned_scorecard_selector_creation_allowed" in validation["reason_codes"]
 
 
+def test_state_conditioned_scorecard_requires_source_historical_gate_pass():
+    from freqtrade_ext.bot_factory.state_conditioning import (
+        build_state_conditioned_scorecard,
+        validate_state_conditioned_scorecard_for_selector,
+    )
+
+    regime_scorecard = _strict_regime_scorecard_for_state_tests()
+    assert any(
+        row["decision"] == "REGIME_SCOPED_SELECTOR_ELIGIBLE"
+        for row in regime_scorecard["scorecard_by_regime"]
+    )
+    regime_scorecard["decision"] = "REJECT"
+
+    scorecard = build_state_conditioned_scorecard(
+        regime_scorecard=regime_scorecard,
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="state_scorecard_rejected_source",
+        require_walk_forward_evidence=True,
+    )
+    validation = validate_state_conditioned_scorecard_for_selector(scorecard)
+
+    assert scorecard["historical_gate_passed"] is False
+    assert scorecard["selector_candidate_creation_allowed"] is False
+    assert scorecard["paper_readiness_input_allowed"] is False
+    assert "historical_gate_not_selector_eligible" in scorecard["blockers"]
+    assert validation["ok"] is False
+
+
 def test_diagnostic_scorecard_cannot_become_selector_candidate():
     import pytest
 
@@ -11282,6 +11398,7 @@ def _state_conditioned_scorecard_for_selector_test(
     regime: str = "trend_up",
     candidate_id: str = "candidate",
     strategy_id: str = "strategy",
+    strategy_class_name: str = "FixtureStrategy",
     normal_returns: tuple[float, float] = (3.0, 2.0),
     stress_returns: tuple[float, float] = (2.0, 1.2),
     lower_confidence_bounds: tuple[float, float] = (0.5, 0.4),
@@ -11293,6 +11410,7 @@ def _state_conditioned_scorecard_for_selector_test(
             regime=regime,
             candidate_id=candidate_id,
             strategy_id=strategy_id,
+            strategy_class_name=strategy_class_name,
             normal_returns=normal_returns,
             stress_returns=stress_returns,
             lower_confidence_bounds=lower_confidence_bounds,
@@ -11654,6 +11772,56 @@ def test_paper_readiness_rejects_minimal_market_state_scorecard_json(tmp_path):
 
     assert readiness["readiness"] in {"blocked", "fail"}
     assert "market_state_scorecard_full_schema" in {
+        check["name"] for check in readiness["failures"]
+    }
+
+
+def test_paper_readiness_requires_suitability_matrix_for_target_strategy(tmp_path):
+    from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
+
+    strategy_path = _write_paper_strategy(tmp_path, "PaperStrategy")
+    historical_dir, walk_forward_dir, training_dir = _write_paper_evidence(
+        tmp_path,
+        historical_gate_pass=True,
+        walk_forward_recommendation="pass",
+        training_recommendation="pass",
+    )
+    other_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="other-candidate",
+        strategy_id="OtherStrategy",
+        strategy_class_name="OtherStrategy",
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[other_scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="other_strategy_matrix",
+    )
+    matrix_path = tmp_path / "strategy_state_suitability_matrix.json"
+    matrix_path.write_text(json.dumps(matrix), encoding="utf-8")
+    inputs = PaperReadinessInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_suitability_strategy_check",
+        config_path=tmp_path / "config.json",
+        strategy_path=strategy_path,
+        historical_dir=historical_dir,
+        walk_forward_dir=walk_forward_dir,
+        training_dir=training_dir,
+        strategy_suitability_matrix_path=matrix_path,
+        requires_strategy_suitability_matrix=True,
+        reviewer_notes=["Reviewed for no-startup paper readiness."],
+    )
+
+    readiness, _, _ = evaluate_paper_readiness(
+        inputs,
+        static_report=scan_paths([strategy_path]),
+        config=_paper_config("PaperStrategy"),
+        strategy_file=strategy_path,
+    )
+
+    assert readiness["readiness"] == "fail"
+    assert "strategy_suitability_matrix_matches_strategy" in {
         check["name"] for check in readiness["failures"]
     }
 

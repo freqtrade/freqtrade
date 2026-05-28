@@ -200,8 +200,12 @@ def build_market_state_snapshot(
     run_id = run_id or "market_state_" + now.strftime("%Y%m%dT%H%M%SZ")
     source_paths = [str(path).replace("\\", "/") for path in source_data_paths]
     prepared = _prepare_ohlcv(frame)
+    prepared = _drop_unclosed_candles(prepared, base_timeframe, asof=now)
     latest_local_candle_at = _timestamp_to_iso(prepared["date"].max()) if len(prepared) else None
-    stale_data = _is_stale(latest_local_candle_at, now, config.max_staleness_seconds)
+    latest_local_candle_close_at = _timestamp_to_iso(
+        _latest_candle_close(prepared, base_timeframe)
+    )
+    stale_data = _is_stale(latest_local_candle_close_at, now, config.max_staleness_seconds)
     source_hashes = dict(source_data_hashes or {})
     for path in source_data_paths:
         source_hashes.setdefault(str(path).replace("\\", "/"), _file_hash(Path(path)))
@@ -212,6 +216,7 @@ def build_market_state_snapshot(
         base_timeframe=base_timeframe,
         horizons=config.horizons,
         horizon_frames=horizon_frames or {},
+        asof=now,
     ).items():
         if len(horizon_frame) < config.min_horizon_rows:
             continue
@@ -263,8 +268,9 @@ def build_market_state_snapshot(
         "schema_version": MARKET_STATE_SNAPSHOT_SCHEMA_VERSION,
         "run_id": run_id,
         "generated_at": generated_at,
-        "data_asof": latest_local_candle_at,
+        "data_asof": latest_local_candle_close_at,
         "latest_local_candle_at": latest_local_candle_at,
+        "latest_local_candle_close_at": latest_local_candle_close_at,
         "git_commit": git_commit,
         "source_data_paths": source_paths,
         "source_data_hashes": source_hashes,
@@ -280,6 +286,7 @@ def build_market_state_snapshot(
             "horizon_count": len(windows),
             "stale_data": stale_data,
             "latest_local_candle_at": latest_local_candle_at,
+            "latest_local_candle_close_at": latest_local_candle_close_at,
             "max_staleness_seconds": config.max_staleness_seconds,
             "max_missing_candle_rate": _max_number(missing_rates),
             "flags": data_quality_flags,
@@ -340,6 +347,7 @@ def build_current_market_state(snapshot: Mapping[str, Any]) -> dict[str, Any]:
         "generated_at": snapshot.get("generated_at"),
         "data_asof": snapshot.get("data_asof"),
         "latest_local_candle_at": snapshot.get("latest_local_candle_at"),
+        "latest_local_candle_close_at": snapshot.get("latest_local_candle_close_at"),
         "pair": snapshot.get("pair"),
         "pair_group": snapshot.get("pair_group"),
         "base_timeframe": snapshot.get("base_timeframe"),
@@ -566,12 +574,15 @@ def _market_state_horizon_frames(
     base_timeframe: str,
     horizons: Sequence[str],
     horizon_frames: Mapping[str, pd.DataFrame],
+    asof: datetime,
 ) -> dict[str, pd.DataFrame]:
     frames: dict[str, pd.DataFrame] = {}
     base_seconds = _timeframe_seconds(base_timeframe)
     for horizon in horizons:
         if horizon in horizon_frames:
-            frames[horizon] = _prepare_ohlcv(horizon_frames[horizon])
+            frames[horizon] = _drop_unclosed_candles(
+                _prepare_ohlcv(horizon_frames[horizon]), horizon, asof=asof
+            )
             continue
         horizon_seconds = _timeframe_seconds(horizon)
         if base_seconds is None or horizon_seconds is None or horizon_seconds < base_seconds:
@@ -579,12 +590,12 @@ def _market_state_horizon_frames(
         frames[horizon] = (
             frame.copy()
             if horizon == base_timeframe
-            else _resample_ohlcv(frame, horizon)
+            else _resample_ohlcv(frame, horizon, asof=asof)
         )
     return {key: value for key, value in frames.items() if len(value)}
 
 
-def _resample_ohlcv(frame: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+def _resample_ohlcv(frame: pd.DataFrame, timeframe: str, *, asof: datetime) -> pd.DataFrame:
     if frame.empty:
         return frame.copy()
     rule = _pandas_resample_rule(timeframe)
@@ -601,7 +612,8 @@ def _resample_ohlcv(frame: pd.DataFrame, timeframe: str) -> pd.DataFrame:
         }
     )
     resampled = resampled.dropna(subset=["open", "high", "low", "close"]).reset_index()
-    return resampled.loc[:, list(REQUIRED_OHLCV_COLUMNS)]
+    resampled = resampled.loc[:, list(REQUIRED_OHLCV_COLUMNS)]
+    return _drop_unclosed_candles(resampled, timeframe, asof=asof)
 
 
 def _latest_market_state_window(
@@ -636,6 +648,7 @@ def _latest_market_state_window(
     uncertainty = round(max(0.0, min(1.0, 1.0 - confidence)), 6)
     ood_score = _out_of_distribution_score(label, confidence)
     latest_ts = pd.to_datetime(frame["date"].iloc[-1], utc=True)
+    latest_close_ts = _candle_close_timestamp(latest_ts, horizon) or latest_ts
     start_index = max(0, len(frame) - config.regime_classifier_config.lookback)
     start_ts = pd.to_datetime(frame["date"].iloc[start_index], utc=True)
     vector = _state_vector(
@@ -657,15 +670,15 @@ def _latest_market_state_window(
             "duration": _lookback_duration(horizon, config.regime_classifier_config.lookback),
         },
         "decision_window_start": _timestamp_to_iso(start_ts),
-        "decision_window_end": _timestamp_to_iso(latest_ts),
+        "decision_window_end": _timestamp_to_iso(latest_close_ts),
         "label": label,
         "state_id": _state_id(label, horizon, confidence, config),
         "confidence": round(confidence, 6),
         "uncertainty": uncertainty,
         "out_of_distribution_score": ood_score,
         "state_vector": vector,
-        "feature_cutoff_timestamp": _timestamp_to_iso(latest_ts),
-        "label_cutoff_timestamp": _timestamp_to_iso(latest_ts),
+        "feature_cutoff_timestamp": _timestamp_to_iso(latest_close_ts),
+        "label_cutoff_timestamp": _timestamp_to_iso(latest_close_ts),
         "future_data_used": False,
         "data_quality_flags": sorted(set(data_quality_flags)),
         "feature_quality_flags": [],
@@ -708,9 +721,10 @@ def _state_vector(
         else None
     )
     latest_ts = pd.to_datetime(frame["date"].iloc[-1], utc=True) if len(frame) else None
+    latest_close_ts = _candle_close_timestamp(latest_ts, horizon) if latest_ts is not None else None
     freshness_age_minutes = (
-        (now.astimezone(UTC) - latest_ts.to_pydatetime()).total_seconds() / 60.0
-        if latest_ts is not None and pd.notna(latest_ts)
+        (now.astimezone(UTC) - latest_close_ts.to_pydatetime()).total_seconds() / 60.0
+        if latest_close_ts is not None and pd.notna(latest_close_ts)
         else None
     )
     return {
@@ -917,6 +931,46 @@ def _is_stale(value: str | None, now: datetime, max_staleness_seconds: int) -> b
     if now.tzinfo is None:
         now = now.replace(tzinfo=UTC)
     return (now - parsed).total_seconds() > max_staleness_seconds
+
+
+def _drop_unclosed_candles(
+    frame: pd.DataFrame, timeframe: str, *, asof: datetime
+) -> pd.DataFrame:
+    if frame.empty:
+        return frame.copy()
+    if asof.tzinfo is None:
+        asof = asof.replace(tzinfo=UTC)
+    close_times = _candle_close_times(frame["date"], timeframe)
+    if close_times is None:
+        return frame.copy()
+    closed = frame.loc[close_times <= pd.Timestamp(asof).tz_convert("UTC")].copy()
+    return closed.reset_index(drop=True)
+
+
+def _latest_candle_close(frame: pd.DataFrame, timeframe: str) -> Any:
+    if frame.empty:
+        return None
+    return _candle_close_timestamp(frame["date"].max(), timeframe)
+
+
+def _candle_close_timestamp(value: Any, timeframe: str) -> pd.Timestamp | None:
+    if value is None or pd.isna(value):
+        return None
+    seconds = _timeframe_seconds(timeframe)
+    if seconds is None:
+        return None
+    parsed = pd.to_datetime(value, utc=True, errors="coerce")
+    if pd.isna(parsed):
+        return None
+    return parsed + pd.Timedelta(seconds=seconds)
+
+
+def _candle_close_times(values: Any, timeframe: str) -> pd.Series | None:
+    seconds = _timeframe_seconds(timeframe)
+    if seconds is None:
+        return None
+    parsed = pd.to_datetime(values, utc=True, errors="coerce")
+    return parsed + pd.Timedelta(seconds=seconds)
 
 
 def _parse_datetime(value: Any) -> datetime | None:

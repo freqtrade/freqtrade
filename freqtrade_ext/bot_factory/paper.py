@@ -916,6 +916,10 @@ def _strategy_suitability_matrix_evidence_checks(
     payload = load_json_file(resolved)
     validation = validate_strategy_suitability_matrix_for_selector(payload)
     safety = payload.get("safety_scope") or {}
+    selector_rows = _selector_eligible_matrix_rows(payload)
+    matching_rows = [
+        row for row in selector_rows if _matrix_row_matches_strategy(row, inputs.strategy)
+    ]
     return [
         _check(
             "strategy_suitability_matrix_required",
@@ -930,6 +934,20 @@ def _strategy_suitability_matrix_evidence_checks(
             "failure",
             "Strategy suitability matrix must pass full schema validation.",
             {"reason_codes": validation["reason_codes"], "checks": validation["checks"]},
+        ),
+        _check(
+            "strategy_suitability_matrix_matches_strategy",
+            bool(matching_rows),
+            "failure",
+            "Strategy suitability matrix must contain a selector-eligible row for the readiness strategy.",
+            {
+                "strategy": inputs.strategy,
+                "selector_row_count": len(selector_rows),
+                "matching_selector_row_count": len(matching_rows),
+                "selector_strategies": [
+                    _matrix_row_strategy_tokens(row) for row in selector_rows
+                ],
+            },
         ),
         _check(
             "strategy_suitability_matrix_no_startup_scope",
@@ -951,6 +969,36 @@ def _strategy_suitability_matrix_evidence_checks(
             },
         ),
     ]
+
+
+def _selector_eligible_matrix_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    rows = payload.get("rows", [])
+    if not isinstance(rows, list):
+        return []
+    return [
+        row
+        for row in rows
+        if isinstance(row, dict)
+        and row.get("row_type") == "strategy"
+        and row.get("decision") == "SELECTOR_ELIGIBLE"
+    ]
+
+
+def _matrix_row_matches_strategy(row: dict[str, Any], strategy: str) -> bool:
+    return strategy in _matrix_row_strategy_tokens(row)
+
+
+def _matrix_row_strategy_tokens(row: dict[str, Any]) -> list[str]:
+    identity = row.get("strategy_identity_unit") or {}
+    if not isinstance(identity, dict):
+        identity = {}
+    values = [
+        row.get("strategy_id"),
+        row.get("strategy_class_name"),
+        identity.get("strategy_id"),
+        identity.get("strategy_class_name"),
+    ]
+    return sorted({str(value) for value in values if value not in (None, "")})
 
 
 def _walk_forward_child_evidence_checks(

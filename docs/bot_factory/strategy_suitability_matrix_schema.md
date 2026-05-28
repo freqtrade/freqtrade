@@ -92,6 +92,7 @@ Required row fields:
 | `strategy_identity_unit` | object or null | Required for strategy rows. |
 | `candidate_id` | string | Candidate id or policy id. |
 | `strategy_id` | string | Strategy id or policy id. |
+| `strategy_class_name` | string or null | Freqtrade strategy class name when known. |
 | `state_id` | string | Market-state id. |
 | `state_label` | string | Deterministic state label where available. |
 | `horizon_profile_id` | string | Horizon profile id. |
@@ -258,6 +259,7 @@ Required safety flags:
       "strategy_identity_unit": {
         "candidate_id": "trend-candidate",
         "strategy_id": "trend-strategy",
+        "strategy_class_name": "TrendStrategy",
         "strategy_version": "strategy_v1",
         "signal_version": "signal_v1",
         "risk_policy_version": "risk_v1",
@@ -267,6 +269,7 @@ Required safety flags:
       },
       "candidate_id": "trend-candidate",
       "strategy_id": "trend-strategy",
+      "strategy_class_name": "TrendStrategy",
       "state_id": "deterministic_market_state_encoder_v1:5m:trend_up:high:ohlcv_state_features_v1",
       "state_label": "trend_up",
       "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=trend_up:intraday=missing:swing=missing",

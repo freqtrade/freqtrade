@@ -279,7 +279,7 @@ Explicitly disallowed in current scope:
 - [x] Extend the deterministic classifier output into multi-horizon artifacts.
 - [x] Add `state_vector` fields independent from human-readable labels.
 - [x] Add `confidence`, `uncertainty`, `unknown_reason`, and `out_of_distribution_score`.
-- [x] Add `data_asof` and `latest_local_candle_at`; never call a stale local snapshot "current" without the as-of timestamp.
+- [x] Add `data_asof`, `latest_local_candle_at`, and `latest_local_candle_close_at`; never call a stale local snapshot "current" without the as-of timestamp.
 - [x] Add anti-leakage fields:
   - `feature_cutoff_timestamp`
   - `label_cutoff_timestamp`
@@ -299,6 +299,9 @@ Implemented on 2026-05-28 JST:
   confidence/uncertainty, OOD score proxy, stale-data unknown fallback, horizon
   conflict detection, `horizon_profile_id`, and no-trade defaults for uncertain
   local state.
+- Review follow-up on 2026-05-28 JST: staleness now ages from candle close
+  time, `data_asof` points to latest local candle close, and resampled
+  higher-timeframe rows are dropped until their candle close time is reached.
 - Added `scripts/bot_factory_build_market_state.py` to write
   `market_state_snapshot.json`, `market_state_windows.jsonl`,
   `market_state_report.md`, `current_market_state.json`, and
@@ -308,8 +311,7 @@ Implemented on 2026-05-28 JST:
   forcing `unknown` plus no-trade.
 - Remaining P0 limitations: OOD scoring is a deterministic confidence proxy,
   not a learned analog-distance model; optional market-structure contexts are
-  not yet joined; state-conditioned scorecards and selector matching are still
-  future increments.
+  not yet joined; historical as-of selector replay remains a future increment.
 
 ## P0: Current Market State Report
 
@@ -487,6 +489,10 @@ Implemented on 2026-05-28 JST:
   thresholds, selector-eligible state rows, and walk-forward evidence when the
   caller requires it. Missing walk-forward evidence produces
   `diagnostic_only=true`.
+- Review follow-up on 2026-05-28 JST: source regime scorecard top-level
+  `decision` must pass the historical selector gate before
+  `selector_candidate_creation_allowed` or `paper_readiness_input_allowed` can
+  be true.
 - Added native optional observation-ledger state fields. When any state field is
   present, validation now requires complete `state_id`, `horizon_profile_id`,
   and `state_encoder_version` plus `future_data_used=false`.
@@ -971,6 +977,9 @@ Implemented on 2026-05-28 JST:
   matrices with full schema checks, rejects diagnostic/minimal top-level-only
   scorecard JSON, and preserves the existing no-startup/no-process safety
   scope.
+- Review follow-up on 2026-05-28 JST: a supplied strategy suitability matrix
+  must contain a selector-eligible row matching the readiness target strategy
+  class or strategy id.
 
 Remaining limitation: candidate identity is not yet joined all the way across
 generated strategy source, config, backtest metrics, walk-forward metrics,

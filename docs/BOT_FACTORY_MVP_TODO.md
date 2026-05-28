@@ -99,6 +99,44 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-28 JST for PR #11 review follow-up on market-state
+matching safety boundaries.
+
+- [x] Addressed review comment `3317907259`: resampled higher-timeframe market
+  state frames now drop candles whose close time is after the local as-of time,
+  preventing incomplete higher-horizon buckets from entering
+  `market_state_snapshot_v1`.
+- [x] Addressed review comment `3318590775`: market-state freshness now uses
+  latest candle close time instead of the OHLCV candle-open timestamp. Snapshot
+  artifacts now include `latest_local_candle_close_at`, and `data_asof` points
+  at that close timestamp.
+- [x] Addressed review comment `3317965069`: state-conditioned scorecards now
+  require the source regime scorecard top-level decision to be
+  `GLOBAL_SELECTOR_ELIGIBLE` or `REGIME_SCOPED_SELECTOR_ELIGIBLE`; otherwise
+  `historical_gate_not_selector_eligible` keeps selector and paper-readiness
+  input flags false even if a per-regime row looks eligible.
+- [x] Addressed review comment `3318590784`: paper readiness now requires a
+  supplied strategy suitability matrix to contain at least one
+  selector-eligible row matching the readiness target strategy class or
+  strategy id.
+- [x] Added regression tests for incomplete higher-timeframe resamples,
+  close-time staleness on `1h`, source historical-gate rejection, and
+  mismatched suitability matrix strategy rejection.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\market_regime.py freqtrade_ext\bot_factory\state_conditioning.py freqtrade_ext\bot_factory\strategy_suitability.py freqtrade_ext\bot_factory\paper.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "incomplete_resampled or candle_close_time or source_historical_gate or suitability_matrix_for_target_strategy or market_state_scorecard"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "market_state or state_conditioned or strategy_suitability or selector_matching or paper_readiness"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+- [x] Results: compile passed; review-regression slice passed `5 passed`;
+  broader market-state/state-conditioned/suitability/selector/paper-readiness
+  slice passed `19 passed`; full `tests\test_bot_factory.py` passed and
+  reached `[100%]`. Pytest still emitted the known Windows `.pytest_cache` and
+  `AppData\Local\Temp\pytest-of-yoro4\pytest-current` ACL cleanup warnings.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
 Checked on 2026-05-28 JST for market-state / strategy-matching local
 suitability, selector/no-trade matching, and paper-readiness schema validation.
 

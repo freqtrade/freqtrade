@@ -39,6 +39,10 @@ def build_state_conditioned_scorecard(
     run_id = run_id or f"{candidate_id}_state_scorecard"
     state_by_label = _state_rows_by_label(market_state_snapshot)
     source_strict = _source_scorecard_strict(regime_scorecard)
+    historical_gate_passed = regime_scorecard.get("decision") in {
+        "GLOBAL_SELECTOR_ELIGIBLE",
+        "REGIME_SCOPED_SELECTOR_ELIGIBLE",
+    }
     walk_forward_gate_passed = (
         _walk_forward_gate_passed(regime_scorecard)
         if require_walk_forward_evidence
@@ -67,6 +71,7 @@ def build_state_conditioned_scorecard(
     )
     blockers = _blockers(
         source_strict=source_strict,
+        historical_gate_passed=historical_gate_passed,
         walk_forward_gate_passed=walk_forward_gate_passed,
         proxy_evidence=proxy_evidence,
         relaxed_thresholds_used=relaxed_thresholds_used,
@@ -108,8 +113,7 @@ def build_state_conditioned_scorecard(
         "proxy_evidence": bool(proxy_evidence),
         "relaxed_thresholds_used": bool(relaxed_thresholds_used),
         "actual_strategy_backtest_required": True,
-        "historical_gate_passed": regime_scorecard.get("decision")
-        in {"GLOBAL_SELECTOR_ELIGIBLE", "REGIME_SCOPED_SELECTOR_ELIGIBLE"},
+        "historical_gate_passed": historical_gate_passed,
         "walk_forward_gate_passed": walk_forward_gate_passed,
         "selector_candidate_creation_allowed": selector_allowed,
         "paper_readiness_input_allowed": selector_allowed,
@@ -526,6 +530,7 @@ def _walk_forward_gate_passed(scorecard: Mapping[str, Any]) -> bool:
 def _blockers(
     *,
     source_strict: bool,
+    historical_gate_passed: bool,
     walk_forward_gate_passed: bool,
     proxy_evidence: bool,
     relaxed_thresholds_used: bool,
@@ -534,6 +539,8 @@ def _blockers(
     blockers: list[str] = []
     if not source_strict:
         blockers.append("source_regime_scorecard_not_strict")
+    if not historical_gate_passed:
+        blockers.append("historical_gate_not_selector_eligible")
     if proxy_evidence:
         blockers.append("proxy_evidence")
     if relaxed_thresholds_used:
