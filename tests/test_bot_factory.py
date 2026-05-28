@@ -10872,6 +10872,20 @@ def test_candidate_identity_segments_signal_risk_regime_and_cost_versions():
         assert {item["field"] for item in result["mismatches"]} == {field}
 
 
+def _market_state_ohlcv_frame(dates, close_values):
+    close = pd.Series(close_values, dtype=float)
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "open": close.shift(1).fillna(close.iloc[0]),
+            "high": close + 0.5,
+            "low": close - 0.5,
+            "close": close,
+            "volume": np.full(len(close), 100.0),
+        }
+    )
+
+
 def test_deterministic_regime_classifier_labels_fixed_ohlcv_and_churn_is_bounded():
     from freqtrade_ext.bot_factory.market_regime import (
         RegimeClassifierConfig,
@@ -10904,6 +10918,149 @@ def test_deterministic_regime_classifier_labels_fixed_ohlcv_and_churn_is_bounded
     assert first["regime_classifier_version"] == "deterministic_regime_classifier_v1"
     assert first["label_counts"]["trend_up"] > 0
     assert churn["ok"] is True
+
+
+def test_market_state_snapshot_writes_multi_horizon_artifacts_and_current_report(tmp_path):
+    from freqtrade_ext.bot_factory.market_regime import (
+        MarketStateConfig,
+        RegimeClassifierConfig,
+        build_market_state_snapshot,
+        write_market_state_artifacts,
+    )
+
+    dates = pd.date_range("2026-01-01", periods=96, freq="5min", tz="UTC")
+    frame = _market_state_ohlcv_frame(dates, np.linspace(100.0, 130.0, len(dates)))
+    config = MarketStateConfig(
+        horizons=("5m", "15m"),
+        min_horizon_rows=8,
+        max_staleness_seconds=900,
+        confidence_threshold=0.45,
+        regime_classifier_config=RegimeClassifierConfig(
+            lookback=4,
+            min_rows=8,
+            trend_return_threshold=0.005,
+            trend_efficiency_threshold=0.2,
+        ),
+    )
+    now = dates[-1].to_pydatetime() + pd.Timedelta(minutes=5)
+
+    snapshot = build_market_state_snapshot(
+        frame,
+        pair="BTC/USDT:USDT",
+        base_timeframe="5m",
+        pair_group="btc_major",
+        run_id="market_state_test",
+        cost_model_id="cost_v1",
+        config=config,
+        generated_at="2026-01-01T08:00:00+00:00",
+        now=now,
+    )
+    paths = write_market_state_artifacts(snapshot, output_root=tmp_path / "market_state")
+    current = json.loads(paths["current_market_state"].read_text(encoding="utf-8"))
+    current_report = paths["current_market_state_report"].read_text(encoding="utf-8")
+
+    assert snapshot["schema_version"] == "market_state_snapshot_v1"
+    assert {row["horizon"] for row in snapshot["horizons"]} == {"5m", "15m"}
+    assert snapshot["aggregate_label"] == "trend_up"
+    assert snapshot["no_trade_default"] is False
+    assert snapshot["safety_scope"]["freqtrade_trade_started"] is False
+    for row in snapshot["horizons"]:
+        assert row["schema_version"] == "market_state_window_v1"
+        assert row["future_data_used"] is False
+        assert row["feature_cutoff_timestamp"] <= row["decision_window_end"]
+        assert "rolling_return_bps" in row["state_vector"]
+    assert current["schema_version"] == "current_market_state_v1"
+    assert current["stale_data"] is False
+    assert current["not_allowed_confirmation"]["paper_trading_started"] is True
+    assert "Current means current as of local data timestamp" in current_report
+    for path in paths.values():
+        assert path.exists()
+
+
+def test_market_state_snapshot_conflicting_horizons_default_to_no_trade():
+    from freqtrade_ext.bot_factory.market_regime import (
+        MarketStateConfig,
+        RegimeClassifierConfig,
+        build_market_state_snapshot,
+    )
+
+    latest = pd.Timestamp("2026-01-02T03:00:00Z")
+    up_dates = pd.date_range(end=latest, periods=40, freq="5min")
+    down_dates = pd.date_range(end=latest, periods=40, freq="1h")
+    up_frame = _market_state_ohlcv_frame(up_dates, np.linspace(100.0, 125.0, len(up_dates)))
+    down_frame = _market_state_ohlcv_frame(
+        down_dates, np.linspace(125.0, 90.0, len(down_dates))
+    )
+    config = MarketStateConfig(
+        horizons=("5m", "1h"),
+        min_horizon_rows=8,
+        max_staleness_seconds=900,
+        confidence_threshold=0.45,
+        regime_classifier_config=RegimeClassifierConfig(
+            lookback=4,
+            min_rows=8,
+            trend_return_threshold=0.005,
+            trend_efficiency_threshold=0.2,
+        ),
+    )
+
+    snapshot = build_market_state_snapshot(
+        up_frame,
+        pair="BTC/USDT:USDT",
+        base_timeframe="5m",
+        run_id="market_state_conflict",
+        horizon_frames={"1h": down_frame},
+        config=config,
+        now=latest.to_pydatetime() + pd.Timedelta(minutes=5),
+    )
+
+    assert {row["label"] for row in snapshot["horizons"]} == {"trend_up", "trend_down"}
+    assert snapshot["aggregate_label"] == "mixed"
+    assert snapshot["no_trade_default"] is True
+    assert snapshot["horizon_conflict"]["conflict_detected"] is True
+    assert "horizon_conflict" in snapshot["reason_codes"]
+
+
+def test_market_state_snapshot_stale_local_candles_force_unknown_no_trade():
+    from freqtrade_ext.bot_factory.market_regime import (
+        MarketStateConfig,
+        RegimeClassifierConfig,
+        build_current_market_state,
+        build_market_state_snapshot,
+    )
+
+    dates = pd.date_range("2026-01-01", periods=40, freq="5min", tz="UTC")
+    frame = _market_state_ohlcv_frame(dates, np.linspace(100.0, 120.0, len(dates)))
+    config = MarketStateConfig(
+        horizons=("5m",),
+        min_horizon_rows=8,
+        max_staleness_seconds=900,
+        confidence_threshold=0.45,
+        regime_classifier_config=RegimeClassifierConfig(
+            lookback=4,
+            min_rows=8,
+            trend_return_threshold=0.005,
+            trend_efficiency_threshold=0.2,
+        ),
+    )
+
+    snapshot = build_market_state_snapshot(
+        frame,
+        pair="BTC/USDT:USDT",
+        base_timeframe="5m",
+        run_id="market_state_stale",
+        config=config,
+        now=datetime(2026, 1, 2, tzinfo=UTC),
+    )
+    current = build_current_market_state(snapshot)
+
+    assert snapshot["aggregate_label"] == "unknown"
+    assert snapshot["unknown_reason"] == "stale_local_data"
+    assert snapshot["no_trade_default"] is True
+    assert snapshot["horizons"][0]["label"] == "unknown"
+    assert "stale_local_data" in snapshot["horizons"][0]["data_quality_flags"]
+    assert "stale_local_data" in snapshot["reason_codes"]
+    assert current["stale_data"] is True
 
 
 def test_backtest_evidence_pipeline_writes_observation_scorecard_and_selector_artifacts(tmp_path):

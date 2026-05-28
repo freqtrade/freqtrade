@@ -99,6 +99,66 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-28 JST for market-state / strategy-matching Increment 0
+schemas plus first P0 local snapshot/current-state reporter foundation.
+
+- [x] Added `docs/bot_factory/market_state_schema.md` defining draft
+  `market_state_snapshot_v1`, `market_state_window_v1`, current-state report
+  boundary fields, local-only safety scope, anti-leakage timestamps,
+  stale/unknown/OOD no-trade defaults, and example JSON snippets.
+- [x] Added `docs/bot_factory/state_conditioned_scorecard_schema.md` defining
+  draft `state_conditioned_scorecard_v1`, observation-ledger extension fields,
+  strict evidence-unit dimensions, separated baseline comparisons,
+  diagnostic-vs-selector eligibility fields, hard vetoes, safety scope, and
+  example JSON snippets.
+- [x] Added `docs/bot_factory/strategy_suitability_matrix_schema.md` defining
+  draft `strategy_suitability_matrix_v1`, first-class no-trade rows,
+  missing-state rows, selector/non-authority boundaries, matrix diff fields,
+  safety scope, and example JSON snippets.
+- [x] Updated
+  `docs/BOT_FACTORY_MARKET_STATE_STRATEGY_MATCHING_TODO.md` to mark Increment 0
+  documentation/schema work and the first P0 market-state artifact reporter as
+  implemented while keeping state-conditioned scorecard construction, matching,
+  OOD analog modeling, and readiness integration open.
+- [x] Extended `freqtrade_ext/bot_factory/market_regime.py` with local-only
+  `market_state_snapshot_v1`, `market_state_window_v1`, and
+  `current_market_state_v1` builders. The implementation reuses the existing
+  deterministic OHLCV classifier, adds state vectors, as-of timestamps,
+  anti-leakage cutoffs, confidence/uncertainty, OOD score proxy, stale-data
+  unknown fallback, horizon conflict detection, horizon profile IDs, safety
+  scope, JSON/JSONL artifact writers, and Markdown reports.
+- [x] Added `scripts/bot_factory_build_market_state.py` to write local
+  `data/market_state/<run_id>/` and `data/market_state/current/<run_id>/`
+  artifacts from closed-candle OHLCV only.
+- [x] Added focused tests for multi-horizon artifact writing/current reports,
+  conflicting horizons defaulting to `mixed` plus `no_trade_default=true`, stale
+  local candles forcing `unknown` plus no-trade, and existing deterministic
+  classifier churn behavior.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\market_regime.py scripts\bot_factory_build_market_state.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "market_state or deterministic_regime_classifier"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "market_state or deterministic_regime_classifier or backtest_evidence_pipeline"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_build_market_state.py --help`
+  - `git diff --check`
+  - `rg -n "[ \t]+$" freqtrade_ext\bot_factory\market_regime.py scripts\bot_factory_build_market_state.py tests\test_bot_factory.py docs\bot_factory docs\BOT_FACTORY_MARKET_STATE_STRATEGY_MATCHING_TODO.md docs\BOT_FACTORY_MVP_TODO.md`
+  - `rg -n "market_state_snapshot_v1|state_conditioned_scorecard_v1|strategy_suitability_matrix_v1|selector_candidate_creation_allowed|paper_readiness_input_allowed" docs\bot_factory docs\BOT_FACTORY_MARKET_STATE_STRATEGY_MATCHING_TODO.md`
+- [x] Results: compile passed; first sandboxed focused pytest hit the known
+  Windows temp/cache ACL issue under `AppData\Local\Temp\pytest-of-yoro4`;
+  rerunning with normal filesystem permissions passed `4 passed`; the broader
+  market-state/regime pipeline slice passed `5 passed`; CLI help exited `0`;
+  `git diff --check` passed with the existing CRLF working-copy warning for
+  this Markdown file; trailing-whitespace search returned no findings; schema
+  keyword search found the expected new schema and boundary references.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, strategy
+  matching, or process-control action was performed.
+- [ ] Remaining limitation: this generates local market-state/current-state
+  artifacts only. OOD scoring is still a deterministic confidence proxy;
+  optional market-structure contexts are not joined; state-conditioned
+  scorecards, suitability matrices, selector/no-trade matching, selector
+  replays, ML diagnostics, and Phase 3 readiness inputs remain future work.
+
 Checked on 2026-05-24 JST for PR #10 review follow-up on annotated strategy
 candidate identity parsing.
 
